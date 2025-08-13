@@ -27,7 +27,7 @@ connectors:
   inbound:
     mode: disabled
 
-core:
+orchestration:
   replicas: 1
   clusterSize: "1"
   partitionCount: "1"

@@ -44,23 +44,23 @@ data:
         server:
           url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
 
-        {{- if or .Values.core.enabled .Values.webModeler.restapi.clusters }}
+        {{- if or .Values.orchestration.enabled .Values.webModeler.restapi.clusters }}
         clusters:
           {{- if .Values.webModeler.restapi.clusters }}
             {{- .Values.webModeler.restapi.clusters | toYaml | nindent 10 }}
           {{- else}}
           - id: "default-cluster"
             name: {{ tpl .Values.global.zeebeClusterName . | quote }}
-            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.core) | quote }}
+            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
             authentication: {{ include "webModeler.authenticationType" . | quote }}
             authorizations:
               enabled: {{ .Values.global.security.authorizations.enabled }}
             url:
               zeebe:
-                grpc: "grpc://{{ include "core.fullname" . }}:{{ .Values.core.service.grpcPort }}"
+                grpc: "grpc://{{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}"
                 rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}"
-              operate: {{ include "camundaPlatform.CoreURL" . | quote }}
-              tasklist: {{ include "camundaPlatform.CoreURL" . | quote }}
+              operate: {{ include "camundaPlatform.OrchestrationURL" . | quote }}
+              tasklist: {{ include "camundaPlatform.OrchestrationURL" . | quote }}
           {{- end }}
         {{- end }}
 

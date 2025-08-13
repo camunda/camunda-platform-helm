@@ -1,6 +1,6 @@
 package camunda
 
-type CoreApplicationYAML struct {
+type OrchestrationApplicationYAML struct {
 	Zeebe   ZeebeYAML   `yaml:"zeebe"`
 	Spring  SpringYAML  `yaml:"spring"`
 	Camunda CamundaYAML `yaml:"camunda"`

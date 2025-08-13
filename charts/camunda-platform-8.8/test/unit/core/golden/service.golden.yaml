@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/templates/core/service.yaml
+# Source: camunda-platform/templates/orchestration/service.yaml
 apiVersion: v1
 kind: Service
 metadata:

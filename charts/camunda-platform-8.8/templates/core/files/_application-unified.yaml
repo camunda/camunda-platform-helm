@@ -4,11 +4,11 @@ It is included (imported) in the ConfigMap.
 */}}
 spring:
   profiles:
-    active: {{ include "core.enabledProfiles" . | quote }}
+    active: {{ include "orchestration.enabledProfiles" . | quote }}
 
 server:
   address: 0.0.0.0
-  port: {{ .Values.core.service.httpPort }}
+  port: {{ .Values.orchestration.service.httpPort }}
   # ssl:
   #   enabled: true
   #   certificate: /path/to/my/cert.pem
@@ -17,17 +17,17 @@ server:
 management:
   server:
     address: 0.0.0.0
-    port: {{ .Values.core.service.managementPort }}
+    port: {{ .Values.orchestration.service.managementPort }}
     # ssl:
     #   enabled: true
-  {{- if .Values.core.contextPath }}
-  endpoint: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath "actuator") | quote }}
+  {{- if .Values.orchestration.contextPath }}
+  endpoint: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath "actuator") | quote }}
   {{- end }}
 
 camunda:
   system:
-    cpu-thread-count: {{ .Values.core.cpuThreadCount }}
-    io-thread-count: {{ .Values.core.ioThreadCount }}
+    cpu-thread-count: {{ .Values.orchestration.cpuThreadCount }}
+    io-thread-count: {{ .Values.orchestration.ioThreadCount }}
     clock-controlled: false
     validate-restore-config: true
     upgrade:
@@ -36,7 +36,7 @@ camunda:
   api:
     grpc:
       address: 0.0.0.0
-      port: {{ .Values.core.service.grpcPort }}
+      port: {{ .Values.orchestration.service.grpcPort }}
       # ssl:
       #   enabled: true
       #   certificate: /path/to/my/cert.pem
@@ -74,25 +74,25 @@ camunda:
       command-api:
         # default-port:
         # host:
-        port: {{ .Values.core.service.commandPort }}
+        port: {{ .Values.orchestration.service.commandPort }}
         # advertisedHost:
         # advertisedPort:
       internal-api:
         # default-port:
         # host:
-        port: {{ .Values.core.service.internalPort }}
+        port: {{ .Values.orchestration.service.internalPort }}
         # advertisedHost:
         # advertisedPort:
     initial-contact-points:
-      {{- range (untilStep 0 (int .Values.core.clusterSize) 1) }}
-        - {{ include "core.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.core.service.internalPort}}
+      {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+        - {{ include "orchestration.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
       {{- end }}
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
     node-id: ${VALUES_NODE_ID}
-    partition-count: {{ .Values.core.partitionCount | quote }}
-    replication-factor: {{ .Values.core.replicationFactor | quote }}
-    size: {{ .Values.core.clusterSize | quote }}
+    partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
+    size: {{ .Values.orchestration.clusterSize | quote }}
     name: {{ tpl .Values.global.zeebeClusterName . }}
     # membership:
     #   broadcast-updates: true
@@ -126,9 +126,9 @@ camunda:
 
   data:
     retention:
-      enabled: {{ .Values.core.history.retention.enabled }}
-      minimum-age: {{ .Values.core.history.retention.minimumAge | quote }}
-    snapshot-period: {{ .Values.core.data.snapshotPeriod | quote }}
+      enabled: {{ .Values.orchestration.history.retention.enabled }}
+      minimum-age: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+    snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
     # export:
     #   distribution-interval: '15s'
     #   skip-records: []
@@ -170,10 +170,10 @@ camunda:
     primary-storage:
       disk:
         free-space:
-          processing: {{ .Values.core.data.disk.freeSpace.processing | quote }}
-          replication: {{ .Values.core.data.disk.freeSpace.replication | quote }}
+          processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
+          replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
     secondary-storage:
-      type: {{ include "core.secondaryStorage" . | quote -}}
+      type: {{ include "orchestration.secondaryStorage" . | quote -}}
       {{- if .Values.global.elasticsearch.enabled }}
       elasticsearch:
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
@@ -190,7 +190,7 @@ camunda:
         {{- end }}
         index-prefix: {{ .Values.global.elasticsearch.prefix | quote }}
         history:
-          policy-name: {{ .Values.core.history.retention.policyName | quote }}
+          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
@@ -208,7 +208,7 @@ camunda:
         {{- end }}
         index-prefix: {{ .Values.global.opensearch.prefix | quote }}
         history:
-          policy-name: {{ .Values.core.history.retention.policyName | quote }}
+          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
     {{- end }}
 
   security:
@@ -216,15 +216,15 @@ camunda:
     base-url: {{ include "identity.internalUrl" . | quote }}
     issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
     issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-    redirect-root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl . | quote }}
+    redirect-root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl . | quote }}
     client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-    audience: {{ include "core.authAudience" . | quote }}
+    audience: {{ include "orchestration.authAudience" . | quote }}
     authentication:
       unprotected-api: {{ .Values.global.security.authentication.unprotectedApi }}
       method: 'oidc'
       {{- if eq .Values.global.security.authentication.method "oidc" }}
       oidc:
-        client-id: {{ include "core.authClientId" . | quote }}
+        client-id: {{ include "orchestration.authClientId" . | quote }}
       {{- end }}
     authorization: {{ .Values.global.security.authorizations.enabled }}
     multi-tenancy: {{ .Values.global.multitenancy.enabled }}
@@ -234,7 +234,7 @@ camunda:
       enterprise: true
       roles:
         - owner
-      # TODO: Update after moving `global.security` to `core.security`.
+      # TODO: Update after moving `global.security` to `orchestration.security`.
       users:
         user-id: 'demo'
         user-password: 'demo'
@@ -245,7 +245,7 @@ camunda:
         # reader-user-id: 'view'
         # reader-password: 'view'
         # reader-display-name: 'view'
-    {{- if .Values.core.profiles.operate }}
+    {{- if .Values.orchestration.profiles.operate }}
     operate:
       enabled: true
       # operation-executor:
@@ -258,13 +258,13 @@ camunda:
       #   lock-timeout: '60s'
       # alerting-webbook: ''
       zeebe:
-        gateway-address: {{ (printf "%s:%v" (include "core.fullname" .) .Values.core.service.grpcPort)| quote }}
+        gateway-address: {{ (printf "%s:%v" (include "orchestration.fullname" .) .Values.orchestration.service.grpcPort)| quote }}
         secure: false
         certificate-path: ''
       # TODO: What kind of value is expected here compared to the 8.7 version?
       importer-enabled: true
     {{- end }}
-    {{- if .Values.core.profiles.tasklist }}
+    {{- if .Values.orchestration.profiles.tasklist }}
     tasklist:
       enabled: true
       # TODO: What kind of value is expected here compared to the 8.7 version?

@@ -58,7 +58,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables compatibility layer for Camunda Core between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
+                                    "description": "if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
                                     "default": true
                                 }
                             }
@@ -673,12 +673,12 @@
                                     "properties": {
                                         "audience": {
                                             "type": "string",
-                                            "description": "defines the audience, which is used by Core.",
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
                                             "default": "core-api"
                                         },
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Core in authentication flows.",
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
                                             "default": "core"
                                         },
                                         "existingSecretKey": {
@@ -693,7 +693,7 @@
                                         },
                                         "tokenScope": {
                                             "type": "string",
-                                            "description": "defines the token scope, which is used by Core.",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
                                             "default": ""
                                         }
                                     }
@@ -4860,7 +4860,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Core web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
                     "default": ""
                 },
                 "cpuThreadCount": {

@@ -1,9 +1,9 @@
 ---
-# Source: camunda-platform/templates/service-monitor/core-service-monitor.yaml
+# Source: camunda-platform/templates/service-monitor/orchestration-service-monitor.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: camunda-platform-test-core
+  name: camunda-platform-test-orchestration
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -15,7 +15,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/component: core
+      app.kubernetes.io/component: orchestration
   endpoints:
     - honorLabels: true
       path: /actuator/prometheus

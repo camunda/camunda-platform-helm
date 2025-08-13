@@ -9,7 +9,7 @@ global:
   security:
     authentication:
       method: oidc
-core:
+orchestration:
   image:
     tag: "$E2E_TESTS_CORE_IMAGE_TAG"
   env:
@@ -115,7 +115,7 @@ identity:
     - name: KEYCLOAK_USERS_0_ROLES_4
       value: Console
     - name: KEYCLOAK_USERS_0_ROLES_5
-      value: Core
+      value: Orchestration
     - name: KEYCLOAK_CLIENTS_2_ID
       value: venom
     - name: KEYCLOAK_CLIENTS_2_NAME
@@ -161,7 +161,7 @@ identity:
     - name: KEYCLOAK_USERS_1_ROLES_4
       value: Console
     - name: KEYCLOAK_USERS_1_ROLES_5
-      value: Core
+      value: Orchestration
     - name: KEYCLOAK_USERS_2_FIRST_NAME
       value: Bart
     - name: KEYCLOAK_USERS_2_LAST_NAME
@@ -183,14 +183,14 @@ identity:
     - name: KEYCLOAK_USERS_2_ROLES_4
       value: Console
     - name: KEYCLOAK_USERS_2_ROLES_5
-      value: Core
-    # # Core access.
+      value: Orchestration
+    # # Orchestration access.
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
-      value: core-api
+      value: orchestration-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
       value: "read:*"
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
-      value: core-api
+      value: orchestration-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
       value: "write:*"
     # # Tasklist access.
@@ -246,13 +246,13 @@ identity:
       value: camunda-identity-resource-server
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_DEFINITION
       value: write
-    # Core access.
+    # Orchestration access.
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_RESOURCE_SERVER_ID
-      value: core-api
+      value: orchestration-api
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_DEFINITION
       value: "read:*"
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_RESOURCE_SERVER_ID
-      value: core-api
+      value: orchestration-api
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_DEFINITION
       value: "write:*"
     # # Tasklist access.

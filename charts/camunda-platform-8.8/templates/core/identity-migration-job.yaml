@@ -1,48 +1,48 @@
-{{- if .Values.core.migration.identity.enabled }}
+{{- if .Values.orchestration.migration.identity.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "identity.fullname" . }}-migration
-  labels: {{- include "core.labels" . | nindent 4 }}
+  labels: {{- include "orchestration.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  backoffLimit: {{ .Values.core.migration.identity.backoffLimit }}
+  backoffLimit: {{ .Values.orchestration.migration.identity.backoffLimit }}
   template:
     metadata:
       labels:
-        {{- include "core.labels" . | nindent 8 }}
+        {{- include "orchestration.labels" . | nindent 8 }}
     spec:
       restartPolicy: OnFailure
-      imagePullSecrets: {{- include "core.imagePullSecrets" . | nindent 8 }}
-      {{- if .Values.core.podSecurityContext }}
-      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
+      imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
+      {{- if .Values.orchestration.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
       initContainers:
-        - name: wait-for-core
-          {{- if .Values.core.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
+        - name: wait-for-orchestration
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           image: curlimages/curl:8.15.0
           command:
             - sh
             - -c
             - |
-              until curl -sf http://{{ include "core.fullname" . }}-gateway:{{ .Values.core.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}; do
+              until curl -sf http://{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
                 echo "waiting for Orchestration Cluster"; sleep 5;
               done
       containers:
         - name: camunda-migration
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-          {{- if .Values.core.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "core.authClientSecretName" . }}
-                  key: {{ include "core.authClientSecretKey" . }}
+                  name: {{ include "orchestration.authClientSecretName" . }}
+                  key: {{ include "orchestration.authClientSecretKey" . }}
           command:
             - /usr/local/camunda/bin/identity-migration
           resources:

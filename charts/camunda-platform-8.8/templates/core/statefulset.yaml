@@ -1,52 +1,52 @@
-{{- if .Values.core.enabled -}}
+{{- if .Values.orchestration.enabled -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "core.legacyName" . }}
+  name: {{ include "orchestration.legacyName" . }}
   labels:
-    {{- include "core.labels" . | nindent 4 }}
+    {{- include "orchestration.labels" . | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.global.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
-  replicas: {{ div .Values.core.clusterSize .Values.global.multiregion.regions }}
+  replicas: {{ div .Values.orchestration.clusterSize .Values.global.multiregion.regions }}
   selector:
     matchLabels:
-      {{- include "core.matchLabels" . | nindent 6 }}
-  serviceName: {{ include "core.fullname" . }}
+      {{- include "orchestration.matchLabels" . | nindent 6 }}
+  serviceName: {{ include "orchestration.fullname" . }}
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
   template:
     metadata:
       labels:
-        {{- include "core.labels" . | nindent 8 }}
-        {{- if .Values.core.podLabels }}
-        {{- toYaml .Values.core.podLabels | nindent 8 }}
+        {{- include "orchestration.labels" . | nindent 8 }}
+        {{- if .Values.orchestration.podLabels }}
+        {{- toYaml .Values.orchestration.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/core/configmap.yaml") . | sha256sum }}
-        {{- range $key, $value := .Values.core.podAnnotations }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.orchestration.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
     spec:
-      {{- if .Values.core.priorityClassName }}
-      priorityClassName: {{ .Values.core.priorityClassName | quote }}
+      {{- if .Values.orchestration.priorityClassName }}
+      priorityClassName: {{ .Values.orchestration.priorityClassName | quote }}
       {{- end }}
       imagePullSecrets:
-        {{- include "core.imagePullSecrets" . | nindent 8 }}
+        {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((coalesce .Values.core.initContainers .Values.core.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+        {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
       containers:
-        - name: core
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.core) }}
+        - name: orchestration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-          {{- if .Values.core.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.containerSecurityContext "context" $) | nindent 12 }}
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
-          {{- if .Values.core.command }}
-          command: {{ toYaml .Values.core.command | nindent 10 }}
+          {{- if .Values.orchestration.command }}
+          command: {{ toYaml .Values.orchestration.command | nindent 10 }}
           {{- else }}
           command: ["bash", "/usr/local/bin/startup.sh"]
           {{- end }}
@@ -100,7 +100,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: {{ include "core.fullname" . }}
+              value: {{ include "orchestration.fullname" . }}
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -109,21 +109,21 @@ spec:
             - name: VALUES_CAMUNDA_CORE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "core.authClientSecretName" . }}
-                  key: {{ include "core.authClientSecretKey" . }}
+                  name: {{ include "orchestration.authClientSecretName" . }}
+                  key: {{ include "orchestration.authClientSecretKey" . }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.core.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
+              value: {{ .Values.orchestration.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.core.javaOpts | quote }}
+              value: {{ .Values.orchestration.javaOpts | quote }}
             {{- end }}
             - name: K8S_POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            {{- with .Values.core.env }}
+            {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
@@ -162,58 +162,58 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
-          {{- if .Values.core.envFrom }}
-            {{- .Values.core.envFrom | toYaml | nindent 12 }}
+          {{- if .Values.orchestration.envFrom }}
+            {{- .Values.orchestration.envFrom | toYaml | nindent 12 }}
           {{- end }}
           ports:
-            - containerPort: {{ .Values.core.service.httpPort }}
-              name: {{ default "http" .Values.core.service.httpName }}
-            - containerPort: {{ .Values.core.service.commandPort }}
-              name: {{ default "command" .Values.core.service.commandName }}
-            - containerPort: {{ .Values.core.service.internalPort }}
-              name: {{ default "internal" .Values.core.service.internalName }}
-            - containerPort: {{ .Values.core.service.managementPort }}
-              name: {{ default "management" .Values.core.service.managementName }}
-            - containerPort: {{ .Values.core.service.grpcPort }}
-              name: {{ default "gateway" .Values.core.service.grpcName }}
-          {{- if .Values.core.startupProbe.enabled }}
+            - containerPort: {{ .Values.orchestration.service.httpPort }}
+              name: {{ default "http" .Values.orchestration.service.httpName }}
+            - containerPort: {{ .Values.orchestration.service.commandPort }}
+              name: {{ default "command" .Values.orchestration.service.commandName }}
+            - containerPort: {{ .Values.orchestration.service.internalPort }}
+              name: {{ default "internal" .Values.orchestration.service.internalName }}
+            - containerPort: {{ .Values.orchestration.service.managementPort }}
+              name: {{ default "management" .Values.orchestration.service.managementName }}
+            - containerPort: {{ .Values.orchestration.service.grpcPort }}
+              name: {{ default "gateway" .Values.orchestration.service.grpcName }}
+          {{- if .Values.orchestration.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.startupProbe.probePath) }}
-              scheme: {{ .Values.core.startupProbe.scheme }}
-              port: {{ .Values.core.service.managementPort }}
-            initialDelaySeconds: {{ .Values.core.startupProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.core.startupProbe.periodSeconds }}
-            successThreshold: {{ .Values.core.startupProbe.successThreshold }}
-            failureThreshold: {{ .Values.core.startupProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.core.startupProbe.timeoutSeconds }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.startupProbe.probePath) }}
+              scheme: {{ .Values.orchestration.startupProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.startupProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.core.readinessProbe.enabled }}
+          {{- if .Values.orchestration.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.readinessProbe.probePath) }}
-              scheme: {{ .Values.core.readinessProbe.scheme }}
-              port: {{ .Values.core.service.managementPort }}
-            initialDelaySeconds: {{ .Values.core.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.core.readinessProbe.periodSeconds }}
-            successThreshold: {{ .Values.core.readinessProbe.successThreshold }}
-            failureThreshold: {{ .Values.core.readinessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.core.readinessProbe.timeoutSeconds }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}
+              scheme: {{ .Values.orchestration.readinessProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.readinessProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.core.livenessProbe.enabled }}
+          {{- if .Values.orchestration.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.livenessProbe.probePath) }}
-              scheme: {{ .Values.core.livenessProbe.scheme }}
-              port: {{ .Values.core.service.managementPort }}
-            initialDelaySeconds: {{ .Values.core.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.core.livenessProbe.periodSeconds }}
-            successThreshold: {{ .Values.core.livenessProbe.successThreshold }}
-            failureThreshold: {{ .Values.core.livenessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.core.livenessProbe.timeoutSeconds }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.livenessProbe.probePath) }}
+              scheme: {{ .Values.orchestration.livenessProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.livenessProbe.timeoutSeconds }}
           {{- end }}
           resources:
-            {{- toYaml .Values.core.resources | nindent 12 }}
+            {{- toYaml .Values.orchestration.resources | nindent 12 }}
           volumeMounts:
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
@@ -223,7 +223,7 @@ spec:
             - name: config
               mountPath: /usr/local/bin/startup.sh
               subPath: startup.sh
-            {{- if not ( eq .Values.core.persistenceType "local" ) }}
+            {{- if not ( eq .Values.orchestration.persistenceType "local" ) }}
             - name: data
               mountPath: /usr/local/camunda/data
             {{- end }}
@@ -231,7 +231,7 @@ spec:
               mountPath: /exporters
             - mountPath: /tmp
               name: tmp
-            {{- if .Values.core.log4j2 }}
+            {{- if .Values.orchestration.log4j2 }}
             - name: config
               mountPath: /usr/local/camunda/config/log4j2.xml
               subPath: log4j2.xml
@@ -239,7 +239,7 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
-            {{- range $key, $val := .Values.core.extraConfiguration }}
+            {{- range $key, $val := .Values.orchestration.extraConfiguration }}
             - name: config
               mountPath: /usr/local/camunda/config/{{ $key }}
               subPath: {{ $key }}
@@ -249,11 +249,11 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
               readOnly: true
             {{- end }}
-            {{- if .Values.core.extraVolumeMounts }}
-            {{ .Values.core.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- if .Values.orchestration.extraVolumeMounts }}
+            {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
-      {{- if .Values.core.sidecars }}
-      {{- .Values.core.sidecars | toYaml | nindent 8 }}
+      {{- if .Values.orchestration.sidecars }}
+      {{- .Values.orchestration.sidecars | toYaml | nindent 8 }}
       {{- end }}
       volumes:
         {{- if .Values.global.elasticsearch.tls.existingSecret }}
@@ -268,15 +268,15 @@ spec:
             secretName: {{ .Values.global.opensearch.tls.existingSecret }}
             optional: false
         {{- end }}
-        {{- if eq .Values.core.persistenceType "memory" }}
+        {{- if eq .Values.orchestration.persistenceType "memory" }}
         - name: data
           emptyDir:
             medium: "Memory"
         {{- end }}
         - name: config
           configMap:
-            name: {{ include "core.fullname" . }}-configuration
-            defaultMode: {{ .Values.core.configMap.defaultMode }}
+            name: {{ include "orchestration.fullname" . }}-configuration
+            defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
         - name: exporters
           emptyDir: {}
         - name: tmp
@@ -289,61 +289,61 @@ spec:
               - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
                 path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
         {{- end }}
-        {{- if .Values.core.extraVolumes }}
-          {{ .Values.core.extraVolumes | toYaml | nindent 8 }}
+        {{- if .Values.orchestration.extraVolumes }}
+          {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
-      serviceAccountName: {{ include "core.serviceAccountName" . }}
-      {{- if .Values.core.dnsConfig }}
-      dnsConfig: {{- toYaml .Values.core.dnsConfig | nindent 8 }}
+      serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
+      {{- if .Values.orchestration.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.orchestration.dnsConfig | nindent 8 }}
       {{- end }}
-      {{- if .Values.core.dnsPolicy }}
-      dnsPolicy: {{ .Values.core.dnsPolicy | quote }}
+      {{- if .Values.orchestration.dnsPolicy }}
+      dnsPolicy: {{ .Values.orchestration.dnsPolicy | quote }}
       {{- end }}
-      {{- if .Values.core.podSecurityContext }}
-      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.core.podSecurityContext "context" $) | nindent 8 }}
+      {{- if .Values.orchestration.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-{{- with .Values.core.nodeSelector | default .Values.global.nodeSelector }}
+{{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
 # yamllint disable
-{{- with .Values.core.affinity }}
+{{- with .Values.orchestration.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
 {{- end }}
 # yamllint enable
-{{- with .Values.core.tolerations }}
+{{- with .Values.orchestration.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
 
-  {{- if eq .Values.core.persistenceType "disk" }}
+  {{- if eq .Values.orchestration.persistenceType "disk" }}
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
         name: data
         annotations:
-          {{- toYaml .Values.core.pvcAnnotations | nindent 10 }}
+          {{- toYaml .Values.orchestration.pvcAnnotations | nindent 10 }}
       spec:
-        accessModes: {{ .Values.core.pvcAccessModes }}
-        {{- if .Values.core.pvcStorageClassName }}
-        {{- if (eq "-" .Values.core.pvcStorageClassName) }}
+        accessModes: {{ .Values.orchestration.pvcAccessModes }}
+        {{- if .Values.orchestration.pvcStorageClassName }}
+        {{- if (eq "-" .Values.orchestration.pvcStorageClassName) }}
         storageClassName: ""
         {{- else }}
-        storageClassName: {{ .Values.core.pvcStorageClassName }}
+        storageClassName: {{ .Values.orchestration.pvcStorageClassName }}
         {{- end }}
         {{- end }}
-        {{- if .Values.core.pvcSelector }}
-        {{- with .Values.core.pvcSelector }}
+        {{- if .Values.orchestration.pvcSelector }}
+        {{- with .Values.orchestration.pvcSelector }}
         selector: {{ toYaml . | nindent 10 }}
         {{- end }}
         {{- end }}
         resources:
           requests:
-            storage: {{ .Values.core.pvcSize | quote }}
-      {{- if .Values.core.extraVolumeClaimTemplates }}
-      {{- toYaml .Values.core.extraVolumeClaimTemplates | nindent 8 }}
+            storage: {{ .Values.orchestration.pvcSize | quote }}
+      {{- if .Values.orchestration.extraVolumeClaimTemplates }}
+      {{- toYaml .Values.orchestration.extraVolumeClaimTemplates | nindent 8 }}
       {{- end }}
   {{- end }}
 {{- end }}

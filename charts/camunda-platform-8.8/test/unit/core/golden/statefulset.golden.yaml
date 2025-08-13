@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/templates/core/statefulset.yaml
+# Source: camunda-platform/templates/orchestration/statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -128,7 +128,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-core-configuration
+            name: camunda-platform-test-orchestration-configuration
             defaultMode: 492
         - name: exporters
           emptyDir: {}

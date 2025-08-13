@@ -1,8 +1,8 @@
 ---
-# Source: camunda-platform/templates/core/configmap-unified.yaml
+# Source: camunda-platform/templates/orchestration/configmap-unified.yaml
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-core-configuration-unified
+  name: camunda-platform-test-orchestration-configuration-unified
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -210,7 +210,7 @@ data:
         issuer-backend-url: "http://:/auth/realms/camunda-platform"
         redirect-root-url: "http://localhost:8082"
         client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
-        audience: "core-api"
+        audience: "orchestration-api"
         authentication:
           unprotected-api: false
           method: 'oidc'
@@ -222,7 +222,7 @@ data:
           enterprise: true
           roles:
             - owner
-          # TODO: Update after moving `global.security` to `core.security`.
+          # TODO: Update after moving `global.security` to `orchestration.security`.
           users:
             user-id: 'demo'
             user-password: 'demo'
@@ -245,7 +245,7 @@ data:
           #   lock-timeout: '60s'
           # alerting-webbook: ''
           zeebe:
-            gateway-address: "camunda-platform-test-core:26500"
+            gateway-address: "camunda-platform-test-orchestration:26500"
             secure: false
             certificate-path: ''
           # TODO: What kind of value is expected here compared to the 8.7 version?

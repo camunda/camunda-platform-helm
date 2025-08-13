@@ -1,17 +1,17 @@
-{{ if and .Values.core.enabled .Values.core.podDisruptionBudget.enabled }}
+{{ if and .Values.orchestration.enabled .Values.orchestration.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "core.fullname" . }}
+  name: {{ include "orchestration.fullname" . }}
   labels:
-    {{- include "core.labels" . | nindent 4 }}
+    {{- include "orchestration.labels" . | nindent 4 }}
 spec:
-  {{- if .Values.core.podDisruptionBudget.minAvailable }}
-  minAvailable: {{ .Values.core.podDisruptionBudget.minAvailable | default 0 }}
+  {{- if .Values.orchestration.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.orchestration.podDisruptionBudget.minAvailable | default 0 }}
   {{- else }}
-  maxUnavailable: {{ .Values.core.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.orchestration.podDisruptionBudget.maxUnavailable }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "core.matchLabels" . | nindent 6 }}
+      {{- include "orchestration.matchLabels" . | nindent 6 }}
 {{- end }}

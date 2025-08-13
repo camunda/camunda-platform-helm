@@ -1,34 +1,34 @@
-{{- if .Values.core.enabled -}}
+{{- if .Values.orchestration.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "core.fullname" . }}
+  name: {{ include "orchestration.fullname" . }}
   labels:
-    {{- include "core.labels" . | nindent 4 }}
+    {{- include "orchestration.labels" . | nindent 4 }}
   annotations:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.core.service.annotations}}
-      {{ .Values.core.service.annotations | toYaml | nindent 4 }}
+    {{- if .Values.orchestration.service.annotations}}
+      {{ .Values.orchestration.service.annotations | toYaml | nindent 4 }}
     {{- end }}
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
-  type: {{ .Values.core.service.type }}
+  type: {{ .Values.orchestration.service.type }}
   ports:
-    - port: {{ .Values.core.service.internalPort }}
+    - port: {{ .Values.orchestration.service.internalPort }}
       protocol: TCP
-      name: {{ default "internal" .Values.core.service.internalName  }}
-    - port: {{ .Values.core.service.commandPort }}
+      name: {{ default "internal" .Values.orchestration.service.internalName  }}
+    - port: {{ .Values.orchestration.service.commandPort }}
       protocol: TCP
-      name: {{ default "command" .Values.core.service.commandName }}
-    - port: {{ .Values.core.service.managementPort }}
+      name: {{ default "command" .Values.orchestration.service.commandName }}
+    - port: {{ .Values.orchestration.service.managementPort }}
       protocol: TCP
-      name: {{ default "management" .Values.core.service.managementName }}
-    {{- if .Values.core.service.extraPorts}}
-    {{ .Values.core.service.extraPorts | toYaml | nindent 4 }}
+      name: {{ default "management" .Values.orchestration.service.managementName }}
+    {{- if .Values.orchestration.service.extraPorts}}
+    {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}
   selector:
-    {{- include "core.matchLabels" . | nindent 4 }}
+    {{- include "orchestration.matchLabels" . | nindent 4 }}
 {{- end }}

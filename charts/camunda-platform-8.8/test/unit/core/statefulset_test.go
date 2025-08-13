@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package orchestration
 
 import (
 	"camunda-platform/test/unit/testhelpers"
@@ -46,7 +46,7 @@ func TestStatefulSetTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/core/statefulset.yaml"},
+		templates: []string{"templates/orchestration/statefulset.yaml"},
 	})
 }
 
@@ -55,7 +55,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
-				"core.podLabels.foo": "bar",
+				"orchestration.podLabels.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -67,7 +67,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
-				"core.podAnnotations.foo": "bar",
+				"orchestration.podAnnotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -91,7 +91,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPriorityClassName",
 			Values: map[string]string{
-				"core.priorityClassName": "PRIO",
+				"orchestration.priorityClassName": "PRIO",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -105,9 +105,9 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.image.registry": "global.custom.registry.io",
 				"global.image.tag":      "8.x.x",
-				"core.image.registry":   "subchart.custom.registry.io",
-				"core.image.repository": "camunda/camunda-test",
-				"core.image.tag":        "snapshot",
+				"orchestration.image.registry":   "subchart.custom.registry.io",
+				"orchestration.image.repository": "camunda/camunda-test",
+				"orchestration.image.tag":        "snapshot",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -133,7 +133,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
 				"global.image.pullSecrets[0].name": "SecretNameGlobal",
-				"core.image.pullSecrets[0].name":   "SecretNameSubChart",
+				"orchestration.image.pullSecrets[0].name":   "SecretNameSubChart",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -145,13 +145,13 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraInitContainers",
 			Values: map[string]string{
-				"core.extraInitContainers[0].name":                      "init-container-{{ .Release.Name }}",
-				"core.extraInitContainers[0].image":                     "busybox:1.28",
-				"core.extraInitContainers[0].command[0]":                "sh",
-				"core.extraInitContainers[0].command[1]":                "-c",
-				"core.extraInitContainers[0].command[2]":                "top",
-				"core.extraInitContainers[0].volumeMounts[0].name":      "exporters",
-				"core.extraInitContainers[0].volumeMounts[0].mountPath": "/exporters/",
+				"orchestration.extraInitContainers[0].name":                      "init-container-{{ .Release.Name }}",
+				"orchestration.extraInitContainers[0].image":                     "busybox:1.28",
+				"orchestration.extraInitContainers[0].command[0]":                "sh",
+				"orchestration.extraInitContainers[0].command[1]":                "-c",
+				"orchestration.extraInitContainers[0].command[2]":                "top",
+				"orchestration.extraInitContainers[0].volumeMounts[0].name":      "exporters",
+				"orchestration.extraInitContainers[0].volumeMounts[0].mountPath": "/exporters/",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -168,9 +168,9 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestInitContainers",
 			Values: map[string]string{
-				"core.initContainers[0].name":                   "nginx",
-				"core.initContainers[0].image":                  "nginx:latest",
-				"core.initContainers[0].ports[0].containerPort": "80",
+				"orchestration.initContainers[0].name":                   "nginx",
+				"orchestration.initContainers[0].image":                  "nginx:latest",
+				"orchestration.initContainers[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -184,7 +184,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTag",
 			Values: map[string]string{
-				"core.image.tag": "a.b.c",
+				"orchestration.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -200,7 +200,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
 				"global.image.tag": "a.b.c",
-				"core.image.tag":   "",
+				"orchestration.image.tag":   "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -216,7 +216,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
 				"global.image.tag": "x.y.z",
-				"core.image.tag":   "a.b.c",
+				"orchestration.image.tag":   "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -231,10 +231,10 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetTemplateEnvVars",
 			Values: map[string]string{
-				"core.env[0].name":  "RELEASE_NAME",
-				"core.env[0].value": "test-{{ .Release.Name }}",
-				"core.env[1].name":  "OTHER_ENV",
-				"core.env[1].value": "nothingToSeeHere",
+				"orchestration.env[0].name":  "RELEASE_NAME",
+				"orchestration.env[0].value": "test-{{ .Release.Name }}",
+				"orchestration.env[1].name":  "OTHER_ENV",
+				"orchestration.env[1].value": "nothingToSeeHere",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -248,7 +248,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetContainerCommand",
 			Values: map[string]string{
-				"core.command[0]": "printenv",
+				"orchestration.command[0]": "printenv",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -263,7 +263,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetLog4j2",
 			Values: map[string]string{
-				"core.log4j2": "<xml>\n</xml>",
+				"orchestration.log4j2": "<xml>\n</xml>",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -286,9 +286,9 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumes",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"core.extraVolumes[0].name":                  "extraVolume",
-				"core.extraVolumes[0].configMap.name":        "otherConfigMap",
-				"core.extraVolumes[0].configMap.defaultMode": "744",
+				"orchestration.extraVolumes[0].name":                  "extraVolume",
+				"orchestration.extraVolumes[0].configMap.name":        "otherConfigMap",
+				"orchestration.extraVolumes[0].configMap.defaultMode": "744",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -314,8 +314,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumeMounts",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"core.extraVolumeMounts[0].name":      "otherConfigMap",
-				"core.extraVolumeMounts[0].mountPath": "/usr/local/config",
+				"orchestration.extraVolumeMounts[0].name":      "otherConfigMap",
+				"orchestration.extraVolumeMounts[0].mountPath": "/usr/local/config",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -337,11 +337,11 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumesAndMounts",
 			Values: map[string]string{
-				"core.extraVolumeMounts[0].name":             "otherConfigMap",
-				"core.extraVolumeMounts[0].mountPath":        "/usr/local/config",
-				"core.extraVolumes[0].name":                  "extraVolume",
-				"core.extraVolumes[0].configMap.name":        "otherConfigMap",
-				"core.extraVolumes[0].configMap.defaultMode": "744",
+				"orchestration.extraVolumeMounts[0].name":             "otherConfigMap",
+				"orchestration.extraVolumeMounts[0].mountPath":        "/usr/local/config",
+				"orchestration.extraVolumes[0].name":                  "extraVolume",
+				"orchestration.extraVolumes[0].configMap.name":        "otherConfigMap",
+				"orchestration.extraVolumes[0].configMap.defaultMode": "744",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -374,7 +374,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
-				"core.podSecurityContext.runAsUser": "1000",
+				"orchestration.podSecurityContext.runAsUser": "1000",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -387,7 +387,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSecurityContext",
 			Values: map[string]string{
-				"core.containerSecurityContext.privileged": "true",
+				"orchestration.containerSecurityContext.privileged": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -400,7 +400,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetServiceAccountName",
 			Values: map[string]string{
-				"core.serviceAccount.name": "serviceaccount",
+				"orchestration.serviceAccount.name": "serviceaccount",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -413,8 +413,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 			Name: "TestContainerSetNodeSelector",
 			Values: map[string]string{
-				"core.nodeSelector.disktype": "ssd",
-				"core.nodeSelector.cputype":  "arm",
+				"orchestration.nodeSelector.disktype": "ssd",
+				"orchestration.nodeSelector.cputype":  "arm",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -446,14 +446,14 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			//		   - another-node-label-value
 			Name: "TestContainerSetAffinity",
 			Values: map[string]string{
-				"core.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
-				"core.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
-				"core.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
-				"core.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
-				"core.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
-				"core.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
-				"core.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
-				"core.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+				"orchestration.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
+				"orchestration.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
+				"orchestration.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
+				"orchestration.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[1]": "e2e-a2",
+				"orchestration.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight":                                         "1",
+				"orchestration.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
+				"orchestration.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
+				"orchestration.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -489,10 +489,10 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			//  effect: "NoSchedule"
 			Name: "TestContainerSetTolerations",
 			Values: map[string]string{
-				"core.tolerations[0].key":      "key1",
-				"core.tolerations[0].operator": "Equal",
-				"core.tolerations[0].value":    "Value1",
-				"core.tolerations[0].effect":   "NoSchedule",
+				"orchestration.tolerations[0].key":      "key1",
+				"orchestration.tolerations[0].operator": "Equal",
+				"orchestration.tolerations[0].value":    "Value1",
+				"orchestration.tolerations[0].effect":   "NoSchedule",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -512,7 +512,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetPersistenceTypeRam",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"core.persistenceType": "memory",
+				"orchestration.persistenceType": "memory",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -545,7 +545,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetPersistenceTypeLocal",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"core.persistenceType": "local",
+				"orchestration.persistenceType": "local",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -592,13 +592,13 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerStartupProbe",
 			Values: map[string]string{
-				"core.startupProbe.enabled":             "true",
-				"core.startupProbe.probePath":           "/healthz",
-				"core.startupProbe.initialDelaySeconds": "5",
-				"core.startupProbe.periodSeconds":       "10",
-				"core.startupProbe.successThreshold":    "1",
-				"core.startupProbe.failureThreshold":    "5",
-				"core.startupProbe.timeoutSeconds":      "1",
+				"orchestration.startupProbe.enabled":             "true",
+				"orchestration.startupProbe.probePath":           "/healthz",
+				"orchestration.startupProbe.initialDelaySeconds": "5",
+				"orchestration.startupProbe.periodSeconds":       "10",
+				"orchestration.startupProbe.successThreshold":    "1",
+				"orchestration.startupProbe.failureThreshold":    "5",
+				"orchestration.startupProbe.timeoutSeconds":      "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -619,13 +619,13 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerLivenessProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"core.livenessProbe.enabled":             "true",
-				"core.livenessProbe.probePath":           "/healthz",
-				"core.livenessProbe.initialDelaySeconds": "5",
-				"core.livenessProbe.periodSeconds":       "10",
-				"core.livenessProbe.successThreshold":    "1",
-				"core.livenessProbe.failureThreshold":    "5",
-				"core.livenessProbe.timeoutSeconds":      "1",
+				"orchestration.livenessProbe.enabled":             "true",
+				"orchestration.livenessProbe.probePath":           "/healthz",
+				"orchestration.livenessProbe.initialDelaySeconds": "5",
+				"orchestration.livenessProbe.periodSeconds":       "10",
+				"orchestration.livenessProbe.successThreshold":    "1",
+				"orchestration.livenessProbe.failureThreshold":    "5",
+				"orchestration.livenessProbe.timeoutSeconds":      "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -645,13 +645,13 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerProbesWithContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"core.contextPath":              "/test",
-				"core.startupProbe.enabled":     "true",
-				"core.startupProbe.probePath":   "/start",
-				"core.readinessProbe.enabled":   "true",
-				"core.readinessProbe.probePath": "/ready",
-				"core.livenessProbe.enabled":    "true",
-				"core.livenessProbe.probePath":  "/live",
+				"orchestration.contextPath":              "/test",
+				"orchestration.startupProbe.enabled":     "true",
+				"orchestration.startupProbe.probePath":   "/start",
+				"orchestration.readinessProbe.enabled":   "true",
+				"orchestration.readinessProbe.probePath": "/ready",
+				"orchestration.livenessProbe.enabled":    "true",
+				"orchestration.livenessProbe.probePath":  "/live",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -667,9 +667,9 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
-				"core.sidecars[0].name":                   "nginx",
-				"core.sidecars[0].image":                  "nginx:latest",
-				"core.sidecars[0].ports[0].containerPort": "80",
+				"orchestration.sidecars[0].name":                   "nginx",
+				"orchestration.sidecars[0].image":                  "nginx:latest",
+				"orchestration.sidecars[0].ports[0].containerPort": "80",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -692,9 +692,9 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestSetDnsPolicyAndDnsConfig",
 			Values: map[string]string{
-				"core.dnsPolicy":                "ClusterFirst",
-				"core.dnsConfig.nameservers[0]": "8.8.8.8",
-				"core.dnsConfig.searches[0]":    "example.com",
+				"orchestration.dnsPolicy":                "ClusterFirst",
+				"orchestration.dnsConfig.nameservers[0]": "8.8.8.8",
+				"orchestration.dnsConfig.searches[0]":    "example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet

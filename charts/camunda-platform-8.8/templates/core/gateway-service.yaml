@@ -1,33 +1,33 @@
-{{- if .Values.core.enabled -}}
+{{- if .Values.orchestration.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "core.fullname" . }}-gateway
+  name: {{ include "orchestration.fullname" . }}-gateway
   labels:
-    {{- include "core.labels" . | nindent 4 }}
+    {{- include "orchestration.labels" . | nindent 4 }}
   annotations:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.core.service.annotations}}
-      {{ .Values.core.service.annotations | toYaml | nindent 4 }}
+    {{- if .Values.orchestration.service.annotations}}
+      {{ .Values.orchestration.service.annotations | toYaml | nindent 4 }}
     {{- end }}
 spec:
   publishNotReadyAddresses: true
-  type: {{ .Values.core.service.type }}
+  type: {{ .Values.orchestration.service.type }}
   ports:
-    - port: {{ .Values.core.service.httpPort }}
+    - port: {{ .Values.orchestration.service.httpPort }}
       protocol: TCP
-      name: {{ default "http" .Values.core.service.httpName  }}
-    - port: {{ .Values.core.service.managementPort }}
+      name: {{ default "http" .Values.orchestration.service.httpName  }}
+    - port: {{ .Values.orchestration.service.managementPort }}
       protocol: TCP
-      name: {{ default "management" .Values.core.service.managementName }}
-    - port: {{ .Values.core.service.grpcPort }}
+      name: {{ default "management" .Values.orchestration.service.managementName }}
+    - port: {{ .Values.orchestration.service.grpcPort }}
       protocol: TCP
-      name: {{ default "grpc-api" .Values.core.service.grpcName }}
-    {{- if .Values.core.service.extraPorts}}
-    {{ .Values.core.service.extraPorts | toYaml | nindent 4 }}
+      name: {{ default "grpc-api" .Values.orchestration.service.grpcName }}
+    {{- if .Values.orchestration.service.extraPorts}}
+    {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}
   selector:
-    {{- include "core.matchLabels" . | nindent 4 }}
+    {{- include "orchestration.matchLabels" . | nindent 4 }}
 {{- end }}

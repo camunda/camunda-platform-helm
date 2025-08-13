@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package orchestration
 
 import (
 	"camunda-platform/test/unit/testhelpers"
@@ -45,7 +45,7 @@ func TestGatewayServiceTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/core/gateway-service.yaml"},
+		templates: []string{"templates/orchestration/gateway-service.yaml"},
 	})
 }
 
@@ -66,10 +66,10 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 		}, {
 			Name: "TestExtraPorts",
 			Values: map[string]string{
-				"core.service.extraPorts[0].name":       "hazelcast",
-				"core.service.extraPorts[0].protocol":   "TCP",
-				"core.service.extraPorts[0].port":       "5701",
-				"core.service.extraPorts[0].targetPort": "5701",
+				"orchestration.service.extraPorts[0].name":       "hazelcast",
+				"orchestration.service.extraPorts[0].protocol":   "TCP",
+				"orchestration.service.extraPorts[0].port":       "5701",
+				"orchestration.service.extraPorts[0].targetPort": "5701",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -88,7 +88,7 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
-				"core.service.annotations.foo": "bar",
+				"orchestration.service.annotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service

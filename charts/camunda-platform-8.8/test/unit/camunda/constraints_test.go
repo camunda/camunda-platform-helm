@@ -54,7 +54,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled": "true",
 				"global.identity.auth.connectors.existingSecret.name":  "foo",
-				"global.identity.auth.core.existingSecret.name":        "bar",
+				"global.identity.auth.orchestration.existingSecret.name":        "bar",
 				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
 			},
@@ -65,18 +65,18 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
 			Values: map[string]string{
-				"identity.enabled": "true", "global.identity.auth.connectors.existingSecret.name": "foo", "global.identity.auth.core.existingSecret.name": "bar",
+				"identity.enabled": "true", "global.identity.auth.connectors.existingSecret.name": "foo", "global.identity.auth.orchestration.existingSecret.name": "bar",
 				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().NotContains(err.Error(), "global.identity.auth.core.existingSecret")
+				s.Require().NotContains(err.Error(), "global.identity.auth.orchestration.existingSecret")
 			},
 		}, {
 			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
 			Values: map[string]string{
-				"identity.enabled": "true", "global.identity.auth.connectors.existingSecret.name": "foo", "global.identity.auth.core.existingSecret.name": "bar",
+				"identity.enabled": "true", "global.identity.auth.connectors.existingSecret.name": "foo", "global.identity.auth.orchestration.existingSecret.name": "bar",
 				"global.identity.auth.issuerBackendUrl":                "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet": "warning",
 			},

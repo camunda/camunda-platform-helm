@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package orchestration
 
 import (
 	"camunda-platform/test/unit/camunda"
@@ -48,7 +48,7 @@ func TestConfigmapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/core/configmap.yaml"},
+		templates: []string{"templates/orchestration/configmap.yaml"},
 	})
 }
 
@@ -63,8 +63,8 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-log4j2",
-		Templates:      []string{"templates/core/configmap.yaml"},
-		SetValues:      map[string]string{"core.log4j2": "<xml>\n</xml>"},
+		Templates:      []string{"templates/orchestration/configmap.yaml"},
+		SetValues:      map[string]string{"orchestration.log4j2": "<xml>\n</xml>"},
 	})
 }
 
@@ -79,7 +79,7 @@ func TestGoldenConfigmapWithAuthorizationsEnabled(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-authorizations",
-		Templates:      []string{"templates/core/configmap.yaml"},
+		Templates:      []string{"templates/orchestration/configmap.yaml"},
 		SetValues:      map[string]string{"global.authorizations.enabled": "true"},
 	})
 }
@@ -91,7 +91,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
-				var configmapApplication camunda.CoreApplicationYAML
+				var configmapApplication camunda.OrchestrationApplicationYAML
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 

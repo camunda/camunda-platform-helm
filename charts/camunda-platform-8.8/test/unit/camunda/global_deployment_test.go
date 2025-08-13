@@ -55,7 +55,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"optimize.enabled": "false",
 				"identity.enabled": "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -68,7 +68,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"operate.enabled":  "false",
 				"identity.enabled": "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -81,7 +81,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"tasklist.enabled": "false",
 				"identity.enabled": "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -106,7 +106,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled": "false",
 				"identity.enabled":   "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -121,7 +121,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"connectors.image.tag":  "",
 				"identity.image.tag":    "",
 				"optimize.image.tag":    "",
-				"core.image.tag":        "",
+				"orchestration.image.tag":        "",
 				"identity.enabled":      "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -138,14 +138,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"connectors.image.tag": "",
 				"identity.image.tag":   "",
 				"optimize.image.tag":   "",
-				"core.image.tag":       "",
+				"orchestration.image.tag":       "",
 				"identity.enabled":     "true",
 
 				// set component‐level digests
 				"connectors.image.digest": "sha256:aaa111",
 				"identity.image.digest":   "sha256:bbb222",
 				"optimize.image.digest":   "sha256:ccc333",
-				"core.image.digest":       "sha256:ddd444",
+				"orchestration.image.digest":       "sha256:ddd444",
 			},
 			HelmOptionsExtraArgs: map[string][]string{
 				"install":  {"--debug"},
@@ -163,12 +163,12 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestDigestFallsBackToTagWhenNoDigest",
 			Values: map[string]string{
 				"connectors.image.tag": "8.x.x",
-				"core.image.tag":       "8.x.x",
+				"orchestration.image.tag":       "8.x.x",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "image: camunda/connectors-bundle:8.x.x")
-				require.Contains(t, output, "image: camunda/core:8.x.x")
+				require.Contains(t, output, "image: camunda/orchestration:8.x.x")
 			},
 		},
 	}

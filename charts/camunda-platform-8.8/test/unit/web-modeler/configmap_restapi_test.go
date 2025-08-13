@@ -27,7 +27,7 @@ var requiredValues = map[string]string{
 	"webModeler.enabled":                                  "true",
 	"webModeler.restapi.mail.fromAddress":                 "example@example.com",
 	"global.identity.auth.connectors.existingSecret.name": "foo",
-	"global.identity.auth.core.existingSecret.name":       "foo",
+	"global.identity.auth.orchestration.existingSecret.name":       "foo",
 }
 
 func TestRestAPIConfigmapTemplate(t *testing.T) {
@@ -310,10 +310,10 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				"global.identity.auth.enabled":           tc.authEnabled,
 				"global.security.authentication.method":  tc.authMethod,
 				"global.security.authorizations.enabled": "false",
-				"core.image.tag":                         "8.x.x-alpha1",
-				"core.contextPath":                       "/core",
-				"core.service.grpcPort":                  "26600",
-				"core.service.httpPort":                  "8090",
+				"orchestration.image.tag":                         "8.x.x-alpha1",
+				"orchestration.contextPath":                       "/orchestration",
+				"orchestration.service.grpcPort":                  "26600",
+				"orchestration.service.httpPort":                  "8090",
 			}
 			maps.Insert(values, maps.All(requiredValues))
 			options := &helm.Options{
@@ -339,8 +339,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
-			s.Require().Equal("grpc://camunda-platform-test-core:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
-			s.Require().Equal("http://camunda-platform-test-core:8090/core", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
+			s.Require().Equal("grpc://camunda-platform-test-orchestration:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
+			s.Require().Equal("http://camunda-platform-test-orchestration:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
 		})
 	}
 }
@@ -352,24 +352,24 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 		"webModeler.restapi.clusters[0].name":           "test cluster 1",
 		"webModeler.restapi.clusters[0].version":        "8.6.0",
 		"webModeler.restapi.clusters[0].authentication": "NONE",
-		"webModeler.restapi.clusters[0].url.zeebe.grpc": "grpc://core.test-1:26500",
-		"webModeler.restapi.clusters[0].url.zeebe.rest": "http://core.test-1:8080",
+		"webModeler.restapi.clusters[0].url.zeebe.grpc": "grpc://orchestration.test-1:26500",
+		"webModeler.restapi.clusters[0].url.zeebe.rest": "http://orchestration.test-1:8080",
 		"webModeler.restapi.clusters[0].url.operate":    "http://operate.test-1:8080",
 		"webModeler.restapi.clusters[0].url.tasklist":   "http://tasklist.test-1:8080",
 		"webModeler.restapi.clusters[1].id":             "test-cluster-2",
 		"webModeler.restapi.clusters[1].name":           "test cluster 2",
 		"webModeler.restapi.clusters[1].version":        "8.x.x-alpha1",
 		"webModeler.restapi.clusters[1].authentication": "BEARER_TOKEN",
-		"webModeler.restapi.clusters[1].url.zeebe.grpc": "grpc://core.test-2:26500",
-		"webModeler.restapi.clusters[1].url.zeebe.rest": "http://core.test-2:8080",
+		"webModeler.restapi.clusters[1].url.zeebe.grpc": "grpc://orchestration.test-2:26500",
+		"webModeler.restapi.clusters[1].url.zeebe.rest": "http://orchestration.test-2:8080",
 		"webModeler.restapi.clusters[1].url.operate":    "http://operate.test-2:8080",
 		"webModeler.restapi.clusters[1].url.tasklist":   "http://tasklist.test-2:8080",
 		"webModeler.restapi.clusters[2].id":             "test-cluster-3",
 		"webModeler.restapi.clusters[2].name":           "test cluster 3",
 		"webModeler.restapi.clusters[2].version":        "8.x.x-alpha1",
 		"webModeler.restapi.clusters[2].authentication": "BASIC",
-		"webModeler.restapi.clusters[2].url.zeebe.grpc": "grpc://core.test-3:26500",
-		"webModeler.restapi.clusters[2].url.zeebe.rest": "http://core.test-3:8080",
+		"webModeler.restapi.clusters[2].url.zeebe.grpc": "grpc://orchestration.test-3:26500",
+		"webModeler.restapi.clusters[2].url.zeebe.rest": "http://orchestration.test-3:8080",
 		"webModeler.restapi.clusters[2].url.operate":    "http://operate.test-3:8080",
 		"webModeler.restapi.clusters[2].url.tasklist":   "http://tasklist.test-3:8080",
 		"webModelerPostgresql.enabled":                  "false",
@@ -397,27 +397,27 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	s.Require().Equal("test cluster 1", configmapApplication.Camunda.Modeler.Clusters[0].Name)
 	s.Require().Equal("8.6.0", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 	s.Require().Equal("NONE", configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
-	s.Require().Equal("grpc://core.test-1:26500", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
-	s.Require().Equal("http://core.test-1:8080", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
+	s.Require().Equal("grpc://orchestration.test-1:26500", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Grpc)
+	s.Require().Equal("http://orchestration.test-1:8080", configmapApplication.Camunda.Modeler.Clusters[0].Url.Zeebe.Rest)
 	s.Require().Equal("test-cluster-2", configmapApplication.Camunda.Modeler.Clusters[1].Id)
 	s.Require().Equal("test cluster 2", configmapApplication.Camunda.Modeler.Clusters[1].Name)
 	s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[1].Version)
 	s.Require().Equal("BEARER_TOKEN", configmapApplication.Camunda.Modeler.Clusters[1].Authentication)
-	s.Require().Equal("grpc://core.test-2:26500", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Grpc)
-	s.Require().Equal("http://core.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Rest)
+	s.Require().Equal("grpc://orchestration.test-2:26500", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Grpc)
+	s.Require().Equal("http://orchestration.test-2:8080", configmapApplication.Camunda.Modeler.Clusters[1].Url.Zeebe.Rest)
 	s.Require().Equal("test-cluster-3", configmapApplication.Camunda.Modeler.Clusters[2].Id)
 	s.Require().Equal("test cluster 3", configmapApplication.Camunda.Modeler.Clusters[2].Name)
 	s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[2].Version)
 	s.Require().Equal("BASIC", configmapApplication.Camunda.Modeler.Clusters[2].Authentication)
-	s.Require().Equal("grpc://core.test-3:26500", configmapApplication.Camunda.Modeler.Clusters[2].Url.Zeebe.Grpc)
-	s.Require().Equal("http://core.test-3:8080", configmapApplication.Camunda.Modeler.Clusters[2].Url.Zeebe.Rest)
+	s.Require().Equal("grpc://orchestration.test-3:26500", configmapApplication.Camunda.Modeler.Clusters[2].Url.Zeebe.Grpc)
+	s.Require().Equal("http://orchestration.test-3:8080", configmapApplication.Camunda.Modeler.Clusters[2].Url.Zeebe.Rest)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
 	// given
 	values := map[string]string{
 		"webModelerPostgresql.enabled": "false",
-		"core.enabled":                 "false",
+		"orchestration.enabled":                 "false",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{

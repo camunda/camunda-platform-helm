@@ -10,9 +10,9 @@ preflightVars:
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
-    core: http://integration-core:9600/core
-    coreGRPC: http://integration-core:26500
-    coreREST: http://integration-core:8080/core/v1
+    core: http://integration-orchestration:9600/core
+    coreGRPC: http://integration-orchestration:26500
+    coreREST: http://integration-orchestration:8080/core/v1
 
 coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"

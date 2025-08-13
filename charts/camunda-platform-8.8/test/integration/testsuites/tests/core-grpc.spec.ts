@@ -22,8 +22,8 @@ const config = {
     console: requireEnv("CONSOLE_BASE_URL"),
     keycloak: requireEnv("KEYCLOAK_BASE_URL"),
     identity: requireEnv("IDENTITY_BASE_URL"),
-    coreTasklist: requireEnv("CORE_TASKLIST_BASE_URL"),
-    coreOperate: requireEnv("CORE_OPERATE_BASE_URL"),
+    orchestrationTasklist: requireEnv("CORE_TASKLIST_BASE_URL"),
+    orchestrationOperate: requireEnv("CORE_OPERATE_BASE_URL"),
     optimize: requireEnv("OPTIMIZE_BASE_URL"),
     webModeler: requireEnv("WEBMODELER_BASE_URL"),
     connectors: requireEnv("CONNECTORS_BASE_URL"),
@@ -34,9 +34,9 @@ const config = {
     Console: requireEnv("CONSOLE_LOGIN_PATH"),
     Keycloak: requireEnv("KEYCLOAK_LOGIN_PATH"),
     Identity: process.env["IDENTITY_LOGIN_PATH"],
-    CoreOperate: requireEnv("CORE_OPERATE_LOGIN_PATH"),
+    OrchestrationOperate: requireEnv("CORE_OPERATE_LOGIN_PATH"),
     Optimize: requireEnv("OPTIMIZE_LOGIN_PATH"),
-    CoreTasklist: requireEnv("CORE_TASKLIST_LOGIN_PATH"),
+    OrchestrationTasklist: requireEnv("CORE_TASKLIST_LOGIN_PATH"),
     WebModeler: requireEnv("WEBMODELER_LOGIN_PATH"),
     connectors: requireEnv("CONNECTORS_LOGIN_PATH"),
     zeebeGRPC: requireEnv("ZEEBE_GATEWAY_GRPC"),
@@ -45,14 +45,14 @@ const config = {
   secrets: {
     connectors: requireEnv("PLAYWRIGHT_VAR_CONNECTORS_CLIENT_SECRET"),
     optimize: requireEnv("PLAYWRIGHT_VAR_OPTIMIZE_CLIENT_SECRET"),
-    core: requireEnv("PLAYWRIGHT_VAR_CORE_CLIENT_SECRET"),
+    orchestration: requireEnv("PLAYWRIGHT_VAR_CORE_CLIENT_SECRET"),
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
 };
 
 // ---------- tests ----------
-test.describe("core-grpc", () => {
+test.describe("orchestration-grpc", () => {
   let api: APIRequestContext;
   let venomJWT: string;
 
@@ -77,8 +77,8 @@ test.describe("core-grpc", () => {
       Keycloak: config.base.keycloak,
       Identity: config.base.identity,
       Optimize: config.base.optimize,
-      CoreTasklist: config.base.coreTasklist,
-      CoreOperate: config.base.coreOperate,
+      OrchestrationTasklist: config.base.orchestrationTasklist,
+      OrchestrationOperate: config.base.orchestrationOperate,
       WebModeler: config.base.webModeler,
     })) {
       test(`Login page: ${name}`, async () => {
@@ -100,7 +100,7 @@ test.describe("core-grpc", () => {
   for (const [label, url, method, body] of [
     [
       "Operate defs",
-      `${config.base.coreOperate}/v2/process-definitions/search`,
+      `${config.base.orchestrationOperate}/v2/process-definitions/search`,
       "POST",
       "{}",
     ],
@@ -199,7 +199,7 @@ test.describe("core-grpc", () => {
       await new Promise((resolve) => setTimeout(resolve, 15000));
 
       const r = await api.post(
-        `${config.base.coreOperate}/v2/process-definitions/search`,
+        `${config.base.orchestrationOperate}/v2/process-definitions/search`,
         {
           data: "{}",
           headers: {

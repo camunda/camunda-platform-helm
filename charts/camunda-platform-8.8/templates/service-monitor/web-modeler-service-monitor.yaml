@@ -1,5 +1,5 @@
 {{- if and .Values.prometheusServiceMonitor.enabled .Values.webModeler.enabled -}}
-apiVersion: monitoring.coreos.com/v1
+apiVersion: monitoring.orchestrationos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-modeler
@@ -16,7 +16,7 @@ spec:
       port: http-management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 ---
-apiVersion: monitoring.coreos.com/v1
+apiVersion: monitoring.orchestrationos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-modeler-webapp

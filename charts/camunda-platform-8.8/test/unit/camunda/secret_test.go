@@ -68,7 +68,7 @@ func (s *secretTest) TestContainerGenerateSecret() {
 		"identity-admin-client-token",
 		"identity-connectors-client-token",
 		"identity-console-client-token",
-		"identity-core-client-token",
+		"identity-orchestration-client-token",
 		"identity-optimize-client-token",
 		"identity-firstuser-password",
 		"identity-keycloak-admin-password",

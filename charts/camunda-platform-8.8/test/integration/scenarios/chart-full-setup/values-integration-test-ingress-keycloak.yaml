@@ -31,10 +31,10 @@ global:
         existingSecret:
           name: "integration-test-credentials"
       #######################
-      # Orchestration Group
+      # Orchestration Cluster
       #######################
-      core:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/core"
+      orchestration:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
         existingSecret:
           name: "integration-test-credentials"
       connectors:
@@ -94,8 +94,8 @@ webModelerPostgresql:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
 
-core:
-  contextPath: "/core"
+orchestration:
+  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true
@@ -106,7 +106,7 @@ core:
         # A wildcard certificate will be used.
         secretName: camunda-platform-zeebe-gateway
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: "core-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
   # giving access to venom to deploy a model. Given access to connectors
   # TODO: Find a way to only give connectors read access
