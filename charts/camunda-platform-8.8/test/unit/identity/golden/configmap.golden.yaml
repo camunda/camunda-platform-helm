@@ -212,7 +212,7 @@ data:
         orchestration:
           clients:
             - name: Orchestration
-              id: core
+              id: orchestration
               type: confidential
               secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
               root-url: "http://localhost:8082"
