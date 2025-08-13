@@ -363,9 +363,16 @@ do not use this for its string value.
 {{- (cat .Values.global.elasticsearch.auth.existingSecret .Values.global.elasticsearch.auth.password) -}}
 {{- end -}}
 
+{{/*
+[opensearch] Used as a boolean to determine whether any password is defined.
+do not use this for its string value.
+*/}}
+{{- define "opensearch.passwordIsDefined" -}}
+{{- (cat .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) -}}
+{{- end -}}
 
 {{/*
-[opensearch] Get name of elasticsearch auth existing secret. For more details:
+[opensearch] Get name of opensearch auth existing secret. For more details:
 https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
 */}}
 {{- define "opensearch.authExistingSecret" -}}

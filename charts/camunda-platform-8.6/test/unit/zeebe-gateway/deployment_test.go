@@ -728,6 +728,82 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				container := deployment.Spec.Template.Spec.Containers[0]
 				s.Require().Equal("/test/actuator/health/readiness", container.ReadinessProbe.HTTPGet.Path)
 			},
+		}, {
+			Name: "TestOpenSearchExistingSecret",
+			Values: map[string]string{
+				"global.opensearch.enabled":                "true",
+				"global.opensearch.auth.existingSecret":    "opensearch-secret",
+				"global.opensearch.auth.existingSecretKey": "opensearch-password",
+				"global.opensearch.url.host":               "opensearch.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				err = helm.UnmarshalK8SYamlE(s.T(), output, &deployment)
+				if err != nil {
+					s.Failf("%w", err.Error())
+				}
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var actualEnvVar *corev1.EnvVar
+				for _, envvar := range env {
+					if envvar.Name == "CAMUNDA_DATABASE_PASSWORD" {
+						actualEnvVar = &envvar
+					}
+				}
+				if actualEnvVar == nil {
+					s.Fail("env var CAMUNDA_DATABASE_PASSWORD not found")
+				}
+
+				expected := corev1.EnvVar{
+					Name: "CAMUNDA_DATABASE_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "opensearch-secret"},
+							Key:                  "opensearch-password",
+						},
+					},
+				}
+				s.Require().Equal(actualEnvVar.Name, expected.Name)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+			},
+		}, {
+			Name: "TestOpenSearchPassword",
+			Values: map[string]string{
+				"global.opensearch.enabled":       "true",
+				"global.opensearch.auth.password": "secureopensearchpassword",
+				"global.opensearch.url.host":      "opensearch.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var actualEnvVar *corev1.EnvVar
+				for _, envvar := range env {
+					if envvar.Name == "CAMUNDA_DATABASE_PASSWORD" {
+						actualEnvVar = &envvar
+					}
+				}
+				if actualEnvVar == nil {
+					s.Fail("env var CAMUNDA_DATABASE_PASSWORD not found")
+				}
+
+				expected := corev1.EnvVar{
+					Name: "CAMUNDA_DATABASE_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-opensearch"},
+							Key:                  "password",
+						},
+					},
+				}
+				s.Require().Equal(actualEnvVar.Name, expected.Name)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
+				s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+			},
 		},
 	}
 
