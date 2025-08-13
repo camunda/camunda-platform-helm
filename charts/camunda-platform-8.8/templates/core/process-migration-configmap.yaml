@@ -34,10 +34,10 @@ data:
       migration:
         process:
           batch-size: 5
-          import-finished-timeout: PT1M
+          import-finished-timeout: {{ .Values.core.migration.process.importFinishedTimeout }}
           retry:
-            max-retries: 5
-            max-retry-delay: PT1M
-            min-retry-delay: PT10S
-            retry-delay-multiplier: 2.0
+            max-retries: {{ .Values.core.migration.process.retry.maxRetries }}
+            max-retry-delay: {{ .Values.core.migration.process.retry.maxRetryDelay }}
+            min-retry-delay: {{ .Values.core.migration.process.retry.minRetryDelay }}
+            retry-delay-multiplier: {{ .Values.core.migration.process.retry.retryDelayMultiplier }}
 {{- end }}

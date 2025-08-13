@@ -4588,6 +4588,41 @@
                                     "type": "number",
                                     "description": "if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
+                                },
+                                "batchSize": {
+                                    "type": "number",
+                                    "description": "can be used to define the batch size.",
+                                    "default": 5
+                                },
+                                "importFinishedTimeout": {
+                                    "type": "string",
+                                    "description": "can be used to define the timeout when the import is finished.",
+                                    "default": "PT1M"
+                                },
+                                "retry": {
+                                    "type": "object",
+                                    "properties": {
+                                        "maxRetries": {
+                                            "type": "number",
+                                            "description": "can be used to define the maximum amount of retries.",
+                                            "default": 5
+                                        },
+                                        "maxRetryDelay": {
+                                            "type": "string",
+                                            "description": "can be used to define the delay time between retries.",
+                                            "default": "PT1M"
+                                        },
+                                        "minRetryDelay": {
+                                            "type": "string",
+                                            "description": "can be used to define the delay time between retries.",
+                                            "default": "PT10s"
+                                        },
+                                        "retryDelayMultiplier": {
+                                            "type": "number",
+                                            "description": "can be used to define the delay multiplier.",
+                                            "default": 2
+                                        }
+                                    }
                                 }
                             }
                         },
