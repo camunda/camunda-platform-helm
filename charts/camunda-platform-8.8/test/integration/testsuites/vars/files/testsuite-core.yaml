@@ -33,9 +33,9 @@ testcases:
     - component: Optimize
       clientID: optimize
       clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
-    - component: Core
-      clientID: core
-      clientSecret: "{{ .CORE_CLIENT_SECRET }}"
+    - component: Orchestration
+      clientID: orchestration
+      clientSecret: "{{ .ORCHESTRATION_CLIENT_SECRET }}"
     method: POST
     url: "{{ .coreVars.authURL }}"
     headers:
@@ -142,7 +142,7 @@ testcases:
       url: "{{ .coreVars.baseURLs.identity }}/api/users"
       method: GET
       body: ''
-    - component: Core Operate
+    - component: Orchestration Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
       url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
       method: POST
@@ -166,7 +166,7 @@ testcases:
   - name: "{{ .value.component }}"
     type: http
     range:
-    - component: Core Operate
+    - component: Orchestration Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
       url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
       method: POST
@@ -228,13 +228,13 @@ testcases:
     - result.statuscode ShouldEqual 200
     - result.body ShouldNotContainSubstring error
 
-- name: TEST - Interacting with Core - keycloak auth
+- name: TEST - Interacting with Orchestration - keycloak auth
   skip:
   # The var with "skip" section should be in lower case as there is a bug in Venom:
   # https://github.com/ovh/venom/issues/654
   - skiptestkeycloak ShouldBeFalse
   steps:
-  - name: Check Core status - gRPC
+  - name: Check Orchestration status - gRPC
     type: exec
     script: |
       zbctl --clientCache=/tmp/zbctl \
@@ -252,10 +252,10 @@ testcases:
     - result.systemout ShouldContainSubstring "Leader, Healthy"
     - result.systemout ShouldNotContainSubstring Unhealthy
     - result.timeseconds ShouldBeLessThan 1
-  - name: Check Core status - REST
+  - name: Check Orchestration status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.coreREST }}/topology"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/topology"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -268,16 +268,16 @@ testcases:
     - result.statuscode ShouldEqual 200
     - result.bodyjson ShouldContainKey brokers
 
-- name: TEST - Interacting with Core - Basic auth
+- name: TEST - Interacting with Orchestration - Basic auth
   skip:
   # The var with "skip" section should be in lower case as there is a bug in Venom:
   # https://github.com/ovh/venom/issues/654
   - skiptestkeycloak ShouldBeTrue
   steps:
-  - name: Check Core status - REST
+  - name: Check Orchestration status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.coreREST }}/topology"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/topology"
     headers:
       Content-Type: application/json
       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -297,7 +297,7 @@ testcases:
   # https://github.com/ovh/venom/issues/654
   - skiptestkeycloak ShouldBeFalse
   steps:
-  - name: Deploy BPMN process to Core - {{ .value.name }}
+  - name: Deploy BPMN process to Orchestration - {{ .value.name }}
     type: exec
     range:
     - name: Basic
@@ -351,7 +351,7 @@ testcases:
 #   # https://github.com/ovh/venom/issues/654
 #   - skiptestkeycloak ShouldBeTrue
 #   steps:
-#   - name: Deploy BPMN process to Core - {{ .value.name }}
+#   - name: Deploy BPMN process to Orchestration - {{ .value.name }}
 #     type: http
 #     range:
 #     - name: Basic
@@ -444,7 +444,7 @@ testcases:
     - result.body ShouldContainSubstring identity
     - result.body ShouldContainSubstring optimize
     - result.body ShouldContainSubstring web-modeler-restapi
-    - result.body ShouldContainSubstring core
+    - result.body ShouldContainSubstring orchestration
 
 # TODO:: uncomment and fix this test for basic auth.
 # - name: TEST - Check ServiceMonitor - Basic Auth

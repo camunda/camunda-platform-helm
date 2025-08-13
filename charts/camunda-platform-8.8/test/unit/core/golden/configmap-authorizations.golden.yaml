@@ -1,16 +1,16 @@
 ---
-# Source: camunda-platform/templates/core/configmap.yaml
+# Source: camunda-platform/templates/orchestration/configmap.yaml
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-core-configuration
+  name: camunda-platform-test-orchestration-configuration
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: core
-    app.kubernetes.io/version: "8.8.0-alpha7"
+    app.kubernetes.io/component: orchestration
+    app.kubernetes.io/version: "8.8.0-alpha6"
 apiVersion: v1
 data:
   startup.sh: |
@@ -93,7 +93,7 @@ data:
 
         # zeebe.broker.exporters
         exporters:
-          camundaexporter:
+          CamundaExporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
@@ -175,7 +175,7 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: "camunda-platform-test-core:26500"
+          gatewayAddress: "camunda-platform-test-orchestration:26500"
 
       #
       # Camunda Tasklist Configuration.
@@ -213,7 +213,7 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: camunda-platform-test-core:26500
-          restAddress: "http://camunda-platform-test-core:8080"
+          gatewayAddress: camunda-platform-test-orchestration:26500
+          restAddress: "http://camunda-platform-test-orchestration:8080"
 
   log4j2.xml: |

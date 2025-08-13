@@ -1,5 +1,5 @@
 ---
-# Source: camunda-platform/templates/core/poddisruptionbudget.yaml
+# Source: camunda-platform/templates/orchestration/poddisruptionbudget.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

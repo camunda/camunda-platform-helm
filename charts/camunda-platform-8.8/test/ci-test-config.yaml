@@ -7,7 +7,7 @@ unit:
     - name: Management
       packages: identity camunda console
     - name: Orchestration
-      packages: core connectors optimize
+      packages: orchestration connectors optimize
     - name: Design
       packages: web-modeler
 
@@ -30,7 +30,7 @@ integration:
           enabled: false
           shortname: esba
           auth: basic
-          exclude: [identity,console,core-grpc]
+          exclude: [identity,console,orchestration-grpc]
     nightly:
       scenario:
         - name: elasticsearch
@@ -43,7 +43,7 @@ integration:
           enabled: true
           auth: basic
           shortname: esba
-          exclude: [identity,console,core-grpc]
+          exclude: [identity,console,orchestration-grpc]
           # deployment should work but integration tests are not passing
         - name: elasticsearch
           enabled: false

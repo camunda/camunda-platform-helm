@@ -53,12 +53,12 @@
                                 }
                             }
                         },
-                        "core": {
+                        "orchestration": {
                             "type": "object",
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables compatibility layer for Camunda Core between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
+                                    "description": "if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
                                     "default": true
                                 }
                             }
@@ -668,23 +668,23 @@
                                         }
                                     }
                                 },
-                                "core": {
+                                "orchestration": {
                                     "type": "object",
                                     "properties": {
                                         "audience": {
                                             "type": "string",
-                                            "description": "defines the audience, which is used by Core.",
-                                            "default": "core-api"
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
+                                            "default": "orchestration-api"
                                         },
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Core in authentication flows.",
-                                            "default": "core"
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
+                                            "default": "orchestration"
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
-                                            "default": "identity-core-client-token"
+                                            "default": "identity-orchestration-client-token"
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -693,7 +693,7 @@
                                         },
                                         "tokenScope": {
                                             "type": "string",
-                                            "description": "defines the token scope, which is used by Core.",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
                                             "default": ""
                                         }
                                     }
@@ -2710,7 +2710,7 @@
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)",
+                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)",
                             "default": [],
                             "items": {}
                         },
@@ -4069,7 +4069,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4524,7 +4524,7 @@
                 }
             }
         },
-        "core": {
+        "orchestration": {
             "type": "object",
             "properties": {
                 "enabled": {
@@ -4558,7 +4558,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4850,7 +4850,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "description": "defines the secret name which contains the TLS private key and certificate",
-                                            "default": "camunda-platform-core-grpc"
+                                            "default": "camunda-platform-orchestration-grpc"
                                         }
                                     }
                                 }
@@ -4860,7 +4860,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Core web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
                     "default": ""
                 },
                 "cpuThreadCount": {
@@ -4910,7 +4910,7 @@
                 },
                 "persistenceType": {
                     "type": "string",
-                    "description": "defines the type of persistence which is used by core. Possible values are: disk, local and memory.",
+                    "description": "defines the type of persistence which is used by orchestration. Possible values are: disk, local and memory.",
                     "default": "disk"
                 },
                 "pvcSize": {
@@ -5370,7 +5370,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",

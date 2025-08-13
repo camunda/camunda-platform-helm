@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package orchestration
 
 import (
 	"camunda-platform/test/unit/utils"
@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestGoldenDefaultsTemplateCore(t *testing.T) {
+func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
@@ -45,7 +45,7 @@ func TestGoldenDefaultsTemplateCore(t *testing.T) {
 			Release:        "camunda-platform-test",
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
-			Templates:      []string{"templates/core/" + name + ".yaml"},
+			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
 			IgnoredLines: []string{
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},

@@ -48,11 +48,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "connectors.authClientSecretName" . }}
                   key: {{ include "connectors.authClientSecretKey" . }}
-            - name: VALUES_KEYCLOAK_INIT_CORE_SECRET
+            - name: VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "core.authClientSecretName" . }}
-                  key: {{ include "core.authClientSecretKey" . }}
+                  name: {{ include "orchestration.authClientSecretName" . }}
+                  key: {{ include "orchestration.authClientSecretKey" . }}
             - name: VALUES_KEYCLOAK_INIT_CONSOLE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -79,28 +79,28 @@ spec:
             - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
               value: /
             - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: {{ include "core.authAudience" . | quote }}
+              value: {{ include "orchestration.authAudience" . | quote }}
             - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
               value: "read:*"
             - name: KEYCLOAK_CLIENTS_1_NAME
-              value: "Core"
+              value: "Orchestration"
             - name: KEYCLOAK_CLIENTS_1_ID
-              value: "core"
+              value: "orchestration"
             - name: KEYCLOAK_CLIENTS_1_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "core.authClientSecretName" . }}
-                  key: {{ include "core.authClientSecretKey" . }}
+                  name: {{ include "orchestration.authClientSecretName" . }}
+                  key: {{ include "orchestration.authClientSecretKey" . }}
             - name: KEYCLOAK_CLIENTS_1_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
+              value: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
-              value: /login/oauth2/code/core
+              value: /login/oauth2/code/orchestration
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_1
               value: /sso-callback
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "Confidential"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: {{ include "core.authAudience" . | quote }}
+              value: {{ include "orchestration.authAudience" . | quote }}
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
             - name: VALUES_KEYCLOAK_SETUP_PASSWORD
@@ -109,7 +109,7 @@ spec:
                   name: {{ include "identity.keycloak.authExistingSecret" . }}
                   key: {{ include "identity.keycloak.authExistingSecretKey" . }}
 
-            {{- if .Values.core.migration.identity.enabled }}
+            {{- if .Values.orchestration.migration.identity.enabled }}
             - name: KEYCLOAK_CLIENTS_2_ID
               value: migration
             - name: KEYCLOAK_CLIENTS_2_NAME
@@ -117,8 +117,8 @@ spec:
             - name: KEYCLOAK_CLIENTS_2_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "core.authClientSecretName" . }}
-                  key: {{ include "core.authClientSecretKey" . }}
+                  name: {{ include "orchestration.authClientSecretName" . }}
+                  key: {{ include "orchestration.authClientSecretKey" . }}
             - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
               value: /dummy
             - name: KEYCLOAK_CLIENTS_2_ROOT_URL

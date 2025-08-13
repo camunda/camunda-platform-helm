@@ -1,0 +1,63 @@
+{{- if .Values.orchestration.migration.identity.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "identity.fullname" . }}-migration
+  labels: {{- include "orchestration.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.orchestration.migration.identity.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "orchestration.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
+      {{- if .Values.orchestration.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-orchestration
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          image: curlimages/curl:8.15.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
+                echo "waiting for Orchestration Cluster"; sleep 5;
+              done
+      containers:
+        - name: camunda-migration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "orchestration.authClientSecretName" . }}
+                  key: {{ include "orchestration.authClientSecretKey" . }}
+          command:
+            - /usr/local/camunda/bin/identity-migration
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 500m
+              memory: 500Mi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/camunda/config/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "identity.fullname" . }}-migration-configuration
+{{- end }}

@@ -1,9 +1,9 @@
 ---
-# Source: camunda-platform/templates/core/gateway-service.yaml
+# Source: camunda-platform/templates/orchestration/gateway-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: camunda-platform-test-core-gateway
+  name: camunda-platform-test-orchestration-gateway
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

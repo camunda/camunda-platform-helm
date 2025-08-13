@@ -98,7 +98,7 @@ func TestGoldenServiceMonitorIdentityDefaults(t *testing.T) {
 	})
 }
 
-func TestGoldenServiceMonitorCoreDefaults(t *testing.T) {
+func TestGoldenServiceMonitorOrchestrationDefaults(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
@@ -108,8 +108,8 @@ func TestGoldenServiceMonitorCoreDefaults(t *testing.T) {
 		ChartPath:      chartPath,
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "core-service-monitor",
-		Templates:      []string{"templates/service-monitor/core-service-monitor.yaml"},
+		GoldenFileName: "orchestration-service-monitor",
+		Templates:      []string{"templates/service-monitor/orchestration-service-monitor.yaml"},
 		SetValues:      map[string]string{"prometheusServiceMonitor.enabled": "true"},
 	})
 }

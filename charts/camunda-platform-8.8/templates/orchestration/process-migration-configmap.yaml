@@ -1,8 +1,8 @@
-{{- if .Values.core.migration.process.enabled }}
+{{- if .Values.orchestration.migration.process.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "core.fullname" . }}-process-migration-configuration
+  name: {{ include "orchestration.fullname" . }}-process-migration-configuration
 data:
   application.yaml: |
     spring:

@@ -65,15 +65,15 @@ spec:
             path: {{ template "webModeler.websocketContextPath" . }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
-        {{- /* Orchestration Group */ -}}
-          {{- if and .Values.core.enabled .Values.core.contextPath }}
-          # Core.
+        {{- /* Orchestration Cluster */ -}}
+          {{- if and .Values.orchestration.enabled .Values.orchestration.contextPath }}
+          # Orchestration.
           - backend:
               service:
-                name: {{ template "core.fullname" . }}-gateway
+                name: {{ template "orchestration.fullname" . }}-gateway
                 port:
-                  number: {{ .Values.core.service.httpPort }}
-            path: {{ .Values.core.contextPath }}
+                  number: {{ .Values.orchestration.service.httpPort }}
+            path: {{ .Values.orchestration.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}

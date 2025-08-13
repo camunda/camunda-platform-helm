@@ -62,7 +62,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 				"global.ingress.tls.enabled":                          "true",
 				"identity.contextPath":                                "/identity",
 				"identity.enabled":                                    "true",
@@ -185,7 +185,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "/modeler",
-				"core.contextPath":                    "/core",
+				"orchestration.contextPath":                    "/orchestration",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -195,7 +195,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(output, "path: /optimize")
 				s.Require().Contains(output, "path: /modeler")
 				s.Require().Contains(output, "path: /modeler-ws")
-				s.Require().Contains(output, "path: /core")
+				s.Require().Contains(output, "path: /orchestration")
 			},
 		},
 		{
@@ -208,7 +208,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "",
-				"core.contextPath":                    "",
+				"orchestration.contextPath":                    "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -216,7 +216,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(output, "name: camunda-platform-test-optimize")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-				s.Require().NotContains(output, "name: camunda-platform-test-core")
+				s.Require().NotContains(output, "name: camunda-platform-test-orchestration")
 			},
 		},
 		{
@@ -226,7 +226,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"global.ingress.enabled": "true",
 				"optimize.enabled":       "false",
 				"webModeler.enabled":     "false",
-				"core.enabled":           "false",
+				"orchestration.enabled":           "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -234,7 +234,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(output, "name: camunda-platform-test-optimize")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-				s.Require().NotContains(output, "name: camunda-platform-test-core")
+				s.Require().NotContains(output, "name: camunda-platform-test-orchestration")
 			},
 		}, {
 			Name:                 "TestIngressExternal",

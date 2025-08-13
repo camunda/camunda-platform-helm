@@ -57,7 +57,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.issuerBackendUrl":               "http://keycloak:80/auth/realms/camunda-platform",
 				"identity.enabled":                                    "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -76,7 +76,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.keycloak.realm":                      "camunda-platform",
 				"identity.enabled":                                    "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap

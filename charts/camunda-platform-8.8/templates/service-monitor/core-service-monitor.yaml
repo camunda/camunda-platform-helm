@@ -1,18 +1,18 @@
-{{- if and .Values.prometheusServiceMonitor.enabled .Values.core.enabled -}}
+{{- if and .Values.prometheusServiceMonitor.enabled .Values.orchestration.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "camundaPlatform.fullname" . }}-core
+  name: {{ include "camundaPlatform.fullname" . }}-orchestration
   labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
     {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
 spec:
   selector:
     matchLabels:
       {{- toYaml .Values.global.labels | nindent 6 }}
-      app.kubernetes.io/component: core
+      app.kubernetes.io/component: orchestration
   endpoints:
     - honorLabels: true
-      path: {{ include "camundaPlatform.joinpath" (list .Values.core.contextPath .Values.core.metrics.prometheus) }}
-      port: {{ default "server" .Values.core.service.managementName }}
+      path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus) }}
+      port: {{ default "server" .Values.orchestration.service.managementName }}
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

@@ -1,4 +1,4 @@
-core:
+orchestration:
   migration:
     identity:
       enabled: true

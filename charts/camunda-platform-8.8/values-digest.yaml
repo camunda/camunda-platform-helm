@@ -8,7 +8,7 @@ optimize:
     repository: camunda/optimize
     digest: sha256:4b1a79b534efe23b0c6d7303e872257257e18238a32e8c2cc53f091f6bdbbeac
 
-core:
+orchestration:
   image:
     repository: camunda/camunda
     digest: sha256:3356f755b8b1d3f797d74bac6da6043de0085cfd2251a76e097684b9c93727a4

@@ -17,7 +17,7 @@ webModelerPostgresql:
   commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
-core:
+orchestration:
   ingress:
     grpc:
       tls:

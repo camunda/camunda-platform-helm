@@ -61,7 +61,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.aws.bucketPath":            "/aws/path",
 				"identity.enabled":                                    "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID":      "aws",
@@ -80,7 +80,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.gcp.bucket":                "gcp-bucket",
 				"identity.enabled":                                    "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID": "gcp",
@@ -97,7 +97,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.inmemory.class":            "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 				"identity.enabled":                                    "true",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "bar",
+				"global.identity.auth.orchestration.existingSecret.name":       "bar",
 			},
 			Expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID":     "inmemory",

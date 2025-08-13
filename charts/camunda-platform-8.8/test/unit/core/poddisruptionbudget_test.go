@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package orchestration
 
 import (
 	"camunda-platform/test/unit/testhelpers"
@@ -39,8 +39,8 @@ func TestGoldenPodDisruptionBudgetDefaults(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "poddisruptionbudget",
-		Templates:      []string{"templates/core/poddisruptionbudget.yaml"},
-		SetValues:      map[string]string{"core.podDisruptionBudget.enabled": "true"},
+		Templates:      []string{"templates/orchestration/poddisruptionbudget.yaml"},
+		SetValues:      map[string]string{"orchestration.podDisruptionBudget.enabled": "true"},
 	})
 }
 
@@ -62,7 +62,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/core/poddisruptionbudget.yaml"},
+		templates: []string{"templates/orchestration/poddisruptionbudget.yaml"},
 	})
 }
 
@@ -71,8 +71,8 @@ func (s *PodDisruptionBudgetTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerMinAvailableMutualExclusiveWithMaxUnavailable",
 			Values: map[string]string{
-				"core.podDisruptionBudget.enabled":      "true",
-				"core.podDisruptionBudget.minAvailable": "1",
+				"orchestration.podDisruptionBudget.enabled":      "true",
+				"orchestration.podDisruptionBudget.minAvailable": "1",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var podDisruptionBudget v1.PodDisruptionBudget
