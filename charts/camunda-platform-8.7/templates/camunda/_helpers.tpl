@@ -209,6 +209,19 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
   {{- .Values.global.license.existingSecretKey | default $defaultSecretKey -}}
 {{- end -}}
 
+
+{{/*
+[camunda-platform] Joins an arbirtary number of subpaths (e.g., contextPath+probePath) for HTTP paths.
+Slashes are trimmed from the beginning and end of each part, and a single slash is inserted between parts, leading slash added at the beginning.
+Usage: {{ include "camundaPlatform.joinpath" (list .Values.zeebe.contextPath .Values.zeebe.readinessProbe.probePath) }}
+*/}}
+{{- define "camundaPlatform.joinpath" -}}
+  {{- $paths := join "/" . -}}
+  {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
+  {{- printf "/%s" $pathsSanitized -}}
+{{- end -}}
+
+
 {{/*
 ********************************************************************************
 Keycloak templates.

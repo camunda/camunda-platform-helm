@@ -665,6 +665,29 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 			},
 		}, {
+			Name:                 "TestContainerProbesWithContextPathWithTrailingSlash",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.contextPath":              "/test/",
+				"orchestration.startupProbe.enabled":     "true",
+				"orchestration.startupProbe.probePath":   "/start",
+				"orchestration.readinessProbe.enabled":   "true",
+				"orchestration.readinessProbe.probePath": "/ready",
+				"orchestration.livenessProbe.enabled":    "true",
+				"orchestration.livenessProbe.probePath":  "/live",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then
+				probe := statefulSet.Spec.Template.Spec.Containers[0]
+
+				s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+				s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+			},
+		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
 				"orchestration.sidecars[0].name":                   "nginx",
