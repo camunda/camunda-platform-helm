@@ -23,6 +23,8 @@ data:
     # like arrays and maps.
     identity:
       url: "http://localhost:8084"
+      flags:
+        multi-tenancy: "false"
 
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"

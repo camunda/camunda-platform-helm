@@ -75,6 +75,16 @@
                         }
                     }
                 },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, then enable multitenancy in all applicable components.",
+                            "default": false
+                        }
+                    }
+                },
                 "security": {
                     "type": "object",
                     "properties": {
@@ -4643,6 +4653,12 @@
                         }
                     }
                 },
+                "sidecars": {
+                    "type": "array",
+                    "description": "can be used to attach extra containers to the deployment",
+                    "default": [],
+                    "items": {}
+                },
                 "multitenancy": {
                     "type": "object",
                     "properties": {
@@ -4667,12 +4683,6 @@
                             }
                         }
                     }
-                },
-                "sidecars": {
-                    "type": "array",
-                    "description": "can be used to attach extra containers to the deployment",
-                    "default": [],
-                    "items": {}
                 },
                 "clusterSize": {
                     "type": "string",
