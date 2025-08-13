@@ -65,7 +65,7 @@ spec:
                 secretKeyRef:
                   name: camunda-credentials
                   key: identity-connectors-client-token
-            - name: VALUES_KEYCLOAK_INIT_CORE_SECRET
+            - name: VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-credentials

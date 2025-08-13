@@ -209,7 +209,7 @@ data:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
         issuer-backend-url: "http://:/auth/realms/camunda-platform"
         redirect-root-url: "http://localhost:8082"
-        client-secret: ${VALUES_CAMUNDA_CORE_CLIENT_SECRET:}
+        client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
         audience: "orchestration-api"
         authentication:
           unprotected-api: false

@@ -35,7 +35,7 @@ testcases:
       clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
     - component: Orchestration
       clientID: orchestration
-      clientSecret: "{{ .CORE_CLIENT_SECRET }}"
+      clientSecret: "{{ .ORCHESTRATION_CLIENT_SECRET }}"
     method: POST
     url: "{{ .coreVars.authURL }}"
     headers:
@@ -255,7 +255,7 @@ testcases:
   - name: Check Orchestration status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.coreREST }}/topology"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/topology"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -277,7 +277,7 @@ testcases:
   - name: Check Orchestration status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.coreREST }}/topology"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/topology"
     headers:
       Content-Type: application/json
       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"

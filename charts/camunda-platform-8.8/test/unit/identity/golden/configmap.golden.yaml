@@ -80,9 +80,9 @@ data:
         orchestration:
           applications:
             - name: Orchestration
-              id: ${CAMUNDA_CORE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CORE_CLIENT_ID:orchestration}}
+              id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
-              secret: ${CAMUNDA_CORE_SECRET:${VALUES_KEYCLOAK_INIT_CORE_SECRET:}}
+              secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
               root-url: "http://localhost:8082"
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
@@ -178,7 +178,7 @@ data:
         console:
           secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
         orchestration:
-          secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
+          secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         webmodeler:
@@ -214,7 +214,7 @@ data:
             - name: Orchestration
               id: core
               type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
               root-url: "http://localhost:8082"
               redirect-uris:
                 - "/identity-callback"
