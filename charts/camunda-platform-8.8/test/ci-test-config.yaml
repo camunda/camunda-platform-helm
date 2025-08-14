@@ -31,6 +31,10 @@ integration:
           shortname: esba
           auth: basic
           exclude: [identity,console,orchestration-grpc]
+          upgrade:
+            versions:
+              - "12" # -- passed into the --version flag of helm install. so 12 would be the latest version of 12 
+              - "13" #    but 12.0.0 should also work. Should not include the current PR version of the chart in list
     nightly:
       scenario:
         - name: elasticsearch

@@ -167,6 +167,10 @@ on:
         default: "true"
         type: string
         description: Enable digest values
+      upgrade-versions:
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -289,6 +293,10 @@ jobs:
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
+
+      #  loop A: upgrade loop begins 
+
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
@@ -435,6 +443,8 @@ jobs:
           cat $V.bk
           mv $V.bk $V
 
+      # loop B: only install on first run
+
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -498,6 +508,9 @@ jobs:
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+
+      # loop C: loop ends
 
       - name: CI Setup - Update GitHub deployment status
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
