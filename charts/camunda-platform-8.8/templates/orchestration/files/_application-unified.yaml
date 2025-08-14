@@ -220,13 +220,13 @@ camunda:
     client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
     audience: {{ include "orchestration.authAudience" . | quote }}
     authentication:
-      unprotected-api: {{ .Values.global.security.authentication.unprotectedApi }}
+      unprotected-api: {{ .Values.orchestration.security.authentication.unprotectedApi }}
       method: 'oidc'
-      {{- if eq .Values.global.security.authentication.method "oidc" }}
+      {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
       oidc:
         client-id: {{ include "orchestration.authClientId" . | quote }}
       {{- end }}
-    authorization: {{ .Values.global.security.authorizations.enabled }}
+    authorization: {{ .Values.orchestration.security.authorizations.enabled }}
     multi-tenancy: {{ .Values.global.multitenancy.enabled }}
 
   webapp:
