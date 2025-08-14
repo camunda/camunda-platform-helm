@@ -83,6 +83,27 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("identity", configmapApplication.Spring.DataSource.Username)
 			},
 		}, {
+			Name: "TestConfigMapGlobalMultitenancySetsIdentityFlag",
+			Values: map[string]string{
+				"global.multitenancy.enabled": "true",
+				"identityPostgresql.enabled":  "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication IdentityConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.NotEmpty(configmap.Data)
+
+				s.Require().Equal("true", configmapApplication.Identity.Flags.MultiTenancy)
+			},
+		}, {
 			Name: "TestConfigMapExternalDatabaseEnabled",
 			Values: map[string]string{
 				"identity.multitenancy.enabled":        "true",
