@@ -45,9 +45,9 @@ data:
             max-jobs-active: 32
             stream-enabled: true
         mode: selfManaged
-        {{- if eq .Values.global.security.authentication.method "basic" }}
+        {{- if eq .Values.orchestration.security.authentication.method "basic" }}
         auth:
-          {{- $user := first .Values.global.security.initialization.users }}
+          {{- $user := first .Values.orchestration.security.initialization.users }}
           method: basic
           username: {{ $user.username | quote }}
           password: {{ $user.password | quote }}
