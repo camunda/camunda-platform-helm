@@ -100,7 +100,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 		{
 			Name: "TestApplicationYamlShouldContainAuthOIDCClientId",
 			Values: map[string]string{
-				"global.security.authentication.method": "oidc",
+				"orchestration.security.authentication.method": "oidc",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration.",
