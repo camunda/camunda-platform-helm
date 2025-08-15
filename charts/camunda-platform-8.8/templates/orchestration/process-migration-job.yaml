@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         {{- include "orchestration.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/core/process-migration-configmap.yaml") . | sha256sum }}
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
