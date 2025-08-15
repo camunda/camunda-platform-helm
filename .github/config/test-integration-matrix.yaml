@@ -26,7 +26,7 @@ matrix:
     - name: Chart Install
       desc: Install chart in production-like setup with Ingress and TLS.
       flow: install
-      if: $INPUTS_FLOWS_INSTALL && !$INPUTS_FLOWS_UPGRADE
+      if: $INPUTS_FLOWS_INSTALL
     - name: Chart Upgrade
       desc: Upgrade chart from the latest released version to the current branch.
       flow: upgrade
