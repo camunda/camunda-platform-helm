@@ -465,7 +465,7 @@ jobs:
             export TEST_CHART_VERSION=${UPGRADE_VERSION_1}
 
             rm -f camunda-platform-*.tgz
-            helm pull camunda/camunda-platform --version ${{ env.UPGRADE_VERSION_2 }}
+            helm pull camunda/camunda-platform --version ${UPGRADE_VERSION_1}
             export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
 
             export APP_VERSION="$(helm show chart "${TEST_CHART_REPO}" | yq .appVersion | grep -o '[0-9]\+\.[0-9]\+')"
