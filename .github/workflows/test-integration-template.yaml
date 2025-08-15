@@ -282,6 +282,7 @@ jobs:
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
+      upgrade-versions: ${{ inputs.upgrade-versions }}
 
   print-outputs:
     name: Print outputs
