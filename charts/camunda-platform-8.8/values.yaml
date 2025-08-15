@@ -851,7 +851,7 @@ identityPostgresql:
   ##
   image:
     repository: bitnamilegacy/postgresql
-    tag: 15.10.0-debian-12-r2
+    tag: 17.5.0-debian-12-r9
     digest: ""
   ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
   ##
@@ -919,7 +919,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.4
+    tag: 26.3.1
     ## @param identityKeycloak.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
 
@@ -943,7 +943,7 @@ identityKeycloak:
       ## @param identityKeycloak.postgresql.image.repository image repo
       repository: bitnamilegacy/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
-      tag: 15.10.0-debian-12-r2
+      tag: 17.5.0-debian-12-r9
       ## @param identityKeycloak.postgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
       digest: ""
     auth:
