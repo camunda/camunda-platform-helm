@@ -212,6 +212,7 @@ jobs:
           export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
           export INPUTS_FLOWS_INSTALL=${{ contains(inputs.flows, 'install') }}
           export INPUTS_FLOWS_UPGRADE=${{ contains(inputs.flows, 'upgrade') }}
+          export INPUTS_UPGRADE_VERSIONS=${{ inputs.upgrade-versions }}
           cat ${CI_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
           # Read matrix YAML file.
           matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
