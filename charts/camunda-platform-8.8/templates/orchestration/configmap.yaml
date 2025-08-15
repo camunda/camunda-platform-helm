@@ -44,8 +44,8 @@ data:
             - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
           {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
           {{/*
-            TODO: add the issuer backend URL when it is supported by the orchestration cluster identity
-            https://github.com/camunda/camunda-platform-helm/issues/3952
+            TODO: Add "camundaPlatform.authIssuerBackendUrl" when "backend-url" config is supported by the Orchestration Identity.
+            For more details: https://github.com/camunda/camunda-platform-helm/issues/3952
           */}}
           issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
           redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
