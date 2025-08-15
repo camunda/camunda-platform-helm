@@ -460,8 +460,6 @@ jobs:
           export TEST_CHART_REPO="${{ inputs.camunda-helm-repo }}"
           if [[ "${{ inputs.upgrade-versions }}" != "" ]]; then
 
-            echo PWD=$(pwd)
-
             export UPGRADE_VERSION_1="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 1)"
             echo UPGRADE_VERSION_1=${UPGRADE_VERSION_1} | tee -a "$GITHUB_ENV"
             export TEST_CHART_VERSION=${UPGRADE_VERSION_1}
@@ -471,15 +469,14 @@ jobs:
             export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
 
             export APP_VERSION="$(helm show chart "${TEST_CHART_REPO}" | yq .appVersion | grep -o '[0-9]\+\.[0-9]\+')"
-            TEST_RELATIVE_CHART_PATH="../../../../charts/camunda-platform-${APP_VERSION}"
-
+            TEST_RELATIVE_CHART_PATH="charts/camunda-platform-${APP_VERSION}"
 
             matrix_file="${TEST_RELATIVE_CHART_PATH}/test/ci-test-config.yaml"
             integration_vars="$(yq '.integration' --indent=0 --output-format json ${matrix_file})"
 
             values_base_dir="$(echo ${integration_vars} | jq -r '.vars.valuesBaseDir')"
             integration_scenarios_values_dir="${TEST_RELATIVE_CHART_PATH}/test/${values_base_dir}"
-            export "TEST_VALUES_BASE_DIR=${integration_scenarios_values_dir}"
+            export "TEST_VALUES_BASE_DIR=../../../../${integration_scenarios_values_dir}"
           fi
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
