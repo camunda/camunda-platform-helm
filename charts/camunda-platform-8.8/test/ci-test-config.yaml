@@ -28,7 +28,7 @@ integration:
           exclude: []
         - name: elasticsearch
           enabled: true
-          shortname: esbamu
+          shortname: jess
           flow: upgrade
           auth: basic
           exclude: [identity,console,orchestration-grpc]
