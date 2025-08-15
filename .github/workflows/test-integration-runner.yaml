@@ -469,6 +469,8 @@ jobs:
             export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
 
             export APP_VERSION="$(helm show chart "${TEST_CHART_REPO}" | yq .appVersion | grep -o '[0-9]\+\.[0-9]\+')"
+            export TEST_CHART_REPO="../../../../$(ls camunda-platform-*.tgz)"
+
             TEST_RELATIVE_CHART_PATH="charts/camunda-platform-${APP_VERSION}"
 
             matrix_file="${TEST_RELATIVE_CHART_PATH}/test/ci-test-config.yaml"
