@@ -140,6 +140,10 @@ on:
         required: false
         default: false
         type: boolean
+      upgrade-versions:
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
