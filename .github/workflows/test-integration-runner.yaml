@@ -783,7 +783,6 @@ jobs:
 
   merge-reports:
     name: Merge reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    # if: ${{ !cancelled() && inputs.test-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
     if: false
     needs: [ci-setup, playwright-e2e-tests]
 
@@ -844,7 +843,8 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [playwright-e2e-tests, ci-setup]
+    if: always()
+    needs: [playwright-e2e-tests, playwright-integration-tests, venom-test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
