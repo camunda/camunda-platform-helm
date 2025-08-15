@@ -5313,6 +5313,16 @@
                                     "type": "string",
                                     "description": "defines the name of the created and applied ILM policy.",
                                     "default": "zeebe-record-retention-policy"
+                                },
+                                "usageMetricsMinimumAge": {
+                                    "type": "string",
+                                    "description": "defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-at).",
+                                    "default": "730d"
+                                },
+                                "usageMetricsPolicyName": {
+                                    "type": "string",
+                                    "description": "defines the name of the created and applied ILM policy to usage metric indices.",
+                                    "default": "camunda-usage-metrics-retention-policy"
                                 }
                             }
                         }

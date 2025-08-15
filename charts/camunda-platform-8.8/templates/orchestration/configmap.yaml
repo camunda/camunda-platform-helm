@@ -148,6 +148,8 @@ data:
                 enabled: true
                 minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
                 policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+                usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
+                usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
               {{- end }}
         {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) }}
           opensearch:
@@ -167,6 +169,8 @@ data:
                 enabled: true
                 minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
                 policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+                usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
+                usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
               {{- end }}
           {{- end }}
         {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
@@ -274,6 +278,8 @@ data:
           enabled: true
           minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
           policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+          usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
+          usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
         {{- end }}
       {{- end }}
 
