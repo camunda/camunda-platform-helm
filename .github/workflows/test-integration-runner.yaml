@@ -458,7 +458,7 @@ jobs:
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           export TEST_CHART_REPO="${{ inputs.camunda-helm-repo }}"
-          if [[ "${{ input.upgrade-versions }}" != "" ]]; then
+          if [[ "${{ inputs.upgrade-versions }}" != "" ]]; then
             export TEST_CHART_REPO="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 1)"
           fi
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
@@ -502,7 +502,7 @@ jobs:
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
       - name: Prepare upgrade
-        if: input.upgrade-versions != ''
+        if: inputs.upgrade-versions != ''
         run: |
           export UPGRADE_VERSION_2="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 2)"
           echo UPGRADE_VERSION_2=$UPGRADE_VERSION_2 | tee -a "$GITHUB_ENV"
