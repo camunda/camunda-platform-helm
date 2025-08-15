@@ -22,19 +22,19 @@ integration:
     pr:
       scenario:
         - name: elasticsearch
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: eske
           exclude: []
-        - name: elasticsearch
-          enabled: false
-          shortname: esba
+        - name: elasticsearch-multi-upgrade
+          enabled: true
+          shortname: esbamu
           auth: basic
           exclude: [identity,console,orchestration-grpc]
           upgrade:
             versions:
-              - "12" # -- passed into the --version flag of helm install. so 12 would be the latest version of 12 
-              - "13" #    but 12.0.0 should also work. Should not include the current PR version of the chart in list
+              - "11" # -- passed into the --version flag of helm install. so 12 would be the latest version of 12 
+              - "12" #    but 12.0.0 should also work. Should not include the current PR version of the chart in list
     nightly:
       scenario:
         - name: elasticsearch
