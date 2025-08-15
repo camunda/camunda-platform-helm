@@ -599,6 +599,12 @@ identity:
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  ## Multitenancy configuration
+  ## @extra identity.multitenancy
+  multitenancy:
+    ## @param identity.multitenancy.enabled can be used to enable multitenancy in management identity
+    enabled: false
+
   ## @param identity.sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
   ## @param identity.initContainers can be used to set up extra init containers for the application Pod
@@ -2332,6 +2338,16 @@ orchestration:
 
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
+
+  ## Multitenancy configuration
+  ## @extra orchestration.multitenancy
+  multitenancy:
+    checks:
+      ## @param orchestration.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
+      enabled: false
+    api:
+      ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
+      enabled: true
 
   ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
