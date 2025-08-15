@@ -471,6 +471,8 @@ jobs:
             export APP_VERSION="$(helm show chart "${TEST_CHART_REPO}" | yq .appVersion | grep -o '[0-9]\+\.[0-9]\+')"
             TEST_RELATIVE_CHART_PATH="../../../../charts/camunda-platform-${APP_VERSION}"
 
+            echo PWD=$(pwd)
+
             matrix_file="${TEST_RELATIVE_CHART_PATH}/test/ci-test-config.yaml"
             integration_vars="$(yq '.integration' --indent=0 --output-format json ${matrix_file})"
 
