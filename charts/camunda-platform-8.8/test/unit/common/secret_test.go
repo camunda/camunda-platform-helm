@@ -61,7 +61,7 @@ func (s *secretTest) TestContainerGenerateSecret() {
 	}
 
 	s.templates = []string{
-		"templates/camunda/secret-camunda.yaml",
+		"templates/common/secret-camunda.yaml",
 	}
 
 	s.secretName = []string{
