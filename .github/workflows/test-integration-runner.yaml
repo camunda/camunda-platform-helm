@@ -195,8 +195,6 @@ env:
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
   CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
-  # The Helm repo which is used during the upgrade flow.
-  TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
@@ -299,10 +297,6 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
-
-      #  loop A: upgrade loop begins 
-
-
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
         uses: ./.github/actions/workflow-vars
@@ -373,6 +367,7 @@ jobs:
         env:
           TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
+          TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
 
       - name: Cluster Setup - Configure TLS Certificates/Secrets
         run: |
@@ -400,6 +395,7 @@ jobs:
       - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
         env:
+          TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
@@ -448,8 +444,6 @@ jobs:
           cat $V.bk
           mv $V.bk $V
 
-      # loop B: only install on first run
-
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -463,17 +457,23 @@ jobs:
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
+          export TEST_CHART_REPO="${{ inputs.camunda-helm-repo }}"
+          if [[ "${{ input.upgrade-versions }}" != "" ]]; then
+            export TEST_CHART_REPO="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 1)"
+          fi
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
       - name: Helm - Execute after install lifecycle tasks
         timeout-minutes: 5
+        env:
+          TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
-
 
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
         if: inputs.flow == 'upgrade'
         env:
+          TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
@@ -501,8 +501,22 @@ jobs:
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set orchestration.image.tag=SNAPSHOT"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
+      - name: Prepare upgrade
+        if: input.upgrade-versions != ''
+        run: |
+          export UPGRADE_VERSION_2="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 2)"
+          echo UPGRADE_VERSION_2=$UPGRADE_VERSION_2 | tee -a "$GITHUB_ENV"
+          export UPGRADE_VERSION_3="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 3)"
+          echo UPGRADE_VERSION_3=$UPGRADE_VERSION_3 | tee -a "$GITHUB_ENV"
+          export UPGRADE_VERSION_4="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 4)"
+          echo UPGRADE_VERSION_4=$UPGRADE_VERSION_4 | tee -a "$GITHUB_ENV"
+          export UPGRADE_VERSION_5="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 5)"
+          echo UPGRADE_VERSION_5=$UPGRADE_VERSION_5 | tee -a "$GITHUB_ENV"
+          export UPGRADE_VERSION_6="$(echo '${{ inputs.upgrade-versions }}' | cut -d '|' -f 6)"
+          echo UPGRADE_VERSION_6=$UPGRADE_VERSION_6 | tee -a "$GITHUB_ENV"
+
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
-        if: inputs.flow == 'upgrade'
+        if: inputs.flow == 'upgrade' && inputs.upgrade-versions == ''
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
@@ -514,8 +528,89 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 1/5 🌟
+        if: inputs.flow == 'upgrade' && env.UPGRADE_VERSION_2 != '' && inputs.upgrade-versions != ''
+        env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          rm -f camunda-platform-*.tgz
+          helm pull camunda/camunda-platform --version ${{ env.UPGRADE_VERSION_2 }}
+          export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
-      # loop C: loop ends
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 2/5 🌟
+        if: inputs.flow == 'upgrade' && env.UPGRADE_VERSION_3 != '' && inputs.upgrade-versions != ''
+        env:
+          TEST_CHART_REPO: ${{ env.UPGRADE_VERSION_3 }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          rm -f camunda-platform-*.tgz
+          helm pull camunda/camunda-platform --version ${{ env.UPGRADE_VERSION_3 }}
+          export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 3/5 🌟
+        if: inputs.flow == 'upgrade' && env.UPGRADE_VERSION_4 != '' && inputs.upgrade-versions != ''
+        env:
+          TEST_CHART_REPO: ${{ env.UPGRADE_VERSION_4 }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          rm -f camunda-platform-*.tgz
+          helm pull camunda/camunda-platform --version ${{ env.UPGRADE_VERSION_4 }}
+          export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 4/5 🌟
+        if: inputs.flow == 'upgrade' && env.UPGRADE_VERSION_5 != '' && inputs.upgrade-versions != ''
+        env:
+          TEST_CHART_REPO: ${{ env.UPGRADE_VERSION_5 }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          rm -f camunda-platform-*.tgz
+          helm pull camunda/camunda-platform --version ${{ env.UPGRADE_VERSION_5 }}
+          export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 5/5 🌟
+        if: inputs.flow == 'upgrade' && env.UPGRADE_VERSION_6 != '' && inputs.upgrade-versions != ''
+        env:
+          TEST_CHART_REPO: ${{ env.UPGRADE_VERSION_6 }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          rm -f camunda-platform-*.tgz
+          helm pull camunda/camunda-platform --version ${{ env.UPGRADE_VERSION_6 }}
+          export TEST_CHART_REPO="$(ls camunda-platform-*.tgz)"
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
       - name: CI Setup - Update GitHub deployment status
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
@@ -618,6 +713,7 @@ jobs:
       - name: Test - ⭐️ Run Venom Env Setup ⭐️
         timeout-minutes: 1
         env:
+          TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
           CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
           TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
           TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
@@ -633,6 +729,7 @@ jobs:
 
       - name: Test - ⭐️ Run Venom Preflight TestSuite ⭐️
         env:
+          TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
           CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
           TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
           TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
@@ -644,6 +741,7 @@ jobs:
 
       - name: Test - ⭐️ Run Venom Core TestSuite ⭐️
         env:
+          TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
           CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
           TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
           TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
