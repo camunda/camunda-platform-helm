@@ -30,7 +30,7 @@ integration:
           enabled: true
           shortname: jess
           flow: upgrade
-          auth: basic
+          auth: keycloak
           exclude: [identity,console,orchestration-grpc]
           upgrade:
             versions:
