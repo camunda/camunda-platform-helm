@@ -276,6 +276,7 @@ jobs:
       values-digest: ${{ inputs.values-digest }}
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
+      upgrade-versions: ${{ inputs.upgrade-versions }}
 
   print-outputs:
     name: Print outputs
