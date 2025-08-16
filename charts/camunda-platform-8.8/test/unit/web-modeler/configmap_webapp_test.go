@@ -232,6 +232,26 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("MICROSOFT", configmapApplication.OAuth2.Type)
 			},
+		}, {
+			Name: "TestContainerShouldSetCorrectIdentityUserNameClaim",
+			Values: map[string]string{
+				"webModeler.enabled":                                "true",
+				"webModeler.restapi.mail.fromAddress":               "example@example.com",
+				"global.security.authentication.oidc.usernameClaim": "example-claim",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerWebAppTOML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := toml.Unmarshal([]byte(configmap.Data["application.toml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("example-claim", configmapApplication.OAuth2.Token.UsernameClaim)
+			},
 		},
 	}
 
