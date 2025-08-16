@@ -71,7 +71,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix
@@ -87,7 +87,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-chart-versions-only.outputs.matrix }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Generate chart versions
         id: generate-chart-versions-only
         run: |
