@@ -125,6 +125,7 @@ type OAuth2Config struct {
 }
 
 type TokenConfig struct {
-	Audience string `toml:"audience"`
-	JwksUrl  string `toml:"jwksUrl"`
+	Audience      string `toml:"audience"`
+	JwksUrl       string `toml:"jwksUrl"`
+	UsernameClaim string `toml:"usernameClaim"`
 }
