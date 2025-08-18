@@ -159,4 +159,6 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 
 {{ include "camunda.constraints.warnings" . | trim }}
 
+{{ include "camundaPlatform.ReleaseHighlights" . }}
+
 {{- end }}
