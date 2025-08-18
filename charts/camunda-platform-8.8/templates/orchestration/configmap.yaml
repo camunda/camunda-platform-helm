@@ -206,7 +206,7 @@ data:
     camunda:
       persistent:
         sessions:
-          enabled: {{ not .Values.global.noSecondaryStorage }}
+          enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
 
       rest:
         query:
@@ -291,7 +291,7 @@ data:
         {{- if .Values.orchestration.migration.process.enabled }}
         importerEnabled: true
         {{- end }}
-        persistentSessionsEnabled: {{ not .Values.global.noSecondaryStorage }}
+        persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
         {{- end }}

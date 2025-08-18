@@ -130,3 +130,7 @@ app.kubernetes.io/component: orchestration
         {{- fail "Please enable a secondary storage type. Either Elasticsearch or OpenSearch" -}}
     {{- end -}}
 {{- end -}}
+
+{{- define "orchestration.persistentSessionsEnabled" -}}
+    {{- not .Values.global.noSecondaryStorage -}}
+{{- end -}}
