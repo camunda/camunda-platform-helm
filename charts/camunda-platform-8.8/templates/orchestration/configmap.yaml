@@ -85,10 +85,8 @@ data:
           network:
             host: 0.0.0.0
             port: {{ .Values.orchestration.service.grpcPort }}
-          {{- if .Values.global.multitenancy.enabled }}
           multitenancy:
-            enabled: true
-          {{- end }}
+            enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
 
         # zeebe.broker.network
         network:
@@ -243,7 +241,8 @@ data:
             {{- end }}
           {{- end }}
         multiTenancy:
-            enabled: {{ .Values.global.multitenancy.enabled }}
+          checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+          apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
 
       {{- if .Values.global.identity.auth.enabled }}
       identity:
@@ -288,10 +287,8 @@ data:
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
         {{- end }}
-        {{- if .Values.global.multitenancy.enabled }}
         multiTenancy:
-          enabled: true
-        {{- end }}
+          enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
         {{- if .Values.global.identity.auth.enabled }}
         identity:
           redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/operate"
@@ -371,10 +368,8 @@ data:
         {{- if .Values.orchestration.migration.process.enabled }}
         importerEnabled: true
         {{- end }}
-        {{- if .Values.global.multitenancy.enabled }}
         multiTenancy:
-          enabled: true
-        {{- end }}
+          enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
 
         {{- if .Values.global.identity.auth.enabled }}
         identity:

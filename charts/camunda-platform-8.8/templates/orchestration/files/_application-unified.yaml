@@ -227,7 +227,9 @@ camunda:
         client-id: {{ include "orchestration.authClientId" . | quote }}
       {{- end }}
     authorization: {{ .Values.global.security.authorizations.enabled }}
-    multi-tenancy: {{ .Values.global.multitenancy.enabled }}
+    multiTenancy:
+      checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+      apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
 
   webapp:
     common:
