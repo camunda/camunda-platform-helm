@@ -249,7 +249,7 @@ jobs:
       # and populate environment variables from Vault
       - name: CI Setup - Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         if: inputs.vault-secret-mapping != ''
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -260,7 +260,7 @@ jobs:
           exportEnv: true
       - name: Import Vault secrets
         id: test-credentials-secret
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -711,7 +711,7 @@ jobs:
       
       - name: Cache - node_modules
         id: cache-node
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
           key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -720,7 +720,7 @@ jobs:
   
       - name: Cache - Playwright
         id: cache-playwright
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -733,7 +733,7 @@ jobs:
           ./run-integration-tests.sh --absolute-chart-path ${{env.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{ env.TEST_NAMESPACE }}
 
       - name: Test - Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
           name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
@@ -770,7 +770,7 @@ jobs:
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
@@ -790,7 +790,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: lts/*
           
@@ -831,7 +831,7 @@ jobs:
         run: npx playwright merge-reports --reporter html ./all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: html-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}
           path: playwright-report
