@@ -530,6 +530,10 @@ jobs:
           echo "SHARD_TOTAL=${SHARD_TOTAL}" | tee -a "$GITHUB_ENV"
           echo "SHARD_INDEX=${SHARD_INDEX_LIST}" | tee -a "$GITHUB_ENV"
 
+      - name: 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
+
   venom-test:
     name: Venom ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.4') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.5') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.6')) }}
@@ -635,6 +639,10 @@ jobs:
         id: core-testsuite
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
+
+      - name: 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
 
   playwright-integration-tests:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
@@ -744,10 +752,6 @@ jobs:
           name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
           if-no-files-found: error
           retention-days: 5
-
-      - name: 🚨 Get failed Pods info 🚨
-        if: failure()
-        uses: ./.github/actions/failed-pods-info
 
   playwright-e2e-tests:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
