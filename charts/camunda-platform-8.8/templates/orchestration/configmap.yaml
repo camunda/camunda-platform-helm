@@ -220,6 +220,7 @@ data:
         {{- end }}
           method: {{ .Values.orchestration.security.authentication.method | quote }}
           unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
+          authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
         authorizations:
           enabled: {{ .Values.orchestration.security.authorizations.enabled }}
         initialization:

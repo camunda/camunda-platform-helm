@@ -2407,6 +2407,7 @@ orchestration:
       method: basic
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
+      authenticationRefreshInterval: "PT30S"
       oidc:
         ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
