@@ -456,6 +456,21 @@ jobs:
           envsubst < $V > $V.bk
           cat $V.bk
           mv $V.bk $V
+          echo "################################################################################"
+
+          echo "Values file: $V"
+          if [[ -n "$E2E_TESTS_LICENSE_KEY" ]]; then
+            echo "Setting license key in $V"
+            if ! yq eval '.global.license.key |= env(E2E_TESTS_LICENSE_KEY)' "$V" > "$V.bk"; then
+              echo "Failed to set license key in " >&2
+              exit 1
+            fi
+            mv $V.bk $V
+            cat $V
+          else
+            echo "License key not set in "
+          fi
+          echo "################################################################################"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
