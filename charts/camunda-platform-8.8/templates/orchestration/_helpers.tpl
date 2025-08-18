@@ -52,6 +52,8 @@ app.kubernetes.io/component: orchestration
     {{ .Values.orchestration.multitenancy.checks.enabled }}
   {{- else if .Values.global.multitenancy.enabled -}}
     {{ .Values.global.multitenancy.enabled }}
+  {{- else -}}
+    false
   {{- end -}}
 {{- end -}}
 
@@ -63,6 +65,8 @@ app.kubernetes.io/component: orchestration
     {{ .Values.orchestration.multitenancy.api.enabled }}
   {{- else if .Values.global.multitenancy.enabled -}}
     {{ .Values.global.multitenancy.enabled }}
+  {{- else -}}
+    false
   {{- end -}}
 {{- end -}}
 
