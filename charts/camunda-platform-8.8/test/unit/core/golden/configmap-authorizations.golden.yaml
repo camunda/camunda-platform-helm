@@ -55,7 +55,7 @@ data:
             host: 0.0.0.0
             port: 26500
           multitenancy:
-            enabled: 
+            enabled: false
 
         # zeebe.broker.network
         network:
@@ -133,7 +133,7 @@ data:
           default-roles.admin.users:
             - "demo"
         multiTenancy:
-          checksEnabled: 
+          checksEnabled: false
           apiEnabled: true
 
       #
@@ -152,7 +152,7 @@ data:
       operate:
         persistentSessionsEnabled: true
         multiTenancy:
-          enabled: 
+          enabled: false
 
         # ELS instance to store Operate data
         elasticsearch:
@@ -187,7 +187,7 @@ data:
       #
       tasklist:
         multiTenancy:
-          enabled: 
+          enabled: false
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.
