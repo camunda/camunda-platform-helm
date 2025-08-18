@@ -167,6 +167,11 @@ on:
         default: "true"
         type: string
         description: Enable digest values
+      always-delete-namespace:
+        description: Always delete the namespace after the test run
+        default: false
+        type: boolean
+        required: false
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -778,7 +783,6 @@ jobs:
 
   merge-reports:
     name: Merge reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    # if: ${{ !cancelled() && inputs.test-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
     if: false
     needs: [ci-setup, playwright-e2e-tests]
 
@@ -839,7 +843,8 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [playwright-e2e-tests, ci-setup]
+    if: always()
+    needs: [playwright-e2e-tests, playwright-integration-tests, venom-test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -917,8 +922,18 @@ jobs:
           ref: ${{ inputs.caller-git-ref }}
 
       - name: CI Cleanup - 🚨 Mark namespace as failed 🚨
-        if: failure()
+        if: always() && ${{ inputs.always-delete-namespace }}
         run: |
+          if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
+            if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+            else
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+            fi
+          else
+            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+          fi
           kubectl annotate ns ${{ env.TEST_NAMESPACE }} build-failed=true
-          kubectl annotate ns ${{ env.TEST_NAMESPACE }} cleaner/ttl=1d
-          kubectl annotate ns ${{ env.TEST_NAMESPACE }} janitor/ttl=1d
