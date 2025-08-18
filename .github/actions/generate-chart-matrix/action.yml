@@ -116,7 +116,7 @@ runs:
           printf "%s\n" ${ALL_MODIFIED_FILES}
 
           # If any workflow or action files have changed, build all chart versions
-          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)/"; then
+          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)"; then
             echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
             for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
               chart_dir="charts/camunda-platform-${camunda_version}"
