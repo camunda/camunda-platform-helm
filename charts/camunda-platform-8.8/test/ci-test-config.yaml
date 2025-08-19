@@ -27,15 +27,10 @@ integration:
           shortname: eske
           exclude: []
         - name: elasticsearch
-          enabled: true
+          enabled: false
           shortname: esba
           auth: basic
           exclude: [identity,console,orchestration-grpc]
-        - name: elasticsearch
-          enabled: true
-          exclude: []
-          shortname: esoi
-          auth: oidc
     nightly:
       scenario:
         - name: elasticsearch
