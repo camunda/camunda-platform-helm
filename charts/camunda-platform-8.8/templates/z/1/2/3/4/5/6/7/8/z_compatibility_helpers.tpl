@@ -55,21 +55,6 @@ Orchestration compatibility.
         */}}
 
         {{/*
-            zeebe.retention => orchestration.history.retention
-            # TODO: Update the retention values after review the correct path with the dev team.
-            {{- if (.Values.zeebe.retention).enabled -}}
-                {{- $_ := set .Values.orchestration.history.retention "enabled" .Values.zeebe.retention.enabled -}}
-                {{- if ((.Values.zeebe.retention).minimumAge) -}}
-                    {{- $_ := set .Values.orchestration.history.retention "minimumAge" .Values.zeebe.retention.minimumAge -}}
-                {{- end -}}
-                {{- if ((.Values.zeebe.retention).policyName) -}}
-                    {{- $_ := set .Values.orchestration.history.retention "policyName" .Values.zeebe.retention.policyName -}}
-                {{- end -}}
-            {{- end -}}
-        */}}
-
-
-        {{/*
             zeebe.resources => orchestration.resources
             Set the default values for the orchestration resources if they use the Zeebe default values,
             as the defaults have been changed in Camunda Helm chart v13.0.0 (Camunda 8.8).

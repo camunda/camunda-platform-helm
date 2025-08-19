@@ -141,11 +141,11 @@ data:
               url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
               index:
                 prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-              {{- if .Values.orchestration.history.retention.enabled }}
+              {{- if .Values.orchestration.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
-                policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
               {{- end }}
         {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) }}
           opensearch:
@@ -160,11 +160,11 @@ data:
               aws:
                 enabled: true
               {{- end}}
-              {{- if .Values.orchestration.history.retention.enabled }}
+              {{- if .Values.orchestration.retention.enabled }}
               retention:
                 enabled: true
-                minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
-                policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
               {{- end }}
           {{- end }}
         {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
@@ -180,6 +180,12 @@ data:
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
                 username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
               {{- end }}
+              {{- if .Values.orchestration.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
+              {{- end }}
               history:
                 elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
                 rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}
@@ -190,6 +196,8 @@ data:
               {{- if .Values.orchestration.history.retention.enabled }}
                 retention:
                   enabled: true
+                  minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+                  policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
               {{- end }}
         {{- else -}}
           {{ " {}" }}
