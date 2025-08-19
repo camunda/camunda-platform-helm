@@ -530,6 +530,10 @@ jobs:
           echo "SHARD_TOTAL=${SHARD_TOTAL}" | tee -a "$GITHUB_ENV"
           echo "SHARD_INDEX=${SHARD_INDEX_LIST}" | tee -a "$GITHUB_ENV"
 
+      - name: 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
+
   venom-test:
     name: Venom ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.4') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.5') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.6')) }}
@@ -635,6 +639,10 @@ jobs:
         id: core-testsuite
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
+
+      - name: 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
 
   playwright-integration-tests:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
@@ -925,7 +933,7 @@ jobs:
         if: always() && ${{ inputs.always-delete-namespace }}
         run: |
           if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
-            if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
+            if [ "${{ inputs.distro-type }}" == "kubernetes" ]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
             else
