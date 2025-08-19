@@ -52,7 +52,7 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
           env:
-            - name: JAVA_OPTIONS
+            - name: JAVA_TOOL_OPTIONS
               value: "-Xmx1536m"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"

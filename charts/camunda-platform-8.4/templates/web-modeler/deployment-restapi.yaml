@@ -34,7 +34,7 @@ spec:
           securityContext: {{- toYaml .Values.webModeler.restapi.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            - name: JAVA_OPTIONS
+            - name: JAVA_TOOL_OPTIONS
               value: "-Xmx1536m"
             {{- if .Values.identity.enabled }}
             - name: CAMUNDA_IDENTITY_BASEURL

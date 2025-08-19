@@ -32,7 +32,7 @@ spec:
         securityContext: {{- toYaml .Values.webModeler.restapi.containerSecurityContext | nindent 10 }}
         {{- end }}
         env:
-          - name: JAVA_OPTIONS
+          - name: JAVA_TOOL_OPTIONS
             value: "-Xmx1536m"
           - name: RESTAPI_DB_HOST
             value: {{ include "webModeler.restapi.databaseHost" . | quote }}
