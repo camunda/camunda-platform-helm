@@ -81,6 +81,9 @@ type UrlYAML struct {
 	Zeebe    ZeebeUrlYAML `yaml:"zeebe"`
 	Operate  string       `yaml:"operate"`
 	Tasklist string       `yaml:"tasklist"`
+	Grpc     string       `yaml:"grpc"`
+	Rest     string       `yaml:"rest"`
+	WebApp   string       `yaml:"web-app"`
 }
 
 type ZeebeUrlYAML struct {

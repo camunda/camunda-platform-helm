@@ -1332,7 +1332,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1419,11 +1419,9 @@ webModeler:
     #    version: "8.8.0"
     #    authentication: "BEARER_TOKEN"
     #    url:
-    #      zeebe:
-    #        grpc: "grpc://camunda-platform-orchestration:26500"
-    #        rest: "http://camunda-platform-orchestration:8080/v1"
-    #      operate: "http://camunda-platform-orchestration:8080/v1"
-    #      tasklist: "http://camunda-platform-orchestration:8080/tasklist"
+    #      grpc: "grpc://camunda-platform-orchestration:26500"
+    #      rest: "http://camunda-platform-orchestration:8080/v1"
+    #      web-app: "http://localhost:8088"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
