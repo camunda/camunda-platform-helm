@@ -384,9 +384,9 @@ jobs:
             done
           else
             # running in EKS
-            kubectl get secret -n ${NAMESPACE_PREFIX} ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls -o yaml > ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
-            sed -i "s/namespace: ${NAMESPACE_PREFIX}/namespace: $TEST_NAMESPACE/g" ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
-            kubectl apply -f ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
+            kubectl get secret -n ${NAMESPACE_PREFIX} aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
+            sed -i "s/namespace: ${NAMESPACE_PREFIX}/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
+            kubectl apply -f aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
           fi
 
       - name: Helm - Install - Execute before install lifecycle tasks
