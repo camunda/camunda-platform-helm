@@ -25,13 +25,21 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+type ConfigmapUnifiedTemplateTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+	templates []string
+}
+
 func TestConfigmapUnifiedTemplate(t *testing.T) {
 	t.Parallel()
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &ConfigmapTemplateTest{
+	suite.Run(t, &ConfigmapUnifiedTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -39,7 +47,7 @@ func TestConfigmapUnifiedTemplate(t *testing.T) {
 	})
 }
 
-func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
+func (s *ConfigmapUnifiedTemplateTest) TestDifferentValuesInputsUnified() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "TestApplicationYamlShouldContainMinimumAge",
@@ -54,7 +62,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 		{
 			Name: "TestApplicationYamlShouldContainEnabledProfilesBroker",
 			Values: map[string]string{
-				"orchestration..profiles.broker":              "false",
+				"orchestration..profiles.broker": "false",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "identity,operate,tasklist",
@@ -63,7 +71,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 		{
 			Name: "TestApplicationYamlShouldContainEnabledProfilesOperate",
 			Values: map[string]string{
-				"orchestration..profiles.operate":             "false",
+				"orchestration..profiles.operate": "false",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "broker,identity,tasklist",
@@ -72,7 +80,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 		{
 			Name: "TestApplicationYamlShouldContainEnabledProfilesTasklist",
 			Values: map[string]string{
-				"orchestration..profiles.tasklist":            "false",
+				"orchestration..profiles.tasklist": "false",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "broker,identity,operate",
@@ -111,7 +119,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
-func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() {
+func (s *ConfigmapUnifiedTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() {
 	testCases := []testhelpers.TestCase{
 		// TODO: Update the retention values after review the correct path with the dev team.
 		// {
@@ -131,7 +139,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
 				"orchestration..profiles.broker":              "null",
-				"zeebe.enabled":                     "false",
+				"zeebe.enabled":                               "false",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "identity,operate,tasklist",
@@ -142,7 +150,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
 				"orchestration..profiles.operate":             "null",
-				"operate.enabled":                   "true",
+				"operate.enabled":                             "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist",
@@ -153,7 +161,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
 				"orchestration..profiles.tasklist":            "null",
-				"tasklist.enabled":                  "true",
+				"tasklist.enabled":                            "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist",
@@ -163,8 +171,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Name: "TestApplicationYamlShouldContainContextPath",
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
-				"zeebeGateway.enabled":              "true",
-				"zeebeGateway.contextPath":          "/custom",
+				"zeebeGateway.enabled":                        "true",
+				"zeebeGateway.contextPath":                    "/custom",
 			},
 			Expected: map[string]string{
 				"configmapApplication.management.endpoint": "/custom/actuator",
@@ -174,8 +182,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Name: "TestApplicationYamlShouldContainPortServer",
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
-				"zeebeGateway.enabled":              "true",
-				"zeebeGateway.service.restPort":     "1111",
+				"zeebeGateway.enabled":                        "true",
+				"zeebeGateway.service.restPort":               "1111",
 			},
 			Expected: map[string]string{
 				"configmapApplication.server.port": "1111",
@@ -185,8 +193,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Name: "TestApplicationYamlShouldContainPortGRPC",
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
-				"zeebeGateway.enabled":              "true",
-				"zeebeGateway.service.grpcPort":     "1111",
+				"zeebeGateway.enabled":                        "true",
+				"zeebeGateway.service.grpcPort":               "1111",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.api.grpc.port": "1111",
@@ -196,8 +204,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Name: "TestApplicationYamlShouldContainPortCommandAPI",
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
-				"zeebeGateway.enabled":              "true",
-				"zeebeGateway.service.commandPort":  "1111",
+				"zeebeGateway.enabled":                        "true",
+				"zeebeGateway.service.commandPort":            "1111",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.cluster.network.command-api.port": "1111",
@@ -207,8 +215,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			Name: "TestApplicationYamlShouldContainPortInternalAPI",
 			Values: map[string]string{
 				"global.compatibility.orchestration..enabled": "true",
-				"zeebeGateway.enabled":              "true",
-				"zeebeGateway.service.internalPort": "1111",
+				"zeebeGateway.enabled":                        "true",
+				"zeebeGateway.service.internalPort":           "1111",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.cluster.network.internal-api.port": "1111",
