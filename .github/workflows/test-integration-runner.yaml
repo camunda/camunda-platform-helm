@@ -925,7 +925,7 @@ jobs:
         if: always() && ${{ inputs.always-delete-namespace }}
         run: |
           if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
-            if [ "${{ matrix.distro.type }}" == "kubernetes" ]; then
+            if [ "${{ inputs.distro-type }}" == "kubernetes" ]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
             else
