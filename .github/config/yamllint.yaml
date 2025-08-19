@@ -1,8 +1,9 @@
 ignore:
-- "charts/camunda-platform*/test/unit/golden/keycloak-statefulset.golden.yaml"
-- "charts/camunda-platform*/test/unit/camunda/golden/keycloak-statefulset.golden.yaml"
-- "charts/camunda-platform*/test/unit/golden/elasticsearch-statefulset.golden.yaml"
 - "charts/camunda-platform*/test/unit/camunda/golden/elasticsearch-statefulset.golden.yaml"
+- "charts/camunda-platform*/test/unit/camunda/golden/keycloak-statefulset.golden.yaml"
+- "charts/camunda-platform*/test/unit/common/golden/elasticsearch-statefulset.golden.yaml"
+- "charts/camunda-platform*/test/unit/common/golden/keycloak-statefulset.golden.yaml"
+- "charts/camunda-platform*/test/unit/golden/keycloak-statefulset.golden.yaml"
 
 
 rules:

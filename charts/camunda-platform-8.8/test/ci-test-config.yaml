@@ -5,7 +5,7 @@ unit:
   enabled: false
   matrix:
     - name: Management
-      packages: identity camunda console
+      packages: identity common console
     - name: Orchestration
       packages: orchestration connectors optimize
     - name: Design
