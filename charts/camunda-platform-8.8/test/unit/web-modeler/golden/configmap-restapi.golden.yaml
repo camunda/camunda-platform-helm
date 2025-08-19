@@ -49,9 +49,8 @@ data:
             authorizations:
               enabled: true
             url:
-              zeebe:
-                grpc: "grpc://camunda-platform-test-orchestration:26500"
-                rest: "http://camunda-platform-test-orchestration:8080"
+              grpc: "grpc://camunda-platform-test-orchestration:26500"
+              rest: "http://camunda-platform-test-orchestration:8080"
               operate: "http://camunda-platform-test-orchestration:8080"
               tasklist: "http://camunda-platform-test-orchestration:8080"
 
