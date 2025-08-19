@@ -1421,7 +1421,7 @@ webModeler:
     #    url:
     #      grpc: "grpc://camunda-platform-orchestration:26500"
     #      rest: "http://camunda-platform-orchestration:8080/v1"
-    #      web-app: "http://loalhost:8088"
+    #      web-app: "http://localhost:8088"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
