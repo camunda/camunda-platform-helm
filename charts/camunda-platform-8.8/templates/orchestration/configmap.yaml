@@ -192,7 +192,31 @@ data:
                   enabled: true
               {{- end }}
         {{- else -}}
+          {{- if not .Values.orchestration.exporters -}}
           {{ " {}" }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.orchestration.exporters }}
+          {{- range $key, $exporter := .Values.orchestration.exporters }}
+          {{ $key }}:
+            {{- if $exporter.className }}
+            className: {{ $exporter.className | quote }}
+            {{- end }}
+            {{- if $exporter.jarPath }}
+            jarPath: {{ $exporter.jarPath | quote }}
+            {{- end }}
+            {{- if $exporter.args }}
+            args:
+              {{- range $argKey, $argVal := $exporter.args }}
+              {{ $argKey }}: 
+                {{- if (typeIs "string" $argVal) -}}
+                  {{ printf " \"%v\"" $argVal }}
+                {{- else -}}
+                  {{ printf " %v" $argVal }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
         {{- end }}
 
     camunda:

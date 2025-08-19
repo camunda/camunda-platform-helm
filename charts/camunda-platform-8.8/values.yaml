@@ -2310,6 +2310,9 @@ orchestration:
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
 
+  # @param orchestration.exporters if specified, contents will be used for any additional camunda.exporters configuration inside application.yaml
+  exporters: {}
+
   ## Multitenancy configuration
   ## @extra orchestration.multitenancy
   multitenancy:
