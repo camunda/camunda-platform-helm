@@ -201,7 +201,7 @@ data:
             password: ${VALUES_ELASTICSEARCH_PASSWORD:}
             index-prefix: "zeebe-record"
             history:
-              policy-name: "zeebe-record-retention-policy"
+              policy-name: "camunda-history-retention-policy"
     
       security:
         # TODO: What kind of value is expected here?

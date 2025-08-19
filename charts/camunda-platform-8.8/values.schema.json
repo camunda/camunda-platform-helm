@@ -5298,6 +5298,26 @@
                         }
                     }
                 },
+                "retention": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the ILM Policy is created and applied to the index templates.",
+                            "default": false
+                        },
+                        "minimumAge": {
+                            "type": "string",
+                            "description": "defines how old the data must be, before the data is deleted as a duration.",
+                            "default": "30d"
+                        },
+                        "policyName": {
+                            "type": "string",
+                            "description": "defines the name of the created and applied ILM policy.",
+                            "default": "zeebe-record-retention-policy"
+                        }
+                    }
+                },
                 "history": {
                     "type": "object",
                     "properties": {
@@ -5347,7 +5367,7 @@
                                 "policyName": {
                                     "type": "string",
                                     "description": "defines the name of the created and applied ILM policy.",
-                                    "default": "zeebe-record-retention-policy"
+                                    "default": "camunda-history-retention-policy"
                                 }
                             }
                         }
