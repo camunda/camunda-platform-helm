@@ -51,12 +51,12 @@ data:
                 policyName: {{ .Values.zeebe.retention.policyName | quote }}
               {{- end }}
         {{- else -}}
-          {{- if not .Values.zeebe.additionalExporterConfig -}}
+          {{- if not .Values.zeebe.exporters -}}
           {{ " {}" }}
           {{- end }}
         {{- end }}
-        {{- if .Values.zeebe.additionalExporterConfig }}
-          {{- range $key, $exporter := .Values.zeebe.additionalExporterConfig }}
+        {{- if .Values.zeebe.exporters }}
+          {{- range $key, $exporter := .Values.zeebe.exporters }}
           {{ $key }}:
             {{- if $exporter.className }}
             className: {{ $exporter.className | quote }}

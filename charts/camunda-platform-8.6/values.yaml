@@ -682,12 +682,8 @@ zeebe:
   ## @param zeebe.sidecars can be used to attach extra containers to the zeebe deployment
   sidecars: []
 
-  # @extra zeebe.additionalExporterConfig if specified, contents will be used for any additional zeebe.broker.exporters configuration inside application.yaml
-  # The configuration is a map where the key is the exporter name and the value is a map
-  # @skip zeebe.additionalExporterConfig.<exporterName>.className defines the class name of the exporter
-  # @skip zeebe.additionalExporterConfig.<exporterName>.jarPath defines the path to the exporter jar
-  # @skip zeebe.additionalExporterConfig.<exporterName>.args defines the arguments for the exporter
-  additionalExporterConfig: {}
+  # @param zeebe.exporters if specified, contents will be used for any additional zeebe.broker.exporters configuration inside application.yaml
+  exporters: {}
 
   ## @param zeebe.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
