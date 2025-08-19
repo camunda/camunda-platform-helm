@@ -1419,11 +1419,9 @@ webModeler:
     #    version: "8.8.0"
     #    authentication: "BEARER_TOKEN"
     #    url:
-    #      zeebe:
-    #        grpc: "grpc://camunda-platform-orchestration:26500"
-    #        rest: "http://camunda-platform-orchestration:8080/v1"
-    #      operate: "http://camunda-platform-orchestration:8080/v1"
-    #      tasklist: "http://camunda-platform-orchestration:8080/tasklist"
+    #      grpc: "grpc://camunda-platform-orchestration:26500"
+    #      rest: "http://camunda-platform-orchestration:8080/v1"
+    #      web-app: "http://loalhost:8088"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
