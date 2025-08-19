@@ -191,6 +191,8 @@ This is mainly used to access the external Keycloak service in the global Ingres
             {{ .Values.identity.multitenancy.enabled }}
         {{- else if .Values.global.multitenancy.enabled -}}
             {{ .Values.global.multitenancy.enabled }}
+        {{- else -}}
+          false
         {{- end -}}
     {{- else -}}
       false
