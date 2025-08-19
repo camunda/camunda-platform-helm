@@ -44,7 +44,7 @@ func TestDocumentStoreConfigMapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/camunda/configmap-documentstore.yaml"},
+		templates: []string{"templates/common/configmap-documentstore.yaml"},
 	})
 }
 
