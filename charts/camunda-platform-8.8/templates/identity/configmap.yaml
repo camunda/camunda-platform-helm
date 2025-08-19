@@ -18,10 +18,8 @@ data:
     # like arrays and maps.
     identity:
       url: {{ include "identity.externalUrl" . | quote }}
-      {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
       flags:
-        multi-tenancy: {{ .Values.global.multitenancy.enabled | quote }}
-      {{- end }}
+        multi-tenancy: {{ include "identity.multitenancyEnabled" . | quote }}
 
       {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
       client-id: {{ include "identity.authClientId" . | quote }}

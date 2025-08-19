@@ -183,6 +183,23 @@ This is mainly used to access the external Keycloak service in the global Ingres
 {{- end -}}
 
 {{/*
+[identity] Get multitenancy setting
+*/}}
+{{- define "identity.multitenancyEnabled" -}}
+    {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+        {{- if .Values.identity.multitenancy.enabled -}}
+            {{ .Values.identity.multitenancy.enabled }}
+        {{- else if .Values.global.multitenancy.enabled -}}
+            {{ .Values.global.multitenancy.enabled }}
+        {{- else -}}
+          false
+        {{- end -}}
+    {{- else -}}
+      false
+    {{- end -}}
+{{- end -}}
+
+{{/*
 [identity] Get Keycloak full URL (protocol, host, port, and contextPath).
 */}}
 {{- define "identity.keycloak.url" -}}

@@ -35,7 +35,7 @@ jobs:
           echo "${GITHUB_CONTEXT}"
       # Checkout.
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
           ref: "${{ inputs.camunda-helm-git-ref }}"
@@ -52,16 +52,16 @@ jobs:
       # Dependencies.
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: 3.9
+          python-version: 3.13
       - name: Cache Helm chart dependencies
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: charts/${{ inputs.camunda-helm-dir }}/charts
           key: ${{ runner.os }}-helm-${{ hashFiles('charts/${{ inputs.camunda-helm-dir }}/Chart.yaml') }}
           restore-keys: |
             ${{ runner.os }}-helm-
       - name: Cache Go modules
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -70,7 +70,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Cache pip
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}

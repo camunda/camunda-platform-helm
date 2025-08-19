@@ -15,7 +15,7 @@
 package orchestration
 
 import (
-	"camunda-platform/test/unit/camunda"
+	"camunda-platform/test/unit/common"
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
 	"path/filepath"

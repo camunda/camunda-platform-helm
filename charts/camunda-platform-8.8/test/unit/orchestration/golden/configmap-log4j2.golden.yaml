@@ -54,6 +54,8 @@ data:
           network:
             host: 0.0.0.0
             port: 26500
+          multitenancy:
+            enabled: false
 
         # zeebe.broker.network
         network:
@@ -131,7 +133,8 @@ data:
           default-roles.admin.users:
             - "demo"
         multiTenancy:
-            enabled: false
+          checksEnabled: false
+          apiEnabled: true
 
       #
       # Camunda Database Configuration.
@@ -148,6 +151,8 @@ data:
       #
       operate:
         persistentSessionsEnabled: true
+        multiTenancy:
+          enabled: false
 
         # ELS instance to store Operate data
         elasticsearch:
@@ -181,6 +186,8 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
+        multiTenancy:
+          enabled: false
 
         # Set Tasklist username and password.
         # If user with <username> does not exists it will be created.
@@ -217,3 +224,5 @@ data:
           restAddress: "http://camunda-platform-test-orchestration:8080"
 
   log4j2.xml: |
+    <xml>
+    </xml>
