@@ -78,7 +78,7 @@ tasks:
       echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
       cat "${VARIABLES_ENV_FILE}"
     - |
-      if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
+      {{if eq (env "TEST_CHART_FLOW") "upgrade"}}
         # Extract OpenShift values from released chart for upgrade test.
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }} \
           --version {{ .TEST_CHART_VERSION }}
@@ -86,6 +86,7 @@ tasks:
         export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
         bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install-upgrade.sh
       fi
+      {{end}}
     - |
       # Create the local chart package to install.
       pwd
@@ -95,7 +96,7 @@ tasks:
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
       bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install.sh
     - |
-      if [[ "${TEST_AUTH_TYPE}" == 'oidc' ]]; then
+      {{if eq (env "TEST_AUTH_TYPE") "oidc"}}
         # This token will expire in June 2027, a new one can be created in the Azure Entra UI
         RESPONSE=$(curl -X POST \
           https://login.microsoftonline.com/${ENTRA_PARENT_APP_DIRECTORY_ID}/oauth2/v2.0/token \
@@ -151,7 +152,7 @@ tasks:
             \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
           }"
 
-      fi
+      {{end}}
 
   setup.venom.env:
     preconditions:
@@ -196,12 +197,12 @@ tasks:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
-      if [[ "${TEST_VALUES_SCENARIO}" == 'opensearch' ]]; then
+      {{if eq (env "TEST_VALUES_SCENARIO") "opensearch"}}
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      fi
+      {{end}}
     - |
       #elif does not work properly in Taskfile. This is why the if statements are separated
-      if [[ "${TEST_AUTH_TYPE}" == "oidc" ]]; then
+      {{if eq (env "TEST_AUTH_TYPE") "oidc"}}
         sed -i 's/<clientId>/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
         sed -i 's/<clientSecret>/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
         sed -i 's/<directoryId>/{{ .ENTRA_CHILD_APP_DIRECTORY_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
@@ -220,9 +221,9 @@ tasks:
         --timeout 20m0s \
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
-      fi
+      {{end}}
 
-      if [[ "${TEST_AUTH_TYPE}" == "basic" ]]; then
+      {{if eq (env "TEST_AUTH_TYPE") "basic"}}
         helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
@@ -236,9 +237,9 @@ tasks:
         --timeout 20m0s \
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
-      fi
+      {{end}}
 
-      if [[ "${TEST_AUTH_TYPE}" == "keycloak" ]]; then
+      {{if eq (env "TEST_AUTH_TYPE") "keycloak"}}
         helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
@@ -251,7 +252,7 @@ tasks:
         --timeout 20m0s \
         --wait \
         {{ .TEST_HELM_EXTRA_ARGS }}
-      fi
+      {{end}}
 
   setup.post:
     cmds:
