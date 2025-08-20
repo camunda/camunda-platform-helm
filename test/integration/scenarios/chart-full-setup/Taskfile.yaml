@@ -212,7 +212,7 @@ tasks:
       helm install integration {{ .TEST_CHART_NAME }} \
       --version {{ .TEST_CHART_VERSION }} \
       --namespace {{ .TEST_NAMESPACE }} \
-      {{ (and (eq (env "TEST_CHART_VERSION") "13.0.0-alpha7") (eq (env "TEST_AUTH_TYPE) "keycloak")) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
+      {{ (and (eq (env "TEST_CHART_VERSION") "13.0.0-alpha7") (eq (env "TEST_AUTH_TYPE) "keycloak"))) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
       --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
       --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
       --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
