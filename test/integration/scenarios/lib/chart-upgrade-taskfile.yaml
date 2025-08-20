@@ -26,8 +26,6 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
         {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
         {{ eq (env "EXPERIMENTAL_S3_ENABLED") "true" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-s3-enabled.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        {{ eq (env "EXPERIMENTAL_S3_ENABLED") "true" | ternary (printf "--set global.documentStore.type.aws.bucket=%s" (env "BUCKET_NAME")) "" }}  \
-        {{ eq (env "EXPERIMENTAL_S3_ENABLED") "true" | ternary (printf "--set global.documentStore.type.aws.region=%s" (env "BUCKET_REGION")) "" }}  \
         --values {{ env "INFRA_TYPE_VALUES" }} \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}

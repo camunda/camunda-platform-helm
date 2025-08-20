@@ -5,6 +5,8 @@ global:
       aws:
         enabled: true
         storeId: "aws"
+        bucket: "camunda-ci-eks-prod-team-bucket-qa"
+        region: "eu-central-1"
         bucketPath: "documents"
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
         existingSecret: "s3-bucket-credentials"

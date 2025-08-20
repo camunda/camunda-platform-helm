@@ -312,7 +312,6 @@ jobs:
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
-          experimental-s3-enabled: ${{ inputs.experimental-s3-enabled }}
 
       - name: CI Setup - Set test type vars
         id: test-type-vars
@@ -393,16 +392,6 @@ jobs:
             kubectl get secret -n ${NAMESPACE_PREFIX} aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
             sed -i "s/namespace: ${NAMESPACE_PREFIX}/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
             kubectl apply -f aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
-          fi
-
-          # S3
-          if [[ "${{ inputs.experimental-s3-enabled }}" == "true" ]]; then
-            kubectl wait -n "$TEST_NAMESPACE" --for=jsonpath='{.metadata.name}'=s3-bucket-credentials secret/s3-bucket-credentials --timeout=120s
-            BUCKET_REGION=$(kubectl get -n $TEST_NAMESPACE secret s3-bucket-credentials -o json | jq '.data["bucket-region"]' | sed 's/"//g' | base64 -d | xargs echo)
-            BUCKET_NAME=$(kubectl get -n $TEST_NAMESPACE secret s3-bucket-credentials -o json | jq '.data["bucket-name"]' | sed 's/"//g' | base64 -d | xargs echo)
-
-            echo BUCKET_REGION="$BUCKET_REGION" | tee -a "$GITHUB_ENV"
-            echo BUCKET_NAME="$BUCKET_NAME" | tee -a "$GITHUB_ENV"
           fi
 
       - name: Helm - Install - Execute before install lifecycle tasks
