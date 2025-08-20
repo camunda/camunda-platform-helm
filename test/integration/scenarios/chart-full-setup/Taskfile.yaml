@@ -218,8 +218,8 @@ tasks:
       --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
       {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
       --values {{ .INFRA_TYPE_VALUES }} \
-      {{ eq (env "TEST_VALUES_DIGEST") "true" | ternary (printf "--values %s/values-digest.yaml" {{ .TEST_CHART_DIR }}) "" }} \
-      {{ eq (env "TEST_VALUES_ENTERPRISE") "true" | ternary (printf "--values %s/values-enterprise.yaml" {{ .TEST_CHART_DIR }}) "" }} \
+      {{ eq (env "TEST_VALUES_DIGEST") "true" | ternary (printf "--values %s/values-digest.yaml" .TEST_CHART_DIR ) "" }} \
+      {{ eq (env "TEST_VALUES_ENTERPRISE") "true" | ternary (printf "--values %s/values-enterprise.yaml" .TEST_CHART_DIR ) "" }} \
       --values /tmp/extra-values-file.yaml \
       --timeout 20m0s \
       --wait \
