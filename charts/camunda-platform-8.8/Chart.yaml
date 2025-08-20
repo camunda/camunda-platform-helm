@@ -133,5 +133,3 @@ annotations:
       description: "Importer should only be enabled for process migration, not identity migration"
     - kind: fixed
       description: "Update camunda exporter ID to avoid duplicate exporters"
-    - kind: fixed
-      description: "running tests"
