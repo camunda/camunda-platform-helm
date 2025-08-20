@@ -64,12 +64,6 @@ runs:
         # The var is needed in some non-shell steps.
         echo "test-values-base-dir=${integration_scenarios_values_dir}" | tee -a $GITHUB_OUTPUT
 
-        if [[ "${{ inputs.platform }}" == "eks" ]]; then
-          echo "INFRA_TYPE_VALUES=${integration_scenarios_values_dir}/infra/values-infra-eks-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
-        else
-          echo "INFRA_TYPE_VALUES=${integration_scenarios_values_dir}/infra/values-infra-${{ inputs.infra-type }}.yaml" | tee -a $GITHUB_ENV
-        fi
-
         # Charts dir.
         charts_base_dir="$(echo ${integration_vars} | jq -r '.vars.chartsBaseDir')"
         echo "TEST_CHART_DIR=${charts_base_dir}/${{ inputs.chart-dir }}" | tee -a $GITHUB_ENV
