@@ -173,7 +173,7 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   AWS_PROFILE: distribution
-  CLUSTER_NAME: camunda-ci-eks-dev
+  CLUSTER_NAME: camunda-ci-eks
   TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
