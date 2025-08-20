@@ -198,6 +198,8 @@ data:
                   enabled: true
                   minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
                   policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+                  usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
+                  usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
               {{- end }}
         {{- else -}}
           {{ " {}" }}
