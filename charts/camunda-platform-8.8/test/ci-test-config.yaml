@@ -23,9 +23,9 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
-          auth: keycloak
-          shortname: eske
           exclude: []
+          shortname: esoi
+          auth: oidc
         - name: elasticsearch
           enabled: false
           shortname: esba
