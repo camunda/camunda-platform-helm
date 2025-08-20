@@ -662,6 +662,7 @@ jobs:
       TEST_NAMESPACE: ${{ needs.ci-setup.outputs.TEST_NAMESPACE }}
       ABSOLUTE_TEST_CHART_DIR: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}
       TEST_EXCLUDE: ${{ inputs.exclude }}
+      PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     steps:
       - name: CI Setup - Checkout
