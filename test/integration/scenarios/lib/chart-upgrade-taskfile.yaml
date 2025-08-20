@@ -10,12 +10,9 @@ tasks:
   pre:
     cmds:
     - |
-      test -f {{ .TEST_VALUES_BASE_DIR }}/pre-upgrade/* || {
-        echo "No pre setup task for this test."
-        exit 0
-      }
+      # Pre-run scripts in the upgrade flow.
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
-      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-upgrade/*.sh
+      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-upgrade.sh
 
   # https://docs.camunda.io/docs/self-managed/setup/upgrade/
   exec:
