@@ -82,23 +82,18 @@ tasks:
         # Extract OpenShift values from released chart for upgrade test.
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }} \
           --version {{ .TEST_CHART_VERSION }}
-        # Preinstall in upgrade flow.
-        test -f {{ .TEST_VALUES_BASE_DIR }}/pre-install-upgrade/* || {
-          exit 0
-        }
+        # Pre-run scripts in the upgrade flow.
         export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
-        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install-upgrade/*.sh
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install-upgrade.sh
       fi
     - |
       # Create the local chart package to install.
       pwd
       helm package {{ .TEST_CHART_DIR }}/
     - |
-      test -f {{ .TEST_VALUES_BASE_DIR }}/pre-install/* || {
-        exit 0
-      }
+      # Pre-run scripts in the install flow.
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
-      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install/*.sh
+      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install.sh
     - |
       if [[ "${TEST_AUTH_TYPE}" == 'oidc' ]]; then
         # This token will expire in June 2027, a new one can be created in the Azure Entra UI
