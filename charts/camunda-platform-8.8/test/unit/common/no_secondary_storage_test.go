@@ -52,12 +52,17 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 			Name:                 "TestGlobalNoSecondaryStorageTogglesAllExpectedValues",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.noSecondaryStorage": "true",
+				"global.noSecondaryStorage":    "true",
+				"global.elasticsearch.enabled": "false",
+				"global.opensearch.enabled":    "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				// Database type should be none
 				require.Contains(t, output, "database:\n        type: none")
+				// Persistent sessions should be disabled
+				require.Contains(t, output, "sessions:\n          enabled: false")
+				require.Contains(t, output, "persistentSessionsEnabled: false")
 				// Agentic AI and inbound connectors should be disabled
 				require.Contains(t, output, "webhook:\n          enabled: false")
 				require.Contains(t, output, "polling:\n          enabled: false")
