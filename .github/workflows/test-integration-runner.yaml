@@ -315,8 +315,6 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
-          values-enterprise: "${{ inputs.values-enterprise }}"
-          values-digest: "${{ inputs.values-digest }}"
 
       - name: CI Setup - Add Helm repos and update helm dependencies
         run: |
@@ -446,6 +444,8 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: "${{ inputs.test-case }}"
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_VALUES_DIGEST: "${{ inputs.values-digest }}"
+          TEST_VALUES_ENTERPRISE: "${{ inputs.values-enterprise }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           VALUES_CONFIG: ${{ inputs.values-config }}
