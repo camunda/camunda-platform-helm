@@ -172,11 +172,6 @@ on:
         default: false
         type: boolean
         required: false
-      experimental-s3-enabled:
-        description: Enable S3 storage
-        required: false
-        default: false
-        type: boolean
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -447,7 +442,6 @@ jobs:
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
-          EXPERIMENTAL_S3_ENABLED: ${{ inputs.experimental-s3-enabled }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: "${{ inputs.test-case }}"
@@ -500,7 +494,6 @@ jobs:
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         if: inputs.flow == 'upgrade'
         env:
-          EXPERIMENTAL_S3_ENABLED: ${{ inputs.experimental-s3-enabled }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
