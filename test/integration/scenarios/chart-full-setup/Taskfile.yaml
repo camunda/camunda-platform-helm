@@ -85,7 +85,6 @@ tasks:
         # Pre-run scripts in the upgrade flow.
         export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
         bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install-upgrade.sh
-      fi
       {{end}}
     - |
       # Create the local chart package to install.
