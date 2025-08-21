@@ -176,6 +176,9 @@ on:
       deployment-url:
         description: The URL of the deployed application.
         value: ${{ jobs.ci-setup.outputs.vars-ingress-host }}
+      namespace:
+        description: The namespace where the deployment is running.
+        value: ${{ jobs.ci-setup.outputs.vars-namespace }}
 
 permissions:
   contents: read
@@ -222,6 +225,7 @@ jobs:
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}      
+      vars-namespace: ${{ env.TEST_NAMESPACE }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -961,7 +965,7 @@ jobs:
           env: ${{ needs.ci-setup.outputs.vars-identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
-      - name: CI Cleanup - 🚨 Mark namespace as failed 🚨
+      - name: CI Cleanup
         if: always() && ${{ inputs.always-delete-namespace }}
         run: |
           if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
