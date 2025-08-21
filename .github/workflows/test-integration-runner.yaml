@@ -372,20 +372,14 @@ jobs:
             kubectl apply -n $TEST_NAMESPACE \
               -f .github/config/external-secret/external-secret-certificates.yaml
 
-            # Version-specific external secret configuration
-            if [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.5"* ]]; then
+            # Dynamic version-specific external secret configuration
+            APP_VERSION=$(helm show chart "charts/${{ inputs.camunda-helm-dir }}" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
+            if [[ -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml" ]]; then
+              echo "Applying version-specific external secret for app version: ${APP_VERSION}"
               kubectl apply -n $TEST_NAMESPACE \
-                -f .github/config/external-secret/external-secret-8.5-integration-test-credentials.yaml
-            elif [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.6"* ]]; then
-              kubectl apply -n $TEST_NAMESPACE \
-                -f .github/config/external-secret/external-secret-8.6-integration-test-credentials.yaml
-            elif [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.7"* ]]; then
-              kubectl apply -n $TEST_NAMESPACE \
-                -f .github/config/external-secret/external-secret-8.7-integration-test-credentials.yaml
-            elif [[ "${{ inputs.camunda-helm-dir }}" == *"camunda-platform-8.8"* ]]; then
-              kubectl apply -n $TEST_NAMESPACE \
-                -f .github/config/external-secret/external-secret-8.8-integration-test-credentials.yaml
+                -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml"
             else
+              echo "Version-specific external secret not found for app version: ${APP_VERSION}, using fallback"
               # For backward compatibility with other versions (alpha, future versions).
               kubectl apply -n $TEST_NAMESPACE \
                 -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
