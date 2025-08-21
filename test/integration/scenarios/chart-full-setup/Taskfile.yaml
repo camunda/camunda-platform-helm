@@ -226,8 +226,8 @@ tasks:
         --values {{.TEST_VALUES_BASE_DIR}}/chart-full-setup/values-integration-test-ingress-infra.yaml \
       {{- end }}
         --values {{ .INFRA_TYPE_VALUES }} \
-      {{- if eq (env "TEST_VALUES_DIGEST") "true" }} 
-        --values {{.TEST_CHART_DIR}}/values-digest.yaml }} \
+      {{- if eq (env "TEST_VALUES_DIGEST") "true" }}
+        --values {{.TEST_CHART_DIR}}/values-digest.yaml \
       {{- end }}
       {{- if eq (env "TEST_VALUES_ENTERPRISE") "true" }}
         --values {{.TEST_CHART_DIR}}/values-enterprise.yaml" \
