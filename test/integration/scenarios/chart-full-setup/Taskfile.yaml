@@ -100,9 +100,9 @@ tasks:
         RESPONSE=$(curl -X POST \
           https://login.microsoftonline.com/${ENTRA_PARENT_APP_DIRECTORY_ID}/oauth2/v2.0/token \
           -H "Content-Type: application/x-www-form-urlencoded" \
-          -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
+          -d "client_id={{ .ENTRA_PARENT_APP_CLIENT_ID }}" \
           -d "scope=https://graph.microsoft.com/.default" \
-          -d "client_secret=${ENTRA_PARENT_APP_CLIENT_SECRET}" \
+          -d "client_secret={{ .ENTRA_PARENT_APP_CLIENT_SECRET }}" \
           -d "grant_type=client_credentials")
 
         BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
@@ -143,7 +143,7 @@ tasks:
 
         # PATCH the updated list
         curl -X PATCH \
-          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json" \
           -d "{
