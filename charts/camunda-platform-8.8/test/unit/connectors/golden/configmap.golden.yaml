@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.8.0-alpha6"
+    app.kubernetes.io/version: "8.8.0-alpha7"
 data:
   application.yml: |
     server:
@@ -35,8 +35,8 @@ data:
 
     camunda:
       client:
-        rest-address: http://camunda-platform-test-core:8080
-        grpc-address: http://camunda-platform-test-core:26500
+        rest-address: http://camunda-platform-test-orchestration:8080
+        grpc-address: http://camunda-platform-test-orchestration:26500
         worker:
           defaults:
             max-jobs-active: 32

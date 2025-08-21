@@ -52,6 +52,16 @@
                                     "default": "disabled"
                                 }
                             }
+                        },
+                        "orchestration": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
+                                    "default": true
+                                }
+                            }
                         }
                     }
                 },
@@ -68,15 +78,10 @@
                 "multitenancy": {
                     "type": "object",
                     "properties": {
-                        "checksEnabled": {
+                        "enabled": {
                             "type": "boolean",
-                            "description": "if true, then enable multitenancy checks in all applicable components.",
+                            "description": "if true, then enable multitenancy in all applicable components.",
                             "default": false
-                        },
-                        "apiEnabled": {
-                            "type": "boolean",
-                            "description": "if true, then enable multitenancy API used for tenant management.",
-                            "default": true
                         }
                     }
                 },
@@ -619,7 +624,7 @@
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
-                                            "default": "http://localhost:8080"
+                                            "default": "http://localhost:8087"
                                         }
                                     }
                                 },
@@ -644,7 +649,7 @@
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
-                                            "default": "http://localhost:8084"
+                                            "default": "http://localhost:8070"
                                         }
                                     }
                                 },
@@ -663,23 +668,23 @@
                                         }
                                     }
                                 },
-                                "core": {
+                                "orchestration": {
                                     "type": "object",
                                     "properties": {
                                         "audience": {
                                             "type": "string",
-                                            "description": "defines the audience, which is used by Core.",
-                                            "default": "core-api"
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
+                                            "default": "orchestration-api"
                                         },
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Core in authentication flows.",
-                                            "default": "core"
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
+                                            "default": "orchestration"
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
-                                            "default": "identity-core-client-token"
+                                            "default": "identity-orchestration-client-token"
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -688,7 +693,7 @@
                                         },
                                         "tokenScope": {
                                             "type": "string",
-                                            "description": "defines the token scope, which is used by Core.",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
                                             "default": ""
                                         }
                                     }
@@ -977,6 +982,16 @@
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
                             "default": [],
                             "items": {}
+                        }
+                    }
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to enable multitenancy in management identity",
+                            "default": false
                         }
                     }
                 },
@@ -2573,7 +2588,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2705,7 +2720,7 @@
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)",
+                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)",
                             "default": [],
                             "items": {}
                         },
@@ -4064,7 +4079,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4519,7 +4534,7 @@
                 }
             }
         },
-        "core": {
+        "orchestration": {
             "type": "object",
             "properties": {
                 "enabled": {
@@ -4553,7 +4568,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4583,6 +4598,41 @@
                                     "type": "number",
                                     "description": "if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
+                                },
+                                "batchSize": {
+                                    "type": "number",
+                                    "description": "can be used to define the batch size.",
+                                    "default": 5
+                                },
+                                "importFinishedTimeout": {
+                                    "type": "string",
+                                    "description": "can be used to define the timeout when the import is finished.",
+                                    "default": "PT1M"
+                                },
+                                "retry": {
+                                    "type": "object",
+                                    "properties": {
+                                        "maxRetries": {
+                                            "type": "number",
+                                            "description": "can be used to define the maximum amount of retries.",
+                                            "default": 5
+                                        },
+                                        "maxRetryDelay": {
+                                            "type": "string",
+                                            "description": "can be used to define the delay time between retries.",
+                                            "default": "PT1M"
+                                        },
+                                        "minRetryDelay": {
+                                            "type": "string",
+                                            "description": "can be used to define the delay time between retries.",
+                                            "default": "PT10s"
+                                        },
+                                        "retryDelayMultiplier": {
+                                            "type": "number",
+                                            "description": "can be used to define the delay multiplier.",
+                                            "default": 2
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -4608,6 +4658,31 @@
                     "description": "can be used to attach extra containers to the deployment",
                     "default": [],
                     "items": {}
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "checks": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable multitenancy checks in all applicable components.",
+                                    "default": false
+                                }
+                            }
+                        },
+                        "api": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable multitenancy API used for tenant management.",
+                                    "default": true
+                                }
+                            }
+                        }
+                    }
                 },
                 "clusterSize": {
                     "type": "string",
@@ -4665,7 +4740,7 @@
                 "javaOpts": {
                     "type": "string",
                     "description": "can be used to set java options",
-                    "default": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
+                    "default": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
                 },
                 "service": {
                     "type": "object",
@@ -4810,7 +4885,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "description": "defines the secret name which contains the TLS private key and certificate",
-                                            "default": "camunda-platform-core-grpc"
+                                            "default": "camunda-platform-orchestration-grpc"
                                         }
                                     }
                                 }
@@ -4820,7 +4895,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Core web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
                     "default": ""
                 },
                 "cpuThreadCount": {
@@ -4870,7 +4945,7 @@
                 },
                 "persistenceType": {
                     "type": "string",
-                    "description": "defines the type of persistence which is used by core. Possible values are: disk, local and memory.",
+                    "description": "defines the type of persistence which is used by orchestration. Possible values are: disk, local and memory.",
                     "default": "disk"
                 },
                 "pvcSize": {
@@ -5223,6 +5298,26 @@
                         }
                     }
                 },
+                "retention": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the ILM Policy is created and applied to the index templates.",
+                            "default": false
+                        },
+                        "minimumAge": {
+                            "type": "string",
+                            "description": "defines how old the data must be, before the data is deleted as a duration.",
+                            "default": "30d"
+                        },
+                        "policyName": {
+                            "type": "string",
+                            "description": "defines the name of the created and applied ILM policy.",
+                            "default": "zeebe-record-retention-policy"
+                        }
+                    }
+                },
                 "history": {
                     "type": "object",
                     "properties": {
@@ -5272,7 +5367,17 @@
                                 "policyName": {
                                     "type": "string",
                                     "description": "defines the name of the created and applied ILM policy.",
-                                    "default": "core-record-retention-policy"
+                                    "default": "camunda-history-retention-policy"
+                                },
+                                "usageMetricsMinimumAge": {
+                                    "type": "string",
+                                    "description": "defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
+                                    "default": "730d"
+                                },
+                                "usageMetricsPolicyName": {
+                                    "type": "string",
+                                    "description": "defines the name of the created and applied ILM policy to usage metric indices.",
+                                    "default": "camunda-usage-metrics-retention-policy"
                                 }
                             }
                         }
@@ -5330,7 +5435,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",

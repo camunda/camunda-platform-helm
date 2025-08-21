@@ -42,14 +42,14 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	if s.SetValues == nil {
 		s.SetValues = map[string]string{
 			"global.identity.auth.connectors.existingSecret.name": "camunda-credentials",
-			"global.identity.auth.core.existingSecret.name":       "camunda-credentials",
+			"global.identity.auth.orchestration.existingSecret.name":       "camunda-credentials",
 			"global.identity.auth.console.existingSecret.name":    "camunda-credentials",
 			"global.identity.auth.optimize.existingSecret.name":   "camunda-credentials",
 		}
 	}
 	values := s.SetValues
 	values["global.identity.auth.connectors.existingSecret.name"] = "camunda-credentials"
-	values["global.identity.auth.core.existingSecret.name"] = "camunda-credentials"
+	values["global.identity.auth.orchestration.existingSecret.name"] = "camunda-credentials"
 	values["global.identity.auth.console.existingSecret.name"] = "camunda-credentials"
 	values["global.identity.auth.optimize.existingSecret.name"] = "camunda-credentials"
 	options := &helm.Options{

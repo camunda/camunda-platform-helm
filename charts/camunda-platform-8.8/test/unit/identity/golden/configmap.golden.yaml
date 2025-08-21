@@ -22,11 +22,13 @@ data:
     # However, it's not possilbe to mix between the configuration and environment variable for the same object
     # like arrays and maps.
     identity:
-      url: "http://localhost:8080"
+      url: "http://localhost:8084"
+      flags:
+        multi-tenancy: "false"
 
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
-        backend-url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+        backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
 
       component-presets:
         connectors:
@@ -36,14 +38,14 @@ data:
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
-                - audience: "core-api"
+                - audience: "orchestration-api"
                   definition: read:*
         console:
           applications:
             - name: "Console"
               id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
               type: public
-              root-url: "http://localhost:8080"
+              root-url: "http://localhost:8087"
               redirect-uris:
                 - "/"
           apis:
@@ -77,30 +79,30 @@ data:
                   definition: read
                 - audience: "camunda-identity-resource-server"
                   definition: write
-        core:
+        orchestration:
           applications:
-            - name: Core
-              id: ${CAMUNDA_CORE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CORE_CLIENT_ID:core}}
+            - name: Orchestration
+              id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
-              secret: ${CAMUNDA_CORE_SECRET:${VALUES_KEYCLOAK_INIT_CORE_SECRET:}}
+              secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
               root-url: "http://localhost:8082"
               redirect-uris:
-                - "/login/oauth2/code/core"
+                - "/login/oauth2/code/orchestration"
           apis:
-            - name: "Core API"
-              audience: "core-api"
+            - name: "Orchestration API"
+              audience: "orchestration-api"
               permissions:
                 - definition: read:*
                   description: "Read permission"
                 - definition: write:*
                   description: "Write permission"
           roles:
-            - name: "Core"
-              description: "Grants full access to Core"
+            - name: "Orchestration"
+              description: "Grants full access to Orchestration"
               permissions:
-                - audience: "core-api"
+                - audience: "orchestration-api"
                   definition: read:*
-                - audience: "core-api"
+                - audience: "orchestration-api"
                   definition: write:*
         optimize:
           applications:
@@ -130,7 +132,7 @@ data:
             - name: "Web Modeler"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
-              root-url: "http://localhost:8084"
+              root-url: "http://localhost:8070"
               redirect-uris:
                 - "/login-callback"
           apis:
@@ -170,19 +172,19 @@ data:
                 - audience: "web-modeler-api"
                   definition: admin:*
     keycloak:
-      url: "http://camunda-platform-test-keycloak:80/auth"
+      url: "http://camunda-platform-test-keycloak/auth"
       setup:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
         console:
           secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
-        core:
-          secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
+        orchestration:
+          secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         webmodeler:
-          root-url: "http://localhost:8084"
+          root-url: "http://localhost:8070"
       # Clients are passed as environment variables.
       clients:
       users:
@@ -197,24 +199,24 @@ data:
             - Web Modeler
             - Web Modeler Admin
             - Console
-            - Core
+            - Orchestration
       environment:
         clients:
           - name: Identity
             id: "camunda-identity"
             type: CONFIDENTIAL
             secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
-            root-url: "http://localhost:8080"
+            root-url: "http://localhost:8084"
             redirect-uris:
               - "/auth/login-callback"
       # The presets key should be removed when 8.6.0 of the applications are released
       presets:
-        core:
+        orchestration:
           clients:
-            - name: Core
-              id: core
+            - name: Orchestration
+              id: orchestration
               type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
+              secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
               root-url: "http://localhost:8082"
               redirect-uris:
                 - "/identity-callback"
@@ -232,11 +234,11 @@ data:
             - name: "Console"
               id: ${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
               type: public
-              root-url: "http://localhost:8080"
+              root-url: "http://localhost:8087"
               redirect-uris:
                 - "/"
     server:
-      port: 8080
+      port: 8084
 
     spring:
       servlet:

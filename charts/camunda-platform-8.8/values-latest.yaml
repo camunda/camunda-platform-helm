@@ -33,7 +33,7 @@ webModeler:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
     tag: SNAPSHOT
 
-core:
+orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
@@ -54,7 +54,7 @@ identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
     repository: bitnamilegacy/keycloak
-    tag: 26.3.2
+    tag: 26.3.3
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:

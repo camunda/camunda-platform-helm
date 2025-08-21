@@ -38,7 +38,7 @@ on:
       deployment-ttl:
         description: Define a TTL for the lifespan of the deployment.
         required: false
-        default: ""
+        default: 1h
         type: string
       platforms:
         default: gke
@@ -140,6 +140,11 @@ on:
         required: false
         default: false
         type: boolean
+      always-delete-namespace:
+        description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
+        default: false
+        type: boolean
+        required: false
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -183,7 +188,7 @@ jobs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed if the workflow is triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -265,6 +270,7 @@ jobs:
       values-digest: ${{ inputs.values-digest }}
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
+      always-delete-namespace: ${{ inputs.always-delete-namespace }}
 
   print-outputs:
     name: Print outputs
@@ -274,7 +280,7 @@ jobs:
       deployment-url: ${{ steps.vars.outputs.ingress-host }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm

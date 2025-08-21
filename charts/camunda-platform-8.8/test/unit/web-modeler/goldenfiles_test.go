@@ -56,7 +56,7 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 				"webModelerPostgresql.enabled":                        "true",
 				"webModelerPostgresql.auth.existingSecret":            "camunda-platform-test-postgresql-web-modeler",
 				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.core.existingSecret.name":       "foo",
+				"global.identity.auth.orchestration.existingSecret.name":       "foo",
 
 				"global.identity.auth.enabled": "true",
 				"identity.enabled":             "true",

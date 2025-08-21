@@ -55,6 +55,10 @@ on:
         required: false
         default: true
         type: boolean
+      deployment-ttl:
+        required: false
+        default: 1h
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -72,7 +76,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix
@@ -88,7 +92,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-chart-versions-only.outputs.matrix }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Generate chart versions
         id: generate-chart-versions-only
         run: |
@@ -159,3 +163,4 @@ jobs:
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
       flows: ${{ inputs.flows || 'install,upgrade' }}
+      deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}

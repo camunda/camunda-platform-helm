@@ -36,10 +36,10 @@ data:
 
     camunda:
       client:
-        {{-  $proto := (lower .Values.core.readinessProbe.scheme) -}}
-        {{- $baseURLInternal := printf "%s://%s" $proto (include "core.fullname" . | trimAll "\"") }}
-        rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.core.service.httpPort .Values.core.contextPath }}
-        grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.core.service.grpcPort }}
+        {{-  $proto := (lower .Values.orchestration.readinessProbe.scheme) -}}
+        {{- $baseURLInternal := printf "%s://%s" $proto (include "orchestration.fullname" . | trimAll "\"") }}
+        rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.orchestration.service.httpPort .Values.orchestration.contextPath }}
+        grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.orchestration.service.grpcPort }}
         worker:
           defaults:
             max-jobs-active: 32
@@ -56,7 +56,7 @@ data:
           token-url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . }}
           client-id: {{ include "connectors.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
-          audience: {{ include "core.authAudience" . | quote }}
+          audience: {{ include "orchestration.authAudience" . | quote }}
         {{- end }}
       connector:
         headless:

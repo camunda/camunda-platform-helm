@@ -7,7 +7,7 @@ If release name contains chart name it will be used as a full name.
 */}}
 
 {{ define "connectors.zeebeEndpoint" }}
-  {{- include "core.fullname" . | replace "\"" "" -}}:{{- .Values.core.service.grpcPort -}}
+  {{- include "orchestration.fullname" . | replace "\"" "" -}}:{{- .Values.orchestration.service.grpcPort -}}
 {{- end -}}
 
 {{- define "connectors.fullname" -}}

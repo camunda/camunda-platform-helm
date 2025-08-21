@@ -1,0 +1,43 @@
+{{- if .Values.orchestration.migration.process.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "orchestration.fullname" . }}-process-migration-configuration
+data:
+  application.yaml: |
+    spring:
+      profiles:
+        active: process-migration
+    {{- if .Values.global.elasticsearch.enabled }}
+    camunda:
+      database:
+        connect:
+          cluster-name: elasticsearch
+          cluster-type: elasticsearch
+        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
+        username: {{ .Values.global.elasticsearch.auth.username }}
+        password: ${VALUES_DATABASE_PASSWORD:}
+        {{- end }}
+    {{- else }}
+    camunda:
+      database:
+        connect:
+          cluster-name: opensearch
+          cluster-type: opensearch
+        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
+        username: {{ .Values.global.opensearch.auth.username }}
+        password: ${VALUES_DATABASE_PASSWORD:}
+        {{- end }}
+    {{- end }}
+      migration:
+        process:
+          batch-size: 5
+          import-finished-timeout: {{ .Values.orchestration.migration.process.importFinishedTimeout }}
+          retry:
+            max-retries: {{ .Values.orchestration.migration.process.retry.maxRetries }}
+            max-retry-delay: {{ .Values.orchestration.migration.process.retry.maxRetryDelay }}
+            min-retry-delay: {{ .Values.orchestration.migration.process.retry.minRetryDelay }}
+            retry-delay-multiplier: {{ .Values.orchestration.migration.process.retry.retryDelayMultiplier }}
+{{- end }}
