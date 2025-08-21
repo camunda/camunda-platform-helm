@@ -7,6 +7,8 @@ vars:
   TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" | default ">0.0.0" | quote }}'
   VALUES_CONFIG: '{{ env "VALUES_CONFIG" | default "{}" }}'
   INFRA_TYPE_VALUES: '{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ eq (env "PLATFORM") "eks" | ternary "eks-" "" }}{{ env "INFRA_TYPE" }}.yaml'
+  PLATFORM: '{{ env "PLATFORM" | default "gke" }}'
+  INFRA_TYPE: '{{ env "INFRA_TYPE" | default "standard" }}'
 
 dotenv:
 - ../vars/common.env
