@@ -27,12 +27,6 @@ integration:
           shortname: eske
           exclude: []
         - name: elasticsearch
-          enabled: true
-          exclude: []
-          auth: basic
-          shortname: elbae
-          enterprise: true
-        - name: elasticsearch
           enabled: false
           shortname: esba
           auth: basic
