@@ -203,6 +203,8 @@ env:
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
   TOKEN: ${{ inputs.teleport-token }}
+  PLATFORM: ${{ inputs.distro-platform }}
+  INFRA_TYPE: ${{ inputs.infra-type }}
 
 jobs:
   ci-setup:
@@ -611,8 +613,6 @@ jobs:
           TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
-          PLATFORM: ${{ inputs.distro-platform }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
         continue-on-error: false
