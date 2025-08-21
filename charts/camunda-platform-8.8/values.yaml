@@ -584,7 +584,7 @@ global:
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-  
+
   ## @extra global.exporter configuration for Elasticsearch and Opensearch exporters.
   exporter:
     ## @param global.exporter.enabled if true, enables Elasticsearch and Opensearch exporters.
@@ -1534,7 +1534,7 @@ webModeler:
     #    authentication: "BEARER_TOKEN"
     #    url:
     #      grpc: "grpc://camunda-platform-orchestration:26500"
-    #      rest: "http://camunda-platform-orchestration:8080/v1"
+    #      rest: "http://camunda-platform-orchestration:8080"
     #      web-app: "http://localhost:8088"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
