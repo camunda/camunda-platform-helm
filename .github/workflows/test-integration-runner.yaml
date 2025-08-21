@@ -396,7 +396,6 @@ jobs:
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
@@ -449,7 +448,6 @@ jobs:
           TEST_VALUES_DIGEST: "${{ inputs.values-digest }}"
           TEST_VALUES_ENTERPRISE: "${{ inputs.values-enterprise }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
           VALUES_CONFIG: ${{ inputs.values-config }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
@@ -470,7 +468,6 @@ jobs:
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -500,7 +497,6 @@ jobs:
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -665,7 +661,6 @@ jobs:
       TEST_NAMESPACE: ${{ needs.ci-setup.outputs.TEST_NAMESPACE }}
       ABSOLUTE_TEST_CHART_DIR: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}
       TEST_EXCLUDE: ${{ inputs.exclude }}
-      PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     steps:
       - name: CI Setup - Checkout
