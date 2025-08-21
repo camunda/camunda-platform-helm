@@ -310,6 +310,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				"global.identity.auth.enabled":           tc.authEnabled,
 				"global.security.authentication.method":  tc.authMethod,
 				"global.security.authorizations.enabled": "false",
+				"global.ingress.enabled":                 "true",
+				"global.ingress.tls.enabled":             "true",
+				"global.ingress.host":                    "example.com",
 				"orchestration.image.tag":                "8.8.x-alpha1",
 				"orchestration.contextPath":              "/orchestration",
 				"orchestration.service.grpcPort":         "26600",
@@ -336,12 +339,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
 			s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
 			s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-			s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
+			s.Require().Equal("8.8.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
 			s.Require().Equal("grpc://camunda-platform-test-orchestration:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
 			s.Require().Equal("http://camunda-platform-test-orchestration:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
-			s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
+			s.Require().Equal("https://example.com/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
 		})
 	}
 }
