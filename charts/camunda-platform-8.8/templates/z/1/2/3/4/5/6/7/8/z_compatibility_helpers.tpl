@@ -37,114 +37,99 @@ Note:
 */}}
 
 {{/*
-Core compatibility.
+Orchestration compatibility.
 */}}
-{{- if .Values.global.compatibility.core.enabled -}}
+{{- if .Values.global.compatibility.orchestration.enabled -}}
     {{/*
-    Zeebe => Core.
-    Deep copy "zeebe" key as "core" key, then set/override the new changes.
+    Zeebe => Orchestration.
+    Deep copy "zeebe" key as "orchestration" key, then set/override the new changes.
     */}}
     {{- if and .Values.zeebe .Values.zeebe.enabled -}}
-        {{/* Deep copy "core" as tmp var to set some keys later after the merge with "zeebe" key. */}}
-        {{- $coreOrig := deepCopy .Values.core -}}
-        {{/* Deep copy and merge "zeebe" with "core" */}}
-        {{- $_ := set .Values "core" (deepCopy .Values.zeebe | mergeOverwrite .Values.core) -}}
+        {{/* Deep copy "orchestration" as tmp var to set some keys later after the merge with "zeebe" key. */}}
+        {{- $orchestrationOrig := deepCopy .Values.orchestration -}}
+        {{/* Deep copy and merge "zeebe" with "orchestration" */}}
+        {{- $_ := set .Values "orchestration" (deepCopy .Values.zeebe | mergeOverwrite .Values.orchestration) -}}
 
         {{/*
             Override keys with different values.
         */}}
 
         {{/*
-            zeebe.retention => core.history.retention
-            # TODO: Update the retention values after review the correct path with the dev team.
-            {{- if (.Values.zeebe.retention).enabled -}}
-                {{- $_ := set .Values.core.history.retention "enabled" .Values.zeebe.retention.enabled -}}
-                {{- if ((.Values.zeebe.retention).minimumAge) -}}
-                    {{- $_ := set .Values.core.history.retention "minimumAge" .Values.zeebe.retention.minimumAge -}}
-                {{- end -}}
-                {{- if ((.Values.zeebe.retention).policyName) -}}
-                    {{- $_ := set .Values.core.history.retention "policyName" .Values.zeebe.retention.policyName -}}
-                {{- end -}}
-            {{- end -}}
-        */}}
-
-
-        {{/*
-            zeebe.resources => core.resources
-            Set the default values for the core resources if they use the Zeebe default values,
+            zeebe.resources => orchestration.resources
+            Set the default values for the orchestration resources if they use the Zeebe default values,
             as the defaults have been changed in Camunda Helm chart v13.0.0 (Camunda 8.8).
-            If the user has set custom values for the core resources, they will not be overridden.
+            If the user has set custom values for the orchestration resources, they will not be overridden.
         */}}
         {{- if eq (((.Values.zeebe).resources).requests).cpu "800m" -}}
-            {{- $_ := set .Values.core.resources.requests "cpu" $coreOrig.resources.requests.cpu -}}
+            {{- $_ := set .Values.orchestration.resources.requests "cpu" $orchestrationOrig.resources.requests.cpu -}}
         {{- end -}}
         {{- if eq (((.Values.zeebe).resources).requests).memory "1200Mi" -}}
-            {{- $_ := set .Values.core.resources.requests "memory" $coreOrig.resources.requests.memory -}}
+            {{- $_ := set .Values.orchestration.resources.requests "memory" $orchestrationOrig.resources.requests.memory -}}
         {{- end -}}
         {{- if eq (((.Values.zeebe).resources).limits).cpu "960m" -}}
-            {{- $_ := set .Values.core.resources.limits "cpu" $coreOrig.resources.limits.cpu -}}
+            {{- $_ := set .Values.orchestration.resources.limits "cpu" $orchestrationOrig.resources.limits.cpu -}}
         {{- end -}}
         {{- if eq (((.Values.zeebe).resources).limits).memory "1920Mi" -}}
-            {{- $_ := set .Values.core.resources.limits "memory" $coreOrig.resources.limits.memory -}}
+            {{- $_ := set .Values.orchestration.resources.limits "memory" $orchestrationOrig.resources.limits.memory -}}
         {{- end -}}
 
         {{/*
-            zeebe.javaOpts => core.javaOpts
+            zeebe.javaOpts => orchestration.javaOpts
             NOTE: The key is already overwritten by Zeebe values, so we need to replace the value.
         */}}
-        {{- $_ := set .Values.core "javaOpts" (.Values.core.javaOpts | replace "zeebe" "camunda") -}}
+        {{- $_ := set .Values.orchestration "javaOpts" (.Values.orchestration.javaOpts | replace "zeebe" "camunda") -}}
     {{- end -}}
 
     {{- if and .Values.zeebe -}}
         {{/*
-            zeebe.enabled => core.profiles.broker
+            zeebe.enabled => orchestration.profiles.broker
         */}}
-        {{- $_ := set .Values.core.profiles "broker" .Values.zeebe.enabled -}}
+        {{- $_ := set .Values.orchestration.profiles "broker" .Values.zeebe.enabled -}}
     {{- end -}}
 
     {{/*
-    Zeebe Gateway => Core.
+    Zeebe Gateway => Orchestration.
     */}}
     {{- if and .Values.zeebeGateway .Values.zeebeGateway.enabled -}}
         {{- if ((.Values.zeebeGateway).ingress) -}}
-            {{- $_ := set .Values.core "ingress" .Values.zeebeGateway.ingress -}}
+            {{- $_ := set .Values.orchestration "ingress" .Values.zeebeGateway.ingress -}}
         {{- end -}}
         {{- if ((.Values.zeebeGateway).contextPath) -}}
-            {{- $_ := set .Values.core "contextPath" .Values.zeebeGateway.contextPath -}}
+            {{- $_ := set .Values.orchestration "contextPath" .Values.zeebeGateway.contextPath -}}
         {{- end -}}
         {{- if ((.Values.zeebeGateway).service) -}}
             {{- if ((.Values.zeebeGateway.service).restPort) -}}
-                {{- $_ := set .Values.core.service "httpPort" .Values.zeebeGateway.service.restPort -}}
+                {{- $_ := set .Values.orchestration.service "httpPort" .Values.zeebeGateway.service.restPort -}}
             {{- end -}}
             {{- if ((.Values.zeebeGateway.service).grpcPort) -}}
-                {{- $_ := set .Values.core.service "grpcPort" .Values.zeebeGateway.service.grpcPort -}}
+                {{- $_ := set .Values.orchestration.service "grpcPort" .Values.zeebeGateway.service.grpcPort -}}
             {{- end -}}
             {{- if ((.Values.zeebeGateway.service).commandPort) -}}
-                {{- $_ := set .Values.core.service "commandPort" .Values.zeebeGateway.service.commandPort -}}
+                {{- $_ := set .Values.orchestration.service "commandPort" .Values.zeebeGateway.service.commandPort -}}
             {{- end -}}
             {{- if ((.Values.zeebeGateway.service).internalPort) -}}
-                {{- $_ := set .Values.core.service "internalPort" .Values.zeebeGateway.service.internalPort -}}
+                {{- $_ := set .Values.orchestration.service "internalPort" .Values.zeebeGateway.service.internalPort -}}
             {{- end -}}
         {{- end -}}
     {{- end -}}
 
     {{/*
-    Operate => Core.
+    Operate => Orchestration.
     */}}
     {{- if and .Values.operate .Values.operate.enabled -}}
-        {{- $_ := set .Values.core.profiles "operate" .Values.operate.enabled -}}
+        {{- $_ := set .Values.orchestration.profiles "operate" .Values.operate.enabled -}}
     {{- end -}}
 
     {{/*
-    Tasklist => Core.
+    Tasklist => Orchestration.
     */}}
     {{- if and .Values.tasklist .Values.tasklist.enabled -}}
-        {{- $_ := set .Values.core.profiles "tasklist" .Values.tasklist.enabled -}}
+        {{- $_ := set .Values.orchestration.profiles "tasklist" .Values.tasklist.enabled -}}
     {{- end -}}
 {{- end -}}
 
 {{/*
-Core constraints.
+Orchestration constraints.
 Free-style inputs should be migrated manually by the user.
 */}}
 
@@ -155,13 +140,13 @@ Usage:
 {{ include "camundaPlatform.manualMigrationRequired" (dict
   "condition" (.Values.zeebe.configuration)
   "oldName" "zeebe.configuration"
-  "newName" "core.configuration"
+  "newName" "orchestration.configuration"
 ) }}
 */}}
 {{- define "camundaPlatform.manualMigrationRequired" }}
   {{- if .condition }}
     {{- $errorMessage := printf
-        "[core][compatibility][error] Please migrate the value of \"%s\" to the new syntax under \"%s\" %s %s"
+        "[orchestration][compatibility][error] Please migrate the value of \"%s\" to the new syntax under \"%s\" %s %s"
         .oldName .newName
         "For more details, please check Camunda Helm chart documentation."
         "https://docs.camunda.io/docs/next/self-managed/installation-methods/helm/upgrade/upgrade-hc-870-880/"
@@ -170,284 +155,284 @@ Usage:
   {{- end }}
 {{- end -}}
 
-{{- if .Values.global.compatibility.core.enabled -}}
+{{- if .Values.global.compatibility.orchestration.enabled -}}
     {{/*
-    Zeebe => Core.
+    Zeebe => Orchestration.
     */}}
     {{- if and .Values.zeebe .Values.zeebe.enabled -}}
         {{/*
-        zeebe.configuration => core.configuration
+        zeebe.configuration => orchestration.configuration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.configuration)
             "oldName" "zeebe.configuration"
-            "newName" "core.configuration"
+            "newName" "orchestration.configuration"
         ) }}
         {{/*
-        zeebe.extraConfiguration => core.extraConfiguration
+        zeebe.extraConfiguration => orchestration.extraConfiguration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.extraConfiguration)
             "oldName" "zeebe.extraConfiguration"
-            "newName" "core.extraConfiguration"
+            "newName" "orchestration.extraConfiguration"
         ) }}
         {{/*
-        zeebe.env => core.env
+        zeebe.env => orchestration.env
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.env)
             "oldName" "zeebe.env"
-            "newName" "core.env"
+            "newName" "orchestration.env"
         ) }}
         {{/*
-        zeebe.envFrom => core.envFrom
+        zeebe.envFrom => orchestration.envFrom
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.envFrom)
             "oldName" "zeebe.envFrom"
-            "newName" "core.envFrom"
+            "newName" "orchestration.envFrom"
         ) }}
         {{/*
-        zeebe.initContainers => core.initContainers
+        zeebe.initContainers => orchestration.initContainers
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.initContainers)
             "oldName" "zeebe.initContainers"
-            "newName" "core.initContainers"
+            "newName" "orchestration.initContainers"
         ) }}
         {{/*
-        zeebe.sidecars => core.sidecars
+        zeebe.sidecars => orchestration.sidecars
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.sidecars)
             "oldName" "zeebe.sidecars"
-            "newName" "core.sidecars"
+            "newName" "orchestration.sidecars"
         ) }}
         {{/*
-        zeebe.extraVolumes => core.extraVolumes
+        zeebe.extraVolumes => orchestration.extraVolumes
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.extraVolumes)
             "oldName" "zeebe.extraVolumes"
-            "newName" "core.extraVolumes"
+            "newName" "orchestration.extraVolumes"
         ) }}
         {{/*
-        zeebe.extraVolumeMounts => core.extraVolumeMounts
+        zeebe.extraVolumeMounts => orchestration.extraVolumeMounts
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebe.extraVolumeMounts)
             "oldName" "zeebe.extraVolumeMounts"
-            "newName" "core.extraVolumeMounts"
+            "newName" "orchestration.extraVolumeMounts"
         ) }}
     {{- end -}}
 
     {{/*
-    Zeebe Gateway => Core.
+    Zeebe Gateway => Orchestration.
     */}}
     {{- if and .Values.zeebeGateway .Values.zeebeGateway.enabled -}}
         {{/*
-        zeebeGateway.configuration => core.configuration
+        zeebeGateway.configuration => orchestration.configuration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.configuration)
             "oldName" "zeebeGateway.configuration"
-            "newName" "core.configuration"
+            "newName" "orchestration.configuration"
         ) }}
         {{/*
-        zeebeGateway.extraConfiguration => core.extraConfiguration
+        zeebeGateway.extraConfiguration => orchestration.extraConfiguration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.extraConfiguration)
             "oldName" "zeebeGateway.extraConfiguration"
-            "newName" "core.extraConfiguration"
+            "newName" "orchestration.extraConfiguration"
         ) }}
         {{/*
-        zeebeGateway.env => core.env
+        zeebeGateway.env => orchestration.env
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.env)
             "oldName" "zeebeGateway.env"
-            "newName" "core.env"
+            "newName" "orchestration.env"
         ) }}
         {{/*
-        zeebeGateway.envFrom => core.envFrom
+        zeebeGateway.envFrom => orchestration.envFrom
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.envFrom)
             "oldName" "zeebeGateway.envFrom"
-            "newName" "core.envFrom"
+            "newName" "orchestration.envFrom"
         ) }}
         {{/*
-        zeebeGateway.initContainers => core.initContainers
+        zeebeGateway.initContainers => orchestration.initContainers
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.initContainers)
             "oldName" "zeebeGateway.initContainers"
-            "newName" "core.initContainers"
+            "newName" "orchestration.initContainers"
         ) }}
         {{/*
-        zeebeGateway.sidecars => core.sidecars
+        zeebeGateway.sidecars => orchestration.sidecars
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.sidecars)
             "oldName" "zeebeGateway.sidecars"
-            "newName" "core.sidecars"
+            "newName" "orchestration.sidecars"
         ) }}
         {{/*
-        zeebeGateway.extraVolumes => core.extraVolumes
+        zeebeGateway.extraVolumes => orchestration.extraVolumes
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.extraVolumes)
             "oldName" "zeebeGateway.extraVolumes"
-            "newName" "core.extraVolumes"
+            "newName" "orchestration.extraVolumes"
         ) }}
         {{/*
-        zeebeGateway.extraVolumeMounts => core.extraVolumeMounts
+        zeebeGateway.extraVolumeMounts => orchestration.extraVolumeMounts
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.zeebeGateway.extraVolumeMounts)
             "oldName" "zeebeGateway.extraVolumeMounts"
-            "newName" "core.extraVolumeMounts"
+            "newName" "orchestration.extraVolumeMounts"
         ) }}
     {{- end -}}
 
     {{/*
-    Operate => Core.
+    Operate => Orchestration.
     */}}
     {{- if and .Values.operate .Values.operate.enabled -}}
         {{/*
-        operate.configuration => core.configuration
+        operate.configuration => orchestration.configuration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.configuration)
             "oldName" "operate.configuration"
-            "newName" "core.configuration"
+            "newName" "orchestration.configuration"
         ) }}
         {{/*
-        operate.extraConfiguration => core.extraConfiguration
+        operate.extraConfiguration => orchestration.extraConfiguration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.extraConfiguration)
             "oldName" "operate.extraConfiguration"
-            "newName" "core.extraConfiguration"
+            "newName" "orchestration.extraConfiguration"
         ) }}
         {{/*
-        operate.env => core.env
+        operate.env => orchestration.env
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.env)
             "oldName" "operate.env"
-            "newName" "core.env"
+            "newName" "orchestration.env"
         ) }}
         {{/*
-        operate.envFrom => core.envFrom
+        operate.envFrom => orchestration.envFrom
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.envFrom)
             "oldName" "operate.envFrom"
-            "newName" "core.envFrom"
+            "newName" "orchestration.envFrom"
         ) }}
         {{/*
-        operate.initContainers => core.initContainers
+        operate.initContainers => orchestration.initContainers
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.initContainers)
             "oldName" "operate.initContainers"
-            "newName" "core.initContainers"
+            "newName" "orchestration.initContainers"
         ) }}
         {{/*
-        operate.sidecars => core.sidecars
+        operate.sidecars => orchestration.sidecars
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.sidecars)
             "oldName" "operate.sidecars"
-            "newName" "core.sidecars"
+            "newName" "orchestration.sidecars"
         ) }}
         {{/*
-        operate.extraVolumes => core.extraVolumes
+        operate.extraVolumes => orchestration.extraVolumes
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.extraVolumes)
             "oldName" "operate.extraVolumes"
-            "newName" "core.extraVolumes"
+            "newName" "orchestration.extraVolumes"
         ) }}
         {{/*
-        operate.extraVolumeMounts => core.extraVolumeMounts
+        operate.extraVolumeMounts => orchestration.extraVolumeMounts
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.operate.extraVolumeMounts)
             "oldName" "operate.extraVolumeMounts"
-            "newName" "core.extraVolumeMounts"
+            "newName" "orchestration.extraVolumeMounts"
         ) }}
     {{- end -}}
 
     {{/*
-    Tasklist => Core.
+    Tasklist => Orchestration.
     */}}
     {{- if and .Values.tasklist .Values.tasklist.enabled -}}
         {{/*
-        tasklist.configuration => core.configuration
+        tasklist.configuration => orchestration.configuration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.configuration)
             "oldName" "tasklist.configuration"
-            "newName" "core.configuration"
+            "newName" "orchestration.configuration"
         ) }}
         {{/*
-        tasklist.extraConfiguration => core.extraConfiguration
+        tasklist.extraConfiguration => orchestration.extraConfiguration
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.extraConfiguration)
             "oldName" "tasklist.extraConfiguration"
-            "newName" "core.extraConfiguration"
+            "newName" "orchestration.extraConfiguration"
         ) }}
         {{/*
-        tasklist.env => core.env
+        tasklist.env => orchestration.env
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.env)
             "oldName" "tasklist.env"
-            "newName" "core.env"
+            "newName" "orchestration.env"
         ) }}
         {{/*
-        tasklist.envFrom => core.envFrom
+        tasklist.envFrom => orchestration.envFrom
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.envFrom)
             "oldName" "tasklist.envFrom"
-            "newName" "core.envFrom"
+            "newName" "orchestration.envFrom"
         ) }}
         {{/*
-        tasklist.initContainers => core.initContainers
+        tasklist.initContainers => orchestration.initContainers
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.initContainers)
             "oldName" "tasklist.initContainers"
-            "newName" "core.initContainers"
+            "newName" "orchestration.initContainers"
         ) }}
         {{/*
-        tasklist.sidecars => core.sidecars
+        tasklist.sidecars => orchestration.sidecars
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.sidecars)
             "oldName" "tasklist.sidecars"
-            "newName" "core.sidecars"
+            "newName" "orchestration.sidecars"
         ) }}
         {{/*
-        tasklist.extraVolumes => core.extraVolumes
+        tasklist.extraVolumes => orchestration.extraVolumes
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.extraVolumes)
             "oldName" "tasklist.extraVolumes"
-            "newName" "core.extraVolumes"
+            "newName" "orchestration.extraVolumes"
         ) }}
         {{/*
-        tasklist.extraVolumeMounts => core.extraVolumeMounts
+        tasklist.extraVolumeMounts => orchestration.extraVolumeMounts
         */}}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
             "condition" (.Values.tasklist.extraVolumeMounts)
             "oldName" "tasklist.extraVolumeMounts"
-            "newName" "core.extraVolumeMounts"
+            "newName" "orchestration.extraVolumeMounts"
         ) }}
     {{- end -}}
 {{- end -}}

@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: console
   endpoints:
     - honorLabels: true
-      path: {{ .Values.console.contextPath }}{{ .Values.console.metrics.prometheus }}
+      path: {{ include "camundaPlatform.joinpath" (list .Values.console.contextPath .Values.console.metrics.prometheus) }}
       port: metrics
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

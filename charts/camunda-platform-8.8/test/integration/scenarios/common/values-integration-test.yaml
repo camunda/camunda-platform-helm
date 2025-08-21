@@ -24,13 +24,13 @@ identity:
       value: camunda-identity-resource-server
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_DEFINITION
       value: write
-    # # Core access.
+    # # Orchestration access.
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
-      value: core-api
+      value: orchestration-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
       value: "read:*"
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
-      value: core-api
+      value: orchestration-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
       value: "write:*"
     # Optimize access.

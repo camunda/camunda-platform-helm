@@ -594,6 +594,29 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 			},
 		}, {
+			Name:                 "TestContainerProbesWithContextPathWithTrailingSlash",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"zeebeGateway.contextPath":              "/test/",
+				"zeebeGateway.startupProbe.enabled":     "true",
+				"zeebeGateway.startupProbe.probePath":   "/start",
+				"zeebeGateway.readinessProbe.enabled":   "true",
+				"zeebeGateway.readinessProbe.probePath": "/ready",
+				"zeebeGateway.livenessProbe.enabled":    "true",
+				"zeebeGateway.livenessProbe.probePath":  "/live",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				probe := deployment.Spec.Template.Spec.Containers[0]
+
+				s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+				s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+			},
+		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
 				"zeebeGateway.sidecars[0].name":                   "nginx",

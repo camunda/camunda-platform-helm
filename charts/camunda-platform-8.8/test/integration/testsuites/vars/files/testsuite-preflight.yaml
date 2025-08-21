@@ -43,7 +43,7 @@ testcases:
     #  url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
     #- component: Optimize
     #  url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
-    - component: Core
+    - component: Orchestration
       url: "{{ .preflightVars.baseURLs.core }}/actuator/health/readiness"
     - component: Connectors
       url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
@@ -109,7 +109,7 @@ testcases:
     #  url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
     # - component: Optimize
     #  url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
-    - component: Core
+    - component: Orchestration
       url: "{{ .preflightVars.baseURLs.core }}/actuator/health/liveness"
     - component: Connectors
       url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/liveness"

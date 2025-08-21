@@ -30,6 +30,7 @@ data:
     jwksUrl = {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
     audience = {{ include "webModeler.authClientApiAudience" . | quote }}
     issuer = {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+    usernameClaim = {{ .Values.global.security.authentication.oidc.usernameClaim | quote }}
 
     [pusher]
     host = {{ include "webModeler.websockets.fullname" . | quote }}
@@ -41,7 +42,7 @@ data:
     {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     path = {{ include "webModeler.websocketContextPath" . | quote }}
     {{- end }}
-    forceTLS = {{ include "webModeler.websocketTlsEnabled" . | quote }}
+    forceTLS = {{ include "webModeler.websocketTlsEnabled" . }}
 
     {{- if .Values.identity.enabled }}
 

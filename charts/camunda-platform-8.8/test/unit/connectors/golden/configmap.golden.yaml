@@ -35,8 +35,8 @@ data:
 
     camunda:
       client:
-        rest-address: http://camunda-platform-test-core:8080
-        grpc-address: http://camunda-platform-test-core:26500
+        rest-address: http://camunda-platform-test-orchestration:8080
+        grpc-address: http://camunda-platform-test-orchestration:26500
         worker:
           defaults:
             max-jobs-active: 32

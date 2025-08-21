@@ -27,13 +27,13 @@
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 ##########################################
-#####
+ #####
 #     # #       ####  #####    ##   #
 #       #      #    # #    #  #  #  #
 #  #### #      #    # #####  #    # #
 #     # #      #    # #    # ###### #
 #     # #      #    # #    # #    # #
-#####  ######  ####  #####  #    # ######
+ #####  ######  ####  #####  #    # ######
 ##########################################
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
@@ -80,10 +80,10 @@ global:
       ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
       ##
       adaptSecurityContext: disabled
-    ## Compatibility adaptations for Camunda Core.
+    ## Compatibility adaptations for Camunda Orchestration Cluster.
     ##
-    core:
-      ## @param global.compatibility.core.enabled if true, enables compatibility layer for Camunda Core between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).
+    orchestration:
+      ## @param global.compatibility.orchestration.enabled if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).
       ##
       enabled: true
 
@@ -437,7 +437,7 @@ global:
         ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8080"
+        redirectUrl: "http://localhost:8087"
 
       ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
       webModeler:
@@ -450,10 +450,10 @@ global:
         ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8084"
+        redirectUrl: "http://localhost:8070"
 
       #######################
-      # Orchestration Group
+      # Orchestration Cluster
       #######################
 
       ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
@@ -473,29 +473,29 @@ global:
           ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
 
-      ## @extra global.identity.auth.core configuration to configure authentication specifics on global level, which can be accessed by other components
-      core:
-        ## @param global.identity.auth.core.audience defines the audience, which is used by Core.
-        audience: core-api
-        ## @param global.identity.auth.core.clientId defines the client id, which is used by Core in authentication flows.
-        clientId: core
-        ## @param global.identity.auth.core.existingSecret [string,object] (DEPRECATED - use global.identity.auth.core.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.core.existingSecret.name.
+      ## @extra global.identity.auth.orchestration configuration to configure authentication specifics on global level, which can be accessed by other components
+      orchestration:
+        ## @param global.identity.auth.orchestration.audience defines the audience, which is used by Orchestration Cluster.
+        audience: orchestration-api
+        ## @param global.identity.auth.orchestration.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
+        clientId: orchestration
+        ## @param global.identity.auth.orchestration.existingSecret [string,object] (DEPRECATED - use global.identity.auth.orchestration.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.orchestration.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.core.existingSecretKey (DEPRECATED - use global.identity.auth.core.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-core-client-token
-        ## @extra global.identity.auth.core.secret configuration to provide the core client secret.
+        ## @param global.identity.auth.orchestration.existingSecretKey (DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-orchestration-client-token
+        ## @extra global.identity.auth.orchestration.secret configuration to provide the orchestration client secret.
         secret:
-          ## @param global.identity.auth.core.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          ## @param global.identity.auth.orchestration.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
           inlineSecret: ""
-          ## @param global.identity.auth.core.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          ## @param global.identity.auth.orchestration.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
           existingSecret: ""
-          ## @param global.identity.auth.core.secret.existingSecretKey defines the key within the existing secret object.
+          ## @param global.identity.auth.orchestration.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
-        ## @param global.identity.auth.core.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be publicly accessible, the default value works if a port-forward to Core is created to 8082.
+        ## @param global.identity.auth.orchestration.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8082"
-        ## @param global.identity.auth.core.tokenScope defines the token scope, which is used by Core.
+        ## @param global.identity.auth.orchestration.tokenScope defines the token scope, which is used by Orchestration Cluster.
         tokenScope: ""
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
@@ -605,29 +605,16 @@ global:
   ## @param global.noSecondaryStorage if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.
   noSecondaryStorage: false
 
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#############################################################################################################
-#     #                                                                   #####
-##   ##   ##   #    #   ##    ####  ###### #    # ###### #    # #####    #     # #####   ####  #    # #####
-# # # #  #  #  ##   #  #  #  #    # #      ##  ## #      ##   #   #      #       #    # #    # #    # #    #
-#  #  # #    # # #  # #    # #      #####  # ## # #####  # #  #   #      #  #### #    # #    # #    # #    #
-#     # ###### #  # # ###### #  ### #      #    # #      #  # #   #      #     # #####  #    # #    # #####
-#     # #    # #   ## #    # #    # #      #    # #      #   ##   #      #     # #   #  #    # #    # #
-#     # #    # #    # #    #  ####  ###### #    # ###### #    #   #       #####  #    #  ####   ####  #
-#############################################################################################################
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
-
 ############################################
 ###
-#  #####  ###### #    # ##### # ##### #   #
-#  #    # #      ##   #   #   #   #    # #
-#  #    # #####  # #  #   #   #   #     #
-#  #    # #      #  # #   #   #   #     #
-#  #    # #      #   ##   #   #   #     #
+ #  #####  ###### #    # ##### # ##### #   #
+ #  #    # #      ##   #   #   #   #    # #
+ #  #    # #####  # #  #   #   #   #     #
+ #  #    # #      #  # #   #   #   #     #
+ #  #    # #      #   ##   #   #   #     #
 ### #####  ###### #    #   #   #   #     #
 ############################################
+
 ## @section Identity Parameters
 # Identity configuration for the identity sub chart.
 identity:
@@ -688,6 +675,12 @@ identity:
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  ## Multitenancy configuration
+  ## @extra identity.multitenancy
+  multitenancy:
+    ## @param identity.multitenancy.enabled can be used to enable multitenancy in management identity
+    enabled: false
 
   ## @param identity.sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
@@ -1191,13 +1184,13 @@ identityKeycloak:
       repository: bitnamilegacy/keycloak-config-cli
 
 #################################################
-#####
+ #####
 #     #  ####  #    #  ####   ####  #      ######
 #       #    # ##   # #      #    # #      #
 #       #    # # #  #  ####  #    # #      #####
 #       #    # #  # #      # #    # #      #
 #     # #    # #   ## #    # #    # #      #
-#####   ####  #    #  ####   ####  ###### ######
+ #####   ####  #    #  ####   ####  ###### ######
 #################################################
 
 ## @section Console Parameters
@@ -1437,7 +1430,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1533,18 +1526,16 @@ webModeler:
       ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
 
-    ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)
+    ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)
     clusters: []
     #  - id: "default-cluster"
     #    name: "Default cluster"
     #    version: "8.8.0"
     #    authentication: "BEARER_TOKEN"
     #    url:
-    #      zeebe:
-    #        grpc: "grpc://camunda-platform-core:26500"
-    #        rest: "http://camunda-platform-core:8080/v1"
-    #      operate: "http://camunda-platform-core:8080/v1"
-    #      tasklist: "http://camunda-platform-core:8080/tasklist"
+    #      grpc: "grpc://camunda-platform-orchestration:26500"
+    #      rest: "http://camunda-platform-orchestration:8080/v1"
+    #      web-app: "http://localhost:8088"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
@@ -2138,28 +2129,14 @@ webModelerPostgresql:
       runAsNonRoot: true
       fsGroup: 1001
 
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
-############################################################################################################################
-#######                                                                                  #####
-#     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #    #     # #####   ####  #    # #####
-#     # #    # #    # #    # #      #        #   #    #  #  #    #   # #    # ##   #    #       #    # #    # #    # #    #
-#     # #    # #      ###### #####   ####    #   #    # #    #   #   # #    # # #  #    #  #### #    # #    # #    # #    #
-#     # #####  #      #    # #           #   #   #####  ######   #   # #    # #  # #    #     # #####  #    # #    # #####
-#     # #   #  #    # #    # #      #    #   #   #   #  #    #   #   # #    # #   ##    #     # #   #  #    # #    # #
-####### #    #  ####  #    # ######  ####    #   #    # #    #   #   #  ####  #    #     #####  #    #  ####   ####  #
-############################################################################################################################
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
-
 #####################################################################
-#####
+ #####
 #     #  ####  #    # #    # ######  ####  #####  ####  #####   ####
 #       #    # ##   # ##   # #      #    #   #   #    # #    # #
 #       #    # # #  # # #  # #####  #        #   #    # #    #  ####
 #       #    # #  # # #  # # #      #        #   #    # #####       #
 #     # #    # #   ## #   ## #      #    #   #   #    # #   #  #    #
-#####   ####  #    # #    # ######  ####    #    ####  #    #  ####
+ #####   ####  #    # #    # ######  ####    #    ####  #    #  ####
 #####################################################################
 ## @section Connectors Parameters
 ## @extra connectors configuration for the Connectors.
@@ -2376,71 +2353,94 @@ connectors:
     ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
-############################
-#####
-#     #  ####  #####  ######
-#       #    # #    # #
-#       #    # #    # #####
-#       #    # #####  #
-#     # #    # #   #  #
-#####    ####  #    # ######
-############################
+####################################################################################
+#######
+#     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #
+#     # #    # #    # #    # #      #        #   #    #  #  #    #   # #    # ##   #
+#     # #    # #      ###### #####   ####    #   #    # #    #   #   # #    # # #  #
+#     # #####  #      #    # #           #   #   #####  ######   #   # #    # #  # #
+#     # #   #  #    # #    # #      #    #   #   #   #  #    #   #   # #    # #   ##
+####### #    #  ####  #    # ######  ####    #   #    # #    #   #   #  ####  #    #
+####################################################################################
 
-## @section Orchestration Core Parameters
-## @extra core configuration for the Orchestration Core.
-core:
-  ## @param core.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
+## @section Orchestration Cluster Parameters
+## @extra orchestration configuration for the Orchestration Cluster.
+orchestration:
+  ## @param orchestration.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
   enabled: true
 
-  ## @param core.debug if true, extra info is printed.
+  ## @param orchestration.debug if true, extra info is printed.
   debug: false
 
-  ## @param core.profiles [object] defines which components of the orchestration core are enabled (e.g., broker, identity, operate).
+  ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, identity, operate).
   profiles:
     broker: true
     identity: true
     operate: true
     tasklist: true
 
-  ## @param core.profilesOverride [string] defines the override for the profiles as comma-separated string.
+  ## @param orchestration.profilesOverride [string] defines the override for the profiles as comma-separated string.
   profilesOverride: ""
 
-  ## @extra core.image configuration to configure the image specifics
+  ## @extra orchestration.image configuration to configure the image specifics
   image:
-    ## @param core.image.registry can be used to set container image registry.
+    ## @param orchestration.image.registry can be used to set container image registry.
     registry: ""
-    ## @param core.image.repository defines which image repository to use
+    ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
-    ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
+    ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
     tag: 8.8.0-alpha7
-    ## @param core.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+    ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
-    ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  ## @extra core.migration configuration for migration purposes for the orchestration cluster
+  ## @extra orchestration.migration configuration for migration purposes for the orchestration cluster
   migration:
     process:
-    ## @param core.migration.process.enabled if true, the process migration occurs.
+      ## @param orchestration.migration.process.enabled if true, the process migration occurs.
       enabled: false
-    ## @param core.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      ## @param orchestration.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
+      ## @param orchestration.migration.process.batchSize can be used to define the batch size.
+      batchSize: 5
+      ## @param orchestration.migration.process.importFinishedTimeout can be used to define the timeout when the import is finished.
+      importFinishedTimeout: PT1M
+      retry:
+        ## @param orchestration.migration.process.retry.maxRetries can be used to define the maximum amount of retries.
+        maxRetries: 5
+        ## @param orchestration.migration.process.retry.maxRetryDelay can be used to define the delay time between retries.
+        maxRetryDelay: PT1M
+        ## @param orchestration.migration.process.retry.minRetryDelay can be used to define the delay time between retries.
+        minRetryDelay: PT10s
+        ## @param orchestration.migration.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
+        retryDelayMultiplier: 2.0
     identity:
-      ## @param core.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
+      ## @param orchestration.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
       enabled: false
-      ## @param core.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
 
-  ## @param core.sidecars can be used to attach extra containers to the deployment
+  ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
 
-  ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  ## Multitenancy configuration
+  ## @extra orchestration.multitenancy
+  multitenancy:
+    checks:
+      ## @param orchestration.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
+      enabled: false
+    api:
+      ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
+      enabled: true
+
+  ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
-  ## @param core.partitionCount defines how many partitions are set up in the cluster
+  ## @param orchestration.partitionCount defines how many partitions are set up in the cluster
   partitionCount: "3"
-  ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
+  ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @param core.env can be used to set extra environment variables in each broker container
+  ## @param orchestration.env can be used to set extra environment variables in each broker container
   env: []
     # - name: LOGGING_LEVEL_IO_CAMUNDA
     #   value: DEBUG
@@ -2448,116 +2448,116 @@ core:
     #   value: TRACE
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
     #   value: TRACE
-  ## @param core.envFrom list of environment variables to import from configMapRef and secretRef
+  ## @param orchestration.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
-  ## @extra core.configMap configuration which will be applied to the mounted config map.
+  ## @extra orchestration.configMap configuration which will be applied to the mounted config map.
   configMap:
-    ## @param core.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    ## @param orchestration.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
-  ## @param core.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  ## @param orchestration.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
-  ## @param core.logLevel defines the log level which is used
+  ## @param orchestration.logLevel defines the log level which is used
   logLevel: info
-  ## @param core.log4j2 can be used to overwrite the log4j2 configuration
+  ## @param orchestration.log4j2 can be used to overwrite the log4j2 configuration
   log4j2: ""
-  ## @param core.javaOpts can be used to set java options
+  ## @param orchestration.javaOpts can be used to set java options
   javaOpts: >-
     -XX:+HeapDumpOnOutOfMemoryError
     -XX:HeapDumpPath=/usr/local/camunda/data
     -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
     -XX:+ExitOnOutOfMemoryError
 
-  ## @extra core.service configuration for the broker service
+  ## @extra orchestration.service configuration for the broker service
   service:
-    ## @param core.service.annotations can be used to define annotations, which will be applied to the service
+    ## @param orchestration.service.annotations can be used to define annotations, which will be applied to the service
     annotations: {}
-    ## @param core.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    ## @param orchestration.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @param core.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
     httpPort: 8080
-    ## @param core.service.httpName defines the name of the http endpoint, where for example metrics are provided
+    ## @param orchestration.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-    ## @param core.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
+    ## @param orchestration.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
     commandPort: 26501
-    ## @param core.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    ## @param orchestration.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
     commandName: "command"
-    ## @param core.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    ## @param orchestration.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
     internalPort: 26502
-    ## @param core.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    ## @param orchestration.service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
-    ## @param core.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
+    ## @param orchestration.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
     extraPorts: []
       # - name: hazelcast
       #   protocol: TCP
       #   port: 5701
       #   targetPort: 5701
-    ## @param core.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
     grpcPort: 26500
-    ## @param core.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
     grpcName: "gateway"
-    ## @param core.service.managementPort
+    ## @param orchestration.service.managementPort
     managementPort: 9600
-    ## @param core.service.managementName
+    ## @param orchestration.service.managementName
     managementName: "server"
 
-  ## @extra global.core.ServiceAccount configuration for the service account where the broker pods are assigned to
+  ## @extra global.orchestration.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
-    ## @param core.serviceAccount.enabled if true, enables the broker service account
+    ## @param orchestration.serviceAccount.enabled if true, enables the broker service account
     enabled: true
-    ## @param core.serviceAccount.name can be used to set the name of the broker service account
+    ## @param orchestration.serviceAccount.name can be used to set the name of the broker service account
     name: ""
-    ## @param core.serviceAccount.annotations can be used to set the annotations of the broker service account
+    ## @param orchestration.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
-    ## @param core.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
   ingress:
     grpc:
-      ## @param core.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
+      ## @param orchestration.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
       enabled: false
-      ## @param core.ingress.grpc.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
+      ## @param orchestration.ingress.grpc.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
       external: false
-      ## @param core.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
+      ## @param orchestration.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
       className: nginx
-      ## @param core.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-      ## @skip core.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
-      ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-      ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+      ## @skip orchestration.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
+      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
       annotations:
         ingress.kubernetes.io/rewrite-target: "/"
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
         nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
         nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-      ## @param core.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      ## @param orchestration.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
-      ## @param core.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      ## @param orchestration.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
       pathType: Prefix
-      ## @param core.ingress.grpc.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      ## @param orchestration.ingress.grpc.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
       host: ""
-      ## @extra core.ingress.grpc.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      ## @extra orchestration.ingress.grpc.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
-        ## @param core.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+        ## @param orchestration.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
         enabled: false
-        ## @param core.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-core-grpc
+        ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
+        secretName: camunda-platform-orchestration-grpc
 
-  # contextPath: "/core"
-  ## @param core.contextPath can be used to make Core web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  # contextPath: "/orchestration"
+  ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
+  ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
-  ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ## @param orchestration.ioThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
-  ## @extra core.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @extra core.resources.requests
-  ## @param core.resources.requests.cpu
-  ## @param core.resources.requests.memory
-  ## @param core.resources.limits.cpu
-  ## @param core.resources.limits.memory
+  ## @extra orchestration.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @extra orchestration.resources.requests
+  ## @param orchestration.resources.requests.cpu
+  ## @param orchestration.resources.requests.memory
+  ## @param orchestration.resources.limits.cpu
+  ## @param orchestration.resources.limits.memory
   resources:
     requests:
       cpu: 1000m
@@ -2566,160 +2566,160 @@ core:
       cpu: 2000m
       memory: 3000Mi
 
-  ## @param core.persistenceType defines the type of persistence which is used by core. Possible values are: disk, local and memory.
+  ## @param orchestration.persistenceType defines the type of persistence which is used by orchestration. Possible values are: disk, local and memory.
   #   disk  - means a persistence volume claim is configured and used
   #   local - means the data is stored into the container, no volumeMount nor volume nor claim is configured
   #   memory   - means it uses a tmpfs for the data persistence, be aware that this takes the limits into account
   persistenceType: disk
-  ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  ## @param orchestration.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
-  ## @param core.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  ## @param orchestration.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
   pvcAccessModes: ["ReadWriteOnce"]
-  ## @param core.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
+  ## @param orchestration.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
   pvcStorageClassName: ""
-  ## @param core.pvcAnnotations can be used to specify custom annotations for persistent volume claims, enhancing storage configuration flexibility.
+  ## @param orchestration.pvcAnnotations can be used to specify custom annotations for persistent volume claims, enhancing storage configuration flexibility.
   pvcAnnotations: {}
-  ## @param core.pvcSelector can be used to specify a label selector for persistent volume claims for further filtering of the set of persistent volumes to select.
+  ## @param orchestration.pvcSelector can be used to specify a label selector for persistent volume claims for further filtering of the set of persistent volumes to select.
   # https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector
   pvcSelector: {}
-  ## @extra core.data configuration to configure the data handling of the Zeebe broker pods
+  ## @extra orchestration.data configuration to configure the data handling of the Zeebe broker pods
   data:
-    ## @param core.data.snapshotPeriod defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
+    ## @param orchestration.data.snapshotPeriod defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
     snapshotPeriod: "5m"
-    ## @extra core.data.disk configuration to configure the disk storage of the Zeebe broker pods
+    ## @extra orchestration.data.disk configuration to configure the disk storage of the Zeebe broker pods
     disk:
-      ## @extra core.data.disk.freeSpace configuration to configure the free space handling of the Zeebe broker pods
+      ## @extra orchestration.data.disk.freeSpace configuration to configure the free space handling of the Zeebe broker pods
       freeSpace:
-        ## @param core.data.disk.freeSpace.processing the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        ## @param orchestration.data.disk.freeSpace.processing the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         processing: "2GB"
-        ## @param core.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         replication: "1GB"
-  ## @param core.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
+  ## @param orchestration.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
-  ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  ## @param orchestration.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
-  ## @param core.extraInitContainers (DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters
+  ## @param orchestration.extraInitContainers (DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
-  ## @param core.initContainers can be used to set up extra init containers for the application Pod
+  ## @param orchestration.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @param core.podAnnotations can be used to define extra broker pod annotations
+  ## @param orchestration.podAnnotations can be used to define extra broker pod annotations
   podAnnotations: {}
-  ## @param core.podLabels can be used to define extra broker pod labels
+  ## @param orchestration.podLabels can be used to define extra broker pod labels
   podLabels: {}
-  ## @extra core.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  ## @extra orchestration.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
-    ## @param core.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
+    ## @param orchestration.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
-    ## @param core.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    ## @param orchestration.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
     minAvailable: 0
-    ## @param core.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    ## @param orchestration.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
-  ## @extra core.podSecurityContext defines the security options the pod should be run with
+  ## @extra orchestration.podSecurityContext defines the security options the pod should be run with
   podSecurityContext:
-    ## @param core.podSecurityContext.runAsNonRoot run as non root
+    ## @param orchestration.podSecurityContext.runAsNonRoot run as non root
     runAsNonRoot: true
-    ## @param core.podSecurityContext.fsGroup
+    ## @param orchestration.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @extra core.podSecurityContext.seccompProfile
+    ## @extra orchestration.podSecurityContext.seccompProfile
     seccompProfile:
-      ## @param core.podSecurityContext.seccompProfile.type
+      ## @param orchestration.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
-  ## @extra core.containerSecurityContext defines the security options the container should be run with
+  ## @extra orchestration.containerSecurityContext defines the security options the container should be run with
   containerSecurityContext:
-    ## @param core.containerSecurityContext.allowPrivilegeEscalation
+    ## @param orchestration.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
-    ## @param core.containerSecurityContext.privileged
+    ## @param orchestration.containerSecurityContext.privileged
     privileged: false
-    ## @param core.containerSecurityContext.readOnlyRootFilesystem
+    ## @param orchestration.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
-    ## @param core.containerSecurityContext.runAsNonRoot
+    ## @param orchestration.containerSecurityContext.runAsNonRoot
     runAsNonRoot: true
-    ## @param core.containerSecurityContext.runAsUser
+    ## @param orchestration.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @extra core.containerSecurityContext.seccompProfile
+    ## @extra orchestration.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param core.containerSecurityContext.seccompProfile.type
+      ## @param orchestration.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
-  ## @extra core.startupProbe configuration
+  ## @extra orchestration.startupProbe configuration
   startupProbe:
-    ## @param core.startupProbe.enabled if true, the startup probe is enabled in app container
+    ## @param orchestration.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param core.startupProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param orchestration.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param core.startupProbe.probePath defines the startup probe route used on the app
+    ## @param orchestration.startupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/startup
-    ## @param core.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
+    ## @param orchestration.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
-    ## @param core.startupProbe.periodSeconds defines how often the probe is executed
+    ## @param orchestration.startupProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param core.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param orchestration.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param core.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param orchestration.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param core.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param orchestration.startupProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## @extra core.readinessProbe configuration
+  ## @extra orchestration.readinessProbe configuration
   readinessProbe:
-    ## @param core.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    ## @param orchestration.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param core.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param orchestration.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param core.readinessProbe.probePath defines the readiness probe route used on the app
+    ## @param orchestration.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
-    ## @param core.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param orchestration.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param core.readinessProbe.periodSeconds defines how often the probe is executed
+    ## @param orchestration.readinessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param core.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param orchestration.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param core.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param orchestration.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param core.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param orchestration.readinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## @extra core.livenessProbe configuration
+  ## @extra orchestration.livenessProbe configuration
   livenessProbe:
-    ## @param core.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    ## @param orchestration.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param core.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param orchestration.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param core.livenessProbe.probePath defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849
+    ## @param orchestration.livenessProbe.probePath defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849
     probePath: /actuator/health/readiness
-    ## @param core.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param orchestration.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param core.livenessProbe.periodSeconds defines how often the probe is executed
+    ## @param orchestration.livenessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param core.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    ## @param orchestration.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
     successThreshold: 1
-    ## @param core.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    ## @param orchestration.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
     failureThreshold: 5
-    ## @param core.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param orchestration.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## Metrics configuration
   metrics:
-    ## @param core.metrics.prometheus Prometheus metrics endpoint
+    ## @param orchestration.metrics.prometheus Prometheus metrics endpoint
     prometheus: /actuator/prometheus
 
-  ## @param core.nodeSelector can be used to define on which nodes the broker pods should run
+  ## @param orchestration.nodeSelector can be used to define on which nodes the broker pods should run
   nodeSelector: {}
-  ## @param core.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ## @param orchestration.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @extra global.core.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ## @extra global.orchestration.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
   # It uses a hard requirement for scheduling and works based on the pod labels
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -2732,56 +2732,71 @@ core:
                   - zeebe-broker
           topologyKey: "kubernetes.io/hostname"
 
-  ## @param core.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  ## @param orchestration.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
   index:
-    ## @param core.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
+    ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
     prefix: ""
 
+  ## @extra orchestration.retention configuration for Camunda exporter index.
+  retention:
+    ## @param orchestration.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    enabled: false
+    ## @param orchestration.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    minimumAge: 30d
+    ## @param orchestration.retention.policyName defines the name of the created and applied ILM policy.
+    policyName: zeebe-record-retention-policy
+
+  ## @extra orchestration.history configuration for Camunda harmonized historical indices.
   history:
-    ## @param core.history.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
+    ## @param orchestration.history.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
     elsRolloverDateFormat: date
-    ## @param core.history.rolloverInterval defines the time range of the historical indices to be created.
+    ## @param orchestration.history.rolloverInterval defines the time range of the historical indices to be created.
     rolloverInterval: 1d
-    ## @param core.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
+    ## @param orchestration.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
     rolloverBatchSize: 100
-    ## @param core.history.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
+    ## @param orchestration.history.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
     ## the last hour will not be collected into historical indices.
     waitPeriodBeforeArchiving: 1h
-    ## @param core.history.delayBetweenRuns the millisecond interval between archiver runs
+    ## @param orchestration.history.delayBetweenRuns the millisecond interval between archiver runs
     delayBetweenRuns: 2000
-    ## @param core.history.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
+    ## @param orchestration.history.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
     maxDelayBetweenRuns: 60000
+    ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.
     retention:
-      ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+      ## @param orchestration.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
       enabled: false
-      ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+      ## @param orchestration.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 30d
-      ## @param core.history.retention.policyName defines the name of the created and applied ILM policy.
+      ## @param orchestration.history.retention.policyName defines the name of the created and applied ILM policy.
       # NOTE: The value is set to "zeebe-record-retention-policy" for backwards compatibility between 8.7 and 8.8.
-      policyName: zeebe-record-retention-policy
+      policyName: camunda-history-retention-policy
+      ## @param orchestration.history.retention.usageMetricsMinimumAge defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).
+      usageMetricsMinimumAge: 730d
+      ## @param orchestration.history.retention.usageMetricsPolicyName defines the name of the created and applied ILM policy to usage metric indices.
+      usageMetricsPolicyName: camunda-usage-metrics-retention-policy
 
-  ## @param core.configuration if specified, contents will be used as the application.yaml
+  ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param core.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
-  ## @param core.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+  ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
-  ## @param core.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+  ## @param orchestration.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
-  ## @param core.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
+  ## @param orchestration.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
   extraVolumeClaimTemplates: []
 
 #############################################
-#####
+ #####
 #     # #####  ##### # #    # # ###### ######
 #     # #    #   #   # ##  ## #     #  #
 #     # #    #   #   # # ## # #    #   #####
 #     # #####    #   # #    # #   #    #
 #     # #        #   # #    # #  #     #
-#####  #        #   # #    # # ###### ######
+ #####  #        #   # #    # # ###### ######
 #############################################
 ## @section Optimize Parameters
 # Optimize configuration for the Optimize sub chart.

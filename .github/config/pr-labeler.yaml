@@ -101,10 +101,10 @@ component/zeebe:
         - 'charts/camunda-platform-*/templates/zeebe-gateway/**'
         - 'charts/camunda-platform-*/charts/zeebe-gateway/**'
 
-component/core:
+component/orchestration:
   - changed-files:
     - any-glob-to-any-file:
-        - 'charts/camunda-platform-*/templates/core/**'
+        - 'charts/camunda-platform-*/templates/orchestration/**'
 
 #
 # Tools.
