@@ -50,7 +50,6 @@ func TestConstraintTemplate(t *testing.T) {
 func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Skip: true,
 			Name: "TestExistingSecretConstraintDisplays",
 			Values: map[string]string{
 				"identity.enabled": "true",
@@ -64,7 +63,6 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 				s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
 			},
 		}, {
-			Skip: true,
 			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
 			Values: map[string]string{
 				"identity.enabled": "true",
@@ -78,7 +76,6 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(err.Error(), "global.identity.auth.orchestration.existingSecret")
 			},
 		}, {
-			Skip: true,
 			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
 			Values: map[string]string{
 				"identity.enabled": "true",
