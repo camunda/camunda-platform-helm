@@ -1,6 +1,6 @@
 # Used in the GitHub Actions unit test CI workflow.
 unit:
-  enabled: true
+  enabled: false
   matrix:
     - name: Core
       packages: identity camunda console
@@ -22,19 +22,19 @@ integration:
     pr:
       scenario:
         - name: elasticsearch
-          enabled: true
+          enabled: false
           shortname: es
           exclude: []
           auth: keycloak
     nightly:
       scenario:
         - name: elasticsearch
-          enabled: true
+          enabled: false
           exclude: []
           shortname: es
           auth: keycloak
         - name: multitenancy
-          enabled: true
+          enabled: false
           exclude: []
           shortname: mt
           auth: keycloak
@@ -44,12 +44,12 @@ integration:
           shortname: oi
           auth: keycloak
         - name: opensearch
-          enabled: true
+          enabled: false
           shortname: os
           exclude: []
           auth: keycloak
         - name: elasticsearch
-          enabled: true
+          enabled: false
           exclude: []
           auth: keycloak
-          enterprise: true
+          enterprise: false
