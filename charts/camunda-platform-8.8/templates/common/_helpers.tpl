@@ -837,6 +837,7 @@ false
 Release highlights.
 ********************************************************************************
 */}}
+
 {{- define "camundaPlatform.ReleaseHighlights" }}
 ###
 ### Helm chart release highlights

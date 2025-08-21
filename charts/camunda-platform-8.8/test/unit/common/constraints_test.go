@@ -61,7 +61,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				require.ErrorContains(t, err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
+				s.Require().ErrorContains(err, "the Camunda Helm chart will no longer automatically generate passwords for the Identity component")
 			},
 		}, {
 			Skip: true,
@@ -75,7 +75,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				Require().NotContains(err.Error(), "global.identity.auth.orchestration.existingSecret")
+				s.Require().NotContains(err.Error(), "global.identity.auth.orchestration.existingSecret")
 			},
 		}, {
 			Skip: true,
@@ -89,7 +89,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				require.Nil(t, err)
+				s.Require().Nil(err)
 			},
 		},
 	}
