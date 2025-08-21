@@ -1,0 +1,28 @@
+connectors:
+  image:
+    repository: camunda/connectors-bundle
+    digest: sha256:940f54c0af1a4ab35f4a7c6fc00d13a7186929a078f6f9ce3fd138f33243aaad
+operate:
+  image:
+    repository: camunda/operate
+    digest: sha256:9c6de5279a4ab22c1823503613ab3d2a30192a640b640048cdeda0e9d4fa254e
+tasklist:
+  image:
+    repository: camunda/tasklist
+    digest: sha256:7140911f7d54284b73b74e0f70be9ecc9442d9612ef72bf92c83aa13e4a3f84f
+optimize:
+  image:
+    repository: camunda/optimize
+    digest: sha256:28541a5e6c07a036ccd2f00d0e2852f7001ed1cd90409ea8506069d3fd6910d4
+identity:
+  image:
+    repository: camunda/identity
+    digest: sha256:cb4a5b851ec5570668bdf66523e6976b7b786b81644c728c249eb78cb678549e
+zeebe:
+  image:
+    repository: camunda/zeebe
+    digest: sha256:56ca2a6dc98dec331f3a601bfa1af656fa5038b32a730e8251072c3bb8a20f03
+zeebeGateway:
+  image:
+    repository: camunda/zeebe
+    digest: sha256:56ca2a6dc98dec331f3a601bfa1af656fa5038b32a730e8251072c3bb8a20f03
