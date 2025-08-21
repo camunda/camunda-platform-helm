@@ -96,7 +96,7 @@ runs:
         echo "matrix:" > matrix_versions.txt
         if [[ "${{ inputs.manual-trigger }}" == "all" ]]; then
           echo "Requested to build all"
-          for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+          for camunda_version in ${{ steps.get-chart-versions.outputs.alpha }}; do
             chart_dir="charts/camunda-platform-${camunda_version}"
             write_matrix_entry "$camunda_version" "$chart_dir"
           done
@@ -118,12 +118,12 @@ runs:
           # If any workflow or action files have changed, build all chart versions
           if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)"; then
             echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
-            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+            for camunda_version in ${{ steps.get-chart-versions.outputs.alpha }}; do
               chart_dir="charts/camunda-platform-${camunda_version}"
               write_matrix_entry "$camunda_version" "$chart_dir"
             done
           else
-            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+            for camunda_version in ${{ steps.get-chart-versions.outputs.alpha }}; do
               chart_dir="charts/camunda-platform-${camunda_version}"
               if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
                 write_matrix_entry "$camunda_version" "$chart_dir"

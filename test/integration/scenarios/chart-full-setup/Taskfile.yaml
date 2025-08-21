@@ -113,7 +113,7 @@ tasks:
           "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback"
           "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback"
           "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback"
-          "https://{{ .TEST_INGRESS_HOST }}/core/sso-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/orchestration/sso-callback"
         )
         NEW_SPA_URIS=(
           "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback"
@@ -121,7 +121,7 @@ tasks:
         )
 
         APP_JSON=$(curl -s -X GET \
-          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json")
 

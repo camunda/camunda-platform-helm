@@ -952,4 +952,5 @@ jobs:
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
           fi
+          kubectl annotate ns ${{ env.TEST_NAMESPACE }} test-flow=${{ inputs.flow }}
           kubectl annotate ns ${{ env.TEST_NAMESPACE }} build-failed=true
