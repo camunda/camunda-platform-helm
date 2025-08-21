@@ -66,3 +66,4 @@ jobs:
       exclude: "${{ inputs.exclude }}"
       values-enterprise: "${{ inputs.values-enterprise }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      values-digest: ${{ inputs.camunda-version == '8.8' }}
