@@ -24,9 +24,15 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
+      {{- if eq (env "PLATFORM") "eks" }}
+        --values {{.TEST_VALUES_BASE_DIR}}/chart-full-setup/values-integration-test-ingress-infra.yaml \
+      {{- end }}
         --values {{ .INFRA_TYPE_VALUES }} \
-        {{ eq (env "TEST_VALUES_DIGEST") "true" | ternary (printf "--values %s/values-digest.yaml" .TEST_CHART_DIR ) "" }} \
-        {{ eq (env "TEST_VALUES_ENTERPRISE") "true" | ternary (printf "--values %s/values-enterprise.yaml" .TEST_CHART_DIR ) "" }} \
+      {{- if eq (env "TEST_VALUES_DIGEST") "true" }}
+        --values {{.TEST_CHART_DIR}}/values-digest.yaml \
+      {{- end }}
+      {{- if eq (env "TEST_VALUES_ENTERPRISE") "true" }}
+        --values {{.TEST_CHART_DIR}}/values-enterprise.yaml" \
+      {{- end }}
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}
