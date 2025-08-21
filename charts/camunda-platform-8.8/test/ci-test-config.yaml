@@ -22,7 +22,7 @@ integration:
     pr:
       scenario:
         - name: elasticsearch
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: eske
           exclude: []
@@ -31,6 +31,11 @@ integration:
           shortname: esba
           auth: basic
           exclude: [identity,console,orchestration-grpc]
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          shortname: esoi
+          auth: oidc
     nightly:
       scenario:
         - name: elasticsearch
