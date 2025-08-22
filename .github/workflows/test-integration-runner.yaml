@@ -966,7 +966,7 @@ jobs:
           ref: ${{ inputs.caller-git-ref }}
 
       - name: CI Cleanup
-        if: always() && ${{ inputs.always-delete-namespace }}
+        if: always() && inputs.always-delete-namespace
         run: |
           if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
             if [ "${{ inputs.distro-type }}" == "kubernetes" ]; then
