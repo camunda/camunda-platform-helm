@@ -417,3 +417,39 @@ The old key was deprecated in 8.6 and removed in the 8.8 release.
   "condition" (((.Values.orchestration.ingress).rest).enabled)
   "oldName" "orchestration.ingress.rest"
 ) }}
+
+{{/*
+*******************************************************************************
+Security config moved from "global.security.*" to "orchestration.security.*"
+The keys moved in the 8.8 Alpha 8 version.
+*******************************************************************************
+*/}}
+
+{{- if .Values.orchestration.enabled -}}
+  {{/*
+  - renamed: global.security.authentication => orchestration.security.authentication
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.authentication)
+    "oldName" "global.security.authentication"
+    "newName" "orchestration.security.authentication"
+  ) }}
+
+  {{/*
+  - renamed: global.security.authorizations => orchestration.security.authorizations
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.authorizations)
+    "oldName" "global.security.authorizations"
+    "newName" "orchestration.security.authorizations"
+  ) }}
+
+  {{/*
+  - renamed: global.security.initialization => orchestration.security.initialization
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.initialization)
+    "oldName" "global.security.initialization"
+    "newName" "orchestration.security.initialization"
+  ) }}
+{{- end }}
