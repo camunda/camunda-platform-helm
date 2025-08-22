@@ -16,6 +16,7 @@ package web_modeler
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -184,11 +185,13 @@ func TestPVCManifestCreated(t *testing.T) {
 		Name: "TestPVCManifestCreated",
 		Values: map[string]string{
 			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "test@test.com",
 			"webModeler.persistence.enabled":        "true",
 			"webModeler.persistence.size":           "5Gi",
 			"webModeler.persistence.accessModes[0]": "ReadWriteOnce",
 		},
 		Verifier: func(t *testing.T, output string, err error) {
+			fmt.Println(output)
 			var pvc corev1.PersistentVolumeClaim
 			helm.UnmarshalK8SYaml(t, output, &pvc)
 			require.Equal(t, "camunda-platform-test-webmodeler-data", pvc.Name)
