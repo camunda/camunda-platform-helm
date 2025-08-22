@@ -962,7 +962,7 @@ jobs:
         with:
           step: delete-env
           token: ${{ steps.cluster-auth.outputs.token }}
-          env: ${{ needs.ci-setup.outputs.vars-identifier }}
+          env: ${{ steps.vars.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
       - name: CI Cleanup
