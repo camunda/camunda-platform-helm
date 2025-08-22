@@ -36,9 +36,15 @@ data:
 
     camunda:
       client:
-        {{-  $proto := (lower .Values.orchestration.readinessProbe.scheme) -}}
-        {{- $baseURLInternal := printf "%s://%s" $proto (include "orchestration.fullname" . | trimAll "\"") }}
-        rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.orchestration.service.httpPort .Values.orchestration.contextPath }}
+        {{- $baseURLInternal := printf "%s://%s-gateway"
+          (lower .Values.orchestration.readinessProbe.scheme)
+          (include "orchestration.fullname" .)
+        }}
+        rest-address: {{ printf "%s:%v%s"
+          $baseURLInternal
+          .Values.orchestration.service.httpPort
+          (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | trimSuffix "/")
+        }}
         grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.orchestration.service.grpcPort }}
         worker:
           defaults:
