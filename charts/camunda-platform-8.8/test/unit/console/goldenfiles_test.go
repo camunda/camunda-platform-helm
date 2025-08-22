@@ -52,7 +52,6 @@ func TestGoldenDefaultsTemplateConsole(t *testing.T) {
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 				`\s+version:\s+.*`,      // ignore release version in console config.
-				`\s+helm.sh/chart:\s+.*`,
 			},
 		})
 	}

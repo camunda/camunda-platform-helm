@@ -564,8 +564,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetInboundModeDisabled",
 			Values: map[string]string{
-				"connectors.enabled":      "true",
-				"connectors.inbound.mode": "disabled",
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+				"connectors.enabled":           "true",
+				"connectors.inbound.mode":      "disabled",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
