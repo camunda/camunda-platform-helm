@@ -16,7 +16,6 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -68,7 +67,6 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
-				fmt.Println(err)
 				helm.UnmarshalK8SYaml(s.T(), output, &ingress)
 
 				// then

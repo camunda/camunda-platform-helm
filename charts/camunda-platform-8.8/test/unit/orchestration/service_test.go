@@ -16,7 +16,6 @@ package orchestration
 
 import (
 	"camunda-platform/test/unit/testhelpers"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -74,7 +73,6 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
-				fmt.Println(output)
 				helm.UnmarshalK8SYaml(s.T(), output, &service)
 
 				// then

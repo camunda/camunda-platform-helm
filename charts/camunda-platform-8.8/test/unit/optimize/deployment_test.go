@@ -16,7 +16,6 @@ package optimize
 
 import (
 	"camunda-platform/test/unit/testhelpers"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -222,7 +221,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				var deploymentBefore appsv1.Deployment
 				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "optimize.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
-				fmt.Println(before)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// given
 				var deployment appsv1.Deployment

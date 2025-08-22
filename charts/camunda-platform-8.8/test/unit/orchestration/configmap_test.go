@@ -18,7 +18,6 @@ import (
 	"camunda-platform/test/unit/common"
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -96,7 +95,6 @@ func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 
-				fmt.Println(output)
 
 				// then
 				s.Require().Equal("io.camunda.exporter.CamundaExporter", configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
