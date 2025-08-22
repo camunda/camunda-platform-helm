@@ -45,6 +45,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 			"global.identity.auth.orchestration.existingSecret.name":       "camunda-credentials",
 			"global.identity.auth.console.existingSecret.name":    "camunda-credentials",
 			"global.identity.auth.optimize.existingSecret.name":   "camunda-credentials",
+			"console.serviceAccount.enabled":   "true",
 		}
 	}
 	values := s.SetValues

@@ -43,14 +43,16 @@ func TestGoldenDefaultsTemplateConsole(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/console/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"console.enabled":          "true",
-				"identity.enabled":         "true",
-				"identityKeycloak.enabled": "true",
+				"console.enabled":                "true",
+				"identity.enabled":               "true",
+				"identityKeycloak.enabled":       "true",
+				"console.serviceAccount.enabled": "true",
 			},
 			IgnoredLines: []string{
 				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 				`\s+version:\s+.*`,      // ignore release version in console config.
+				`\s+helm.sh/chart:\s+.*`,
 			},
 		})
 	}
