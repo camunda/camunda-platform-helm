@@ -62,7 +62,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				s.Require().Equal("bar", deployment.Spec.Template.ObjectMeta.Labels["foo"])
+				s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
 			},
 		}, {
 			Name: "TestContainerSetPodAnnotations",
@@ -672,3 +672,4 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+

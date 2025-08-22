@@ -56,7 +56,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
-				"identity.enabled":      "true",
 				"console.enabled":       "true",
 				"console.podLabels.foo": "bar",
 			},
@@ -65,12 +64,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				s.Require().Equal("bar", deployment.Spec.Template.ObjectMeta.Labels["foo"])
+				s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
 			},
 		}, {
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
-				"identity.enabled":           "true",
 				"console.enabled":            "true",
 				"console.podAnnotations.foo": "bar",
 				"console.podAnnotations.foz": "baz",
@@ -86,7 +84,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
-				"identity.enabled":       "true",
 				"console.enabled":        "true",
 				"global.annotations.foo": "bar",
 			},
@@ -100,7 +97,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
-				"identity.enabled":         "true",
 				"console.enabled":          "true",
 				"global.image.registry":    "global.custom.registry.io",
 				"global.image.tag":         "8.x.x",
@@ -119,7 +115,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsGlobal",
 			Values: map[string]string{
-				"identity.enabled":                 "true",
 				"console.enabled":                  "true",
 				"global.image.pullSecrets[0].name": "SecretName",
 			},
@@ -133,7 +128,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
-				"identity.enabled":                  "true",
 				"console.enabled":                   "true",
 				"global.image.pullSecrets[0].name":  "SecretName",
 				"console.image.pullSecrets[0].name": "SecretNameSubChart",
@@ -149,7 +143,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerOverwriteImageTag",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":  "true",
 				"console.enabled":   "true",
 				"console.image.tag": "a.b.c",
 			},
@@ -166,7 +159,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerOverwriteGlobalImageTag",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":  "true",
 				"console.enabled":   "true",
 				"global.image.tag":  "a.b.c",
 				"console.image.tag": "",
@@ -184,7 +176,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerOverwriteImageTagWithChartDirectSetting",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":  "true",
 				"console.enabled":   "true",
 				"global.image.tag":  "x.y.z",
 				"console.image.tag": "a.b.c",
@@ -203,7 +194,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetContainerCommand",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":   "true",
 				"console.enabled":    "true",
 				"console.command[0]": "printenv",
 			},
@@ -221,7 +211,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumes",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                              "true",
 				"console.enabled":                               "true",
 				"console.extraVolumes[0].name":                  "extraVolume",
 				"console.extraVolumes[0].configMap.name":        "otherConfigMap",
@@ -256,7 +245,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumeMounts",
 			Values: map[string]string{
-				"identity.enabled":                       "true",
 				"console.enabled":                        "true",
 				"console.extraVolumeMounts[0].name":      "otherConfigMap",
 				"console.extraVolumeMounts[0].mountPath": "/usr/local/config",
@@ -266,8 +254,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				beforeOptions := &helm.Options{
 					SetValues: map[string]string{
-						"identity.enabled": "true",
-						"console.enabled":  "true",
+						"console.enabled": "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 					ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -292,7 +279,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumesAndMounts",
 			Values: map[string]string{
-				"identity.enabled":                              "true",
 				"console.enabled":                               "true",
 				"console.extraVolumeMounts[0].name":             "otherConfigMap",
 				"console.extraVolumeMounts[0].mountPath":        "/usr/local/config",
@@ -341,7 +327,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetServiceAccountName",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":            "true",
 				"console.enabled":             "true",
 				"console.serviceAccount.name": "accName",
 			},
@@ -356,7 +341,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
-				"identity.enabled":                     "true",
 				"console.enabled":                      "true",
 				"console.podSecurityContext.runAsUser": "1000",
 			},
@@ -371,8 +355,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSecurityContext",
 			Values: map[string]string{
-				"identity.enabled": "true",
-				"console.enabled":  "true",
+				"console.enabled": "true",
 				"console.containerSecurityContext.privileged":          "true",
 				"console.containerSecurityContext.capabilities.add[0]": "NET_ADMIN",
 			},
@@ -389,7 +372,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 			Name: "TestContainerSetNodeSelector",
 			Values: map[string]string{
-				"identity.enabled":              "true",
 				"console.enabled":               "true",
 				"console.nodeSelector.disktype": "ssd",
 				"console.nodeSelector.cputype":  "arm",
@@ -424,8 +406,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//		   - another-node-label-value
 			Name: "TestContainerSetAffinity",
 			Values: map[string]string{
-				"identity.enabled": "true",
-				"console.enabled":  "true",
+				"console.enabled": "true",
 				"console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
 				"console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
 				"console.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].values[0]": "e2e-a1",
@@ -469,7 +450,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//  effect: "NoSchedule"
 			Name: "TestContainerSetTolerations",
 			Values: map[string]string{
-				"identity.enabled":                "true",
 				"console.enabled":                 "true",
 				"console.tolerations[0].key":      "key1",
 				"console.tolerations[0].operator": "Equal",
@@ -493,7 +473,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldOverwriteGlobalImagePullPolicy",
 			Values: map[string]string{
-				"identity.enabled":        "true",
 				"console.enabled":         "true",
 				"global.image.pullPolicy": "Always",
 			},
@@ -512,7 +491,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerStartupProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                         "true",
 				"console.enabled":                          "true",
 				"console.startupProbe.enabled":             "true",
 				"console.startupProbe.probePath":           "/healthz",
@@ -540,7 +518,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerLivenessProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                          "true",
 				"console.enabled":                           "true",
 				"console.livenessProbe.enabled":             "true",
 				"console.livenessProbe.probePath":           "/healthz",
@@ -567,7 +544,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
-				"identity.enabled":                           "true",
 				"console.enabled":                            "true",
 				"console.sidecars[0].name":                   "nginx",
 				"console.sidecars[0].image":                  "nginx:latest",
@@ -594,7 +570,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestInitContainers",
 			Values: map[string]string{
-				"identity.enabled":                                 "true",
 				"console.enabled":                                  "true",
 				"console.initContainers[0].name":                   "nginx",
 				"console.initContainers[0].image":                  "nginx:latest",
