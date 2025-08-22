@@ -101,7 +101,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("c8.example.com", configmapApplication.Client.Pusher.Host)
 				s.Require().Equal("80", configmapApplication.Client.Pusher.Port)
 				s.Require().Equal("/modeler-ws", configmapApplication.Client.Pusher.Path)
-				s.Require().Equal("false", configmapApplication.Client.Pusher.ForceTLS)
+				s.Require().Equal(false, configmapApplication.Client.Pusher.ForceTLS)
 			},
 		}, {
 			Name: "TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsEnabled",
@@ -127,7 +127,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("c8.example.com", configmapApplication.Client.Pusher.Host)
 				s.Require().Equal("443", configmapApplication.Client.Pusher.Port)
 				s.Require().Equal("/modeler-ws", configmapApplication.Client.Pusher.Path)
-				s.Require().Equal("true", configmapApplication.Client.Pusher.ForceTLS)
+				s.Require().Equal(true, configmapApplication.Client.Pusher.ForceTLS)
 			},
 		}, {
 			Name: "TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride",
@@ -135,6 +135,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"identity.fullnameOverride":           "custom-identity-fullname",
+				"identity.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -155,6 +156,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"identity.nameOverride":               "custom-identity",
+				"identity.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
