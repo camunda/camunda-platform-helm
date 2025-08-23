@@ -108,3 +108,4 @@ jobs:
       platforms: ${{ matrix.platform }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
       always-delete-namespace: true
+      values-digest: ${{ inputs.camunda-version == '8.8' }}

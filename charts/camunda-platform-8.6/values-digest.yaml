@@ -1,0 +1,53 @@
+connectors:
+  image:
+    repository: camunda/connectors-bundle
+    digest: sha256:25ab2100a73f027ada5eb45cfec6df57ef3ecf6222ec58b6e8e177c11a288d7f
+operate:
+  image:
+    repository: camunda/operate
+    digest: sha256:3d9e7df651dc76efafd4ff63c5c1f0aa2e335d448cf18a7c03ff3f46592a4886
+tasklist:
+  image:
+    repository: camunda/tasklist
+    digest: sha256:795307343ac2f00954dc494ebba7e7a123c0edb97ed1bf742febf3e5e7284503
+optimize:
+  image:
+    repository: camunda/optimize
+    digest: sha256:c273de2caf314c8aacacb8bb5e462c31bb890eddcb995b36a82dade18fa4b50c
+identity:
+  image:
+    repository: camunda/identity
+    digest: sha256:cb071acead0c010dcc473e58c34306353019c659356710db4843a46d64d79d88
+zeebe:
+  image:
+    repository: camunda/zeebe
+    digest: sha256:b1540f7967a49a3a32f456c8dc2531f33903127e93b7f209f371a0c53219380d
+zeebeGateway:
+  image:
+    repository: camunda/zeebe
+    digest: sha256:b1540f7967a49a3a32f456c8dc2531f33903127e93b7f209f371a0c53219380d
+executionIdentity:
+  image:
+    repository: camunda/camunda
+    digest: sha256:41a5ff4b75d5a24cd85561b8317ae4998ea73dbc49992c60ae0613353352424d
+console:
+  image:
+    repository: camunda/console
+    digest: sha256:f4675f8b69a554c1fd2a98a479837c165a4e842afc5ef80050c26a202110021c
+webModeler:
+  restapi:
+    image:
+      repository: camunda/web-modeler-restapi
+      digest: sha256:3622828d7536241f58d3f737ab63466d8b71c8ba59eeaaa88c27f5e624fda8f0
+  webapp:
+    image:
+      repository: camunda/web-modeler-webapp
+      digest: sha256:b98bb1e260f8063854538c8146d89463d87fac5e13f6993bf34bab156f08057d
+  websockets:
+    image:
+      repository: camunda/web-modeler-websockets
+      digest: sha256:b08544fa5f2d684758bfcc9b82393559ab8ed85794a3733396012f343f710972
+identityKeycloak:
+  image:
+    repository: camunda/keycloak
+    digest: sha256:c48b036bd405d303e84d399f620f670d55e16c5313d21248e1b19fb9acbe276b

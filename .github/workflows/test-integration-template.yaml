@@ -104,7 +104,7 @@ on:
         description: Enable enterprise values
       values-digest:
         required: false
-        default: "true"
+        default: "false"
         type: string
         description: Enable digest values
       camunda-helm-post-render:
