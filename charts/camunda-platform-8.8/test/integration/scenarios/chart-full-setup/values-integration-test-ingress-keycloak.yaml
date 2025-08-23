@@ -47,6 +47,7 @@ global:
   security:
     authentication:
       method: oidc
+      authenticationRefreshInterval: "PT30S"
 
 identity:
   enabled: true

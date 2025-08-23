@@ -218,6 +218,8 @@ data:
         authentication:
           method: {{ .Values.global.security.authentication.method | quote }}
           unprotectedApi: {{ .Values.global.security.authentication.unprotectedApi }}
+          authenticationRefreshInterval: {{ .Values.global.security.authentication.authenticationRefreshInterval | quote }}
+
         authorizations:
           enabled: {{ .Values.global.security.authorizations.enabled }}
         initialization:
