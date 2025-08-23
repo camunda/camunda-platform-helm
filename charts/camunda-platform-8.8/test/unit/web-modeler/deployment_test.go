@@ -291,6 +291,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// then
 				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 				volumes := deployment.Spec.Template.Spec.Volumes
 				s.Require().Equal(volumeLenBefore+1, len(volumes))
 
@@ -325,6 +326,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				// then
 				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 				containers := deployment.Spec.Template.Spec.Containers
 				s.Require().Equal(containerLenBefore, len(containers))
 
