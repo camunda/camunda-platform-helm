@@ -59,7 +59,7 @@ runs:
       uses: teleport-actions/auth-k8s@171cc0ad4b6b7cebcb33c672defe3f6dc58967ba # v2
       with:
         proxy: camunda.teleport.sh:443
-        token: ${{ env.TOKEN }}
+        token: ${{ env.TELEPORT_TOKEN }}
         kubernetes-cluster: ${{ env.CLUSTER_NAME }}
 
     - name: Authenticate via var

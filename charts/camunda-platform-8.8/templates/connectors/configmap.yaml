@@ -36,18 +36,24 @@ data:
 
     camunda:
       client:
-        {{-  $proto := (lower .Values.orchestration.readinessProbe.scheme) -}}
-        {{- $baseURLInternal := printf "%s://%s" $proto (include "orchestration.fullname" . | trimAll "\"") }}
-        rest-address: {{ printf "%s:%v%s" $baseURLInternal .Values.orchestration.service.httpPort .Values.orchestration.contextPath }}
+        {{- $baseURLInternal := printf "%s://%s-gateway"
+          (lower .Values.orchestration.readinessProbe.scheme)
+          (include "orchestration.fullname" .)
+        }}
+        rest-address: {{ printf "%s:%v%s"
+          $baseURLInternal
+          .Values.orchestration.service.httpPort
+          (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | trimSuffix "/")
+        }}
         grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.orchestration.service.grpcPort }}
         worker:
           defaults:
             max-jobs-active: 32
             stream-enabled: true
         mode: selfManaged
-        {{- if eq .Values.global.security.authentication.method "basic" }}
+        {{- if eq .Values.orchestration.security.authentication.method "basic" }}
         auth:
-          {{- $user := first .Values.global.security.initialization.users }}
+          {{- $user := first .Values.orchestration.security.initialization.users }}
           method: basic
           username: {{ $user.username | quote }}
           password: {{ $user.password | quote }}

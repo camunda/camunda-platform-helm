@@ -13,7 +13,6 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-global:
   identity:
     auth:
       enabled: true
@@ -67,19 +66,6 @@ global:
         existingSecretKey: entra-child-app-client-secret
         tokenScope: <clientId>/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
-  security:
-    authentication:
-      method: oidc
-      unprotectedApi: false
-      oidc:
-        usernameClaim: oid
-    authorizations:
-      enabled: true
-    initialization:
-      mappingRules:
-        - mappingRuleID: demo-user-mapping-rule
-          claimName: oid
-          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
 
 console:
   enabled: true
@@ -146,6 +132,19 @@ orchestration:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
+  security:
+    authentication:
+      method: oidc
+      unprotectedApi: false
+      oidc:
+        usernameClaim: oid
+    authorizations:
+      enabled: true
+    initialization:
+      mappingRules:
+        - mappingRuleID: demo-user-mapping-rule
+          claimName: oid
+          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping"
