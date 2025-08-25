@@ -36,44 +36,39 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
-            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "connectors.authClientSecretName" . }}
-                  key: {{ include "connectors.authClientSecretKey" . }}
-            - name: VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "orchestration.authClientSecretName" . }}
-                  key: {{ include "orchestration.authClientSecretKey" . }}
-            - name: VALUES_KEYCLOAK_INIT_CONSOLE_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "console.authClientSecretName" . }}
-                  key: {{ include "console.authClientSecretKey" . }}
-            - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "optimize.authClientSecretName" . }}
-                  key: {{ include "optimize.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
+                "config"        .Values.global.identity.auth.connectors
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
+                "config"        .Values.global.identity.auth.orchestration
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "VALUES_KEYCLOAK_INIT_CONSOLE_SECRET"
+                "config"        .Values.global.identity.auth.console
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
+                "config"        .Values.global.identity.auth.optimize
+            ) | nindent 12 }}
             {{- /* TODO: Use ".Values.identity.connectors.inbound.mode=oauth" as a condition when we migrate
                  to flat chart structure. Also then remove the optional flag from the secret. */}}
             - name: KEYCLOAK_CLIENTS_0_NAME
               value: Connectors
             - name: KEYCLOAK_CLIENTS_0_ID
               value: connectors
-            - name: KEYCLOAK_CLIENTS_0_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "connectors.authClientSecretName" . }}
-                  key: {{ include "connectors.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "KEYCLOAK_CLIENTS_0_SECRET"
+                "config" .Values.global.identity.auth.connectors
+            ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
               value: http://placeholder
             - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
@@ -86,11 +81,10 @@ spec:
               value: "Orchestration"
             - name: KEYCLOAK_CLIENTS_1_ID
               value: "orchestration"
-            - name: KEYCLOAK_CLIENTS_1_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "orchestration.authClientSecretName" . }}
-                  key: {{ include "orchestration.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "KEYCLOAK_CLIENTS_1_SECRET"
+                "config" .Values.global.identity.auth.orchestration
+            ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_1_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
@@ -114,11 +108,10 @@ spec:
               value: migration
             - name: KEYCLOAK_CLIENTS_2_NAME
               value: Migration
-            - name: KEYCLOAK_CLIENTS_2_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "orchestration.authClientSecretName" . }}
-                  key: {{ include "orchestration.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "KEYCLOAK_CLIENTS_2_SECRET"
+                "config" .Values.global.identity.auth.orchestration
+            ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
               value: /dummy
             - name: KEYCLOAK_CLIENTS_2_ROOT_URL
@@ -131,52 +124,39 @@ spec:
               value: read
             {{- end }}
             {{- if .Values.identity.firstUser.enabled }}
-            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
-            {{- if .Values.identity.firstUser.existingSecret }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.identity.firstUser.existingSecret }}
-                  key: {{ .Values.identity.firstUser.existingSecretKey }}
-            {{- else }}
-              value: {{ .Values.identity.firstUser.password | quote }}
-            {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+              "config" .Values.identity.firstUser
+              "plaintextKey" "password"
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.identity.auth.admin.enabled }}
-            - name: VALUES_CAMUNDA_ADMIN_CLIENT_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.admin.existingSecret) }}
-              value: {{ .Values.global.identity.auth.admin.existingSecret | quote }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.identity.auth.admin.existingSecret.name }}
-                  key: {{ .Values.global.identity.auth.admin.existingSecretKey }}
-              {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "VALUES_CAMUNDA_ADMIN_CLIENT_SECRET"
+              "config" .Values.global.identity.auth.admin
+            ) | nindent 12 }}
             {{- end }}
             {{- end }}
-            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
-            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
-              value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
-                  key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
-              {{- end }}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
+              "config" .Values.global.identity.auth.identity
+            ) | nindent 12 }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
-            - name: CAMUNDA_OPTIMIZE_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.optimize.existingSecret) }}
-              value: {{ .Values.global.identity.auth.optimize.existingSecret | quote }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.identity.auth.optimize.existingSecret.name }}
-                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "CAMUNDA_OPTIMIZE_SECRET"
+              "config" .Values.global.identity.auth.optimize
+            ) | nindent 12 }}
             {{- end }}
             {{- end }}
-            {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+            {{- if .Values.identity.externalDatabase.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "IDENTITY_DATABASE_PASSWORD"
+              "config" .Values.identity.externalDatabase
+              "legacyKeyField" "existingSecretPasswordKey"
+            ) | nindent 12 }}
+            {{- else if .Values.identityPostgresql.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:

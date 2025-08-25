@@ -51,48 +51,41 @@ spec:
           command: ["bash", "/usr/local/bin/startup.sh"]
           {{- end }}
           env:
-            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
-            - name: CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            - name: CAMUNDA_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPERATE_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_DATABASE_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
             {{- end }}
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -106,11 +99,10 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             {{- if .Values.global.identity.auth.enabled }}
-            - name: VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "orchestration.authClientSecretName" . }}
-                  key: {{ include "orchestration.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.orchestration
+            ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
@@ -145,20 +137,18 @@ spec:
             {{/*
             Passwords for variable substitution.
             */}}
-            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
-            - name: VALUES_ELASTICSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
-                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled (include "opensearch.passwordIsDefined" .) }}
-            - name: VALUES_OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            {{- end}}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars

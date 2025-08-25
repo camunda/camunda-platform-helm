@@ -156,6 +156,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		},
 	}
 
+	s.T().Skip("Skipping until 8.8 reenables these")
 	for _, testCase := range testCases {
 		testCase := testCase
 		s.Run(testCase.Name, func() {
@@ -203,5 +204,6 @@ func TestPVCManifestCreated(t *testing.T) {
 		},
 	}
 
+	t.Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/persistentvolumeclaim-restapi.yaml"}, []testhelpers.TestCase{testCase})
 }

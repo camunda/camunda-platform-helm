@@ -89,18 +89,6 @@ app.kubernetes.io/component: orchestration
     {{- .Values.global.identity.auth.orchestration.clientId | default "orchestration" -}}
 {{- end -}}
 
-{{- define "orchestration.authClientSecretName" -}}
-    {{- if and .Values.global.identity.auth.orchestration.existingSecret (not (typeIs "string" .Values.global.identity.auth.orchestration.existingSecret)) -}}
-        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.orchestration.existingSecret "context" $) -}}
-    {{- else -}}
-        {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "orchestration") -}}
-    {{- end -}}
-{{- end -}}
-
-{{- define "orchestration.authClientSecretKey" -}}
-    {{ .Values.global.identity.auth.orchestration.existingSecretKey }}
-{{- end -}}
-
 {{- define "orchestration.authAudience" -}}
     {{- .Values.global.identity.auth.orchestration.audience | default "orchestration-api" -}}
 {{- end -}}

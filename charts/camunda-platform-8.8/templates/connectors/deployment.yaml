@@ -39,17 +39,16 @@ spec:
               name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
-            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "connectors.authClientSecretName" . }}
-                  key: {{ include "connectors.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.connectors
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID

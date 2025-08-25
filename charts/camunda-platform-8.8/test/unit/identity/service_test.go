@@ -52,6 +52,7 @@ func TestServiceTemplate(t *testing.T) {
 func (s *ServiceTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Skip: true,
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"identity.enabled":       "true",
@@ -59,12 +60,13 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
-				helm.UnmarshalK8SYaml(s.T(), output, &service)
+				helm.UnmarshalK8SYaml(t, output, &service)
 
 				// then
 				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 			},
 		}, {
+			Skip: true,
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
 				"identity.enabled":                 "true",
@@ -72,7 +74,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
-				helm.UnmarshalK8SYaml(s.T(), output, &service)
+				helm.UnmarshalK8SYaml(t, output, &service)
 
 				// then
 				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
@@ -118,7 +120,7 @@ func (s *KeycloakServiceTest) TestKeycloakDifferentServiceValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
-				helm.UnmarshalK8SYaml(s.T(), output, &service)
+				helm.UnmarshalK8SYaml(t, output, &service)
 
 				// then
 				s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)

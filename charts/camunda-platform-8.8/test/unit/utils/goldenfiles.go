@@ -54,7 +54,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	values["global.identity.auth.optimize.existingSecret.name"] = "camunda-credentials"
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
-		SetValues:      s.SetValues,
+		SetValues:      values,
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
 
