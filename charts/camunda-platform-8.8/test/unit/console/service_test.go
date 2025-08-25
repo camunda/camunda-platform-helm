@@ -55,6 +55,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"console.enabled":        "true",
+				"identity.enabled":       "true",
 				"global.annotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -67,6 +68,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
+				"identity.enabled":                "true",
 				"console.enabled":                 "true",
 				"console.service.annotations.foo": "bar",
 			},

@@ -41,6 +41,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerShouldSetCorrectAuthClientApiAudience",
 			Values: map[string]string{
+				"identity.enabled":                                  "true",
 				"webModeler.enabled":                                "true",
 				"webModeler.restapi.mail.fromAddress":               "example@example.com",
 				"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
@@ -60,6 +61,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectAuthClientId",
 			Values: map[string]string{
+				"identity.enabled":                         "true",
 				"webModeler.enabled":                       "true",
 				"webModeler.restapi.mail.fromAddress":      "example@example.com",
 				"global.identity.auth.webModeler.clientId": "custom-clientId",
@@ -80,6 +82,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsDisabled",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "/modeler",
@@ -106,6 +109,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsEnabled",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "/modeler",
@@ -132,10 +136,10 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"identity.fullnameOverride":           "custom-identity-fullname",
-				"identity.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -153,10 +157,10 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"identity.nameOverride":               "custom-identity",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"identity.nameOverride":               "custom-identity",
-				"identity.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -174,6 +178,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetServerHttpsOnly",
 			Values: map[string]string{
+				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
 				"webModeler.restapi.mail.fromAddress":         "example@example.com",
 				"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
@@ -194,6 +199,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectKeycloakServiceUrl",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"webModeler.enabled":                    "true",
 				"webModeler.restapi.mail.fromAddress":   "example@example.com",
 				"global.identity.keycloak.url.protocol": "http",
@@ -216,6 +222,7 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectIdentityType",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"webModeler.enabled":                    "true",
 				"webModeler.restapi.mail.fromAddress":   "example@example.com",
 				"global.identity.auth.type":             "MICROSOFT",
@@ -237,9 +244,10 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldSetCorrectIdentityUserNameClaim",
 			Values: map[string]string{
-				"webModeler.enabled":                                "true",
-				"webModeler.restapi.mail.fromAddress":               "example@example.com",
-				"global.security.authentication.oidc.usernameClaim": "example-claim",
+				"identity.enabled":                                         "true",
+				"webModeler.enabled":                                       "true",
+				"webModeler.restapi.mail.fromAddress":                      "example@example.com",
+				"orchestration.security.authentication.oidc.usernameClaim": "example-claim",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
