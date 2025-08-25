@@ -183,7 +183,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
-								Key:                  "password",
+								Key:                  "web-modeler-postgresql-user-password",
 							},
 						},
 					})

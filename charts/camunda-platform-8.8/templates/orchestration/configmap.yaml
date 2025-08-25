@@ -27,14 +27,14 @@ data:
         multipart:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
-  {{- if eq .Values.global.security.authentication.method "oidc" }}
+  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
       profiles:
         active: "identity,tasklist,operate,broker,consolidated-auth"
     camunda.security:
       authentication:
         oidc:
-          username-claim: {{ .Values.global.security.authentication.oidc.usernameClaim | quote }}
-          groups-claim: {{ .Values.global.security.authentication.oidc.groupsClaim | quote }}
+          username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+          groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
           client-id: {{ include "orchestration.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
           audiences:
@@ -49,7 +49,7 @@ data:
           */}}
           issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
           redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
-  {{- else if eq .Values.global.security.authentication.method "basic" }}
+  {{- else if eq .Values.orchestration.security.authentication.method "basic" }}
       profiles:
         active: "identity,operate,tasklist,broker,consolidated-auth"
   {{- else }}
@@ -216,29 +216,29 @@ data:
 
       security:
         authentication:
-          method: {{ .Values.global.security.authentication.method | quote }}
-          unprotectedApi: {{ .Values.global.security.authentication.unprotectedApi }}
+          method: {{ .Values.orchestration.security.authentication.method | quote }}
+          unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
         authorizations:
-          enabled: {{ .Values.global.security.authorizations.enabled }}
+          enabled: {{ .Values.orchestration.security.authorizations.enabled }}
         initialization:
-          {{- if eq .Values.global.security.authentication.method "basic" }}
+          {{- if eq .Values.orchestration.security.authentication.method "basic" }}
           users:
-            {{- range $user := .Values.global.security.initialization.users }}
+            {{- range $user := .Values.orchestration.security.initialization.users }}
             - username: {{ $user.username | quote }}
               password: {{ $user.password | quote }}
               name: {{ $user.name | quote }}
               email: {{ $user.email | quote }}
             {{- end }}
           default-roles.admin.users:
-            {{- range $user := .Values.global.security.initialization.users }}
+            {{- range $user := .Values.orchestration.security.initialization.users }}
             - {{ index $user "username" | quote }}
             {{- end }}
-          {{- else if eq .Values.global.security.authentication.method "oidc" }}
+          {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
           mapping-rules:
             - mapping-rule-id: "connectors-client-mapping-rule"
               claim-name: "client_id"
               claim-value: "connectors"
-            {{- range $mappingRule := .Values.global.security.initialization.mappingRules }}
+            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
             - mapping-rule-id: {{ index $mappingRule "mappingRuleID" | quote }}
               claim-name: {{ index $mappingRule "claimName" | quote }}
               claim-value: {{ index $mappingRule "claimValue" | quote }}
@@ -246,7 +246,7 @@ data:
           default-roles.connectors.mappingRules:
             - "connectors-client-mapping-rule"
           default-roles.admin.mappingRules:
-            {{- range $mappingRule := .Values.global.security.initialization.mappingRules }}
+            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
             - {{ index $mappingRule "mappingRuleID" | quote }}
             {{- end }}
           {{- end }}

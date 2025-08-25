@@ -15,14 +15,14 @@ global:
       protocol: https
       host: "$AWS_HOST_URL"
       port: 443
-  security:
-    authentication:
-      method: oidc
 elasticsearch:
   enabled: false
 orchestration:
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+  security:
+    authentication:
+      method: oidc
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping-rule"

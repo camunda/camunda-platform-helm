@@ -185,6 +185,7 @@ func TestPVCManifestCreated(t *testing.T) {
 		Name: "TestPVCManifestCreated",
 		Values: map[string]string{
 			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "test@test.com",
 			"webModeler.persistence.enabled":        "true",
 			"webModeler.persistence.size":           "5Gi",
 			"webModeler.persistence.accessModes[0]": "ReadWriteOnce",

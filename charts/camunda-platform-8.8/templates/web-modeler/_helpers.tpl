@@ -286,9 +286,9 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 
 {{- define "webModeler.authenticationType" -}}
 {{- if .Values.global.identity.auth.enabled }}
-  {{- if eq .Values.global.security.authentication.method "oidc" }}
+  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
     {{- "BEARER_TOKEN" }}
-  {{- else if eq .Values.global.security.authentication.method "basic" }}
+  {{- else if eq .Values.orchestration.security.authentication.method "basic" }}
     {{- "BASIC" }}
   {{- end }}
 {{- else }}
