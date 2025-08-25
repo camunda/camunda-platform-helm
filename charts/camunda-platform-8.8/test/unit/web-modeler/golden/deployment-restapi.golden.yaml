@@ -57,7 +57,7 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-license
                   key: CAMUNDA_LICENSE_KEY
-            - name: JAVA_OPTIONS
+            - name: JAVA_TOOL_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:

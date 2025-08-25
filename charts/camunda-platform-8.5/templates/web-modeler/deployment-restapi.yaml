@@ -34,7 +34,7 @@ spec:
           securityContext: {{- toYaml .Values.webModeler.restapi.containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
-            - name: JAVA_OPTIONS
+            - name: JAVA_TOOL_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
             {{- if or (not .Values.webModeler.restapi.externalDatabase.enabled) .Values.webModeler.restapi.externalDatabase.password }}
             - name: SPRING_DATASOURCE_PASSWORD

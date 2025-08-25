@@ -44,7 +44,7 @@ spec:
         image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.2.20"
         imagePullPolicy: IfNotPresent
         env:
-          - name: JAVA_OPTIONS
+          - name: JAVA_TOOL_OPTIONS
             value: "-Xmx1536m"
           - name: RESTAPI_DB_HOST
             value: "camunda-platform-test-postgresql-web-modeler"
