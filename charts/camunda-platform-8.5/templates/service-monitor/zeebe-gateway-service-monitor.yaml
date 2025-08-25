@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: zeebe-gateway
   endpoints:
     - honorLabels: true
-      path: {{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.metrics.prometheus }}
+      path: {{ include "camundaPlatform.joinpath" (list .Values.zeebeGateway.contextPath .Values.zeebeGateway.metrics.prometheus) }}
       port: http
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

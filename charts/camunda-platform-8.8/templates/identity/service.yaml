@@ -17,7 +17,7 @@ spec:
   ports:
     - port: {{ .Values.identity.service.port }}
       name: http
-      targetPort: 8080
+      targetPort: 8084
       protocol: TCP
     - port: {{ .Values.identity.service.metricsPort }}
       name: {{ .Values.identity.service.metricsName }}

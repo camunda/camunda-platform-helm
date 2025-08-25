@@ -722,6 +722,35 @@ func (s *deploymentTemplateTest) TestContainerProbesWithContextPath() {
 	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 }
 
+func (s *deploymentTemplateTest) TestContainerProbesWithContextPathWithTrailingSlash() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.contextPath":              "/test/",
+			"operate.startupProbe.enabled":     "true",
+			"operate.startupProbe.probePath":   "/start",
+			"operate.readinessProbe.enabled":   "true",
+			"operate.readinessProbe.probePath": "/ready",
+			"operate.livenessProbe.enabled":    "true",
+			"operate.livenessProbe.probePath":  "/live",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0]
+
+	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+}
+
 func (s *deploymentTemplateTest) TestContainerSetSidecar() {
 	// given
 	options := &helm.Options{

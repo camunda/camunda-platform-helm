@@ -209,6 +209,19 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
   {{- .Values.global.license.existingSecretKey | default $defaultSecretKey -}}
 {{- end -}}
 
+
+{{/*
+[camunda-platform] Joins an arbirtary number of subpaths (e.g., contextPath+probePath) for HTTP paths.
+Slashes are trimmed from the beginning and end of each part, and a single slash is inserted between parts, leading slash added at the beginning.
+Usage: {{ include "camundaPlatform.joinpath" (list .Values.zeebe.contextPath .Values.zeebe.readinessProbe.probePath) }}
+*/}}
+{{- define "camundaPlatform.joinpath" -}}
+  {{- $paths := join "/" . -}}
+  {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
+  {{- printf "/%s" $pathsSanitized -}}
+{{- end -}}
+
+
 {{/*
 ********************************************************************************
 Keycloak templates.
@@ -350,9 +363,16 @@ do not use this for its string value.
 {{- (cat .Values.global.elasticsearch.auth.existingSecret .Values.global.elasticsearch.auth.password) -}}
 {{- end -}}
 
+{{/*
+[opensearch] Used as a boolean to determine whether any password is defined.
+do not use this for its string value.
+*/}}
+{{- define "opensearch.passwordIsDefined" -}}
+{{- (cat .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) -}}
+{{- end -}}
 
 {{/*
-[opensearch] Get name of elasticsearch auth existing secret. For more details:
+[opensearch] Get name of opensearch auth existing secret. For more details:
 https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
 */}}
 {{- define "opensearch.authExistingSecret" -}}

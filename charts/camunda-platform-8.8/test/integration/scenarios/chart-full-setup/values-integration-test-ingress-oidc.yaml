@@ -13,7 +13,6 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-global:
   identity:
     auth:
       enabled: true
@@ -23,13 +22,13 @@ global:
       jwksUrl: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
       publicIssuerUrl: https://login.microsoftonline.com/<directoryId>/v2.0
       type: "MICROSOFT"
-      core:
+      orchestration:
         clientId: <clientId>
         audience: <clientId>
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/core"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
       identity:
         clientId: <clientId>
         audience: <clientId>
@@ -67,19 +66,6 @@ global:
         existingSecretKey: entra-child-app-client-secret
         tokenScope: <clientId>/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
-  security:
-    authentication:
-      method: oidc
-      unprotectedApi: false
-      oidc:
-        usernameClaim: oid
-    authorizations:
-      enabled: true
-    initialization:
-      mappingRules:
-        - mappingRuleID: demo-user-mapping-rule
-          claimName: oid
-          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
 
 console:
   enabled: true
@@ -132,8 +118,8 @@ webModelerPostgresql:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
 
-core:
-  contextPath: "/core"
+orchestration:
+  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true
@@ -144,8 +130,21 @@ core:
         # A wildcard certificate will be used.
         secretName: camunda-platform-zeebe-gateway
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: "core-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
+  security:
+    authentication:
+      method: oidc
+      unprotectedApi: false
+      oidc:
+        usernameClaim: oid
+    authorizations:
+      enabled: true
+    initialization:
+      mappingRules:
+        - mappingRuleID: demo-user-mapping-rule
+          claimName: oid
+          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping"

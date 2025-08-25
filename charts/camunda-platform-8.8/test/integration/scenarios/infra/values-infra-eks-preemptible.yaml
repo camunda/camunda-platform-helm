@@ -91,7 +91,7 @@ webModelerPostgresql:
                 values:
                   - t-core-16-unstable
 
-core:
+orchestration:
   tolerations:
     - key: t-core-16-unstable
       operator: Exists

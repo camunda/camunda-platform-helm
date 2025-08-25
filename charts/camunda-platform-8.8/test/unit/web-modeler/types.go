@@ -69,22 +69,30 @@ type AudienceYAML struct {
 }
 
 type ClusterYAML struct {
-	Id             string  `yaml:"id"`
-	Name           string  `yaml:"name"`
-	Version        string  `yaml:"version"`
-	Authentication string  `yaml:"authentication"`
-	Url            UrlYAML `yaml:"url"`
+	Id             string             `yaml:"id"`
+	Name           string             `yaml:"name"`
+	Version        string             `yaml:"version"`
+	Authentication string             `yaml:"authentication"`
+	Url            UrlYAML            `yaml:"url"`
+	Authorizations AuthorizationsYAML `yaml:"authorizations"`
 }
 
 type UrlYAML struct {
 	Zeebe    ZeebeUrlYAML `yaml:"zeebe"`
 	Operate  string       `yaml:"operate"`
 	Tasklist string       `yaml:"tasklist"`
+	Grpc     string       `yaml:"grpc"`
+	Rest     string       `yaml:"rest"`
+	WebApp   string       `yaml:"web-app"`
 }
 
 type ZeebeUrlYAML struct {
 	Grpc string `yaml:"grpc"`
 	Rest string `yaml:"rest"`
+}
+
+type AuthorizationsYAML struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // Web App ---
@@ -110,7 +118,7 @@ type PusherConfig struct {
 	Host     string `toml:"host"`
 	Port     string `toml:"port"`
 	Path     string `toml:"path"`
-	ForceTLS string `toml:"forceTLS"`
+	ForceTLS bool   `toml:"forceTLS"`
 }
 
 type OAuth2Config struct {
@@ -120,6 +128,7 @@ type OAuth2Config struct {
 }
 
 type TokenConfig struct {
-	Audience string `toml:"audience"`
-	JwksUrl  string `toml:"jwksUrl"`
+	Audience      string `toml:"audience"`
+	JwksUrl       string `toml:"jwksUrl"`
+	UsernameClaim string `toml:"usernameClaim"`
 }

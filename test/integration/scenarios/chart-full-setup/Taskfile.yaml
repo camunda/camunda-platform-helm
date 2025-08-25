@@ -5,6 +5,7 @@ vars:
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" | default ">0.0.0" | quote }}'
+  VALUES_CONFIG: '{{ env "VALUES_CONFIG" | default "{}" }}'
 
 dotenv:
 - ../vars/common.env
@@ -48,43 +49,60 @@ tasks:
       echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ env "INFRA_TYPE_VALUES" }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
+            
+      # Step 1: Merge all YAMLs
+      MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
+        "${TEST_VALUES_BASE_DIR}/common/values-integration-test.yaml" \
+        "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
+        "${INFRA_TYPE_VALUES}" \
+        /tmp/extra-values-file.yaml)
+      
+      echo "--- Merged YAML ---"
+      echo "$MERGED_YAML"
+      echo "-------------------"
+      # Step 2: Extract the Elasticsearch enabled value
+      ES_ENABLED=$(echo "$MERGED_YAML" | yq '.elasticsearch.enabled // false')
+      
+      echo "Elasticsearch enabled: $ES_ENABLED"
+
+      # Step 3: Determine if we should skip test
+      VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
+      
+      echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
+      echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
+      #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .INFRA_TYPE_VALUES }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_VALUES_SCENARIO" = "elasticsearch" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
       echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
       # In case the Zeebe version has not been released officially yet.
       echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
+      cat "${VARIABLES_ENV_FILE}"
     - |
-      if [[ "${TEST_CHART_FLOW}" == 'upgrade' ]]; then
+      {{ if eq .TEST_CHART_FLOW "upgrade"}}
         # Extract OpenShift values from released chart for upgrade test.
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }} \
           --version {{ .TEST_CHART_VERSION }}
-        # Preinstall in upgrade flow.
-        test -f {{ .TEST_VALUES_BASE_DIR }}/pre-install-upgrade/* || {
-          exit 0
-        }
+        # Pre-run scripts in the upgrade flow.
         export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
-        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install-upgrade/*.sh
-      fi
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install-upgrade.sh
+      {{ end }}
     - |
       # Create the local chart package to install.
       pwd
       helm package {{ .TEST_CHART_DIR }}/
     - |
-      test -f {{ .TEST_VALUES_BASE_DIR }}/pre-install/* || {
-        exit 0
-      }
+      # Pre-run scripts in the install flow.
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
-      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-install/*.sh
+      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install.sh
     - |
-      if [[ "${TEST_AUTH_TYPE}" == 'oidc' ]]; then
+      {{ if eq .TEST_AUTH_TYPE "oidc" }}
         # This token will expire in June 2027, a new one can be created in the Azure Entra UI
         RESPONSE=$(curl -X POST \
-          https://login.microsoftonline.com/${ENTRA_PARENT_APP_DIRECTORY_ID}/oauth2/v2.0/token \
+          https://login.microsoftonline.com/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
           -H "Content-Type: application/x-www-form-urlencoded" \
-          -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
+          -d "client_id={{ .ENTRA_PARENT_APP_CLIENT_ID }}" \
           -d "scope=https://graph.microsoft.com/.default" \
-          -d "client_secret=${ENTRA_PARENT_APP_CLIENT_SECRET}" \
+          -d "client_secret={{ .ENTRA_PARENT_APP_CLIENT_SECRET }}" \
           -d "grant_type=client_credentials")
 
         BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
@@ -95,7 +113,7 @@ tasks:
           "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback"
           "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback"
           "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback"
-          "https://{{ .TEST_INGRESS_HOST }}/core/sso-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/orchestration/sso-callback"
         )
         NEW_SPA_URIS=(
           "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback"
@@ -103,7 +121,7 @@ tasks:
         )
 
         APP_JSON=$(curl -s -X GET \
-          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json")
 
@@ -125,15 +143,26 @@ tasks:
 
         # PATCH the updated list
         curl -X PATCH \
-          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json" \
           -d "{
             \"web\": { \"redirectUris\": $FINAL_WEB_URIS },
             \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
           }"
-
-      fi
+      {{ end }}
+    - |
+      {{ if eq .TEST_VALUES_SCENARIO "opensearch" }}
+        sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      {{ end }}
+    - |
+      {{ if eq .TEST_AUTH_TYPE "oidc" }}
+        sed -i 's/<clientId>/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        sed -i 's/<clientSecret>/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        sed -i 's/<directoryId>/{{ .ENTRA_CHILD_APP_DIRECTORY_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        # sed -i 's/<objectId>/{{ .ENTRA_CHILD_APP_OBJECT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+      {{ end }}
 
   setup.venom.env:
     preconditions:
@@ -145,7 +174,27 @@ tasks:
         echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
-        echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq '.elasticsearch.enabled // false | not' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
+        # Step 1: Merge all YAMLs
+        MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
+          "${TEST_VALUES_BASE_DIR}/common/values-integration-test.yaml" \
+          "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
+          "${INFRA_TYPE_VALUES}" \
+          /tmp/extra-values-file.yaml)
+        
+        echo "--- Merged YAML ---"
+        echo "$MERGED_YAML"
+        echo "-------------------"
+        # Step 2: Extract the Elasticsearch enabled value
+        ES_ENABLED=$(echo "$MERGED_YAML" | yq '.elasticsearch.enabled // false')
+        
+        echo "Elasticsearch enabled: $ES_ENABLED"
+  
+        # Step 3: Determine if we should skip test
+        VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
+        
+        echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
+        echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
+        #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .INFRA_TYPE_VALUES }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
         echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
         # In case the Zeebe version has not been released officially yet.
@@ -154,66 +203,22 @@ tasks:
 
   setup.exec:
     env:
-      TEST_AUTH_TYPE: "{{ .TEST_AUTH_TYPE }}"
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
-      if [[ "${TEST_VALUES_SCENARIO}" == 'opensearch' ]]; then
-        sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      fi
-    - |
-      #elif does not work properly in Taskfile. This is why the if statements are separated
-      if [[ "${TEST_AUTH_TYPE}" == "oidc" ]]; then
-        sed -i 's/<clientId>/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        sed -i 's/<clientSecret>/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        sed -i 's/<directoryId>/{{ .ENTRA_CHILD_APP_DIRECTORY_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        # sed -i 's/<objectId>/{{ .ENTRA_CHILD_APP_OBJECT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        helm install integration {{ .TEST_CHART_NAME }} \
-        --version {{ .TEST_CHART_VERSION }} \
-        --namespace {{ .TEST_NAMESPACE }} \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        --values {{ env "INFRA_TYPE_VALUES" }} \
-        --values /tmp/extra-values-file.yaml \
-        --timeout 20m0s \
-        --wait \
-        {{ .TEST_HELM_EXTRA_ARGS }}
-      fi
-
-      if [[ "${TEST_AUTH_TYPE}" == "basic" ]]; then
-        helm install integration {{ .TEST_CHART_NAME }} \
-        --version {{ .TEST_CHART_VERSION }} \
-        --namespace {{ .TEST_NAMESPACE }} \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-basic.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        --values {{ env "INFRA_TYPE_VALUES" }} \
-        --values /tmp/extra-values-file.yaml \
-        --timeout 20m0s \
-        --wait \
-        {{ .TEST_HELM_EXTRA_ARGS }}
-      fi
-
-      if [[ "${TEST_AUTH_TYPE}" == "keycloak" ]]; then
-        helm install integration {{ .TEST_CHART_NAME }} \
-        --version {{ .TEST_CHART_VERSION }} \
-        --namespace {{ .TEST_NAMESPACE }} \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-keycloak.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        --values {{ env "INFRA_TYPE_VALUES" }} \
-        --values /tmp/extra-values-file.yaml \
-        --timeout 20m0s \
-        --wait \
-        {{ .TEST_HELM_EXTRA_ARGS }}
-      fi
+      helm install integration {{ .TEST_CHART_NAME }} \
+      --version {{ .TEST_CHART_VERSION }} \
+      --namespace {{ .TEST_NAMESPACE }} \
+      {{ (and (eq .TEST_CHART_VERSION "13.0.0-alpha7") (eq .TEST_AUTH_TYPE "keycloak")) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
+      --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+      --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
+      --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+      {{ eq .PLATFORM "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
+      --values {{ .INFRA_TYPE_VALUES }} \
+      --values /tmp/extra-values-file.yaml \
+      --timeout 20m0s \
+      --wait \
+      {{ .TEST_HELM_EXTRA_ARGS }}
 
   setup.post:
     cmds:

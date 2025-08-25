@@ -17,8 +17,8 @@ global:
     authentication:
       method: basic
 
-core:
-  contextPath: "/core"
+orchestration:
+  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true
@@ -29,7 +29,7 @@ core:
         # A wildcard certificate will be used.
         secretName: camunda-platform-zeebe-gateway
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: "core-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
 
 console:

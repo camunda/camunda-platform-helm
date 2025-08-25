@@ -14,7 +14,7 @@ global:
 elasticsearch:
   enabled: false
 
-core:
+orchestration:
   # index:
   #   prefix: app
   env:

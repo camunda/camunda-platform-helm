@@ -1547,7 +1547,7 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 | `elasticsearch.master.extraEnvVars[0].name`        | env          | `ELASTICSEARCH_ENABLE_REST_TLS`        |
 | `elasticsearch.master.extraEnvVars[0].value`       | env value    | `false`                                |
 | `elasticsearch.sysctlImage.enabled`                |              | `true`                                 |
-| `elasticsearch.sysctlImage.image.repository`       |              | `bitnamilegacy/os-shell`               |
+| `elasticsearch.sysctlImage.repository`             |              | `bitnamilegacy/os-shell`               |
 | `elasticsearch.data.replicaCount`                  |              | `0`                                    |
 | `elasticsearch.coordinating.replicaCount`          |              | `0`                                    |
 | `elasticsearch.ingest.enabled`                     |              | `false`                                |

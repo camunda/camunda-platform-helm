@@ -380,6 +380,91 @@ func (s *statefulSetTest) TestContainerSetContainerCommand() {
 	s.Require().Equal("printenv", containers[0].Command[0])
 }
 
+func (s *statefulSetTest) TestContainerOpenSearchExistingSecret() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.opensearch.enabled":                "true",
+			"global.opensearch.auth.existingSecret":    "opensearch-secret",
+			"global.opensearch.auth.existingSecretKey": "opensearch-password",
+			"global.opensearch.url.host":               "opensearch.example.com",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	var actualEnvVar *corev1.EnvVar
+	for _, envvar := range env {
+		if envvar.Name == "CAMUNDA_DATABASE_PASSWORD" {
+			actualEnvVar = &envvar
+		}
+	}
+	if actualEnvVar == nil {
+		s.Fail("env var CAMUNDA_DATABASE_PASSWORD not found")
+	}
+
+	expected := corev1.EnvVar{
+		Name: "CAMUNDA_DATABASE_PASSWORD",
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "opensearch-secret"},
+				Key:                  "opensearch-password",
+			},
+		},
+	}
+	s.Require().Equal(actualEnvVar.Name, expected.Name)
+	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
+	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+}
+
+func (s *statefulSetTest) TestContainerOpenSearchPassword() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.opensearch.enabled":       "true",
+			"global.opensearch.auth.password": "secureopensearchpassword",
+			"global.opensearch.url.host":      "opensearch.example.com",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	env := statefulSet.Spec.Template.Spec.Containers[0].Env
+	var actualEnvVar *corev1.EnvVar
+	for _, envvar := range env {
+		if envvar.Name == "CAMUNDA_DATABASE_PASSWORD" {
+			actualEnvVar = &envvar
+		}
+	}
+	if actualEnvVar == nil {
+		s.Fail("env var CAMUNDA_DATABASE_PASSWORD not found")
+	}
+
+	expected := corev1.EnvVar{
+		Name: "CAMUNDA_DATABASE_PASSWORD",
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-platform-test-opensearch"},
+				Key:                  "password",
+			},
+		},
+	}
+	s.Require().Equal(actualEnvVar.Name, expected.Name)
+	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.Key, expected.ValueFrom.SecretKeyRef.Key)
+	s.Require().Equal(actualEnvVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name, expected.ValueFrom.SecretKeyRef.LocalObjectReference.Name)
+}
+
 func (s *statefulSetTest) TestContainerSetLog4j2() {
 	// finding out the length of containers and volumeMounts array before addition of new volumeMount
 	var statefulSetBefore appsv1.StatefulSet
@@ -856,6 +941,35 @@ func (s *statefulSetTest) TestContainerProbesWithContextPath() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"zeebe.contextPath":              "/test",
+			"zeebe.startupProbe.enabled":     "true",
+			"zeebe.startupProbe.probePath":   "/start",
+			"zeebe.readinessProbe.enabled":   "true",
+			"zeebe.readinessProbe.probePath": "/ready",
+			"zeebe.livenessProbe.enabled":    "true",
+			"zeebe.livenessProbe.probePath":  "/live",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+		ExtraArgs:      map[string][]string{"install": {"--debug"}},
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var statefulSet appsv1.StatefulSet
+	helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+	// then
+	probe := statefulSet.Spec.Template.Spec.Containers[0]
+
+	s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+	s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+	s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
+}
+
+func (s *statefulSetTest) TestContainerProbesWithContextPathWithTrailingSlash() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"zeebe.contextPath":              "/test/", // notice the trailing slash
 			"zeebe.startupProbe.enabled":     "true",
 			"zeebe.startupProbe.probePath":   "/start",
 			"zeebe.readinessProbe.enabled":   "true",

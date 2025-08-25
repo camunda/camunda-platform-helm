@@ -47,7 +47,7 @@ test.describe("connectors", () => {
     ).toBeTruthy();
   });
 
-  // this needs to be ran after the core test. This test needs a model to be deployed before running or it results in a 404.
+  // this needs to be ran after the orchestration test. This test needs a model to be deployed before running or it results in a 404.
   // test(`TEST - Check Connectors webhook`, async () => {
   //   const r = await api.post(config.base.connectors + "/test-mywebhook", {
   //     data: { webhookDataKey: "webhookDataValue" },

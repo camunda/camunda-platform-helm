@@ -10,9 +10,9 @@ preflightVars:
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
-    core: http://integration-core:9600/core
-    coreGRPC: http://integration-core:26500
-    coreREST: http://integration-core:8080/core/v1
+    orchestration: http://integration-orchestration:9600/core
+    orchestrationGRPC: http://integration-orchestration:26500
+    orchestrationREST: http://integration-orchestration:8080/orchestration/v1
 
 coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
@@ -25,9 +25,9 @@ coreVars:
     connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
-    core: "https://{{ .TEST_INGRESS_HOST }}/core/v2"
-    coreGRPC: "grpc-{{ .TEST_INGRESS_HOST }}:443"
-    coreREST: "https://{{ .TEST_INGRESS_HOST }}/core/v2"
+    orchestration: "https://{{ .TEST_INGRESS_HOST }}/orchestration/v2"
+    orchestrationGRPC: "grpc-{{ .TEST_INGRESS_HOST }}:443"
+    orchestrationREST: "https://{{ .TEST_INGRESS_HOST }}/orchestration/v2"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""
