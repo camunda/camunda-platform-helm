@@ -57,11 +57,7 @@ spec:
               type: RuntimeDefault
           command: ["bash", "/usr/local/bin/startup.sh"]
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME

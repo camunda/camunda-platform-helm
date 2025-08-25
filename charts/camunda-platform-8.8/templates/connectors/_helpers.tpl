@@ -53,14 +53,6 @@ app.kubernetes.io/component: connectors
 {{- end -}}
 
 {{/*
-[connectors] Create the name of the auth credentials
-*/}}
-{{- define "connectors.authCredentialsSecretName" -}}
-{{- $name := .Release.Name -}}
-{{- printf "%s-connectors-auth-credentials" $name | trunc 63 | trimSuffix "-" | quote -}}
-{{- end }}
-
-{{/*
 [connectors] Defines the auth client
 */}}
 {{- define "connectors.authClientId" -}}
@@ -73,18 +65,6 @@ app.kubernetes.io/component: connectors
 {{- define "connectors.imagePullSecrets" -}}
 {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" .Values.connectors.image)) }}
 {{- end }}
-
-{{- define "connectors.authClientSecretName" -}}
-    {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) -}}
-        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) -}}
-    {{- else -}}
-        {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") -}}
-    {{- end -}}
-{{- end -}}
-
-{{- define "connectors.authClientSecretKey" -}}
-    {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-{{- end -}}
 
 {{/*
 [connectors] Service name.
