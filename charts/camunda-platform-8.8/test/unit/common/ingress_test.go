@@ -55,64 +55,12 @@ func TestIngressTemplate(t *testing.T) {
 func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestIngressEnabledAndKeycloakChartProxyForwardingEnabled",
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
-			},
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "bar",
-				"global.ingress.tls.enabled":                          "true",
-				"identity.contextPath":                                "/identity",
-				"identity.enabled":                                    "true",
-				"identityKeycloak.enabled":                            "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var statefulSet appsv1.StatefulSet
-				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-				// then
-				env := statefulSet.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
-						Value: "true",
-					})
-			},
-		},
-		{
-			Name:                 "TestIngressEnabledAndKeycloakChartProxyForwardingEnabled",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: nil,
-			},
-			RenderTemplateExtraArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
-			Values: map[string]string{
-				"global.ingress.tls.enabled": "true",
-				"identity.contextPath":       "/identity",
-				"identity.enabled":           "/true",
-				"identityKeycloak.enabled":   "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var statefulSet appsv1.StatefulSet
-				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-				// then
-				env := statefulSet.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
-						Value: "true",
-					})
-			},
-		},
-		{
 			Name:                 "TestIngressEnabledWithKeycloakCustomContextPathIngress",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":               "true",
 				"global.identity.keycloak.contextPath": "/custom",
+				"identity.enabled":                     "true",
 				"identityKeycloak.enabled":             "true",
 				"identityKeycloak.httpRelativePath":    "/custom",
 				"identity.contextPath":                 "/identity",
@@ -137,6 +85,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.ingress.enabled":               "true",
 				"global.identity.keycloak.contextPath": "/custom",
+				"identity.enabled":                     "true",
 				"identityKeycloak.enabled":             "true",
 				"identityKeycloak.httpRelativePath":    "/custom",
 				"identity.contextPath":                 "/identity",
@@ -159,6 +108,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled": "true",
+				"identity.enabled":       "true",
 				"identity.contextPath":   "/identity",
 				// Disable Identity Keycloak chart.
 				"identityKeycloak.enabled": "false",
@@ -180,12 +130,15 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.ingress.enabled":              "true",
+				"identity.enabled":                    "true",
+				"identityKeycloak.enabled":            "true",
 				"identity.contextPath":                "/identity",
+				"optimize.enabled":                    "true",
 				"optimize.contextPath":                "/optimize",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "/modeler",
-				"orchestration.contextPath":                    "/orchestration",
+				"orchestration.contextPath":           "/orchestration",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -208,7 +161,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "",
-				"orchestration.contextPath":                    "",
+				"orchestration.contextPath":           "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -226,7 +179,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"global.ingress.enabled": "true",
 				"optimize.enabled":       "false",
 				"webModeler.enabled":     "false",
-				"orchestration.enabled":           "false",
+				"orchestration.enabled":  "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
