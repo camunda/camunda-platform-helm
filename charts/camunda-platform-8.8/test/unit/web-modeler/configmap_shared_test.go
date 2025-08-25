@@ -54,6 +54,7 @@ func (s *configmapTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerGenerateRandomPusherAppKey",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 			},

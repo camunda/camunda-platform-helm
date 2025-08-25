@@ -54,6 +54,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
+				"identity.enabled":       "true",
 				"global.annotations.foo": "bar",
 				"optimize.enabled":       "true",
 			},
@@ -67,6 +68,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
+				"identity.enabled":                 "true",
 				"optimize.enabled":                 "true",
 				"optimize.service.annotations.foo": "bar",
 			},

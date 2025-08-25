@@ -55,6 +55,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
+				"identity.enabled":       "true",
 				"optimize.enabled":       "true",
 				"optimize.podLabels.foo": "bar",
 			},
@@ -68,6 +69,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
+				"identity.enabled":            "true",
 				"optimize.enabled":            "true",
 				"optimize.podAnnotations.foo": "bar",
 				"optimize.podAnnotations.foz": "baz",
@@ -83,6 +85,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
+				"identity.enabled":       "true",
 				"optimize.enabled":       "true",
 				"global.annotations.foo": "bar",
 			},
@@ -96,6 +99,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
+				"identity.enabled":          "true",
 				"global.image.registry":     "global.custom.registry.io",
 				"global.image.tag":          "8.x.x",
 				"optimize.enabled":          "true",
@@ -114,6 +118,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsGlobal",
 			Values: map[string]string{
+				"identity.enabled":                 "true",
 				"optimize.enabled":                 "true",
 				"global.image.pullSecrets[0].name": "SecretName",
 			},
@@ -127,6 +132,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
+				"identity.enabled":                   "true",
 				"optimize.enabled":                   "true",
 				"global.image.pullSecrets[0].name":   "SecretName",
 				"optimize.image.pullSecrets[0].name": "SecretNameSubChart",
@@ -142,6 +148,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerOverwriteImageTag",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":   "true",
 				"optimize.enabled":   "true",
 				"optimize.image.tag": "a.b.c",
 			},
@@ -159,6 +166,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerNotOverwriteGlobalImageTag",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled": "true",
 				"optimize.enabled": "true",
 				"global.image.tag": "a.b.c",
 			},
@@ -176,6 +184,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerOverwriteImageTagWithChartDirectSetting",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":   "true",
 				"global.image.tag":   "x.y.z",
 				"optimize.image.tag": "a.b.c",
 				"optimize.enabled":   "true",
@@ -194,6 +203,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetContainerCommand",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":    "true",
 				"optimize.enabled":    "true",
 				"optimize.command[0]": "printenv",
 			},
@@ -211,6 +221,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumes",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                               "true",
 				"optimize.enabled":                               "true",
 				"optimize.extraVolumes[0].name":                  "extraVolume",
 				"optimize.extraVolumes[0].configMap.name":        "otherConfigMap",
@@ -219,7 +230,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "optimize.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "optimize.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// given
@@ -240,6 +251,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetExtraVolumeMounts",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                        "true",
 				"optimize.enabled":                        "true",
 				"optimize.extraVolumeMounts[0].name":      "otherConfigMap",
 				"optimize.extraVolumeMounts[0].mountPath": "/usr/local/config",
@@ -247,7 +259,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "optimize.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true", "--set", "optimize.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
@@ -268,6 +280,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumesAndMounts",
 			Values: map[string]string{
+				"identity.enabled":                               "true",
 				"optimize.enabled":                               "true",
 				"optimize.extraVolumeMounts[0].name":             "otherConfigMap",
 				"optimize.extraVolumeMounts[0].mountPath":        "/usr/local/config",
@@ -278,7 +291,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes, volumemounts array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "optimize.enabled=true")
+				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates, "--set", "optimize.enabled=true", "--set", "identity.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
@@ -310,6 +323,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetServiceAccountName",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":             "true",
 				"optimize.enabled":             "true",
 				"optimize.serviceAccount.name": "accName",
 			},
@@ -324,6 +338,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"optimize.enabled":                      "true",
 				"optimize.podSecurityContext.runAsUser": "1000",
 			},
@@ -338,6 +353,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSecurityContext",
 			Values: map[string]string{
+				"identity.enabled": "true",
 				"optimize.enabled": "true",
 				"optimize.containerSecurityContext.privileged": "true",
 			},
@@ -353,6 +369,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 			Name: "TestContainerSetNodeSelector",
 			Values: map[string]string{
+				"identity.enabled":               "true",
 				"optimize.enabled":               "true",
 				"optimize.nodeSelector.disktype": "ssd",
 				"optimize.nodeSelector.cputype":  "arm",
@@ -387,6 +404,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//		   - another-node-label-value
 			Name: "TestContainerSetAffinity",
 			Values: map[string]string{
+				"identity.enabled": "true",
 				"optimize.enabled": "true",
 				"optimize.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
 				"optimize.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].operator":  "In",
@@ -432,6 +450,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerSetTolerations",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                 "true",
 				"optimize.enabled":                 "true",
 				"optimize.tolerations[0].key":      "key1",
 				"optimize.tolerations[0].operator": "Equal",
@@ -456,6 +475,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretValue",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                             "true",
 				"optimize.enabled":                             "true",
 				"global.identity.auth.enabled":                 "true",
 				"global.identity.auth.optimize.existingSecret": "secretValue",
@@ -481,6 +501,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretViaReference",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                                  "true",
 				"optimize.enabled":                                  "true",
 				"global.identity.auth.enabled":                      "true",
 				"global.identity.auth.optimize.existingSecret.name": "ownExistingSecret",
@@ -505,6 +526,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldOverwriteGlobalImagePullPolicy",
 			Values: map[string]string{
+				"identity.enabled":        "true",
 				"optimize.enabled":        "true",
 				"global.image.pullPolicy": "Always",
 			},
@@ -524,6 +546,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerStartupProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                          "true",
 				"optimize.enabled":                          "true",
 				"optimize.startupProbe.enabled":             "true",
 				"optimize.startupProbe.probePath":           "/healthz",
@@ -551,6 +574,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerLivenessProbe",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                           "true",
 				"optimize.enabled":                           "true",
 				"optimize.livenessProbe.enabled":             "true",
 				"optimize.livenessProbe.probePath":           "/healthz",
@@ -578,6 +602,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerProbesWithContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                  "true",
 				"optimize.enabled":                  "true",
 				"optimize.contextPath":              "/test",
 				"optimize.startupProbe.enabled":     "true",
@@ -602,6 +627,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerProbesWithContextPathWithTrailingSlash",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                  "true",
 				"optimize.enabled":                  "true",
 				"optimize.contextPath":              "/test/",
 				"optimize.startupProbe.enabled":     "true",
@@ -625,6 +651,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
+				"identity.enabled":                            "true",
 				"optimize.enabled":                            "true",
 				"optimize.sidecars[0].name":                   "nginx",
 				"optimize.sidecars[0].image":                  "nginx:latest",
@@ -651,6 +678,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestInitContainers",
 			Values: map[string]string{
+				"identity.enabled":                                  "true",
 				"optimize.enabled":                                  "true",
 				"optimize.initContainers[0].name":                   "nginx",
 				"optimize.initContainers[0].image":                  "nginx:latest",
@@ -677,6 +705,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestOptimizeMultiTenancyEnabled",
 			Values: map[string]string{
+				"identity.enabled":              "true",
 				"global.identity.auth.enabled":  "true",
 				"optimize.enabled":              "true",
 				"identity.multitenancy.enabled": "true",
@@ -693,6 +722,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestOptimizeWithConfiguration",
 			Values: map[string]string{
+				"identity.enabled": "true",
 				"optimize.enabled": "true",
 				"optimize.configuration": `
 es:
@@ -736,6 +766,7 @@ es:
 		}, {
 			Name: "TestOptimizeWithLog4j2Configuration",
 			Values: map[string]string{
+				"identity.enabled": "true",
 				"optimize.enabled": "true",
 				"optimize.extraConfiguration.environment-logbackxml": `
 <configuration></configuration>
@@ -776,6 +807,7 @@ es:
 		}, {
 			Name: "TestSetDnsPolicyAndDnsConfig",
 			Values: map[string]string{
+				"identity.enabled":                  "true",
 				"optimize.enabled":                  "true",
 				"optimize.dnsPolicy":                "ClusterFirst",
 				"optimize.dnsConfig.nameservers[0]": "8.8.8.8",
