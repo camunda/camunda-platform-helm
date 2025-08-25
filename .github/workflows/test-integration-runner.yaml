@@ -440,41 +440,41 @@ jobs:
           fi
           echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
 
-      - name: Helm - Install - Fill out yaml with values-config
+      - name: Helm – prepare values from values-config
         if: inputs.values-config != '{}'
+        shell: bash
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          TMP_DIR: charts${{ inputs.chart-dir }}/test/integration/scenarios
           CHART_PATH: charts/${{ inputs.camunda-helm-dir }}
         run: |
-          echo "$VALS_CONFIG" > /tmp/values-config.json
-          cat /tmp/values-config.json
-          export $(jq -r 'to_entries | map("\(.key)=\(.value|tostring)") | .[]' /tmp/values-config.json)
-          env
-          TMP_DIR="${CHART_PATH}/test/integration/scenarios/chart-full-setup"
-          VAL_FI=values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml
-          V=${TMP_DIR}/${VAL_FI}
-          ls -ls ${TMP_DIR}
-          cat $V
-          envsubst < $V > $V.bk
-          cat $V.bk
-          mv $V.bk $V
-          echo "################################################################################"
-
-          echo "Values file: $V"
-          if [[ -n "$E2E_TESTS_LICENSE_KEY" ]]; then
-            echo "Setting license key in $V"
-            if ! yq eval '.global.license.key |= env(E2E_TESTS_LICENSE_KEY)' "$V" > "$V.bk"; then
-              echo "Failed to set license key in " >&2
-              exit 1
-            fi
-            mv $V.bk $V
-            cat $V
-          else
-            echo "License key not set in "
+          # write + parse JSON config to env vars (stringified)
+          cfg="$(mktemp)"
+          printf '%s' "$VALS_CONFIG" > "$cfg"
+          while IFS='=' read -r k v; do
+            # export as strings; tolerate empty values
+            export "$k"="$v"
+          done < <(jq -r 'to_entries[] | "\(.key)=\(.value|tostring)"' "$cfg")
+          rm -f "$cfg"
+      
+          # paths
+          scenarios_dir="$CHART_PATH/test/integration/scenarios/chart-full-setup"
+          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+      
+          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
+      
+          # template substitution
+          tmp="$(mktemp)"
+          envsubst < "$values_file" > "$tmp"
+          mv "$tmp" "$values_file"
+      
+          # optional license key
+          if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
+            echo "::add-mask::${E2E_TESTS_LICENSE_KEY}"
+            yq -i '.global.license.key = env(E2E_TESTS_LICENSE_KEY)' "$values_file"
           fi
-          echo "################################################################################"
+      
+          echo "Prepared values file: $values_file"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
