@@ -47,6 +47,7 @@ func TestRestAPIConfigmapTemplate(t *testing.T) {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                                  "true",
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
 	}
@@ -74,6 +75,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                                  "true",
 		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
 	}
@@ -157,6 +159,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                             "true",
 		"global.identity.auth.enabled":                 "true",
 		"global.identity.auth.type":                    "MICROSOFT",
 		"global.identity.auth.issuerBackendUrl":        "https://example.com",
@@ -186,6 +189,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
@@ -215,6 +219,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrlWithCustomPort() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
@@ -244,6 +249,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                     "true",
 		"webModeler.restapi.mail.smtpUser":     "modeler-user",
 		"webModeler.restapi.mail.smtpPassword": "modeler-password",
 	}
@@ -271,6 +277,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                             "true",
 		"webModelerPostgresql.enabled":                 "false",
 		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 		"webModeler.restapi.externalDatabase.user":     "modeler-user",
@@ -314,18 +321,19 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			values := map[string]string{
-				"webModelerPostgresql.enabled":           "false",
-				"global.zeebeClusterName":                "test-zeebe",
-				"global.identity.auth.enabled":           tc.authEnabled,
-				"global.security.authentication.method":  tc.authMethod,
-				"global.security.authorizations.enabled": "false",
-				"global.ingress.enabled":                 "true",
-				"global.ingress.tls.enabled":             "true",
-				"global.ingress.host":                    "example.com",
-				"orchestration.image.tag":                "8.8.x-alpha1",
-				"orchestration.contextPath":              "/orchestration",
-				"orchestration.service.grpcPort":         "26600",
-				"orchestration.service.httpPort":         "8090",
+				"identity.enabled":                              "true",
+				"webModelerPostgresql.enabled":                  "false",
+				"global.zeebeClusterName":                       "test-zeebe",
+				"global.identity.auth.enabled":                  tc.authEnabled,
+				"global.ingress.enabled":                        "true",
+				"global.ingress.tls.enabled":                    "true",
+				"global.ingress.host":                           "example.com",
+				"orchestration.image.tag":                       "8.8.x-alpha1",
+				"orchestration.contextPath":                     "/orchestration",
+				"orchestration.service.grpcPort":                "26600",
+				"orchestration.service.httpPort":                "8090",
+				"orchestration.security.authentication.method":  tc.authMethod,
+				"orchestration.security.authorizations.enabled": "false",
 			}
 			maps.Insert(values, maps.All(requiredValues))
 			options := &helm.Options{
@@ -361,6 +369,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                              "true",
 		"webModeler.restapi.clusters[0].id":             "test-cluster-1",
 		"webModeler.restapi.clusters[0].name":           "test cluster 1",
 		"webModeler.restapi.clusters[0].version":        "8.6.0",
@@ -429,6 +438,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
 	// given
 	values := map[string]string{
+		"identity.enabled":             "true",
 		"webModelerPostgresql.enabled": "false",
 		"orchestration.enabled":        "false",
 	}
@@ -456,6 +466,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
 	// given
 	values := map[string]string{
+		"identity.enabled":             "true",
 		"global.identity.auth.enabled": "true",
 		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
 	}
@@ -483,6 +494,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuerBackendUrlProperty() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
 	}
@@ -510,6 +522,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeycloakUrlProperties() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
 		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "https",
 		"global.identity.keycloak.url.host":     "example.com",
@@ -541,6 +554,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                             "true",
 		"webModelerPostgresql.enabled":                 "false",
 		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
 		"webModeler.restapi.externalDatabase.port":     "65432",

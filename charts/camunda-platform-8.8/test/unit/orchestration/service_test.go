@@ -80,10 +80,21 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				expectedName := "hazelcast"
 				expectedTargetPort := int32(5701)
 				ports := service.Spec.Ports
+				var hazelcastPort coreV1.ServicePort
+				found := false
+				for _, port := range ports {
+					if port.Name == expectedName {
+						hazelcastPort = port
+						found = true
+						continue
+					}
+				}
+				if !found {
+					s.Fail("hazelcast port not found")
+				}
 
-				s.Require().Equal(expectedPort, ports[5].Port)
-				s.Require().Equal(expectedName, ports[5].Name)
-				s.Require().Equal(expectedTargetPort, ports[5].TargetPort.IntVal)
+				s.Require().Equal(expectedPort, hazelcastPort.Port)
+				s.Require().Equal(expectedTargetPort, hazelcastPort.TargetPort.IntVal)
 			},
 		}, {
 			Name: "TestContainerServiceAnnotations",

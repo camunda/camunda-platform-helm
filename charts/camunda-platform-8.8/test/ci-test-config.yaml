@@ -1,8 +1,7 @@
 # Used in the GitHub Actions unit test CI workflow.
 # auth can be the following values: basic, keycloak, oidc
 unit:
-  # TODO: Enable it again when the 8.7 is released (we need to review and fix the unit tests for 8.8).
-  enabled: false
+  enabled: true
   matrix:
     - name: Management
       packages: identity common console

@@ -45,8 +45,6 @@ func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 				"identityKeycloak.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				require.Error(t, err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
 			},

@@ -25,9 +25,10 @@
 #
 # When is *every* chart built?
 # ---------------------------
-# If the change touches `.github/workflows/**` or `.github/actions/**`, the
-# CI pipeline itself may have changed. In the absence of guarantees we take the
-# conservative route and rebuild every chart to retain confidence.
+# If the change touches `.github/workflows/**`, `.github/actions/**`, or 
+# `.github/config/**`, the CI pipeline or shared configuration may have changed. 
+# In the absence of guarantees we take the conservative route and rebuild every 
+# chart to retain confidence.
 #
 # Manual override
 # ---------------
@@ -115,9 +116,9 @@ runs:
           echo "Changed files:"
           printf "%s\n" ${ALL_MODIFIED_FILES}
 
-          # If any workflow or action files have changed, build all chart versions
-          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)"; then
-            echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
+          # If any workflow, action, or external secret config files have changed, build all chart versions
+          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions|config)"; then
+            echo "Changes in .github/workflows, .github/actions, or .github/config detected — building all chart versions"
             for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
               chart_dir="charts/camunda-platform-${camunda_version}"
               write_matrix_entry "$camunda_version" "$chart_dir"

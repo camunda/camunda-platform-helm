@@ -52,6 +52,7 @@ func (s *configMapTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "Container should set correct identity type",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"console.enabled":                       "true",
 				"global.identity.auth.type":             "MICROSOFT",
 				"global.identity.auth.issuer":           "https://example.com",
@@ -63,6 +64,5 @@ func (s *configMapTemplateTest) TestDifferentValuesInputs() {
 		},
 	}
 
-	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

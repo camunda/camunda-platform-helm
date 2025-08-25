@@ -50,6 +50,7 @@ func TestGoldenDefaultsTemplateSecrets(t *testing.T) {
 				`\s+.*-password:\s+.*`,  // passwords are auto-generated and need to be ignored.
 				`\s+.*-token:\s+.*`,     // passwords are auto-generated and need to be ignored.
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+				`\s+helm.sh/chart:\s+.*`,
 			},
 		})
 	}

@@ -55,6 +55,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Skip: true,
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
+				"identity.enabled":       "true",
 				"global.annotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -68,6 +69,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 			Skip: true,
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
+				"identity.enabled":                 "true",
 				"identity.service.annotations.foo": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -77,10 +79,40 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
 			},
-		}, {
-			Skip: true,
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+type KeycloakServiceTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+	templates []string
+}
+
+func TestKeycloakServiceTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &KeycloakServiceTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{"templates/identity/keycloak-service.yaml"},
+	})
+}
+
+func (s *KeycloakServiceTest) TestKeycloakDifferentServiceValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
 			Name: "TestKeycloakExternalService",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"global.identity.keycloak.internal":     "true",
 				"global.identity.keycloak.url.protocol": "https",
 				"global.identity.keycloak.url.host":     "keycloak.prod.svc.cluster.local",
