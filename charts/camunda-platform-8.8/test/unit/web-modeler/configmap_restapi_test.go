@@ -47,6 +47,7 @@ func TestRestAPIConfigmapTemplate(t *testing.T) {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -73,6 +74,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -99,7 +101,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
 	// given
 	values := map[string]string{
-		"identity.fullnameOverride": "custom-identity-fullname",
+		"global.identity.auth.enabled": "true",
+		"identity.enabled":             "true",
+		"identity.fullnameOverride":    "custom-identity-fullname",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -125,7 +129,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
 	// given
 	values := map[string]string{
-		"identity.nameOverride": "custom-identity",
+		"global.identity.auth.enabled": "true",
+		"identity.enabled":             "true",
+		"identity.nameOverride":        "custom-identity",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -151,6 +157,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled":                 "true",
 		"global.identity.auth.type":                    "MICROSOFT",
 		"global.identity.auth.issuerBackendUrl":        "https://example.com",
 		"global.identity.auth.identity.existingSecret": "foo",
@@ -179,6 +186,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "80",
@@ -207,6 +215,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrlWithCustomPort() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "8888",
@@ -447,6 +456,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled": "true",
 		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -473,6 +483,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuerBackendUrlProperty() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled":          "true",
 		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -499,6 +510,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeycloakUrlProperties() {
 	// given
 	values := map[string]string{
+		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "https",
 		"global.identity.keycloak.url.host":     "example.com",
 		"global.identity.keycloak.url.port":     "443",

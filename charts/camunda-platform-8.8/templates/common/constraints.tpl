@@ -96,12 +96,34 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{- end }}
 
 {{/*
-Fail with a message if Console is enabled but managed Identity is not enabled.
+Fail with a message if Console is enabled but management Identity is not enabled.
 */}}
 {{- if and .Values.console.enabled (not .Values.identity.enabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Console is enabled but managed Identity is not enabled."
-      "Please ensure that if Console is enabled, managed Identity must also be enabled."
+      "Console is enabled but management Identity is not enabled."
+      "Please ensure that if Console is enabled, management Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Optimize is enabled but management Identity is not enabled.
+*/}}
+{{- if and .Values.optimize.enabled (not .Values.identity.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Optimize is enabled but management Identity is not enabled."
+      "Please ensure that if Optimize is enabled, management Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Web Modeler is enabled but management Identity is not enabled.
+*/}}
+{{- if and .Values.webModeler.enabled (not .Values.identity.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Web Modeler is enabled but management Identity is not enabled."
+      "Please ensure that if Web Modeler is enabled, management Identity must also be enabled."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
@@ -417,3 +439,39 @@ The old key was deprecated in 8.6 and removed in the 8.8 release.
   "condition" (((.Values.orchestration.ingress).rest).enabled)
   "oldName" "orchestration.ingress.rest"
 ) }}
+
+{{/*
+*******************************************************************************
+Security config moved from "global.security.*" to "orchestration.security.*"
+The keys moved in the 8.8 Alpha 8 version.
+*******************************************************************************
+*/}}
+
+{{- if .Values.orchestration.enabled -}}
+  {{/*
+  - renamed: global.security.authentication => orchestration.security.authentication
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.authentication)
+    "oldName" "global.security.authentication"
+    "newName" "orchestration.security.authentication"
+  ) }}
+
+  {{/*
+  - renamed: global.security.authorizations => orchestration.security.authorizations
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.authorizations)
+    "oldName" "global.security.authorizations"
+    "newName" "orchestration.security.authorizations"
+  ) }}
+
+  {{/*
+  - renamed: global.security.initialization => orchestration.security.initialization
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.initialization)
+    "oldName" "global.security.initialization"
+    "newName" "orchestration.security.initialization"
+  ) }}
+{{- end }}

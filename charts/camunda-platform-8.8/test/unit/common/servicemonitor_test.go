@@ -40,6 +40,7 @@ func TestGoldenServiceMonitorOptimizeDefaults(t *testing.T) {
 		SetValues: map[string]string{
 			"optimize.enabled":                 "true",
 			"prometheusServiceMonitor.enabled": "true",
+			"identity.enabled":                 "true",
 		},
 	})
 }
@@ -59,6 +60,7 @@ func TestGoldenServiceMonitorModelerDefaults(t *testing.T) {
 		SetValues: map[string]string{"prometheusServiceMonitor.enabled": "true",
 			"webModeler.enabled":                  "true",
 			"webModeler.restapi.mail.fromAddress": "test@test.com",
+			"identity.enabled":                    "true",
 		},
 	})
 }

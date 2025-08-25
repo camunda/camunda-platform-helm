@@ -220,16 +220,16 @@ camunda:
     client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
     audience: {{ include "orchestration.authAudience" . | quote }}
     authentication:
-      unprotected-api: {{ .Values.global.security.authentication.unprotectedApi }}
+      unprotected-api: {{ .Values.orchestration.security.authentication.unprotectedApi }}
       method: 'oidc'
-      {{- if eq .Values.global.security.authentication.method "oidc" }}
+      {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
       oidc:
         client-id: {{ include "orchestration.authClientId" . | quote }}
       {{- end }}
-    authorization: {{ .Values.global.security.authorizations.enabled }}
-    multiTenancy:
-      checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
-      apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
+    authorization: {{ .Values.orchestration.security.authorizations.enabled }}
+    multi-tenancy:
+      checks: {{ include "orchestration.multitenancyChecksEnabled" . }}
+      api: {{ include "orchestration.multitenancyApiEnabled" . }}
 
   webapp:
     common:

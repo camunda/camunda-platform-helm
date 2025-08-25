@@ -215,9 +215,9 @@ data:
           unprotected-api: false
           method: 'oidc'
         authorization: true
-        multiTenancy:
-          checksEnabled: false
-          apiEnabled: true
+        multi-tenancy:
+          checks: false
+          api: true
     
       webapp:
         common:
