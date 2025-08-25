@@ -200,9 +200,19 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  # OIDC.
+  ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
+  ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
+  ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
+  ENTRA_PARENT_APP_OBJECT_ID: ${{ secrets.ENTRA_PARENT_APP_OBJECT_ID }}
+  ENTRA_CHILD_APP_CLIENT_ID: ${{ secrets.ENTRA_CHILD_APP_CLIENT_ID }}
+  ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_CHILD_APP_CLIENT_SECRET }}
+  ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_CHILD_APP_DIRECTORY_ID }}
+  ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+  # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
-  TOKEN: ${{ inputs.teleport-token }}
+  TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
   ci-setup:
@@ -318,7 +328,7 @@ jobs:
           values-enterprise: "${{ inputs.values-enterprise }}"
           values-digest: "${{ inputs.values-digest }}"
 
-      - name: CI Setup - Add Helm repos and update helm dependencies
+      - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
           make helm.repos-add
@@ -410,14 +420,12 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
-      - name: Helm - Install - Setup helm extra args
+      - name: Helm - Install - Setup Helm extra args
         env:
           CI_HELM_CREDENTIALS_SOURCE: ${{ inputs.camunda-helm-credentials-source }}
         run: |
@@ -469,7 +477,6 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
-
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
         if: inputs.flow == 'upgrade'
         env:
@@ -484,13 +491,13 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
-      - name: Helm - Upgrade - Setup helm extra args
+      - name: Helm - Upgrade - Setup Helm extra args
         if: inputs.flow == 'upgrade'
         run: |
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS}"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
-      - name: Helm - Upgrade ALPHA - Setup helm extra args
+      - name: Helm - Upgrade ALPHA - Setup Helm extra args
         if: inputs.flow == 'upgrade' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
         run: |
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
@@ -954,4 +961,5 @@ jobs:
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
           fi
+          kubectl annotate ns ${{ env.TEST_NAMESPACE }} test-flow=${{ inputs.flow }}
           kubectl annotate ns ${{ env.TEST_NAMESPACE }} build-failed=true

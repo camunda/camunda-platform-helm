@@ -85,102 +85,6 @@
                         }
                     }
                 },
-                "security": {
-                    "type": "object",
-                    "properties": {
-                        "authentication": {
-                            "type": "object",
-                            "properties": {
-                                "method": {
-                                    "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc",
-                                    "default": "basic"
-                                },
-                                "unprotectedApi": {
-                                    "type": "boolean",
-                                    "description": "if true, then allow unauthenticated API access.",
-                                    "default": false
-                                },
-                                "oidc": {
-                                    "type": "object",
-                                    "properties": {
-                                        "usernameClaim": {
-                                            "type": "string",
-                                            "description": "username claim.",
-                                            "default": "preferred_username"
-                                        },
-                                        "groupsClaim": {
-                                            "type": "string",
-                                            "description": "group claim.",
-                                            "default": "groups"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "authorizations": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, then enable authorizations checks in all applicable components.",
-                                    "default": true
-                                }
-                            }
-                        },
-                        "initialization": {
-                            "type": "object",
-                            "properties": {
-                                "users": {
-                                    "type": "array",
-                                    "description": "",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "username": {
-                                                "type": "string",
-                                                "description": ""
-                                            },
-                                            "password": {
-                                                "type": "string",
-                                                "description": ""
-                                            },
-                                            "name": {
-                                                "type": "string",
-                                                "description": ""
-                                            },
-                                            "email": {
-                                                "type": "string",
-                                                "description": ""
-                                            }
-                                        }
-                                    }
-                                },
-                                "mappingRules": {
-                                    "type": "array",
-                                    "description": "the mapping-rule-id of an initial mapping rule.",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "mappingRuleID": {
-                                                "type": "string",
-                                                "description": "the mapping-rule-id of an initial mapping rule."
-                                            },
-                                            "claimName": {
-                                                "type": "string",
-                                                "description": "the claim-name of an initial mapping rule."
-                                            },
-                                            "claimValue": {
-                                                "type": "string",
-                                                "description": "the claim-value of an initial mapping rule."
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
                 "createReleaseInfo": {
                     "type": "boolean",
                     "description": "Create config that will be used in Camunda Console.",
@@ -4551,6 +4455,102 @@
                     "type": "string",
                     "description": "defines the override for the profiles as comma-separated string.",
                     "default": "\"\""
+                },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc",
+                                    "default": "basic"
+                                },
+                                "unprotectedApi": {
+                                    "type": "boolean",
+                                    "description": "if true, then allow unauthenticated API access.",
+                                    "default": false
+                                },
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "usernameClaim": {
+                                            "type": "string",
+                                            "description": "username claim.",
+                                            "default": "preferred_username"
+                                        },
+                                        "groupsClaim": {
+                                            "type": "string",
+                                            "description": "group claim.",
+                                            "default": "groups"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "authorizations": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable authorizations checks in all applicable components.",
+                                    "default": true
+                                }
+                            }
+                        },
+                        "initialization": {
+                            "type": "object",
+                            "properties": {
+                                "users": {
+                                    "type": "array",
+                                    "description": "",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "username": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "password": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "description": ""
+                                            }
+                                        }
+                                    }
+                                },
+                                "mappingRules": {
+                                    "type": "array",
+                                    "description": "the mapping-rule-id of an initial mapping rule.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "mappingRuleID": {
+                                                "type": "string",
+                                                "description": "the mapping-rule-id of an initial mapping rule."
+                                            },
+                                            "claimName": {
+                                                "type": "string",
+                                                "description": "the claim-name of an initial mapping rule."
+                                            },
+                                            "claimValue": {
+                                                "type": "string",
+                                                "description": "the claim-value of an initial mapping rule."
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
                 "image": {
                     "type": "object",
