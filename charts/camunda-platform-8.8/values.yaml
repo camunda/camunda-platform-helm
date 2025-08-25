@@ -103,48 +103,6 @@ global:
   security:
     ## @skip global.security.allowInsecureImages
     allowInsecureImages: true
-    ## Authentication configuration
-    ## @extra global.security.authentication
-    authentication:
-      ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
-      method: basic
-      ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
-      unprotectedApi: false
-      oidc:
-        ## @param global.security.authentication.oidc.usernameClaim username claim.
-        usernameClaim: preferred_username
-        ## @param global.security.authentication.oidc.groupsClaim group claim.
-        groupsClaim: "groups"
-    ## Authorizations configuration.
-    ## @extra global.security.authorizations
-    authorizations:
-      ## @param global.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
-      enabled: true
-    ## Initialization configuration
-    ## @extra global.security.initialization
-    initialization:
-      ## Initial admin users configurations
-      ## @extra global.security.initialization.users
-      ## @param global.security.initialization.users[0].username
-      ## @param global.security.initialization.users[0].password
-      ## @param global.security.initialization.users[0].name
-      ## @param global.security.initialization.users[0].email
-      users:
-        ## @extra global.security.initialization.users.username, the username of an initial user.
-        - username: demo
-          ## @extra global.security.initialization.users.password, the password of an initial user.
-          password: demo
-          ## @extra global.security.initialization.users.name, the name of an initial user.
-          name: Demo User
-          ## @extra global.security.initialization.users.email, the email of an initial user.
-          email: demo@demo.com
-      mappingRules:
-        ## @param global.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
-        - mappingRuleID: demo-user-mapping-rule
-          ## @param global.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
-          claimName: preferred_username
-          ## @param global.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
-          claimValue: demo
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
@@ -2382,6 +2340,49 @@ orchestration:
   ## @param orchestration.profilesOverride [string] defines the override for the profiles as comma-separated string.
   profilesOverride: ""
 
+  security:
+    ## Authentication configuration
+    ## @extra orchestration.security.authentication
+    authentication:
+      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
+      method: basic
+      ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
+      unprotectedApi: false
+      oidc:
+        ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
+        usernameClaim: preferred_username
+        ## @param orchestration.security.authentication.oidc.groupsClaim group claim.
+        groupsClaim: "groups"
+    ## Authorizations configuration.
+    ## @extra orchestration.security.authorizations
+    authorizations:
+      ## @param orchestration.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
+      enabled: true
+    ## Initialization configuration
+    ## @extra orchestration.security.initialization
+    initialization:
+      ## Initial admin users configurations
+      ## @extra orchestration.security.initialization.users
+      ## @param orchestration.security.initialization.users[0].username
+      ## @param orchestration.security.initialization.users[0].password
+      ## @param orchestration.security.initialization.users[0].name
+      ## @param orchestration.security.initialization.users[0].email
+      users:
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user.
+        - username: demo
+          ## @extra orchestration.security.initialization.users.password, the password of an initial user.
+          password: demo
+          ## @extra orchestration.security.initialization.users.name, the name of an initial user.
+          name: Demo User
+          ## @extra orchestration.security.initialization.users.email, the email of an initial user.
+          email: demo@demo.com
+      mappingRules:
+        ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
+        - mappingRuleID: demo-user-mapping-rule
+          ## @param orchestration.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
+          claimName: preferred_username
+          ## @param orchestration.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
+          claimValue: demo
   ## @extra orchestration.image configuration to configure the image specifics
   image:
     ## @param orchestration.image.registry can be used to set container image registry.
