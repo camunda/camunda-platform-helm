@@ -16,7 +16,9 @@ package zeebe
 
 import (
 	"camunda-platform/test/unit/camunda"
+	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -30,7 +32,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type configmapTemplateTest struct {
+type ConfigmapTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -44,7 +46,7 @@ func TestConfigmapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &configmapTemplateTest{
+	suite.Run(t, &ConfigmapTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -68,7 +70,7 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 	})
 }
 
-func (s *configmapTemplateTest) TestContainerShouldContainExporterClassPerDefault() {
+func (s *ConfigmapTemplateTest) TestContainerShouldContainExporterClassPerDefault() {
 	// given
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
@@ -83,4 +85,44 @@ func (s *configmapTemplateTest) TestContainerShouldContainExporterClassPerDefaul
 
 	// then
 	s.Require().Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", configmapApplication.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestContainerShouldContainExporterClassPerDefault",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication camunda.ZeebeApplicationYAML
+				fmt.Println(err)
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+				// then
+				s.Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", configmapApplication.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
+			},
+		}, {
+			Name: "TestContainerCustomExporter",
+			Values: map[string]string{
+				"zeebe.exporters.custom.className":  "io.camunda.CustomExporter",
+				"zeebe.exporters.custom.jarPath":    "./custom-exporter.jar",
+				"zeebe.exporters.custom.args.debug": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication camunda.ZeebeApplicationYAML
+				fmt.Println(err)
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+				// then
+				s.Equal("io.camunda.CustomExporter", configmapApplication.Zeebe.Broker.Exporters.Custom.ClassName)
+				s.Equal("./custom-exporter.jar", configmapApplication.Zeebe.Broker.Exporters.Custom.JarPath)
+				s.Equal(true, configmapApplication.Zeebe.Broker.Exporters.Custom.Args["debug"])
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

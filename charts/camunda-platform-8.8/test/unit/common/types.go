@@ -17,7 +17,15 @@ type BrokerYAML struct {
 }
 
 type ExportersYAML struct {
-	Elasticsearch ElasticsearchYAML `yaml:"elasticsearch"`
+	Elasticsearch   ElasticsearchYAML  `yaml:"elasticsearch"`
+	CamundaExporter ElasticsearchYAML  `yaml:"camundaexporter"`
+	Custom          CustomExporterYAML `yaml:"custom"`
+}
+
+type CustomExporterYAML struct {
+	ClassName string                 `yaml:"className"`
+	JarPath   string                 `yaml:"jarPath"`
+	Args      map[string]interface{} `yaml:"args"`
 }
 
 type ElasticsearchYAML struct {

@@ -18,6 +18,7 @@ import (
 	"camunda-platform/test/unit/common"
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -94,9 +95,28 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
 				var configmapApplication camunda.OrchestrationApplicationYAML
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
-
 				// then
-				s.Require().Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", configmapApplication.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
+				s.Equal("io.camunda.exporter.CamundaExporter", configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
+			},
+		}, {
+			Name: "TestContainerCustomExporter",
+			Values: map[string]string{
+				"orchestration.exporters.custom.className":  "io.camunda.CustomExporter",
+				"orchestration.exporters.custom.jarPath":    "./custom-exporter.jar",
+				"orchestration.exporters.custom.args.debug": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+
+				var configmap corev1.ConfigMap
+				var configmapApplication camunda.OrchestrationApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+				fmt.Println(output)
+				// then
+				s.Equal("io.camunda.CustomExporter", configmapApplication.Zeebe.Broker.Exporters.Custom.ClassName)
+				s.Equal("./custom-exporter.jar", configmapApplication.Zeebe.Broker.Exporters.Custom.JarPath)
+				s.Equal(true, configmapApplication.Zeebe.Broker.Exporters.Custom.Args["debug"])
 			},
 		},
 	}

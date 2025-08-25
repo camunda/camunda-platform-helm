@@ -742,6 +742,9 @@ zeebe:
   ## @param zeebe.sidecars can be used to attach extra containers to the zeebe deployment
   sidecars: []
 
+  # @param zeebe.exporters if specified, contents will be used for any additional zeebe.broker.exporters configuration inside application.yaml
+  exporters: {}
+
   ## @param zeebe.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   ## @param zeebe.partitionCount defines how many zeebe partitions are set up in the cluster

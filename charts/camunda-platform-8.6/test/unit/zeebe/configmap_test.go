@@ -142,6 +142,24 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", configmapApplication.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
 			},
+		}, {
+			Name: "TestContainerCustomExporter",
+			Values: map[string]string{
+				"zeebe.exporters.custom.className":  "io.camunda.CustomExporter",
+				"zeebe.exporters.custom.jarPath":    "./custom-exporter.jar",
+				"zeebe.exporters.custom.args.debug": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication camunda.ZeebeApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
+
+				// then
+				s.Require().Equal("io.camunda.CustomExporter", configmapApplication.Zeebe.Broker.Exporters.Custom.ClassName)
+				s.Require().Equal("./custom-exporter.jar", configmapApplication.Zeebe.Broker.Exporters.Custom.JarPath)
+				s.Require().Equal(true, configmapApplication.Zeebe.Broker.Exporters.Custom.Args["debug"])
+			},
 		},
 	}
 
