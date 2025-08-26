@@ -469,14 +469,15 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerExtraConfigurationCreatesVolumeMount",
 			Values: map[string]string{
+				"identity.enabled":                                  "true",
 				"webModeler.enabled":                                "true",
+				"webModeler.restapi.mail.fromAddress":               "example@example.com",
 				"webModeler.restapi.extraConfiguration.testFile":    "this is a test",
 				"webModeler.webapp.extraConfiguration.testFile":     "this is a test",
 				"webModeler.websockets.extraConfiguration.testFile": "this is a test",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				fmt.Println(output)
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
@@ -491,8 +492,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 					}
 				}
 				if !found {
-					fmt.Println("not found")
-					//s.Fail("Could not find volumeMount with extraConfiguration")
+					s.Fail("Could not find volumeMount with extraConfiguration")
 				}
 
 				s.EqualValues("/home/runner/config/testFile", testVolumeMount.MountPath)
