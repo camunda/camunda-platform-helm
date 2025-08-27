@@ -56,10 +56,6 @@ jobs:
           mkdir -p camunda-platform/version-matrix
           cp -a main/version-matrix/* camunda-platform/version-matrix/
           echo "Copied version matrix files to camunda-platform/version-matrix/"
-
-      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
-        with:
-          message: "chore: update camunda-platform public files"
       - name: Add public files info to workflow summary
         run: |
           cat << EOF >> $GITHUB_STEP_SUMMARY
@@ -76,3 +72,6 @@ jobs:
         run: |
           rm -rf main
           find .
+      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        with:
+          message: "chore: update camunda-platform public files"
