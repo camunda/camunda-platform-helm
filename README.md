@@ -83,3 +83,4 @@ Or delete the related Kubernetes namespace, which contains all of the chart reso
 ## Issues
 
 Please create [new issues](https://github.com/camunda/camunda-platform-helm/issues) if you find problems with these charts. This repository is hosted using GitHub Pages, and the source code repository can be found [here](https://github.com/camunda/camunda-platform-helm).
+
