@@ -71,10 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Backport - implement joinPath helper for constructing paths"
-    - kind: added
-      description: "Create extra values file for legacy bitnami repo name"
-    - kind: fixed
-      description: "Env var CAMUNDA_DATABASE_PASSWORD wasn't set correctly with opensearch"
+  artifacthub.io/changes: ""
