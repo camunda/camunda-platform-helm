@@ -50,7 +50,7 @@ jobs:
           # Create a tmp file and ensure it's empty.
           echo "" > "${matrix_file}"
 
-          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.include.[0].version' | while read -r dir_id; do
+          echo '8.6' | while read -r dir_id; do
             chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
 
             # Extract version info.
