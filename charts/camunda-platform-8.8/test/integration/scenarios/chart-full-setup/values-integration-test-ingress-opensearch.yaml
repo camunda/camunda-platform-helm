@@ -8,7 +8,7 @@ global:
       password: camunda
     url:
       protocol: https
-      host: camunda.com
+      host: search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com
       port: 443
 
 elasticsearch:
