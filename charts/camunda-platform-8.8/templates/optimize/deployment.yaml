@@ -41,17 +41,16 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            {{- if and .Values.global.elasticsearch.external  (include "elasticsearch.passwordIsDefined" .) }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
-                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            {{- if .Values.global.elasticsearch.external }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
+                "config"        .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
@@ -66,12 +65,11 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
             {{- end}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
@@ -131,17 +129,16 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.optimize.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            {{- if and .Values.global.elasticsearch.external  (include "elasticsearch.passwordIsDefined" .) }}
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
-                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            {{- if .Values.global.elasticsearch.external }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
+                "config"        .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.opensearch.enabled }}
               {{- if eq .Values.global.opensearch.url.protocol "https" }}
@@ -156,12 +153,11 @@ spec:
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.global.opensearch.auth.username | quote }}
-            {{- if or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "opensearch.authExistingSecret" . | quote }}
-                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
             {{- end}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
@@ -181,11 +177,10 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
-            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "optimize.authClientSecretName" . }}
-                  key: {{ include "optimize.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.optimize
+            ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED

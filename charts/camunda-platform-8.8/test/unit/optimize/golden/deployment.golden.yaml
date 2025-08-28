@@ -53,11 +53,7 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
@@ -90,11 +86,7 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
