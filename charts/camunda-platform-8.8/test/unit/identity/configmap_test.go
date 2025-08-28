@@ -87,8 +87,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapGlobalMultitenancySetsIdentityFlag",
 			Values: map[string]string{
-				"global.multitenancy.enabled": "true",
-				"identityPostgresql.enabled":  "true",
+				"global.multitenancy.enabled":   "true",
+				"identityPostgresql.enabled":    "true",
+				"identity.enabled":              "true",
+				"global.identity.auth.enabled":  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -108,13 +110,15 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapExternalDatabaseEnabled",
 			Values: map[string]string{
-				"identity.multitenancy.enabled":        "true",
-				"identityPostgresql.enabled":         "false",
-				"identity.externalDatabase.enabled":  "true",
-				"identity.externalDatabase.host":     "my-database-host",
-				"identity.externalDatabase.port":     "2345",
-				"identity.externalDatabase.database": "my-database-name",
-				"identity.externalDatabase.username": "my-database-username",
+				"identity.enabled":                     "true",
+				"global.identity.auth.enabled":        "true",
+				"identity.multitenancy.enabled":       "true",
+				"identityPostgresql.enabled":          "false",
+				"identity.externalDatabase.enabled":   "true",
+				"identity.externalDatabase.host":      "my-database-host",
+				"identity.externalDatabase.port":      "2345",
+				"identity.externalDatabase.database":  "my-database-name",
+				"identity.externalDatabase.username":  "my-database-username",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap

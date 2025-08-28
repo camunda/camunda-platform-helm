@@ -176,6 +176,9 @@ on:
       deployment-url:
         description: The URL of the deployed application.
         value: ${{ jobs.ci-setup.outputs.vars-ingress-host }}
+      namespace:
+        description: The namespace where the deployment is running.
+        value: ${{ jobs.ci-setup.outputs.vars-namespace }}
 
 permissions:
   contents: read
@@ -222,6 +225,7 @@ jobs:
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}      
+      vars-namespace: ${{ env.TEST_NAMESPACE }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -382,9 +386,18 @@ jobs:
             kubectl apply -n $TEST_NAMESPACE \
               -f .github/config/external-secret/external-secret-certificates.yaml
 
-            # For backward compatibility.
-            kubectl apply -n $TEST_NAMESPACE \
-              -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
+            # Dynamic version-specific external secret configuration
+            APP_VERSION=$(helm show chart "charts/${{ inputs.camunda-helm-dir }}" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
+            if [[ -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml" ]]; then
+              echo "Applying version-specific external secret for app version: ${APP_VERSION}"
+              kubectl apply -n $TEST_NAMESPACE \
+                -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml"
+            else
+              echo "Version-specific external secret not found for app version: ${APP_VERSION}, using fallback"
+              # For backward compatibility with other versions (alpha, future versions).
+              kubectl apply -n $TEST_NAMESPACE \
+                -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
+            fi
 
             # Ensure ExternalSecrets are created
             for secret in $(kubectl get externalsecret -n distribution-team -o jsonpath='{.items[*].metadata.name}'); do
@@ -427,26 +440,41 @@ jobs:
           fi
           echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
 
-      - name: Helm - Install - Fill out yaml with values-config
+      - name: Helm – prepare values from values-config
         if: inputs.values-config != '{}'
+        shell: bash
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          TMP_DIR: charts${{ inputs.chart-dir }}/test/integration/scenarios
           CHART_PATH: charts/${{ inputs.camunda-helm-dir }}
         run: |
-          echo "$VALS_CONFIG" > /tmp/values-config.json
-          cat /tmp/values-config.json
-          export $(jq -r 'to_entries | map("\(.key)=\(.value|tostring)") | .[]' /tmp/values-config.json)
-          env
-          TMP_DIR="${CHART_PATH}/test/integration/scenarios/chart-full-setup"
-          VAL_FI=values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml
-          V=${TMP_DIR}/${VAL_FI}
-          ls -ls ${TMP_DIR}
-          cat $V
-          envsubst < $V > $V.bk
-          cat $V.bk
-          mv $V.bk $V
+          # write + parse JSON config to env vars (stringified)
+          cfg="$(mktemp)"
+          printf '%s' "$VALS_CONFIG" > "$cfg"
+          while IFS='=' read -r k v; do
+            # export as strings; tolerate empty values
+            export "$k"="$v"
+          done < <(jq -r 'to_entries[] | "\(.key)=\(.value|tostring)"' "$cfg")
+          rm -f "$cfg"
+      
+          # paths
+          scenarios_dir="$CHART_PATH/test/integration/scenarios/chart-full-setup"
+          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+      
+          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
+      
+          # template substitution
+          tmp="$(mktemp)"
+          envsubst < "$values_file" > "$tmp"
+          mv "$tmp" "$values_file"
+      
+          # optional license key
+          if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
+            echo "::add-mask::${E2E_TESTS_LICENSE_KEY}"
+            yq -i '.global.license.key = env(E2E_TESTS_LICENSE_KEY)' "$values_file"
+          fi
+      
+          echo "Prepared values file: $values_file"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -859,7 +887,6 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    if: always()
     needs: [playwright-e2e-tests, playwright-integration-tests, venom-test]
     runs-on: ubuntu-latest
     permissions:
@@ -934,11 +961,11 @@ jobs:
         with:
           step: delete-env
           token: ${{ steps.cluster-auth.outputs.token }}
-          env: ${{ needs.ci-setup.outputs.vars-identifier }}
+          env: ${{ steps.vars.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
-      - name: CI Cleanup - 🚨 Mark namespace as failed 🚨
-        if: always() && ${{ inputs.always-delete-namespace }}
+      - name: CI Cleanup
+        if: always() && inputs.always-delete-namespace
         run: |
           if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
             if [ "${{ inputs.distro-type }}" == "kubernetes" ]; then

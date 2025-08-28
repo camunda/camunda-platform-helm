@@ -11,7 +11,7 @@ global:
   identity:
     image:
       repository: camunda/identity
-      tag: 8.5.19
+      tag: 8.5.20
 
 console:
   # Camunda Enterprise repository.
@@ -30,19 +30,19 @@ operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.5.18
+    tag: 8.5.19
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.18
+    tag: 8.5.19
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.5.20
+    tag: 8.5.21
 
 webModeler:
   # Camunda Enterprise repository.
@@ -55,13 +55,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.22
+    tag: 8.5.23
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.5.22
+    tag: 8.5.23
 
 #
 # Identity
@@ -71,7 +71,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: 8.5.19
+    tag: 8.5.20
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags

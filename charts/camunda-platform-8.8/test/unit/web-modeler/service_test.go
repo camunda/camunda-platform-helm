@@ -59,6 +59,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.annotations.foo":              "bar",
@@ -73,6 +74,7 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
+				"identity.enabled":                                       "true",
 				"webModeler.enabled":                                     "true",
 				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
 				"webModeler." + s.component + ".service.annotations.foo": "bar",

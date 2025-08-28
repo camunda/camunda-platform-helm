@@ -42,6 +42,8 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldAddContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":     "true",
+				"optimize.enabled":     "true",
 				"optimize.contextPath": "/optimize",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -61,6 +63,8 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestCustomZeebeName",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":            "true",
+				"optimize.enabled":            "true",
 				"global.elasticsearch.prefix": "custom-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

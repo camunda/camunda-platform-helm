@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ConfigmapTemplateTest struct {
+type ConfigmapLegacyTemplateTest struct {
 	suite.Suite
 	chartPath string
 	release   string
@@ -44,7 +44,7 @@ func TestConfigmapTemplate(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	suite.Run(t, &ConfigmapTemplateTest{
+	suite.Run(t, &ConfigmapLegacyTemplateTest{
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
@@ -84,7 +84,7 @@ func TestGoldenConfigmapWithAuthorizationsEnabled(t *testing.T) {
 	})
 }
 
-func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
+func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name:   "TestContainerShouldContainExporterClassPerDefault",
@@ -95,8 +95,9 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				helm.UnmarshalK8SYaml(s.T(), configmap.Data["application.yaml"], &configmapApplication)
 
+
 				// then
-				s.Require().Equal("io.camunda.zeebe.exporter.ElasticsearchExporter", configmapApplication.Zeebe.Broker.Exporters.Elasticsearch.ClassName)
+				s.Require().Equal("io.camunda.exporter.CamundaExporter", configmapApplication.Zeebe.Broker.Exporters.CamundaExporter.ClassName)
 			},
 		},
 	}
