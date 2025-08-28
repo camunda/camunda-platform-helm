@@ -4,14 +4,10 @@ on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
     inputs:
-      trigger:
-        description: "Trigger release manually"
-        required: false
-        default: false
-        type: boolean
-  pull_request:
-    types:
-      - labeled
+      id:
+        description: Camunda chart dir id like x.y
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,88 +19,34 @@ permissions:
   packages: write
 
 jobs:
-  init:
-    name: Generate release matrix
-    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+  get_chart_version:
+    name: Get Chart version from app version
     runs-on: ubuntu-latest
+    env:
+      CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
     outputs:
-      matrix: ${{ steps.release.outputs.matrix }}
+      chart_version: ${{ steps.get_chart_version.outputs.chart_version }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - name: Generate chart versions
-        id: generate-chart-versions
-        uses: ./.github/actions/generate-chart-matrix
-      - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            yq
-      - name: ⭐ Create release matrix
-        id: release
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      - name: output chart version
+        id: get_chart_version
         run: |
-          echo "Generating release matrix ..."
-          matrix_file="matrix_versions.txt"
-
-          # Create a tmp file and ensure it's empty.
-          echo "" > "${matrix_file}"
-
-          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.include.[0].version' | while read -r dir_id; do
-            chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
-
-            # Extract version info.
-            chart_version="$(yq '.version' "${chart_file}")"
-            camunda_version="$(yq '.appVersion' "${chart_file}" | sed 's/.x//')"
-            chart_prerelease="$(yq '.annotations."artifacthub.io/prerelease" // "false"' "${chart_file}")"
-
-            # Check if the release already exists.
-            if gh release view "camunda-platform-${chart_version}" > /dev/null 2>&1; then
-              echo "⚠️ Release Skipped ⚠️" >> "${GITHUB_STEP_SUMMARY}"
-              cat << EOF >> "${GITHUB_STEP_SUMMARY}"
-                - The release for chart dir \`camunda-platform-${dir_id}\` with version \`${chart_version}\` already exists.
-                - To rerelease, delete the GH release first.
-                - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
-              ---
-          EOF
-            else
-              echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
-              cat << EOF >> "${matrix_file}"
-                {
-                  "dirID": "${dir_id}",
-                  "version": "${chart_version}",
-                  "appVersion": "${camunda_version}",
-                  "prerelease": ${chart_prerelease}
-                }
-          EOF
-            fi
-          done
-
-          # Generate JSON matrix and set it as a GH output.
-          matrix_versions="$(jq --slurp --compact-output '.' ${matrix_file})"
-          echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
-
+          chart_file="${CHART_DIR}/Chart.yaml"
+          chart_version="$(yq '.version' "${chart_file}")"
+          echo "chart_version=${chart_version}" | tee -a $GITHUB_OUTPUT
   release:
-    name: Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
-    if: ${{ needs.init.outputs.matrix != '[]' }}
-    needs: init
+    name: Release - ${{ needs.get_chart_version.outputs.chart_version }} (camunda-platform-${{ inputs.id }})
+    needs: get_chart_version
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      # It's not expected to run more than one release in the same PR,
-      # but just for safety to avoid race condition of updating the Helm repo index.yaml file.
-      max-parallel: 1
-      matrix:
-        chart: ${{ fromJson(needs.init.outputs.matrix) }}
     permissions:
       contents: write
       id-token: write
     env:
       CHART_RELEASER_CONFIG: ".github/config/chart-releaser.yaml"
-      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
-      CHART_VERSION: "${{ matrix.chart.version }}"
-      CHART_PACKAGE_NAME: "camunda-platform-${{ matrix.chart.version }}"
-      CHART_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
+      CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
+      CHART_VERSION: "${{ needs.get_chart_version.outputs.chart_version }}"
+      CHART_PACKAGE_NAME: "camunda-platform-${{ inputs.id }}"
+      CHART_TAG_NAME: "camunda-platform-${{ inputs.id }}-${{ inputs.id }}"
     steps:
       # Init.
       - name: Checkout
@@ -192,13 +134,15 @@ jobs:
             --git-repo "$(basename ${{ github.repository }})" \
             --release-name-template "${{ env.CHART_TAG_NAME }}"
       - name: Set GitHub release type
-        if: ${{ matrix.chart.prerelease }}
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          gh release edit "${{ env.CHART_TAG_NAME }}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --prerelease
+          is_prerelease="$(yq e '.annotations."artifacthub.io/prerelease"' "${{ env.CHART_DIR }}/Chart.yaml")"
+          if [[ "${is_prerelease}" == "true" ]]; then
+            gh release edit "${{ env.CHART_TAG_NAME }}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --prerelease
+          fi
 
       # Sign and upload the signature.
       - name: Sign Helm chart with Cosign
@@ -228,23 +172,15 @@ jobs:
           EOF
 
   post-release:
-    name: Post-Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
-    if: ${{ needs.init.outputs.matrix != '[]' }}
-    needs: [init, release]
+    name: Post-Release - ${{ needs.get_chart_version.outputs.chart_version }} (camunda-platform-${{ inputs.id }})
+    needs: [get_chart_version, release]
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      # It's not expected to run more than one release in the same PR,
-      # but just for safety to avoid race condition.
-      max-parallel: 1
-      matrix:
-        chart: ${{ fromJson(needs.init.outputs.matrix) }}
     permissions:
       contents: write
       pull-requests: write
       issues: write
     env:
-      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
+      CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
