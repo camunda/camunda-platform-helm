@@ -149,6 +149,9 @@ on:
       deployment-url:
         description: The URL of the deployed application.
         value: ${{ jobs.print-outputs.outputs.deployment-url }}
+      namespace:
+        description: The namespace where the deployment is running.
+        value: ${{ jobs.print-outputs.outputs.namespace }}
 
 permissions:
   contents: read
@@ -288,6 +291,7 @@ jobs:
     needs: [runner]
     outputs:
       deployment-url: ${{ steps.vars.outputs.ingress-host }}
+      namespace: ${{ needs.runner.outputs.namespace }}
     steps:
       - name: CI Setup - Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -312,7 +316,9 @@ jobs:
       - name: Print outputs
         run: |
           echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
+          echo "Namespace: ${{ needs.runner.outputs.namespace }}"
           echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
+          echo "namespace=${{ needs.runner.outputs.namespace }}" >> $GITHUB_OUTPUT
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
