@@ -45,7 +45,7 @@ jobs:
       CHART_RELEASER_CONFIG: ".github/config/chart-releaser.yaml"
       CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
       CHART_VERSION: "${{ needs.get_chart_version.outputs.chart_version }}"
-      CHART_PACKAGE_NAME: "camunda-platform-${{ inputs.id }}"
+      CHART_PACKAGE_NAME: "camunda-platform-${{ needs.get_chart_version.outputs.chart_version }}"
       CHART_TAG_NAME: "camunda-platform-${{ inputs.id }}-${{ needs.get_chart_version.outputs.chart_version }}"
     steps:
       # Init.
