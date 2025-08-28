@@ -4,6 +4,11 @@ name: "Test - Integration - Template"
 on:
   workflow_call:
     inputs:
+      values-config:
+        type: string
+        description: Some of the values files will allow subsitutions. For example, on the image.tags. This config supplies those values
+        default: '{}'
+        required: false
       identifier:
         description: The unique identifier of used in the deployment hostname.
         required: true
@@ -33,7 +38,7 @@ on:
       deployment-ttl:
         description: Define a TTL for the lifespan of the deployment.
         required: false
-        default: ""
+        default: 1h
         type: string
       platforms:
         default: gke
@@ -81,7 +86,7 @@ on:
         type: string
       shortname:
         required: false
-        default: "elasticsearch"
+        default: "es"
         type: string
       auth:
         required: false
@@ -92,10 +97,16 @@ on:
         required: false
         default: ""
         type: string
-      enterprise:
+      values-enterprise:
         required: false
         default: "false"
         type: string
+        description: Enable enterprise values
+      values-digest:
+        required: false
+        default: "true"
+        type: string
+        description: Enable digest values
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -129,6 +140,18 @@ on:
         required: false
         default: false
         type: boolean
+      always-delete-namespace:
+        description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
+        default: false
+        type: boolean
+        required: false
+    outputs:
+      deployment-url:
+        description: The URL of the deployed application.
+        value: ${{ jobs.print-outputs.outputs.deployment-url }}
+      namespace:
+        description: The namespace where the deployment is running.
+        value: ${{ jobs.print-outputs.outputs.namespace }}
 
 permissions:
   contents: read
@@ -152,9 +175,19 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  # OIDC.
+  ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
+  ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
+  ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
+  ENTRA_PARENT_APP_OBJECT_ID: ${{ secrets.ENTRA_PARENT_APP_OBJECT_ID }}
+  ENTRA_CHILD_APP_CLIENT_ID: ${{ secrets.ENTRA_CHILD_APP_CLIENT_ID }}
+  ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_CHILD_APP_CLIENT_SECRET }}
+  ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_CHILD_APP_DIRECTORY_ID }}
+  ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+  # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
-  TOKEN: ${{ inputs.teleport-token }}
+  TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
   init:
@@ -168,7 +201,7 @@ jobs:
       matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed if the workflow is triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -247,6 +280,45 @@ jobs:
       shortname: ${{ inputs.shortname }}
       teleport-token: ${{ inputs.teleport-token }}
       namespace-prefix: ${{ inputs.namespace-prefix }}
+      values-digest: ${{ inputs.values-digest }}
+      values-enterprise: ${{ inputs.values-enterprise }}
+      values-config: ${{ inputs.values-config }}
+      always-delete-namespace: ${{ inputs.always-delete-namespace }}
+
+  print-outputs:
+    name: Print outputs
+    runs-on: ubuntu-latest
+    needs: [runner]
+    outputs:
+      deployment-url: ${{ steps.vars.outputs.ingress-host }}
+      namespace: ${{ needs.runner.outputs.namespace }}
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: 30m
+          setup-flow: install
+          platform: gke
+          identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
+          ingress-hostname-base: ci.distro.ultrawombat.com
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: 8.7
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: Print outputs
+        run: |
+          echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
+          echo "Namespace: ${{ needs.runner.outputs.namespace }}"
+          echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
+          echo "namespace=${{ needs.runner.outputs.namespace }}" >> $GITHUB_OUTPUT
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:

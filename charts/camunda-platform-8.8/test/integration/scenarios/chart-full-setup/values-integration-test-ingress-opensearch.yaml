@@ -14,7 +14,7 @@ global:
 elasticsearch:
   enabled: false
 
-core:
+orchestration:
   # index:
   #   prefix: app
   env:
@@ -34,6 +34,32 @@ core:
       value: custom-zeebe
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
       value: custom-zeebe
+    #################### Only needed for keycloak auth
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+      value: "venom"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
+      value: "connectors"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"
+    ####################
 
 optimize:
   enabled: false

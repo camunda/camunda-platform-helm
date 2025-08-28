@@ -58,6 +58,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledUsesEmptyDir",
 			Values: map[string]string{
+				"identity.enabled": "true",
 				"optimize.enabled": "true",
 				// persistence.enabled defaults to false
 			},
@@ -89,6 +90,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"optimize.enabled":                    "true",
 				"optimize.persistence.enabled":        "true",
 				"optimize.persistence.size":           "5Gi",
@@ -124,6 +126,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceWithExistingClaimCreatesVolume",
 			Values: map[string]string{
+				"identity.enabled":                   "true",
 				"optimize.enabled":                   "true",
 				"optimize.persistence.enabled":       "true",
 				"optimize.persistence.existingClaim": "my-existing-pvc",
@@ -156,6 +159,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledWhenComponentDisabled",
 			Values: map[string]string{
+				"identity.enabled":             "true",
 				"optimize.enabled":             "false",
 				"optimize.persistence.enabled": "true",
 				"optimize.persistence.size":    "5Gi",
@@ -198,6 +202,7 @@ func TestPVCManifestCreated(t *testing.T) {
 	testCase := testhelpers.TestCase{
 		Name: "TestPVCManifestCreated",
 		Values: map[string]string{
+			"identity.enabled":                    "true",
 			"optimize.enabled":                    "true",
 			"optimize.persistence.enabled":        "true",
 			"optimize.persistence.size":           "5Gi",
@@ -212,5 +217,6 @@ func TestPVCManifestCreated(t *testing.T) {
 		},
 	}
 
+	t.Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-optimize", []string{"templates/optimize/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
 }

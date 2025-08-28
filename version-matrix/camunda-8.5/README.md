@@ -5,6 +5,7 @@
 
 ## ToC
 
+- [Helm chart 10.10.0](#helm-chart-10100)
 - [Helm chart 10.9.0](#helm-chart-1090)
 - [Helm chart 10.8.0](#helm-chart-1080)
 - [Helm chart 10.7.1](#helm-chart-1071)
@@ -33,6 +34,37 @@
 - [Helm chart 10.0.4](#helm-chart-1004)
 - [Helm chart 10.0.3](#helm-chart-1003)
 - [Helm chart 10.0.2](#helm-chart-1002)
+
+## Helm chart 10.10.0
+
+Supported versions:
+
+- Camunda applications: [8.5](https://github.com/camunda/camunda/releases?q=tag%3A8.5&expanded=true)
+- Camunda version matrix: [8.5](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.5)
+- Helm values: [10.10.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/10.10.0#parameters)
+- Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:8.5.20
+- docker.io/camunda/identity:8.5.19
+- docker.io/camunda/operate:8.5.18
+- docker.io/camunda/optimize:8.5.18
+- docker.io/camunda/tasklist:8.5.20
+- docker.io/camunda/zeebe:8.5.22
+- registry.camunda.cloud/console/console-sm:8.5.118
+- registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.5.21
+- registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.5.21
+- registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.5.21
+
+Non-Camunda images:
+
+- docker.io/bitnamilegacy/elasticsearch:8.12.2
+- docker.io/bitnamilegacy/keycloak:23.0.7
+- docker.io/bitnamilegacy/os-shell:12-debian-12-r18
+- docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+- docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+
 
 ## Helm chart 10.9.0
 

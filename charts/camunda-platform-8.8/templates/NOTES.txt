@@ -21,13 +21,13 @@
   - Docker Image used for Console: {{ .Values.console.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
   {{- end }}
-- Core:
-  - Enabled: {{ .Values.core.enabled }}
-  {{- if .Values.core.enabled }}
-    {{- if .Values.core.image.tag }}
-  - Docker Image used for Zeebe: {{ .Values.core.image.repository }}:{{ .Values.core.image.tag }}
+- Orchestration:
+  - Enabled: {{ .Values.orchestration.enabled }}
+  {{- if .Values.orchestration.enabled }}
+    {{- if .Values.orchestration.image.tag }}
+  - Docker Image used for Zeebe: {{ .Values.orchestration.image.repository }}:{{ .Values.orchestration.image.tag }}
     {{- else }}
-  - Docker Image used for Zeebe: {{ .Values.core.image.repository }}:{{ .Values.global.image.tag }}
+  - Docker Image used for Zeebe: {{ .Values.orchestration.image.repository }}:{{ .Values.global.image.tag }}
     {{- end }}
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
@@ -67,12 +67,12 @@
 
 The Cluster itself is not exposed as a service which means that you can use `kubectl port-forward` to access the Zeebe cluster from outside Kubernetes:
 
-> kubectl port-forward svc/{{ include "core.fullname" . }}-gateway 26500:26500 -n {{ .Release.Namespace }}
-> kubectl port-forward svc/{{ include "core.fullname" . }}-gateway 8088:8080 -n {{ .Release.Namespace }}
+> kubectl port-forward svc/{{ include "orchestration.fullname" . }}-gateway 26500:26500 -n {{ .Release.Namespace }}
+> kubectl port-forward svc/{{ include "orchestration.fullname" . }}-gateway 8088:8080 -n {{ .Release.Namespace }}
 
 Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:26500` for REST API usage.
 
-{{ if or (.Values.core.enabled) (.Values.identity.enabled) }}
+{{ if or (.Values.orchestration.enabled) (.Values.identity.enabled) }}
 ### Connecting to Web apps
 
 As part of the Helm charts, an ingress definition can be deployed, but you require to have an Ingress Controller for that Ingress to be Exposed.
@@ -81,11 +81,11 @@ If you don't have an ingress controller you can use `kubectl port-forward` to ac
 
 {{ if .Values.identity.enabled -}}
 Identity:
-> kubectl port-forward svc/{{ .Release.Name }}-identity 8080:80
+> kubectl port-forward svc/{{ .Release.Name }}-identity 8084:80
 {{- end }}
 {{ if .Values.webModeler.enabled -}}
 Web Modeler:
-> kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8084:80
+> kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
 {{ if .Values.connectors.enabled -}}
@@ -142,8 +142,8 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{- end }}
 {{- end }}
 
-{{- if .Values.core.ingress.grpc.enabled }}
-- Camunda gRPC API: {{  include "camundaPlatform.coreGRPCExternalURL" . }}
+{{- if .Values.orchestration.ingress.grpc.enabled }}
+- Camunda gRPC API: {{  include "camundaPlatform.orchestrationGRPCExternalURL" . }}
 {{- end }}
 
 {{- if .Values.global.ingress.enabled }}
@@ -158,5 +158,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{ include "camundaPlatform.releaseInfo" . }}
 
 {{ include "camunda.constraints.warnings" . | trim }}
+
+{{ include "camundaPlatform.ReleaseHighlights" . }}
 
 {{- end }}

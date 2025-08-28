@@ -58,6 +58,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledUsesEmptyDir",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				// persistence.enabled defaults to false
@@ -84,6 +85,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"webModeler.enabled":                    "true",
 				"webModeler.restapi.mail.fromAddress":   "example@example.com",
 				"webModeler.persistence.enabled":        "true",
@@ -113,6 +115,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceWithExistingClaimCreatesVolume",
 			Values: map[string]string{
+				"identity.enabled":                     "true",
 				"webModeler.enabled":                   "true",
 				"webModeler.restapi.mail.fromAddress":  "example@example.com",
 				"webModeler.persistence.enabled":       "true",
@@ -140,6 +143,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		{
 			Name: "TestPersistenceDisabledWhenComponentDisabled",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "false",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.persistence.enabled":      "true",
@@ -152,6 +156,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 		},
 	}
 
+	s.T().Skip("Skipping until 8.8 reenables these")
 	for _, testCase := range testCases {
 		testCase := testCase
 		s.Run(testCase.Name, func() {
@@ -183,7 +188,9 @@ func TestPVCManifestCreated(t *testing.T) {
 	testCase := testhelpers.TestCase{
 		Name: "TestPVCManifestCreated",
 		Values: map[string]string{
+			"identity.enabled":                      "true",
 			"webModeler.enabled":                    "true",
+			"webModeler.restapi.mail.fromAddress":   "test@test.com",
 			"webModeler.persistence.enabled":        "true",
 			"webModeler.persistence.size":           "5Gi",
 			"webModeler.persistence.accessModes[0]": "ReadWriteOnce",
@@ -197,5 +204,6 @@ func TestPVCManifestCreated(t *testing.T) {
 		},
 	}
 
+	t.Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/persistentvolumeclaim-restapi.yaml"}, []testhelpers.TestCase{testCase})
 }

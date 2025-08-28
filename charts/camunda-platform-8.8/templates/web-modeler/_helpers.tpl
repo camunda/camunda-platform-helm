@@ -210,66 +210,6 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{/*
-[web-modeler] Get the name of the secret that contains the database password, depending on whether the postgresql dependency chart is enabled.
-*/}}
-{{- define "webModeler.restapi.databaseSecretName" -}}
-  {{- if .Values.webModelerPostgresql.enabled }}
-    {{- .Values.webModelerPostgresql.auth.existingSecret | default (include "webModeler.postgresql.fullname" .) }}
-  {{- else }}
-    {{- if or (typeIs "string" .Values.webModeler.restapi.externalDatabase.existingSecret) .Values.webModeler.restapi.externalDatabase.password }}
-      {{- include "webModeler.restapi.fullname" . }}
-    {{- else if typeIs "map[string]interface {}" .Values.webModeler.restapi.externalDatabase.existingSecret }}
-      {{- .Values.webModeler.restapi.externalDatabase.existingSecret.name | default (include "webModeler.restapi.fullname" .) }}
-    {{- end }}
-  {{- end }}
-{{- end -}}
-
-{{/*
-[web-modeler] Get the name of the database password key in the secret, depending on whether the postgresql dependency chart is enabled.
-*/}}
-{{- define "webModeler.restapi.databaseSecretKey" -}}
-  {{- if .Values.webModelerPostgresql.enabled }}
-    {{- if .Values.webModelerPostgresql.auth.existingSecret }}
-      {{- .Values.webModelerPostgresql.auth.secretKeys.userPasswordKey }}
-    {{- else -}}
-      password
-    {{- end }}
-  {{- else }}
-    {{- $defaultSecretKey := "database-password" -}}
-    {{- if .Values.webModeler.restapi.externalDatabase.existingSecret }}
-      {{- .Values.webModeler.restapi.externalDatabase.existingSecretPasswordKey | default $defaultSecretKey }}
-    {{- else }}
-      {{- $defaultSecretKey }}
-    {{- end }}
-  {{- end }}
-{{- end -}}
-
-{{/*
-[web-modeler] Get the name of the secret resource that contains the SMTP password.
-*/}}
-{{- define "webModeler.restapi.smtpSecretName" -}}
-  {{- if or (and (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) (ne .Values.webModeler.restapi.mail.existingSecret "")) .Values.webModeler.restapi.mail.smtpPassword }}
-      {{- (include "webModeler.restapi.fullname" .) }}
-  {{- else if and (typeIs "map[string]interface {}" .Values.webModeler.restapi.mail.existingSecret) .Values.webModeler.restapi.mail.existingSecret.name }}
-      {{- .Values.webModeler.restapi.mail.existingSecret.name }}
-  {{- end }}
-{{- end -}}
-
-{{/*
-[web-modeler] Get the name of the secret key that contains the SMTP password.
-*/}}
-{{- define "webModeler.restapi.smtpSecretKey" -}}
-  {{- $defaultSecretKey := "smtp-password" -}}
-  {{- if (typeIs "string" .Values.webModeler.restapi.mail.existingSecret) }}
-    {{- $defaultSecretKey }}
-  {{- else if .Values.webModeler.restapi.mail.existingSecret }}
-    {{- .Values.webModeler.restapi.mail.existingSecretPasswordKey | default $defaultSecretKey }}
-  {{- else if .Values.webModeler.restapi.mail.smtpPassword }}
-    {{- $defaultSecretKey }}
-  {{- end }}
-{{- end -}}
-
-{{/*
 [web-modeler] Check if username and password is provided for the SMTP server
 */}}
 {{- define "webModeler.restapi.mail.authEnabled" -}}
@@ -302,6 +242,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.publicWebsocketHost" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.host }}
+  {{- else -}}
+    localhost
   {{- end }}
 {{- end -}}
 
@@ -322,6 +264,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.websocketTlsEnabled" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.tls.enabled }}
+  {{- else -}}
+    false
   {{- end }}
 {{- end -}}
 
@@ -342,9 +286,9 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 
 {{- define "webModeler.authenticationType" -}}
 {{- if .Values.global.identity.auth.enabled }}
-  {{- if eq .Values.global.security.authentication.method "oidc" }}
+  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
     {{- "BEARER_TOKEN" }}
-  {{- else if eq .Values.global.security.authentication.method "basic" }}
+  {{- else if eq .Values.orchestration.security.authentication.method "basic" }}
     {{- "BASIC" }}
   {{- end }}
 {{- else }}

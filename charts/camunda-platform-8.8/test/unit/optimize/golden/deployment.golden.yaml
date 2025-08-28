@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: optimize
-    app.kubernetes.io/version: "8.8.0-alpha6"
+    app.kubernetes.io/version: "8.8.0-alpha7"
   annotations:
     {}
 spec:
@@ -35,14 +35,14 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: optimize
-        app.kubernetes.io/version: "8.8.0-alpha6"
+        app.kubernetes.io/version: "8.8.0-alpha7"
       annotations:
     spec:
       imagePullSecrets:
         []
       initContainers:
         - name: migration
-          image: camunda/optimize:8.8.0-alpha6
+          image: camunda/optimize:8.8.0-alpha7
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -53,11 +53,7 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
@@ -79,7 +75,7 @@ spec:
               name: environment-config
       containers:
         - name: optimize
-          image: camunda/optimize:8.8.0-alpha6
+          image: camunda/optimize:8.8.0-alpha7
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -90,11 +86,7 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT

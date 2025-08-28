@@ -30,7 +30,7 @@ jobs:
     outputs:
       matrix: ${{ steps.release.outputs.matrix }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix
@@ -108,7 +108,7 @@ jobs:
     steps:
       # Init.
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
       - name: Install tools
@@ -120,9 +120,9 @@ jobs:
             helm-ct
             yq
       - name: Install Cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
       - name: Setup caching
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -247,7 +247,7 @@ jobs:
       CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # The verification step happens in the release branch before merging into the "main" branch.
           fetch-depth: 0

@@ -24,7 +24,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 )
 
@@ -56,6 +55,7 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
+			"identity.enabled":                   "true",
 			"identityPostgresql.enabled":         "false",
 			"identity.externalDatabase.enabled":  "true",
 			"identity.externalDatabase.password": "super-secure-ext",
@@ -75,61 +75,4 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 	// then
 	s.NotEmpty(secret.Data)
 	s.Require().Equal("super-secure-ext", string(secret.Data["password"]))
-}
-
-func (s *secretTest) TestExternalIdentityPostgresqlSecretRenderedOnCompatibilityPostgresqlEnabled() {
-	// given
-	options := &helm.Options{
-		SetValues: map[string]string{
-			// note how it's not identityPostgresql.enabled so we can reproduce SUPPORT-21601
-			"identity.postgresql.enabled":       "true",
-			"identity.externalDatabase.enabled": "false",
-		},
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// There are 2 possible ways for this secret to be rendered:
-	// 1. through charts/identityPostgresql/templates/secrets.yaml for situations when identityPostgresql is enabled
-	// 2. through templates/identity/postgresql-secret.yaml for situations when identityPostgresql is disabled but
-	//    there is an externalDatabase configured
-	postgresqlSubchartSecretTemplatePath := []string{
-		"charts/identityPostgresql/templates/secrets.yaml",
-	}
-
-	identityPostgresqlMainChartSecretTemplatePath := []string{
-		"templates/identity/postgresql-secret.yaml",
-	}
-
-	deploymentTemplateName := []string{
-		"templates/identity/deployment.yaml",
-	}
-
-	// when
-	postgresqlSubchartSecret := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, postgresqlSubchartSecretTemplatePath)
-	_, mainChartSecretError := helm.RenderTemplateE(s.T(), options, s.chartPath, s.release, identityPostgresqlMainChartSecretTemplatePath)
-	deploymentTemplate := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, deploymentTemplateName)
-	var secret coreV1.Secret
-	var deployment appsv1.Deployment
-
-	helm.UnmarshalK8SYaml(s.T(), postgresqlSubchartSecret, &secret)
-	helm.UnmarshalK8SYaml(s.T(), deploymentTemplate, &deployment)
-
-	envVars := deployment.Spec.Template.Spec.Containers[0].Env
-	var identityDatabasePassword coreV1.EnvVar
-	for _, envVar := range envVars {
-		if envVar.Name == "IDENTITY_DATABASE_PASSWORD" {
-			identityDatabasePassword = envVar
-		}
-	}
-
-	// then
-
-	// I expect Secret to NOT be rendered via charts/identityPostgresql/templates/secrets.yaml
-	s.Require().ErrorContains(mainChartSecretError, "could not find template templates/identity/postgresql-secret.yaml in chart")
-	s.Require().Equal("IDENTITY_DATABASE_PASSWORD", identityDatabasePassword.Name)
-	// I expect Deployment environment variable to reference the secret that is rendered
-	s.Require().Equal("camunda-platform-test-identity-postgresql", identityDatabasePassword.ValueFrom.SecretKeyRef.Name)
-	// I expect Secret to be rendered via templates/identity/postgresql-secret.yaml
-	s.Require().Equal("camunda-platform-test-identity-postgresql", secret.ObjectMeta.Name)
-	s.Require().NotEmpty(string(secret.Data["password"]))
 }

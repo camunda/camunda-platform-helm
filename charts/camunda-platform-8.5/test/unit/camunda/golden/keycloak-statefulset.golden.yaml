@@ -60,7 +60,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: init-quarkus-directory
-          image: docker.io/bitnami/keycloak:23.0.7
+          image: docker.io/bitnamilegacy/keycloak:23.0.7
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -92,7 +92,7 @@ spec:
           - sh
           - -c
           - cp -a /app/keycloak-theme/* /mnt
-          image: 'docker.io/camunda/identity:8.5.18'
+          image: 'docker.io/camunda/identity:8.5.20'
           imagePullPolicy: 'IfNotPresent'
           name: copy-camunda-theme
           securityContext:
@@ -111,7 +111,7 @@ spec:
             name: camunda-theme
       containers:
         - name: keycloak
-          image: docker.io/bitnami/keycloak:23.0.7
+          image: docker.io/bitnamilegacy/keycloak:23.0.7
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

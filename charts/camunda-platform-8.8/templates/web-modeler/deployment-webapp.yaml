@@ -34,15 +34,15 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.webapp.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             - name: NODE_ENV
               value: "production"
             - name: PLAY_ENABLED
-              value: "true"
+              value: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
             - name: NODE_OPTIONS
               value: "--max-old-space-size=128"
             - name: PUSHER_APP_ID

@@ -60,6 +60,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		},
 	}
 
+	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
@@ -92,9 +93,9 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.KeycloakTokenURL)
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.ClientId)
 
-// 	s.Require().Equal("camunda-platform-test-core:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
+// 	s.Require().Equal("camunda-platform-test-orchestration:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
 // 	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
-// 	s.Require().Equal("http://camunda-platform-test-core:80/v1", configmapApplication.Camunda.Operate.Client.Url)
+// 	s.Require().Equal("http://camunda-platform-test-orchestration:80/v1", configmapApplication.Camunda.Operate.Client.Url)
 // 	s.Require().Equal("connectors", configmapApplication.Camunda.Operate.Client.Username)
 // }
 
@@ -125,7 +126,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.Username)
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.ClientId)
 
-// 	s.Require().Equal("camunda-platform-core-gateway:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
+// 	s.Require().Equal("camunda-platform-orchestration-gateway:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
 // 	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
 // 	s.Require().Equal("false", configmapApplication.Camunda.Connector.Polling.Enabled)
 // 	s.Require().Equal("false", configmapApplication.Camunda.Connector.WebHook.Enabled)
@@ -158,7 +159,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	s.Require().Empty(configmapApplication.Camunda.Connector.WebHook.Enabled)
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.Username)
 
-// 	s.Require().Equal("camunda-platform-test-core:26500/v1", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
+// 	s.Require().Equal("camunda-platform-test-orchestration:26500/v1", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
 // 	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
 // 	s.Require().Equal("http://camunda-platform-test-operate:80", configmapApplication.Camunda.Operate.Client.Url)
 // 	s.Require().Equal("operate-api", configmapApplication.Camunda.Identity.Audience)

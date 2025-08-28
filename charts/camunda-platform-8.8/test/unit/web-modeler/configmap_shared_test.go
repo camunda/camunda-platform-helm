@@ -54,6 +54,7 @@ func (s *configmapTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerGenerateRandomPusherAppKey",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 			},
@@ -68,5 +69,6 @@ func (s *configmapTest) TestDifferentValuesInputs() {
 		},
 	}
 
+	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

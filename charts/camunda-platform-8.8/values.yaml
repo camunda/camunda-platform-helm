@@ -1,3 +1,5 @@
+
+
 # Default values for Camunda Helm chart.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
@@ -25,13 +27,13 @@
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
 ##########################################
-#####
+ #####
 #     # #       ####  #####    ##   #
 #       #      #    # #    #  #  #  #
 #  #### #      #    # #####  #    # #
 #     # #      #    # #    # ###### #
 #     # #      #    # #    # #    # #
-#####  ######  ####  #####  #    # ######
+ #####  ######  ####  #####  #    # ######
 ##########################################
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------#
@@ -55,14 +57,22 @@ global:
   ## License configuration.
   ## @extra global.license
   license:
-    ## @param global.license.key if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
+    ## @param global.license.key (DEPRECATED - use global.license.secret instead) if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
     key: ""
-    ## @param global.license.existingSecret you can provide an existing secret name for Camunda license secret.
+    ## @param global.license.existingSecret (DEPRECATED - use global.license.secret instead) you can provide an existing secret name for Camunda license secret.
     existingSecret: ""
-    ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
+    ## @param global.license.existingSecretKey (DEPRECATED - use global.license.secret instead) you can provide the key within the existing secret object for Camunda license key.
     existingSecretKey: ""
+    ## @extra global.license.secret configuration to provide the license secret.
+    secret:
+      ## @param global.license.secret.inlineSecret can be used to provide the license as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param global.license.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the license.
+      existingSecret: ""
+      ## @param global.license.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
-  ## @extra global.compatibility Compatibility adaptations for Kubernetes platforms
+  ## @extra global.compatibility Compatibility adaptations in the chart.
   compatibility:
     ## Compatibility adaptations for Openshift
     ##
@@ -70,6 +80,12 @@ global:
       ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
       ##
       adaptSecurityContext: disabled
+    ## Compatibility adaptations for Camunda Orchestration Cluster.
+    ##
+    orchestration:
+      ## @param global.compatibility.orchestration.enabled if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).
+      ##
+      enabled: true
 
   ## @extra global.config Config used in various places.
   config:
@@ -85,48 +101,8 @@ global:
   ## Security configuration
   ## @extra global.security
   security:
-    ## Authentication configuration
-    ## @extra global.security.authentication
-    authentication:
-      ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
-      method: basic
-      ## @param global.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
-      unprotectedApi: false
-      oidc:
-        ## @param global.security.authentication.oidc.usernameClaim username claim.
-        usernameClaim: preferred_username
-        ## @param global.security.authentication.oidc.groupsClaim group claim.
-        groupsClaim: ""
-    ## Authorizations configuration.
-    ## @extra global.security.authorizations
-    authorizations:
-      ## @param global.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
-      enabled: true
-    ## Initialization configuration
-    ## @extra global.security.initialization
-    initialization:
-      ## Initial admin users configurations
-      ## @extra global.security.initialization.users
-      ## @param global.security.initialization.users[0].username
-      ## @param global.security.initialization.users[0].password
-      ## @param global.security.initialization.users[0].name
-      ## @param global.security.initialization.users[0].email
-      users:
-        ## @extra global.security.initialization.users.username, the username of an initial user.
-        - username: demo
-          ## @extra global.security.initialization.users.password, the password of an initial user.
-          password: demo
-          ## @extra global.security.initialization.users.name, the name of an initial user.
-          name: Demo User
-          ## @extra global.security.initialization.users.email, the email of an initial user.
-          email: demo@demo.com
-      mappings:
-        ## @param global.security.initialization.mappings[0].mappingID the mapping-id of an initial mapping.
-        - mappingID: demo-user-mapping
-          ## @param global.security.initialization.mappings[0].claimName the claim-name of an initial mapping.
-          claimName: preferred_username
-          ## @param global.security.initialization.mappings[0].claimValue the name of an initial user.
-          claimValue: demo
+    ## @skip global.security.allowInsecureImages
+    allowInsecureImages: true
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
@@ -196,24 +172,40 @@ global:
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
-  ## @param global.elasticsearch.auth.password the password for external elasticsearch
-  ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
-  ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
+  ## @param global.elasticsearch.auth.password (DEPRECATED - use global.elasticsearch.auth.secret instead) the password for external elasticsearch
+  ## @param global.elasticsearch.auth.existingSecret (DEPRECATED - use global.elasticsearch.auth.secret instead) you can provide an existing secret for the external elasticsearch password
+  ## @param global.elasticsearch.auth.existingSecretKey (DEPRECATED - use global.elasticsearch.auth.secret instead) you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
     enabled: true
     external: false
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.elasticsearch.tls.secret configuration to provide the TLS secret.
+      secret:
+        ## @param global.elasticsearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
+        existingSecret: ""
+        ## @param global.elasticsearch.tls.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     auth:
       username: ""
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
-      ## @param  global.elasticsearch.disableExporter DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled
+      ## @extra global.elasticsearch.auth.secret configuration to provide the authentication secret.
+      secret:
+        ## @param global.elasticsearch.auth.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.elasticsearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param global.elasticsearch.auth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+    ## @param  global.elasticsearch.disableExporter (DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.
     disableExporter: false
     ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
@@ -223,7 +215,7 @@ global:
       protocol: http
       host: "{{ .Release.Name }}-elasticsearch"
       port: 9200
-    ## @param global.elasticsearch.clusterName Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch
+    ## @param global.elasticsearch.clusterName defines the name of the Elasticsearch cluster.
     clusterName: "elasticsearch"
     ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
     prefix: zeebe-record
@@ -233,12 +225,12 @@ global:
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
   ## @param global.opensearch.auth.username the username for external opensearch
-  ## @param global.opensearch.auth.password the password for external opensearch
-  ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
-  ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
+  ## @param global.opensearch.auth.password (DEPRECATED - use global.opensearch.auth.secret instead) the password for external opensearch
+  ## @param global.opensearch.auth.existingSecret (DEPRECATED - use global.opensearch.auth.secret instead) you can provide an existing secret for the external opensearch password
+  ## @param global.opensearch.auth.existingSecretKey (DEPRECATED - use global.opensearch.auth.secret instead) you can provide an existing secret key for the external opensearch password
   opensearch:
     enabled: false
     aws:
@@ -246,11 +238,27 @@ global:
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.opensearch.tls.secret configuration to provide the TLS secret.
+      secret:
+        ## @param global.opensearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
+        existingSecret: ""
+        ## @param global.opensearch.tls.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     auth:
       username: ""
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
+      ## @extra global.opensearch.auth.secret configuration to provide the authentication secret.
+      secret:
+        ## @param global.opensearch.auth.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.opensearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param global.opensearch.auth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     ## @extra global.opensearch.url Configuration to configure opensearch url
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
     ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
@@ -259,6 +267,10 @@ global:
       protocol: https
       host: ""
       port: 443
+    ## @param global.opensearch.clusterName defines the name of the OpenSearch cluster.
+    clusterName: "opensearch"
+    ## @param global.opensearch.prefix defines the prefix used for OpenSearch indices or records.
+    prefix: zeebe-record
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
@@ -323,10 +335,18 @@ global:
         enabled: false
         ## @param global.identity.auth.admin.clientId defines the client id.
         clientId: admin
-        ## @param global.identity.auth.admin.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.admin.existingSecret.name.
+        ## @param global.identity.auth.admin.existingSecret [string,object] (DEPRECATED - use global.identity.auth.admin.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.admin.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.admin.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.admin.existingSecretKey (DEPRECATED - use global.identity.auth.admin.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-admin-client-token
+        ## @extra global.identity.auth.admin.secret configuration to provide the admin client secret.
+        secret:
+          ## @param global.identity.auth.admin.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.admin.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.admin.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
       #######################
       # Management Group
@@ -338,9 +358,9 @@ global:
         clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret [string,object] can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+        ## @param global.identity.auth.identity.existingSecret [string,object] (DEPRECATED - use global.identity.auth.identity.secret instead) can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
         existingSecret: ""
-        ## @param global.identity.auth.identity.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.identity.existingSecretKey (DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
         ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
         # Should be publicly accessible, the default value works if a port-forward to Identity is created to 8085.
@@ -360,14 +380,22 @@ global:
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
         wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
+        ## @param global.identity.auth.console.existingSecret [string,object] (DEPRECATED - use global.identity.auth.console.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.console.existingSecretKey (DEPRECATED - use global.identity.auth.console.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-console-client-token
+        ## @extra global.identity.auth.console.secret configuration to provide the console client secret.
+        secret:
+          ## @param global.identity.auth.console.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.console.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.console.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
         ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8080"
+        redirectUrl: "http://localhost:8087"
 
       ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
       webModeler:
@@ -380,36 +408,52 @@ global:
         ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
         # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8084"
+        redirectUrl: "http://localhost:8070"
 
       #######################
-      # Orchestration Group
+      # Orchestration Cluster
       #######################
 
       ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
       connectors:
         ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
+        ## @param global.identity.auth.connectors.existingSecret [string,object] (DEPRECATED - use global.identity.auth.connectors.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.connectors.existingSecretKey (DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-connectors-client-token
+        ## @extra global.identity.auth.connectors.secret configuration to provide the connectors client secret.
+        secret:
+          ## @param global.identity.auth.connectors.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.connectors.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
-      ## @extra global.identity.auth.core configuration to configure authentication specifics on global level, which can be accessed by other components
-      core:
-        ## @param global.identity.auth.core.audience defines the audience, which is used by Core.
-        audience: core-api
-        ## @param global.identity.auth.core.clientId defines the client id, which is used by Core in authentication flows.
-        clientId: core
-        ## @param global.identity.auth.core.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.core.existingSecret.name.
+      ## @extra global.identity.auth.orchestration configuration to configure authentication specifics on global level, which can be accessed by other components
+      orchestration:
+        ## @param global.identity.auth.orchestration.audience defines the audience, which is used by Orchestration Cluster.
+        audience: orchestration-api
+        ## @param global.identity.auth.orchestration.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
+        clientId: orchestration
+        ## @param global.identity.auth.orchestration.existingSecret [string,object] (DEPRECATED - use global.identity.auth.orchestration.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.orchestration.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.core.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: identity-core-client-token
-        ## @param global.identity.auth.core.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be publicly accessible, the default value works if a port-forward to Core is created to 8082.
+        ## @param global.identity.auth.orchestration.existingSecretKey (DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-orchestration-client-token
+        ## @extra global.identity.auth.orchestration.secret configuration to provide the orchestration client secret.
+        secret:
+          ## @param global.identity.auth.orchestration.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.orchestration.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.orchestration.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
+        ## @param global.identity.auth.orchestration.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8082"
-        ## @param global.identity.auth.core.tokenScope defines the token scope, which is used by Core.
+        ## @param global.identity.auth.orchestration.tokenScope defines the token scope, which is used by Orchestration Cluster.
         tokenScope: ""
 
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
@@ -418,10 +462,18 @@ global:
         audience: optimize-api
         ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in authentication flows.
         clientId: optimize
-        ## @param global.identity.auth.optimize.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.optimize.existingSecret.name.
+        ## @param global.identity.auth.optimize.existingSecret [string,object] (DEPRECATED - use global.identity.auth.optimize.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.optimize.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.optimize.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.optimize.existingSecretKey (DEPRECATED - use global.identity.auth.optimize.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-optimize-client-token
+        ## @extra global.identity.auth.optimize.secret configuration to provide the optimize client secret.
+        secret:
+          ## @param global.identity.auth.optimize.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.optimize.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.optimize.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
         ## @param global.identity.auth.optimize.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Optimize.
         # Should be publicly accessible, the default value works if a port-forward to Optimize is created to 8083.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -491,6 +543,11 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
+  ## @extra global.exporter configuration for Elasticsearch and Opensearch exporters.
+  exporter:
+    ## @param global.exporter.enabled if true, enables Elasticsearch and Opensearch exporters.
+    enabled: false
+
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:
   # extraManifests:
@@ -503,29 +560,19 @@ global:
   #       test: test
   extraManifests: []
 
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#############################################################################################################
-#     #                                                                   #####
-##   ##   ##   #    #   ##    ####  ###### #    # ###### #    # #####    #     # #####   ####  #    # #####
-# # # #  #  #  ##   #  #  #  #    # #      ##  ## #      ##   #   #      #       #    # #    # #    # #    #
-#  #  # #    # # #  # #    # #      #####  # ## # #####  # #  #   #      #  #### #    # #    # #    # #    #
-#     # ###### #  # # ###### #  ### #      #    # #      #  # #   #      #     # #####  #    # #    # #####
-#     # #    # #   ## #    # #    # #      #    # #      #   ##   #      #     # #   #  #    # #    # #
-#     # #    # #    # #    #  ####  ###### #    # ###### #    #   #       #####  #    #  ####   ####  #
-#############################################################################################################
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
+  ## @param global.noSecondaryStorage if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.
+  noSecondaryStorage: false
 
 ############################################
 ###
-#  #####  ###### #    # ##### # ##### #   #
-#  #    # #      ##   #   #   #   #    # #
-#  #    # #####  # #  #   #   #   #     #
-#  #    # #      #  # #   #   #   #     #
-#  #    # #      #   ##   #   #   #     #
+ #  #####  ###### #    # ##### # ##### #   #
+ #  #    # #      ##   #   #   #   #    # #
+ #  #    # #####  # #  #   #   #   #     #
+ #  #    # #      #  # #   #   #   #     #
+ #  #    # #      #   ##   #   #   #     #
 ### #####  ###### #    #   #   #   #     #
 ############################################
+
 ## @section Identity Parameters
 # Identity configuration for the identity sub chart.
 identity:
@@ -543,10 +590,6 @@ identity:
   ## @param identity.nameOverride can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)
   nameOverride: ""
 
-  migration:
-  ## @param identity.migration migrating data from Management Identity to Identity (in the orchestration cluster)
-    enabled: false
-
   ## @extra identity.firstUser configuration to configure properties of the first Identity user, which can be used to access all
   # web applications
   firstUser:
@@ -554,7 +597,7 @@ identity:
     enabled: true
     ## @param identity.firstUser.username defines the username of the first user, needed to log in into the web applications
     username: demo
-    ## @param identity.firstUser.password defines the password of the first user, needed to log in into the web applications
+    ## @param identity.firstUser.password (DEPRECATED - use identity.firstUser.secret instead) defines the password of the first user, needed to log in into the web applications
     password: demo
     ## @param identity.firstUser.email defines the email address of the first user; a valid email address is required to use WebModeler
     email: demo@example.org
@@ -562,10 +605,18 @@ identity:
     firstName: Demo
     ## @param identity.firstUser.lastName defines the last name of the first user; a name is required to use WebModeler
     lastName: User
-    ## @param identity.firstUser.existingSecret can be used to use an own existing secret for Identity first user.
+    ## @param identity.firstUser.existingSecret (DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Identity first user.
     existingSecret: camunda-credentials
-    ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
+    ## @param identity.firstUser.existingSecretKey (DEPRECATED - use identity.firstUser.secret instead) defines the key within the existing secret object.
     existingSecretKey: identity-firstuser-password
+    ## @extra identity.firstUser.secret configuration to provide the first user password secret.
+    secret:
+      ## @param identity.firstUser.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param identity.firstUser.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+      existingSecret: ""
+      ## @param identity.firstUser.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @param identity.users configuration to configure properties of the Identity users, which can be used to access web applications.
   users: []
@@ -577,11 +628,17 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha6
+    tag: 8.8.0-alpha7
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  ## Multitenancy configuration
+  ## @extra identity.multitenancy
+  multitenancy:
+    ## @param identity.multitenancy.enabled can be used to enable multitenancy in management identity
+    enabled: false
 
   ## @param identity.sidecars can be used to attach extra containers to the identity deployment
   sidecars: []
@@ -762,10 +819,10 @@ identity:
   ## @param identity.externalDatabase.host Database host
   ## @param identity.externalDatabase.port Database port number
   ## @param identity.externalDatabase.username Non-root username
-  ## @param identity.externalDatabase.password Password for the non-root username
+  ## @param identity.externalDatabase.password (DEPRECATED - use identity.externalDatabase.secret instead) Password for the non-root username
   ## @param identity.externalDatabase.database The database name
-  ## @param identity.externalDatabase.existingSecret Name of an existing Kubernetes Secret containing the external database credentials for Identity.
-  ## @param identity.externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
+  ## @param identity.externalDatabase.existingSecret (DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Identity.
+  ## @param identity.externalDatabase.existingSecretPasswordKey (DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
     enabled: false
@@ -776,6 +833,14 @@ identity:
     password: ""
     existingSecret: ""
     existingSecretPasswordKey: ""
+    ## @extra identity.externalDatabase.secret configuration to provide the external database password secret.
+    secret:
+      ## @param identity.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+      existingSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
@@ -834,7 +899,7 @@ identityPostgresql:
   ## @param identityPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   ##
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: 15.10.0-debian-12-r2
     digest: ""
   ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
@@ -858,6 +923,14 @@ identityPostgresql:
       adminPasswordKey: "identity-postgresql-admin-password"
       ## @param identityPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
       userPasswordKey: "identity-postgresql-user-password"
+  volumePermissions:
+    image:
+      ## @param identityPostgresql.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  metrics:
+    image:
+      ## @param identityPostgresql.metrics.image.repository
+      repository: bitnamilegacy/postgres-exporter
 
 # Identity.
 #    # ###### #   #  ####  #       ####    ##   #    #
@@ -917,7 +990,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       ## @param identityKeycloak.postgresql.image.repository image repo
-      repository: bitnami/postgresql
+      repository: bitnamilegacy/postgresql
       ## @param identityKeycloak.postgresql.image.tag image tag
       tag: 15.10.0-debian-12-r2
       ## @param identityKeycloak.postgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
@@ -957,6 +1030,14 @@ identityKeycloak:
         enabled: true
         runAsNonRoot: true
         fsGroup: 1001
+    volumePermissions:
+      image:
+        ## @param identityKeycloak.postgresql.volumePermissions.image.repository
+        repository: bitnamilegacy/os-shell
+    metrics:
+      image:
+        ## @param identityKeycloak.postgresql.metrics.image.repository
+        repository: bitnamilegacy/postgres-exporter
   # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
   # Docs: https://www.keycloak.org/server/reverseproxy
   ## @param identityKeycloak.proxy keycloak proxy
@@ -1055,15 +1136,19 @@ identityKeycloak:
     existingSecret: camunda-credentials
     ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
     passwordSecretKey: identity-keycloak-admin-password
+  keycloakConfigCli:
+    image:
+      ## @param identityKeycloak.keycloakConfigCli.image.repository
+      repository: bitnamilegacy/keycloak-config-cli
 
 #################################################
-#####
+ #####
 #     #  ####  #    #  ####   ####  #      ######
 #       #    # ##   # #      #    # #      #
 #       #    # # #  #  ####  #    # #      #####
 #       #    # #  # #      # #    # #      #
 #     # #    # #   ## #    # #    # #      #
-#####   ####  #    #  ####   ####  ###### ######
+ #####   ####  #    #  ####   ####  ###### ######
 #################################################
 
 ## @section Console Parameters
@@ -1085,7 +1170,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.0-alpha6
+    tag: 8.8.0-alpha7
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1303,9 +1388,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0-alpha6
-    ## @param webModeler.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-    digest: ""
+    tag: 8.8.0-alpha8-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1329,6 +1412,8 @@ webModeler:
     image:
       ## @param webModeler.restapi.image.repository defines which image repository to use for the restapi Docker image
       repository: camunda/web-modeler-restapi
+      ## @param webModeler.restapi.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.restapi.sidecars can be used to attach extra containers to the restapi deployment
     sidecars: []
@@ -1338,7 +1423,7 @@ webModeler:
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
     # Note: Currently, the only supported database system is PostgreSQL.
     externalDatabase:
-      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.
+      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.
       # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
       url: ""
       ## @param webModeler.restapi.externalDatabase.host Database host (used when url is not provided)
@@ -1349,17 +1434,25 @@ webModeler:
       database: "web-modeler"
       ## @param webModeler.restapi.externalDatabase.user defines the database user
       user: ""
-      ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
+      ## @param webModeler.restapi.externalDatabase.password (DEPRECATED - use webModeler.restapi.externalDatabase.secret instead) can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.4–8.7; string form will be treated as a literal password).
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] (DEPRECATED - use webModeler.restapi.externalDatabase.secret instead) Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.4–8.7; string form will be treated as a literal password).
       ## @skip webModeler.restapi.externalDatabase.existingSecret.name string Name of the Kubernetes Secret containing the DB password; required when using the object form of `existingSecret`.
       ##   • **String form** (schema‐native, but in 8.4–8.7 it will be treated as the literal password rather than the secret name).
       ##  • **Object form** (recommended workaround until 8.8 GA):
       ##       existingSecret:
       ##         name: my-webmodeler-db-secret
       existingSecret: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string Key in the Secret data that holds the DB password; defaults to `"password"`.
+      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey (DEPRECATED - use webModeler.restapi.externalDatabase.secret instead) string Key in the Secret data that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: "database-password"
+      ## @extra webModeler.restapi.externalDatabase.secret configuration to provide the database password secret.
+      secret:
+        ## @param webModeler.restapi.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
     mail:
@@ -1369,32 +1462,48 @@ webModeler:
       smtpPort: 587
       ## @param webModeler.restapi.mail.smtpUser can be used to provide a user for the SMTP server
       smtpUser: ""
-      ## @param webModeler.restapi.mail.smtpPassword can be used to provide a password for the SMTP server; ignored if `webModeler.restapi.mail.existingSecret` is set
+      ## @param webModeler.restapi.mail.smtpPassword (DEPRECATED - use webModeler.restapi.mail.secret instead) can be used to provide a password for the SMTP server; ignored if `webModeler.restapi.mail.existingSecret` is set
       smtpPassword: ""
       ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
-      ## @param webModeler.restapi.mail.existingSecret [string,object] A string literal SMTP password can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.mail.existingSecret.name.
+      ## @param webModeler.restapi.mail.existingSecret [string,object] (DEPRECATED - use webModeler.restapi.mail.secret instead) A string literal SMTP password can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.mail.existingSecret.name.
       existingSecret: ""
-      ## @param webModeler.restapi.mail.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the SMTP password
+      ## @param webModeler.restapi.mail.existingSecretPasswordKey (DEPRECATED - use webModeler.restapi.mail.secret instead) can be used to provide the name of an existing secret key containing the SMTP password
       existingSecretPasswordKey: "smtp-password"
+      ## @extra webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
+      secret:
+        ## @param webModeler.restapi.mail.secret.inlineSecret can be used to provide the SMTP password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the SMTP password.
+        existingSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
       ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
       # NOTE: This value is mandatory.
       fromAddress: ""
       ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
+    ## @extra webModeler.restapi.pusher configuration for Pusher integration
+    pusher:
+      ## @extra webModeler.restapi.pusher.secret configuration to provide the Pusher app secret
+      secret:
+        ## @param webModeler.restapi.pusher.secret.inlineSecret can be used to provide the Pusher app secret as a plain-text value for non-production usage
+        inlineSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Pusher app secret
+        existingSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecretKey defines the key within the existing secret object
+        existingSecretKey: ""
 
-    ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)
+    ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)
     clusters: []
     #  - id: "default-cluster"
     #    name: "Default cluster"
     #    version: "8.8.0"
     #    authentication: "BEARER_TOKEN"
     #    url:
-    #      zeebe:
-    #        grpc: "grpc://camunda-platform-core:26500"
-    #        rest: "http://camunda-platform-core:8080/v1"
-    #      operate: "http://camunda-platform-core:8080/v1"
-    #      tasklist: "http://camunda-platform-core:8080/tasklist"
+    #      grpc: "grpc://camunda-platform-orchestration:26500"
+    #      rest: "http://camunda-platform-orchestration:8080"
+    #      web-app: "http://localhost:8088"
 
     ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
     podAnnotations: {}
@@ -1566,6 +1675,8 @@ webModeler:
     image:
       ## @param webModeler.webapp.image.repository defines which image repository to use for the webapp Docker image
       repository: camunda/web-modeler-webapp
+      ## @param webModeler.webapp.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
     sidecars: []
@@ -1734,6 +1845,8 @@ webModeler:
     image:
       ## @param webModeler.websockets.image.repository defines which image repository to use for the websockets Docker image
       repository: camunda/web-modeler-websockets
+      ## @param webModeler.websockets.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      digest: ""
 
     ## @param webModeler.websockets.sidecars can be used to attach extra containers to the modeler websockets deployment
     sidecars: []
@@ -1937,7 +2050,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.tag PostgreSQL image tag
   ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: 14.18.0-debian-12-r0
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
@@ -1984,28 +2097,14 @@ webModelerPostgresql:
       runAsNonRoot: true
       fsGroup: 1001
 
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
-############################################################################################################################
-#######                                                                                  #####
-#     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #    #     # #####   ####  #    # #####
-#     # #    # #    # #    # #      #        #   #    #  #  #    #   # #    # ##   #    #       #    # #    # #    # #    #
-#     # #    # #      ###### #####   ####    #   #    # #    #   #   # #    # # #  #    #  #### #    # #    # #    # #    #
-#     # #####  #      #    # #           #   #   #####  ######   #   # #    # #  # #    #     # #####  #    # #    # #####
-#     # #   #  #    # #    # #      #    #   #   #   #  #    #   #   # #    # #   ##    #     # #   #  #    # #    # #
-####### #    #  ####  #    # ######  ####    #   #    # #    #   #   #  ####  #    #     #####  #    #  ####   ####  #
-############################################################################################################################
-#------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------------------#
-
 #####################################################################
-#####
+ #####
 #     #  ####  #    # #    # ######  ####  #####  ####  #####   ####
 #       #    # ##   # ##   # #      #    #   #   #    # #    # #
 #       #    # # #  # # #  # #####  #        #   #    # #    #  ####
 #       #    # #  # # #  # # #      #        #   #    # #####       #
 #     # #    # #   ## #   ## #      #    #   #   #    # #   #  #    #
-#####   ####  #    # #    # ######  ####    #    ####  #    #  ####
+ #####   ####  #    # #    # ######  ####    #    ####  #    #  ####
 #####################################################################
 ## @section Connectors Parameters
 ## @extra connectors configuration for the Connectors.
@@ -2021,7 +2120,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha6
+    tag: 8.8.0-alpha7
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2222,48 +2321,137 @@ connectors:
     ## @param connectors.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
-############################
-#####
-#     #  ####  #####  ######
-#       #    # #    # #
-#       #    # #    # #####
-#       #    # #####  #
-#     # #    # #   #  #
-#####   ####  #    # ######
-############################
+####################################################################################
+#######
+#     # #####   ####  #    # ######  ####  ##### #####    ##   ##### #  ####  #    #
+#     # #    # #    # #    # #      #        #   #    #  #  #    #   # #    # ##   #
+#     # #    # #      ###### #####   ####    #   #    # #    #   #   # #    # # #  #
+#     # #####  #      #    # #           #   #   #####  ######   #   # #    # #  # #
+#     # #   #  #    # #    # #      #    #   #   #   #  #    #   #   # #    # #   ##
+####### #    #  ####  #    # ######  ####    #   #    # #    #   #   #  ####  #    #
+####################################################################################
 
-## @section Orchestration Core Parameters
-## @extra core configuration for the Orchestration Core.
-core:
-  ## @param core.enabled if true, all related resources are deployed via the helm release
+## @section Orchestration Cluster Parameters
+## @extra orchestration configuration for the Orchestration Cluster.
+orchestration:
+  ## @param orchestration.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
   enabled: true
 
-  ## @param core.debug if true, extra info is printed.
+  ## @param orchestration.debug if true, extra info is printed.
   debug: false
 
-  ## @extra core.image configuration to configure the image specifics
+  ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, identity, operate).
+  profiles:
+    broker: true
+    identity: true
+    operate: true
+    tasklist: true
+
+  ## @param orchestration.profilesOverride [string] defines the override for the profiles as comma-separated string.
+  profilesOverride: ""
+
+  security:
+    ## Authentication configuration
+    ## @extra orchestration.security.authentication
+    authentication:
+      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
+      method: basic
+      ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
+      unprotectedApi: false
+      oidc:
+        ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
+        usernameClaim: preferred_username
+        ## @param orchestration.security.authentication.oidc.groupsClaim group claim.
+        groupsClaim: "groups"
+    ## Authorizations configuration.
+    ## @extra orchestration.security.authorizations
+    authorizations:
+      ## @param orchestration.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
+      enabled: true
+    ## Initialization configuration
+    ## @extra orchestration.security.initialization
+    initialization:
+      ## Initial admin users configurations
+      ## @extra orchestration.security.initialization.users
+      ## @param orchestration.security.initialization.users[0].username
+      ## @param orchestration.security.initialization.users[0].password
+      ## @param orchestration.security.initialization.users[0].name
+      ## @param orchestration.security.initialization.users[0].email
+      users:
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user.
+        - username: demo
+          ## @extra orchestration.security.initialization.users.password, the password of an initial user.
+          password: demo
+          ## @extra orchestration.security.initialization.users.name, the name of an initial user.
+          name: Demo User
+          ## @extra orchestration.security.initialization.users.email, the email of an initial user.
+          email: demo@demo.com
+      mappingRules:
+        ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
+        - mappingRuleID: demo-user-mapping-rule
+          ## @param orchestration.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
+          claimName: preferred_username
+          ## @param orchestration.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
+          claimValue: demo
+  ## @extra orchestration.image configuration to configure the image specifics
   image:
-    ## @param core.image.registry can be used to set container image registry.
+    ## @param orchestration.image.registry can be used to set container image registry.
     registry: ""
-    ## @param core.image.repository defines which image repository to use
+    ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
-    ## @param core.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha6
-    ## @param core.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+    ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
+    tag: 8.8.0-alpha7
+    ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
-    ## @param core.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
-  ## @param core.sidecars can be used to attach extra containers to the deployment
+  ## @extra orchestration.migration configuration for migration purposes for the orchestration cluster
+  migration:
+    process:
+      ## @param orchestration.migration.process.enabled if true, the process migration occurs.
+      enabled: false
+      ## @param orchestration.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      backoffLimit: 6
+      ## @param orchestration.migration.process.batchSize can be used to define the batch size.
+      batchSize: 5
+      ## @param orchestration.migration.process.importFinishedTimeout can be used to define the timeout when the import is finished.
+      importFinishedTimeout: PT1M
+      retry:
+        ## @param orchestration.migration.process.retry.maxRetries can be used to define the maximum amount of retries.
+        maxRetries: 5
+        ## @param orchestration.migration.process.retry.maxRetryDelay can be used to define the delay time between retries.
+        maxRetryDelay: PT1M
+        ## @param orchestration.migration.process.retry.minRetryDelay can be used to define the delay time between retries.
+        minRetryDelay: PT10s
+        ## @param orchestration.migration.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
+        retryDelayMultiplier: 2.0
+    identity:
+      ## @param orchestration.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
+      enabled: false
+      ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      backoffLimit: 6
+
+  ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
 
-  ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  ## Multitenancy configuration
+  ## @extra orchestration.multitenancy
+  multitenancy:
+    checks:
+      ## @param orchestration.multitenancy.checks.enabled if true, then enable multitenancy checks in all applicable components.
+      enabled: false
+    api:
+      ## @param orchestration.multitenancy.api.enabled if true, then enable multitenancy API used for tenant management.
+      enabled: true
+
+  ## @param orchestration.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
-  ## @param core.partitionCount defines how many partitions are set up in the cluster
+  ## @param orchestration.partitionCount defines how many partitions are set up in the cluster
   partitionCount: "3"
-  ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
+  ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @param core.env can be used to set extra environment variables in each broker container
+  ## @param orchestration.env can be used to set extra environment variables in each broker container
   env: []
     # - name: LOGGING_LEVEL_IO_CAMUNDA
     #   value: DEBUG
@@ -2271,117 +2459,116 @@ core:
     #   value: TRACE
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
     #   value: TRACE
-  ## @param core.envFrom list of environment variables to import from configMapRef and secretRef
+  ## @param orchestration.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
-  ## @extra core.configMap configuration which will be applied to the mounted config map.
+  ## @extra orchestration.configMap configuration which will be applied to the mounted config map.
   configMap:
-    ## @param core.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
+    ## @param orchestration.configMap.defaultMode can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
-  ## @param core.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+  ## @param orchestration.command can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
   command: []
 
-  ## @param core.logLevel defines the log level which is used
+  ## @param orchestration.logLevel defines the log level which is used
   logLevel: info
-  ## @param core.log4j2 can be used to overwrite the log4j2 configuration
+  ## @param orchestration.log4j2 can be used to overwrite the log4j2 configuration
   log4j2: ""
-  ## @param core.javaOpts can be used to set java options
+  ## @param orchestration.javaOpts can be used to set java options
   javaOpts: >-
     -XX:+HeapDumpOnOutOfMemoryError
     -XX:HeapDumpPath=/usr/local/camunda/data
-    -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log
+    -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
     -XX:+ExitOnOutOfMemoryError
 
-  ## @extra core.service configuration for the broker service
+  ## @extra orchestration.service configuration for the broker service
   service:
-    ## @param core.service.annotations can be used to define annotations, which will be applied to the service
+    ## @param orchestration.service.annotations can be used to define annotations, which will be applied to the service
     annotations: {}
-    ## @param core.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    ## @param orchestration.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @param core.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
     httpPort: 8080
-    ## @param core.service.httpName defines the name of the http endpoint, where for example metrics are provided
+    ## @param orchestration.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-    ## @param core.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
+    ## @param orchestration.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
     commandPort: 26501
-    ## @param core.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    ## @param orchestration.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
     commandName: "command"
-    ## @param core.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
+    ## @param orchestration.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
     internalPort: 26502
-    ## @param core.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    ## @param orchestration.service.internalName defines the name of the internal api endpoint, which is used for internal communication
     internalName: "internal"
-    ## @param core.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
-    extraPorts:
-      []
+    ## @param orchestration.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
+    extraPorts: []
       # - name: hazelcast
       #   protocol: TCP
       #   port: 5701
       #   targetPort: 5701
-    ## @param core.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
     grpcPort: 26500
-    ## @param core.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
     grpcName: "gateway"
-    ## @param core.service.managementPort
+    ## @param orchestration.service.managementPort
     managementPort: 9600
-    ## @param core.service.managementName
+    ## @param orchestration.service.managementName
     managementName: "server"
 
-  ## @extra global.core.ServiceAccount configuration for the service account where the broker pods are assigned to
+  ## @extra global.orchestration.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
-    ## @param core.serviceAccount.enabled if true, enables the broker service account
+    ## @param orchestration.serviceAccount.enabled if true, enables the broker service account
     enabled: true
-    ## @param core.serviceAccount.name can be used to set the name of the broker service account
+    ## @param orchestration.serviceAccount.name can be used to set the name of the broker service account
     name: ""
-    ## @param core.serviceAccount.annotations can be used to set the annotations of the broker service account
+    ## @param orchestration.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
-    ## @param core.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
+    ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
   ingress:
     grpc:
-      ## @param core.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
+      ## @param orchestration.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
       enabled: false
-      ## @param core.ingress.grpc.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
+      ## @param orchestration.ingress.grpc.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
       external: false
-      ## @param core.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
+      ## @param orchestration.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
       className: nginx
-      ## @param core.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
-      ## @skip core.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
-      ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
-      ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      ## @skip core.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
+      ## @skip orchestration.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
+      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
+      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
       annotations:
         ingress.kubernetes.io/rewrite-target: "/"
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
         nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
         nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-      ## @param core.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      ## @param orchestration.ingress.grpc.path defines the path which is associated with the Zeebe gateway's gRPC service and port https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       path: /
-      ## @param core.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+      ## @param orchestration.ingress.grpc.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
       pathType: Prefix
-      ## @param core.ingress.grpc.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+      ## @param orchestration.ingress.grpc.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
       # If not specified the rules applies to all inbound gRPC traffic, if specified the rule applies to that host.
       host: ""
-      ## @extra core.ingress.grpc.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+      ## @extra orchestration.ingress.grpc.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
       tls:
-        ## @param core.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
+        ## @param orchestration.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
         enabled: false
-        ## @param core.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-core-grpc
+        ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
+        secretName: camunda-platform-orchestration-grpc
 
-  # contextPath: "/core"
-  ## @param core.contextPath can be used to make Core web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
+  # contextPath: "/orchestration"
+  ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
+  ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
-  ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ## @param orchestration.ioThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
-  ## @extra core.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @extra core.resources.requests
-  ## @param core.resources.requests.cpu
-  ## @param core.resources.requests.memory
-  ## @param core.resources.limits.cpu
-  ## @param core.resources.limits.memory
+  ## @extra orchestration.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @extra orchestration.resources.requests
+  ## @param orchestration.resources.requests.cpu
+  ## @param orchestration.resources.requests.memory
+  ## @param orchestration.resources.limits.cpu
+  ## @param orchestration.resources.limits.memory
   resources:
     requests:
       cpu: 1000m
@@ -2390,160 +2577,160 @@ core:
       cpu: 2000m
       memory: 3000Mi
 
-  ## @param core.persistenceType defines the type of persistence which is used by core. Possible values are: disk, local and memory.
+  ## @param orchestration.persistenceType defines the type of persistence which is used by orchestration. Possible values are: disk, local and memory.
   #   disk  - means a persistence volume claim is configured and used
   #   local - means the data is stored into the container, no volumeMount nor volume nor claim is configured
   #   memory   - means it uses a tmpfs for the data persistence, be aware that this takes the limits into account
   persistenceType: disk
-  ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  ## @param orchestration.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
-  ## @param core.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  ## @param orchestration.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
   pvcAccessModes: ["ReadWriteOnce"]
-  ## @param core.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
+  ## @param orchestration.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
   pvcStorageClassName: ""
-  ## @param core.pvcAnnotations can be used to specify custom annotations for persistent volume claims, enhancing storage configuration flexibility.
+  ## @param orchestration.pvcAnnotations can be used to specify custom annotations for persistent volume claims, enhancing storage configuration flexibility.
   pvcAnnotations: {}
-  ## @param core.pvcSelector can be used to specify a label selector for persistent volume claims for further filtering of the set of persistent volumes to select.
+  ## @param orchestration.pvcSelector can be used to specify a label selector for persistent volume claims for further filtering of the set of persistent volumes to select.
   # https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector
   pvcSelector: {}
-  ## @extra core.data configuration to configure the data handling of the Zeebe broker pods
+  ## @extra orchestration.data configuration to configure the data handling of the Zeebe broker pods
   data:
-    ## @param core.data.snapshotPeriod defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
+    ## @param orchestration.data.snapshotPeriod defines the period, after which a snapshot is created https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdata
     snapshotPeriod: "5m"
-    ## @extra core.data.disk configuration to configure the disk storage of the Zeebe broker pods
+    ## @extra orchestration.data.disk configuration to configure the disk storage of the Zeebe broker pods
     disk:
-      ## @extra core.data.disk.freeSpace configuration to configure the free space handling of the Zeebe broker pods
+      ## @extra orchestration.data.disk.freeSpace configuration to configure the free space handling of the Zeebe broker pods
       freeSpace:
-        ## @param core.data.disk.freeSpace.processing the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
-        processing: "3GB"
-        ## @param core.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
-        replication: "2GB"
-  ## @param core.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
+        ## @param orchestration.data.disk.freeSpace.processing the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        processing: "2GB"
+        ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
+        replication: "1GB"
+  ## @param orchestration.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
-  ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  ## @param orchestration.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
   extraVolumeMounts: []
-  ## @param core.extraInitContainers (Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters
+  ## @param orchestration.extraInitContainers (DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters
   extraInitContainers: []
-  ## @param core.initContainers can be used to set up extra init containers for the application Pod
+  ## @param orchestration.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @param core.podAnnotations can be used to define extra broker pod annotations
+  ## @param orchestration.podAnnotations can be used to define extra broker pod annotations
   podAnnotations: {}
-  ## @param core.podLabels can be used to define extra broker pod labels
+  ## @param orchestration.podLabels can be used to define extra broker pod labels
   podLabels: {}
-  ## @extra core.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  ## @extra orchestration.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
-    ## @param core.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
+    ## @param orchestration.podDisruptionBudget.enabled if true a pod disruption budget is defined for the brokers
     enabled: false
-    ## @param core.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
+    ## @param orchestration.podDisruptionBudget.minAvailable can be used to set how many pods should be available. Be aware that if minAvailable is set, maxUnavailable will not be set (they are mutually exclusive).
     minAvailable: 0
-    ## @param core.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
+    ## @param orchestration.podDisruptionBudget.maxUnavailable can be used to set how many pods should be at max. unavailable
     maxUnavailable: 1
 
-  ## @extra core.podSecurityContext defines the security options the pod should be run with
+  ## @extra orchestration.podSecurityContext defines the security options the pod should be run with
   podSecurityContext:
-    ## @param core.podSecurityContext.runAsNonRoot run as non root
+    ## @param orchestration.podSecurityContext.runAsNonRoot run as non root
     runAsNonRoot: true
-    ## @param core.podSecurityContext.fsGroup
+    ## @param orchestration.podSecurityContext.fsGroup
     fsGroup: 1001
-    ## @extra core.podSecurityContext.seccompProfile
+    ## @extra orchestration.podSecurityContext.seccompProfile
     seccompProfile:
-      ## @param core.podSecurityContext.seccompProfile.type
+      ## @param orchestration.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
-  ## @extra core.containerSecurityContext defines the security options the container should be run with
+  ## @extra orchestration.containerSecurityContext defines the security options the container should be run with
   containerSecurityContext:
-    ## @param core.containerSecurityContext.allowPrivilegeEscalation
+    ## @param orchestration.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
-    ## @param core.containerSecurityContext.privileged
+    ## @param orchestration.containerSecurityContext.privileged
     privileged: false
-    ## @param core.containerSecurityContext.readOnlyRootFilesystem
+    ## @param orchestration.containerSecurityContext.readOnlyRootFilesystem
     readOnlyRootFilesystem: true
-    ## @param core.containerSecurityContext.runAsNonRoot
+    ## @param orchestration.containerSecurityContext.runAsNonRoot
     runAsNonRoot: true
-    ## @param core.containerSecurityContext.runAsUser
+    ## @param orchestration.containerSecurityContext.runAsUser
     runAsUser: 1001
-    ## @extra core.containerSecurityContext.seccompProfile
+    ## @extra orchestration.containerSecurityContext.seccompProfile
     seccompProfile:
-      ## @param core.containerSecurityContext.seccompProfile.type
+      ## @param orchestration.containerSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
-  ## @extra core.startupProbe configuration
+  ## @extra orchestration.startupProbe configuration
   startupProbe:
-    ## @param core.startupProbe.enabled if true, the startup probe is enabled in app container
+    ## @param orchestration.startupProbe.enabled if true, the startup probe is enabled in app container
     enabled: false
-    ## @param core.startupProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param orchestration.startupProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param core.startupProbe.probePath defines the startup probe route used on the app
+    ## @param orchestration.startupProbe.probePath defines the startup probe route used on the app
     probePath: /actuator/health/startup
-    ## @param core.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
+    ## @param orchestration.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated.
     initialDelaySeconds: 30
-    ## @param core.startupProbe.periodSeconds defines how often the probe is executed
+    ## @param orchestration.startupProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param core.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param orchestration.startupProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param core.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param orchestration.startupProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param core.startupProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param orchestration.startupProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## @extra core.readinessProbe configuration
+  ## @extra orchestration.readinessProbe configuration
   readinessProbe:
-    ## @param core.readinessProbe.enabled if true, the readiness probe is enabled in app container
+    ## @param orchestration.readinessProbe.enabled if true, the readiness probe is enabled in app container
     enabled: true
-    ## @param core.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param orchestration.readinessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param core.readinessProbe.probePath defines the readiness probe route used on the app
+    ## @param orchestration.readinessProbe.probePath defines the readiness probe route used on the app
     probePath: /actuator/health/readiness
-    ## @param core.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param orchestration.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param core.readinessProbe.periodSeconds defines how often the probe is executed
+    ## @param orchestration.readinessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param core.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
+    ## @param orchestration.readinessProbe.successThreshold defines how often it needs to be true to be marked as ready, after failure
     successThreshold: 1
-    ## @param core.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
+    ## @param orchestration.readinessProbe.failureThreshold defines when the probe is considered as failed so the Pod will be marked Unready
     failureThreshold: 5
-    ## @param core.readinessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param orchestration.readinessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
-  ## @extra core.livenessProbe configuration
+  ## @extra orchestration.livenessProbe configuration
   livenessProbe:
-    ## @param core.livenessProbe.enabled if true, the liveness probe is enabled in app container
+    ## @param orchestration.livenessProbe.enabled if true, the liveness probe is enabled in app container
     enabled: false
-    ## @param core.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+    ## @param orchestration.livenessProbe.scheme defines the startup probe schema used on calling the probePath
     scheme: HTTP
-    ## @param core.livenessProbe.probePath defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849
+    ## @param orchestration.livenessProbe.probePath defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849
     probePath: /actuator/health/readiness
-    ## @param core.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
+    ## @param orchestration.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before
     # the probe is initiated.
     initialDelaySeconds: 30
-    ## @param core.livenessProbe.periodSeconds defines how often the probe is executed
+    ## @param orchestration.livenessProbe.periodSeconds defines how often the probe is executed
     periodSeconds: 30
-    ## @param core.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
+    ## @param orchestration.livenessProbe.successThreshold defines how often it needs to be true to be considered successful after having failed
     successThreshold: 1
-    ## @param core.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
+    ## @param orchestration.livenessProbe.failureThreshold defines when the probe is considered as failed so the container will be restarted
     failureThreshold: 5
-    ## @param core.livenessProbe.timeoutSeconds defines the seconds after the probe times out
+    ## @param orchestration.livenessProbe.timeoutSeconds defines the seconds after the probe times out
     timeoutSeconds: 1
 
   ## Metrics configuration
   metrics:
-    ## @param core.metrics.prometheus Prometheus metrics endpoint
+    ## @param orchestration.metrics.prometheus Prometheus metrics endpoint
     prometheus: /actuator/prometheus
 
-  ## @param core.nodeSelector can be used to define on which nodes the broker pods should run
+  ## @param orchestration.nodeSelector can be used to define on which nodes the broker pods should run
   nodeSelector: {}
-  ## @param core.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ## @param orchestration.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @extra global.core.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ## @extra global.orchestration.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
   # It uses a hard requirement for scheduling and works based on the pod labels
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
-  ## @skip core.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].operator
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values
+  ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -2551,59 +2738,76 @@ core:
             matchExpressions:
               - key: "app.kubernetes.io/component"
                 operator: In
+                # NOTE: The value is set to "zeebe-broker" for backwards compatibility between 8.7 and 8.8.
                 values:
-                  - core
+                  - zeebe-broker
           topologyKey: "kubernetes.io/hostname"
 
-  ## @param core.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+  ## @param orchestration.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
   index:
-    ## @param core.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
+    ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
     prefix: ""
 
+  ## @extra orchestration.retention configuration for Camunda exporter index.
+  retention:
+    ## @param orchestration.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    enabled: false
+    ## @param orchestration.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    minimumAge: 30d
+    ## @param orchestration.retention.policyName defines the name of the created and applied ILM policy.
+    policyName: zeebe-record-retention-policy
+
+  ## @extra orchestration.history configuration for Camunda harmonized historical indices.
   history:
-    ## @param core.history.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
+    ## @param orchestration.history.elsRolloverDateFormat defines the date format of historical indices in a Java DateTimeFormatter compliant syntax.
     elsRolloverDateFormat: date
-    ## @param core.history.rolloverInterval defines the time range of the historical indices to be created.
+    ## @param orchestration.history.rolloverInterval defines the time range of the historical indices to be created.
     rolloverInterval: 1d
-    ## @param core.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
+    ## @param orchestration.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
     rolloverBatchSize: 100
-    ## @param core.history.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
+    ## @param orchestration.history.waitPeriodBeforeArchiving defines the grace period for processes to be excluded from archiving for a value of 1h, any processes completed in
     ## the last hour will not be collected into historical indices.
     waitPeriodBeforeArchiving: 1h
-    ## @param core.history.delayBetweenRuns the millisecond interval between archiver runs
+    ## @param orchestration.history.delayBetweenRuns the millisecond interval between archiver runs
     delayBetweenRuns: 2000
-    ## @param core.history.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
+    ## @param orchestration.history.maxDelayBetweenRuns the maximum millisecond interval between archiver runs due to failure backoffs
     maxDelayBetweenRuns: 60000
+    ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.
     retention:
-      ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+      ## @param orchestration.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
       enabled: false
-      ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+      ## @param orchestration.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 30d
-      ## @param core.history.retention.policyName defines the name of the created and applied ILM policy.
-      policyName: core-record-retention-policy
+      ## @param orchestration.history.retention.policyName defines the name of the created and applied ILM policy.
+      # NOTE: The value is set to "zeebe-record-retention-policy" for backwards compatibility between 8.7 and 8.8.
+      policyName: camunda-history-retention-policy
+      ## @param orchestration.history.retention.usageMetricsMinimumAge defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).
+      usageMetricsMinimumAge: 730d
+      ## @param orchestration.history.retention.usageMetricsPolicyName defines the name of the created and applied ILM policy to usage metric indices.
+      usageMetricsPolicyName: camunda-usage-metrics-retention-policy
 
-  ## @param core.configuration if specified, contents will be used as the application.yaml
+  ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param core.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
-  ## @param core.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
+  ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
-  ## @param core.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+  ## @param orchestration.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
 
-  ## @param core.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
+  ## @param orchestration.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
   extraVolumeClaimTemplates: []
 
 #############################################
-#####
+ #####
 #     # #####  ##### # #    # # ###### ######
 #     # #    #   #   # ##  ## #     #  #
 #     # #    #   #   # # ## # #    #   #####
 #     # #####    #   # #    # #   #    #
 #     # #        #   # #    # #  #     #
-#####  #        #   # #    # # ###### ######
+ #####  #        #   # #    # # ###### ######
 #############################################
 ## @section Optimize Parameters
 # Optimize configuration for the Optimize sub chart.
@@ -2619,7 +2823,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha6
+    tag: 8.8.0-alpha7
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2876,7 +3080,7 @@ elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
     ## @param elasticsearch.image.repository
-    repository: bitnami/elasticsearch
+    repository: bitnamilegacy/elasticsearch
     ## @param elasticsearch.image.tag
     tag: 8.18.0
     ## @param elasticsearch.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
@@ -2919,6 +3123,8 @@ elasticsearch:
   sysctlImage:
     ## @param elasticsearch.sysctlImage.enabled
     enabled: true
+    ## @param elasticsearch.sysctlImage.repository
+    repository: bitnamilegacy/os-shell
   data:
     ## @param elasticsearch.data.replicaCount
     replicaCount: 0
@@ -2928,6 +3134,18 @@ elasticsearch:
   ingest:
     ## @param elasticsearch.ingest.enabled
     enabled: false
+  metrics:
+    image:
+      ## @param elasticsearch.metrics.image.repository
+      repository: bitnamilegacy/elasticsearch-exporter
+  volumePermissions:
+    image:
+      ## @param elasticsearch.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  copyTlsCerts:
+    image:
+      ## @param elasticsearch.copyTlsCerts.image.repository
+      repository: bitnamilegacy/os-shell
 
 #####################################################################
 ######

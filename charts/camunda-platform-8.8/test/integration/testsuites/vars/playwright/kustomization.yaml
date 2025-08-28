@@ -27,6 +27,6 @@ configMapGenerator:
     - ../../tests/connectors.spec.ts
     - ../../tests/console.spec.ts
     - ../../tests/identity.spec.ts
-    - ../../tests/core-grpc.spec.ts
-    - ../../tests/core-rest.spec.ts
+    - ../../tests/orchestration-grpc.spec.ts
+    - ../../tests/orchestration-rest.spec.ts
     - ../../tests/helper.ts

@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-websockets
-          image: "camunda/web-modeler-websockets:8.8.0-alpha6"
+          image: "camunda/web-modeler-websockets:8.8.0-alpha8-rc1"
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -52,11 +52,7 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
             - name: APP_NAME
               value: "Web Modeler WebSockets"
             - name: PUSHER_APP_ID

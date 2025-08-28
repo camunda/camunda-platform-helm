@@ -18,16 +18,17 @@ data:
     # like arrays and maps.
     identity:
       url: {{ include "identity.externalUrl" . | quote }}
-      {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
       flags:
-        multi-tenancy: {{ .Values.global.multitenancy.enabled | quote }}
-      {{- end }}
+        multi-tenancy: {{ include "identity.multitenancyEnabled" . | quote }}
 
-      {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
       client-id: {{ include "identity.authClientId" . | quote }}
       {{- end }}
-      {{- if and (.Values.global.identity.auth.identity.existingSecret) (eq (typeOf .Values.global.identity.auth.identity.existingSecret) "string") }}
-      client-secret: {{ include "identity.authClientSecret" . | quote }}
+      {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+      {{- if $config.plaintext }}
+      client-secret: {{ $config.plaintext | quote }}
+      {{- else if $config.ref }}
+      client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
       {{- end }}
 
       authProvider:
@@ -50,7 +51,7 @@ data:
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
               permissions:
-                - audience: {{ include "core.authAudience" . | quote }}
+                - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: read:*
         console:
           applications:
@@ -91,30 +92,30 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        core:
+        orchestration:
           applications:
-            - name: Core
-              id: ${CAMUNDA_CORE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CORE_CLIENT_ID:core}}
+            - name: Orchestration
+              id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
-              secret: ${CAMUNDA_CORE_SECRET:${VALUES_KEYCLOAK_INIT_CORE_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
+              secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
+              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
               redirect-uris:
-                - "/login/oauth2/code/core"
+                - "/login/oauth2/code/orchestration"
           apis:
-            - name: "Core API"
-              audience: {{ include "core.authAudience" . | quote }}
+            - name: "Orchestration API"
+              audience: {{ include "orchestration.authAudience" . | quote }}
               permissions:
                 - definition: read:*
                   description: "Read permission"
                 - definition: write:*
                   description: "Write permission"
           roles:
-            - name: "Core"
-              description: "Grants full access to Core"
+            - name: "Orchestration"
+              description: "Grants full access to Orchestration"
               permissions:
-                - audience: {{ include "core.authAudience" . | quote }}
+                - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: read:*
-                - audience: {{ include "core.authAudience" . | quote }}
+                - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
         optimize:
           applications:
@@ -194,8 +195,8 @@ data:
       init:
         console:
           secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
-        core:
-          secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
+        orchestration:
+          secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         webmodeler:
@@ -216,7 +217,7 @@ data:
             - Web Modeler
             - Web Modeler Admin
             - Console
-            - Core
+            - Orchestration
           {{- end }}
         {{- end }}
         {{- if .Values.identity.users }}
@@ -252,18 +253,18 @@ data:
                 definition: "write:*"
               - resourceServerId: {{ include "webModeler.authClientApiAudience" . | quote }}
                 definition: "write:*"
-              - resourceServerId: {{ include "core.authAudience" . | quote }}
+              - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
                 definition: "write:*"
               - resourceServerId: {{ include "optimize.authAudience" . | quote }}
                 definition: "write:*"
         {{- end }}
-        core:
+        orchestration:
           clients:
-            - name: Core
-              id: core
+            - name: Orchestration
+              id: orchestration
               type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_CORE_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.core.redirectUrl $ | quote }}
+              secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
+              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
         optimize:
@@ -286,7 +287,7 @@ data:
     {{- end }}
     {{- end }}
     server:
-      port: 8080
+      port: 8084
       {{- if .Values.identity.contextPath }}
       servlet:
         context-path: {{ .Values.identity.contextPath | quote }}
@@ -311,11 +312,12 @@ data:
     camunda:
       identity:
         audience: {{ include "identity.authAudience" . | quote }}
-        {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
         client-id: {{ include "identity.authClientId" .  | quote }}
-        {{- if eq (typeOf .Values.global.identity.auth.identity.existingSecret) "string" }}
-        client-secret: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
-        {{- else }}
+        {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+        {{- if $config.plaintext }}
+        client-secret: {{ $config.plaintext | quote }}
+        {{- else if $config.ref }}
         client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
         {{- end }}
         {{- end }}

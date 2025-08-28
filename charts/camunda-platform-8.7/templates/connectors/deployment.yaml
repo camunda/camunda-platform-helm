@@ -140,7 +140,7 @@ spec:
           {{- if .Values.connectors.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.startupProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.startupProbe.probePath) }}
               port: {{ .Values.connectors.service.serverName }}
               scheme: {{ default "HTTP" .Values.connectors.scheme }}
             initialDelaySeconds: {{ .Values.connectors.startupProbe.initialDelaySeconds }}
@@ -152,7 +152,7 @@ spec:
           {{- if .Values.connectors.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.readinessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath) }}
               port: {{ .Values.connectors.service.serverName }}
               scheme: {{ default "HTTP" .Values.connectors.scheme }}
             initialDelaySeconds: {{ .Values.connectors.readinessProbe.initialDelaySeconds }}
@@ -164,7 +164,7 @@ spec:
           {{- if .Values.connectors.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.connectors.contextPath }}{{ .Values.connectors.livenessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.livenessProbe.probePath) }}
               port: {{ .Values.connectors.service.serverName }}
               scheme: {{ default "HTTP" .Values.connectors.scheme }}
             initialDelaySeconds: {{ .Values.connectors.livenessProbe.initialDelaySeconds }}

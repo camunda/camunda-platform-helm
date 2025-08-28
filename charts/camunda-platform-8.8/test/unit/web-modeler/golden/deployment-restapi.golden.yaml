@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-restapi
-          image: "camunda/web-modeler-restapi:8.8.0-alpha6"
+          image: "camunda/web-modeler-restapi:8.8.0-alpha8-rc1"
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -52,11 +52,7 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
             - name: JAVA_OPTIONS
               value: "-XX:MaxRAMPercentage=80.0"
             - name: SPRING_DATASOURCE_PASSWORD
@@ -64,6 +60,7 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-postgresql-web-modeler
                   key: web-modeler-postgresql-user-password
+            
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
