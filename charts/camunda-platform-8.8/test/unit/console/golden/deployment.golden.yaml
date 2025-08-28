@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.8.0-alpha6"
+    app.kubernetes.io/version: "8.8.0-alpha7"
   annotations:
     {}
 spec:
@@ -49,7 +49,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: camunda-platform
-          image: camunda/console:8.8.0-alpha6
+          image: camunda/console:8.8.0-alpha7
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -70,7 +70,7 @@ spec:
             - name: NODE_ENV
               value: prod
             - name: KEYCLOAK_INTERNAL_BASE_URL
-              value: "http://:/auth"
+              value: "http://camunda-platform-test-keycloak/auth"
             - name: KEYCLOAK_BASE_URL
               value: "http://localhost:18080/auth"
             - name: KEYCLOAK_REALM

@@ -42,6 +42,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldAddContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":     "true",
 				"identity.fullURL":     "https://mydomain.com/identity",
 				"identity.contextPath": "/identity",
 			},
@@ -62,8 +63,9 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapBuiltinDatabaseEnabled",
 			Values: map[string]string{
-				"global.multitenancy.enabled": "true",
-				"identityPostgresql.enabled":  "true",
+				"identity.enabled":              "true",
+				"identity.multitenancy.enabled": "true",
+				"identityPostgresql.enabled":    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -83,9 +85,32 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("identity", configmapApplication.Spring.DataSource.Username)
 			},
 		}, {
+			Name: "TestConfigMapGlobalMultitenancySetsIdentityFlag",
+			Values: map[string]string{
+				"identity.enabled":            "true",
+				"global.multitenancy.enabled": "true",
+				"identityPostgresql.enabled":  "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication IdentityConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.NotEmpty(configmap.Data)
+
+				s.Require().Equal("true", configmapApplication.Identity.Flags.MultiTenancy)
+			},
+		}, {
 			Name: "TestConfigMapExternalDatabaseEnabled",
 			Values: map[string]string{
-				"global.multitenancy.enabled":        "true",
+				"identity.enabled":                   "true",
+				"identity.multitenancy.enabled":      "true",
 				"identityPostgresql.enabled":         "false",
 				"identity.externalDatabase.enabled":  "true",
 				"identity.externalDatabase.host":     "my-database-host",
@@ -113,6 +138,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapAuthIssuerBackendUrlWhenExplicitlyDefined",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"identityKeycloak.enabled":              "false",
 				"global.identity.auth.enabled":          "false",
 				"global.identity.auth.issuerBackendUrl": "https://example.com/",
@@ -140,6 +166,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.keycloak.url.port":     "443",
 				"global.identity.keycloak.contextPath":  "/auth/",
 				"global.identity.keycloak.realm":        "camunda-platform",
+				"identity.enabled":                      "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -157,10 +184,15 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("https://keycloak.com:443/auth/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		}, {
-			Name:   "TestConfigMapAuthIssuerBackendUrlWhenKeycloakNotDefined",
-			Values: map[string]string{},
+			Name: "TestConfigMapAuthIssuerBackendUrlWhenKeycloakNotDefined",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+				"identityKeycloak.enabled":     "true",
+			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 				var configmapApplication IdentityConfigYAML
 				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
@@ -168,9 +200,7 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				}
 
 				// then
-				s.NotEmpty(configmap.Data)
-
-				s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
+				s.Require().Equal("http://camunda-platform-test-keycloak/auth/realms/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		},
 	}

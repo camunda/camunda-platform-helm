@@ -62,6 +62,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerOverrideAppName",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.nameOverride":             "foo",
@@ -76,6 +77,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverrideAppFullname",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.fullnameOverride":         "foo",
@@ -90,6 +92,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
+				"identity.enabled":                             "true",
 				"webModeler.enabled":                           "true",
 				"webModeler.restapi.mail.fromAddress":          "example@example.com",
 				"webModeler." + s.component + ".podLabels.foo": "bar",
@@ -104,6 +107,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
+				"identity.enabled":                                  "true",
 				"webModeler.enabled":                                "true",
 				"webModeler.restapi.mail.fromAddress":               "example@example.com",
 				"webModeler." + s.component + ".podAnnotations.foo": "bar",
@@ -120,6 +124,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.annotations.foo":              "bar",
@@ -134,6 +139,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
+				"identity.enabled":                                "true",
 				"webModeler.enabled":                              "true",
 				"webModeler.restapi.mail.fromAddress":             "example@example.com",
 				"global.image.registry":                           "global.custom.registry.io",
@@ -153,6 +159,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameGlobalRegistry",
 			Values: map[string]string{
+				"identity.enabled":                                "true",
 				"webModeler.enabled":                              "true",
 				"webModeler.restapi.mail.fromAddress":             "example@example.com",
 				"global.image.registry":                           "global.custom.registry.io",
@@ -171,6 +178,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsGlobal",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.image.pullSecrets[0].name":    "SecretName",
@@ -185,6 +193,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
+				"identity.enabled":                     "true",
 				"webModeler.enabled":                   "true",
 				"webModeler.restapi.mail.fromAddress":  "example@example.com",
 				"global.image.pullSecrets[0].name":     "SecretName",
@@ -200,6 +209,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTag",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.image.tag":                "a.b.c",
@@ -217,6 +227,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.image.tag":                "",
@@ -235,6 +246,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.image.tag":                "a.b.c",
@@ -253,6 +265,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetContainerCommand",
 			Values: map[string]string{
+				"identity.enabled":                          "true",
 				"webModeler.enabled":                        "true",
 				"webModeler.restapi.mail.fromAddress":       "example@example.com",
 				"webModeler." + s.component + ".command[0]": "printenv",
@@ -270,6 +283,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumes",
 			Values: map[string]string{
+				"identity.enabled":                                                     "true",
 				"webModeler.enabled":                                                   "true",
 				"webModeler.restapi.mail.fromAddress":                                  "example@example.com",
 				"webModeler." + s.component + ".extraVolumes[0].name":                  "extraVolume",
@@ -286,11 +300,12 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), optionsBefore, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), optionsBefore, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// then
 				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 				volumes := deployment.Spec.Template.Spec.Volumes
 				s.Require().Equal(volumeLenBefore+1, len(volumes))
 
@@ -303,6 +318,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetExtraVolumeMounts",
 			Values: map[string]string{
+				"identity.enabled":                                              "true",
 				"webModeler.enabled":                                            "true",
 				"webModeler.restapi.mail.fromAddress":                           "example@example.com",
 				"webModeler." + s.component + ".extraVolumeMounts[0].name":      "otherConfigMap",
@@ -318,13 +334,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), optionsBefore, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), optionsBefore, s.chartPath, s.release, s.templates, "--set", "identity.enabled=true")
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 
 				// then
 				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 				containers := deployment.Spec.Template.Spec.Containers
 				s.Require().Equal(containerLenBefore, len(containers))
 
@@ -337,6 +354,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetServiceAccountName",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.serviceAccount.name":      "accName",
@@ -352,8 +370,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPodSetSecurityContext",
 			Values: map[string]string{
-				"webModeler.enabled":                                          "true",
-				"webModeler.restapi.mail.fromAddress":                         "example@example.com",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler." + s.component + ".podSecurityContext.runAsUser": "1000",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -367,8 +386,9 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSecurityContext",
 			Values: map[string]string{
-				"webModeler.enabled":                                                 "true",
-				"webModeler.restapi.mail.fromAddress":                                "example@example.com",
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler." + s.component + ".containerSecurityContext.privileged": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -383,6 +403,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
 			Name: "TestContainerSetNodeSelector",
 			Values: map[string]string{
+				"identity.enabled":                                     "true",
 				"webModeler.enabled":                                   "true",
 				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
 				"webModeler." + s.component + ".nodeSelector.disktype": "ssd",
@@ -418,6 +439,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//		   - another-node-label-value
 			Name: "TestContainerSetAffinity",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler." + s.component + ".affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchexpressions[0].key":       "kubernetes.io/e2e-az-name",
@@ -463,6 +485,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			//  effect: "NoSchedule"
 			Name: "TestContainerSetTolerations",
 			Values: map[string]string{
+				"identity.enabled":                                       "true",
 				"webModeler.enabled":                                     "true",
 				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
 				"webModeler." + s.component + ".tolerations[0].key":      "key1",
@@ -487,6 +510,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerShouldOverwriteGlobalImagePullPolicy",
 			Values: map[string]string{
+				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.image.pullPolicy":             "Always",
@@ -505,6 +529,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerStartupProbe",
 			Values: map[string]string{
+				"identity.enabled":                                                "true",
 				"webModeler.enabled":                                              "true",
 				"webModeler.restapi.mail.fromAddress":                             "example@example.com",
 				"webModeler." + s.component + ".startupProbe.enabled":             "true",
@@ -530,6 +555,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerReadinessProbe",
 			Values: map[string]string{
+				"identity.enabled":                                                  "true",
 				"webModeler.enabled":                                                "true",
 				"webModeler.restapi.mail.fromAddress":                               "example@example.com",
 				"webModeler." + s.component + ".readinessProbe.enabled":             "true",
@@ -555,6 +581,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerLivenessProbe",
 			Values: map[string]string{
+				"identity.enabled":                                                 "true",
 				"webModeler.enabled":                                               "true",
 				"webModeler.restapi.mail.fromAddress":                              "example@example.com",
 				"webModeler." + s.component + ".livenessProbe.enabled":             "true",

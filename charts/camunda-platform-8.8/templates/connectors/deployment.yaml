@@ -44,7 +44,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            {{- if eq .Values.global.security.authentication.method "oidc" }}
+            {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
             - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

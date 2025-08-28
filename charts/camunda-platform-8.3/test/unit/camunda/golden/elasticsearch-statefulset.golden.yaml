@@ -50,7 +50,7 @@ spec:
       initContainers:
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
-          image: docker.io/bitnami/os-shell:11-debian-11-r93
+          image: docker.io/bitnamilegacy/os-shell:11-debian-11-r93
           imagePullPolicy: "IfNotPresent"
           command:
             - /bin/bash
@@ -74,7 +74,7 @@ spec:
             requests: {}
       containers:
         - name: elasticsearch
-          image: docker.io/bitnami/elasticsearch:8.8.2
+          image: docker.io/bitnamilegacy/elasticsearch:8.8.2
           imagePullPolicy: "IfNotPresent"
           securityContext:
             runAsNonRoot: true

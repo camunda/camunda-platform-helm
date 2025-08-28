@@ -76,13 +76,13 @@ spec:
                   name: {{ include "elasticsearch.authExistingSecret" . | quote }}
                   key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password}}
+            {{- if and .Values.global.opensearch.enabled (include "opensearch.passwordIsDefined" .) }}
             - name: CAMUNDA_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "opensearch.authExistingSecret" . | quote }}
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
-            {{- end}}
+            {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
@@ -142,7 +142,7 @@ spec:
           {{- if .Values.zeebeGateway.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.startupProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.zeebeGateway.contextPath .Values.zeebeGateway.startupProbe.probePath) }}
               scheme: {{ .Values.zeebeGateway.startupProbe.scheme }}
               port: {{ .Values.zeebeGateway.service.httpPort }}
             initialDelaySeconds: {{ .Values.zeebeGateway.startupProbe.initialDelaySeconds }}
@@ -166,7 +166,7 @@ spec:
           {{- if .Values.zeebeGateway.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.zeebeGateway.contextPath }}{{ .Values.zeebeGateway.livenessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.zeebeGateway.contextPath .Values.zeebeGateway.livenessProbe.probePath) }}
               scheme: {{ .Values.zeebeGateway.livenessProbe.scheme }}
               port: {{ .Values.zeebeGateway.service.httpPort }}
             initialDelaySeconds: {{ .Values.zeebeGateway.livenessProbe.initialDelaySeconds }}

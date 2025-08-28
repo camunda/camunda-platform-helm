@@ -4,7 +4,7 @@ global:
     camunda.cloud/ephemeral: "true"
   ingress:
     tls:
-      secretName: distribution-aws-camunda-cloud-tls
+      secretName: aws-camunda-cloud-tls
 identityKeycloak:
   commonLabels:
     janitor/ttl: 1h
@@ -21,7 +21,7 @@ zeebeGateway:
   ingress:
     grpc:
       tls:
-        secretName: distribution-aws-camunda-cloud-tls
+        secretName: aws-camunda-cloud-tls
 elasticsearch:
   commonLabels:
     janitor/ttl: 1h

@@ -1,0 +1,36 @@
+---
+# Source: camunda-platform/templates/orchestration/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: camunda-platform-test-orchestration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: orchestration
+    app.kubernetes.io/version: "8.8.0-alpha7"
+  annotations:
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  type: ClusterIP
+  ports:
+    - port: 26502
+      protocol: TCP
+      name: internal
+    - port: 26501
+      protocol: TCP
+      name: command
+    - port: 9600
+      protocol: TCP
+      name: server
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: orchestration

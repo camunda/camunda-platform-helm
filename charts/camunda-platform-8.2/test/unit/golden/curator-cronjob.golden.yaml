@@ -22,7 +22,7 @@ spec:
       template:
         spec:
           containers:
-            - image: "bitnami/elasticsearch-curator-archived:5.8.4"
+            - image: "bitnamilegacy/elasticsearch-curator-archived:5.8.4"
               name: curator
               args: ["--config", "/etc/config/config.yml", "/etc/config/action_file.yml"]
               resources: 

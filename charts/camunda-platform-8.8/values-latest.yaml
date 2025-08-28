@@ -27,19 +27,13 @@ optimize:
     repository: camunda/optimize
     tag: 8-SNAPSHOT
 
-tasklist:
-  # https://hub.docker.com/r/camunda/tasklist/tags
-  image:
-    repository: camunda/tasklist
-    tag: SNAPSHOT
-
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
     tag: SNAPSHOT
 
-core:
+orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
@@ -59,12 +53,12 @@ identity:
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
-    repository: bitnami/keycloak
-    tag: 23.0.7
+    repository: bitnamilegacy/keycloak
+    tag: 26.3.3
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
-      repository: bitnami/postgresql
+      repository: bitnamilegacy/postgresql
       tag: 15.10.0-debian-12-r2
 
 #
@@ -74,5 +68,5 @@ identityKeycloak:
 elasticsearch:
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
-    repository: bitnami/elasticsearch
+    repository: bitnamilegacy/elasticsearch
     tag: 8.18.0

@@ -72,7 +72,7 @@ jobs:
       CHART_NAME: "camunda-platform"
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
           ref: ${{ inputs.branch }}
@@ -137,7 +137,7 @@ jobs:
       # Security signature.
       - name: Install Cosign CLI
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
       - name: Sign Helm chart with Cosign
         if: env.PUBLISH_ARTIFACT == 'true'
         run: |
@@ -152,7 +152,7 @@ jobs:
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
       - name: Login to GitHub Container Registry
         if: env.PUBLISH_ARTIFACT == 'true'
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

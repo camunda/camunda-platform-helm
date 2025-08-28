@@ -4,6 +4,11 @@ name: "Test - Integration - Runner"
 on:
   workflow_call:
     inputs:
+      values-config:
+        type: string
+        description: Some of the values files will allow subsitutions. For example, on the image.tags. This config supplies those values
+        default: '{}'
+        required: false
       auth:
         description: The authentication type to use for the tests.
         required: true
@@ -43,7 +48,7 @@ on:
       deployment-ttl:
         description: Define a TTL for the lifespan of the deployment.
         required: false
-        default: ""
+        default: "12h"
         type: string
       distro-platform:
         default: gke
@@ -87,7 +92,7 @@ on:
         type: string
       scenario:
         required: false
-        default: "base"
+        default: "elasticsearch"
         type: string
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
@@ -145,13 +150,32 @@ on:
       shortname:
         description: The shortname of the scenario.
         required: true
-        default: ""
+        default: "eske"
         type: string
       namespace-prefix:
         description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
         required: false
         default: ""
         type: string
+      values-enterprise:
+        required: false
+        default: "false"
+        type: string
+        description: Enable enterprise values
+      values-digest:
+        required: false
+        default: "true"
+        type: string
+        description: Enable digest values
+      always-delete-namespace:
+        description: Always delete the namespace after the test run
+        default: false
+        type: boolean
+        required: false
+    outputs:
+      deployment-url:
+        description: The URL of the deployed application.
+        value: ${{ jobs.ci-setup.outputs.vars-ingress-host }}
 
 permissions:
   contents: read
@@ -176,9 +200,19 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  # OIDC.
+  ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
+  ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
+  ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
+  ENTRA_PARENT_APP_OBJECT_ID: ${{ secrets.ENTRA_PARENT_APP_OBJECT_ID }}
+  ENTRA_CHILD_APP_CLIENT_ID: ${{ secrets.ENTRA_CHILD_APP_CLIENT_ID }}
+  ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_CHILD_APP_CLIENT_SECRET }}
+  ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_CHILD_APP_DIRECTORY_ID }}
+  ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+  # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
-  TOKEN: ${{ inputs.teleport-token }}
+  TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
   ci-setup:
@@ -188,11 +222,6 @@ jobs:
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}      
-      ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
-      TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
-      CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
-      TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
-      TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -213,7 +242,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -235,7 +264,7 @@ jobs:
       # and populate environment variables from Vault
       - name: CI Setup - Import Vault secrets
         id: secrets
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         if: inputs.vault-secret-mapping != ''
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -246,7 +275,7 @@ jobs:
           exportEnv: true
       - name: Import Vault secrets
         id: test-credentials-secret
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -254,6 +283,8 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
+            secret/data/products/distribution/ci NEXUS_USERNAME;
+            secret/data/products/distribution/ci NEXUS_PASSWORD;
           exportEnv: true
 
       - name: CI Setup - Authenticate to cluster
@@ -294,8 +325,10 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          values-enterprise: "${{ inputs.values-enterprise }}"
+          values-digest: "${{ inputs.values-digest }}"
 
-      - name: CI Setup - Add Helm repos and update helm dependencies
+      - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
           make helm.repos-add
@@ -322,8 +355,8 @@ jobs:
           kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=30m
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=30m
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl }}
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl }}
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
@@ -339,6 +372,9 @@ jobs:
           --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
+        env:
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
 
       - name: Cluster Setup - Configure TLS Certificates/Secrets
         run: |
@@ -346,9 +382,18 @@ jobs:
             kubectl apply -n $TEST_NAMESPACE \
               -f .github/config/external-secret/external-secret-certificates.yaml
 
-            # For backward compatibility.
-            kubectl apply -n $TEST_NAMESPACE \
-              -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
+            # Dynamic version-specific external secret configuration
+            APP_VERSION=$(helm show chart "charts/${{ inputs.camunda-helm-dir }}" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
+            if [[ -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml" ]]; then
+              echo "Applying version-specific external secret for app version: ${APP_VERSION}"
+              kubectl apply -n $TEST_NAMESPACE \
+                -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml"
+            else
+              echo "Version-specific external secret not found for app version: ${APP_VERSION}, using fallback"
+              # For backward compatibility with other versions (alpha, future versions).
+              kubectl apply -n $TEST_NAMESPACE \
+                -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
+            fi
 
             # Ensure ExternalSecrets are created
             for secret in $(kubectl get externalsecret -n distribution-team -o jsonpath='{.items[*].metadata.name}'); do
@@ -358,27 +403,59 @@ jobs:
             done
           else
             # running in EKS
-            kubectl get secret -n ${NAMESPACE_PREFIX}-certs ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls -o yaml > ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
-            sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml
-            kubectl apply -f ${NAMESPACE_PREFIX}-aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
+            kubectl get secret -n ${NAMESPACE_PREFIX} aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
+            sed -i "s/namespace: ${NAMESPACE_PREFIX}/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
+            kubectl apply -f aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
           fi
 
-      - name: Helm - Execute before install lifecycle tasks
+      - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          EXTRA_VALUES: ${{ inputs.extra-values }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
-          echo "${{ inputs.extra-values }}" | tee /tmp/extra-values-file.yaml
-
+          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
-      - name: Helm - Install - Setup helm extra args
-        if: inputs.flow == 'install' && inputs.camunda-helm-credentials-source == 'auto-generated'
+      - name: Helm - Install - Setup Helm extra args
+        env:
+          CI_HELM_CREDENTIALS_SOURCE: ${{ inputs.camunda-helm-credentials-source }}
         run: |
-          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS} --set global.secrets.autoGenerated=true"
+          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS}"
+          if [ "${CI_HELM_CREDENTIALS_SOURCE}" = "auto-generated" ]
+          then 
+              TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set global.secrets.autoGenerated=true"
+          fi
           echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
+
+      - name: Helm - Install - Fill out yaml with values-config
+        if: inputs.values-config != '{}'
+        env:
+          VALS_CONFIG: ${{ inputs.values-config }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TMP_DIR: charts${{ inputs.chart-dir }}/test/integration/scenarios
+          CHART_PATH: charts/${{ inputs.camunda-helm-dir }}
+        run: |
+          echo "$VALS_CONFIG" > /tmp/values-config.json
+          cat /tmp/values-config.json
+          export $(jq -r 'to_entries | map("\(.key)=\(.value|tostring)") | .[]' /tmp/values-config.json)
+          env
+          TMP_DIR="${CHART_PATH}/test/integration/scenarios/chart-full-setup"
+          VAL_FI=values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml
+          V=${TMP_DIR}/${VAL_FI}
+          ls -ls ${TMP_DIR}
+          cat $V
+          envsubst < $V > $V.bk
+          cat $V.bk
+          mv $V.bk $V
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -388,6 +465,7 @@ jobs:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_INSTALL }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -399,20 +477,35 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
-      - name: Helm - Upgrade - Setup helm extra args
+      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
+        if: inputs.flow == 'upgrade'
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
+
+      - name: Helm - Upgrade - Setup Helm extra args
+        if: inputs.flow == 'upgrade'
+        run: |
+          TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS}"
+          echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
+
+      - name: Helm - Upgrade ALPHA - Setup Helm extra args
         if: inputs.flow == 'upgrade' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
         run: |
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
           # The Zeebe team advised to use SNAPSHOT tag instead.
-          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set zeebe.image.tag=SNAPSHOT"
+          TEST_HELM_EXTRA_ARGS_INSTALL="${TEST_HELM_EXTRA_ARGS_INSTALL} --set orchestration.image.tag=SNAPSHOT"
           echo "TEST_HELM_EXTRA_ARGS_INSTALL=${TEST_HELM_EXTRA_ARGS_INSTALL}" | tee -a $GITHUB_ENV
-          TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set zeebe.image.tag=SNAPSHOT"
+          TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set orchestration.image.tag=SNAPSHOT"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
-
-      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
-        if: inputs.flow == 'upgrade'
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         if: inputs.flow == 'upgrade'
@@ -420,6 +513,7 @@ jobs:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -452,25 +546,23 @@ jobs:
           echo "SHARD_TOTAL=${SHARD_TOTAL}" | tee -a "$GITHUB_ENV"
           echo "SHARD_INDEX=${SHARD_INDEX_LIST}" | tee -a "$GITHUB_ENV"
 
+      - name: 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
+
   venom-test:
     name: Venom ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.4') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.5') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.6')) }}
     needs: [ci-setup]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      CI_TASKS_BASE_DIR: ${{ needs.ci-setup.outputs.CI_TASKS_BASE_DIR }}
-      TEST_CHART_DIR: ${{ needs.ci-setup.outputs.TEST_CHART_DIR }}
-      TEST_VALUES_BASE_DIR: ${{ needs.ci-setup.outputs.TEST_VALUES_BASE_DIR }}
-      TEST_INGRESS_HOST: ${{ needs.ci-setup.outputs.vars-ingress-host }}
-      TEST_NAMESPACE: ${{ needs.ci-setup.outputs.TEST_NAMESPACE }}
     permissions:
       contents: read
       id-token: write
       deployments: write 
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -486,6 +578,27 @@ jobs:
             oc
             task
             yq
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+    
+      - name: CI Setup - Set test type vars
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -505,21 +618,47 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
-      - name: Test - ⭐️ Run Venom Env Setup ⭐️        
+      - name: Test - ⭐️ Run Venom Env Setup ⭐️
         timeout-minutes: 1
+        env:
+          CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
+          TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
+          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+          EXTRA_VALUES: ${{ inputs.extra-values }}
         continue-on-error: false
         run: |
+          echo "Extra values from workflow:"
+          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.venom.env
 
       - name: Test - ⭐️ Run Venom Preflight TestSuite ⭐️
+        env:
+          CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
+          TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
+          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
         continue-on-error: true
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
 
       - name: Test - ⭐️ Run Venom Core TestSuite ⭐️
+        env:
+          CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
+          TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
+          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
         id: core-testsuite
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
+
+      - name: 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
 
   playwright-integration-tests:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
@@ -539,10 +678,11 @@ jobs:
       TEST_NAMESPACE: ${{ needs.ci-setup.outputs.TEST_NAMESPACE }}
       ABSOLUTE_TEST_CHART_DIR: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}
       TEST_EXCLUDE: ${{ inputs.exclude }}
+      PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -559,6 +699,27 @@ jobs:
             task
             yq
             zbctl
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: CI Setup - Set test type vars
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -580,141 +741,116 @@ jobs:
       
       - name: Cache - node_modules
         id: cache-node
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
-          path: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
-          key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
+          path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
+          key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
           restore-keys: |
             node_modules-${{ runner.os }}-
   
       - name: Cache - Playwright
         id: cache-playwright
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
+          key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
           restore-keys: |
             playwright-automation-${{ runner.os }}-
 
       - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
         run: |
           cd $GITHUB_WORKSPACE/scripts
-          ./run-integration-tests.sh --absolute-chart-path ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{ needs.ci-setup.outputs.TEST_NAMESPACE }}
+          ./run-integration-tests.sh --absolute-chart-path ${{env.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{ env.TEST_NAMESPACE }}
 
       - name: Test - Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          path: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
-          name: playwright-report-${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
+          path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
+          name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
           if-no-files-found: error
           retention-days: 5
 
   playwright-e2e-tests:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [ci-setup]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-32-longrunning-big-ssd
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       TEST_EXCLUDE: ${{ inputs.exclude }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: ${{ fromJson(needs.ci-setup.outputs.SHARD_INDEX) }}
-        shardTotal: ${{ fromJson(needs.ci-setup.outputs.SHARD_TOTAL) }}
+        shardIndex: [1]
+        shardTotal: [1]
+        #shardIndex: ${{ fromJson(needs.ci-setup.outputs.SHARD_INDEX) }}
+        #shardTotal: ${{ fromJson(needs.ci-setup.outputs.SHARD_TOTAL) }}
     permissions:
         contents: read
         id-token: write
         deployments: write 
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
-
-      - name: CI Setup - Authenticate to cluster
-        id: cluster-auth
-        uses: ./.github/actions/cluster-auth
-        with:
-          platform: ${{ inputs.distro-platform }}
-          auth-data: ${{ inputs.auth-data }}
-        env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
-          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
-          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
-          GKE_SA:           ${{ secrets[inputs.service-account] }}
-          ROSA_URL:         ${{ secrets[inputs.server-url] }}
-          ROSA_USER:        ${{ secrets[inputs.username] }}
-          ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-      - name: Cache - node_modules
-        id: cache-node
-        uses: actions/cache@v4
-        with:
-          path: ${{ needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
-          key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
-          restore-keys: |
-            node_modules-${{ runner.os }}-
-
-      - name: Cache - Playwright
-        id: cache-playwright
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR)) }}
-          restore-keys: |
-            playwright-automation-${{ runner.os }}-
-
-      - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
-        run: |
-          cd $GITHUB_WORKSPACE/scripts
-          ./run-e2e-tests.sh --absolute-chart-path ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{needs.ci-setup.outputs.TEST_NAMESPACE}} --shard-index ${{ matrix.shardIndex }} --shard-total ${{ matrix.shardTotal }} $( [ "${{ inputs.run-all-e2e-tests }}" = "false" ] && echo "--run-smoke-tests" )
-
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ matrix.shardIndex }}
-          path: ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
+          path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
           retention-days: 1
 
   merge-reports:
     name: Merge reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    if: ${{ !cancelled() && inputs.test-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+    if: false
     needs: [ci-setup, playwright-e2e-tests]
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: lts/*
           
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: CI Setup - Set test type vars
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+
       - name: Install dependencies
         run: |
-          cd ${{needs.ci-setup.outputs.ABSOLUTE_TEST_CHART_DIR}}/test/e2e
+          cd ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e
           npm ci
 
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           path: all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
           pattern: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-*
@@ -724,7 +860,7 @@ jobs:
         run: npx playwright merge-reports --reporter html ./all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: html-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}
           path: playwright-report
@@ -732,7 +868,8 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [playwright-e2e-tests, ci-setup]
+    if: always()
+    needs: [playwright-e2e-tests, playwright-integration-tests, venom-test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -744,11 +881,32 @@ jobs:
         uses: ./.github/actions/failed-pods-info
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: CI Setup - Set test type vars
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
 
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
@@ -789,8 +947,19 @@ jobs:
           ref: ${{ inputs.caller-git-ref }}
 
       - name: CI Cleanup - 🚨 Mark namespace as failed 🚨
-        if: failure()
+        if: always() && ${{ inputs.always-delete-namespace }}
         run: |
-          kubectl annotate ns ${{ needs.ci-setup.outputs.TEST_NAMESPACE }} build-failed=true
-          kubectl annotate ns ${{ needs.ci-setup.outputs.TEST_NAMESPACE }} cleaner/ttl=1d
-          kubectl annotate ns ${{ needs.ci-setup.outputs.TEST_NAMESPACE }} janitor/ttl=1d
+          if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
+            if [ "${{ inputs.distro-type }}" == "kubernetes" ]; then
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+            else
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+            fi
+          else
+            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+          fi
+          kubectl annotate ns ${{ env.TEST_NAMESPACE }} test-flow=${{ inputs.flow }}
+          kubectl annotate ns ${{ env.TEST_NAMESPACE }} build-failed=true

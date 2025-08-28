@@ -52,6 +52,16 @@
                                     "default": "disabled"
                                 }
                             }
+                        },
+                        "orchestration": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
+                                    "default": true
+                                }
+                            }
                         }
                     }
                 },
@@ -72,102 +82,6 @@
                             "type": "boolean",
                             "description": "if true, then enable multitenancy in all applicable components.",
                             "default": false
-                        }
-                    }
-                },
-                "security": {
-                    "type": "object",
-                    "properties": {
-                        "authentication": {
-                            "type": "object",
-                            "properties": {
-                                "method": {
-                                    "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc",
-                                    "default": "basic"
-                                },
-                                "unprotectedApi": {
-                                    "type": "boolean",
-                                    "description": "if true, then allow unauthenticated API access.",
-                                    "default": false
-                                },
-                                "oidc": {
-                                    "type": "object",
-                                    "properties": {
-                                        "usernameClaim": {
-                                            "type": "string",
-                                            "description": "username claim.",
-                                            "default": "preferred_username"
-                                        },
-                                        "groupsClaim": {
-                                            "type": "string",
-                                            "description": "group claim.",
-                                            "default": ""
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "authorizations": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, then enable authorizations checks in all applicable components.",
-                                    "default": true
-                                }
-                            }
-                        },
-                        "initialization": {
-                            "type": "object",
-                            "properties": {
-                                "users": {
-                                    "type": "array",
-                                    "description": "",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "username": {
-                                                "type": "string",
-                                                "description": ""
-                                            },
-                                            "password": {
-                                                "type": "string",
-                                                "description": ""
-                                            },
-                                            "name": {
-                                                "type": "string",
-                                                "description": ""
-                                            },
-                                            "email": {
-                                                "type": "string",
-                                                "description": ""
-                                            }
-                                        }
-                                    }
-                                },
-                                "mappings": {
-                                    "type": "array",
-                                    "description": "the mapping-id of an initial mapping.",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "mappingID": {
-                                                "type": "string",
-                                                "description": "the mapping-id of an initial mapping."
-                                            },
-                                            "claimName": {
-                                                "type": "string",
-                                                "description": "the claim-name of an initial mapping."
-                                            },
-                                            "claimValue": {
-                                                "type": "string",
-                                                "description": "the name of an initial user."
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 },
@@ -325,11 +239,6 @@
                                 }
                             }
                         },
-                        "disableExporter": {
-                            "type": "boolean",
-                            "description": "DEPRECATED: this value is not needed anymore. Use global.elasticsearch.enabled",
-                            "default": false
-                        },
                         "url": {
                             "type": "object",
                             "properties": {
@@ -352,7 +261,7 @@
                         },
                         "clusterName": {
                             "type": "string",
-                            "description": "Elasticsearch.clusterName defines the cluster name which is used by Elasticsearch",
+                            "description": "defines the name of the Elasticsearch cluster.",
                             "default": "elasticsearch"
                         },
                         "prefix": {
@@ -439,6 +348,16 @@
                                     "default": 443
                                 }
                             }
+                        },
+                        "clusterName": {
+                            "type": "string",
+                            "description": "defines the name of the OpenSearch cluster.",
+                            "default": "opensearch"
+                        },
+                        "prefix": {
+                            "type": "string",
+                            "description": "defines the prefix used for OpenSearch indices or records.",
+                            "default": "zeebe-record"
                         }
                     }
                 },
@@ -609,7 +528,7 @@
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
-                                            "default": "http://localhost:8080"
+                                            "default": "http://localhost:8087"
                                         }
                                     }
                                 },
@@ -634,7 +553,7 @@
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
-                                            "default": "http://localhost:8084"
+                                            "default": "http://localhost:8070"
                                         }
                                     }
                                 },
@@ -653,23 +572,23 @@
                                         }
                                     }
                                 },
-                                "core": {
+                                "orchestration": {
                                     "type": "object",
                                     "properties": {
                                         "audience": {
                                             "type": "string",
-                                            "description": "defines the audience, which is used by Core.",
-                                            "default": "core-api"
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
+                                            "default": "orchestration-api"
                                         },
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Core in authentication flows.",
-                                            "default": "core"
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
+                                            "default": "orchestration"
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
                                             "description": "defines the key within the existing secret object.",
-                                            "default": "identity-core-client-token"
+                                            "default": "identity-orchestration-client-token"
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -678,7 +597,7 @@
                                         },
                                         "tokenScope": {
                                             "type": "string",
-                                            "description": "defines the token scope, which is used by Core.",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
                                             "default": ""
                                         }
                                     }
@@ -847,11 +766,26 @@
                         }
                     }
                 },
+                "exporter": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
+                            "default": false
+                        }
+                    }
+                },
                 "extraManifests": {
                     "type": "array",
                     "description": "Array of extra objects to deploy with the release.",
                     "default": [],
                     "items": {}
+                },
+                "noSecondaryStorage": {
+                    "type": "boolean",
+                    "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
+                    "default": false
                 }
             }
         },
@@ -940,7 +874,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -952,6 +886,16 @@
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
                             "default": [],
                             "items": {}
+                        }
+                    }
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "can be used to enable multitenancy in management identity",
+                            "default": false
                         }
                     }
                 },
@@ -1494,7 +1438,7 @@
                         "repository": {
                             "type": "string",
                             "description": "PostgreSQL repo",
-                            "default": "bitnami/postgresql"
+                            "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
@@ -1548,6 +1492,36 @@
                                     "type": "string",
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "identity-postgresql-user-password"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
+                        }
+                    }
+                },
+                "metrics": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/postgres-exporter"
                                 }
                             }
                         }
@@ -1662,7 +1636,7 @@
                                 "repository": {
                                     "type": "string",
                                     "description": "image repo",
-                                    "default": "bitnami/postgresql"
+                                    "default": "bitnamilegacy/postgresql"
                                 },
                                 "tag": {
                                     "type": "string",
@@ -1781,6 +1755,36 @@
                                             "type": "number",
                                             "description": "",
                                             "default": 1001
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "volumePermissions": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "bitnamilegacy/os-shell"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "metrics": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string",
+                                            "description": "",
+                                            "default": "bitnamilegacy/postgres-exporter"
                                         }
                                     }
                                 }
@@ -1967,6 +1971,21 @@
                             "default": "identity-keycloak-admin-password"
                         }
                     }
+                },
+                "keycloakConfigCli": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/keycloak-config-cli"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -2004,7 +2023,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -2473,12 +2492,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha6"
-                        },
-                        "digest": {
-                            "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
-                            "default": ""
+                            "default": "8.8.0-alpha8-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2503,6 +2517,11 @@
                                     "type": "string",
                                     "description": "defines which image repository to use for the restapi Docker image",
                                     "default": "camunda/web-modeler-restapi"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "default": ""
                                 }
                             }
                         },
@@ -2523,7 +2542,7 @@
                             "properties": {
                                 "url": {
                                     "type": "string",
-                                    "description": "(DEPRECATED) defines the JDBC url of the database instance. Use host, port, and database instead of url.",
+                                    "description": "(DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.",
                                     "default": ""
                                 },
                                 "host": {
@@ -2605,7 +2624,7 @@
                         },
                         "clusters": {
                             "type": "array",
-                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `core.enabled=true`)",
+                            "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)",
                             "default": [],
                             "items": {}
                         },
@@ -2972,6 +2991,11 @@
                                     "type": "string",
                                     "description": "defines which image repository to use for the webapp Docker image",
                                     "default": "camunda/web-modeler-webapp"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "default": ""
                                 }
                             }
                         },
@@ -3350,6 +3374,11 @@
                                     "type": "string",
                                     "description": "defines which image repository to use for the websockets Docker image",
                                     "default": "camunda/web-modeler-websockets"
+                                },
+                                "digest": {
+                                    "type": "string",
+                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "default": ""
                                 }
                             }
                         },
@@ -3789,7 +3818,7 @@
                         "repository": {
                             "type": "string",
                             "description": "PostgreSQL repo",
-                            "default": "bitnami/postgresql"
+                            "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
@@ -3954,7 +3983,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4409,18 +4438,119 @@
                 }
             }
         },
-        "core": {
+        "orchestration": {
             "type": "object",
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, all related resources are deployed via the helm release",
+                    "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
                 "debug": {
                     "type": "boolean",
                     "description": "if true, extra info is printed.",
                     "default": false
+                },
+                "profilesOverride": {
+                    "type": "string",
+                    "description": "defines the override for the profiles as comma-separated string.",
+                    "default": "\"\""
+                },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc",
+                                    "default": "basic"
+                                },
+                                "unprotectedApi": {
+                                    "type": "boolean",
+                                    "description": "if true, then allow unauthenticated API access.",
+                                    "default": false
+                                },
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "usernameClaim": {
+                                            "type": "string",
+                                            "description": "username claim.",
+                                            "default": "preferred_username"
+                                        },
+                                        "groupsClaim": {
+                                            "type": "string",
+                                            "description": "group claim.",
+                                            "default": "groups"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "authorizations": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable authorizations checks in all applicable components.",
+                                    "default": true
+                                }
+                            }
+                        },
+                        "initialization": {
+                            "type": "object",
+                            "properties": {
+                                "users": {
+                                    "type": "array",
+                                    "description": "",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "username": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "password": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": ""
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "description": ""
+                                            }
+                                        }
+                                    }
+                                },
+                                "mappingRules": {
+                                    "type": "array",
+                                    "description": "the mapping-rule-id of an initial mapping rule.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "mappingRuleID": {
+                                                "type": "string",
+                                                "description": "the mapping-rule-id of an initial mapping rule."
+                                            },
+                                            "claimName": {
+                                                "type": "string",
+                                                "description": "the claim-name of an initial mapping rule."
+                                            },
+                                            "claimValue": {
+                                                "type": "string",
+                                                "description": "the claim-value of an initial mapping rule."
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
                 "image": {
                     "type": "object",
@@ -4438,7 +4568,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -4453,11 +4583,106 @@
                         }
                     }
                 },
+                "migration": {
+                    "type": "object",
+                    "properties": {
+                        "process": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the process migration occurs.",
+                                    "default": false
+                                },
+                                "backoffLimit": {
+                                    "type": "number",
+                                    "description": "if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
+                                    "default": 6
+                                },
+                                "batchSize": {
+                                    "type": "number",
+                                    "description": "can be used to define the batch size.",
+                                    "default": 5
+                                },
+                                "importFinishedTimeout": {
+                                    "type": "string",
+                                    "description": "can be used to define the timeout when the import is finished.",
+                                    "default": "PT1M"
+                                },
+                                "retry": {
+                                    "type": "object",
+                                    "properties": {
+                                        "maxRetries": {
+                                            "type": "number",
+                                            "description": "can be used to define the maximum amount of retries.",
+                                            "default": 5
+                                        },
+                                        "maxRetryDelay": {
+                                            "type": "string",
+                                            "description": "can be used to define the delay time between retries.",
+                                            "default": "PT1M"
+                                        },
+                                        "minRetryDelay": {
+                                            "type": "string",
+                                            "description": "can be used to define the delay time between retries.",
+                                            "default": "PT10s"
+                                        },
+                                        "retryDelayMultiplier": {
+                                            "type": "number",
+                                            "description": "can be used to define the delay multiplier.",
+                                            "default": 2
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "identity": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs",
+                                    "default": false
+                                },
+                                "backoffLimit": {
+                                    "type": "number",
+                                    "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
+                                    "default": 6
+                                }
+                            }
+                        }
+                    }
+                },
                 "sidecars": {
                     "type": "array",
                     "description": "can be used to attach extra containers to the deployment",
                     "default": [],
                     "items": {}
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "checks": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable multitenancy checks in all applicable components.",
+                                    "default": false
+                                }
+                            }
+                        },
+                        "api": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then enable multitenancy API used for tenant management.",
+                                    "default": true
+                                }
+                            }
+                        }
+                    }
                 },
                 "clusterSize": {
                     "type": "string",
@@ -4515,7 +4740,7 @@
                 "javaOpts": {
                     "type": "string",
                     "description": "can be used to set java options",
-                    "default": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
+                    "default": "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
                 },
                 "service": {
                     "type": "object",
@@ -4660,7 +4885,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "description": "defines the secret name which contains the TLS private key and certificate",
-                                            "default": "camunda-platform-core-grpc"
+                                            "default": "camunda-platform-orchestration-grpc"
                                         }
                                     }
                                 }
@@ -4670,7 +4895,7 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Core web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
                     "default": ""
                 },
                 "cpuThreadCount": {
@@ -4720,7 +4945,7 @@
                 },
                 "persistenceType": {
                     "type": "string",
-                    "description": "defines the type of persistence which is used by core. Possible values are: disk, local and memory.",
+                    "description": "defines the type of persistence which is used by orchestration. Possible values are: disk, local and memory.",
                     "default": "disk"
                 },
                 "pvcSize": {
@@ -4770,12 +4995,12 @@
                                         "processing": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops processing commands https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "3GB"
+                                            "default": "2GB"
                                         },
                                         "replication": {
                                             "type": "string",
                                             "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
-                                            "default": "2GB"
+                                            "default": "1GB"
                                         }
                                     }
                                 }
@@ -4797,7 +5022,7 @@
                 },
                 "extraInitContainers": {
                     "type": "array",
-                    "description": "(Deprecated - use `initContainers` instead) ExtraInitContainers can be used to set up extra init containers for the broker pods, useful for additional exporters",
+                    "description": "(DEPRECATED - use `initContainers` instead) can be used to set up extra init containers for the broker pods, useful for additional exporters",
                     "default": [],
                     "items": {}
                 },
@@ -5073,6 +5298,26 @@
                         }
                     }
                 },
+                "retention": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the ILM Policy is created and applied to the index templates.",
+                            "default": false
+                        },
+                        "minimumAge": {
+                            "type": "string",
+                            "description": "defines how old the data must be, before the data is deleted as a duration.",
+                            "default": "30d"
+                        },
+                        "policyName": {
+                            "type": "string",
+                            "description": "defines the name of the created and applied ILM policy.",
+                            "default": "zeebe-record-retention-policy"
+                        }
+                    }
+                },
                 "history": {
                     "type": "object",
                     "properties": {
@@ -5122,7 +5367,17 @@
                                 "policyName": {
                                     "type": "string",
                                     "description": "defines the name of the created and applied ILM policy.",
-                                    "default": "core-record-retention-policy"
+                                    "default": "camunda-history-retention-policy"
+                                },
+                                "usageMetricsMinimumAge": {
+                                    "type": "string",
+                                    "description": "defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).",
+                                    "default": "730d"
+                                },
+                                "usageMetricsPolicyName": {
+                                    "type": "string",
+                                    "description": "defines the name of the created and applied ILM policy to usage metric indices.",
+                                    "default": "camunda-usage-metrics-retention-policy"
                                 }
                             }
                         }
@@ -5180,7 +5435,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha6"
+                            "default": "8.8.0-alpha7"
                         },
                         "digest": {
                             "type": "string",
@@ -5745,7 +6000,7 @@
                         "repository": {
                             "type": "string",
                             "description": "",
-                            "default": "bitnami/elasticsearch"
+                            "default": "bitnamilegacy/elasticsearch"
                         },
                         "tag": {
                             "type": "string",
@@ -5863,6 +6118,11 @@
                             "type": "boolean",
                             "description": "",
                             "default": true
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "",
+                            "default": "bitnamilegacy/os-shell"
                         }
                     }
                 },
@@ -5893,6 +6153,51 @@
                             "type": "boolean",
                             "description": "",
                             "default": false
+                        }
+                    }
+                },
+                "metrics": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/elasticsearch-exporter"
+                                }
+                            }
+                        }
+                    }
+                },
+                "volumePermissions": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
+                        }
+                    }
+                },
+                "copyTlsCerts": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "type": "string",
+                                    "description": "",
+                                    "default": "bitnamilegacy/os-shell"
+                                }
+                            }
                         }
                     }
                 }

@@ -51,15 +51,15 @@ setup_env_file() {
   # with an authorized kubectl context.
 
   if [[ "$test_suite_path" == *"8.8"* ]]; then
-    if [[ "$namespace" == *"camunda-"* ]]; then #gke
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+    if [[ "$PLATFORM" == "gke" ]]; then
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     else
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
@@ -69,15 +69,15 @@ setup_env_file() {
   fi
 
   if [[ "$test_suite_path" == *"8.7"* ]]; then
-    if [[ "$namespace" == *"camunda-"* ]]; then # gke
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+    if [[ "$PLATFORM" == "gke" ]]; then
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     else
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE CORE; do
+      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
@@ -190,6 +190,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
 hostname=$(get_ingress_hostname "$NAMESPACE")
+
 setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI"
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "1" "1" "html" "$TEST_EXCLUDE" false

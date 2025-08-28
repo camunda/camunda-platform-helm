@@ -302,6 +302,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.publicWebsocketHost" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.host }}
+  {{- else -}}
+    localhost
   {{- end }}
 {{- end -}}
 
@@ -322,6 +324,8 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- define "webModeler.websocketTlsEnabled" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.tls.enabled }}
+  {{- else -}}
+    false
   {{- end }}
 {{- end -}}
 
@@ -342,9 +346,9 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 
 {{- define "webModeler.authenticationType" -}}
 {{- if .Values.global.identity.auth.enabled }}
-  {{- if eq .Values.global.security.authentication.method "oidc" }}
+  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
     {{- "BEARER_TOKEN" }}
-  {{- else if eq .Values.global.security.authentication.method "basic" }}
+  {{- else if eq .Values.orchestration.security.authentication.method "basic" }}
     {{- "BASIC" }}
   {{- end }}
 {{- else }}

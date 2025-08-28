@@ -53,6 +53,12 @@ global:
     # Image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  ## Security configuration
+  ## @extra global.security
+  security:
+    ## @skip global.security.allowInsecureImages
+    allowInsecureImages: true
+
   # Ingress configuration to configure the ingress resource
   ingress:
     # Ingress.enabled if true, an ingress resource is deployed. Only useful if an ingress controller is available, like Ingress-NGINX.
@@ -1405,8 +1411,16 @@ identity:
     postgresql:
       # https://hub.docker.com/r/bitnami/postgresql/tags
       image:
-        repository: bitnami/postgresql
+        repository: bitnamilegacy/postgresql
         tag: 15.10.0
+      volumePermissions:
+        image:
+          ## @param identity.keycloak.postgresql.volumePermissions.image.repository
+          repository: bitnamilegacy/os-shell
+      metrics:
+        image:
+          ## @param identity.keycloak.postgresql.metrics.image.repository
+          repository: bitnamilegacy/postgres-exporter
 
     # Keycloak.enabled is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Platform Helm chart.
     enabled: true
@@ -1414,12 +1428,18 @@ identity:
     # Keycloak.image configuration.
     # https://hub.docker.com/r/bitnami/keycloak/tags
     image:
-      repository: bitnami/keycloak
+      repository: bitnamilegacy/keycloak
       tag: 19.0.3
 
     # Keycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
     tls:
       enabled: false
+    volumePermissions:
+      image:
+        repository: bitnamilegacy/bitnami-shell
+    metrics:
+      image:
+        repository: bitnamilegacy/postgres-exporter
 
     # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
     # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
@@ -1484,6 +1504,9 @@ identity:
       # Keycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
       # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
       existingSecret: ""
+    keycloakConfigCli:
+      image:
+        repository: bitnamilegacy/keycloak-config-cli
 
 
 #######################################################################
@@ -1992,6 +2015,12 @@ postgresql:
     password: ""
     # Postgresql.auth.database defines the name of the database to be created for Web Modeler
     database: web-modeler
+  volumePermissions:
+    image:
+      repository: bitnamilegacy/bitnami-shell
+  metrics:
+    image:
+      repository: bitnamilegacy/postgres-exporter
 
 #####################################################################
  #####
@@ -2507,7 +2536,7 @@ retentionPolicy:
     # Image.registry can be used to set container image registry.
     registry: ""
     # Image.repository defines which image repository to use
-    repository: bitnami/elasticsearch-curator-archived
+    repository: bitnamilegacy/elasticsearch-curator-archived
     # Image.tag defines the tag / version which should be used in the chart
     tag: 5.8.4
 
