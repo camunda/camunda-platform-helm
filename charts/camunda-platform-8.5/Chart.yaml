@@ -58,7 +58,7 @@ maintainers:
   - name: aabouzaid
     email: ahmed.abouzaid@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.18.3"
+  camunda.io/helmCLIVersion: "3.18.6"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -69,12 +69,6 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Introduce e2e tests for helm charts"
+      description: "Backport - implement joinPath helper for constructing paths"
     - kind: added
-      description: "Enable values to be source from this repo rather than push from the QA repo"
-    - kind: changed
-      description: "Change bitnami docker images to bitnamilegacy"
-    - kind: fixed
-      description: "Add digest to web-modeler components"
-    - kind: fixed
-      description: "Sysctl images were not updated with the bitnamilegacy repo name"
+      description: "Create extra values file for legacy bitnami repo name"
