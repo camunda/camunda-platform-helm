@@ -44,7 +44,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	components := []string{"restapi"}
+	components := []string{"restapi", "webapp", "websockets"}
 
 	for _, component := range components {
 		suite.Run(t, &DeploymentTemplateTest{
