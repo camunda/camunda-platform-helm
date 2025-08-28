@@ -8,6 +8,13 @@ on:
         description: Camunda chart dir id like x.y
         required: true
         type: string
+        options:
+          - "8.3"
+          - "8.4"
+          - "8.5"
+          - "8.6"
+          - "8.7"
+          - "8.8"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
