@@ -15,12 +15,12 @@
 package identity
 
 import (
-	"camunda-platform/test/unit/testhelpers"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
