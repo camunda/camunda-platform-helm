@@ -46,7 +46,7 @@ jobs:
       CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
       CHART_VERSION: "${{ needs.get_chart_version.outputs.chart_version }}"
       CHART_PACKAGE_NAME: "camunda-platform-${{ inputs.id }}"
-      CHART_TAG_NAME: "camunda-platform-${{ inputs.id }}-${{ inputs.id }}"
+      CHART_TAG_NAME: "camunda-platform-${{ inputs.id }}-${{ needs.get_chart_version.outputs.chart_version }}"
     steps:
       # Init.
       - name: Checkout
