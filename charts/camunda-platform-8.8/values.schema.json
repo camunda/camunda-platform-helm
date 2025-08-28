@@ -2907,6 +2907,31 @@
                                 }
                             }
                         },
+                        "pusher": {
+                            "type": "object",
+                            "properties": {
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the Pusher app secret as a plain-text value for non-production usage",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the Pusher app secret",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         "clusters": {
                             "type": "array",
                             "description": "can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)",
