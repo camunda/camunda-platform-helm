@@ -4,12 +4,12 @@ global:
   opensearch:
     enabled: true
     auth:
-      username: camunda
-      password: camunda
+      username: "$OPENSEARCH_USERNAME"
+      password: "$OPENSEARCH_PASSWORD"
     url:
-      protocol: https
-      host: search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com
-      port: 443
+      protocol: $OPENSEARCH_PROTOCOL
+      host: "$OPENSEARCH_HOST"
+      port: $OPENSEARCH_PORT
 
 elasticsearch:
   enabled: false

@@ -203,6 +203,8 @@ env:
   # Camunda registry auth to access WebModeler Docker image since it's not public.
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  # OpenSearch credentials
+  OPENSEARCH_BASIC_AUTH_BASE64: ${{ secrets.OPENSEARCH_BASIC_AUTH_BASE64 }}
   # OIDC.
   ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
   ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
@@ -425,6 +427,18 @@ jobs:
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
+          # Set OpenSearch environment variables if scenario uses opensearch
+          if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_BASIC_AUTH_BASE64}" ]]; then
+            echo "Setting OpenSearch environment variables for scenario: ${{ inputs.scenario }}"
+            OPENSEARCH_CREDS=$(echo "${OPENSEARCH_BASIC_AUTH_BASE64}" | base64 -d)
+            export OPENSEARCH_USERNAME=$(echo "${OPENSEARCH_CREDS}" | cut -d: -f1)
+            export OPENSEARCH_PASSWORD=$(echo "${OPENSEARCH_CREDS}" | cut -d: -f2-)
+            export OPENSEARCH_PROTOCOL="https"
+            export OPENSEARCH_HOST="search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
+            export OPENSEARCH_PORT="443"
+            echo "OpenSearch credentials configured"
+          fi
+          
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
@@ -649,6 +663,18 @@ jobs:
           EXTRA_VALUES: ${{ inputs.extra-values }}
         continue-on-error: false
         run: |
+          # Set OpenSearch environment variables if scenario uses opensearch
+          if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_BASIC_AUTH_BASE64}" ]]; then
+            echo "Setting OpenSearch environment variables for scenario: ${{ inputs.scenario }}"
+            OPENSEARCH_CREDS=$(echo "${OPENSEARCH_BASIC_AUTH_BASE64}" | base64 -d)
+            export OPENSEARCH_USERNAME=$(echo "${OPENSEARCH_CREDS}" | cut -d: -f1)
+            export OPENSEARCH_PASSWORD=$(echo "${OPENSEARCH_CREDS}" | cut -d: -f2-)
+            export OPENSEARCH_PROTOCOL="https"
+            export OPENSEARCH_HOST="search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
+            export OPENSEARCH_PORT="443"
+            echo "OpenSearch credentials configured"
+          fi
+          
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.venom.env
