@@ -4,10 +4,10 @@ on:
   # Allow to run the workflow from GitHub UI and other workflows.
   workflow_dispatch:
     inputs:
-      id:
-        description: Camunda chart dir id like x.y
+      camunda-version:
+        description: Camunda version in form of x.y
         required: true
-        type: string
+        type: choice
         options:
           - "8.3"
           - "8.4"
@@ -30,7 +30,7 @@ jobs:
     name: Get Chart version from app version
     runs-on: ubuntu-latest
     env:
-      CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
+      CHART_DIR: "charts/camunda-platform-${{ inputs.camunda-version }}"
     outputs:
       chart_version: ${{ steps.get_chart_version.outputs.chart_version }}
     steps:
@@ -42,7 +42,7 @@ jobs:
           chart_version="$(yq '.version' "${chart_file}")"
           echo "chart_version=${chart_version}" | tee -a $GITHUB_OUTPUT
   release:
-    name: Release - ${{ needs.get_chart_version.outputs.chart_version }} (camunda-platform-${{ inputs.id }})
+    name: Release - ${{ needs.get_chart_version.outputs.chart_version }} (camunda-platform-${{ inputs.camunda-version }})
     needs: get_chart_version
     runs-on: ubuntu-latest
     permissions:
@@ -50,10 +50,10 @@ jobs:
       id-token: write
     env:
       CHART_RELEASER_CONFIG: ".github/config/chart-releaser.yaml"
-      CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
+      CHART_DIR: "charts/camunda-platform-${{ inputs.camunda-version }}"
       CHART_VERSION: "${{ needs.get_chart_version.outputs.chart_version }}"
       CHART_PACKAGE_NAME: "camunda-platform-${{ needs.get_chart_version.outputs.chart_version }}"
-      CHART_TAG_NAME: "camunda-platform-${{ inputs.id }}-${{ needs.get_chart_version.outputs.chart_version }}"
+      CHART_TAG_NAME: "camunda-platform-${{ inputs.camunda-version }}-${{ needs.get_chart_version.outputs.chart_version }}"
     steps:
       # Init.
       - name: Checkout
@@ -179,7 +179,7 @@ jobs:
           EOF
 
   post-release:
-    name: Post-Release - ${{ needs.get_chart_version.outputs.chart_version }} (camunda-platform-${{ inputs.id }})
+    name: Post-Release - ${{ needs.get_chart_version.outputs.chart_version }} (camunda-platform-${{ inputs.camunda-version }})
     needs: [get_chart_version, release]
     runs-on: ubuntu-latest
     permissions:
@@ -187,7 +187,7 @@ jobs:
       pull-requests: write
       issues: write
     env:
-      CHART_DIR: "charts/camunda-platform-${{ inputs.id }}"
+      CHART_DIR: "charts/camunda-platform-${{ inputs.camunda-version }}"
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
