@@ -57,6 +57,8 @@ data:
         level: {{ .Values.orchestration.logLevel | quote }}
 
       broker:
+        experimental:
+          versionCheckRestrictionEnabled: false
         # zeebe.broker.gateway
         gateway:
           enable: true

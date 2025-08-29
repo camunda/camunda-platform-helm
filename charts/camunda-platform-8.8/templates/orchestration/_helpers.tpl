@@ -5,7 +5,7 @@
 */}}
 {{- define "orchestration.fullname" -}}
     {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "orchestration"
+        "componentName" "zeebe"
         "componentValues" .Values.orchestration
         "context" $
     ) -}}
