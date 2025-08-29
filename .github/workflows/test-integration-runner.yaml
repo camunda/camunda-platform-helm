@@ -708,7 +708,8 @@ jobs:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
-
+      - name: Configure Git Safe Directory
+        run: git config --global --add safe.directory /__w/camunda-platform-helm/camunda-platform-helm
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
         with:
