@@ -57,12 +57,20 @@ global:
   ## License configuration.
   ## @extra global.license
   license:
-    ## @param global.license.key if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
+    ## @param global.license.key (DEPRECATED - use global.license.secret instead) if set, it will be exposed as "CAMUNDA_LICENSE_KEY" in the apps.
     key: ""
-    ## @param global.license.existingSecret you can provide an existing secret name for Camunda license secret.
+    ## @param global.license.existingSecret (DEPRECATED - use global.license.secret instead) you can provide an existing secret name for Camunda license secret.
     existingSecret: ""
-    ## @param global.license.existingSecretKey you can provide the key within the existing secret object for Camunda license key.
+    ## @param global.license.existingSecretKey (DEPRECATED - use global.license.secret instead) you can provide the key within the existing secret object for Camunda license key.
     existingSecretKey: ""
+    ## @extra global.license.secret configuration to provide the license secret.
+    secret:
+      ## @param global.license.secret.inlineSecret can be used to provide the license as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param global.license.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the license.
+      existingSecret: ""
+      ## @param global.license.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @extra global.compatibility Compatibility adaptations in the chart.
   compatibility:
@@ -164,23 +172,41 @@ global:
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
-  ## @param global.elasticsearch.auth.password the password for external elasticsearch
-  ## @param global.elasticsearch.auth.existingSecret you can provide an existing secret for the external elasticsearch password
-  ## @param global.elasticsearch.auth.existingSecretKey you can provide an existing secret key for the external elasticsearch password
+  ## @param global.elasticsearch.auth.password (DEPRECATED - use global.elasticsearch.auth.secret instead) the password for external elasticsearch
+  ## @param global.elasticsearch.auth.existingSecret (DEPRECATED - use global.elasticsearch.auth.secret instead) you can provide an existing secret for the external elasticsearch password
+  ## @param global.elasticsearch.auth.existingSecretKey (DEPRECATED - use global.elasticsearch.auth.secret instead) you can provide an existing secret key for the external elasticsearch password
   elasticsearch:
     enabled: true
     external: false
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.elasticsearch.tls.secret configuration to provide the TLS secret.
+      secret:
+        ## @param global.elasticsearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
+        existingSecret: ""
+        ## @param global.elasticsearch.tls.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     auth:
       username: ""
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
+      ## @extra global.elasticsearch.auth.secret configuration to provide the authentication secret.
+      secret:
+        ## @param global.elasticsearch.auth.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.elasticsearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param global.elasticsearch.auth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
+    ## @param  global.elasticsearch.disableExporter (DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.
+    disableExporter: false
     ## @extra global.elasticsearch.url Configuration to configure elasticsearch url
     ## @param global.elasticsearch.url.protocol defines the elasticsearch access protocol.
     ## @param global.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
@@ -199,12 +225,12 @@ global:
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
   ## @param global.opensearch.auth.username the username for external opensearch
-  ## @param global.opensearch.auth.password the password for external opensearch
-  ## @param global.opensearch.auth.existingSecret you can provide an existing secret for the external opensearch password
-  ## @param global.opensearch.auth.existingSecretKey you can provide an existing secret key for the external opensearch password
+  ## @param global.opensearch.auth.password (DEPRECATED - use global.opensearch.auth.secret instead) the password for external opensearch
+  ## @param global.opensearch.auth.existingSecret (DEPRECATED - use global.opensearch.auth.secret instead) you can provide an existing secret for the external opensearch password
+  ## @param global.opensearch.auth.existingSecretKey (DEPRECATED - use global.opensearch.auth.secret instead) you can provide an existing secret key for the external opensearch password
   opensearch:
     enabled: false
     aws:
@@ -212,11 +238,27 @@ global:
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.opensearch.tls.secret configuration to provide the TLS secret.
+      secret:
+        ## @param global.opensearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
+        existingSecret: ""
+        ## @param global.opensearch.tls.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     auth:
       username: ""
       password: ""
       existingSecret: ""
       existingSecretKey: "password"
+      ## @extra global.opensearch.auth.secret configuration to provide the authentication secret.
+      secret:
+        ## @param global.opensearch.auth.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param global.opensearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param global.opensearch.auth.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
     ## @extra global.opensearch.url Configuration to configure opensearch url
     ## @param global.opensearch.url.protocol defines the external opensearch access protocol
     ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
@@ -293,10 +335,18 @@ global:
         enabled: false
         ## @param global.identity.auth.admin.clientId defines the client id.
         clientId: admin
-        ## @param global.identity.auth.admin.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.admin.existingSecret.name.
+        ## @param global.identity.auth.admin.existingSecret [string,object] (DEPRECATED - use global.identity.auth.admin.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.admin.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.admin.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.admin.existingSecretKey (DEPRECATED - use global.identity.auth.admin.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-admin-client-token
+        ## @extra global.identity.auth.admin.secret configuration to provide the admin client secret.
+        secret:
+          ## @param global.identity.auth.admin.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.admin.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.admin.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
       #######################
       # Management Group
@@ -308,9 +358,9 @@ global:
         clientId: camunda-identity
         ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
         audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret [string,object] can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+        ## @param global.identity.auth.identity.existingSecret [string,object] (DEPRECATED - use global.identity.auth.identity.secret instead) can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
         existingSecret: ""
-        ## @param global.identity.auth.identity.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.identity.existingSecretKey (DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
         ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
         # Should be publicly accessible, the default value works if a port-forward to Identity is created to 8085.
@@ -330,10 +380,18 @@ global:
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
         wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
+        ## @param global.identity.auth.console.existingSecret [string,object] (DEPRECATED - use global.identity.auth.console.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.console.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.console.existingSecretKey (DEPRECATED - use global.identity.auth.console.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-console-client-token
+        ## @extra global.identity.auth.console.secret configuration to provide the console client secret.
+        secret:
+          ## @param global.identity.auth.console.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.console.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.console.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
         ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -360,10 +418,18 @@ global:
       connectors:
         ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
+        ## @param global.identity.auth.connectors.existingSecret [string,object] (DEPRECATED - use global.identity.auth.connectors.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.connectors.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.connectors.existingSecretKey (DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-connectors-client-token
+        ## @extra global.identity.auth.connectors.secret configuration to provide the connectors client secret.
+        secret:
+          ## @param global.identity.auth.connectors.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.connectors.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
       ## @extra global.identity.auth.orchestration configuration to configure authentication specifics on global level, which can be accessed by other components
       orchestration:
@@ -371,10 +437,18 @@ global:
         audience: orchestration-api
         ## @param global.identity.auth.orchestration.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
         clientId: orchestration
-        ## @param global.identity.auth.orchestration.existingSecret [string,object] A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.orchestration.existingSecret.name.
+        ## @param global.identity.auth.orchestration.existingSecret [string,object] (DEPRECATED - use global.identity.auth.orchestration.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.orchestration.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.orchestration.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.orchestration.existingSecretKey (DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-orchestration-client-token
+        ## @extra global.identity.auth.orchestration.secret configuration to provide the orchestration client secret.
+        secret:
+          ## @param global.identity.auth.orchestration.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.orchestration.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.orchestration.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
         ## @param global.identity.auth.orchestration.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
         # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -388,10 +462,18 @@ global:
         audience: optimize-api
         ## @param global.identity.auth.optimize.clientId defines the client id, which is used by Optimize in authentication flows.
         clientId: optimize
-        ## @param global.identity.auth.optimize.existingSecret [string,object] A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.optimize.existingSecret.name.
+        ## @param global.identity.auth.optimize.existingSecret [string,object] (DEPRECATED - use global.identity.auth.optimize.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.optimize.existingSecret.name.
         existingSecret: ""
-        ## @param global.identity.auth.optimize.existingSecretKey defines the key within the existing secret object.
+        ## @param global.identity.auth.optimize.existingSecretKey (DEPRECATED - use global.identity.auth.optimize.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-optimize-client-token
+        ## @extra global.identity.auth.optimize.secret configuration to provide the optimize client secret.
+        secret:
+          ## @param global.identity.auth.optimize.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.optimize.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.optimize.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
         ## @param global.identity.auth.optimize.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Optimize.
         # Should be publicly accessible, the default value works if a port-forward to Optimize is created to 8083.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -515,7 +597,7 @@ identity:
     enabled: true
     ## @param identity.firstUser.username defines the username of the first user, needed to log in into the web applications
     username: demo
-    ## @param identity.firstUser.password defines the password of the first user, needed to log in into the web applications
+    ## @param identity.firstUser.password (DEPRECATED - use identity.firstUser.secret instead) defines the password of the first user, needed to log in into the web applications
     password: demo
     ## @param identity.firstUser.email defines the email address of the first user; a valid email address is required to use WebModeler
     email: demo@example.org
@@ -523,10 +605,18 @@ identity:
     firstName: Demo
     ## @param identity.firstUser.lastName defines the last name of the first user; a name is required to use WebModeler
     lastName: User
-    ## @param identity.firstUser.existingSecret can be used to use an own existing secret for Identity first user.
+    ## @param identity.firstUser.existingSecret (DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Identity first user.
     existingSecret: camunda-credentials
-    ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
+    ## @param identity.firstUser.existingSecretKey (DEPRECATED - use identity.firstUser.secret instead) defines the key within the existing secret object.
     existingSecretKey: identity-firstuser-password
+    ## @extra identity.firstUser.secret configuration to provide the first user password secret.
+    secret:
+      ## @param identity.firstUser.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param identity.firstUser.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+      existingSecret: ""
+      ## @param identity.firstUser.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @param identity.users configuration to configure properties of the Identity users, which can be used to access web applications.
   users: []
@@ -729,10 +819,10 @@ identity:
   ## @param identity.externalDatabase.host Database host
   ## @param identity.externalDatabase.port Database port number
   ## @param identity.externalDatabase.username Non-root username
-  ## @param identity.externalDatabase.password Password for the non-root username
+  ## @param identity.externalDatabase.password (DEPRECATED - use identity.externalDatabase.secret instead) Password for the non-root username
   ## @param identity.externalDatabase.database The database name
-  ## @param identity.externalDatabase.existingSecret Name of an existing Kubernetes Secret containing the external database credentials for Identity.
-  ## @param identity.externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
+  ## @param identity.externalDatabase.existingSecret (DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Identity.
+  ## @param identity.externalDatabase.existingSecretPasswordKey (DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
     enabled: false
@@ -743,6 +833,14 @@ identity:
     password: ""
     existingSecret: ""
     existingSecretPasswordKey: ""
+    ## @extra identity.externalDatabase.secret configuration to provide the external database password secret.
+    secret:
+      ## @param identity.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+      inlineSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+      existingSecret: ""
+      ## @param identity.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+      existingSecretKey: ""
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
@@ -1336,17 +1434,25 @@ webModeler:
       database: "web-modeler"
       ## @param webModeler.restapi.externalDatabase.user defines the database user
       user: ""
-      ## @param webModeler.restapi.externalDatabase.password can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
+      ## @param webModeler.restapi.externalDatabase.password (DEPRECATED - use webModeler.restapi.externalDatabase.secret instead) can be used to provide the database user's password; ignored if `webModeler.restapi.externalDatabase.existingSecret` is set
       password: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.4–8.7; string form will be treated as a literal password).
+      ## @param webModeler.restapi.externalDatabase.existingSecret [string,object] (DEPRECATED - use webModeler.restapi.externalDatabase.secret instead) Reference an existing Kubernetes Secret for the DB password (object form with `.name` is recommended in 8.4–8.7; string form will be treated as a literal password).
       ## @skip webModeler.restapi.externalDatabase.existingSecret.name string Name of the Kubernetes Secret containing the DB password; required when using the object form of `existingSecret`.
       ##   • **String form** (schema‐native, but in 8.4–8.7 it will be treated as the literal password rather than the secret name).
       ##  • **Object form** (recommended workaround until 8.8 GA):
       ##       existingSecret:
       ##         name: my-webmodeler-db-secret
       existingSecret: ""
-      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey string Key in the Secret data that holds the DB password; defaults to `"password"`.
+      ## @param webModeler.restapi.externalDatabase.existingSecretPasswordKey (DEPRECATED - use webModeler.restapi.externalDatabase.secret instead) string Key in the Secret data that holds the DB password; defaults to `"password"`.
       existingSecretPasswordKey: "database-password"
+      ## @extra webModeler.restapi.externalDatabase.secret configuration to provide the database password secret.
+      secret:
+        ## @param webModeler.restapi.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
+        existingSecret: ""
+        ## @param webModeler.restapi.externalDatabase.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
 
     ## @extra webModeler.restapi.mail configuration for emails sent by WebModeler
     mail:
@@ -1356,19 +1462,37 @@ webModeler:
       smtpPort: 587
       ## @param webModeler.restapi.mail.smtpUser can be used to provide a user for the SMTP server
       smtpUser: ""
-      ## @param webModeler.restapi.mail.smtpPassword can be used to provide a password for the SMTP server; ignored if `webModeler.restapi.mail.existingSecret` is set
+      ## @param webModeler.restapi.mail.smtpPassword (DEPRECATED - use webModeler.restapi.mail.secret instead) can be used to provide a password for the SMTP server; ignored if `webModeler.restapi.mail.existingSecret` is set
       smtpPassword: ""
       ## @param webModeler.restapi.mail.smtpTlsEnabled if true, enforces TLS encryption for SMTP connections (using STARTTLS)
       smtpTlsEnabled: true
-      ## @param webModeler.restapi.mail.existingSecret [string,object] A string literal SMTP password can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.mail.existingSecret.name.
+      ## @param webModeler.restapi.mail.existingSecret [string,object] (DEPRECATED - use webModeler.restapi.mail.secret instead) A string literal SMTP password can be provided. Recommended: reference an existing Kubernetes Secret using webModeler.restapi.mail.existingSecret.name.
       existingSecret: ""
-      ## @param webModeler.restapi.mail.existingSecretPasswordKey can be used to provide the name of an existing secret key containing the SMTP password
+      ## @param webModeler.restapi.mail.existingSecretPasswordKey (DEPRECATED - use webModeler.restapi.mail.secret instead) can be used to provide the name of an existing secret key containing the SMTP password
       existingSecretPasswordKey: "smtp-password"
+      ## @extra webModeler.restapi.mail.secret configuration to provide the SMTP password secret.
+      secret:
+        ## @param webModeler.restapi.mail.secret.inlineSecret can be used to provide the SMTP password as a plain-text value for non-production usage.
+        inlineSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the SMTP password.
+        existingSecret: ""
+        ## @param webModeler.restapi.mail.secret.existingSecretKey defines the key within the existing secret object.
+        existingSecretKey: ""
       ## @param webModeler.restapi.mail.fromAddress defines the email address that will be displayed as the sender of emails sent by WebModeler
       # NOTE: This value is mandatory.
       fromAddress: ""
       ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
+    ## @extra webModeler.restapi.pusher configuration for Pusher integration
+    pusher:
+      ## @extra webModeler.restapi.pusher.secret configuration to provide the Pusher app secret
+      secret:
+        ## @param webModeler.restapi.pusher.secret.inlineSecret can be used to provide the Pusher app secret as a plain-text value for non-production usage
+        inlineSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Pusher app secret
+        existingSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecretKey defines the key within the existing secret object
+        existingSecretKey: ""
 
     ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)
     clusters: []
