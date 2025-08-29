@@ -1582,7 +1582,7 @@ webModeler:
     readinessProbe:
       ## @param webModeler.restapi.readinessProbe.enabled if true, the readiness probe will be enabled for the restapi container
       enabled: true
-      ## @param webModeler.restapi.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.restapi.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.restapi.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
@@ -1601,7 +1601,7 @@ webModeler:
     livenessProbe:
       ## @param webModeler.restapi.livenessProbe.enabled if true, the liveness probe will be enabled for the restapi container
       enabled: false
-      ## @param webModeler.restapi.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.restapi.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.restapi.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
@@ -1752,7 +1752,7 @@ webModeler:
     readinessProbe:
       ## @param webModeler.webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
       enabled: true
-      ## @param webModeler.webapp.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.webapp.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
@@ -1771,7 +1771,7 @@ webModeler:
     livenessProbe:
       ## @param webModeler.webapp.livenessProbe.enabled if true, the liveness probe will be enabled for the webapp container
       enabled: false
-      ## @param webModeler.webapp.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.webapp.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.webapp.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
