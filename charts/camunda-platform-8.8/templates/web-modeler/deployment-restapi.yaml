@@ -39,8 +39,6 @@ spec:
                 "config" .Values.global.license
                 "plaintextKey" "key"
             ) | nindent 12 }}
-            - name: JAVA_OPTIONS
-              value: "-XX:MaxRAMPercentage=80.0"
             {{- if not .Values.webModelerPostgresql.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "SPRING_DATASOURCE_PASSWORD"

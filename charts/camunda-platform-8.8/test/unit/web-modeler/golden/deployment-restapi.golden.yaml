@@ -53,8 +53,6 @@ spec:
               type: RuntimeDefault
           env:
             
-            - name: JAVA_OPTIONS
-              value: "-XX:MaxRAMPercentage=80.0"
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
