@@ -72,7 +72,7 @@ data:
                 - definition: write
                   description: "Write permission"
           roles:
-            - name: "Identity"
+            - name: "ManagementIdentity"
               description: "Provides full access to Identity"
               permissions:
                 - audience: "camunda-identity-resource-server"
@@ -194,7 +194,7 @@ data:
           lastName: "User"
           email: "demo@example.org"
           roles:
-            - Identity
+            - ManagementIdentity
             - Optimize
             - Web Modeler
             - Web Modeler Admin
