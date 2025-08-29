@@ -719,6 +719,7 @@ jobs:
             kubectl
             oc
             task
+            jq
             yq
             zbctl
 
