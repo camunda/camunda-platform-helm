@@ -2972,7 +2972,7 @@ webModeler:
     readinessProbe:
       ## @param webModeler.restapi.readinessProbe.enabled if true, the readiness probe will be enabled for the restapi container
       enabled: true
-      ## @param webModeler.restapi.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.restapi.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.restapi.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
@@ -2991,7 +2991,7 @@ webModeler:
     livenessProbe:
       ## @param webModeler.restapi.livenessProbe.enabled if true, the liveness probe will be enabled for the restapi container
       enabled: false
-      ## @param webModeler.restapi.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.restapi.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.restapi.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
@@ -3142,7 +3142,7 @@ webModeler:
     readinessProbe:
       ## @param webModeler.webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
       enabled: true
-      ## @param webModeler.webapp.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.webapp.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
@@ -3161,7 +3161,7 @@ webModeler:
     livenessProbe:
       ## @param webModeler.webapp.livenessProbe.enabled if true, the liveness probe will be enabled for the webapp container
       enabled: false
-      ## @param webModeler.webapp.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.webapp.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.webapp.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
@@ -3299,6 +3299,10 @@ webModeler:
     startupProbe:
       ## @param webModeler.websockets.startupProbe.enabled if true, the startup probe will be enabled for the websockets container
       enabled: false
+      ## @param webModeler.websockets.startupProbe.scheme defines the startup probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.startupProbe.probePath defines the HTTP endpoint used for the startup probe
+      probePath: /up
       ## @param webModeler.websockets.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       ## @param webModeler.websockets.startupProbe.periodSeconds defines how often the probe is executed
@@ -3314,6 +3318,10 @@ webModeler:
     readinessProbe:
       ## @param webModeler.websockets.readinessProbe.enabled if true, the readiness probe will be enabled for the websockets container
       enabled: true
+      ## @param webModeler.websockets.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
+      probePath: /up
       ## @param webModeler.websockets.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       ## @param webModeler.websockets.readinessProbe.periodSeconds defines how often the probe is executed
@@ -3329,6 +3337,10 @@ webModeler:
     livenessProbe:
       ## @param webModeler.websockets.livenessProbe.enabled if true, the liveness probe will be enabled for the websockets container
       enabled: false
+      ## @param webModeler.websockets.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /up
       ## @param webModeler.websockets.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       ## @param webModeler.websockets.livenessProbe.periodSeconds defines how often the probe is executed
