@@ -13,12 +13,12 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-  security:
-    authentication:
-      method: basic
 
 orchestration:
   contextPath: "/orchestration"
+  security:
+    authentication:
+      method: basic
   ingress:
     grpc:
       enabled: true
