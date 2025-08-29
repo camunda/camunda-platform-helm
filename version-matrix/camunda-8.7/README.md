@@ -59,7 +59,7 @@ Supported versions:
 Camunda images:
 
 - docker.io/camunda/connectors-bundle:8.7.7
-- docker.io/camunda/console:8.7.56
+- docker.io/camunda/console:8.7.58
 - docker.io/camunda/identity:8.7.5
 - docker.io/camunda/keycloak:26.1.4
 - docker.io/camunda/operate:8.7.10
