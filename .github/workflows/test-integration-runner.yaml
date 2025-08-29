@@ -682,7 +682,9 @@ jobs:
   playwright-integration-tests:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [ci-setup]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Use a valid runner label (e.g., ubuntu-latest or ubuntu-24.04)
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
     permissions:
