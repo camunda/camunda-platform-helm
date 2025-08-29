@@ -472,6 +472,7 @@ jobs:
           if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
             echo "::add-mask::${E2E_TESTS_LICENSE_KEY}"
             yq -i '.global.license.key = env(E2E_TESTS_LICENSE_KEY)' "$values_file"
+            cat "$values_file"
           fi
       
           echo "Prepared values file: $values_file"
