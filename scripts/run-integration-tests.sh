@@ -56,6 +56,7 @@ setup_env_file() {
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
+        echo "::add-mask::$secret"
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     else
@@ -63,6 +64,7 @@ setup_env_file() {
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
+        echo "::add-mask::$secret"
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     fi
@@ -74,6 +76,7 @@ setup_env_file() {
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
+        echo "::add-mask::$secret"
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     else
@@ -81,6 +84,7 @@ setup_env_file() {
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
+        echo "::add-mask::$secret"
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
       done
     fi
@@ -89,6 +93,7 @@ setup_env_file() {
   secret=$(kubectl -n "$namespace" \
     get secret integration-test-credentials \
     -o jsonpath="{.data.identity-admin-client-password}" | base64 -d)
+  echo "::add-mask::$secret"
   echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${secret}" >>"$env_file"
 
   # fixtures are the *.bpmn files that are used to test the platform. This is likely to change
