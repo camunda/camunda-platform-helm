@@ -1483,6 +1483,16 @@ webModeler:
       fromAddress: ""
       ## @param webModeler.restapi.mail.fromName defines the name that will be displayed as the sender of emails sent by WebModeler
       fromName: "Camunda 8"
+    ## @extra webModeler.restapi.pusher configuration for Pusher integration
+    pusher:
+      ## @extra webModeler.restapi.pusher.secret configuration to provide the Pusher app secret
+      secret:
+        ## @param webModeler.restapi.pusher.secret.inlineSecret can be used to provide the Pusher app secret as a plain-text value for non-production usage
+        inlineSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Pusher app secret
+        existingSecret: ""
+        ## @param webModeler.restapi.pusher.secret.existingSecretKey defines the key within the existing secret object
+        existingSecretKey: ""
 
     ## @param webModeler.restapi.clusters can be used to configure Camunda 8 clusters that will be available in Web Modeler (will override default cluster configuration that is used if `orchestration.enabled=true`)
     clusters: []

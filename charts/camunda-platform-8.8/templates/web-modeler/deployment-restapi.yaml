@@ -70,11 +70,12 @@ spec:
                 configMapKeyRef:
                   name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-key
-            - name: RESTAPI_PUSHER_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
-                  key: pusher-app-secret
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "RESTAPI_PUSHER_SECRET"
+                "config" .Values.webModeler.restapi.pusher
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
+            ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
             {{- if .Values.global.documentStore.type.aws.enabled }}
