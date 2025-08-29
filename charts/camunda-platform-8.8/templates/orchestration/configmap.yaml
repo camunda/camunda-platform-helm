@@ -27,31 +27,9 @@ data:
         multipart:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
-  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+  {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
       profiles:
         active: "identity,tasklist,operate,broker,consolidated-auth"
-    camunda.security:
-      authentication:
-        oidc:
-          username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
-          groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
-          client-id: {{ include "orchestration.authClientId" . | quote }}
-          client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
-          audiences:
-            - {{ include "orchestration.authClientId" . | quote }}
-            - {{ .Values.global.identity.auth.orchestration.audience | quote }}
-            - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
-            - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
-          {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
-          {{/*
-            TODO: Add "camundaPlatform.authIssuerBackendUrl" when "backend-url" config is supported by the Orchestration Identity.
-            For more details: https://github.com/camunda/camunda-platform-helm/issues/3952
-          */}}
-          issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
-          redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
-  {{- else if eq .Values.orchestration.security.authentication.method "basic" }}
-      profiles:
-        active: "identity,operate,tasklist,broker,consolidated-auth"
   {{- else }}
       profiles:
         active: "operate,tasklist,broker,auth"
@@ -216,6 +194,25 @@ data:
 
       security:
         authentication:
+        {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+          oidc:
+            username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+            groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
+            client-id: {{ include "orchestration.authClientId" . | quote }}
+            client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
+            audiences:
+              - {{ include "orchestration.authClientId" . | quote }}
+              - {{ .Values.global.identity.auth.orchestration.audience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
+            {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
+            {{/*
+              TODO: Add "camundaPlatform.authIssuerBackendUrl" when "backend-url" config is supported by the Orchestration Identity.
+              For more details: https://github.com/camunda/camunda-platform-helm/issues/3952
+            */}}
+            issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
+            redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
+        {{- end }}
           method: {{ .Values.orchestration.security.authentication.method | quote }}
           unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
         authorizations:
