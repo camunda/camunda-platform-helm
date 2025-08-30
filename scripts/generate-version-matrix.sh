@@ -58,12 +58,17 @@ get_chart_images () {
         sort | uniq;
       )"
       chart_images_json="$(echo -e "$chart_images" | jq -R | jq -sc)"
-      output_json="$(cat ${version_matrix_file} | jq -r ". + [{ \"chart_version\": \"${chart_version}\", \"chart_images\": ${chart_images_json}}]")"
+      output_json="$(cat ${version_matrix_file} |
+        jq -r ". + [{
+          \"chart_version\": \"${chart_version}\",
+          \"chart_images\": ${chart_images_json},
+      }]")"
       echo "$output_json" > "${version_matrix_file}"
     fi
 
     # Print chart images from version-matrix.json file.
-    version_matrix_images="$(cat ${version_matrix_file} | jq -r ".[] | select(.chart_version==\"$chart_version\").chart_images[]" | awk '{gsub(/\x1e/, ""); print}')"
+    version_matrix_images="$(cat ${version_matrix_file} |
+      jq -r ".[] | select(.chart_version==\"$chart_version\").chart_images[]" | awk '{gsub(/\x1e/, ""); print}')"
     printf -- "- %s\n" $(echo -e "$version_matrix_images")
 }
 

@@ -100,11 +100,15 @@ jobs:
       contents: write
       id-token: write
     env:
-      CHART_RELEASER_CONFIG: ".github/config/chart-releaser.yaml"
+      CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
       CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
-      CHART_VERSION: "${{ matrix.chart.version }}"
-      CHART_PACKAGE_NAME: "camunda-platform-${{ matrix.chart.version }}"
-      CHART_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
+      CHART_RELEASE_VERSION: "${{ matrix.chart.version }}"
+      CHART_RELEASE_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
+      CHART_RELEASE_PACKAGE_FILE: "camunda-platform-${{ matrix.chart.version }}.tgz"
+      CHART_RELEASE_COSIGN_BUNDLE_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-bundle.json"
+      CHART_RELEASE_COSIGN_VERIFY_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-verify.sh"
+      CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
+      CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
       # Init.
       - name: Checkout
@@ -165,65 +169,93 @@ jobs:
       # Using the chart-releaser CLI provides more flexibility and control over the release process.
       - name: Run Chart Releaser - Packaging
         run: |
-          helm-cr package ${{ env.CHART_DIR }} --config ${{ env.CHART_RELEASER_CONFIG }}
+          helm-cr package ${{ env.CHART_DIR }} --config ${{ env.CHART_RELEASER_CONFIG_FILE }}
       # Only keep the chart in the release process to avoid releasing untargeted charts.
       - name: Clean up packages
         run: |
           ls -lsa .cr-release-packages/*
           find .cr-release-packages/* \
-            -not -name "camunda-platform-${{ env.CHART_VERSION }}.tgz" \
+            -not -name "${{ env.CHART_RELEASE_PACKAGE_FILE }}" \
             -delete
       - name: Run Chart Releaser - Tagging/Uploading
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG }} \
+          helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
             --push \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
-            --release-name-template "${{ env.CHART_TAG_NAME }}"
+            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
       - name: Run Chart Releaser - Indexing
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG }} \
+          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
             --push \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
-            --release-name-template "${{ env.CHART_TAG_NAME }}"
+            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
       - name: Set GitHub release type
         if: ${{ matrix.chart.prerelease }}
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          gh release edit "${{ env.CHART_TAG_NAME }}" \
+          gh release edit "${{ env.CHART_RELEASE_TAG_NAME }}" \
             --repo "${GITHUB_REPOSITORY}" \
             --prerelease
 
       # Sign and upload the signature.
       - name: Sign Helm chart with Cosign
+        working-directory: .cr-release-packages
         run: |
-          cosign sign-blob -y .cr-release-packages/${{ env.CHART_PACKAGE_NAME }}.tgz \
-            --bundle "${{ env.CHART_PACKAGE_NAME }}.cosign.bundle"
+          cosign sign-blob -y ${{ env.CHART_RELEASE_PACKAGE_FILE }} \
+            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
+      - name: Get Helm chart Cosign Rekor log index
+        working-directory: .cr-release-packages
+        run: |
+          rekor_log_index="$(cat ${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
+          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
+      - name: Create the script to verify signed Helm chart with Cosign
+        working-directory: .cr-release-packages
+        run: |
+          cat << EOF > ${{ env.CHART_RELEASE_NAME }}-cosign-verify.sh
+          # Rekor.
+          echo "Rekor record:"
+          echo "https://search.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}"
+
+          # Cosign.
+          cosign verify-blob ${{ env.CHART_RELEASE_PACKAGE_FILE }} \
+            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
+            --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \
+            --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
+          EOF
       - name: Verify signed Helm chart with Cosign
+        working-directory: .cr-release-packages
         run: |
-          cosign verify-blob .cr-release-packages/${{ env.CHART_PACKAGE_NAME }}.tgz \
-            --bundle "${{ env.CHART_PACKAGE_NAME }}.cosign.bundle" \
-            --certificate-identity "https://github.com/${GITHUB_WORKFLOW_REF}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-      - name: Upload Helm chart signature bundle
+          bash ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
+      - name: Upload Helm chart Cosign bundle file
+        working-directory: .cr-release-packages
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          gh release upload "${{ env.CHART_TAG_NAME }}" \
-            "${{ env.CHART_PACKAGE_NAME }}.cosign.bundle" \
+          gh release upload "${{ env.CHART_RELEASE_TAG_NAME }}" \
+            "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
+            --repo "${GITHUB_REPOSITORY}"
+      - name: Upload Helm chart Cosign verify file
+        working-directory: .cr-release-packages
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          gh release upload "${{ env.CHART_RELEASE_TAG_NAME }}" \
+            "${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}" \
             --repo "${GITHUB_REPOSITORY}"
       - name: Add release info to workflow summary
         run: |
           echo "ℹ️ Release Published ℹ️" >> $GITHUB_STEP_SUMMARY
           cat << EOF >> $GITHUB_STEP_SUMMARY
-          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ env.CHART_TAG_NAME }}
-          - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_VERSION }}
+          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ env.CHART_RELEASE_TAG_NAME }}
+          - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_RELEASE_VERSION }}
+          - Rekor record: https://rekor.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}
           Note: Artifact Hub link needs some time till it's AH scraps the Helm repo index.
           EOF
 
@@ -261,13 +293,6 @@ jobs:
             helm
             helm-ct
             yq
-      # - name: Simple smoke test
-      #   uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3
-      #   with:
-      #     max_attempts: 3
-      #     timeout_minutes: 5
-      #     retry_wait_seconds: 10
-      #     command: make release.verify-components-version
       - name: Label PRs with app and chart version
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
