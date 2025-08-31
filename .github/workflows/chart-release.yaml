@@ -224,9 +224,9 @@ jobs:
           echo "https://search.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}"
 
           # Cosign.
-          cosign verify-blob ${{ env.CHART_RELEASE_PACKAGE_FILE }} \
-            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
-            --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \
+          cosign verify-blob ${{ env.CHART_RELEASE_PACKAGE_FILE }} \\
+            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
+            --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
             --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
           EOF
       - name: Verify signed Helm chart with Cosign
