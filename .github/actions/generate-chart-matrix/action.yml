@@ -116,13 +116,24 @@ runs:
           echo "Changed files:"
           printf "%s\n" ${ALL_MODIFIED_FILES}
 
-          # If any workflow, action, or external secret config files have changed, build all chart versions
-          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions|config)"; then
-            echo "Changes in .github/workflows, .github/actions, or .github/config detected — building all chart versions"
+          # If any workflow, action, files have changed, build all chart versions
+          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)"; then
+            echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
             for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
               chart_dir="charts/camunda-platform-${camunda_version}"
               write_matrix_entry "$camunda_version" "$chart_dir"
             done
+
+          # If any external secret config files have changed, build all chart versions
+          elif echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/config" && \
+              ! echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/config/release-please"; then
+            echo "Changes in .github/config (excluding release-please) detected — building all chart versions"
+            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+              chart_dir="charts/camunda-platform-${camunda_version}"
+              write_matrix_entry "$camunda_version" "$chart_dir"
+            done
+
+          # Else, only rebuild the affected charts
           else
             for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
               chart_dir="charts/camunda-platform-${camunda_version}"
