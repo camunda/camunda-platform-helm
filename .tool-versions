@@ -4,7 +4,7 @@ gomplate v4.3.3
 helm 3.18.6
 helm-cr 1.7.0
 helm-ct 3.11.0
-kind 0.29.0
+kind 0.30.0
 kubectl 1.27.16 # The kubectl version depends on the K8s CI cluster version
 kustomize 5.7.1
 make 4.3
