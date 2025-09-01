@@ -2737,7 +2737,7 @@ orchestration:
             matchExpressions:
               - key: "app.kubernetes.io/component"
                 operator: In
-                # NOTE: The value is set to "zeebe-broker" for backwards compatibility between 8.7 and 8.8.
+                # NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8.
                 values:
                   - zeebe-broker
           topologyKey: "kubernetes.io/hostname"
@@ -2780,7 +2780,7 @@ orchestration:
       ## @param orchestration.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 30d
       ## @param orchestration.history.retention.policyName defines the name of the created and applied ILM policy.
-      # NOTE: The value is set to "zeebe-record-retention-policy" for backwards compatibility between 8.7 and 8.8.
+      # NOTE: The value is set to "zeebe-record-retention-policy" for backward compatibility between 8.7 and 8.8.
       policyName: camunda-history-retention-policy
       ## @param orchestration.history.retention.usageMetricsMinimumAge defines how old the usage metric indices must be before deletion (camunda-usage-metric, camunda-usage-metric-tu).
       usageMetricsMinimumAge: 730d
