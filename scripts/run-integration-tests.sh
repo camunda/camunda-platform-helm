@@ -43,7 +43,12 @@ setup_env_file() {
   local is_ci="$7"
 
   export TEST_INGRESS_HOST="$hostname"
-  export TEST_AUTH_TYPE="$test_auth_type"
+  
+  # Only export TEST_AUTH_TYPE for 8.8+ where the template uses it
+  if [[ "$test_suite_path" == *"8.8"* ]]; then
+    export TEST_AUTH_TYPE="$test_auth_type"
+  fi
+  
   envsubst <"$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template >"$env_file"
 
   # during helm install, we create a secret with the credentials for the services
