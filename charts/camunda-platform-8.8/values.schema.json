@@ -5185,6 +5185,48 @@
                         }
                     }
                 },
+                "importer": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
+                            "default": false
+                        },
+                        "podLabels": {
+                            "type": "object",
+                            "description": "can be used to define extra importer pod labels",
+                            "default": {}
+                        },
+                        "podAnnotations": {
+                            "type": "object",
+                            "description": "can be used to define extra importer pod annotations",
+                            "default": {}
+                        },
+                        "extraVolumeMounts": {
+                            "type": "array",
+                            "description": "can be used to mount extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumes": {
+                            "type": "array",
+                            "description": "can be used to define extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
+                        },
+                        "dnsConfig": {
+                            "type": "object",
+                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
+                            "default": {}
+                        },
+                        "dnsPolicy": {
+                            "type": "string",
+                            "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy",
+                            "default": ""
+                        }
+                    }
+                },
                 "sidecars": {
                     "type": "array",
                     "description": "can be used to attach extra containers to the deployment",
