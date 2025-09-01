@@ -142,7 +142,7 @@ NAMESPACE=""
 SHOW_HTML_REPORT=false
 VERBOSE=false
 TEST_AUTH_TYPE="${TEST_AUTH_TYPE:-keycloak}"
-TEST_EXCLUDE=""
+TEST_EXCLUDE="${TEST_EXCLUDE:-}"
 IS_CI=true
 
 check_required_cmds
