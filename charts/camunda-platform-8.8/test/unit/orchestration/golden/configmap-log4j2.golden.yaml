@@ -30,7 +30,7 @@ data:
           max-file-size: "10MB"
           max-request-size: "10MB"
       profiles:
-        active: "identity,operate,tasklist,broker,consolidated-auth"
+        active: "identity,tasklist,operate,broker,consolidated-auth"
 
     management:
       server:
