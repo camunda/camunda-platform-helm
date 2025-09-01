@@ -37,7 +37,11 @@ test.describe("connectors", () => {
 
   test.beforeAll(async ({ playwright }) => {
     api = await playwright.request.newContext();
-    venomJWT = await fetchToken(config.venomID, config.venomSec, api, config);
+    if (config.authType !== "basic") {
+      venomJWT = await fetchToken(config.venomID, config.venomSec, api, config);
+    } else {
+      venomJWT = "";
+    }
   });
 
   test("Connectors inbound page", async () => {
