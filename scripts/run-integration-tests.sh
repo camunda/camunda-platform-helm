@@ -43,6 +43,7 @@ setup_env_file() {
   local is_ci="$7"
 
   export TEST_INGRESS_HOST="$hostname"
+  export TEST_AUTH_TYPE="$test_auth_type"
   envsubst <"$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template >"$env_file"
 
   # during helm install, we create a secret with the credentials for the services
