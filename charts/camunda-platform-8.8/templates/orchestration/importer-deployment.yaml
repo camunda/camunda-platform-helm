@@ -1,0 +1,280 @@
+{{- if .Values.orchestration.importer.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "orchestration.fullname" . }}-importer
+  labels:
+    {{- include "orchestration.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.global.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "orchestrationImporter.matchLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "orchestrationImporter.labels" . | nindent 8 }}
+        {{- if .Values.orchestration.importer.podLabels }}
+        {{- toYaml .Values.orchestration.importer.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.orchestration.importer.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: orchestration-importer
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.orchestration.command }}
+          command: {{ toYaml .Values.orchestration.command | nindent 10 }}
+          {{- else }}
+          command: ["bash", "/usr/local/bin/startup.sh"]
+          {{- end }}
+          env:
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_OPERATE_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_DATABASE_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            - name: LC_ALL
+              value: C.UTF-8
+            - name: K8S_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_SERVICE_NAME
+              value: {{ include "orchestration.fullname" . }}
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- if .Values.global.identity.auth.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.orchestration
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.orchestration.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
+            {{- else }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.orchestration.javaOpts | quote }}
+            {{- end }}
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            {{- with .Values.orchestration.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
+            {{/*
+            Passwords for variable substitution.
+            */}}
+            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.orchestration.envFrom }}
+            {{- .Values.orchestration.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.orchestration.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.startupProbe.probePath) }}
+              scheme: {{ .Values.orchestration.startupProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.orchestration.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}
+              scheme: {{ .Values.orchestration.readinessProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.orchestration.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.livenessProbe.probePath) }}
+              scheme: {{ .Values.orchestration.livenessProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.orchestration.resources | nindent 12 }}
+          volumeMounts:
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/camunda/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
+            - name: config
+              mountPath: /usr/local/bin/startup.sh
+              subPath: startup.sh
+            - name: data
+              mountPath: /usr/local/camunda/data
+            - name: exporters
+              mountPath: /exporters
+            - mountPath: /tmp
+              name: tmp
+            {{- if .Values.orchestration.log4j2 }}
+            - name: config
+              mountPath: /usr/local/camunda/config/log4j2.xml
+              subPath: log4j2.xml
+            {{- end }}
+            - name: config
+              mountPath: /usr/local/camunda/config/application.yaml
+              subPath: application.yaml
+            {{- range $key, $val := .Values.orchestration.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/camunda/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.orchestration.importer.extraVolumeMounts }}
+            {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        - name: data
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "orchestration.fullname" . }}-importer-configuration
+            defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
+        - name: exporters
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
+        {{- if .Values.orchestration.importer.extraVolumes }}
+          {{ .Values.orchestration.importer.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
+      {{- if .Values.orchestration.importer.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.orchestration.importer.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.orchestration.importer.dnsPolicy }}
+      dnsPolicy: {{ .Values.orchestration.importer.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.orchestration.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+{{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+# yamllint disable
+{{- with .Values.orchestration.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

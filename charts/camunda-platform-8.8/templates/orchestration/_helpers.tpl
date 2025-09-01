@@ -22,6 +22,14 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 {{- end }}
 
 {{/*
+[orchestration Importer] Defines extra labels for orchestration importer.
+*/}}
+{{ define "orchestrationImporter.extraLabels" -}}
+app.kubernetes.io/component: orchestration-importer
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
+{{- end }}
+
+{{/*
 [orchestration] Define common labels for orchestration, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
@@ -29,6 +37,17 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "orchestration.extraLabels" . }}
+{{- end -}}
+
+
+{{/*
+[orchestration Importer] Define common labels for orchestration importer, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+*/}}
+{{- define "orchestrationImporter.labels" -}}
+    {{- include "camundaPlatform.labels" . }}
+    {{- "\n" }}
+    {{- include "orchestrationImporter.extraLabels" . }}
 {{- end -}}
 
 {{/*
@@ -39,6 +58,16 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
     {{- "\n" -}}
     {{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
     app.kubernetes.io/component: zeebe-broker
+{{- end -}}
+
+
+{{/*
+[orchestration Importer] Defines match labels for orchestration importer, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "orchestrationImporter.matchLabels" -}}
+    {{- include "camundaPlatform.matchLabels" . }}
+    {{- "\n" -}}
+    app.kubernetes.io/component: orchestration-importer
 {{- end -}}
 
 {{/*

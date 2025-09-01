@@ -1,0 +1,468 @@
+{{- if .Values.orchestration.importer.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "orchestration.fullname" . }}-importer-configuration
+  labels:
+    {{- include "orchestration.labels" . | nindent 4 }}
+apiVersion: v1
+data:
+  startup.sh: |
+    # The Node ID depends on the Pod name so it cannot be templated in the StatefulSet level.
+    export ZEEBE_BROKER_CLUSTER_NODEID="${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}"
+    echo "export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID}"
+
+    if [ "${ZEEBE_RESTORE}" = "true" ]; then
+      exec /usr/local/camunda/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
+    else
+      exec /usr/local/camunda/bin/camunda
+    fi
+
+  {{- if .Values.orchestration.configuration }}
+  application.yaml: |
+    {{ .Values.orchestration.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    spring:
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+  {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
+      profiles:
+        active: "identity,tasklist,operate,broker,consolidated-auth"
+  {{- else }}
+      profiles:
+        active: "operate,tasklist,broker,auth"
+  {{- end }}
+
+    management:
+      server:
+        port: {{ .Values.orchestration.service.managementPort }}
+        {{- if .Values.orchestration.contextPath }}
+        base-path: {{ .Values.orchestration.contextPath | quote }}
+        {{- end }}
+
+    server:
+      forward-headers-strategy: none
+      address: 0.0.0.0
+      port: {{ .Values.orchestration.service.httpPort }}
+      servlet:
+      {{- if .Values.orchestration.contextPath }}
+        context-path: {{ .Values.orchestration.contextPath | quote }}
+      {{- end }}
+
+    zeebe:
+      host: 0.0.0.0
+      log:
+        level: {{ .Values.orchestration.logLevel | quote }}
+
+      broker:
+        # zeebe.broker.gateway
+        gateway:
+          enable: true
+          network:
+            host: 0.0.0.0
+            port: {{ .Values.orchestration.service.grpcPort }}
+          multitenancy:
+            enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+
+        # zeebe.broker.network
+        network:
+          {{- if gt (int .Values.global.multiregion.regions) 1 }}
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
+          {{- else }}
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          {{- end }}
+          host: 0.0.0.0
+          commandApi:
+            port: {{ .Values.orchestration.service.commandPort }}
+          internalApi:
+            port: {{ .Values.orchestration.service.internalPort }}
+
+        # zeebe.broker.cluster
+        cluster:
+          # The value of "nodeId" is set via the "ZEEBE_BROKER_CLUSTER_NODEID" env var.
+          # As it depends on the Pod name, which cannot be templated at the installation time.
+          # nodeId:
+          initialContactPoints:
+          {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+            - {{ include "orchestration.legacyName" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{$.Values.orchestration.service.internalPort}}
+          {{- end }}
+          clusterSize: {{ .Values.orchestration.clusterSize | quote }}
+          replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
+          partitionsCount: {{ .Values.orchestration.partitionCount | quote }}
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+
+        # zeebe.broker.data
+        data:
+          snapshotPeriod: {{ .Values.orchestration.data.snapshotPeriod | quote }}
+          disk:
+            freeSpace:
+              processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
+              replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
+
+        # zeebe.broker.threads
+        threads:
+          cpuThreadCount: {{ .Values.orchestration.cpuThreadCount  | quote }}
+          ioThreadCount: {{ .Values.orchestration.ioThreadCount  | quote }}
+
+        # zeebe.broker.exporters
+        exporters:
+        {{- if or (and .Values.global.elasticsearch.enabled .Values.global.exporter.enabled) (and .Values.global.elasticsearch.enabled .Values.optimize.enabled) }}
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              {{- if .Values.global.elasticsearch.external }}
+              authentication:
+                username: {{ .Values.global.elasticsearch.auth.username | quote }}
+              {{- end }}
+              url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+              index:
+                prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+              {{- if .Values.orchestration.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
+              {{- end }}
+        {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) }}
+          opensearch:
+            className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            args:
+              url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+              {{- if .Values.global.opensearch.auth.username }}
+              authentication:
+                username: {{ .Values.global.opensearch.auth.username | quote }}
+              {{- end }}
+              {{- if .Values.global.opensearch.aws.enabled }}
+              aws:
+                enabled: true
+              {{- end}}
+              {{- if .Values.orchestration.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
+              {{- end }}
+          {{- end }}
+        {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+          camundaexporter:
+            className: "io.camunda.exporter.CamundaExporter"
+            args:
+              connect:
+                type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
+                url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
+                {{- if .Values.orchestration.index.prefix }}
+                indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+                {{- end }}
+              {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
+                username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
+              {{- end }}
+              {{- if .Values.orchestration.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
+              {{- end }}
+              history:
+                elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
+                rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}
+                rolloverBatchSize: {{ .Values.orchestration.history.rolloverBatchSize }}
+                waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
+                delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
+                maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
+              {{- if .Values.orchestration.history.retention.enabled }}
+                retention:
+                  enabled: true
+                  minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+                  policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+                  usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
+                  usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
+              {{- end }}
+        {{- else -}}
+          {{ " {}" }}
+        {{- end }}
+
+    camunda:
+      persistent:
+        sessions:
+          enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
+
+      rest:
+        query:
+          enabled: true
+
+      security:
+        authentication:
+        {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+          oidc:
+            username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+            groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
+            client-id: {{ include "orchestration.authClientId" . | quote }}
+            client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
+            audiences:
+              - {{ include "orchestration.authClientId" . | quote }}
+              - {{ .Values.global.identity.auth.orchestration.audience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+              - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
+            {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
+            {{/*
+              TODO: Add "camundaPlatform.authIssuerBackendUrl" when "backend-url" config is supported by the Orchestration Identity.
+              For more details: https://github.com/camunda/camunda-platform-helm/issues/3952
+            */}}
+            issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
+            redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
+        {{- end }}
+          method: {{ .Values.orchestration.security.authentication.method | quote }}
+          unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
+        authorizations:
+          enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+        initialization:
+          {{- if eq .Values.orchestration.security.authentication.method "basic" }}
+          users:
+            {{- range $user := .Values.orchestration.security.initialization.users }}
+            - username: {{ $user.username | quote }}
+              password: {{ $user.password | quote }}
+              name: {{ $user.name | quote }}
+              email: {{ $user.email | quote }}
+            {{- end }}
+          default-roles.admin.users:
+            {{- range $user := .Values.orchestration.security.initialization.users }}
+            - {{ index $user "username" | quote }}
+            {{- end }}
+          {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
+          mapping-rules:
+            - mapping-rule-id: "connectors-client-mapping-rule"
+              claim-name: "client_id"
+              claim-value: "connectors"
+            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
+            - mapping-rule-id: {{ index $mappingRule "mappingRuleID" | quote }}
+              claim-name: {{ index $mappingRule "claimName" | quote }}
+              claim-value: {{ index $mappingRule "claimValue" | quote }}
+            {{- end }}
+          default-roles.connectors.mappingRules:
+            - "connectors-client-mapping-rule"
+          default-roles.admin.mappingRules:
+            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
+            - {{ index $mappingRule "mappingRuleID" | quote }}
+            {{- end }}
+          {{- end }}
+        multiTenancy:
+          checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+          apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
+
+      {{- if .Values.global.identity.auth.enabled }}
+      identity:
+        clientId: {{ include "orchestration.authClientId" . | quote }}
+        audience: {{ include "orchestration.authAudience" . | quote }}
+      {{- end }}
+
+      #
+      # Camunda Database Configuration.
+      #
+      {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled .Values.global.noSecondaryStorage }}
+      database:
+        type: {{ if .Values.global.noSecondaryStorage }}none{{ else if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
+        {{- if .Values.global.elasticsearch.enabled }}
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        {{- end }}
+        {{- if or .Values.global.elasticsearch.external .Values.global.opensearch.auth.username }}
+        username: {{ if .Values.global.elasticsearch.enabled }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
+        {{- end }}
+        # Database full url
+        url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
+        {{- if .Values.orchestration.index.prefix }}
+        indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+        {{- end }}
+        {{- if .Values.orchestration.history.retention.enabled }}
+        retention:
+          enabled: true
+          minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+          policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+        {{- end }}
+      {{- end }}
+
+      #
+      # Camunda Operate Configuration.
+      #
+      operate:
+        importerEnabled: true
+        webappEnabled: false
+        persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
+        {{- if .Values.global.opensearch.enabled }}
+        database: opensearch
+        {{- end }}
+        multiTenancy:
+          enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+        {{- if .Values.global.identity.auth.enabled }}
+        identity:
+          redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/operate"
+        {{- end }}
+
+        # ELS instance to store Operate data
+        {{- if .Values.global.elasticsearch.enabled }}
+        elasticsearch:
+          # Operate index prefix.
+          {{- if .Values.orchestration.index.prefix }}
+          indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+          {{- end }}
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          {{- if .Values.global.elasticsearch.external }}
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+        # ELS instance to export Zeebe data to
+        zeebeElasticsearch:
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+          {{- if .Values.global.elasticsearch.external }}
+          # Elasticsearch username
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.grpcPort }}"
+        {{- if .Values.global.opensearch.enabled }}
+        opensearch:
+          {{- if .Values.orchestration.index.prefix }}
+          indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+          {{- end }}
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.aws.enabled }}
+          awsEnabled: true
+          {{- end }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        zeebeOpensearch:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.orchestration.history.retention.enabled }}
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
+        {{- end }}
+
+      #
+      # Camunda Tasklist Configuration.
+      #
+      tasklist:
+        importerEnabled: true
+        webappEnabled: false
+        multiTenancy:
+          enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+
+        {{- if .Values.global.identity.auth.enabled }}
+        identity:
+          redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/tasklist"
+        {{- end }}
+
+        # Set Tasklist username and password.
+        # If user with <username> does not exists it will be created.
+        # Default: demo/demo
+        #username:
+        #password:
+        {{- if .Values.global.elasticsearch.enabled }}
+        # ELS instance to store Tasklist data
+        elasticsearch:
+          # Tasklist index prefix.
+          {{- if .Values.orchestration.index.prefix }}
+          indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+          {{- end }}
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+          {{- if .Values.global.elasticsearch.external }}
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+        # ELS instance to export Zeebe data to
+        zeebeElasticsearch:
+          # Cluster name
+          clusterName: {{ .Values.global.elasticsearch.clusterName }}
+          # Host
+          host: {{ include "camundaPlatform.elasticsearchHost" . }}
+          # Transport port
+          port: {{ .Values.global.elasticsearch.url.port }}
+          # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+          {{- if .Values.global.elasticsearch.url.host }}
+          # Elasticsearch full url
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- end }}
+          {{- if .Values.global.elasticsearch.external }}
+          username: {{ .Values.global.elasticsearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.global.opensearch.enabled }}
+        database: opensearch
+        opensearch:
+          {{- if .Values.orchestration.index.prefix }}
+          indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+          {{- end }}
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.aws.enabled }}
+          awsEnabled: true
+          {{- end }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        zeebeOpensearch:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- if .Values.global.opensearch.auth.username }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          {{- end }}
+        {{- end }}
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: {{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.grpcPort }}
+          restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+        {{- if .Values.orchestration.history.retention.enabled }}
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
+        {{- end }}
+
+    {{- end }}
+
+  log4j2.xml: |
+  {{- if .Values.orchestration.log4j2 }}
+    {{ .Values.orchestration.log4j2 | indent 4 | trim }}
+  {{- end }}
+
+  {{- range $key, $val := .Values.orchestration.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}
