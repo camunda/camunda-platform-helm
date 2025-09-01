@@ -27,7 +27,9 @@ orchestration:
       value: custom
     - name: CAMUNDA_DATABASE_INDEXPREFIX
       value: custom
-    # group2
+    # group2 - Disable duplicate opensearch exporter to avoid conflicts with camundaexporter
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ENABLED
+      value: "false"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
       value: "io.camunda.exporter.CamundaExporter"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_TYPE
