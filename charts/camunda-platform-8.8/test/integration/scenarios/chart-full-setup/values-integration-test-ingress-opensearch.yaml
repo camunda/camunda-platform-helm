@@ -28,8 +28,6 @@ orchestration:
     - name: CAMUNDA_DATABASE_INDEXPREFIX
       value: custom
     # group2
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: custom-zeebe
     - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
       value: custom-zeebe
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
