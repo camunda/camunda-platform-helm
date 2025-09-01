@@ -26,7 +26,7 @@ orchestration:
     - name: CAMUNDA_DATABASE_INDEXPREFIX
       value: custom
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
-      value: "io.camunda.exporter.CamundaExporter"
+      value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_TYPE
       value: "opensearch"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_URL
