@@ -104,7 +104,7 @@ elasticsearch:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/elasticsearch
-    tag: 8.17.4
+    tag: 8.19.3
     pullSecrets:
       - name: registry-camunda-cloud
 
