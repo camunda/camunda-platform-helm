@@ -77,6 +77,9 @@ optimize:
     key: workload
     operator: Equal
     value: standard
+  resources:
+    requests:
+      cpu: 2000m
 
 # Web Modeler.
 webModeler:
@@ -115,7 +118,7 @@ webModelerPostgresql:
       value: standard
 
 # Zeebe.
-zeebe:
+orchestration:
   nodeSelector:
     workload: standard
   tolerations:
@@ -123,6 +126,11 @@ zeebe:
     key: workload
     operator: Equal
     value: standard
+  resources:
+    requests:
+      cpu: 4000m
+    limits:
+      cpu: 4000m
 zeebeGateway:
   nodeSelector:
     workload: standard
