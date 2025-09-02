@@ -20,7 +20,7 @@ The quickest way to use this workflow is the example template:
 - Replace `<USE_CASE>` in that file with a clear identifier for your use case (e.g., `my-team-dev-env`).
 - **Done! 🎉** The Helm chart integration test will run with each PR in your repo.
 
-You can see the workflow in action on the Camunda apps repo: [Camunda Helm Chart Integration Test](https://github.com/camunda/camunda/actions/workflows/camunda-helm-integration.yml).
+You can see the workflow in action on the Camunda apps repo: [Camunda Helm Chart Integration Test](https://github.com/camunda/camunda/actions/workflows/camunda-helm-integration.yaml).
 
 ### Workflow inputs
 
