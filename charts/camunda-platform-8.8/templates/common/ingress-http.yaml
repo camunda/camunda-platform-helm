@@ -5,6 +5,9 @@ metadata:
   name: {{ include "camundaPlatform.fullname" . }}-http
   labels:
     {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- if .Values.global.ingress.labels }}
+    {{- toYaml .Values.global.ingress.labels | nindent 4 }}
+    {{- end }}
 {{- with .Values.global.ingress.annotations }}
   annotations: {{ tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
