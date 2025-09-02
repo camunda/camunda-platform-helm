@@ -84,8 +84,8 @@ spec:
             - mountPath: /tmp
               name: tmp
             - name: config
-              mountPath: /config/application.yml
-              subPath: application.yml
+              mountPath: /config/application.yaml
+              subPath: application.yaml
       volumes:
         - name: tmp
           emptyDir: {}

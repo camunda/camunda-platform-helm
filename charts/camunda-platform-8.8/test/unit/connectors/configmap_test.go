@@ -49,7 +49,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				var configmapApplication ConnectorsConfigYAML
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
@@ -82,7 +82,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	var configmapApplication ConnectorsConfigYAML
 // 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 // 	if err != nil {
 // 		s.Fail("Failed to unmarshal yaml. error=", err)
 // 	}
@@ -115,7 +115,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	var configmapApplication ConnectorsConfigYAML
 // 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 // 	if err != nil {
 // 		s.Fail("Failed to unmarshal yaml. error=", err)
 // 	}
@@ -149,7 +149,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	var configmapApplication ConnectorsConfigYAML
 // 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 // 	if err != nil {
 // 		s.Fail("Failed to unmarshal yaml. error=", err)
 // 	}
