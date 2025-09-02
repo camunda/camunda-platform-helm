@@ -20,11 +20,16 @@ integration:
   case:
     pr:
       scenario:
-        - name: opensearch
+        - name: elasticsearch
           enabled: true
-          shortname: osba
-          exclude: [identity,console,orchestration-grpc]
+          auth: keycloak
+          shortname: eske
+          exclude: []
+        - name: elasticsearch
+          enabled: false
+          shortname: esba
           auth: basic
+          exclude: [identity,console,orchestration-grpc]
     nightly:
       scenario:
         - name: elasticsearch
