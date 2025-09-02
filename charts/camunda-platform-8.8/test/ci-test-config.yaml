@@ -23,7 +23,7 @@ integration:
         - name: opensearch
           enabled: true
           shortname: osba
-          exclude: [identity,console,core-grpc]
+          exclude: [identity,console,orchestration-grpc]
           auth: basic
     nightly:
       scenario:
@@ -58,7 +58,7 @@ integration:
         - name: opensearch
           enabled: true
           shortname: osba
-          exclude: [identity,console,core-grpc]
+          exclude: [identity,console,orchestration-grpc]
           auth: basic
         - name: identity-migration
           enabled: true
