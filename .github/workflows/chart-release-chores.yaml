@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - .github/workflows/chart-release-chores.yml
+      - .github/workflows/chart-release-chores.yaml
       - '**/.release-please-config.json'
       - '**/.release-please-manifest.json'
 
