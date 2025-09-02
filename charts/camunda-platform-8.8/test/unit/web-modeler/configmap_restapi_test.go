@@ -26,6 +26,7 @@ type configmapRestAPITemplateTest struct {
 var requiredValues = map[string]string{
 	"webModeler.enabled":                                     "true",
 	"webModeler.restapi.mail.fromAddress":                    "example@example.com",
+	"webModelerPostgresql.enabled":                           "true",
 	"global.identity.auth.connectors.existingSecret.name":    "foo",
 	"global.identity.auth.orchestration.existingSecret.name": "foo",
 }
@@ -277,11 +278,42 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                             "true",
-		"webModelerPostgresql.enabled":                 "false",
-		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.user":     "modeler-user",
-		"webModeler.restapi.externalDatabase.password": "modeler-password",
+		"identity.enabled":                        "true",
+		"webModelerPostgresql.enabled":            "false",
+		"webModeler.restapi.externalDatabase.url": "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+	}
+	// Copy required values and then override with test-specific values
+	finalValues := make(map[string]string)
+	maps.Insert(finalValues, maps.All(requiredValues))
+	maps.Insert(finalValues, maps.All(values))
+	
+	options := &helm.Options{
+		SetValues:      finalValues,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("jdbc:postgresql://postgres.example.com:65432/modeler-database", configmapApplication.Spring.Datasource.Url)
+	// Username is not set in the ConfigMap for external databases - it comes from environment variables
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetInternalDatabaseConfiguration() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                 "true",
+		"webModelerPostgresql.enabled":     "true",
+		"webModelerPostgresql.auth.database": "internal-modeler-db",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -301,8 +333,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	}
 
 	// then
-	s.Require().Equal("jdbc:postgresql://postgres.example.com:65432/modeler-database", configmapApplication.Spring.Datasource.Url)
-	s.Require().Equal("modeler-user", configmapApplication.Spring.Datasource.Username)
+	// Should generate the internal PostgreSQL JDBC URL
+	s.Require().Equal("jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/internal-modeler-db", configmapApplication.Spring.Datasource.Url)
+	s.Require().Equal("web-modeler", configmapApplication.Spring.Datasource.Username) // Default username from PostgreSQL chart
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
@@ -549,34 +582,4 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 
 	// then
 	s.Require().Equal("https://example.com:443/test/protocol/openid-connect/certs", configmapApplication.Spring.Security.OAuth2.ResourceServer.JWT.JwkSetURI)
-}
-
-func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
-	// given
-	values := map[string]string{
-		"identity.enabled":                             "true",
-		"webModelerPostgresql.enabled":                 "false",
-		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
-		"webModeler.restapi.externalDatabase.port":     "65432",
-		"webModeler.restapi.externalDatabase.database": "custom-modeler-db",
-	}
-	maps.Insert(values, maps.All(requiredValues))
-	options := &helm.Options{
-		SetValues:      values,
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication WebModelerRestAPIApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then
-	s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
 }
