@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: connectors
     app.kubernetes.io/version: "8.8.0-alpha7"
 data:
-  application.yml: |
+  application.yaml: |
     server:
       port: 8080
 
