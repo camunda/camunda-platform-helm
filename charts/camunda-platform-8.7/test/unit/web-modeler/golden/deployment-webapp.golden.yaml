@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-webapp
-          image: "camunda/web-modeler-webapp:8.7.8"
+          image: "camunda/web-modeler-webapp:8.7.9"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
