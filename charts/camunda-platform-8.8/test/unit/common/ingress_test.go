@@ -221,7 +221,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(output, "name: camunda-platform-test-optimize")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-				s.Require().NotContains(output, "name: camunda-platform-test-orchestration")
+				s.Require().NotContains(output, "name: camunda-platform-test-zeebe")
 			},
 		},
 		{
@@ -239,7 +239,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(output, "name: camunda-platform-test-optimize")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-webapp")
 				s.Require().NotContains(output, "name: camunda-platform-test-web-modeler-websockets")
-				s.Require().NotContains(output, "name: camunda-platform-test-orchestration")
+				s.Require().NotContains(output, "name: camunda-platform-test-zeebe")
 			},
 		},
 		{

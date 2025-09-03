@@ -4,18 +4,12 @@
 [orchestration] Create a default fully qualified app name.
 */}}
 {{- define "orchestration.fullname" -}}
+    {{- /* NOTE: The value is set to "zeebe" for backward compatibility between 8.7 and 8.8. */ -}}
     {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "orchestration"
+        "componentName" "zeebe"
         "componentValues" .Values.orchestration
         "context" $
     ) -}}
-{{- end -}}
-
-{{/*
-[orchestration] The old name used in PVC which is used to avoid upgrade downtime.
-*/}}
-{{- define "orchestration.legacyName" -}}
-    {{- printf "%s-zeebe" .Release.Name -}}
 {{- end -}}
 
 {{/*
