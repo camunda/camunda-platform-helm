@@ -184,6 +184,10 @@ data:
         {{- end }}
 
     camunda:
+      data:
+        secondary-storage:
+          elasticsearch:
+            url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
       persistent:
         sessions:
           enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
