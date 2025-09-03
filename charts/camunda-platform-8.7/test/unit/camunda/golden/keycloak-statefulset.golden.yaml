@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 26.3.1
+    app.kubernetes.io/version: 26.3.2
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -31,9 +31,9 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 26.3.1
+        app.kubernetes.io/version: 26.3.2
         app.kubernetes.io/component: keycloak
-        app.kubernetes.io/app-version: 26.3.1
+        app.kubernetes.io/app-version: 26.3.2
     spec:
       serviceAccountName: camunda-platform-test-keycloak
       
@@ -61,7 +61,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-write-dirs
-          image: docker.io/camunda/keycloak:26.3.1
+          image: docker.io/camunda/keycloak:26.3.2
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -103,7 +103,7 @@ spec:
              mountPath: /emptydir
       containers:
         - name: keycloak
-          image: docker.io/camunda/keycloak:26.3.1
+          image: docker.io/camunda/keycloak:26.3.2
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
