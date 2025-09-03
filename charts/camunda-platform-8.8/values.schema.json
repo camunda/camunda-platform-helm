@@ -2787,8 +2787,23 @@
                             "properties": {
                                 "url": {
                                     "type": "string",
-                                    "description": "defines the JDBC url of the database instance. ",
+                                    "description": "defines the JDBC url of the database instance.",
                                     "default": ""
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "Database host (used when url is not provided)",
+                                    "default": ""
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "Database port number (used when url is not provided)",
+                                    "default": 5432
+                                },
+                                "database": {
+                                    "type": "string",
+                                    "description": "The database name (used when url is not provided)",
+                                    "default": "web-modeler"
                                 },
                                 "user": {
                                     "type": "string",
