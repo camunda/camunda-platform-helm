@@ -1828,7 +1828,7 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "26.1.4"
+                            "default": "26.3.1"
                         },
                         "digest": {
                             "type": "string",
