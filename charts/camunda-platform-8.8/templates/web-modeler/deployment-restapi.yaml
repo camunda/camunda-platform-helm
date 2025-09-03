@@ -80,15 +80,15 @@ spec:
               value: /tmp/zeebe_client_cache.txt
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
             - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
             {{- end }}
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
