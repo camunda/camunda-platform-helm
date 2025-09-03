@@ -2,7 +2,7 @@
 # Source: camunda-platform/templates/orchestration/configmap.yaml
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-orchestration-configuration
+  name: camunda-platform-test-zeebe-configuration
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -184,7 +184,7 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: "camunda-platform-test-orchestration:26500"
+          gatewayAddress: "camunda-platform-test-zeebe:26500"
 
       #
       # Camunda Tasklist Configuration.
@@ -224,8 +224,8 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: camunda-platform-test-orchestration:26500
-          restAddress: "http://camunda-platform-test-orchestration:8080"
+          gatewayAddress: camunda-platform-test-zeebe:26500
+          restAddress: "http://camunda-platform-test-zeebe:8080"
 
   log4j2.xml: |
     <xml>
