@@ -2787,7 +2787,7 @@
                             "properties": {
                                 "url": {
                                     "type": "string",
-                                    "description": "(DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.",
+                                    "description": "defines the JDBC url of the database instance.",
                                     "default": ""
                                 },
                                 "host": {
