@@ -12,6 +12,8 @@ orchestration:
   security:
     authentication:
       method: oidc
+      oidc:
+        groupsClaim: ""
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping-rule"
