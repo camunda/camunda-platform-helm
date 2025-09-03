@@ -7,10 +7,10 @@ metadata:
     {{- include "connectors.labels" . | nindent 4 }}
 data:
   {{- if .Values.connectors.configuration }}
-  application.yml: |
+  application.yaml: |
     {{ .Values.connectors.configuration | indent 4 | trim }}
   {{- else }}
-  application.yml: |
+  application.yaml: |
     server:
       port: {{ .Values.connectors.service.serverPort }}
     {{- if .Values.connectors.contextPath }}
