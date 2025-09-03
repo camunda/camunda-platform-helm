@@ -1422,7 +1422,7 @@ webModeler:
 
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
     externalDatabase:
-      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.
+      ## @param webModeler.restapi.externalDatabase.url defines the JDBC url of the database instance.
       # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
       url: ""
       ## @param webModeler.restapi.externalDatabase.host Database host (used when url is not provided)
