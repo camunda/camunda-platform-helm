@@ -110,6 +110,10 @@ data:
                 maxDelayBetweenRuns: 60000
 
     camunda:
+      data:
+        secondary-storage:
+          elasticsearch:
+            url: "http://camunda-platform-test-elasticsearch:9200"
       persistent:
         sessions:
           enabled: true
