@@ -833,6 +833,48 @@ false
 {{- end -}}
 
 {{/*
+emitAwsDocumentStoreSecret
+Emits AWS Document Store environment variable handling both legacy and new secret patterns.
+Prioritizes new pattern over legacy pattern.
+Usage:
+  - name: AWS_ACCESS_KEY_ID
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "accessKeyId" "context" .) }}
+  - name: AWS_SECRET_ACCESS_KEY
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "secretAccessKey" "context" .) }}
+*/}}
+{{- define "camundaPlatform.emitAwsDocumentStoreSecret" -}}
+{{- $root := .context -}}
+{{- if $root.Values.global.documentStore.type.aws.enabled -}}
+{{- $awsConfig := $root.Values.global.documentStore.type.aws -}}
+{{- $secretType := .secretType -}}
+{{- $legacyKey := "" -}}
+{{- if eq $secretType "accessKeyId" -}}
+  {{- $legacyKey = $awsConfig.accessKeyIdKey -}}
+{{- else if eq $secretType "secretAccessKey" -}}
+  {{- $legacyKey = $awsConfig.secretAccessKeyKey -}}
+{{- end -}}
+{{/* New pattern - prioritize over legacy */}}
+{{- $secretConfig := (index $awsConfig $secretType) | default dict -}}
+{{- if and $secretConfig.secret (or $secretConfig.secret.existingSecret $secretConfig.secret.inlineSecret) -}}
+{{- if and $secretConfig.secret.existingSecret $secretConfig.secret.existingSecretKey -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ $secretConfig.secret.existingSecret }}
+    key: {{ $secretConfig.secret.existingSecretKey }}
+{{- else if $secretConfig.secret.inlineSecret -}}
+value: {{ $secretConfig.secret.inlineSecret | quote }}
+{{- end -}}
+{{/* Legacy pattern - fallback */}}
+{{- else if and $awsConfig.existingSecret $legacyKey -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ $awsConfig.existingSecret | quote }}
+    key: {{ $legacyKey | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 ********************************************************************************
 Release highlights.
 ********************************************************************************

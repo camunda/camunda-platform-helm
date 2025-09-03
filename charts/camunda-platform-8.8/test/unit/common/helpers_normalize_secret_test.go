@@ -124,3 +124,104 @@ func (s *normalizeSecretConfigTest) TestSecretHelperFunctionsWithOpenSearch() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "aws document store new style secret creates env vars",
+			Values: map[string]string{
+				"orchestration.enabled":                                                  "true",
+				"global.documentStore.type.aws.enabled":                                 "true",
+				"global.documentStore.type.aws.accessKeyId.secret.existingSecret":       "my-aws-secret",
+				"global.documentStore.type.aws.accessKeyId.secret.existingSecretKey":    "access-key",
+				"global.documentStore.type.aws.secretAccessKey.secret.existingSecret":   "my-aws-secret",
+				"global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey": "secret-key",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.name":     "my-aws-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.key":      "access-key",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.name": "my-aws-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.key":  "secret-key",
+			},
+		},
+		{
+			Name: "aws document store inline secret creates env vars with direct values",
+			Values: map[string]string{
+				"orchestration.enabled":                                          "true",
+				"global.documentStore.type.aws.enabled":                         "true",
+				"global.documentStore.type.aws.accessKeyId.secret.inlineSecret": "test-access-key-id",
+				"global.documentStore.type.aws.secretAccessKey.secret.inlineSecret": "test-secret-access-key",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].value":     "test-access-key-id",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].value": "test-secret-access-key",
+			},
+		},
+		{
+			Name: "aws document store legacy secret format creates env vars",
+			Values: map[string]string{
+				"orchestration.enabled":                               "true",
+				"global.documentStore.type.aws.enabled":              "true",
+				"global.documentStore.type.aws.existingSecret":       "legacy-aws-secret",
+				"global.documentStore.type.aws.accessKeyIdKey":       "legacy-access-key",
+				"global.documentStore.type.aws.secretAccessKeyKey":   "legacy-secret-key",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.name":     "legacy-aws-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.key":      "legacy-access-key",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.name": "legacy-aws-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.key":  "legacy-secret-key",
+			},
+		},
+		{
+			Name: "aws document store mixed configuration - new takes precedence",
+			Values: map[string]string{
+				"orchestration.enabled":                                                  "true",
+				"global.documentStore.type.aws.enabled":                                 "true",
+				// Legacy configuration (should be ignored)
+				"global.documentStore.type.aws.existingSecret":                          "legacy-aws-secret",
+				"global.documentStore.type.aws.accessKeyIdKey":                          "legacy-access-key",
+				"global.documentStore.type.aws.secretAccessKeyKey":                      "legacy-secret-key",
+				// New configuration (should take precedence)
+				"global.documentStore.type.aws.accessKeyId.secret.existingSecret":       "new-aws-secret",
+				"global.documentStore.type.aws.accessKeyId.secret.existingSecretKey":    "new-access-key",
+				"global.documentStore.type.aws.secretAccessKey.secret.existingSecret":   "new-aws-secret",
+				"global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey": "new-secret-key",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.name":     "new-aws-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.key":      "new-access-key",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.name": "new-aws-secret",
+				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.key":  "new-secret-key",
+			},
+		},
+		{
+			Name: "no aws document store config means no env vars",
+			Values: map[string]string{
+				"orchestration.enabled":                  "true",
+				"global.documentStore.type.aws.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// Should not create any AWS env vars
+				require.NotContains(t, output, "AWS_ACCESS_KEY_ID")
+				require.NotContains(t, output, "AWS_SECRET_ACCESS_KEY")
+			},
+		},
+		{
+			Name: "aws document store disabled means no env vars",
+			Values: map[string]string{
+				"orchestration.enabled":                                               "true",
+				"global.documentStore.type.aws.enabled":                              "false",
+				"global.documentStore.type.aws.accessKeyId.secret.inlineSecret":      "access-key",
+				"global.documentStore.type.aws.secretAccessKey.secret.inlineSecret":  "secret-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// Should not create any AWS env vars when AWS document store is disabled
+				require.NotContains(t, output, "AWS_ACCESS_KEY_ID")
+				require.NotContains(t, output, "AWS_SECRET_ACCESS_KEY")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
