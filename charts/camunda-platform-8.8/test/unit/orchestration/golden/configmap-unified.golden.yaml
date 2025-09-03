@@ -2,14 +2,14 @@
 # Source: camunda-platform/templates/orchestration/configmap-unified.yaml
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-orchestration-configuration-unified
+  name: camunda-platform-test-zeebe-configuration-unified
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: orchestration
+    app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.8.0-alpha7"
 apiVersion: v1
 data:
@@ -247,7 +247,7 @@ data:
           #   lock-timeout: '60s'
           # alerting-webbook: ''
           zeebe:
-            gateway-address: "camunda-platform-test-orchestration:26500"
+            gateway-address: "camunda-platform-test-zeebe:26500"
             secure: false
             certificate-path: ''
           # TODO: What kind of value is expected here compared to the 8.7 version?

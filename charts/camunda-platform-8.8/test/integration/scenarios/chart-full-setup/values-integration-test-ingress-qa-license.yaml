@@ -6,12 +6,12 @@ global:
       enabled: true
     auth:
       enabled: true
-  security:
-    authentication:
-      method: oidc
   license:
     key:
 orchestration:
+  security:
+    authentication:
+      method: oidc
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
   env:
@@ -107,7 +107,7 @@ identity:
     - name: KEYCLOAK_USERS_0_PASSWORD
       value: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
     - name: KEYCLOAK_USERS_0_ROLES_0
-      value: Identity
+      value: ManagementIdentity
     - name: KEYCLOAK_USERS_0_ROLES_1
       value: Optimize
     - name: KEYCLOAK_USERS_0_ROLES_2
@@ -153,7 +153,7 @@ identity:
     - name: KEYCLOAK_USERS_1_PASSWORD
       value: $DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
     - name: KEYCLOAK_USERS_1_ROLES_0
-      value: Identity
+      value: ManagementIdentity
     - name: KEYCLOAK_USERS_1_ROLES_1
       value: Optimize
     - name: KEYCLOAK_USERS_1_ROLES_2
@@ -175,7 +175,7 @@ identity:
     - name: KEYCLOAK_USERS_2_PASSWORD
       value: $DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
     - name: KEYCLOAK_USERS_2_ROLES_0
-      value: Identity
+      value: ManagementIdentity
     - name: KEYCLOAK_USERS_2_ROLES_1
       value: Optimize
     - name: KEYCLOAK_USERS_2_ROLES_2

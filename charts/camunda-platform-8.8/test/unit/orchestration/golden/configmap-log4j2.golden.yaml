@@ -2,14 +2,14 @@
 # Source: camunda-platform/templates/orchestration/configmap.yaml
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-orchestration-configuration
+  name: camunda-platform-test-zeebe-configuration
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: orchestration
+    app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.8.0-alpha7"
 apiVersion: v1
 data:
@@ -30,7 +30,7 @@ data:
           max-file-size: "10MB"
           max-request-size: "10MB"
       profiles:
-        active: "identity,operate,tasklist,broker,consolidated-auth"
+        active: "identity,tasklist,operate,broker,consolidated-auth"
 
     management:
       server:
@@ -110,6 +110,10 @@ data:
                 maxDelayBetweenRuns: 60000
 
     camunda:
+      data:
+        secondary-storage:
+          elasticsearch:
+            url: "http://camunda-platform-test-elasticsearch:9200"
       persistent:
         sessions:
           enabled: true
@@ -180,7 +184,7 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: "camunda-platform-test-orchestration:26500"
+          gatewayAddress: "camunda-platform-test-zeebe:26500"
 
       #
       # Camunda Tasklist Configuration.
@@ -220,8 +224,8 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: camunda-platform-test-orchestration:26500
-          restAddress: "http://camunda-platform-test-orchestration:8080"
+          gatewayAddress: camunda-platform-test-zeebe:26500
+          restAddress: "http://camunda-platform-test-zeebe:8080"
 
   log4j2.xml: |
     <xml>

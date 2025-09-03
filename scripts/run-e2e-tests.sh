@@ -51,6 +51,8 @@ setup_env_file() {
     DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv VALUES_KEYCLOAK_SETUP_PASSWORD)
   fi
 
+  echo "::add-mask::$DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD"
+
   {
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
     echo "CLUSTER_VERSION=8"
