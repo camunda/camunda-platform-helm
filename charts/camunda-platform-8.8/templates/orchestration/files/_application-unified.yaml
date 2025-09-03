@@ -85,7 +85,7 @@ camunda:
         # advertisedPort:
     initial-contact-points:
       {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-        - {{ include "orchestration.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
+        - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
       {{- end }}
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
