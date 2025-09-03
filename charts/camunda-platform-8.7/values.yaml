@@ -2720,7 +2720,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.3.1
+    tag: 26.3.2
     ## @param identityKeycloak.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
 
