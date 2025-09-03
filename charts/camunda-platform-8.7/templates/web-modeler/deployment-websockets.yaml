@@ -78,7 +78,9 @@ spec:
               protocol: TCP
           {{- if .Values.webModeler.websockets.startupProbe.enabled }}
           startupProbe:
-            tcpSocket:
+            httpGet:
+              path: {{ .Values.webModeler.websockets.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.websockets.startupProbe.scheme }}
               port: http
             initialDelaySeconds: {{ .Values.webModeler.websockets.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.websockets.startupProbe.periodSeconds }}
@@ -88,7 +90,9 @@ spec:
           {{- end }}
           {{- if .Values.webModeler.websockets.readinessProbe.enabled }}
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: {{ .Values.webModeler.websockets.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.websockets.readinessProbe.scheme }}
               port: http
             initialDelaySeconds: {{ .Values.webModeler.websockets.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.websockets.readinessProbe.periodSeconds }}
@@ -98,7 +102,9 @@ spec:
           {{- end }}
           {{- if .Values.webModeler.websockets.livenessProbe.enabled }}
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: {{ .Values.webModeler.websockets.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.websockets.livenessProbe.scheme }}
               port: http
             initialDelaySeconds: {{ .Values.webModeler.websockets.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.websockets.livenessProbe.periodSeconds }}

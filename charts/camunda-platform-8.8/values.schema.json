@@ -3103,7 +3103,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the readiness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3148,7 +3148,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the liveness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3486,7 +3486,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the readiness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3531,7 +3531,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the liveness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3827,6 +3827,16 @@
                                     "description": "if true, the startup probe will be enabled for the websockets container",
                                     "default": false
                                 },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the HTTP endpoint used for the startup probe",
+                                    "default": "/up"
+                                },
                                 "initialDelaySeconds": {
                                     "type": "number",
                                     "description": "defines the number of seconds after the container has started before the probe is initiated",
@@ -3862,6 +3872,16 @@
                                     "description": "if true, the readiness probe will be enabled for the websockets container",
                                     "default": true
                                 },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the readiness probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the HTTP endpoint used for the readiness probe",
+                                    "default": "/up"
+                                },
                                 "initialDelaySeconds": {
                                     "type": "number",
                                     "description": "defines the number of seconds after the container has started before the probe is initiated",
@@ -3896,6 +3916,16 @@
                                     "type": "boolean",
                                     "description": "if true, the liveness probe will be enabled for the websockets container",
                                     "default": false
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the liveness probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the HTTP endpoint used for the liveness probe",
+                                    "default": "/up"
                                 },
                                 "initialDelaySeconds": {
                                     "type": "number",
