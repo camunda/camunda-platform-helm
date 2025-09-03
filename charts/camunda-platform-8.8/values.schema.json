@@ -5224,6 +5224,12 @@
                             "type": "string",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy",
                             "default": ""
+                        },
+                        "envFrom": {
+                            "type": "array",
+                            "description": "list of environment variables to import from configMapRef and secretRef",
+                            "default": [],
+                            "items": {}
                         }
                     }
                 },
