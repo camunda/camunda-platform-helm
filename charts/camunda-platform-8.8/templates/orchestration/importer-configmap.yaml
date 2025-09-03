@@ -29,10 +29,10 @@ data:
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
   {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
       profiles:
-        active: "identity,tasklist,operate,broker,consolidated-auth"
+        active: "tasklist,operate,consolidated-auth"
   {{- else }}
       profiles:
-        active: "operate,tasklist,broker,auth"
+        active: "operate,tasklist,auth"
   {{- end }}
 
     management:
@@ -52,6 +52,11 @@ data:
       {{- end }}
 
     zeebe:
+      gateway:
+        cluster:
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+          port: {{ .Values.orchestration.service.internalPort }}
+          initialContactPoints: {{ include "orchestration.fullname" $ }}:{{ .Values.orchestration.service.internalPort }}
       host: 0.0.0.0
       log:
         level: {{ .Values.orchestration.logLevel | quote }}
@@ -217,36 +222,6 @@ data:
           unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
         authorizations:
           enabled: {{ .Values.orchestration.security.authorizations.enabled }}
-        initialization:
-          {{- if eq .Values.orchestration.security.authentication.method "basic" }}
-          users:
-            {{- range $user := .Values.orchestration.security.initialization.users }}
-            - username: {{ $user.username | quote }}
-              password: {{ $user.password | quote }}
-              name: {{ $user.name | quote }}
-              email: {{ $user.email | quote }}
-            {{- end }}
-          default-roles.admin.users:
-            {{- range $user := .Values.orchestration.security.initialization.users }}
-            - {{ index $user "username" | quote }}
-            {{- end }}
-          {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
-          mapping-rules:
-            - mapping-rule-id: "connectors-client-mapping-rule"
-              claim-name: "client_id"
-              claim-value: "connectors"
-            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
-            - mapping-rule-id: {{ index $mappingRule "mappingRuleID" | quote }}
-              claim-name: {{ index $mappingRule "claimName" | quote }}
-              claim-value: {{ index $mappingRule "claimValue" | quote }}
-            {{- end }}
-          default-roles.connectors.mappingRules:
-            - "connectors-client-mapping-rule"
-          default-roles.admin.mappingRules:
-            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
-            - {{ index $mappingRule "mappingRuleID" | quote }}
-            {{- end }}
-          {{- end }}
         multiTenancy:
           checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
           apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
@@ -343,6 +318,7 @@ data:
         zeebe:
           # Gateway address
           gatewayAddress: "{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.grpcPort }}"
+          brokerContactPoint: {{ include "orchestration.fullname" $ }}:{{ .Values.orchestration.service.grpcPort }}
         {{- if .Values.global.opensearch.enabled }}
         opensearch:
           {{- if .Values.orchestration.index.prefix }}
@@ -448,6 +424,7 @@ data:
           # Gateway address
           gatewayAddress: {{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.grpcPort }}
           restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+          brokerContactPoint: {{ include "orchestration.fullname" $ }}:{{ .Values.orchestration.service.grpcPort }}
         {{- if .Values.orchestration.history.retention.enabled }}
         archiver:
           ilmEnabled: true

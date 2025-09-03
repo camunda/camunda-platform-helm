@@ -2447,6 +2447,8 @@ orchestration:
     dnsConfig: {}
     ## @param orchestration.importer.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
+    ## @param orchestration.importer.envFrom list of environment variables to import from configMapRef and secretRef
+    envFrom: []
 
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []

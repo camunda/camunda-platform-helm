@@ -46,6 +46,17 @@ spec:
           command: ["bash", "/usr/local/bin/startup.sh"]
           {{- end }}
           env:
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            # the unique member id (in this case the pod name) that is used as identifier inside the SWIM cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
             {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD"
@@ -147,8 +158,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
-          {{- if .Values.orchestration.envFrom }}
-            {{- .Values.orchestration.envFrom | toYaml | nindent 12 }}
+          {{- if .Values.orchestration.importer.envFrom }}
+            {{- .Values.orchestration.importer.envFrom | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.orchestration.startupProbe.enabled }}
           startupProbe:
