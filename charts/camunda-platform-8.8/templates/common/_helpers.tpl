@@ -875,6 +875,29 @@ valueFrom:
 {{- end -}}
 
 {{/*
+emitVolumeFromSecretConfig
+Emits volume definition using normalized secret configuration.
+Usage:
+  {{ include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+      "volumeName" "gcp-credentials-volume"
+      "config" .Values.global.documentStore.type.gcp
+      "legacyKeyField" "credentialsKey"
+      "fileName" (.Values.global.documentStore.type.gcp.fileName | default "service-account.json")
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitVolumeFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if $norm.ref }}
+- name: {{ .volumeName }}
+  secret:
+    secretName: {{ $norm.ref.name | quote }}
+    items:
+      - key: {{ $norm.ref.key | quote }}
+        path: {{ .fileName | quote }}
+{{- end }}
+{{- end -}}
+
+{{/*
 ********************************************************************************
 Release highlights.
 ********************************************************************************

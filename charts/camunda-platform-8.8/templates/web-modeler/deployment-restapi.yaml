@@ -92,7 +92,7 @@ spec:
             {{- end }}
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -164,7 +164,7 @@ spec:
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
             {{- if .Values.webModeler.restapi.extraVolumeMounts }}
@@ -188,12 +188,12 @@ spec:
           configMap:
             name: {{ include "webModeler.fullname" . }}-restapi-configuration
         {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
         {{- end }}
         {{- if .Values.webModeler.restapi.extraVolumes }}
         {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
