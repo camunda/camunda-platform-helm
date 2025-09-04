@@ -55,7 +55,7 @@ spec:
                   key: {{ .Values.global.opensearch.auth.existingSecretKey }}
             {{- end }}
           command:
-            - /usr/local/camunda/bin/process-migration
+            - /usr/local/camunda/bin/data-migration
           resources:
             limits:
               cpu: 500m

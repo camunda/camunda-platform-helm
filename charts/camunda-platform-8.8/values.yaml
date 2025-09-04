@@ -2419,24 +2419,67 @@ orchestration:
 
   ## @extra orchestration.migration configuration for migration purposes for the orchestration cluster
   migration:
-    process:
-      ## @param orchestration.migration.process.enabled if true, the process migration occurs.
+    data:
+      ## @param orchestration.migration.data.enabled if true, the data migration occurs.
       enabled: false
-      ## @param orchestration.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      ## @param orchestration.migration.data.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
-      ## @param orchestration.migration.process.batchSize can be used to define the batch size.
-      batchSize: 5
-      ## @param orchestration.migration.process.importFinishedTimeout can be used to define the timeout when the import is finished.
-      importFinishedTimeout: PT1M
-      retry:
-        ## @param orchestration.migration.process.retry.maxRetries can be used to define the maximum amount of retries.
-        maxRetries: 5
-        ## @param orchestration.migration.process.retry.maxRetryDelay can be used to define the delay time between retries.
-        maxRetryDelay: PT1M
-        ## @param orchestration.migration.process.retry.minRetryDelay can be used to define the delay time between retries.
-        minRetryDelay: PT10s
-        ## @param orchestration.migration.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
-        retryDelayMultiplier: 2.0
+      process:
+        ## @param orchestration.migration.data.process.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.process.importFinishedTimeout can be used to define the timeout when the import is finished.
+        importFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.process.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.process.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.process.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      metrics:
+        ## @param orchestration.migration.data.metrics.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.metrics.importFinishedTimeout can be used to define the timeout when the import is finished.
+        importFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.metrics.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.metrics.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.metrics.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.metrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      tumetrics:
+        ## @param orchestration.migration.data.tumetrics.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.tumetrics.importFinishedTimeout can be used to define the timeout when the import is finished.
+        importFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.tumetrics.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.tumetrics.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.tumetrics.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.tumetrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      tasks:
+        ## @param orchestration.migration.data.tasks.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.tasks.importFinishedTimeout can be used to define the timeout when the import is finished.
+        importFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.tasks.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.tasks.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.tasks.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.tasks.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
     identity:
       ## @param orchestration.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
       enabled: false
