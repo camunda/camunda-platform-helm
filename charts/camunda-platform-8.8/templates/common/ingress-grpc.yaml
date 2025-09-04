@@ -8,7 +8,7 @@ metadata:
     {{- include "common.tplvalues.merge-overwrite" (dict
       "values" (list
         (include "camundaPlatform.labels" .)
-        .Values.global.ingress.labels
+        .Values.orchestration.ingress.grpc.labels
       )
       "context" .
     ) | nindent 4 }}
