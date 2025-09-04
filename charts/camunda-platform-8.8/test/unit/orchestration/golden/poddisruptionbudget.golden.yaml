@@ -3,7 +3,7 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: camunda-platform-test-orchestration
+  name: camunda-platform-test-zeebe
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

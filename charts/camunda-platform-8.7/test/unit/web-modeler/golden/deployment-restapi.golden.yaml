@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-restapi
-          image: "camunda/web-modeler-restapi:8.7.8"
+          image: "camunda/web-modeler-restapi:8.7.9"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -101,6 +101,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /health/readiness
+              scheme: HTTP
               port: http-management
             initialDelaySeconds: 30
             periodSeconds: 30

@@ -54,23 +54,23 @@ data:
             - name: Operate
               id: operate
               url: http://localhost:8088/operate
-              readiness: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/prometheus
+              readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
             - name: Tasklist
               id: tasklist
               url: http://localhost:8088/tasklist
-              readiness: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/prometheus
+              readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
             - name: Orchestration Identity
               id: orchestrationIdentity
               url: http://localhost:8088/identity
-              readiness: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/prometheus
+              readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
           
             - name: Orchestration Cluster
               id: orchestration
               urls:
                 grpc: http://localhost:26500
                 http: http://localhost:8088
-              readiness: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/health/readiness
-              metrics: http://camunda-platform-test-orchestration.camunda-platform:9600/actuator/prometheus
+              readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus

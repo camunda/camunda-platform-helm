@@ -49,7 +49,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				var configmapApplication ConnectorsConfigYAML
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 				if e != nil {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
@@ -82,7 +82,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	var configmapApplication ConnectorsConfigYAML
 // 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 // 	if err != nil {
 // 		s.Fail("Failed to unmarshal yaml. error=", err)
 // 	}
@@ -93,9 +93,9 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.KeycloakTokenURL)
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.ClientId)
 
-// 	s.Require().Equal("camunda-platform-test-orchestration:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
+// 	s.Require().Equal("camunda-platform-test-zeebe:26500", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
 // 	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
-// 	s.Require().Equal("http://camunda-platform-test-orchestration:80/v1", configmapApplication.Camunda.Operate.Client.Url)
+// 	s.Require().Equal("http://camunda-platform-test-zeebe:80/v1", configmapApplication.Camunda.Operate.Client.Url)
 // 	s.Require().Equal("connectors", configmapApplication.Camunda.Operate.Client.Username)
 // }
 
@@ -115,7 +115,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	var configmapApplication ConnectorsConfigYAML
 // 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 // 	if err != nil {
 // 		s.Fail("Failed to unmarshal yaml. error=", err)
 // 	}
@@ -149,7 +149,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	var configmapApplication ConnectorsConfigYAML
 // 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yml"]), &configmapApplication)
+// 	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
 // 	if err != nil {
 // 		s.Fail("Failed to unmarshal yaml. error=", err)
 // 	}
@@ -159,7 +159,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 // 	s.Require().Empty(configmapApplication.Camunda.Connector.WebHook.Enabled)
 // 	s.Require().Empty(configmapApplication.Camunda.Operate.Client.Username)
 
-// 	s.Require().Equal("camunda-platform-test-orchestration:26500/v1", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
+// 	s.Require().Equal("camunda-platform-test-zeebe:26500/v1", configmapApplication.Zeebe.Client.Broker.GatewayAddress)
 // 	s.Require().Equal("true", configmapApplication.Zeebe.Client.Security.Plaintext)
 // 	s.Require().Equal("http://camunda-platform-test-operate:80", configmapApplication.Camunda.Operate.Client.Url)
 // 	s.Require().Equal("operate-api", configmapApplication.Camunda.Identity.Audience)

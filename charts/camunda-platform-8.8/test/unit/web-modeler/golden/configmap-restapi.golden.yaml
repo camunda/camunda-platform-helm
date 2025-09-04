@@ -49,8 +49,8 @@ data:
             authorizations:
               enabled: true
             url:
-              grpc: "grpc://camunda-platform-test-orchestration:26500"
-              rest: "http://camunda-platform-test-orchestration:8080"
+              grpc: "grpc://camunda-platform-test-zeebe:26500"
+              rest: "http://camunda-platform-test-zeebe:8080"
               web-app: "http://localhost:8088"
 
     spring:

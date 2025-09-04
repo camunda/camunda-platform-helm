@@ -23,7 +23,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-broker
-  serviceName: camunda-platform-test-orchestration
+  serviceName: camunda-platform-test-zeebe
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
@@ -65,7 +65,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: camunda-platform-test-orchestration
+              value: camunda-platform-test-zeebe
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -124,13 +124,13 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-orchestration-configuration
+            name: camunda-platform-test-zeebe-configuration
             defaultMode: 492
         - name: exporters
           emptyDir: {}
         - name: tmp
           emptyDir: {}
-      serviceAccountName: camunda-platform-test-orchestration
+      serviceAccountName: camunda-platform-test-zeebe
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

@@ -86,7 +86,7 @@ data:
           # nodeId:
           initialContactPoints:
           {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-            - {{ include "orchestration.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
+            - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
           {{- end }}
           clusterSize: {{ .Values.orchestration.clusterSize | quote }}
           replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
@@ -184,6 +184,10 @@ data:
         {{- end }}
 
     camunda:
+      data:
+        secondary-storage:
+          elasticsearch:
+            url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
       persistent:
         sessions:
           enabled: {{ include "orchestration.persistentSessionsEnabled" . }}

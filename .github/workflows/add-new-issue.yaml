@@ -2,9 +2,7 @@ name: Add new Issue
 
 on:
   issues:
-    types:
-      - opened
-      - transferred
+    types: [opened, reopened, transferred, labeled]
 
 jobs:
   add-to-project:
@@ -31,7 +29,7 @@ jobs:
           github-token: '${{ steps.generate-github-token.outputs.token }}'
 
       - name: Update Created At field
-        uses: github/update-project-action@21f8a8478d7c5253e166ee62517d3a942b170fa4 # main
+        uses: github/update-project-action@855b6a7c34beb8568df7291e7c0e84650d66c934 # main
         id: update-created-at
         with:
           github_token: ${{ steps.generate-github-token.outputs.token }}
@@ -41,4 +39,21 @@ jobs:
           field: Created At
           value: ${{ steps.vars.outputs.now }}
 
-          
+      - name: Add issue to Quality Board
+        # https://github.com/orgs/camunda/projects/187/views/15
+        id: add-bug-to-quality-board
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@main
+        with:
+          github-token: ${{ steps.generate-github-token.outputs.token }}
+          project-number: "187"
+        # Only run this job for issues labeled as 'kind/bug' and
+        # for the relevant GitHub issue events that indicate a new or updated issue.
+        if: >
+          contains(github.event.issue.labels.*.name, 'kind/bug') &&
+          (
+              github.event.action == 'opened' ||
+              github.event.action == 'reopened' ||
+              github.event.action == 'transferred' ||
+              (github.event.action == 'labeled' && github.event.label.name == 'kind/bug')
+          )
+                
