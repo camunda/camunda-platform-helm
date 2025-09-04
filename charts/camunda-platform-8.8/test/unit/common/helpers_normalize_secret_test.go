@@ -225,3 +225,114 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
+	// Use connectors deployment template which has GCP volume support
+	templates := []string{"templates/connectors/deployment.yaml"}
+	
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "gcp document store new style secret creates volume",
+			Values: map[string]string{
+				"connectors.enabled":                                     "true",
+				"global.documentStore.type.gcp.enabled":                 "true",
+				"global.documentStore.type.gcp.secret.existingSecret":   "my-gcp-secret",
+				"global.documentStore.type.gcp.secret.existingSecretKey": "credentials.json",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.secretName":         "my-gcp-secret",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].key":       "credentials.json",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].path":      "service-account.json",
+			},
+		},
+		{
+			Name: "gcp document store legacy secret format creates volume",
+			Values: map[string]string{
+				"connectors.enabled":                         "true",
+				"global.documentStore.type.gcp.enabled":     "true",
+				"global.documentStore.type.gcp.existingSecret": "legacy-gcp-secret",
+				"global.documentStore.type.gcp.credentialsKey": "legacy-credentials.json",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.secretName":         "legacy-gcp-secret",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].key":       "legacy-credentials.json",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].path":      "service-account.json",
+			},
+		},
+		{
+			Name: "gcp document store mixed configuration - new takes precedence",
+			Values: map[string]string{
+				"connectors.enabled":                                     "true",
+				"global.documentStore.type.gcp.enabled":                 "true",
+				// Legacy configuration (should be ignored)
+				"global.documentStore.type.gcp.existingSecret":          "legacy-gcp-secret",
+				"global.documentStore.type.gcp.credentialsKey":          "legacy-credentials.json",
+				// New configuration (should take precedence)
+				"global.documentStore.type.gcp.secret.existingSecret":   "new-gcp-secret",
+				"global.documentStore.type.gcp.secret.existingSecretKey": "new-credentials.json",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.secretName":         "new-gcp-secret",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].key":       "new-credentials.json",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].path":      "service-account.json",
+			},
+		},
+		{
+			Name: "gcp document store custom fileName creates volume with custom path",
+			Values: map[string]string{
+				"connectors.enabled":                                     "true",
+				"global.documentStore.type.gcp.enabled":                 "true",
+				"global.documentStore.type.gcp.secret.existingSecret":   "custom-gcp-secret",
+				"global.documentStore.type.gcp.secret.existingSecretKey": "custom.json",
+				"global.documentStore.type.gcp.fileName":                "my-custom-file.json",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.secretName":         "custom-gcp-secret",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].key":       "custom.json",
+				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].path":      "my-custom-file.json",
+			},
+		},
+		{
+			Name: "gcp document store volume mount is created when secret exists",
+			Values: map[string]string{
+				"connectors.enabled":                                     "true",
+				"global.documentStore.type.gcp.enabled":                 "true",
+				"global.documentStore.type.gcp.secret.existingSecret":   "mount-test-secret",
+				"global.documentStore.type.gcp.secret.existingSecretKey": "mount-test.json",
+				"global.documentStore.type.gcp.mountPath":               "/custom/mount/path",
+			},
+			Expected: map[string]string{
+				"spec.template.spec.containers[0].volumeMounts[?(@.name=='gcp-credentials-volume')].mountPath": "/custom/mount/path",
+				"spec.template.spec.containers[0].volumeMounts[?(@.name=='gcp-credentials-volume')].readOnly":  "true",
+			},
+		},
+		{
+			Name: "no gcp document store config means no volume",
+			Values: map[string]string{
+				"connectors.enabled":                     "true",
+				"global.documentStore.type.gcp.enabled": "true",
+				// No secret configuration
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// Should still create volume due to defaults in values.yaml, but verify it uses defaults
+				require.Contains(t, output, "gcp-credentials-volume")
+				require.Contains(t, output, "gcp-credentials") // default secret name
+			},
+		},
+		{
+			Name: "gcp document store disabled means no volume",
+			Values: map[string]string{
+				"connectors.enabled":                                     "true",
+				"global.documentStore.type.gcp.enabled":                 "false",
+				"global.documentStore.type.gcp.secret.existingSecret":   "should-not-be-used",
+				"global.documentStore.type.gcp.secret.existingSecretKey": "should-not-be-used.json",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// Should not create any GCP volumes when GCP document store is disabled
+				require.NotContains(t, output, "gcp-credentials-volume")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+}
