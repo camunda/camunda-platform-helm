@@ -72,11 +72,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Backport - implement joinPath helper for constructing paths"
-    - kind: added
-      description: "Create extra values file for legacy bitnami repo name"
     - kind: fixed
-      description: "Env var CAMUNDA_DATABASE_PASSWORD wasn't set correctly with opensearch"
+      description: "Upgrade keycloak version for 8.7"
     - kind: fixed
-      description: "The region is mapped to the document store env"
+      description: "Downgrade nonexistant keycloak 26.3.2 to 26.3.1"
+    - kind: fixed
+      description: "Revert webmodeler externaldb change"
