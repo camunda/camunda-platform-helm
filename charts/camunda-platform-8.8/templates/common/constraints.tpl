@@ -267,6 +267,7 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
     (dict "path" "webModeler.restapi.mail" "config" .Values.webModeler.restapi.mail "plaintextKey" "smtpPassword")
     (dict "path" "global.documentStore.type.aws.accessKeyId" "config" .Values.global.documentStore.type.aws.accessKeyId "isAwsDocumentStore" true)
     (dict "path" "global.documentStore.type.aws.secretAccessKey" "config" .Values.global.documentStore.type.aws.secretAccessKey "isAwsDocumentStore" true)
+    (dict "path" "global.documentStore.type.gcp" "config" .Values.global.documentStore.type.gcp "isGcpDocumentStore" true "legacySecretKey" "existingSecret" "legacyFileKey" "credentialsKey")
   -}}
 
   {{- range $secretConfigs -}}
