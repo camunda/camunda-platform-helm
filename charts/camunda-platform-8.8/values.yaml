@@ -545,14 +545,22 @@ global:
         bucket: "your-gcp-bucket"
         ## @param global.documentStore.type.gcp.class Fully qualified class name for the GCP document store provider.
         class: "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
-        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials.
+        ## @param global.documentStore.type.gcp.existingSecret (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Reference to an existing Kubernetes secret containing GCP credentials.
         existingSecret: "gcp-credentials"
-        ## @param global.documentStore.type.gcp.credentialsKey Key in the GCP credentials secret that contains the service-account JSON.
+        ## @param global.documentStore.type.gcp.credentialsKey (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Key in the GCP credentials secret that contains the service-account JSON.
         credentialsKey: "service-account.json"
         ## @param global.documentStore.type.gcp.mountPath Mount path for the GCP credentials secret.
         mountPath: "/var/secrets/gcp"
         ## @param global.documentStore.type.gcp.fileName The file name for the GCP credentials JSON.
         fileName: "service-account.json"
+        ## @extra global.documentStore.type.gcp.secret configuration to provide the GCP service account credentials secret.
+        secret:
+          ## @param global.documentStore.type.gcp.secret.inlineSecret can be used to provide the service account JSON as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.documentStore.type.gcp.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the service account JSON.
+          existingSecret: ""
+          ## @param global.documentStore.type.gcp.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "service-account.json"
       inmemory:
         ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
         enabled: true

@@ -302,7 +302,7 @@ spec:
             {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
@@ -349,12 +349,12 @@ spec:
             optional: false
         {{- end }}
         {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" (.Values.global.documentStore.type.gcp.fileName | default "service-account.json")
+        ) | nindent 8 }}
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
