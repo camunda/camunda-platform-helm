@@ -2062,7 +2062,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
     repository: bitnamilegacy/postgresql
-    tag: 14.18.0-debian-12-r0
+    tag: 15.10.0-debian-12-r2
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
   auth:
