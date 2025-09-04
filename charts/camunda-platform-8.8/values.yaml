@@ -2427,8 +2427,8 @@ orchestration:
       process:
         ## @param orchestration.migration.data.process.batchSize can be used to define the batch size.
         batchSize: 5
-        ## @param orchestration.migration.data.process.importFinishedTimeout can be used to define the timeout when the import is finished.
-        importFinishedTimeout: PT1M
+        ## @param orchestration.migration.data.process.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
         retry:
           ## @param orchestration.migration.data.process.retry.maxRetries can be used to define the maximum amount of retries.
           maxRetries: 5
@@ -2441,8 +2441,8 @@ orchestration:
       metrics:
         ## @param orchestration.migration.data.metrics.batchSize can be used to define the batch size.
         batchSize: 5
-        ## @param orchestration.migration.data.metrics.importFinishedTimeout can be used to define the timeout when the import is finished.
-        importFinishedTimeout: PT1M
+        ## @param orchestration.migration.data.metrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
         retry:
           ## @param orchestration.migration.data.metrics.retry.maxRetries can be used to define the maximum amount of retries.
           maxRetries: 5
@@ -2455,8 +2455,8 @@ orchestration:
       tumetrics:
         ## @param orchestration.migration.data.tumetrics.batchSize can be used to define the batch size.
         batchSize: 5
-        ## @param orchestration.migration.data.tumetrics.importFinishedTimeout can be used to define the timeout when the import is finished.
-        importFinishedTimeout: PT1M
+        ## @param orchestration.migration.data.tumetrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
         retry:
           ## @param orchestration.migration.data.tumetrics.retry.maxRetries can be used to define the maximum amount of retries.
           maxRetries: 5
@@ -2469,8 +2469,8 @@ orchestration:
       tasks:
         ## @param orchestration.migration.data.tasks.batchSize can be used to define the batch size.
         batchSize: 5
-        ## @param orchestration.migration.data.tasks.importFinishedTimeout can be used to define the timeout when the import is finished.
-        importFinishedTimeout: PT1M
+        ## @param orchestration.migration.data.tasks.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
         retry:
           ## @param orchestration.migration.data.tasks.retry.maxRetries can be used to define the maximum amount of retries.
           maxRetries: 5
