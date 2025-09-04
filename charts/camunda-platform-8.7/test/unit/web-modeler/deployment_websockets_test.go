@@ -75,9 +75,10 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerStartupProbe",
 			Values: map[string]string{
-				"webModeler.enabled":                         "true",
-				"webModeler.restapi.mail.fromAddress":        "example@example.com",
-				"webModeler.websockets.startupProbe.enabled": "true",
+				"webModeler.enabled":                           "true",
+				"webModeler.restapi.mail.fromAddress":          "example@example.com",
+				"webModeler.websockets.startupProbe.enabled":   "true",
+				"webModeler.websockets.startupProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -86,14 +87,16 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
 
-				s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
+				s.Require().Equal("/healthz", probe.HTTPGet.Path)
+				s.Require().Equal("http", probe.HTTPGet.Port.StrVal)
 			},
 		}, {
 			Name: "TestContainerReadinessProbe",
 			Values: map[string]string{
-				"webModeler.enabled":                           "true",
-				"webModeler.restapi.mail.fromAddress":          "example@example.com",
-				"webModeler.websockets.readinessProbe.enabled": "true",
+				"webModeler.enabled":                             "true",
+				"webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"webModeler.websockets.readinessProbe.enabled":   "true",
+				"webModeler.websockets.readinessProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -102,14 +105,16 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				probe := deployment.Spec.Template.Spec.Containers[0].ReadinessProbe
 
-				s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
+				s.Require().Equal("/healthz", probe.HTTPGet.Path)
+				s.Require().Equal("http", probe.HTTPGet.Port.StrVal)
 			},
 		}, {
 			Name: "TestContainerLivenessProbe",
 			Values: map[string]string{
-				"webModeler.enabled":                          "true",
-				"webModeler.restapi.mail.fromAddress":         "example@example.com",
-				"webModeler.websockets.livenessProbe.enabled": "true",
+				"webModeler.enabled":                            "true",
+				"webModeler.restapi.mail.fromAddress":           "example@example.com",
+				"webModeler.websockets.livenessProbe.enabled":   "true",
+				"webModeler.websockets.livenessProbe.probePath": "/healthz",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -118,7 +123,33 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
 
-				s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
+				s.Require().Equal("/healthz", probe.HTTPGet.Path)
+				s.Require().Equal("http", probe.HTTPGet.Port.StrVal)
+			},
+		}, {
+			// Web Modeler doesn't support contextPath for health endpoints
+			Name: "TestContainerProbesWithContextPath",
+			Values: map[string]string{
+				"webModeler.enabled":                             "true",
+				"webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"webModeler.contextPath":                         "/test",
+				"webModeler.websockets.startupProbe.enabled":     "true",
+				"webModeler.websockets.startupProbe.probePath":   "/start",
+				"webModeler.websockets.readinessProbe.enabled":   "true",
+				"webModeler.websockets.readinessProbe.probePath": "/ready",
+				"webModeler.websockets.livenessProbe.enabled":    "true",
+				"webModeler.websockets.livenessProbe.probePath":  "/live",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				probe := deployment.Spec.Template.Spec.Containers[0]
+
+				s.Require().Equal("/start", probe.StartupProbe.HTTPGet.Path)
+				s.Require().Equal("/ready", probe.ReadinessProbe.HTTPGet.Path)
+				s.Require().Equal("/live", probe.LivenessProbe.HTTPGet.Path)
 			},
 		}, {
 			Name: "TestContainerSetSidecar",

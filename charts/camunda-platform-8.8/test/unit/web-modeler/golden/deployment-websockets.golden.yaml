@@ -82,7 +82,9 @@ spec:
               name: http
               protocol: TCP
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /up
+              scheme: HTTP
               port: http
             initialDelaySeconds: 10
             periodSeconds: 30

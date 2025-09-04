@@ -105,6 +105,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /health/readiness
+              scheme: HTTP
               port: http-management
             initialDelaySeconds: 15
             periodSeconds: 30
