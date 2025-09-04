@@ -5,10 +5,13 @@ kind: Ingress
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-grpc
   labels:
-    {{- include "camundaPlatform.labels" . | nindent 4 }}
-    {{- if .Values.orchestration.ingress.grpc.labels }}
-    {{- toYaml .Values.orchestration.ingress.grpc.labels | nindent 4 }}
-    {{- end }}
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "camundaPlatform.labels" .)
+        .Values.global.ingress.labels
+      )
+      "context" .
+    ) | nindent 4 }}
 {{- with .Values.orchestration.ingress.grpc.annotations }}
   annotations:
   {{- tpl (toYaml .) $ | nindent 4 }}
