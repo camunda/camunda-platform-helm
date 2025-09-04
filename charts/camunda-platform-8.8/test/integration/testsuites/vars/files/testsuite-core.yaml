@@ -144,7 +144,7 @@ testcases:
       body: ''
     - component: Orchestration Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
-      url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
+      url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
       method: POST
       body: '{}'
     method: "{{ .value.method }}"
@@ -168,7 +168,7 @@ testcases:
     range:
     - component: Orchestration Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
-      url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
+      url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
       method: POST
       body: '{}'
     method: "{{ .value.method }}"
@@ -239,7 +239,7 @@ testcases:
     script: |
       zbctl --clientCache=/tmp/zbctl \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
-          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.coreGRPC }}" \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.orchestrationGRPC }}" \
           {{ .coreVars.zbctl.extraArgs }} \
           status
     retry: 2
@@ -307,7 +307,7 @@ testcases:
     script: |
       zbctl --clientCache=/tmp/zbctl \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
-          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.coreGRPC }}" \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.orchestrationGRPC }}" \
           {{ .coreVars.zbctl.extraArgs }} \
           deploy /mnt/fixtures/{{ .value.file }}
     # info: |
@@ -330,7 +330,7 @@ testcases:
     - name: Inbound Connector
       id: test-inbound-process
     method: POST
-    url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -359,7 +359,7 @@ testcases:
 #     - name: Inbound Connector
 #       file: test-inbound-process.bpmn
 #     method: POST
-#     url: "{{ .coreVars.baseURLs.core }}/deployments"
+#     url: "{{ .coreVars.baseURLs.orchestrationREST }}/deployments"
 #     headers:
 #       Content-Type: application/json
 #       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -389,7 +389,7 @@ testcases:
 #     - name: Inbound Connector
 #       id: test-inbound-process
 #     method: POST
-#     url: "{{ .coreVars.baseURLs.core }}/process-definitions/search"
+#     url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
 #     headers:
 #       Content-Type: application/json
 #       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
