@@ -1,18 +1,18 @@
-{{- if .Values.orchestration.migration.process.enabled }}
+{{- if .Values.orchestration.migration.data.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "orchestration.fullname" . }}-process-migration
+  name: {{ include "orchestration.fullname" . }}-data-migration
   labels: {{- include "orchestration.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  backoffLimit: {{ .Values.orchestration.migration.process.backoffLimit }}
+  backoffLimit: {{ .Values.orchestration.migration.data.backoffLimit }}
   template:
     metadata:
       labels:
         {{- include "orchestration.labels" . | nindent 8 }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/orchestration/process-migration-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/migration-data-configmap.yaml") . | sha256sum }}
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
@@ -40,22 +40,23 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            {{- if and .Values.global.elasticsearch.external .Values.global.elasticsearch.auth.password -}}
-            - name: VALUES_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-elasticsearch
-                  key: {{ .Values.global.elasticsearch.auth.existingSecretKey }}
+            {{/*
+            Passwords for variable substitution.
+            */}}
+            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password -}}
-            - name: VALUES_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-opensearch
-                  key: {{ .Values.global.opensearch.auth.existingSecretKey }}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
             {{- end }}
           command:
-            - /usr/local/camunda/bin/process-migration
+            - /usr/local/camunda/bin/data-migration
           resources:
             limits:
               cpu: 500m
@@ -70,5 +71,5 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "orchestration.fullname" . }}-process-migration-configuration
+            name: {{ include "orchestration.fullname" . }}-data-migration-configuration
 {{- end }}
