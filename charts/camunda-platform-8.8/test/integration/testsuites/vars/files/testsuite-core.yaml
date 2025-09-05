@@ -9,7 +9,7 @@ vars:
   venomClientSecret: '{{ .TEST_CLIENT_SECRET }}'
   skipTestIngress: '{{ .SKIP_TEST_INGRESS }}'
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
-  skipTestKeycloak: '{{ .SKIP_TEST_KEYCLOAK }}'
+  skipTestKeycloak: '{{ .SKIP_TEST_KEYCLOAK | default "false" }}'
 
 testcases:
 
@@ -176,7 +176,7 @@ testcases:
     headers:
       Content-Type: application/json
       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
-      Authorization: "Basic ZGVtbzpkZW1v"
+      Authorization: '{{ if or (eq .skipTestKeycloak "true") (eq .skipTestKeycloak true) }}Basic ZGVtbzpkZW1v{{ else }}Bearer {{ .helperVenomToken.jwt }}{{ end }}'
     body: "{{ .value.body }}"
     # info: |
     #   Component: {{ .value.component }}
@@ -281,7 +281,7 @@ testcases:
     headers:
       Content-Type: application/json
       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
-      Authorization: "Basic ZGVtbzpkZW1v"
+      Authorization: '{{ if or (eq .skipTestKeycloak "true") (eq .skipTestKeycloak true) }}Basic ZGVtbzpkZW1v{{ else }}Bearer {{ .helperVenomToken.jwt }}{{ end }}'
     retry: 2
     delay: 10
     info: |
