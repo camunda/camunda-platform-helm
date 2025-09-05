@@ -152,7 +152,7 @@ tasks:
           }"
       {{ end }}
     - |
-      {{ if eq .TEST_VALUES_SCENARIO "opensearch" }}
+      {{ if and (eq .TEST_VALUES_SCENARIO "opensearch") .TEST_OPENSEARCH_PREFIX }}
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       {{ end }}
     - |
