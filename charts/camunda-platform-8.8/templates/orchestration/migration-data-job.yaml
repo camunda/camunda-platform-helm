@@ -40,19 +40,20 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            {{- if and .Values.global.elasticsearch.external .Values.global.elasticsearch.auth.password -}}
-            - name: VALUES_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-elasticsearch
-                  key: {{ .Values.global.elasticsearch.auth.existingSecretKey }}
+            {{/*
+            Passwords for variable substitution.
+            */}}
+            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled .Values.global.opensearch.auth.password -}}
-            - name: VALUES_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.fullname" . }}-opensearch
-                  key: {{ .Values.global.opensearch.auth.existingSecretKey }}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
             {{- end }}
           command:
             - /usr/local/camunda/bin/data-migration

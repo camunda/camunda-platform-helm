@@ -14,7 +14,7 @@ data:
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
         username: {{ .Values.global.elasticsearch.auth.username }}
-        password: ${VALUES_DATABASE_PASSWORD:}
+        password: ${VALUES_ELASTICSEARCH_PASSWORD:}
         {{- end }}
     {{- else }}
     camunda:
@@ -25,7 +25,7 @@ data:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
         username: {{ .Values.global.opensearch.auth.username }}
-        password: ${VALUES_DATABASE_PASSWORD:}
+        password: ${VALUES_OPENSEARCH_PASSWORD:}
         {{- end }}
     {{- end }}
       migration:
