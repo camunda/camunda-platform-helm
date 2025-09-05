@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.7.61"
+    app.kubernetes.io/version: "8.7.62"
   annotations:
     {}
 spec:
@@ -49,7 +49,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: camunda-platform
-          image: camunda/console:8.7.61
+          image: camunda/console:8.7.62
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
