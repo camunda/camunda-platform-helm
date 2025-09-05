@@ -218,7 +218,7 @@ jobs:
       - name: Create the script to verify signed Helm chart with Cosign
         working-directory: .cr-release-packages
         run: |
-          cat << EOF > ${{ env.CHART_RELEASE_NAME }}-cosign-verify.sh
+          cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
           # Rekor.
           echo "Rekor record:"
           echo "https://search.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}"
