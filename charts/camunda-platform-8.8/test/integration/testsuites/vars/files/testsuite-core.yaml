@@ -162,6 +162,10 @@ testcases:
     - result.statuscode ShouldEqual 200
 
 - name: TEST - Interacting with Camunda Orchestration web API
+  skip:
+  # The var with "skip" section should be in lower case as there is a bug in Venom:
+  # https://github.com/ovh/venom/issues/654
+  - skiptestkeycloak ShouldBeTrue
   steps:
   - name: "{{ .value.component }}"
     type: http
@@ -176,7 +180,7 @@ testcases:
     headers:
       Content-Type: application/json
       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
-      Authorization: '{{ if or (eq .skipTestKeycloak "true") (eq .skipTestKeycloak true) }}Basic ZGVtbzpkZW1v{{ else }}Bearer {{ .helperVenomToken.jwt }}{{ end }}'
+      Authorization: "Basic ZGVtbzpkZW1v"
     body: "{{ .value.body }}"
     # info: |
     #   Component: {{ .value.component }}
