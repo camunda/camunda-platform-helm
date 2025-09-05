@@ -12,7 +12,7 @@ spec:
       labels:
         {{- include "orchestration.labels" . | nindent 8 }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/orchestration/data-migration-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/migration-data-configmap.yaml") . | sha256sum }}
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
