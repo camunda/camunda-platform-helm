@@ -144,7 +144,7 @@ testcases:
       body: ''
     - component: Orchestration Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
-      url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
+      url: "{{ .coreVars.baseURLs.orchestrationREST }}/v2/process-definitions/search"
       method: POST
       body: '{}'
     method: "{{ .value.method }}"
@@ -168,7 +168,7 @@ testcases:
     range:
     - component: Orchestration Operate
       docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
-      url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
+      url: "{{ .coreVars.baseURLs.orchestrationREST }}/v2/process-definitions/search"
       method: POST
       body: '{}'
     method: "{{ .value.method }}"
@@ -255,7 +255,7 @@ testcases:
   - name: Check Orchestration status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.orchestrationREST }}/topology"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/v2/topology"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -277,7 +277,7 @@ testcases:
   - name: Check Orchestration status - REST
     type: http
     method: GET
-    url: "{{ .coreVars.baseURLs.orchestrationREST }}/topology"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/v2/topology"
     headers:
       Content-Type: application/json
       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -330,7 +330,7 @@ testcases:
     - name: Inbound Connector
       id: test-inbound-process
     method: POST
-    url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
+    url: "{{ .coreVars.baseURLs.orchestrationREST }}/v2/process-definitions/search"
     headers:
       Content-Type: application/json
       Authorization: "Bearer {{ .helperVenomToken.jwt }}"
@@ -389,7 +389,7 @@ testcases:
 #     - name: Inbound Connector
 #       id: test-inbound-process
 #     method: POST
-#     url: "{{ .coreVars.baseURLs.orchestrationREST }}/process-definitions/search"
+#     url: "{{ .coreVars.baseURLs.orchestrationREST }}/v2/process-definitions/search"
 #     headers:
 #       Content-Type: application/json
 #       # Authorization: "Bearer {{ .helperVenomToken.jwt }}"
