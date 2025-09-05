@@ -3,6 +3,8 @@ global:
     enabled: false
   opensearch:
     enabled: true
+    aws:
+      enabled: false
     auth:
       username: "$OPENSEARCH_USERNAME"
       password: "$OPENSEARCH_PASSWORD"
@@ -15,12 +17,7 @@ elasticsearch:
   enabled: false
 
 orchestration:
-  # index:
-  #   prefix: app
   env:
-    # group1
-    - name: CAMUNDA_DATA_SECONDARY_STORAGE_TYPE
-      value: "opensearch"
     - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
       value: "custom"
     - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
