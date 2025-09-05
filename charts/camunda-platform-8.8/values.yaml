@@ -791,7 +791,7 @@ identity:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param identity.env can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -1236,7 +1236,7 @@ console:
       cpu: 2
       memory: 2Gi
 
-  ## @param console.env can be used to set extra environment variables in each app container
+  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -1517,7 +1517,7 @@ webModeler:
         io.camunda.modeler: DEBUG
         io.grpc: TRACE
 
-    ## @param webModeler.restapi.env can be used to set extra environment variables in each restapi container
+    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1687,7 +1687,7 @@ webModeler:
     ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels
     podLabels: {}
 
-    ## @param webModeler.webapp.env can be used to set extra environment variables in each webapp container
+    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1866,7 +1866,7 @@ webModeler:
     ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels
     podLabels: {}
 
-    ## @param webModeler.websockets.env can be used to set extra environment variables in each websockets container
+    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.websockets.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -2062,7 +2062,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
     repository: bitnamilegacy/postgresql
-    tag: 14.18.0-debian-12-r0
+    tag: 15.10.0-debian-12-r2
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
   auth:
@@ -2184,7 +2184,7 @@ connectors:
       cpu: 2
       memory: 2Gi
 
-  ## @param connectors.env can be used to set extra environment variables in each Connector container
+  ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param connectors.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -2505,10 +2505,8 @@ orchestration:
   partitionCount: "3"
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @param orchestration.env can be used to set extra environment variables in each broker container
+  ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
-    # - name: LOGGING_LEVEL_IO_CAMUNDA
-    #   value: DEBUG
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
     #   value: TRACE
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
@@ -2887,7 +2885,7 @@ optimize:
   migration:
     ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
     enabled: true
-    ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container (Note: there is no need to define if optimize.env is defined)
+    ## @param optimize.migration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)
     env: []
 
     ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -2930,7 +2928,7 @@ optimize:
 
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
-  ## @param optimize.env can be used to set extra environment variables in each Optimize container
+  ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param optimize.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
