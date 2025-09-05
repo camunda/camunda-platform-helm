@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "orchestration.legacyName" . }}
+  name: {{ include "orchestration.fullname" . }}
   labels:
     {{- include "orchestration.labels" . | nindent 4 }}
   annotations:
