@@ -998,11 +998,6 @@
                                         "secret": {
                                             "type": "object",
                                             "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the service account JSON as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
                                                 "existingSecret": {
                                                     "type": "string",
                                                     "description": "can be used to reference an existing Kubernetes Secret containing the service account JSON.",
