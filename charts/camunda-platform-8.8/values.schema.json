@@ -5609,7 +5609,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/orchestration"
                 },
                 "cpuThreadCount": {
                     "type": "string",
