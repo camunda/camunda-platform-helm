@@ -9,7 +9,7 @@ data:
     camunda:
       database:
         connect:
-          cluster-name: elasticsearch
+          cluster-name: {{ .Values.global.elasticsearch.clusterName }}
           cluster-type: elasticsearch
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
@@ -20,7 +20,7 @@ data:
     camunda:
       database:
         connect:
-          cluster-name: opensearch
+          cluster-name: {{ .Values.global.opensearch.clusterName }}
           cluster-type: opensearch
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
