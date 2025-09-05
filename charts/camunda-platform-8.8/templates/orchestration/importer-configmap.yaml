@@ -91,7 +91,7 @@ data:
           # nodeId:
           initialContactPoints:
           {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-            - {{ include "orchestration.legacyName" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{$.Values.orchestration.service.internalPort}}
+            - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{$.Values.orchestration.service.internalPort}}
           {{- end }}
           clusterSize: {{ .Values.orchestration.clusterSize | quote }}
           replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
