@@ -2620,9 +2620,8 @@ orchestration:
         ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: camunda-platform-orchestration-grpc
 
-  # contextPath: "/orchestration"
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/orchestration"
 
   ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
