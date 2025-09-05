@@ -1464,9 +1464,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -1828,7 +1856,7 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "26.1.4"
+                            "default": "26.3.1"
                         },
                         "digest": {
                             "type": "string",
@@ -2417,9 +2445,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each app container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -2787,7 +2843,7 @@
                             "properties": {
                                 "url": {
                                     "type": "string",
-                                    "description": "(DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.",
+                                    "description": "defines the JDBC url of the database instance.",
                                     "default": ""
                                 },
                                 "host": {
@@ -2950,7 +3006,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in each restapi container",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3103,7 +3159,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the readiness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3148,7 +3204,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the liveness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3333,7 +3389,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in each webapp container",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3486,7 +3542,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the readiness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3531,7 +3587,7 @@
                                 },
                                 "scheme": {
                                     "type": "string",
-                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "description": "defines the liveness probe schema used on calling the probePath",
                                     "default": "HTTP"
                                 },
                                 "probePath": {
@@ -3726,7 +3782,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in each websockets container",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3827,6 +3883,16 @@
                                     "description": "if true, the startup probe will be enabled for the websockets container",
                                     "default": false
                                 },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the startup probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the HTTP endpoint used for the startup probe",
+                                    "default": "/up"
+                                },
                                 "initialDelaySeconds": {
                                     "type": "number",
                                     "description": "defines the number of seconds after the container has started before the probe is initiated",
@@ -3862,6 +3928,16 @@
                                     "description": "if true, the readiness probe will be enabled for the websockets container",
                                     "default": true
                                 },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the readiness probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the HTTP endpoint used for the readiness probe",
+                                    "default": "/up"
+                                },
                                 "initialDelaySeconds": {
                                     "type": "number",
                                     "description": "defines the number of seconds after the container has started before the probe is initiated",
@@ -3896,6 +3972,16 @@
                                     "type": "boolean",
                                     "description": "if true, the liveness probe will be enabled for the websockets container",
                                     "default": false
+                                },
+                                "scheme": {
+                                    "type": "string",
+                                    "description": "defines the liveness probe schema used on calling the probePath",
+                                    "default": "HTTP"
+                                },
+                                "probePath": {
+                                    "type": "string",
+                                    "description": "defines the HTTP endpoint used for the liveness probe",
+                                    "default": "/up"
                                 },
                                 "initialDelaySeconds": {
                                     "type": "number",
@@ -4087,6 +4173,114 @@
                         }
                     }
                 }
+            },
+            "restapi": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "webapp": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "websockets": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
             }
         },
         "webModelerPostgresql": {
@@ -4133,7 +4327,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "14.18.0-debian-12-r0"
+                            "default": "15.10.0-debian-12-r2"
                         },
                         "digest": {
                             "type": "string",
@@ -4402,9 +4596,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each Connector container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -5011,9 +5233,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each broker container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -5770,7 +6020,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set environment variables for Optimize migration init container (Note: there is no need to define if optimize.env is defined)",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)",
                             "default": [],
                             "items": {}
                         },
@@ -5864,9 +6114,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each Optimize container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -6271,6 +6549,42 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        }
+                    }
+                }
+            },
+            "migration": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
                         }
                     }
                 }

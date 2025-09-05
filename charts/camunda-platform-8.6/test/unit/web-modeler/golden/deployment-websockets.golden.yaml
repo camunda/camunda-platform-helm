@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-websockets
-          image: "camunda/web-modeler-websockets:8.6.17"
+          image: "camunda/web-modeler-websockets:8.6.18"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -86,7 +86,9 @@ spec:
               name: http
               protocol: TCP
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /up
+              scheme: HTTP
               port: http
             initialDelaySeconds: 10
             periodSeconds: 30

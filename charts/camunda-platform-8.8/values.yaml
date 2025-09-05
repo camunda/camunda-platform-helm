@@ -791,7 +791,7 @@ identity:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param identity.env can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -968,7 +968,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.1.4
+    tag: 26.3.1
     ## @param identityKeycloak.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
 
@@ -1236,7 +1236,7 @@ console:
       cpu: 2
       memory: 2Gi
 
-  ## @param console.env can be used to set extra environment variables in each app container
+  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -1422,7 +1422,7 @@ webModeler:
 
     ## @extra webModeler.restapi.externalDatabase can be used to configure a connection to an external database; will only be applied if the postgresql dependency chart is disabled (with `postgresql.enabled=false`)
     externalDatabase:
-      ## @param webModeler.restapi.externalDatabase.url (DEPRECATED - use host, port, and database instead) defines the JDBC url of the database instance.
+      ## @param webModeler.restapi.externalDatabase.url defines the JDBC url of the database instance.
       # Note: If url is provided, it takes precedence over individual connection parameters (host, port, database)
       url: ""
       ## @param webModeler.restapi.externalDatabase.host Database host (used when url is not provided)
@@ -1517,7 +1517,7 @@ webModeler:
         io.camunda.modeler: DEBUG
         io.grpc: TRACE
 
-    ## @param webModeler.restapi.env can be used to set extra environment variables in each restapi container
+    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1581,7 +1581,7 @@ webModeler:
     readinessProbe:
       ## @param webModeler.restapi.readinessProbe.enabled if true, the readiness probe will be enabled for the restapi container
       enabled: true
-      ## @param webModeler.restapi.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.restapi.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.restapi.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
@@ -1600,7 +1600,7 @@ webModeler:
     livenessProbe:
       ## @param webModeler.restapi.livenessProbe.enabled if true, the liveness probe will be enabled for the restapi container
       enabled: false
-      ## @param webModeler.restapi.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.restapi.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.restapi.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
@@ -1687,7 +1687,7 @@ webModeler:
     ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels
     podLabels: {}
 
-    ## @param webModeler.webapp.env can be used to set extra environment variables in each webapp container
+    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1751,7 +1751,7 @@ webModeler:
     readinessProbe:
       ## @param webModeler.webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
       enabled: true
-      ## @param webModeler.webapp.readinessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.webapp.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
       probePath: /health/readiness
@@ -1770,7 +1770,7 @@ webModeler:
     livenessProbe:
       ## @param webModeler.webapp.livenessProbe.enabled if true, the liveness probe will be enabled for the webapp container
       enabled: false
-      ## @param webModeler.webapp.livenessProbe.scheme defines the startup probe schema used on calling the probePath
+      ## @param webModeler.webapp.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
       scheme: HTTP
       ## @param webModeler.webapp.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
       probePath: /health/liveness
@@ -1866,7 +1866,7 @@ webModeler:
     ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels
     podLabels: {}
 
-    ## @param webModeler.websockets.env can be used to set extra environment variables in each websockets container
+    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.websockets.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1908,6 +1908,10 @@ webModeler:
     startupProbe:
       ## @param webModeler.websockets.startupProbe.enabled if true, the startup probe will be enabled for the websockets container
       enabled: false
+      ## @param webModeler.websockets.startupProbe.scheme defines the startup probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.startupProbe.probePath defines the HTTP endpoint used for the startup probe
+      probePath: /up
       ## @param webModeler.websockets.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       ## @param webModeler.websockets.startupProbe.periodSeconds defines how often the probe is executed
@@ -1923,6 +1927,10 @@ webModeler:
     readinessProbe:
       ## @param webModeler.websockets.readinessProbe.enabled if true, the readiness probe will be enabled for the websockets container
       enabled: true
+      ## @param webModeler.websockets.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
+      probePath: /up
       ## @param webModeler.websockets.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       ## @param webModeler.websockets.readinessProbe.periodSeconds defines how often the probe is executed
@@ -1938,6 +1946,10 @@ webModeler:
     livenessProbe:
       ## @param webModeler.websockets.livenessProbe.enabled if true, the liveness probe will be enabled for the websockets container
       enabled: false
+      ## @param webModeler.websockets.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
+      scheme: HTTP
+      ## @param webModeler.websockets.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
+      probePath: /up
       ## @param webModeler.websockets.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
       initialDelaySeconds: 10
       ## @param webModeler.websockets.livenessProbe.periodSeconds defines how often the probe is executed
@@ -2050,7 +2062,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
     repository: bitnamilegacy/postgresql
-    tag: 14.18.0-debian-12-r0
+    tag: 15.10.0-debian-12-r2
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
   auth:
@@ -2172,7 +2184,7 @@ connectors:
       cpu: 2
       memory: 2Gi
 
-  ## @param connectors.env can be used to set extra environment variables in each Connector container
+  ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param connectors.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -2450,10 +2462,8 @@ orchestration:
   partitionCount: "3"
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @param orchestration.env can be used to set extra environment variables in each broker container
+  ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
-    # - name: LOGGING_LEVEL_IO_CAMUNDA
-    #   value: DEBUG
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
     #   value: TRACE
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
@@ -2832,7 +2842,7 @@ optimize:
   migration:
     ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
     enabled: true
-    ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container (Note: there is no need to define if optimize.env is defined)
+    ## @param optimize.migration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)
     env: []
 
     ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -2875,7 +2885,7 @@ optimize:
 
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
-  ## @param optimize.env can be used to set extra environment variables in each Optimize container
+  ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param optimize.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
