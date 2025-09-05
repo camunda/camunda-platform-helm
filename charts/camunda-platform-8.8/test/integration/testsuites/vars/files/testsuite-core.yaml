@@ -9,7 +9,7 @@ vars:
   venomClientSecret: '{{ .TEST_CLIENT_SECRET }}'
   skipTestIngress: '{{ .SKIP_TEST_INGRESS }}'
   skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
-  skipTestKeycloak: '{{ .SKIP_TEST_KEYCLOAK | default "true" }}'
+  skipTestKeycloak: '{{ .SKIP_TEST_KEYCLOAK }}'
 
 testcases:
 
