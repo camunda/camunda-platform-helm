@@ -11,7 +11,7 @@ optimize:
 orchestration:
   image:
     repository: camunda/camunda
-    digest: sha256:19d112a5d8a7916722a13574c54901b8780930d96c5aff5adf99798a9c316149
+    digest: sha256:9c8b3acb549e049f76414840afb90f616cc0d31d9bb4fff0a96dc1f5d97709e5
 
 identity:
   image:
