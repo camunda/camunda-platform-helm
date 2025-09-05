@@ -555,8 +555,6 @@ global:
         fileName: "service-account.json"
         ## @extra global.documentStore.type.gcp.secret configuration to provide the GCP service account credentials secret.
         secret:
-          ## @param global.documentStore.type.gcp.secret.inlineSecret can be used to provide the service account JSON as a plain-text value for non-production usage.
-          inlineSecret: ""
           ## @param global.documentStore.type.gcp.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the service account JSON.
           existingSecret: ""
           ## @param global.documentStore.type.gcp.secret.existingSecretKey defines the key within the existing secret object.
