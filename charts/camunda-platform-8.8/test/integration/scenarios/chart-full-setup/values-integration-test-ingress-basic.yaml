@@ -18,7 +18,6 @@ global:
       method: basic
 
 orchestration:
-  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true
