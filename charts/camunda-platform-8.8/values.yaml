@@ -2490,20 +2490,12 @@ orchestration:
   importer:
     ## @param orchestration.importer.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
     enabled: false
-    ## @param orchestration.importer.podLabels can be used to define extra importer pod labels
-    podLabels: {}
-    ## @param orchestration.importer.podAnnotations can be used to define extra importer pod annotations
-    podAnnotations: {}
-    ## @param orchestration.importer.extraVolumeMounts can be used to mount extra volumes for the importer pod
-    extraVolumeMounts: []
-    ## @param orchestration.importer.extraVolumes can be used to define extra volumes for the importer pod
-    extraVolumes: []
-    ## @param orchestration.importer.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-    dnsConfig: {}
-    ## @param orchestration.importer.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-    dnsPolicy: ""
     ## @param orchestration.importer.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
+    ## @param orchestration.importer.extraVolumes can be used to define extra volumes for the importer pod
+    extraVolumes: []
+    ## @param orchestration.importer.extraVolumeMounts can be used to mount extra volumes for the importer pod
+    extraVolumeMounts: []
 
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []

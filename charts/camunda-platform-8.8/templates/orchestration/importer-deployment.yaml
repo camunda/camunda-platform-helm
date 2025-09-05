@@ -20,14 +20,8 @@ spec:
     metadata:
       labels:
         {{- include "orchestrationImporter.labels" . | nindent 8 }}
-        {{- if .Values.orchestration.importer.podLabels }}
-        {{- toYaml .Values.orchestration.importer.podLabels | nindent 8 }}
-        {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
-        {{- range $key, $value := .Values.orchestration.importer.podAnnotations }}
-        {{ $key }}: {{ $value | quote }}
-        {{- end }}
     spec:
       imagePullSecrets:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
@@ -270,10 +264,10 @@ spec:
           {{ .Values.orchestration.importer.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
-      {{- if .Values.orchestration.importer.dnsConfig }}
+      {{- if .Values.orchestration.dnsConfig }}
       dnsConfig: {{- toYaml .Values.orchestration.importer.dnsConfig | nindent 8 }}
       {{- end }}
-      {{- if .Values.orchestration.importer.dnsPolicy }}
+      {{- if .Values.orchestration.dnsPolicy }}
       dnsPolicy: {{ .Values.orchestration.importer.dnsPolicy | quote }}
       {{- end }}
       {{- if .Values.orchestration.podSecurityContext }}
