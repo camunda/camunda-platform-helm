@@ -29,6 +29,8 @@ orchestration:
       value: "custom"
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
       value: "custom-zeebe"
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD
+      value: "$OPENSEARCH_PASSWORD"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
       value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_TYPE
