@@ -1,7 +1,7 @@
-{{- if .Values.orchestration.enabled -}}
+{{- if .Values.orchestration.importer.enabled -}}
 kind: ConfigMap
 metadata:
-  name: {{ include "orchestration.fullname" . }}-configuration
+  name: {{ include "orchestration.fullname" . }}-importer-configuration
   labels:
     {{- include "orchestration.labels" . | nindent 4 }}
 apiVersion: v1
@@ -29,10 +29,10 @@ data:
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
   {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
       profiles:
-        active: "identity,tasklist,operate,broker,consolidated-auth"
+        active: "tasklist,operate,consolidated-auth"
   {{- else }}
       profiles:
-        active: "operate,tasklist,broker,auth"
+        active: "operate,tasklist,auth"
   {{- end }}
 
     management:
@@ -52,6 +52,11 @@ data:
       {{- end }}
 
     zeebe:
+      gateway:
+        cluster:
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+          port: {{ .Values.orchestration.service.internalPort }}
+          initialContactPoints: {{ include "orchestration.fullname" $ }}:{{ .Values.orchestration.service.internalPort }}
       host: 0.0.0.0
       log:
         level: {{ .Values.orchestration.logLevel | quote }}
@@ -86,7 +91,7 @@ data:
           # nodeId:
           initialContactPoints:
           {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-            - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
+            - {{ include "orchestration.legacyName" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{$.Values.orchestration.service.internalPort}}
           {{- end }}
           clusterSize: {{ .Values.orchestration.clusterSize | quote }}
           replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
@@ -185,16 +190,9 @@ data:
 
     camunda:
       data:
-        {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
         secondary-storage:
-          {{- if .Values.global.elasticsearch.enabled }}
           elasticsearch:
             url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-          {{- else if .Values.global.opensearch.enabled }}
-          opensearch:
-            url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-          {{- end }}
-        {{- end }}
       persistent:
         sessions:
           enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
@@ -228,36 +226,6 @@ data:
           unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
         authorizations:
           enabled: {{ .Values.orchestration.security.authorizations.enabled }}
-        initialization:
-          {{- if eq .Values.orchestration.security.authentication.method "basic" }}
-          users:
-            {{- range $user := .Values.orchestration.security.initialization.users }}
-            - username: {{ $user.username | quote }}
-              password: {{ $user.password | quote }}
-              name: {{ $user.name | quote }}
-              email: {{ $user.email | quote }}
-            {{- end }}
-          default-roles.admin.users:
-            {{- range $user := .Values.orchestration.security.initialization.users }}
-            - {{ index $user "username" | quote }}
-            {{- end }}
-          {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
-          mapping-rules:
-            - mapping-rule-id: "connectors-client-mapping-rule"
-              claim-name: "client_id"
-              claim-value: "connectors"
-            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
-            - mapping-rule-id: {{ index $mappingRule "mappingRuleID" | quote }}
-              claim-name: {{ index $mappingRule "claimName" | quote }}
-              claim-value: {{ index $mappingRule "claimValue" | quote }}
-            {{- end }}
-          default-roles.connectors.mappingRules:
-            - "connectors-client-mapping-rule"
-          default-roles.admin.mappingRules:
-            {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
-            - {{ index $mappingRule "mappingRuleID" | quote }}
-            {{- end }}
-          {{- end }}
         multiTenancy:
           checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
           apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
@@ -298,6 +266,8 @@ data:
       # Camunda Operate Configuration.
       #
       operate:
+        importerEnabled: true
+        webappEnabled: false
         persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
         {{- if .Values.global.opensearch.enabled }}
         database: opensearch
@@ -351,7 +321,8 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: "{{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}"
+          gatewayAddress: "{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.grpcPort }}"
+          brokerContactPoint: {{ include "orchestration.fullname" $ }}:{{ .Values.orchestration.service.grpcPort }}
         {{- if .Values.global.opensearch.enabled }}
         opensearch:
           {{- if .Values.orchestration.index.prefix }}
@@ -380,6 +351,8 @@ data:
       # Camunda Tasklist Configuration.
       #
       tasklist:
+        importerEnabled: true
+        webappEnabled: false
         multiTenancy:
           enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
 
@@ -453,8 +426,9 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: {{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}
+          gatewayAddress: {{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.grpcPort }}
           restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+          brokerContactPoint: {{ include "orchestration.fullname" $ }}:{{ .Values.orchestration.service.grpcPort }}
         {{- if .Values.orchestration.history.retention.enabled }}
         archiver:
           ilmEnabled: true

@@ -5118,12 +5118,12 @@
                 "migration": {
                     "type": "object",
                     "properties": {
-                        "process": {
+                        "data": {
                             "type": "object",
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, the process migration occurs.",
+                                    "description": "if true, the data migration occurs.",
                                     "default": false
                                 },
                                 "backoffLimit": {
@@ -5131,38 +5131,163 @@
                                     "description": "if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
                                 },
-                                "batchSize": {
-                                    "type": "number",
-                                    "description": "can be used to define the batch size.",
-                                    "default": 5
-                                },
-                                "importFinishedTimeout": {
-                                    "type": "string",
-                                    "description": "can be used to define the timeout when the import is finished.",
-                                    "default": "PT1M"
-                                },
-                                "retry": {
+                                "process": {
                                     "type": "object",
                                     "properties": {
-                                        "maxRetries": {
+                                        "batchSize": {
                                             "type": "number",
-                                            "description": "can be used to define the maximum amount of retries.",
+                                            "description": "can be used to define the batch size.",
                                             "default": 5
                                         },
-                                        "maxRetryDelay": {
+                                        "importerFinishedTimeout": {
                                             "type": "string",
-                                            "description": "can be used to define the delay time between retries.",
+                                            "description": "can be used to define the timeout when the import is finished.",
                                             "default": "PT1M"
                                         },
-                                        "minRetryDelay": {
-                                            "type": "string",
-                                            "description": "can be used to define the delay time between retries.",
-                                            "default": "PT10s"
-                                        },
-                                        "retryDelayMultiplier": {
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "metrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
                                             "type": "number",
-                                            "description": "can be used to define the delay multiplier.",
-                                            "default": 2
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "tumetrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
+                                            "type": "number",
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "tasks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
+                                            "type": "number",
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -5182,6 +5307,34 @@
                                     "default": 6
                                 }
                             }
+                        }
+                    }
+                },
+                "importer": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
+                            "default": false
+                        },
+                        "envFrom": {
+                            "type": "array",
+                            "description": "list of environment variables to import from configMapRef and secretRef",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumes": {
+                            "type": "array",
+                            "description": "can be used to define extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumeMounts": {
+                            "type": "array",
+                            "description": "can be used to mount extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
                         }
                     }
                 },
