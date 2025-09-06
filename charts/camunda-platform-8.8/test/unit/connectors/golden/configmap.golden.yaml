@@ -35,7 +35,7 @@ data:
 
     camunda:
       client:
-        rest-address: http://camunda-platform-test-zeebe-gateway:8080
+        rest-address: http://camunda-platform-test-zeebe-gateway:8080/orchestration
         grpc-address: http://camunda-platform-test-zeebe-gateway:26500
         worker:
           defaults:
