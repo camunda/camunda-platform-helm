@@ -25,7 +25,7 @@ export async function fetchToken(
   }
 }
 
-export const authHeader = async (api: APIRequestContext, config: any) => {
+export const authHeader = async (api: APIRequestContext, config: any): Promise<string> => {
   if (config.authType === "basic") {
     return `Basic ${Buffer.from(
       `${config.demoUser}:${config.demoPass}`,
