@@ -244,6 +244,7 @@ testcases:
       zbctl --clientCache=/tmp/zbctl \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
           --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.orchestrationGRPC }}" \
+          --requestTimeout 1m \
           {{ .coreVars.zbctl.extraArgs }} \
           status
     retry: 2
@@ -312,6 +313,7 @@ testcases:
       zbctl --clientCache=/tmp/zbctl \
           --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
           --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.orchestrationGRPC }}" \
+          --requestTimeout 1m \
           {{ .coreVars.zbctl.extraArgs }} \
           deploy /mnt/fixtures/{{ .value.file }}
     # info: |
