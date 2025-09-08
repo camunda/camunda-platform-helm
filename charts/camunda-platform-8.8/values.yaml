@@ -510,12 +510,32 @@ global:
         bucketTtl: 0
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
-        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
+        ## @param global.documentStore.type.aws.existingSecret (DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret and global.documentStore.type.aws.secretAccessKey.secret instead) Reference to an existing Kubernetes secret containing AWS credentials.
         existingSecret: "aws-credentials"
-        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
+        ## @param global.documentStore.type.aws.accessKeyIdKey (DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret instead) Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
         accessKeyIdKey: "awsAccessKeyId"
-        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
+        ## @param global.documentStore.type.aws.secretAccessKeyKey (DEPRECATED - use global.documentStore.type.aws.secretAccessKey.secret instead) Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
         secretAccessKeyKey: "awsSecretAccessKey"
+        ## @extra global.documentStore.type.aws.accessKeyId configuration to provide the AWS access key ID.
+        accessKeyId:
+          ## @extra global.documentStore.type.aws.accessKeyId.secret configuration to provide the AWS access key ID secret.
+          secret:
+            ## @param global.documentStore.type.aws.accessKeyId.secret.inlineSecret can be used to provide the access key ID as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.aws.accessKeyId.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the access key ID.
+            existingSecret: ""
+            ## @param global.documentStore.type.aws.accessKeyId.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "access-key-id"
+        ## @extra global.documentStore.type.aws.secretAccessKey configuration to provide the AWS secret access key.
+        secretAccessKey:
+          ## @extra global.documentStore.type.aws.secretAccessKey.secret configuration to provide the AWS secret access key secret.
+          secret:
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.inlineSecret can be used to provide the secret access key as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the secret access key.
+            existingSecret: ""
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "secret-access-key"
       gcp:
         ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
         enabled: false
@@ -525,14 +545,20 @@ global:
         bucket: "your-gcp-bucket"
         ## @param global.documentStore.type.gcp.class Fully qualified class name for the GCP document store provider.
         class: "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
-        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials.
+        ## @param global.documentStore.type.gcp.existingSecret (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Reference to an existing Kubernetes secret containing GCP credentials.
         existingSecret: "gcp-credentials"
-        ## @param global.documentStore.type.gcp.credentialsKey Key in the GCP credentials secret that contains the service-account JSON.
+        ## @param global.documentStore.type.gcp.credentialsKey (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Key in the GCP credentials secret that contains the service-account JSON.
         credentialsKey: "service-account.json"
         ## @param global.documentStore.type.gcp.mountPath Mount path for the GCP credentials secret.
         mountPath: "/var/secrets/gcp"
         ## @param global.documentStore.type.gcp.fileName The file name for the GCP credentials JSON.
         fileName: "service-account.json"
+        ## @extra global.documentStore.type.gcp.secret configuration to provide the GCP service account credentials secret.
+        secret:
+          ## @param global.documentStore.type.gcp.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the service account JSON.
+          existingSecret: ""
+          ## @param global.documentStore.type.gcp.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "service-account.json"
       inmemory:
         ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
         enabled: true
