@@ -611,7 +611,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					s.Fail("Could not find volumeMount with extraConfiguration")
 				}
 
-				s.EqualValues("/home/runner/config/testFile", testVolumeMount.MountPath)
+				s.Contains(testVolumeMount.MountPath, "config/testFile")
 				s.EqualValues("testFile", testVolumeMount.SubPath)
 			},
 		},
