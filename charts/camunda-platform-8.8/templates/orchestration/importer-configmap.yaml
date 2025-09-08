@@ -43,7 +43,7 @@ data:
         {{- end }}
 
     server:
-      forward-headers-strategy: none
+      forward-headers-strategy: native
       address: 0.0.0.0
       port: {{ .Values.orchestration.service.httpPort }}
       servlet:
@@ -91,7 +91,7 @@ data:
           # nodeId:
           initialContactPoints:
           {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-            - {{ include "orchestration.legacyName" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{$.Values.orchestration.service.internalPort}}
+            - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{$.Values.orchestration.service.internalPort}}
           {{- end }}
           clusterSize: {{ .Values.orchestration.clusterSize | quote }}
           replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
