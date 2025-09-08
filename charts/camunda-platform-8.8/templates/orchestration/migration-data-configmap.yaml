@@ -31,7 +31,7 @@ data:
       migration:
         process:
           batch-size: {{ .Values.orchestration.migration.data.process.batchSize }}
-          import-finished-timeout: {{ .Values.orchestration.migration.data.process.importerFinishedTimeout }}
+          importer-finished-timeout: {{ .Values.orchestration.migration.data.process.importerFinishedTimeout }}
           retry:
             max-retries: {{ .Values.orchestration.migration.data.process.retry.maxRetries }}
             max-retry-delay: {{ .Values.orchestration.migration.data.process.retry.maxRetryDelay }}
@@ -39,7 +39,7 @@ data:
             retry-delay-multiplier: {{ .Values.orchestration.migration.data.process.retry.retryDelayMultiplier }}
         metrics:
           batch-size: {{ .Values.orchestration.migration.data.metrics.batchSize }}
-          import-finished-timeout: {{ .Values.orchestration.migration.data.metrics.importerFinishedTimeout }}
+          importer-finished-timeout: {{ .Values.orchestration.migration.data.metrics.importerFinishedTimeout }}
           retry:
             max-retries: {{ .Values.orchestration.migration.data.metrics.retry.maxRetries }}
             max-retry-delay: {{ .Values.orchestration.migration.data.metrics.retry.maxRetryDelay }}
@@ -47,7 +47,7 @@ data:
             retry-delay-multiplier: {{ .Values.orchestration.migration.data.metrics.retry.retryDelayMultiplier }}
         tumetrics:
           batch-size: {{ .Values.orchestration.migration.data.tumetrics.batchSize }}
-          import-finished-timeout: {{ .Values.orchestration.migration.data.tumetrics.importerFinishedTimeout }}
+          importer-finished-timeout: {{ .Values.orchestration.migration.data.tumetrics.importerFinishedTimeout }}
           retry:
             max-retries: {{ .Values.orchestration.migration.data.tumetrics.retry.maxRetries }}
             max-retry-delay: {{ .Values.orchestration.migration.data.tumetrics.retry.maxRetryDelay }}
@@ -55,7 +55,7 @@ data:
             retry-delay-multiplier: {{ .Values.orchestration.migration.data.tumetrics.retry.retryDelayMultiplier }}
         tasks:
           batch-size: {{ .Values.orchestration.migration.data.tasks.batchSize }}
-          import-finished-timeout: {{ .Values.orchestration.migration.data.process.importerFinishedTimeout }}
+          importer-finished-timeout: {{ .Values.orchestration.migration.data.process.importerFinishedTimeout }}
           retry:
             max-retries: {{ .Values.orchestration.migration.data.process.retry.maxRetries }}
             max-retry-delay: {{ .Values.orchestration.migration.data.process.retry.maxRetryDelay }}
