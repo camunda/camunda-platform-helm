@@ -1144,7 +1144,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/identity"
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -2355,7 +2355,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/"
                 },
                 "initContainers": {
                     "type": "array",
@@ -2806,7 +2806,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/modeler"
                 },
                 "restapi": {
                     "type": "object",
@@ -4522,7 +4522,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/connectors"
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -5609,7 +5609,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/orchestration"
                 },
                 "cpuThreadCount": {
                     "type": "string",
@@ -6223,7 +6223,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/optimize"
                 },
                 "configMap": {
                     "type": "object",

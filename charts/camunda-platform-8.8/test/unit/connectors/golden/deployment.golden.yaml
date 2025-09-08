@@ -72,7 +72,7 @@ spec:
               memory: 1Gi
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /connectors/actuator/health/readiness
               port: http
               scheme: HTTP
             initialDelaySeconds: 30

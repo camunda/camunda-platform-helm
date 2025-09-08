@@ -239,6 +239,8 @@ data:
                 - "/"
     server:
       port: 8084
+      servlet:
+        context-path: "/identity"
 
     spring:
       servlet:

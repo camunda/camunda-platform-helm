@@ -43,6 +43,7 @@ data:
         port: 9600
         # ssl:
         #   enabled: true
+      endpoint: "/orchestration/actuator"
     
     camunda:
       system:

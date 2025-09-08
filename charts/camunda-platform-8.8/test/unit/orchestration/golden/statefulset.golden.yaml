@@ -93,7 +93,7 @@ spec:
               name: gateway
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /orchestration/actuator/health/readiness
               scheme: HTTP
               port: 9600
             initialDelaySeconds: 30
