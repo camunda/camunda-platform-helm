@@ -582,6 +582,38 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().EqualValues(5, probe.FailureThreshold)
 				s.Require().EqualValues(1, probe.TimeoutSeconds)
 			},
+		}, {
+			Name: "TestContainerExtraConfigurationCreatesVolumeMount",
+			Values: map[string]string{
+				"identity.enabled":                                  "true",
+				"webModeler.enabled":                                "true",
+				"webModeler.restapi.mail.fromAddress":               "example@example.com",
+				"webModeler.restapi.extraConfiguration.testFile":    "this is a test",
+				"webModeler.webapp.extraConfiguration.testFile":     "this is a test",
+				"webModeler.websockets.extraConfiguration.testFile": "this is a test",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
+				found := false
+				var testVolumeMount corev1.VolumeMount
+				for _, mount := range volumeMounts {
+					if mount.Name == "config" && strings.Contains(mount.MountPath, "testFile") {
+						found = true
+						testVolumeMount = mount
+						break
+					}
+				}
+				if !found {
+					s.Fail("Could not find volumeMount with extraConfiguration")
+				}
+
+				s.EqualValues("/home/runner/config/testFile", testVolumeMount.MountPath)
+				s.EqualValues("testFile", testVolumeMount.SubPath)
+			},
 		},
 	}
 
