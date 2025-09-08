@@ -142,6 +142,8 @@ global:
     external: false
     ## @param global.ingress.className Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
+    ## @param global.ingress.labels [object] can be used to define labels which will be applied to the global HTTP ingress resource
+    labels: {}
     ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
@@ -1106,6 +1108,8 @@ identityKeycloak:
     tls: false
     ## @param identityKeycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
     extraTls: []
+    ## @param identityKeycloak.ingress.labels [object] can be used to define labels which will be applied to the Keycloak ingress resource
+    labels: {}
     ## @param identityKeycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
     annotations:
       ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -2590,6 +2594,8 @@ orchestration:
       external: false
       ## @param orchestration.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
       className: nginx
+      ## @param orchestration.ingress.grpc.labels [object] can be used to define labels which will be applied to the orchestration gRPC ingress resource
+      labels: {}
       ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
       ## @skip orchestration.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
       ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
