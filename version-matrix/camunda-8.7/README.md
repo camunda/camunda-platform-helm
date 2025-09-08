@@ -5,6 +5,7 @@
 
 ## ToC
 
+- [Helm chart 12.6.0](#helm-chart-1260)
 - [Helm chart 12.5.0](#helm-chart-1250)
 - [Helm chart 12.4.0](#helm-chart-1240)
 - [Helm chart 12.3.0](#helm-chart-1230)
@@ -15,6 +16,37 @@
 - [Helm chart 12.0.0](#helm-chart-1200)
 - [Helm chart 12.0.0-alpha5](#helm-chart-1200-alpha5)
 - [Helm chart 12.0.0-alpha4](#helm-chart-1200-alpha4)
+
+## Helm chart 12.6.0
+
+Supported versions:
+
+- Camunda applications: [8.7](https://github.com/camunda/camunda/releases?q=tag%3A8.7&expanded=true)
+- Camunda version matrix: [8.7](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.7)
+- Helm values: [12.6.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/12.6.0#parameters)
+- Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
+
+Camunda images:
+
+- docker.io/camunda/connectors-bundle:8.7.8
+- docker.io/camunda/console:8.7.61
+- docker.io/camunda/identity:8.7.6
+- docker.io/camunda/keycloak:26.3.1
+- docker.io/camunda/operate:8.7.12
+- docker.io/camunda/optimize:8.7.9
+- docker.io/camunda/tasklist:8.7.12
+- docker.io/camunda/web-modeler-restapi:8.7.9
+- docker.io/camunda/web-modeler-webapp:8.7.9
+- docker.io/camunda/web-modeler-websockets:8.7.9
+- docker.io/camunda/zeebe:8.7.12
+
+Non-Camunda images:
+
+- docker.io/bitnamilegacy/elasticsearch:8.17.4
+- docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+- docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+- docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+
 
 ## Helm chart 12.5.0
 
