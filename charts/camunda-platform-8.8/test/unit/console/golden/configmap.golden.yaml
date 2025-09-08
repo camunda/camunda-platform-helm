@@ -49,7 +49,7 @@ data:
             - name: Connectors
               id: connectors
               url: http://localhost:8086
-              readiness: http://camunda-platform-test-connectors.camunda-platform:8080/actuator/health/readiness
+              readiness: http://camunda-platform-test-connectors.camunda-platform:8080/connectors/actuator/health/readiness
               metrics: http://camunda-platform-test-connectors.camunda-platform:8080/actuator/prometheus
             - name: Operate
               id: operate

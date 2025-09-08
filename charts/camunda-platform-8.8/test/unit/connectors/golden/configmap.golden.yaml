@@ -16,6 +16,8 @@ data:
   application.yaml: |
     server:
       port: 8080
+      servlet:
+        context-path: "/connectors"
 
     management:
       endpoints:

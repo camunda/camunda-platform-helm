@@ -18,7 +18,7 @@ data:
   application.yaml: |
     camunda:
       identity:
-        base-url: "http://camunda-platform-test-identity:80"
+        base-url: "http://camunda-platform-test-identity:80/identity"
         issuer: "http://localhost:18080/auth/realms/camunda-platform"
         issuerBackendUrl: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
         type: "KEYCLOAK"

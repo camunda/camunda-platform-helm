@@ -648,9 +648,8 @@ identity:
   # Note: Identity cannot be accessed over HTTP if a "contextPath" is configured.
   #       Which means that Identity cannot be configured in combined Ingress without HTTPS.
   #       To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
-  # contextPath: "/identity"
   ## @param identity.contextPath can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/identity"
 
   ## @param identity.podAnnotations can be used to define extra Identity pod annotations
   podAnnotations: {}
@@ -1197,7 +1196,7 @@ console:
     realm: "camunda-platform"
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/"
 
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
@@ -1393,9 +1392,8 @@ webModeler:
     pullSecrets: []
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
-  # contextPath: "/modeler"
   ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/modeler"
 
   # WebModeler.
   ######                         #    ######  ###
@@ -2145,9 +2143,8 @@ connectors:
   ## @param connectors.replicas number of Connectors replicas
   replicas: 1
 
-  # contextPath: "/connectors"
   ## @param connectors.contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/connectors"
 
   ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
   podAnnotations: {}
@@ -2916,9 +2913,8 @@ optimize:
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
 
-  # contextPath: "/optimize"
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/optimize"
 
   ## @extra optimize.configMap configuration which will be applied to the mounted config map.
   configMap:
