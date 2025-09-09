@@ -488,6 +488,7 @@ jobs:
           fi
       
           echo "Prepared values file: $values_file"
+          cat "$values_file"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
