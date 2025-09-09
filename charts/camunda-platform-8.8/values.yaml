@@ -1222,7 +1222,7 @@ console:
     realm: "camunda-platform"
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/"
+  contextPath: ""
 
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
