@@ -85,7 +85,7 @@ data:
                 - definition: write
                   description: "Write permission"
           roles:
-            - name: "Identity"
+            - name: "ManagementIdentity"
               description: "Provides full access to Identity"
               permissions:
                 - audience: {{ include "identity.authAudience" . | quote }}
