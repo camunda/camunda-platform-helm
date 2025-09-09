@@ -88,7 +88,7 @@ orchestration:
           claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping"
+      value: "demo-user-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
       value: "oid"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
