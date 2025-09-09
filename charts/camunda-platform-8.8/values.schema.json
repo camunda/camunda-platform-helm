@@ -2420,7 +2420,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/"
+                    "default": ""
                 },
                 "initContainers": {
                     "type": "array",
