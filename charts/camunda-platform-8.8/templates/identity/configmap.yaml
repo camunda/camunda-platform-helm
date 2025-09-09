@@ -60,7 +60,7 @@ data:
               type: public
               root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
               redirect-uris:
-                - ""
+                - "/"
           apis:
             - name: Console API
               audience: {{ include "console.authAudience" . | quote }}
