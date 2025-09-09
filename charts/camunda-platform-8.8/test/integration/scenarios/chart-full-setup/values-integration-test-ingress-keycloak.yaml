@@ -27,7 +27,7 @@ global:
       webModeler:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
       console:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
         existingSecret:
           name: "integration-test-credentials"
       #######################
