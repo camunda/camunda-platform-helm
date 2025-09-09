@@ -9,25 +9,25 @@ preflightVars:
     tasklist: http://integration-tasklist:9600/tasklist
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
-    webModelerWebapp: http://integration-web-modeler-webapp:8071
-    orchestration: http://integration-zeebe-gateway:9600
+    webModelerWebapp: http://integration-web-modeler-webapp:8071/modeler
+    orchestration: http://integration-zeebe-gateway:9600/orchestration
     orchestrationGRPC: http://integration-zeebe-gateway:26500
-    orchestrationREST: http://integration-zeebe-gateway:8080
+    orchestrationREST: http://integration-zeebe-gateway:8080/orchestration
 
 coreVars:
   authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
   testNamespace: "{{ .K8S_NAMESPACE }}"
   baseURLs:
-    console: "https://{{ .TEST_INGRESS_HOST }}/management/console"
+    console: "https://{{ .TEST_INGRESS_HOST }}"
     keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth/"
-    identity: "https://{{ .TEST_INGRESS_HOST }}/management/identity"
+    identity: "https://{{ .TEST_INGRESS_HOST }}/identity"
     optimize: "https://{{ .TEST_INGRESS_HOST }}/optimize"
     connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
-    orchestration: "https://{{ .TEST_INGRESS_HOST }}"
+    orchestration: "https://{{ .TEST_INGRESS_HOST }}/orchestration"
     orchestrationGRPC: "zeebe.{{ .TEST_INGRESS_HOST }}:443"
-    orchestrationREST: "https://{{ .TEST_INGRESS_HOST }}"
+    orchestrationREST: "https://{{ .TEST_INGRESS_HOST }}/orchestration"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
     extraArgs: ""
