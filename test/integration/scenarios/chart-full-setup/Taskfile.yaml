@@ -207,18 +207,19 @@ tasks:
     cmds:
     - |
       helm install integration {{ .TEST_CHART_NAME }} \
-      --version {{ .TEST_CHART_VERSION }} \
-      --namespace {{ .TEST_NAMESPACE }} \
-      {{ (and (eq .TEST_CHART_VERSION "13.0.0-alpha7") (eq .TEST_AUTH_TYPE "keycloak")) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
-      --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-      --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-      --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
-      {{ eq .PLATFORM "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-      --values {{ .INFRA_TYPE_VALUES }} \
-      --values /tmp/extra-values-file.yaml \
-      --timeout 20m0s \
-      --wait \
-      {{ .TEST_HELM_EXTRA_ARGS }}
+        --version {{ .TEST_CHART_VERSION }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        {{ (and (eq .TEST_CHART_VERSION "13.0.0-alpha7") (eq .TEST_AUTH_TYPE "keycloak")) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        {{ eq .PLATFORM "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }} \
+        {{ if eq .TEST_CHART_FLOW "install" }}--values {{ .TEST_HELM_DIGEST_VALUES }}{{ end }} \
+        --values {{ .INFRA_TYPE_VALUES }} \
+        --values /tmp/extra-values-file.yaml \
+        --timeout 20m0s \
+        --wait \
+        {{ .TEST_HELM_EXTRA_ARGS }}
 
   setup.post:
     cmds:
