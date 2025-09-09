@@ -97,7 +97,7 @@ tasks:
     - |
       {{ if eq .TEST_AUTH_TYPE "oidc" }}
         # This token will expire in June 2027, a new one can be created in the Azure Entra UI
-        RESPONSE=$(curl -X POST \
+        RESPONSE=$(curl -v -X POST \
           https://login.microsoftonline.com/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
           -H "Content-Type: application/x-www-form-urlencoded" \
           -d "client_id={{ .ENTRA_PARENT_APP_CLIENT_ID }}" \
@@ -120,7 +120,7 @@ tasks:
           "https://{{ .TEST_INGRESS_HOST }}/"
         )
 
-        APP_JSON=$(curl -s -X GET \
+        APP_JSON=$(curl -sv -X GET \
           "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json")
@@ -142,7 +142,7 @@ tasks:
         echo $FINAL_SPA_URIS
 
         # PATCH the updated list
-        curl -X PATCH \
+        curl -v -X PATCH \
           "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json" \
