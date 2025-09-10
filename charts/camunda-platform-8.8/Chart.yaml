@@ -74,6 +74,12 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
+      description: "Add data migrations for 8.8"
+    - kind: added
+      description: "Add tasklist and operate importer as a separate deployment"
+    - kind: added
+      description: "Add custom ingress label values"
+    - kind: added
       description: "Adding extra configuration options to the process migration"
     - kind: added
       description: "Backport - implement joinPath helper for constructing paths"
@@ -86,6 +92,12 @@ annotations:
     - kind: added
       description: "Add schema validation for env keys"
     - kind: changed
+      description: "Update orchestration config forward-headers-strategy to native"
+    - kind: changed
+      description: "Remove ingress affinity annotations"
+    - kind: changed
+      description: "Set default value for contextPath in all components"
+    - kind: changed
       description: "**⚠ BREAKING CHANGE** Rename core to orchestration"
     - kind: changed
       description: "Rename templates dir and add release highlights"
@@ -97,6 +109,22 @@ annotations:
       description: "Rename connectors config file from yml to yaml"
     - kind: changed
       description: "Revert to zeebe as name for orchestration cluster"
+    - kind: fixed
+      description: "Add secondary-storage config to data migration"
+    - kind: fixed
+      description: "OpensearchURL for secondary storage in data migration"
+    - kind: fixed
+      description: "The elastic auth is missing for orchestration when using the global creds. this fixes that issue"
+    - kind: fixed
+      description: "Helper function function and checksum correction in migraiton"
+    - kind: fixed
+      description: "Update snapshot image of orchestration cluster"
+    - kind: fixed
+      description: "Data migration configmap fix importer-finished-timeout"
+    - kind: fixed
+      description: "Update keycloak in values-latest"
+    - kind: fixed
+      description: "Update documentstore secrets to new schema"
     - kind: fixed
       description: "Align ports and minor localhost-port-forward fixes"
     - kind: fixed

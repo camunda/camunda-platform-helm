@@ -1,5 +1,37 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
+## [camunda-platform-13.0.0-alpha8](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha8) (2025-09-10)
+
+### Fixes
+
+- Add secondary-storage config to data migration (#4129)
+- OpensearchURL for secondary storage in data migration (#4130)
+
+
+## [camunda-platform-8.7-12.6.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.6.0) (2025-09-08)
+
+### Features
+
+- Add data migrations for 8.8 (#4090)
+- Add tasklist and operate importer as a separate deployment (#4058)
+- Add custom ingress label values (#4063)
+
+### Refactor
+
+- Update orchestration config forward-headers-strategy to native (#4099)
+- Remove ingress affinity annotations (#4108)
+- Set default value for contextPath in all components (#4096)
+
+### Fixes
+
+- The elastic auth is missing for orchestration when using the global creds. this fixes that issue (#4093)
+- Helper function function and checksum correction in migraiton (#4098)
+- Update snapshot image of orchestration cluster (#4107)
+- Data migration configmap fix importer-finished-timeout (#4110)
+- Update keycloak in values-latest (#4109)
+- Update documentstore secrets to new schema (#4086)
+
+
 ## [camunda-platform-8.5-10.11.1](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.5-10.11.1) (2025-09-04)
 
 ### Features
