@@ -11,11 +11,21 @@ data:
         secondary-storage:
           elasticsearch:
             url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            {{- if .Values.orchestration.index.prefix }}
+            index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+            {{- end}}
+            cluster-name: {{ .Values.global.elasticsearch.clusterName }}
+            {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
+            username: {{ .Values.global.elasticsearch.auth.username }}
+            password: ${VALUES_ELASTICSEARCH_PASSWORD:}
+            {{- end}}
       database:
-        connect:
-          cluster-name: {{ .Values.global.elasticsearch.clusterName }}
-          cluster-type: elasticsearch
+        type: elasticsearch
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        {{- if .Values.orchestration.index.prefix }}
+        indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+        {{- end }}
         {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
         username: {{ .Values.global.elasticsearch.auth.username }}
         password: ${VALUES_ELASTICSEARCH_PASSWORD:}
@@ -26,11 +36,23 @@ data:
         secondary-storage:
           opensearch:
             url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            {{- if .Values.orchestration.index.prefix }}
+            index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+            {{- end }}
+            username: {{ .Values.global.opensearch.auth.username }}
+            password: ${VALUES_OPENSEARCH_PASSWORD:}
+            cluster-name: {{ .Values.global.opensearch.clusterName }}
+            {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
+            username: {{ .Values.global.opensearch.auth.username }}
+            password: ${VALUES_OPENSEARCH_PASSWORD:}
+            {{- end }}
       database:
-        connect:
-          cluster-name: {{ .Values.global.opensearch.clusterName }}
-          cluster-type: opensearch
+        clusterName: {{ .Values.global.opensearch.clusterName }}
+        type: opensearch
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+        {{- if .Values.orchestration.index.prefix }}
+        indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+        {{- end }}
         {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
         username: {{ .Values.global.opensearch.auth.username }}
         password: ${VALUES_OPENSEARCH_PASSWORD:}
