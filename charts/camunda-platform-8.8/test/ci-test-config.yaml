@@ -23,12 +23,14 @@ integration:
         - name: elasticsearch
           enabled: true
           auth: keycloak
+          flow: install
           shortname: eske
           exclude: []
         - name: elasticsearch
           enabled: false
           shortname: esba
           auth: basic
+          flow: install
           exclude: [identity,console,orchestration-grpc]
     nightly:
       scenario:
