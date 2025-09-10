@@ -347,87 +347,8 @@ global:
           existingSecretKey: ""
 
       #######################
-      # Management Identity, Console, Webmodeler
-      #######################
-
-      ## @extra global.identity.auth.identity configuration to configure Management Identity authentication specifics on global level, which can be accessed by other components
-      identity:
-        ## @param global.identity.auth.identity.clientId defines the client id, which is used by Management Identity in authentication flows.
-        clientId: camunda-identity
-        ## @param global.identity.auth.identity.audience defines the audience, which is used by Management Identity.
-        audience: camunda-identity-resource-server
-        ## @param global.identity.auth.identity.existingSecret [string,object] (DEPRECATED - use global.identity.auth.identity.secret instead) can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
-        existingSecret: ""
-        ## @param global.identity.auth.identity.existingSecretKey (DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-oidc-client-token
-        ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Management Identity.
-        # Should be publicly accessible, the default value works if a port-forward to Management Identity is created to 8085.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8085"
-        ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Management Identity to configure initial mapping rules,
-        # defaults to "oid".
-        initialClaimName: "oid"
-        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.
-        initialClaimValue: ""
-
-      ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
-      console:
-        ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
-        clientId: console
-        ## @param global.identity.auth.console.audience defines the audience which is used by Console's client API.
-        audience: console-api
-        ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
-        wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret [string,object] (DEPRECATED - use global.identity.auth.console.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.console.existingSecretKey (DEPRECATED - use global.identity.auth.console.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-console-client-token
-        ## @extra global.identity.auth.console.secret configuration to provide the console client secret.
-        secret:
-          ## @param global.identity.auth.console.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.console.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.console.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
-        ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
-        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8087"
-
-      ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
-      webModeler:
-        ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
-        clientId: web-modeler
-        ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by WebModeler's client API.
-        clientApiAudience: web-modeler-api
-        ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by WebModeler's public API.
-        publicApiAudience: web-modeler-public-api
-        ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
-        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8070"
-
-      #######################
       # Orchestration Cluster
       #######################
-
-      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
-      connectors:
-        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
-        clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret [string,object] (DEPRECATED - use global.identity.auth.connectors.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.connectors.existingSecretKey (DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-connectors-client-token
-        ## @extra global.identity.auth.connectors.secret configuration to provide the connectors client secret.
-        secret:
-          ## @param global.identity.auth.connectors.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
 
       ## @extra global.identity.auth.orchestration configuration to configure authentication specifics on global level, which can be accessed by other components
       orchestration:
@@ -454,6 +375,100 @@ global:
         ## @param global.identity.auth.orchestration.tokenScope defines the token scope, which is used by Orchestration Cluster.
         tokenScope: ""
 
+      #######################
+      # Connectors
+      #######################
+
+      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
+      connectors:
+        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
+        clientId: connectors
+        ## @param global.identity.auth.connectors.existingSecret [string,object] (DEPRECATED - use global.identity.auth.connectors.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
+        existingSecret: ""
+        ## @param global.identity.auth.connectors.existingSecretKey (DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-connectors-client-token
+        ## @extra global.identity.auth.connectors.secret configuration to provide the connectors client secret.
+        secret:
+          ## @param global.identity.auth.connectors.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.connectors.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
+
+      #####################
+      # Management Identity
+      #####################
+
+      ## @extra global.identity.auth.identity configuration to configure Management Identity authentication specifics on global level, which can be accessed by other components
+      identity:
+        ## @param global.identity.auth.identity.clientId defines the client id, which is used by Management Identity in authentication flows.
+        clientId: camunda-identity
+        ## @param global.identity.auth.identity.audience defines the audience, which is used by Management Identity.
+        audience: camunda-identity-resource-server
+        ## @param global.identity.auth.identity.existingSecret [string,object] (DEPRECATED - use global.identity.auth.identity.secret instead) can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+        existingSecret: ""
+        ## @param global.identity.auth.identity.existingSecretKey (DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-oidc-client-token
+        ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Management Identity.
+        # Should be publicly accessible, the default value works if a port-forward to Management Identity is created to 8085.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8085"
+        ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Management Identity to configure initial mapping rules,
+        # defaults to "oid".
+        initialClaimName: "oid"
+        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.
+        initialClaimValue: ""
+
+      #####################
+      # Console
+      #####################
+
+      ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
+      console:
+        ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
+        clientId: console
+        ## @param global.identity.auth.console.audience defines the audience which is used by Console's client API.
+        audience: console-api
+        ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
+        wellKnown: https://well-known-uri
+        ## @param global.identity.auth.console.existingSecret [string,object] (DEPRECATED - use global.identity.auth.console.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
+        existingSecret: ""
+        ## @param global.identity.auth.console.existingSecretKey (DEPRECATED - use global.identity.auth.console.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-console-client-token
+        ## @extra global.identity.auth.console.secret configuration to provide the console client secret.
+        secret:
+          ## @param global.identity.auth.console.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.console.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.console.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
+        ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
+        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8087"
+
+      #####################
+      # Webmodeler
+      #####################
+
+      ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
+      webModeler:
+        ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
+        clientId: web-modeler
+        ## @param global.identity.auth.webModeler.clientApiAudience defines the audience which is used by WebModeler's client API.
+        clientApiAudience: web-modeler-api
+        ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by WebModeler's public API.
+        publicApiAudience: web-modeler-public-api
+        ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
+        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8070"
+
+      #####################
+      # Optimize
+      #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
       optimize:
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
