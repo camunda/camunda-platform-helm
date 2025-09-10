@@ -307,3 +307,37 @@ connectors:
       value: username
     - name: password
       value: password
+    - name: IDP_AWS_BUCKET_NAME
+      value: "$IDP_AWS_BUCKET_NAME"
+    - name: IDP_AWS_REGION
+      value: "$IDP_AWS_REGION"
+    - name: IDP_AWS_SECRETKEY
+      value: "$IDP_AWS_SECRETKEY"
+#    - name: IDP_GCP_SERVICE_ACCOUNT
+#      value: "$IDP_GCP_SERVICE_ACCOUNT"
+#    - name: IDP_GCP_VERTEX_BUCKET_NAME
+#      value: "$IDP_GCP_VERTEX_BUCKET_NAME"
+#    - name: IDP_GCP_VERTEX_PROJECT_ID
+#      value: "$IDP_GCP_VERTEX_PROJECT_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_PROJECT_ID
+#      value: "$IDP_GCP_DOCUMENT_AI_PROJECT_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_PROCESSOR_ID
+#      value: "$IDP_GCP_DOCUMENT_AI_PROCESSOR_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_REGION
+#      value: "$IDP_GCP_DOCUMENT_AI_REGION"
+#    - name: IDP_GCP_VERTEX_REGION
+#      value: "$IDP_GCP_VERTEX_REGION"
+    - name: IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY
+      value: "$IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY"
+    - name: IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT
+      value: "$IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
+    - name: IDP_AZURE_AI_FOUNDRY_ENDPOINT
+      value: "$IDP_AZURE_AI_FOUNDRY_ENDPOINT"
+    - name: IDP_AZURE_AI_FOUNDRY_KEY
+      value: "$IDP_AZURE_AI_FOUNDRY_KEY"
+    - name: IDP_AZURE_OPEN_AI_ENDPOINT
+      value: "$IDP_AZURE_OPEN_AI_ENDPOINT"
+    - name: IDP_AZURE_OPEN_AI_KEY
+      value: "$IDP_AZURE_OPEN_AI_KEY"
+    - name: OPENAI_API_KEY
+      value: "$OPENAI_API_KEY"
