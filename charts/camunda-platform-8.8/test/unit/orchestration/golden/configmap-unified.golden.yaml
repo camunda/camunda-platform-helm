@@ -92,6 +92,83 @@ data:
           checksEnabled: false
           apiEnabled: true
     
+      #
+      # Camunda Operate Configuration.
+      #
+      operate:
+        persistentSessionsEnabled: true
+        multiTenancy:
+          enabled: false
+    
+        # ELS instance to store Operate data
+        elasticsearch:
+          # Operate index prefix.
+          # Cluster name
+          clusterName: elasticsearch
+          # Host
+          host: camunda-platform-test-elasticsearch
+          # Transport port
+          port: 9200
+          # Elasticsearch full url
+          url: "http://camunda-platform-test-elasticsearch:9200"
+        # ELS instance to export Zeebe data to
+        zeebeElasticsearch:
+          # Cluster name
+          clusterName: elasticsearch
+          # Host
+          host: camunda-platform-test-elasticsearch
+          # Transport port
+          port: 9200
+          # Index prefix, configured in Zeebe Elasticsearch exporter
+          prefix: "zeebe-record"
+          # Elasticsearch full url
+          url: "http://camunda-platform-test-elasticsearch:9200"
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "camunda-platform-test-zeebe:26500"
+    
+      #
+      # Camunda Tasklist Configuration.
+      #
+      tasklist:
+            multiTenancy:
+              enabled: false
+    
+            # Set Tasklist username and password.
+            # If user with <username> does not exists it will be created.
+            # Default: demo/demo
+            #username:
+            #password:
+            # ELS instance to store Tasklist data
+            elasticsearch:
+              # Tasklist index prefix.
+              # Cluster name
+              clusterName: elasticsearch
+              # Host
+              host: camunda-platform-test-elasticsearch
+              # Transport port
+              port: 9200
+              # Elasticsearch full url
+              url: "http://camunda-platform-test-elasticsearch:9200"
+            # ELS instance to export Zeebe data to
+            zeebeElasticsearch:
+              # Cluster name
+              clusterName: elasticsearch
+              # Host
+              host: camunda-platform-test-elasticsearch
+              # Transport port
+              port: 9200
+              # Index prefix, configured in Zeebe Elasticsearch exporter
+              prefix: "zeebe-record"
+              # Elasticsearch full url
+              url: "http://camunda-platform-test-elasticsearch:9200"
+            # Zeebe instance
+            zeebe:
+              # Gateway address
+              gatewayAddress: camunda-platform-test-zeebe:26500
+              restAddress: "http://camunda-platform-test-zeebe:8080/orchestration"
+    
     # Configuration from 8.7 syntax.
     zeebe:
       host: 0.0.0.0
