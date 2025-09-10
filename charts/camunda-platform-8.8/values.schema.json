@@ -592,6 +592,91 @@
                                         }
                                     }
                                 },
+                                "orchestration": {
+                                    "type": "object",
+                                    "properties": {
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
+                                            "default": "orchestration-api"
+                                        },
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
+                                            "default": "orchestration"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-orchestration-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
+                                        "redirectUrl": {
+                                            "type": "string",
+                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
+                                            "default": "http://localhost:8082"
+                                        },
+                                        "tokenScope": {
+                                            "type": "string",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
+                                            "default": ""
+                                        }
+                                    }
+                                },
+                                "connectors": {
+                                    "type": "object",
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
+                                            "default": "connectors"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-connectors-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "identity": {
                                     "type": "object",
                                     "properties": {
@@ -699,91 +784,6 @@
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
                                             "default": "http://localhost:8070"
-                                        }
-                                    }
-                                },
-                                "connectors": {
-                                    "type": "object",
-                                    "properties": {
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
-                                            "default": "connectors"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-connectors-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "orchestration": {
-                                    "type": "object",
-                                    "properties": {
-                                        "audience": {
-                                            "type": "string",
-                                            "description": "defines the audience, which is used by Orchestration Cluster.",
-                                            "default": "orchestration-api"
-                                        },
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
-                                            "default": "orchestration"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-orchestration-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        },
-                                        "redirectUrl": {
-                                            "type": "string",
-                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
-                                            "default": "http://localhost:8082"
-                                        },
-                                        "tokenScope": {
-                                            "type": "string",
-                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
-                                            "default": ""
                                         }
                                     }
                                 },
