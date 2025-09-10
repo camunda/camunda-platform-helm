@@ -124,7 +124,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-configuration
+            name: camunda-platform-test-zeebe-configuration-unified
             defaultMode: 492
         - name: exporters
           emptyDir: {}

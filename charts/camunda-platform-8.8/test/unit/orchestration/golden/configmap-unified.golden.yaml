@@ -15,9 +15,9 @@ apiVersion: v1
 data:
   startup.sh: |
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
-    # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
-    export VALUES_NODE_ID="${VALUES_NODE_ID:-$[${K8S_NAME##*-} * 1 + 0]}"
-    echo "export VALUES_NODE_ID=${VALUES_NODE_ID}"
+    # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * 1 + 0]}"
+    echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "${ZEEBE_RESTORE}" = "true" ]; then
       exec /usr/local/camunda/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
@@ -27,23 +27,19 @@ data:
   application.yaml: |    
     spring:
       profiles:
-        active: "broker,identity,operate,tasklist"
+        active: "broker,identity,operate,tasklist,consolidated-auth"
     
     server:
       address: 0.0.0.0
       port: 8080
-      # ssl:
-      #   enabled: true
-      #   certificate: /path/to/my/cert.pem
-      #   certificate-private-key: /path
+      servlet:
+        context-path: "/orchestration"
     
     management:
       server:
         address: 0.0.0.0
         port: 9600
-        # ssl:
-        #   enabled: true
-      endpoint: "/orchestration/actuator"
+        base-path: "/orchestration"
     
     camunda:
       system:
@@ -58,136 +54,9 @@ data:
         grpc:
           address: 0.0.0.0
           port: 26500
-          # ssl:
-          #   enabled: true
-          #   certificate: /path/to/my/cert.pem
-          #   certificate-private-key: /path
-          # interceptors: []
-          #   # - id: 'id1'
-          #   #   jar-path: './lib/myInterceptor.jar'
-          #   #   class-name: 'MyGrpcInterceptor'
-          # management-threads: 1
-        # long-polling:
-        #   enabled: true
-        #   timeout: 20000
-        #   probe-timeout: '10s'
-        #   min-empty-responses: 3
-        # rest:
-        #   filters: []
-        #     # - id: 'id1'
-        #     #   jar-path: './lib/myFilter.jar'
-        #     #   class-name: 'MyRestFilter'
-    
-      cluster:
-        # metadata:
-        #   sync-delay: '10s'
-        #   sync-request-timeout: '2s'
-        #   gossip-fanout: 2
-        network:
-          host: null
-          advertised-host: null
-          # port-offset: 0
-          # max-message-size: '4MB'
-          # socket-send-buffer: '1MB'
-          # socket-receive-buffer: '1MB'
-          # heartbeat-timeout: '15s'
-          # heartbeat-interval: '5s'
-          command-api:
-            # default-port:
-            # host:
-            port: 26501
-            # advertisedHost:
-            # advertisedPort:
-          internal-api:
-            # default-port:
-            # host:
-            port: 26502
-            # advertisedHost:
-            # advertisedPort:
-        initial-contact-points:
-            - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
-        # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
-        # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
-        node-id: ${VALUES_NODE_ID}
-        partition-count: "3"
-        replication-factor: "3"
-        size: "3"
-        name: camunda-platform-test-zeebe
-        # membership:
-        #   broadcast-updates: true
-        #   broadcast-disputes: true
-        #   notify-suspect: false
-        #   probe-interval: '1s'
-        #   probe-timeout: '100ms'
-        #   suspect-probes: 3
-        #   failure-timeout: '3s'
-        #   sync-interval: '10s'
-        #   gossip-fanout: 2
-        #   gossip-interval: '250ms'
-        # raft:
-        #   priority-election-enabled: true
-        #   flush-enabled: true
-        #   flush-delay: 0s
-        #   heartbeat-interval: '250ms'
-        #   election-timeout: '2.5s'
-        #   max-appends-per-follower: 6
-        #   max-appends-batch-size: 32KB
-        #   disable-explicit-raft-flush: false
-        #   request-timeout: 2.5s
-        #   snapshot-request-timeout: 2.5s
-        #   snapshot-chunk-size: 1GB
-        #   configuration-change-timeout: 10s
-        #   max-quorum-response-timeout: 0s
-        #   min-step-down-failure-count: 3
-        #   prefer-snapshot-replicationThreshold: 100
-        #   preallocate-segment-files: true
-        # compression-algorithm: 'none'
     
       data:
-        retention:
-          enabled: false
-          minimum-age: "30d"
         snapshot-period: "5m"
-        # export:
-        #   distribution-interval: '15s'
-        #   skip-records: []
-        #   execution-metrics-enabled: false
-        # backup:
-        #   repository-name: ''
-        #   snapshot-timeout: 0
-        #   incomplete-check-timeout: 5m
-        #   store: 'NONE'
-        #   s3:
-        #     bucket-name:
-        #     endpoint:
-        #     region:
-        #     access-key:
-        #     secret-key:
-        #     api-call-timeout: '180s'
-        #     force-path-style-access: false
-        #     compression:
-        #     max-concurrent-connections: 50
-        #     connection-acquisition-timeout: '45s'
-        #     base-path:
-        #   gcs:
-        #     bucket-name:
-        #     endpoint:
-        #     host:
-        #     auth: 'AUTO'
-        #   azure:
-        #     endpoint:
-        #     account-name:
-        #     account-key:
-        #     connection-string:
-        #     base-path:
-        #     create-container: true
-        #     sas-token:
-        #       type:
-        #       value:
-        #   filesystem:
-        #     base-path:
         primary-storage:
           disk:
             free-space:
@@ -204,60 +73,75 @@ data:
             history:
               policy-name: "camunda-history-retention-policy"
     
+      # Configuration from 8.7 syntax.
       security:
-        # TODO: What kind of value is expected here?
-        base-url: ""
-        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
-        issuer-backend-url: "http://:/auth/realms/camunda-platform"
-        redirect-root-url: "http://localhost:8082"
-        client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
-        audience: "orchestration-api"
         authentication:
-          unprotected-api: false
-          method: 'oidc'
-        authorization: true
-        multi-tenancy:
-          checks: false
-          api: true
-    
-      webapp:
-        common:
-          enterprise: true
-          roles:
-            - owner
-          # TODO: Update after moving `global.security` to `orchestration.security`.
+          method: "basic"
+          unprotectedApi: false
+        authorizations:
+          enabled: true
+        initialization:
           users:
-            user-id: 'demo'
-            user-password: 'demo'
-            user-display-name: 'demo'
-            # operator-user-id: 'act'
-            # operator-password: 'act'
-            # operator-display-name: 'act'
-            # reader-user-id: 'view'
-            # reader-password: 'view'
-            # reader-display-name: 'view'
-        operate:
-          enabled: true
-          # operation-executor:
-          #   enabled: true
-          #   thread-count: 3
-          #   queue-size: 10
-          #   batch-size: 500
-          #   deletion-batch-size: 5000
-          #   worker-id: random-uuid
-          #   lock-timeout: '60s'
-          # alerting-webbook: ''
-          zeebe:
-            gateway-address: "camunda-platform-test-zeebe:26500"
-            secure: false
-            certificate-path: ''
-          # TODO: What kind of value is expected here compared to the 8.7 version?
-          importer-enabled: true
-        tasklist:
-          enabled: true
-          # TODO: What kind of value is expected here compared to the 8.7 version?
-          importer-enabled: true
-        session:
-          persistent: true
+            - username: "demo"
+              password: "demo"
+              name: "Demo User"
+              email: "demo@demo.com"
+          default-roles.admin.users:
+            - "demo"
+        multiTenancy:
+          checksEnabled: false
+          apiEnabled: true
+    
+    # Configuration from 8.7 syntax.
+    zeebe:
+      host: 0.0.0.0
+      log:
+        level: "info"
+    
+      broker:
+        # zeebe.broker.gateway
+        gateway:
+          enable: true
+          multitenancy:
+            enabled: false
+    
+        # zeebe.broker.network
+        network:
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          host: 0.0.0.0
+          commandApi:
+            port: 26501
+          internalApi:
+            port: 26502
+    
+        # zeebe.broker.cluster
+        cluster:
+          # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+          # The value of "nodeId" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+          nodeId: ${VALUES_ORCHESTRATION_NODE_ID}
+          initialContactPoints:
+            - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+            - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+            - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
+          clusterSize: "3"
+          replicationFactor: "3"
+          partitionsCount: "3"
+          clusterName: camunda-platform-test-zeebe
+    
+        # zeebe.broker.exporters
+        exporters:
+          camundaexporter:
+            className: "io.camunda.exporter.CamundaExporter"
+            args:
+              connect:
+                type: elasticsearch
+                url: "http://camunda-platform-test-elasticsearch:9200"
+              history:
+                elsRolloverDateFormat: "date"
+                rolloverInterval: "1d"
+                rolloverBatchSize: 100
+                waitPeriodBeforeArchiving: "1h"
+                delayBetweenRuns: 2000
+                maxDelayBetweenRuns: 60000
     
   log4j2.xml: |

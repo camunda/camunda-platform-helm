@@ -143,12 +143,20 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 
 {{- define "orchestration.enabledProfiles" -}}
     {{- $enabledProfiles := list -}}
-    {{- range $k, $v := .Values.orchestration.profiles }}
-    {{- if eq $v true }}
-        {{- $enabledProfiles = append $enabledProfiles $k }}
-    {{- end }}
+    {{- range $key, $value := .Values.orchestration.profiles }}
+        {{- if eq $value true }}
+            {{- $enabledProfiles = append $enabledProfiles $key }}
+        {{- end }}
     {{- end }}
     {{- join "," $enabledProfiles }}
+{{- end -}}
+
+{{- define "orchestration.enabledProfilesWithIdentity" -}}
+    {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
+        {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
+    {{- else }}
+        {{- include "orchestration.enabledProfiles" . | replace "identity" "auth" -}}
+    {{- end }}
 {{- end -}}
 
 {{- define "orchestration.secondaryStorage" -}}
