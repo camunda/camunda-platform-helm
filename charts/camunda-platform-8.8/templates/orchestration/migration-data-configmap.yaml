@@ -30,6 +30,12 @@ data:
         username: {{ .Values.global.elasticsearch.auth.username }}
         password: ${VALUES_ELASTICSEARCH_PASSWORD:}
         {{- end }}
+        {{- if .Values.orchestration.history.retention.enabled }}
+        retention:
+          enabled: true
+          minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+          policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+        {{- end }}
     {{- else }}
     camunda:
       data:
@@ -56,6 +62,12 @@ data:
         {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
         username: {{ .Values.global.opensearch.auth.username }}
         password: ${VALUES_OPENSEARCH_PASSWORD:}
+        {{- end }}
+        {{- if .Values.orchestration.history.retention.enabled }}
+        retention:
+          enabled: true
+          minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+          policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
         {{- end }}
     {{- end }}
       migration:
