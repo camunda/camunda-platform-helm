@@ -142,16 +142,14 @@ global:
     external: false
     ## @param global.ingress.className Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
+    ## @param global.ingress.labels [object] can be used to define labels which will be applied to the global HTTP ingress resource
+    labels: {}
     ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       nginx.ingress.kubernetes.io/proxy-buffering: "on"
-      nginx.ingress.kubernetes.io/affinity: "cookie"
-      nginx.ingress.kubernetes.io/affinity-mode: "persistent"
-      nginx.ingress.kubernetes.io/session-cookie-name: "route"
-      nginx.ingress.kubernetes.io/session-cookie-path: "/"
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -512,12 +510,32 @@ global:
         bucketTtl: 0
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
-        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
+        ## @param global.documentStore.type.aws.existingSecret (DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret and global.documentStore.type.aws.secretAccessKey.secret instead) Reference to an existing Kubernetes secret containing AWS credentials.
         existingSecret: "aws-credentials"
-        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
+        ## @param global.documentStore.type.aws.accessKeyIdKey (DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret instead) Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
         accessKeyIdKey: "awsAccessKeyId"
-        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
+        ## @param global.documentStore.type.aws.secretAccessKeyKey (DEPRECATED - use global.documentStore.type.aws.secretAccessKey.secret instead) Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
         secretAccessKeyKey: "awsSecretAccessKey"
+        ## @extra global.documentStore.type.aws.accessKeyId configuration to provide the AWS access key ID.
+        accessKeyId:
+          ## @extra global.documentStore.type.aws.accessKeyId.secret configuration to provide the AWS access key ID secret.
+          secret:
+            ## @param global.documentStore.type.aws.accessKeyId.secret.inlineSecret can be used to provide the access key ID as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.aws.accessKeyId.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the access key ID.
+            existingSecret: ""
+            ## @param global.documentStore.type.aws.accessKeyId.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "access-key-id"
+        ## @extra global.documentStore.type.aws.secretAccessKey configuration to provide the AWS secret access key.
+        secretAccessKey:
+          ## @extra global.documentStore.type.aws.secretAccessKey.secret configuration to provide the AWS secret access key secret.
+          secret:
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.inlineSecret can be used to provide the secret access key as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the secret access key.
+            existingSecret: ""
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "secret-access-key"
       gcp:
         ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
         enabled: false
@@ -527,14 +545,20 @@ global:
         bucket: "your-gcp-bucket"
         ## @param global.documentStore.type.gcp.class Fully qualified class name for the GCP document store provider.
         class: "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
-        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials.
+        ## @param global.documentStore.type.gcp.existingSecret (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Reference to an existing Kubernetes secret containing GCP credentials.
         existingSecret: "gcp-credentials"
-        ## @param global.documentStore.type.gcp.credentialsKey Key in the GCP credentials secret that contains the service-account JSON.
+        ## @param global.documentStore.type.gcp.credentialsKey (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Key in the GCP credentials secret that contains the service-account JSON.
         credentialsKey: "service-account.json"
         ## @param global.documentStore.type.gcp.mountPath Mount path for the GCP credentials secret.
         mountPath: "/var/secrets/gcp"
         ## @param global.documentStore.type.gcp.fileName The file name for the GCP credentials JSON.
         fileName: "service-account.json"
+        ## @extra global.documentStore.type.gcp.secret configuration to provide the GCP service account credentials secret.
+        secret:
+          ## @param global.documentStore.type.gcp.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the service account JSON.
+          existingSecret: ""
+          ## @param global.documentStore.type.gcp.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "service-account.json"
       inmemory:
         ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
         enabled: true
@@ -628,7 +652,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -650,9 +674,8 @@ identity:
   # Note: Identity cannot be accessed over HTTP if a "contextPath" is configured.
   #       Which means that Identity cannot be configured in combined Ingress without HTTPS.
   #       To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
-  # contextPath: "/identity"
   ## @param identity.contextPath can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/identity"
 
   ## @param identity.podAnnotations can be used to define extra Identity pod annotations
   podAnnotations: {}
@@ -1110,6 +1133,8 @@ identityKeycloak:
     tls: false
     ## @param identityKeycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
     extraTls: []
+    ## @param identityKeycloak.ingress.labels [object] can be used to define labels which will be applied to the Keycloak ingress resource
+    labels: {}
     ## @param identityKeycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
     annotations:
       ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -1170,7 +1195,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8.1
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1197,7 +1222,7 @@ console:
     realm: "camunda-platform"
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/"
 
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
@@ -1388,14 +1413,13 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0-alpha8-rc1
+    tag: 8.8.0-alpha8
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
-  # contextPath: "/modeler"
   ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/modeler"
 
   # WebModeler.
   ######                         #    ######  ###
@@ -2131,7 +2155,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2145,9 +2169,8 @@ connectors:
   ## @param connectors.replicas number of Connectors replicas
   replicas: 1
 
-  # contextPath: "/connectors"
   ## @param connectors.contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/connectors"
 
   ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
   podAnnotations: {}
@@ -2411,7 +2434,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2419,29 +2442,83 @@ orchestration:
 
   ## @extra orchestration.migration configuration for migration purposes for the orchestration cluster
   migration:
-    process:
-      ## @param orchestration.migration.process.enabled if true, the process migration occurs.
+    data:
+      ## @param orchestration.migration.data.enabled if true, the data migration occurs.
       enabled: false
-      ## @param orchestration.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      ## @param orchestration.migration.data.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
-      ## @param orchestration.migration.process.batchSize can be used to define the batch size.
-      batchSize: 5
-      ## @param orchestration.migration.process.importFinishedTimeout can be used to define the timeout when the import is finished.
-      importFinishedTimeout: PT1M
-      retry:
-        ## @param orchestration.migration.process.retry.maxRetries can be used to define the maximum amount of retries.
-        maxRetries: 5
-        ## @param orchestration.migration.process.retry.maxRetryDelay can be used to define the delay time between retries.
-        maxRetryDelay: PT1M
-        ## @param orchestration.migration.process.retry.minRetryDelay can be used to define the delay time between retries.
-        minRetryDelay: PT10s
-        ## @param orchestration.migration.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
-        retryDelayMultiplier: 2.0
+      process:
+        ## @param orchestration.migration.data.process.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.process.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.process.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.process.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.process.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      metrics:
+        ## @param orchestration.migration.data.metrics.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.metrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.metrics.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.metrics.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.metrics.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.metrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      tumetrics:
+        ## @param orchestration.migration.data.tumetrics.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.tumetrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.tumetrics.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.tumetrics.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.tumetrics.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.tumetrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      tasks:
+        ## @param orchestration.migration.data.tasks.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.tasks.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.tasks.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.tasks.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.tasks.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.tasks.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
     identity:
       ## @param orchestration.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
       enabled: false
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
+
+  ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
+  importer:
+    ## @param orchestration.importer.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
+    enabled: false
+    ## @param orchestration.importer.envFrom list of environment variables to import from configMapRef and secretRef
+    envFrom: []
+    ## @param orchestration.importer.extraVolumes can be used to define extra volumes for the importer pod
+    extraVolumes: []
+    ## @param orchestration.importer.extraVolumeMounts can be used to mount extra volumes for the importer pod
+    extraVolumeMounts: []
 
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
@@ -2540,6 +2617,8 @@ orchestration:
       external: false
       ## @param orchestration.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
       className: nginx
+      ## @param orchestration.ingress.grpc.labels [object] can be used to define labels which will be applied to the orchestration gRPC ingress resource
+      labels: {}
       ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
       ## @skip orchestration.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
       ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
@@ -2564,9 +2643,8 @@ orchestration:
         ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: camunda-platform-orchestration-grpc
 
-  # contextPath: "/orchestration"
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/orchestration"
 
   ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
@@ -2832,7 +2910,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2861,9 +2939,8 @@ optimize:
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
 
-  # contextPath: "/optimize"
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: ""
+  contextPath: "/optimize"
 
   ## @extra optimize.configMap configuration which will be applied to the mounted config map.
   configMap:

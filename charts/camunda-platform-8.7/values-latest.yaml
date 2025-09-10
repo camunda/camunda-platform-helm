@@ -13,7 +13,7 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.7.61
+    tag: 8.7.68
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -70,8 +70,8 @@ identity:
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
-    repository: bitnamilegacy/keycloak
-    tag: 26.3.3
+    repository: camunda/keycloak
+    tag: 26.3.2
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:

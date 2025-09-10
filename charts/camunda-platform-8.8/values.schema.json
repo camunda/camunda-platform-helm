@@ -887,18 +887,68 @@
                                         },
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "Reference to an existing Kubernetes secret containing AWS credentials.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret and global.documentStore.type.aws.secretAccessKey.secret instead) Reference to an existing Kubernetes secret containing AWS credentials.",
                                             "default": "aws-credentials"
                                         },
                                         "accessKeyIdKey": {
                                             "type": "string",
-                                            "description": "Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret instead) Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.",
                                             "default": "awsAccessKeyId"
                                         },
                                         "secretAccessKeyKey": {
                                             "type": "string",
-                                            "description": "Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.aws.secretAccessKey.secret instead) Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.",
                                             "default": "awsSecretAccessKey"
+                                        },
+                                        "accessKeyId": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the access key ID as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the access key ID.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "access-key-id"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "secretAccessKey": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the secret access key as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the secret access key.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "secret-access-key"
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -927,12 +977,12 @@
                                         },
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "Reference to an existing Kubernetes secret containing GCP credentials.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Reference to an existing Kubernetes secret containing GCP credentials.",
                                             "default": "gcp-credentials"
                                         },
                                         "credentialsKey": {
                                             "type": "string",
-                                            "description": "Key in the GCP credentials secret that contains the service-account JSON.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Key in the GCP credentials secret that contains the service-account JSON.",
                                             "default": "service-account.json"
                                         },
                                         "mountPath": {
@@ -944,6 +994,21 @@
                                             "type": "string",
                                             "description": "The file name for the GCP credentials JSON.",
                                             "default": "service-account.json"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the service account JSON.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": "service-account.json"
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -1099,7 +1164,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -1144,7 +1209,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/identity"
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -2296,7 +2361,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8.1"
                         },
                         "digest": {
                             "type": "string",
@@ -2355,7 +2420,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/"
                 },
                 "initContainers": {
                     "type": "array",
@@ -2793,7 +2858,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha8-rc1"
+                            "default": "8.8.0-alpha8"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2806,7 +2871,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/modeler"
                 },
                 "restapi": {
                     "type": "object",
@@ -4487,7 +4552,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -4522,7 +4587,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/connectors"
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -5100,7 +5165,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -5118,12 +5183,12 @@
                 "migration": {
                     "type": "object",
                     "properties": {
-                        "process": {
+                        "data": {
                             "type": "object",
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, the process migration occurs.",
+                                    "description": "if true, the data migration occurs.",
                                     "default": false
                                 },
                                 "backoffLimit": {
@@ -5131,38 +5196,163 @@
                                     "description": "if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
                                 },
-                                "batchSize": {
-                                    "type": "number",
-                                    "description": "can be used to define the batch size.",
-                                    "default": 5
-                                },
-                                "importFinishedTimeout": {
-                                    "type": "string",
-                                    "description": "can be used to define the timeout when the import is finished.",
-                                    "default": "PT1M"
-                                },
-                                "retry": {
+                                "process": {
                                     "type": "object",
                                     "properties": {
-                                        "maxRetries": {
+                                        "batchSize": {
                                             "type": "number",
-                                            "description": "can be used to define the maximum amount of retries.",
+                                            "description": "can be used to define the batch size.",
                                             "default": 5
                                         },
-                                        "maxRetryDelay": {
+                                        "importerFinishedTimeout": {
                                             "type": "string",
-                                            "description": "can be used to define the delay time between retries.",
+                                            "description": "can be used to define the timeout when the import is finished.",
                                             "default": "PT1M"
                                         },
-                                        "minRetryDelay": {
-                                            "type": "string",
-                                            "description": "can be used to define the delay time between retries.",
-                                            "default": "PT10s"
-                                        },
-                                        "retryDelayMultiplier": {
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "metrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
                                             "type": "number",
-                                            "description": "can be used to define the delay multiplier.",
-                                            "default": 2
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "tumetrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
+                                            "type": "number",
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "tasks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
+                                            "type": "number",
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -5182,6 +5372,34 @@
                                     "default": 6
                                 }
                             }
+                        }
+                    }
+                },
+                "importer": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
+                            "default": false
+                        },
+                        "envFrom": {
+                            "type": "array",
+                            "description": "list of environment variables to import from configMapRef and secretRef",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumes": {
+                            "type": "array",
+                            "description": "can be used to define extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumeMounts": {
+                            "type": "array",
+                            "description": "can be used to mount extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
                         }
                     }
                 },
@@ -5456,7 +5674,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/orchestration"
                 },
                 "cpuThreadCount": {
                     "type": "string",
@@ -5995,7 +6213,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -6070,7 +6288,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": ""
+                    "default": "/optimize"
                 },
                 "configMap": {
                     "type": "object",
