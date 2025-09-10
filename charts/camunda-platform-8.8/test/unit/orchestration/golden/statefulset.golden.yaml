@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.8.0-alpha7"
+    app.kubernetes.io/version: "8.8.0-alpha8"
   annotations:
 spec:
   replicas: 3
@@ -36,7 +36,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "8.8.0-alpha7"
+        app.kubernetes.io/version: "8.8.0-alpha8"
       annotations:
     spec:
       imagePullSecrets:
@@ -45,7 +45,7 @@ spec:
         []
       containers:
         - name: orchestration
-          image: camunda/camunda:8.8.0-alpha7
+          image: camunda/camunda:8.8.0-alpha8
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -93,7 +93,7 @@ spec:
               name: gateway
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /orchestration/actuator/health/readiness
               scheme: HTTP
               port: 9600
             initialDelaySeconds: 30

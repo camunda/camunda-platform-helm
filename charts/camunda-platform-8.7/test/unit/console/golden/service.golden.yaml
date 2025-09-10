@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: console
-    app.kubernetes.io/version: "8.7.62"
+    app.kubernetes.io/version: "8.7.68"
   annotations:
 spec:
   type: ClusterIP
