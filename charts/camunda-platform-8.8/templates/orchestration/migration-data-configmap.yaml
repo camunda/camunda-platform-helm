@@ -25,7 +25,7 @@ data:
       data:
         secondary-storage:
           opensearch:
-            url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            url: {{ include "camundaPlatform.opensearchURL" . | quote }}
       database:
         connect:
           cluster-name: {{ .Values.global.opensearch.clusterName }}
