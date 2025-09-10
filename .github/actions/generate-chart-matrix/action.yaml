@@ -86,6 +86,7 @@ runs:
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
               echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
               echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
+              echo "    flow: $(echo "$prScenario" | yq e '.flow' -)" >> matrix_versions.txt
               echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
             done
             sed -i -e '$s/,$/]\n/' matrix_versions.txt
