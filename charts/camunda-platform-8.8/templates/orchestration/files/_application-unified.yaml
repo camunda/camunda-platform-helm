@@ -11,7 +11,7 @@ server:
   port: {{ .Values.orchestration.service.httpPort }}
   servlet:
   {{- if .Values.orchestration.contextPath }}
-    context-path: {{ .Values.orchestration.contextPath | quote }}
+    context-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
   {{- end }}
 
 management:
@@ -64,7 +64,7 @@ camunda:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
     {{- end }}
 
-  # Configuration from 8.7 syntax.
+  # Security configuration - Seperated syntax.
   security:
     authentication:
     {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
@@ -131,13 +131,10 @@ camunda:
   {{- end }}
 
   #
-  # Camunda Operate Configuration.
+  # Camunda Operate Configuration - Seperated syntax.
   #
   operate:
     persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
-    {{- if .Values.global.opensearch.enabled }}
-    database: opensearch
-    {{- end }}
     multiTenancy:
       enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
     {{- if .Values.global.identity.auth.enabled }}
@@ -145,67 +142,10 @@ camunda:
       redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/operate"
     {{- end }}
 
-    # ELS instance to store Operate data
-    {{- if .Values.global.elasticsearch.enabled }}
-    elasticsearch:
-      # Operate index prefix.
-      {{- if .Values.orchestration.index.prefix }}
-      indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
-      {{- end }}
-      # Cluster name
-      clusterName: {{ .Values.global.elasticsearch.clusterName }}
-      {{- if .Values.global.elasticsearch.external }}
-      username: {{ .Values.global.elasticsearch.auth.username | quote }}
-      {{- end }}
-      # Host
-      host: {{ include "camundaPlatform.elasticsearchHost" . }}
-      # Transport port
-      port: {{ .Values.global.elasticsearch.url.port }}
-      {{- if .Values.global.elasticsearch.url.host }}
-      # Elasticsearch full url
-      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-      {{- end }}
-    # ELS instance to export Zeebe data to
-    zeebeElasticsearch:
-      # Cluster name
-      clusterName: {{ .Values.global.elasticsearch.clusterName }}
-      # Host
-      host: {{ include "camundaPlatform.elasticsearchHost" . }}
-      # Transport port
-      port: {{ .Values.global.elasticsearch.url.port }}
-      # Index prefix, configured in Zeebe Elasticsearch exporter
-      prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-      {{- if .Values.global.elasticsearch.url.host }}
-      # Elasticsearch full url
-      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-      {{- end }}
-      {{- if .Values.global.elasticsearch.external }}
-      # Elasticsearch username
-      username: {{ .Values.global.elasticsearch.auth.username | quote }}
-      {{- end }}
-    {{- end }}
     # Zeebe instance
     zeebe:
       # Gateway address
       gatewayAddress: "{{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}"
-    {{- if .Values.global.opensearch.enabled }}
-    opensearch:
-      {{- if .Values.orchestration.index.prefix }}
-      indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
-      {{- end }}
-      url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-      {{- if .Values.global.opensearch.aws.enabled }}
-      awsEnabled: true
-      {{- end }}
-      {{- if .Values.global.opensearch.auth.username }}
-      username: {{ .Values.global.opensearch.auth.username | quote }}
-      {{- end }}
-    zeebeOpensearch:
-      url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-      {{- if .Values.global.opensearch.auth.username }}
-      username: {{ .Values.global.opensearch.auth.username | quote }}
-      {{- end }}
-    {{- end }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true
@@ -213,7 +153,7 @@ camunda:
     {{- end }}
 
   #
-  # Camunda Tasklist Configuration.
+  # Camunda Tasklist Configuration - Seperated syntax.
   #
   tasklist:
         multiTenancy:
@@ -229,63 +169,6 @@ camunda:
         # Default: demo/demo
         #username:
         #password:
-        {{- if .Values.global.elasticsearch.enabled }}
-        # ELS instance to store Tasklist data
-        elasticsearch:
-          # Tasklist index prefix.
-          {{- if .Values.orchestration.index.prefix }}
-          indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
-          {{- end }}
-          # Cluster name
-          clusterName: {{ .Values.global.elasticsearch.clusterName }}
-          # Host
-          host: {{ include "camundaPlatform.elasticsearchHost" . }}
-          # Transport port
-          port: {{ .Values.global.elasticsearch.url.port }}
-          {{- if .Values.global.elasticsearch.url.host }}
-          # Elasticsearch full url
-          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-          {{- end }}
-          {{- if .Values.global.elasticsearch.external }}
-          username: {{ .Values.global.elasticsearch.auth.username | quote }}
-          {{- end }}
-        # ELS instance to export Zeebe data to
-        zeebeElasticsearch:
-          # Cluster name
-          clusterName: {{ .Values.global.elasticsearch.clusterName }}
-          # Host
-          host: {{ include "camundaPlatform.elasticsearchHost" . }}
-          # Transport port
-          port: {{ .Values.global.elasticsearch.url.port }}
-          # Index prefix, configured in Zeebe Elasticsearch exporter
-          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-          {{- if .Values.global.elasticsearch.url.host }}
-          # Elasticsearch full url
-          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-          {{- end }}
-          {{- if .Values.global.elasticsearch.external }}
-          username: {{ .Values.global.elasticsearch.auth.username | quote }}
-          {{- end }}
-        {{- end }}
-        {{- if .Values.global.opensearch.enabled }}
-        database: opensearch
-        opensearch:
-          {{- if .Values.orchestration.index.prefix }}
-          indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
-          {{- end }}
-          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-          {{- if .Values.global.opensearch.aws.enabled }}
-          awsEnabled: true
-          {{- end }}
-          {{- if .Values.global.opensearch.auth.username }}
-          username: {{ .Values.global.opensearch.auth.username | quote }}
-          {{- end }}
-        zeebeOpensearch:
-          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-          {{- if .Values.global.opensearch.auth.username }}
-          username: {{ .Values.global.opensearch.auth.username | quote }}
-          {{- end }}
-        {{- end }}
         # Zeebe instance
         zeebe:
           # Gateway address
@@ -297,7 +180,9 @@ camunda:
           ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
         {{- end }}
 
-# Configuration from 8.7 syntax.
+#
+# Camunda Zeebe Configuration - Seperated syntax.
+#
 zeebe:
   host: 0.0.0.0
   log:
