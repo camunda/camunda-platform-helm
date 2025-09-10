@@ -194,7 +194,7 @@ data:
           lastName: "User"
           email: "demo@example.org"
           roles:
-            - Identity
+            - ManagementIdentity
             - Optimize
             - Web Modeler
             - Web Modeler Admin
