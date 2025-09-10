@@ -23,8 +23,12 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        {{ eq (env "PLATFORM") "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }}  \
-        --values {{ env "INFRA_TYPE_VALUES" }} \
+        {{ if eq .PLATFORM "eks" -}}
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
+        {{ end -}}
+        {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
+        {{ end -}}
+        --values {{ .INFRA_TYPE_VALUES }} \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}

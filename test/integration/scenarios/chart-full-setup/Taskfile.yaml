@@ -213,8 +213,12 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
-        {{ eq .PLATFORM "eks" | ternary (printf "--values %s/chart-full-setup/values-integration-test-ingress-infra.yaml" .TEST_VALUES_BASE_DIR) "" }} \
-        {{ if eq .TEST_CHART_FLOW "install" }}--values {{ .TEST_HELM_DIGEST_VALUES }}{{ end }} \
+        {{ if eq .PLATFORM "eks" -}}
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
+        {{ end -}}
+        {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
+        --values {{ .TEST_HELM_DIGEST_VALUES }} \
+        {{ end -}}
         --values {{ .INFRA_TYPE_VALUES }} \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
