@@ -231,9 +231,11 @@ data:
               email: {{ $user.email | quote }}
             {{- end }}
           default-roles.admin.users:
-            {{- range $user := .Values.orchestration.security.initialization.users }}
+          {{- range $user := .Values.orchestration.security.initialization.users }}
+            {{- if eq (index $user "admin") true }}
             - {{ index $user "username" | quote }}
             {{- end }}
+          {{- end }}
           {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
           mapping-rules:
             - mapping-rule-id: "connectors-client-mapping-rule"

@@ -2435,6 +2435,7 @@ orchestration:
           name: Demo User
           ## @extra orchestration.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
+          admin: false
       mappingRules:
         ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
         - mappingRuleID: demo-user-mapping-rule
