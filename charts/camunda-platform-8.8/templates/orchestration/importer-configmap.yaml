@@ -208,7 +208,7 @@ data:
             username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
             groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
             client-id: {{ include "orchestration.authClientId" . | quote }}
-            client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
+            client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
             audiences:
               - {{ include "orchestration.authClientId" . | quote }}
               - {{ .Values.global.identity.auth.orchestration.audience | quote }}

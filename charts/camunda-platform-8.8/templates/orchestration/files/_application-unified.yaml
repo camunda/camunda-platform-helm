@@ -21,6 +21,9 @@ management:
     base-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
 
 camunda:
+  license:
+    key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
+
   system:
     cpu-thread-count: {{ .Values.orchestration.cpuThreadCount }}
     io-thread-count: {{ .Values.orchestration.ioThreadCount }}
@@ -56,7 +59,7 @@ camunda:
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
-        password: ${VALUES_ELASTICSEARCH_PASSWORD:}
+        password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.global.elasticsearch.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
@@ -80,7 +83,7 @@ camunda:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
         groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
         client-id: {{ include "orchestration.authClientId" . | quote }}
-        client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
+        client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
         audiences:
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ .Values.global.identity.auth.orchestration.audience | quote }}
@@ -247,6 +250,7 @@ zeebe:
           {{- if .Values.global.elasticsearch.external }}
           authentication:
             username: {{ .Values.global.elasticsearch.auth.username | quote }}
+            password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
           {{- end }}
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
@@ -265,6 +269,7 @@ zeebe:
           {{- if .Values.global.opensearch.auth.username }}
           authentication:
             username: {{ .Values.global.opensearch.auth.username | quote }}
+            password: "${VALUES_OPENSEARCH_PASSWORD:}"
           {{- end }}
           {{- if .Values.global.opensearch.aws.enabled }}
           aws:
@@ -289,6 +294,7 @@ zeebe:
             {{- end }}
           {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
             username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
+            password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
           {{- end }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:

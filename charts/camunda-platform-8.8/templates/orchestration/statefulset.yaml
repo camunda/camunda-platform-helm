@@ -51,71 +51,6 @@ spec:
           command: ["bash", "/usr/local/bin/startup.sh"]
           {{- end }}
           env:
-            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_OPERATE_OPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_DATABASE_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- end }}
-            {{- if and .Values.global.elasticsearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_AUTHENTICATION_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_DATABASE_PASSWORD"
-                "config" .Values.global.elasticsearch.auth
-            ) | nindent 12 }}
-            {{- end }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_LICENSE_KEY"
-                "config" .Values.global.license
-                "plaintextKey" "key"
-            ) | nindent 12 }}
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -128,9 +63,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ORCHESTRATION_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET"
+                "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
                 "config" .Values.global.identity.auth.orchestration
             ) | nindent 12 }}
             {{- end }}
@@ -165,7 +105,7 @@ spec:
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
             {{/*
-            Passwords for variable substitution.
+            Variable substitution for passwords.
             */}}
             {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
