@@ -5,9 +5,41 @@ on:
   schedule:
     # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
     - cron: "0 4 * * *"
+  pull_request:
+    paths:
+      - ".github/workflows/test-chart-version-nightly-template.yaml"
+      - ".github/workflows/test-chart-version-nightly.yaml"
+      - ".github/workflows/test-integration-template.yaml"
+      - ".github/workflows/test-integration-runner.yaml"
+      - ".github/charts/*/test/ci-test-config.yaml"
   push:
     branches:
     - "feature/ee-images-prem"
+  workflow_dispatch: 
+    inputs:
+      platforms:
+        description: The deployment cloud platform
+        default: "gke"
+        required: false
+        type: choice
+        options:
+          - gke
+          - eks
+          - rosa
+          - gke,eks
+      flows:
+        description: The flows to run
+        default: "install"
+        required: false
+        type: choice
+        options:
+          - install
+          - upgrade
+          - install,upgrade
+      deployment-ttl:
+        required: false
+        default: 1h
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
@@ -32,10 +64,22 @@ jobs:
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix-nightly
 
-  test:
-    if: ${{ needs.init.outputs.matrix != '[]' }}
-    name: Camunda ${{ matrix.version }}
+  validation:
+    name: Camunda ${{ matrix.version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
     needs: init
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    with:
+      identifier: "${{ matrix.case }}-vald-${{ matrix.shortname }}-${{ matrix.version }}-${{ matrix.auth }}-${{ matrix.exclude }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  integation-tests:
+    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    needs: [init,validation]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -45,6 +89,10 @@ jobs:
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
       scenario: ${{ matrix.scenario }}
+      shortname: ${{ matrix.shortname }}
       auth: ${{ matrix.auth }}
+      platforms: ${{ inputs.platforms || 'gke,eks' }}
       exclude: ${{ matrix.exclude }}
+      flows: ${{ inputs.flows || 'install,upgrade' }}
+      deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
       values-enterprise: ${{ matrix.values-enterprise }}
