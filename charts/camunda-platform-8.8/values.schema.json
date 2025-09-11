@@ -2361,7 +2361,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha8.1"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
