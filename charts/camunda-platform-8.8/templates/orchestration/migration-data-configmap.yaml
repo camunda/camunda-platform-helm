@@ -13,12 +13,12 @@ data:
             url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             {{- if .Values.orchestration.index.prefix }}
             index-prefix: {{ .Values.orchestration.index.prefix | quote }}
-            {{- end}}
+            {{- end }}
             cluster-name: {{ .Values.global.elasticsearch.clusterName }}
             {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
             username: {{ .Values.global.elasticsearch.auth.username }}
             password: ${VALUES_ELASTICSEARCH_PASSWORD:}
-            {{- end}}
+            {{- end }}
       database:
         type: elasticsearch
         clusterName: {{ .Values.global.elasticsearch.clusterName }}

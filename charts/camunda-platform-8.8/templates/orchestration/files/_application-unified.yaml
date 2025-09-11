@@ -158,7 +158,7 @@ camunda:
     # Zeebe instance
     zeebe:
       # Gateway address
-      gatewayAddress: "{{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}"
+      gatewayAddress: {{ include "orchestration.serviceNameGatewayGRPC" . | quote }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true
@@ -180,15 +180,10 @@ camunda:
       redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/tasklist"
     {{- end }}
 
-    # Set Tasklist username and password.
-    # If user with <username> does not exists it will be created.
-    # Default: demo/demo
-    #username:
-    #password:
     # Zeebe instance
     zeebe:
       # Gateway address
-      gatewayAddress: {{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}
+      gatewayAddress: {{ include "orchestration.serviceNameGatewayGRPC" . | quote }}
       restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
@@ -234,7 +229,7 @@ zeebe:
       # nodeId: ${VALUES_ORCHESTRATION_NODE_ID}
       initialContactPoints:
       {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-        - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
+        - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
       {{- end }}
       # clusterSize: {{ .Values.orchestration.clusterSize | quote }}
       # replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
@@ -274,7 +269,7 @@ zeebe:
           {{- if .Values.global.opensearch.aws.enabled }}
           aws:
             enabled: true
-          {{- end}}
+          {{- end }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
