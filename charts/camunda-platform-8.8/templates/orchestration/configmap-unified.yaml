@@ -9,7 +9,7 @@ data:
   startup.sh: |
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}"
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * {{ .Values.global.multiregion.regions }} + {{ .Values.global.multiregion.regionId }}]}"
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "${ZEEBE_RESTORE}" = "true" ]; then

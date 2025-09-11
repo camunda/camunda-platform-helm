@@ -26,7 +26,7 @@ spec:
         {{- toYaml .Values.orchestration.podLabels | nindent 8 }}
         {{- end }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
         {{- range $key, $value := .Values.orchestration.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
