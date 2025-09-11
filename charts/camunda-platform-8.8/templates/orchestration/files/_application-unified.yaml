@@ -29,6 +29,14 @@ camunda:
     upgrade:
       enable-version-check: true
 
+  cluster:
+    # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+    # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+    node-id: ${VALUES_ORCHESTRATION_NODE_ID}
+    size: {{ .Values.orchestration.clusterSize | quote }}
+    replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
+    partitions-count: {{ .Values.orchestration.partitionCount | quote }}
+
   api:
     grpc:
       address: 0.0.0.0
@@ -130,6 +138,8 @@ camunda:
     audience: {{ include "orchestration.authAudience" . | quote }}
   {{- end }}
 
+{{- if .Values.orchestration.profiles.operate -}}
+  {{- "\n" }}
   #
   # Camunda Operate Configuration - Seperated syntax.
   #
@@ -151,35 +161,41 @@ camunda:
       ilmEnabled: true
       ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
     {{- end }}
+{{- end -}}
 
+{{- if .Values.orchestration.profiles.tasklist -}}
+  {{- "\n" }}
   #
   # Camunda Tasklist Configuration - Seperated syntax.
   #
   tasklist:
-        multiTenancy:
-          enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+    multiTenancy:
+      enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
 
-        {{- if .Values.global.identity.auth.enabled }}
-        identity:
-          redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/tasklist"
-        {{- end }}
+    {{- if .Values.global.identity.auth.enabled }}
+    identity:
+      redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/tasklist"
+    {{- end }}
 
-        # Set Tasklist username and password.
-        # If user with <username> does not exists it will be created.
-        # Default: demo/demo
-        #username:
-        #password:
-        # Zeebe instance
-        zeebe:
-          # Gateway address
-          gatewayAddress: {{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}
-          restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
-        {{- if .Values.orchestration.history.retention.enabled }}
-        archiver:
-          ilmEnabled: true
-          ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
-        {{- end }}
+    # Set Tasklist username and password.
+    # If user with <username> does not exists it will be created.
+    # Default: demo/demo
+    #username:
+    #password:
+    # Zeebe instance
+    zeebe:
+      # Gateway address
+      gatewayAddress: {{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}
+      restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+    {{- if .Values.orchestration.history.retention.enabled }}
+    archiver:
+      ilmEnabled: true
+      ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
+    {{- end }}
+{{- end -}}
 
+{{- if .Values.orchestration.profiles.broker -}}
+{{- "\n" }}
 #
 # Camunda Zeebe Configuration - Seperated syntax.
 #
@@ -210,16 +226,16 @@ zeebe:
 
     # zeebe.broker.cluster
     cluster:
-      # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
-      # The value of "nodeId" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-      nodeId: ${VALUES_ORCHESTRATION_NODE_ID}
+      # # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+      # # The value of "nodeId" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+      # nodeId: ${VALUES_ORCHESTRATION_NODE_ID}
       initialContactPoints:
       {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
         - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
       {{- end }}
-      clusterSize: {{ .Values.orchestration.clusterSize | quote }}
-      replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
-      partitionsCount: {{ .Values.orchestration.partitionCount | quote }}
+      # clusterSize: {{ .Values.orchestration.clusterSize | quote }}
+      # replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
+      # partitionsCount: {{ .Values.orchestration.partitionCount | quote }}
       clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
     # zeebe.broker.exporters
@@ -298,3 +314,4 @@ zeebe:
     {{- else -}}
       {{ " {}" }}
     {{- end }}
+{{ end -}}
