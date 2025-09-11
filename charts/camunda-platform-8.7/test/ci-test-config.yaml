@@ -53,6 +53,7 @@ integration:
           exclude: []
           auth: keycloak
           enterprise: true
+          shortname: ese
         - name: documentstore
           enabled: false
           exclude: []
