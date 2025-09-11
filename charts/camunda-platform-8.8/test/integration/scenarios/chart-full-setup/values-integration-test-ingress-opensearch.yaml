@@ -1,6 +1,8 @@
 global:
   elasticsearch:
     enabled: false
+  exporter:
+    enabled: false
   opensearch:
     enabled: true
     aws:
@@ -12,36 +14,27 @@ global:
       protocol: $OPENSEARCH_PROTOCOL
       host: "$OPENSEARCH_HOST"
       port: $OPENSEARCH_PORT
+    prefix: "custom-zeebe"
 
 elasticsearch:
   enabled: false
 
 orchestration:
+  index:
+    prefix: "custom-zeebe"
   env:
     - name: CAMUNDA_DATA_SECONDARY_STORAGE_TYPE
       value: "opensearch"
+    - name: CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_USERNAME
+      value: "$OPENSEARCH_USERNAME"
+    - name: CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_PASSWORD
+      value: "$OPENSEARCH_PASSWORD"
     - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
       value: "custom"
     - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
       value: "custom"
-    - name: CAMUNDA_DATABASE_INDEXPREFIX
-      value: "custom"
-    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
-      value: "custom-zeebe"
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD
       value: "$OPENSEARCH_PASSWORD"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
-      value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_TYPE
-      value: "opensearch"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_URL
-      value: "$OPENSEARCH_PROTOCOL://$OPENSEARCH_HOST:$OPENSEARCH_PORT"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_USERNAME
-      value: "$OPENSEARCH_USERNAME"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
-      value: "$OPENSEARCH_PASSWORD"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: "custom-zeebe"
     - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
       value: "custom-zeebe"
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
