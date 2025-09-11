@@ -100,7 +100,7 @@ spec:
                   fieldPath: metadata.namespace
             {{- if .Values.global.identity.auth.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET"
+                "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
                 "config" .Values.global.identity.auth.orchestration
             ) | nindent 12 }}
             {{- end }}

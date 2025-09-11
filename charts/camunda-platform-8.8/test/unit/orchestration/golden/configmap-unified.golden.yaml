@@ -42,6 +42,9 @@ data:
         base-path: "/orchestration"
     
     camunda:
+      license:
+        key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
+    
       system:
         cpu-thread-count: 3
         io-thread-count: 3
@@ -76,7 +79,7 @@ data:
             url: "http://camunda-platform-test-elasticsearch:9200"
             cluster-name: "elasticsearch"
             username: ""
-            password: ${VALUES_ELASTICSEARCH_PASSWORD:}
+            password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: "zeebe-record"
             history:
               policy-name: "camunda-history-retention-policy"
