@@ -683,6 +683,9 @@ jobs:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [ci-setup]
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.52.0-noble
+      options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
     permissions:
@@ -718,6 +721,13 @@ jobs:
             task
             yq
             zbctl
+            jq
+
+      - name: Install CLI deps (jq, envsubst)
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y gettext-base
+          envsubst --version
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars

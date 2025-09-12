@@ -11,6 +11,12 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Mark repo as safe for git
+      shell: bash
+      run: |
+        # Mark the repo as safe for Git by setting the safe.directory config option. This is required for running jobs in containers like the playwright integration tests.
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
     - name: Filter .tool-versions
       shell: bash
       run: |
@@ -25,20 +31,40 @@ runs:
     - name: Restore cache
       uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
       with:
-        path: /home/runner/.asdf
+        # Using $HOME instead of /home/runner as inside of the container the home directory is might not be /home/runner.
+        path: $HOME/.asdf
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: Install asdf and tools
       uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4
       with:
         # TODO: Upgrade to 0.16 when it's supported in the GHA.
-        # https://github.com/asdf-vm/actions/pull/590
         asdf_branch: v0.15.0
+
+    - name: Print asdf build logs
+      if: always()
+      shell: bash
+      env:
+        ASDF_DIR: ${{ env.ASDF_DIR }}
+      run: |
+        set -euo pipefail
+        root="${ASDF_DIR:-$HOME/.asdf}/downloads"
+        if [ -d "$root" ]; then
+          echo "=== asdf installer logs under $root ==="
+          # Group each log in the Actions UI
+          while IFS= read -r -d '' f; do
+            echo "::group::${f#$root/}"
+            cat "$f" || true
+            echo "::endgroup::"
+          done < <(find "$root" -type f -name install.log -print0)
+        else
+          echo "No asdf downloads dir at $root"
+        fi
 
     - name: Save cache
       uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
       with:
-        path: /home/runner/.asdf
+        path: $HOME/.asdf
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions

@@ -22,6 +22,15 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 {{- end }}
 
 {{/*
+[orchestration] Defines extra labels for orchestration.
+*/}}
+{{ define "orchestrationMigration.extraLabels" -}}
+{{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
+app.kubernetes.io/component: orchestration-migration
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
+{{- end }}
+
+{{/*
 [orchestration Importer] Defines extra labels for orchestration importer.
 */}}
 {{ define "orchestrationImporter.extraLabels" -}}
@@ -39,6 +48,15 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
     {{- include "orchestration.extraLabels" . }}
 {{- end -}}
 
+{{/*
+[orchestration] Define common labels for orchestration cluster migrations, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+*/}}
+{{- define "orchestrationMigration.labels" -}}
+    {{- include "camundaPlatform.labels" . }}
+    {{- "\n" }}
+    {{- include "orchestrationMigration.extraLabels" . }}
+{{- end -}}
 
 {{/*
 [orchestration Importer] Define common labels for orchestration importer, combining the match labels and transient labels, which might change on updating
