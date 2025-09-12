@@ -32,11 +32,10 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 	require.NoError(t, err)
 	templateNames := []string{
 		"service",
+		"service-gateway",
 		"serviceaccount",
 		"statefulset",
-		"configmap",
 		"configmap-unified",
-		"gateway-service",
 	}
 
 	for _, name := range templateNames {

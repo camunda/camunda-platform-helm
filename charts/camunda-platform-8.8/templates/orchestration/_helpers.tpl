@@ -127,7 +127,7 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 
 
 {{/*
-[web-modeler] Define variables related to authentication.
+[orchestration] Define variables related to authentication.
 */}}
 {{- define "orchestration.authClientId" -}}
     {{- .Values.global.identity.auth.orchestration.clientId | default "orchestration" -}}
@@ -143,12 +143,20 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 
 {{- define "orchestration.enabledProfiles" -}}
     {{- $enabledProfiles := list -}}
-    {{- range $k, $v := .Values.orchestration.profiles }}
-    {{- if eq $v true }}
-        {{- $enabledProfiles = append $enabledProfiles $k }}
-    {{- end }}
+    {{- range $key, $value := .Values.orchestration.profiles }}
+        {{- if eq $value true }}
+            {{- $enabledProfiles = append $enabledProfiles $key }}
+        {{- end }}
     {{- end }}
     {{- join "," $enabledProfiles }}
+{{- end -}}
+
+{{- define "orchestration.enabledProfilesWithIdentity" -}}
+    {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
+        {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
+    {{- else }}
+        {{- include "orchestration.enabledProfiles" . | replace "identity" "auth" -}}
+    {{- end }}
 {{- end -}}
 
 {{- define "orchestration.secondaryStorage" -}}
@@ -165,4 +173,46 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 
 {{- define "orchestration.persistentSessionsEnabled" -}}
     {{- not .Values.global.noSecondaryStorage -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
+Service names.
+********************************************************************************
+*/}}
+
+{{/*
+[orchestration] Define Orchestration Cluster service - Broker.
+*/}}
+{{- define "orchestration.serviceNameBroker" }}
+    {{- include "orchestration.fullname" . -}}
+{{- end -}}
+
+{{/*
+[orchestration] Define Orchestration Cluster service - Gateway.
+*/}}
+{{- define "orchestration.serviceNameGateway" }}
+    {{- include "orchestration.fullname" . -}}-gateway
+{{- end -}}
+
+{{/*
+[orchestration] Define Orchestration Cluster service - Broker - gRPC.
+*/}}
+{{- define "orchestration.serviceNameBrokerGRPC" }}
+    {{- include "orchestration.serviceNameBroker" . -}}:{{ .Values.orchestration.service.grpcPort }}
+{{- end -}}
+
+{{/*
+[orchestration] Define Orchestration Cluster service - Gateway - gRPC.
+*/}}
+{{- define "orchestration.serviceNameGatewayGRPC" }}
+    {{- include "orchestration.serviceNameGateway" . -}}:{{ .Values.orchestration.service.grpcPort }}
+{{- end -}}
+
+{{/*
+[orchestration] Define Orchestration Cluster service - Gateway - REST.
+*/}}
+{{- define "orchestration.serviceNameGatewayREST" }}
+    {{- include "orchestration.serviceNameGateway" . -}}:{{ .Values.orchestration.service.restPort }}
 {{- end -}}
