@@ -20,18 +20,11 @@ integration:
   case:
     pr:
       scenario:
-        - name: elasticsearch
+        - name: opensearch
           enabled: true
-          auth: keycloak
-          flow: install
-          shortname: eske
-          exclude: []
-        - name: elasticsearch
-          enabled: false
-          shortname: esba
-          auth: basic
-          flow: install
+          shortname: osba
           exclude: [identity,console,orchestration-grpc]
+          auth: basic
     nightly:
       scenario:
         - name: elasticsearch
@@ -62,6 +55,11 @@ integration:
           exclude: []
           shortname: oske
           auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: osba
+          exclude: [identity,console,orchestration-grpc]
+          auth: basic
         - name: identity-migration
           enabled: true
           exclude: []

@@ -185,9 +185,16 @@ data:
 
     camunda:
       data:
+        {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
         secondary-storage:
+          {{- if .Values.global.elasticsearch.enabled }}
           elasticsearch:
             url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+          {{- else if .Values.global.opensearch.enabled }}
+          opensearch:
+            url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+          {{- end }}
+        {{- end }}
       persistent:
         sessions:
           enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
