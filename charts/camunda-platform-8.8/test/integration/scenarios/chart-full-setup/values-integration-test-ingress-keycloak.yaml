@@ -107,6 +107,7 @@ orchestration:
   security:
     authentication:
       method: oidc
+      authenticationRefreshInterval: "PT30S"
   # giving access to venom to deploy a model. Given access to connectors
   # TODO: Find a way to only give connectors read access
   env:

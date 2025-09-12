@@ -14,6 +14,7 @@ orchestration:
       method: oidc
       oidc:
         groupsClaim: ""
+      authenticationRefreshInterval: "PT30S"
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping-rule"
