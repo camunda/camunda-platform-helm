@@ -388,10 +388,10 @@ jobs:
 
             # Dynamic version-specific external secret configuration
             APP_VERSION=$(helm show chart "charts/${{ inputs.camunda-helm-dir }}" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
-            if [[ -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml" ]]; then
+            if [[ -f "charts/${{ inputs.camunda-helm-dir }}/test/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml" ]]; then
               echo "Applying version-specific external secret for app version: ${APP_VERSION}"
               kubectl apply -n $TEST_NAMESPACE \
-                -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml"
+                -f "charts/${{ inputs.camunda-helm-dir }}/test/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml"
             else
               echo "Version-specific external secret not found for app version: ${APP_VERSION}, using fallback"
               # For backward compatibility with other versions (alpha, future versions).
