@@ -47,6 +47,8 @@ func TestRestAPIConfigmapTemplate(t *testing.T) {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientApiAudience() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                                  "true",
+		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.clientApiAudience": "custom-audience",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -73,6 +75,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicApiAudience() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                                  "true",
+		"global.identity.auth.enabled":                      "true",
 		"global.identity.auth.webModeler.publicApiAudience": "custom-audience",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -99,7 +103,9 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
 	// given
 	values := map[string]string{
-		"identity.fullnameOverride": "custom-identity-fullname",
+		"global.identity.auth.enabled": "true",
+		"identity.enabled":             "true",
+		"identity.fullnameOverride":    "custom-identity-fullname",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -119,13 +125,15 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	}
 
 	// then
-	s.Require().Equal("http://custom-identity-fullname:80", configmapApplication.Camunda.Identity.BaseURL)
+	s.Require().Equal("http://custom-identity-fullname:80/identity", configmapApplication.Camunda.Identity.BaseURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
 	// given
 	values := map[string]string{
-		"identity.nameOverride": "custom-identity",
+		"global.identity.auth.enabled": "true",
+		"identity.enabled":             "true",
+		"identity.nameOverride":        "custom-identity",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -145,12 +153,14 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	}
 
 	// then
-	s.Require().Equal("http://camunda-platform-test-custom-identity:80", configmapApplication.Camunda.Identity.BaseURL)
+	s.Require().Equal("http://camunda-platform-test-custom-identity:80/identity", configmapApplication.Camunda.Identity.BaseURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                             "true",
+		"global.identity.auth.enabled":                 "true",
 		"global.identity.auth.type":                    "MICROSOFT",
 		"global.identity.auth.issuerBackendUrl":        "https://example.com",
 		"global.identity.auth.identity.existingSecret": "foo",
@@ -179,6 +189,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrl() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
+		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "80",
@@ -207,6 +219,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServiceUrlWithCustomPort() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
+		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "http",
 		"global.identity.keycloak.url.host":     "keycloak",
 		"global.identity.keycloak.url.port":     "8888",
@@ -235,6 +249,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                     "true",
 		"webModeler.restapi.mail.smtpUser":     "modeler-user",
 		"webModeler.restapi.mail.smtpPassword": "modeler-password",
 	}
@@ -262,6 +277,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                             "true",
 		"webModelerPostgresql.enabled":                 "false",
 		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 		"webModeler.restapi.externalDatabase.user":     "modeler-user",
@@ -305,15 +321,19 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			values := map[string]string{
-				"webModelerPostgresql.enabled":           "false",
-				"global.zeebeClusterName":                "test-zeebe",
-				"global.identity.auth.enabled":           tc.authEnabled,
-				"global.security.authentication.method":  tc.authMethod,
-				"global.security.authorizations.enabled": "false",
-				"orchestration.image.tag":                "8.8.x-alpha1",
-				"orchestration.contextPath":              "/orchestration",
-				"orchestration.service.grpcPort":         "26600",
-				"orchestration.service.httpPort":         "8090",
+				"identity.enabled":                              "true",
+				"webModelerPostgresql.enabled":                  "false",
+				"global.zeebeClusterName":                       "test-zeebe",
+				"global.identity.auth.enabled":                  tc.authEnabled,
+				"global.ingress.enabled":                        "true",
+				"global.ingress.tls.enabled":                    "true",
+				"global.ingress.host":                           "example.com",
+				"orchestration.image.tag":                       "8.8.x-alpha1",
+				"orchestration.contextPath":                     "/orchestration",
+				"orchestration.service.grpcPort":                "26600",
+				"orchestration.service.httpPort":                "8090",
+				"orchestration.security.authentication.method":  tc.authMethod,
+				"orchestration.security.authorizations.enabled": "false",
 			}
 			maps.Insert(values, maps.All(requiredValues))
 			options := &helm.Options{
@@ -336,12 +356,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal(1, len(configmapApplication.Camunda.Modeler.Clusters))
 			s.Require().Equal("default-cluster", configmapApplication.Camunda.Modeler.Clusters[0].Id)
 			s.Require().Equal("test-zeebe", configmapApplication.Camunda.Modeler.Clusters[0].Name)
-			s.Require().Equal("8.x.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
+			s.Require().Equal("8.8.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
-			s.Require().Equal("grpc://camunda-platform-test-orchestration:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-			s.Require().Equal("http://camunda-platform-test-orchestration:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
-			s.Require().Equal("http://localhost:8088", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
+			s.Require().Equal("grpc://camunda-platform-test-zeebe:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
+			s.Require().Equal("http://camunda-platform-test-zeebe:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
+			s.Require().Equal("https://example.com/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
 		})
 	}
 }
@@ -349,6 +369,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomConfiguration() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                              "true",
 		"webModeler.restapi.clusters[0].id":             "test-cluster-1",
 		"webModeler.restapi.clusters[0].name":           "test cluster 1",
 		"webModeler.restapi.clusters[0].version":        "8.6.0",
@@ -417,6 +438,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIfZeebeDisabledAndNoCustomConfiguration() {
 	// given
 	values := map[string]string{
+		"identity.enabled":             "true",
 		"webModelerPostgresql.enabled": "false",
 		"orchestration.enabled":        "false",
 	}
@@ -444,6 +466,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUrlProperty() {
 	// given
 	values := map[string]string{
+		"identity.enabled":             "true",
+		"global.identity.auth.enabled": "true",
 		"global.identity.auth.jwksUrl": "https://example.com/auth/realms/test/protocol/openid-connect/certs",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -470,6 +494,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuerBackendUrlProperty() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
+		"global.identity.auth.enabled":          "true",
 		"global.identity.auth.issuerBackendUrl": "http://test-keycloak/auth/realms/test",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -496,6 +522,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeycloakUrlProperties() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                      "true",
+		"global.identity.auth.enabled":          "true",
 		"global.identity.keycloak.url.protocol": "https",
 		"global.identity.keycloak.url.host":     "example.com",
 		"global.identity.keycloak.url.port":     "443",
@@ -526,6 +554,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPortDatabase() {
 	// given
 	values := map[string]string{
+		"identity.enabled":                             "true",
 		"webModelerPostgresql.enabled":                 "false",
 		"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
 		"webModeler.restapi.externalDatabase.port":     "65432",

@@ -1,0 +1,75 @@
+{{- if .Values.orchestration.migration.data.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "orchestration.fullname" . }}-data-migration
+  labels: {{- include "orchestrationMigration.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.orchestration.migration.data.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "orchestrationMigration.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/migration-data-configmap.yaml") . | sha256sum }}
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
+      {{- if .Values.orchestration.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-orchestration
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          image: curlimages/curl:8.15.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
+                echo "waiting for Orchestration Cluster"; sleep 5;
+              done
+      containers:
+        - name: camunda-migration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{/*
+            Passwords for variable substitution.
+            */}}
+            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+          command:
+            - /usr/local/camunda/bin/data-migration
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 500m
+              memory: 500Mi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/camunda/config/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "orchestration.fullname" . }}-data-migration-configuration
+{{- end }}

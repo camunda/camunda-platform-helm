@@ -166,13 +166,23 @@ helm.schema-update:
 		excluded_versions="camunda-platform-(8\.(2|3|4|5|6|7)|alpha)$$"; \
 		if echo "$${chart_dir}" | grep -qE "$${excluded_versions}"; then \
 			echo "\n[$@] Chart dir: $${chart_dir}";\
-			echo "[$@] This chart version doesn't have schema";\
+			echo "[$@] This chart version doesn't have schema"; \
 			continue; \
 		fi; \
 		echo "\n[$@] Chart dir: $${chart_dir}"; \
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
-			--schema "$${chart_dir}/values.schema.json";\
+			--schema "$${chart_dir}/values.schema.json"; \
+		# Merge with extra schema if exists. \
+		if [ ! -f "$${chart_dir}/values.schema.extra.json" ]; then \
+			echo "[$@] No extra schema to merge"; \
+			continue; \
+		fi; \
+		echo "[$@] Merging with extra schema"; \
+		jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
+			"$${chart_dir}/values.schema.json" \
+			"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
+			&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
 	done
 
 # helm.get-images: list all images in the chart.

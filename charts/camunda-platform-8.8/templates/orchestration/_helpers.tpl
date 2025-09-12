@@ -4,25 +4,37 @@
 [orchestration] Create a default fully qualified app name.
 */}}
 {{- define "orchestration.fullname" -}}
+    {{- /* NOTE: The value is set to "zeebe" for backward compatibility between 8.7 and 8.8. */ -}}
     {{- include "camundaPlatform.componentFullname" (dict
-        "componentName" "orchestration"
+        "componentName" "zeebe"
         "componentValues" .Values.orchestration
         "context" $
     ) -}}
 {{- end -}}
 
 {{/*
-[orchestration] The old name used in PVC which is used to avoid upgrade downtime.
+[orchestration] Defines extra labels for orchestration.
 */}}
-{{- define "orchestration.legacyName" -}}
-    {{- printf "%s-zeebe" .Release.Name -}}
-{{- end -}}
+{{ define "orchestration.extraLabels" -}}
+{{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
+app.kubernetes.io/component: zeebe-broker
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
+{{- end }}
 
 {{/*
 [orchestration] Defines extra labels for orchestration.
 */}}
-{{ define "orchestration.extraLabels" -}}
-app.kubernetes.io/component: orchestration
+{{ define "orchestrationMigration.extraLabels" -}}
+{{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
+app.kubernetes.io/component: orchestration-migration
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
+{{- end }}
+
+{{/*
+[orchestration Importer] Defines extra labels for orchestration importer.
+*/}}
+{{ define "orchestrationImporter.extraLabels" -}}
+app.kubernetes.io/component: orchestration-importer
 app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
 {{- end }}
 
@@ -37,11 +49,43 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 {{- end -}}
 
 {{/*
+[orchestration] Define common labels for orchestration cluster migrations, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+*/}}
+{{- define "orchestrationMigration.labels" -}}
+    {{- include "camundaPlatform.labels" . }}
+    {{- "\n" }}
+    {{- include "orchestrationMigration.extraLabels" . }}
+{{- end -}}
+
+{{/*
+[orchestration Importer] Define common labels for orchestration importer, combining the match labels and transient labels, which might change on updating
+(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+*/}}
+{{- define "orchestrationImporter.labels" -}}
+    {{- include "camundaPlatform.labels" . }}
+    {{- "\n" }}
+    {{- include "orchestrationImporter.extraLabels" . }}
+{{- end -}}
+
+{{/*
 [orchestration] Defines match labels for orchestration, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "orchestration.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: orchestration
+    {{- "\n" -}}
+    {{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
+    app.kubernetes.io/component: zeebe-broker
+{{- end -}}
+
+
+{{/*
+[orchestration Importer] Defines match labels for orchestration importer, which are extended by sub-charts and should be used in matchLabels selectors.
+*/}}
+{{- define "orchestrationImporter.matchLabels" -}}
+    {{- include "camundaPlatform.matchLabels" . }}
+    {{- "\n" -}}
+    app.kubernetes.io/component: orchestration-importer
 {{- end -}}
 
 {{/*
@@ -87,18 +131,6 @@ app.kubernetes.io/component: orchestration
 */}}
 {{- define "orchestration.authClientId" -}}
     {{- .Values.global.identity.auth.orchestration.clientId | default "orchestration" -}}
-{{- end -}}
-
-{{- define "orchestration.authClientSecretName" -}}
-    {{- if and .Values.global.identity.auth.orchestration.existingSecret (not (typeIs "string" .Values.global.identity.auth.orchestration.existingSecret)) -}}
-        {{- include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.orchestration.existingSecret "context" $) -}}
-    {{- else -}}
-        {{- include "camundaPlatform.identitySecretName" (dict "context" . "component" "orchestration") -}}
-    {{- end -}}
-{{- end -}}
-
-{{- define "orchestration.authClientSecretKey" -}}
-    {{ .Values.global.identity.auth.orchestration.existingSecretKey }}
 {{- end -}}
 
 {{- define "orchestration.authAudience" -}}

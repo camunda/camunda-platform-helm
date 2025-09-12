@@ -41,10 +41,10 @@ type TemplateGoldenTest struct {
 func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	if s.SetValues == nil {
 		s.SetValues = map[string]string{
-			"global.identity.auth.connectors.existingSecret.name": "camunda-credentials",
-			"global.identity.auth.orchestration.existingSecret.name":       "camunda-credentials",
-			"global.identity.auth.console.existingSecret.name":    "camunda-credentials",
-			"global.identity.auth.optimize.existingSecret.name":   "camunda-credentials",
+			"global.identity.auth.connectors.existingSecret.name":    "camunda-credentials",
+			"global.identity.auth.orchestration.existingSecret.name": "camunda-credentials",
+			"global.identity.auth.console.existingSecret.name":       "camunda-credentials",
+			"global.identity.auth.optimize.existingSecret.name":      "camunda-credentials",
 		}
 	}
 	values := s.SetValues
@@ -54,7 +54,7 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	values["global.identity.auth.optimize.existingSecret.name"] = "camunda-credentials"
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
-		SetValues:      s.SetValues,
+		SetValues:      values,
 	}
 	output := helm.RenderTemplate(s.T(), options, s.ChartPath, s.Release, s.Templates, s.ExtraHelmArgs...)
 

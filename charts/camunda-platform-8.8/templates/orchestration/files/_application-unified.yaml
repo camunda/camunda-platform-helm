@@ -85,7 +85,7 @@ camunda:
         # advertisedPort:
     initial-contact-points:
       {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-        - {{ include "orchestration.legacyName" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
+        - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{$.Values.orchestration.service.internalPort}}
       {{- end }}
     # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
     # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_NODE_ID" env var.
@@ -220,16 +220,16 @@ camunda:
     client-secret: ${VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET:}
     audience: {{ include "orchestration.authAudience" . | quote }}
     authentication:
-      unprotected-api: {{ .Values.global.security.authentication.unprotectedApi }}
+      unprotected-api: {{ .Values.orchestration.security.authentication.unprotectedApi }}
       method: 'oidc'
-      {{- if eq .Values.global.security.authentication.method "oidc" }}
+      {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
       oidc:
         client-id: {{ include "orchestration.authClientId" . | quote }}
       {{- end }}
-    authorization: {{ .Values.global.security.authorizations.enabled }}
-    multiTenancy:
-      checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
-      apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
+    authorization: {{ .Values.orchestration.security.authorizations.enabled }}
+    multi-tenancy:
+      checks: {{ include "orchestration.multitenancyChecksEnabled" . }}
+      api: {{ include "orchestration.multitenancyApiEnabled" . }}
 
   webapp:
     common:

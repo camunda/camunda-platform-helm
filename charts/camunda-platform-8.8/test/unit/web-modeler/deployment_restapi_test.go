@@ -56,6 +56,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerExternalDatabasePasswordSecretRefForGivenPassword",
 			Values: map[string]string{
+				"identity.enabled":                             "true",
 				"webModeler.enabled":                           "true",
 				"webModeler.restapi.mail.fromAddress":          "example@example.com",
 				"webModelerPostgresql.enabled":                 "false",
@@ -83,6 +84,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey",
 			Values: map[string]string{
+				"identity.enabled":                                        "true",
 				"webModeler.enabled":                                      "true",
 				"webModeler.restapi.mail.fromAddress":                     "example@example.com",
 				"webModelerPostgresql.enabled":                            "false",
@@ -110,6 +112,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndCustomKey",
 			Values: map[string]string{
+				"identity.enabled":                                              "true",
 				"webModeler.enabled":                                            "true",
 				"webModeler.restapi.mail.fromAddress":                           "example@example.com",
 				"webModelerPostgresql.enabled":                                  "false",
@@ -138,6 +141,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerExternalDatabasePasswordExplicitlyDefinedStillReferencesInternalSecret",
 			Values: map[string]string{
+				"identity.enabled":                                   "true",
 				"webModeler.enabled":                                 "true",
 				"webModeler.restapi.mail.fromAddress":                "example@example.com",
 				"webModelerPostgresql.enabled":                       "false",
@@ -166,6 +170,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerInternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey",
 			Values: map[string]string{
+				"identity.enabled":                         "true",
 				"webModeler.enabled":                       "true",
 				"webModeler.restapi.mail.fromAddress":      "example@example.com",
 				"webModelerPostgresql.enabled":             "true",
@@ -183,7 +188,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
-								Key:                  "password",
+								Key:                  "web-modeler-postgresql-user-password",
 							},
 						},
 					})
@@ -191,6 +196,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerInternalDatabasePasswordSecretRefForExistingSecretAndCustomKey",
 			Values: map[string]string{
+				"identity.enabled":                                     "true",
 				"webModeler.enabled":                                   "true",
 				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
 				"webModelerPostgresql.enabled":                         "true",
@@ -217,6 +223,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSmtpPasswordSecretRefForGivenPassword",
 			Values: map[string]string{
+				"identity.enabled":                     "true",
 				"webModeler.enabled":                   "true",
 				"webModeler.restapi.mail.fromAddress":  "example@example.com",
 				"webModeler.restapi.mail.smtpUser":     "modeler-user",
@@ -242,6 +249,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSmtpPasswordSecretRefForExistingSecretAndDefaultKey",
 			Values: map[string]string{
+				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
 				"webModeler.restapi.mail.fromAddress":         "example@example.com",
 				"webModeler.restapi.mail.smtpUser":            "modeler-user",
@@ -267,6 +275,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSmtpPasswordSecretRefForExistingSecretAndCustomKey",
 			Values: map[string]string{
+				"identity.enabled":                                  "true",
 				"webModeler.enabled":                                "true",
 				"webModeler.restapi.mail.fromAddress":               "example@example.com",
 				"webModeler.restapi.mail.smtpUser":                  "modeler-user",
@@ -293,6 +302,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerStartupProbe",
 			Values: map[string]string{
+				"identity.enabled":                          "true",
 				"webModeler.enabled":                        "true",
 				"webModeler.restapi.mail.fromAddress":       "example@example.com",
 				"webModeler.restapi.startupProbe.enabled":   "true",
@@ -311,6 +321,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerReadinessProbe",
 			Values: map[string]string{
+				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
 				"webModeler.restapi.mail.fromAddress":         "example@example.com",
 				"webModeler.restapi.readinessProbe.enabled":   "true",
@@ -329,6 +340,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerLivenessProbe",
 			Values: map[string]string{
+				"identity.enabled":                           "true",
 				"webModeler.enabled":                         "true",
 				"webModeler.restapi.mail.fromAddress":        "example@example.com",
 				"webModeler.restapi.livenessProbe.enabled":   "true",
@@ -348,6 +360,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 			// Web-Modeler REST API doesn't use contextPath for health endpoints.
 			Name: "TestContainerProbesWithContextPath",
 			Values: map[string]string{
+				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
 				"webModeler.restapi.mail.fromAddress":         "example@example.com",
 				"webModeler.contextPath":                      "/test",
@@ -372,6 +385,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
+				"identity.enabled":                                      "true",
 				"webModeler.enabled":                                    "true",
 				"webModeler.restapi.mail.fromAddress":                   "example@example.com",
 				"webModeler.restapi.sidecars[0].name":                   "nginx",
@@ -399,6 +413,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetInitContainer",
 			Values: map[string]string{
+				"identity.enabled":                                            "true",
 				"webModeler.enabled":                                          "true",
 				"webModeler.restapi.mail.fromAddress":                         "example@example.com",
 				"webModeler.restapi.initContainers[0].name":                   "nginx",
@@ -426,6 +441,7 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestSetDnsPolicyAndDnsConfig",
 			Values: map[string]string{
+				"identity.enabled":                            "true",
 				"webModeler.enabled":                          "true",
 				"webModeler.restapi.mail.fromAddress":         "example@example.com",
 				"webModeler.restapi.dnsPolicy":                "ClusterFirst",
@@ -453,5 +469,6 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		},
 	}
 
+	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

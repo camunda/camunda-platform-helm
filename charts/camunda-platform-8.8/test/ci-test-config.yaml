@@ -1,8 +1,7 @@
 # Used in the GitHub Actions unit test CI workflow.
 # auth can be the following values: basic, keycloak, oidc
 unit:
-  # TODO: Enable it again when the 8.7 is released (we need to review and fix the unit tests for 8.8).
-  enabled: false
+  enabled: true
   matrix:
     - name: Management
       packages: identity common console
@@ -24,12 +23,14 @@ integration:
         - name: elasticsearch
           enabled: true
           auth: keycloak
+          flow: install
           shortname: eske
           exclude: []
         - name: elasticsearch
           enabled: false
           shortname: esba
           auth: basic
+          flow: install
           exclude: [identity,console,orchestration-grpc]
     nightly:
       scenario:
@@ -72,3 +73,8 @@ integration:
           auth: basic
           shortname: elbae
           enterprise: true
+        - name: documentstore
+          enabled: false
+          exclude: []
+          shortname: docstr
+          auth: keycloak

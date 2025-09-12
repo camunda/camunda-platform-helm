@@ -17,10 +17,15 @@ type BrokerYAML struct {
 }
 
 type ExportersYAML struct {
-	Elasticsearch ElasticsearchYAML `yaml:"elasticsearch"`
+	Elasticsearch   ElasticsearchYAML   `yaml:"elasticsearch"`
+	CamundaExporter CamundaExporterYAML `yaml:"camundaexporter"`
 }
 
 type ElasticsearchYAML struct {
+	ClassName string `yaml:"className"`
+}
+
+type CamundaExporterYAML struct {
 	ClassName string `yaml:"className"`
 }
 

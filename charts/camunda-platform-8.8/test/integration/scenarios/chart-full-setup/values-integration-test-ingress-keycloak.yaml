@@ -44,10 +44,6 @@ global:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
         existingSecret:
           name: "integration-test-credentials"
-  security:
-    authentication:
-      method: oidc
-      authenticationRefreshInterval: "PT30S"
 
 identity:
   enabled: true
@@ -96,7 +92,6 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 orchestration:
-  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true
@@ -109,6 +104,10 @@ orchestration:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
+  security:
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
   # giving access to venom to deploy a model. Given access to connectors
   # TODO: Find a way to only give connectors read access
   env:

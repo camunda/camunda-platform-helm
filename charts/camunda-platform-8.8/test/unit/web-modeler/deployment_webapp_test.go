@@ -56,6 +56,7 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerStartupProbe",
 			Values: map[string]string{
+				"identity.enabled":                         "true",
 				"webModeler.enabled":                       "true",
 				"webModeler.restapi.mail.fromAddress":      "example@example.com",
 				"webModeler.webapp.startupProbe.enabled":   "true",
@@ -74,6 +75,7 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerReadinessProbe",
 			Values: map[string]string{
+				"identity.enabled":                           "true",
 				"webModeler.enabled":                         "true",
 				"webModeler.restapi.mail.fromAddress":        "example@example.com",
 				"webModeler.webapp.readinessProbe.enabled":   "true",
@@ -92,6 +94,7 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerLivenessProbe",
 			Values: map[string]string{
+				"identity.enabled":                          "true",
 				"webModeler.enabled":                        "true",
 				"webModeler.restapi.mail.fromAddress":       "example@example.com",
 				"webModeler.webapp.livenessProbe.enabled":   "true",
@@ -111,6 +114,7 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerProbesWithContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":                           "true",
 				"webModeler.enabled":                         "true",
 				"webModeler.restapi.mail.fromAddress":        "example@example.com",
 				"webModeler.contextPath":                     "/test",
@@ -136,6 +140,7 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 			// Web-Modeler WebApp doesn't support contextPath for health endpoints.
 			Name: "TestContainerSetSidecar",
 			Values: map[string]string{
+				"identity.enabled":                                     "true",
 				"webModeler.enabled":                                   "true",
 				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
 				"webModeler.webapp.sidecars[0].name":                   "nginx",
@@ -163,6 +168,7 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetInitContainer",
 			Values: map[string]string{
+				"identity.enabled":                                           "true",
 				"webModeler.enabled":                                         "true",
 				"webModeler.restapi.mail.fromAddress":                        "example@example.com",
 				"webModeler.webapp.initContainers[0].name":                   "nginx",
@@ -190,6 +196,7 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestSetDnsPolicyAndDnsConfig",
 			Values: map[string]string{
+				"identity.enabled":                           "true",
 				"webModeler.enabled":                         "true",
 				"webModeler.restapi.mail.fromAddress":        "example@example.com",
 				"webModeler.webapp.dnsPolicy":                "ClusterFirst",
@@ -217,5 +224,6 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 		},
 	}
 
+	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

@@ -90,7 +90,7 @@ main () {
 
 release_notes_footer () {
     chart_dir="${1}"
-    export CHART_NAME_WITH_VERSION="$(yq '[.name, .version] | join("-")' "${chart_dir}/Chart.yaml")"
+    export CHART_RELEASE_NAME="$(yq '[.name, .version] | join("-")' "${chart_dir}/Chart.yaml")"
     export VERSION_MATRIX_RELEASE_HEADER="false"
     export VERSION_MATRIX_RELEASE_INFO="$(CHART_DIR=${chart_dir} make release.generate-version-matrix-unreleased)"
     echo "\nChart dir: $${chart_dir}";\

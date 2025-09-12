@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.8.0-alpha7"
+    app.kubernetes.io/version: "8.8.0-alpha8"
   annotations:
     {}
 data:
@@ -72,7 +72,7 @@ data:
                 - definition: write
                   description: "Write permission"
           roles:
-            - name: "Identity"
+            - name: "ManagementIdentity"
               description: "Provides full access to Identity"
               permissions:
                 - audience: "camunda-identity-resource-server"
@@ -194,7 +194,7 @@ data:
           lastName: "User"
           email: "demo@example.org"
           roles:
-            - Identity
+            - ManagementIdentity
             - Optimize
             - Web Modeler
             - Web Modeler Admin
@@ -239,6 +239,8 @@ data:
                 - "/"
     server:
       port: 8084
+      servlet:
+        context-path: "/identity"
 
     spring:
       servlet:

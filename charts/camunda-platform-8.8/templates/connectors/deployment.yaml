@@ -39,33 +39,32 @@ spec:
               name: {{ .Values.connectors.service.serverName }}
               protocol: TCP
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            {{- if eq .Values.global.security.authentication.method "oidc" }}
-            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "connectors.authClientSecretName" . }}
-                  key: {{ include "connectors.authClientSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" .Values.global.identity.auth.connectors
+            ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
             - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
             {{- end }}
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
@@ -125,8 +124,8 @@ spec:
             - mountPath: /tmp
               name: tmp
             - name: config
-              mountPath: /config/application.yml
-              subPath: application.yml
+              mountPath: /config/application.yaml
+              subPath: application.yaml
           {{- range $key, $val := .Values.connectors.extraConfiguration }}
             - name: config
               mountPath: /config/{{ $key }}
@@ -134,7 +133,7 @@ spec:
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
           {{- if .Values.connectors.extraVolumeMounts }}
@@ -158,12 +157,12 @@ spec:
           configMap:
             name: {{ include "connectors.fullname" . }}-configuration
         {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
         {{- end }}
       {{- if .Values.connectors.extraVolumes }}
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}

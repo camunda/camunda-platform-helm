@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.8.0-alpha7"
+    app.kubernetes.io/version: "8.8.0-alpha8"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: "8.8.0-alpha7"
+        app.kubernetes.io/version: "8.8.0-alpha8"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,7 +44,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.8.0-alpha7
+          image: camunda/connectors-bundle:8.8.0-alpha8
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -59,11 +59,7 @@ spec:
               name: http
               protocol: TCP
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
+            
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
@@ -76,7 +72,7 @@ spec:
               memory: 1Gi
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /connectors/actuator/health/readiness
               port: http
               scheme: HTTP
             initialDelaySeconds: 30
@@ -88,8 +84,8 @@ spec:
             - mountPath: /tmp
               name: tmp
             - name: config
-              mountPath: /config/application.yml
-              subPath: application.yml
+              mountPath: /config/application.yaml
+              subPath: application.yaml
       volumes:
         - name: tmp
           emptyDir: {}

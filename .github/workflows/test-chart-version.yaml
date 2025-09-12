@@ -5,10 +5,11 @@ on:
   pull_request:
     paths:
       - ".github/workflows/chart-validate-template.yaml"
-      - ".github/workflows/test-unit-template.yml"
+      - ".github/workflows/test-unit-template.yaml"
       - ".github/workflows/test-integration-template.yaml"
       - ".github/workflows/test-chart-version-template.yaml"
       - ".github/workflows/test-chart-version.yaml"
+      - ".github/config/external-secret/**"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
   workflow_dispatch: 
@@ -105,7 +106,7 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
-    uses: ./.github/workflows/test-unit-template.yml
+    uses: ./.github/workflows/test-unit-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}-unit-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
@@ -136,7 +137,7 @@ jobs:
     permissions:
       contents: read
     secrets: inherit
-    uses: ./.github/workflows/test-local-template.yml
+    uses: ./.github/workflows/test-local-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}-loc-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
@@ -161,5 +162,5 @@ jobs:
       exclude: ${{ matrix.exclude }}
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
-      flows: ${{ inputs.flows || 'install,upgrade' }}
+      flows: ${{ inputs.flows || matrix.flow || 'install,upgrade' }}
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}

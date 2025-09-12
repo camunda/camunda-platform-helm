@@ -1,0 +1,156 @@
+# -----------------------------------------------------------------------------
+# Camunda Platform Helm – Build Matrix Generator (Purpose & Rationale)
+#
+# Problem
+# -------
+# The repository hosts many versioned Camunda Platform Helm charts (8.2, 8.3, …).
+# Building and testing every single chart on every pull-request would slow the
+# feedback loop and needlessly consume CI resources.
+#
+# Goal
+# ----
+# Run the smallest *sufficient* set of chart builds for a given change set while
+# still guaranteeing correctness when the build or release process itself is
+# modified.
+#
+# Strategy
+# --------
+# 1. Detect which files were modified in the commit / PR.
+# 2. Derive the **minimum chart version matrix** from that file list.
+#    • Regular code or chart changes  → build only the impacted versions.
+#    • Changes in CI configuration    → build *all* versions, as any could be
+#      affected.
+# 3. Provide the resulting set as a JSON matrix so downstream workflows can
+#    fan-out their jobs.
+#
+# When is *every* chart built?
+# ---------------------------
+# If the change touches `.github/workflows/**`, `.github/actions/**`, or 
+# `.github/config/**`, the CI pipeline or shared configuration may have changed. 
+# In the absence of guarantees we take the conservative route and rebuild every 
+# chart to retain confidence.
+#
+# Manual override
+# ---------------
+# Maintainers can bypass automatic detection by passing the `manual-trigger`
+# input, forcing the matrix to contain exactly one desired version. This is
+# useful for re-publishing a chart or running ad-hoc validations.
+# -----------------------------------------------------------------------------
+name: Generate chart matrix
+description: Find changed charts and generate matrix for changed ones only.
+inputs:
+  manual-trigger:
+    description: Input used by workflow dispatch to trigger a build on a specific chart version
+    default: "none"
+outputs:
+  matrix:
+    description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-chart-versions.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: ℹ️ Print workflow inputs ℹ️
+      shell: bash
+      env:
+        GITHUB_CONTEXT: ${{ toJson(inputs) }}
+      run: |
+        echo "Action Inputs:"
+        echo "${GITHUB_CONTEXT}"
+    - name: Get changed dirs
+      id: changed-files
+      uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46
+      with:
+        dir_names: "true"
+    - name: Get chart versions
+      id: get-chart-versions
+      uses: ./.github/actions/get-chart-versions
+    - name: Generate matrix
+      shell: bash
+      id: set-chart-versions
+      env:
+        ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
+      run: |
+        write_matrix_entry() {
+          local camunda_version="$1"
+          local chart_dir="$2"
+          echo "⭐ Generating matrix for $camunda_version and chart $chart_dir"
+          if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
+            readarray prScenarios < <(yq e -o=j -I=0 '.integration.case.pr.scenario.[]' $chart_dir/test/ci-test-config.yaml)
+            for prScenario in "${prScenarios[@]}"; do
+              enabled=$(echo "$prScenario" | yq e '.enabled' -)
+              if [ "$enabled" = "false" ]; then
+                continue
+              fi
+              echo "  - version: ${camunda_version}" >> matrix_versions.txt
+              echo "    case: pr" >> matrix_versions.txt
+              echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
+              echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
+              echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
+              echo "    flow: $(echo "$prScenario" | yq e '.flow' -)" >> matrix_versions.txt
+              echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+            done
+            sed -i -e '$s/,$/]\n/' matrix_versions.txt
+          fi
+        }
+
+        echo "Checking for manual-trigger"
+        touch matrix_versions.txt
+        echo "matrix:" > matrix_versions.txt
+        if [[ "${{ inputs.manual-trigger }}" == "all" ]]; then
+          echo "Requested to build all"
+          for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+            chart_dir="charts/camunda-platform-${camunda_version}"
+            write_matrix_entry "$camunda_version" "$chart_dir"
+          done
+        elif [[ "${{ inputs.manual-trigger }}" != "none" && "${{ inputs.manual-trigger }}" != "" ]]; then
+          echo "Manual trigger detected: ${{ inputs.manual-trigger }}"
+          chart_dir="charts/camunda-platform-${{ inputs.manual-trigger }}"
+          if [ -d "$chart_dir" ]; then
+            camunda_version="${{ inputs.manual-trigger }}"
+            write_matrix_entry "$camunda_version" "$chart_dir"
+          else
+            echo "Chart directory $chart_dir does not exist. Aborting."
+            exit 1
+          fi
+        else
+          echo "Setting matrix based on changed files"
+          echo "Changed files:"
+          printf "%s\n" ${ALL_MODIFIED_FILES}
+
+          # If any workflow, action, files have changed, build all chart versions
+          if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)"; then
+            echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
+            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+              chart_dir="charts/camunda-platform-${camunda_version}"
+              write_matrix_entry "$camunda_version" "$chart_dir"
+            done
+
+          # If any external secret config files have changed, build all chart versions
+          elif echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/config" && \
+              ! echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/config/release-please"; then
+            echo "Changes in .github/config (excluding release-please) detected — building all chart versions"
+            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+              chart_dir="charts/camunda-platform-${camunda_version}"
+              write_matrix_entry "$camunda_version" "$chart_dir"
+            done
+
+          # Else, only rebuild the affected charts
+          else
+            for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+              chart_dir="charts/camunda-platform-${camunda_version}"
+              if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
+                write_matrix_entry "$camunda_version" "$chart_dir"
+              fi
+            done
+          fi
+        fi
+        cat matrix_versions.txt
+
+        if [ "$(cat matrix_versions.txt)" = "matrix:" ]; then
+          echo "The matrix.txt file is empty. This workflow is only triggered when there are changes to the code. Aborting."
+          exit 1
+        fi
+
+        matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \
+          | jq -c 'walk(if type == "number" then tostring else . end)')"
+        echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT

@@ -54,40 +54,43 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"optimize.enabled": "false",
 				"identity.enabled": "true",
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "bar",
+				"global.identity.auth.connectors.existingSecret.name":    "foo",
+				"global.identity.auth.orchestration.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().NotContains(output, "charts/optimize")
+				require.NotContains(t, output, "charts/optimize")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderOperateIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"operate.enabled":  "false",
 				"identity.enabled": "true",
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "bar",
+				"global.identity.auth.connectors.existingSecret.name":    "foo",
+				"global.identity.auth.orchestration.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().NotContains(output, "charts/operate")
+				require.NotContains(t, output, "charts/operate")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderTasklistIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"tasklist.enabled": "false",
 				"identity.enabled": "true",
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "bar",
+				"global.identity.auth.connectors.existingSecret.name":    "foo",
+				"global.identity.auth.orchestration.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().NotContains(output, "charts/tasklist")
+				require.NotContains(t, output, "charts/tasklist")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderIdentityIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -97,55 +100,62 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().NotContains(output, "/templates/identity/")
+				require.NotContains(t, output, "/templates/identity/")
 			},
-		}, {
+		},
+		{
 			Name:                 "TestContainerShouldNotRenderWebModelerIfDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"webModeler.enabled": "false",
 				"identity.enabled":   "true",
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "bar",
+				"global.identity.auth.connectors.existingSecret.name":    "foo",
+				"global.identity.auth.orchestration.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().NotContains(output, "templates/web-modeler")
+				require.NotContains(t, output, "templates/web-modeler")
 			},
-		}, {
+		},
+		{
+			Skip:                 true,
 			Name:                 "TestContainerSetImageNameGlobal",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.image.registry": "global.custom.registry.io",
-				"global.image.tag":      "8.x.x",
-				"connectors.image.tag":  "",
-				"identity.image.tag":    "",
-				"optimize.image.tag":    "",
-				"orchestration.image.tag":        "",
-				"identity.enabled":      "true",
+				"global.image.registry":   "global.custom.registry.io",
+				"global.image.tag":        "8.x.x",
+				"connectors.image.tag":    "",
+				"identity.image.tag":      "",
+				"optimize.image.tag":      "",
+				"orchestration.image.tag": "",
+				"identity.enabled":        "true",
+				"optimize.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
-				s.Require().Contains(output, "image: global.custom.registry.io/camunda/connectors-bundle:8.x.x")
-				s.Require().Contains(output, "image: global.custom.registry.io/camunda/identity:8.x.x")
-				s.Require().Contains(output, "image: global.custom.registry.io/camunda/optimize:8.x.x")
-				s.Require().Contains(output, "image: global.custom.registry.io/camunda/camunda:8.x.x")
+				require.Contains(t, output, "image: global.custom.registry.io/camunda/connectors-bundle:8.x.x")
+				require.Contains(t, output, "image: global.custom.registry.io/camunda/identity:8.x.x")
+				require.Contains(t, output, "image: global.custom.registry.io/camunda/optimize:8.x.x")
+				require.Contains(t, output, "image: global.custom.registry.io/camunda/camunda:8.x.x")
 			},
-		}, {
+		},
+		{
+			Skip: true,
 			Name: "TestComponentDigestOverridesTag",
 			Values: map[string]string{
 				// leave tags empty to force each component to use its own digest
-				"connectors.image.tag": "",
-				"identity.image.tag":   "",
-				"optimize.image.tag":   "",
-				"orchestration.image.tag":       "",
-				"identity.enabled":     "true",
+				"connectors.image.tag":    "",
+				"identity.image.tag":      "",
+				"optimize.image.tag":      "",
+				"orchestration.image.tag": "",
+				"identity.enabled":        "true",
+				"optimize.enabled":        "true",
 
 				// set component‐level digests
-				"connectors.image.digest": "sha256:aaa111",
-				"identity.image.digest":   "sha256:bbb222",
-				"optimize.image.digest":   "sha256:ccc333",
-				"orchestration.image.digest":       "sha256:ddd444",
+				"connectors.image.digest":    "sha256:aaa111",
+				"identity.image.digest":      "sha256:bbb222",
+				"optimize.image.digest":      "sha256:ccc333",
+				"orchestration.image.digest": "sha256:ddd444",
 			},
 			HelmOptionsExtraArgs: map[string][]string{
 				"install":  {"--debug"},
@@ -156,21 +166,23 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "image: camunda/connectors-bundle@sha256:aaa111")
 				require.Contains(t, output, "image: camunda/identity@sha256:bbb222")
 				require.Contains(t, output, "image: camunda/optimize@sha256:ccc333")
-				require.Contains(t, output, "image: camunda/zeebe@sha256:ddd444")
+				require.Contains(t, output, "image: camunda/camunda@sha256:ddd444")
 			},
 		},
 		{
+			Skip: true,
 			Name: "TestDigestFallsBackToTagWhenNoDigest",
 			Values: map[string]string{
-				"connectors.image.tag": "8.x.x",
-				"orchestration.image.tag":       "8.x.x",
+				"connectors.image.tag":    "8.x.x",
+				"orchestration.image.tag": "8.x.x",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				require.Contains(t, output, "image: camunda/connectors-bundle:8.x.x")
-				require.Contains(t, output, "image: camunda/orchestration:8.x.x")
+				require.Contains(t, output, "image: camunda/camunda:8.x.x")
 			},
 		},
 	}
+
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

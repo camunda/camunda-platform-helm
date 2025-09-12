@@ -53,3 +53,8 @@ integration:
           exclude: []
           auth: keycloak
           enterprise: true
+        - name: documentstore
+          enabled: false
+          exclude: []
+          shortname: docstr
+          auth: keycloak

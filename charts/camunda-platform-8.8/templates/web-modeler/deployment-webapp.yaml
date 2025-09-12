@@ -34,11 +34,11 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.webapp.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.licenseSecretName" . }}
-                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
             - name: NODE_ENV
               value: "production"
             - name: PLAY_ENABLED
@@ -70,19 +70,19 @@ spec:
             {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
             - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
             {{- end }}
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
           envFrom:
             - configMapRef:
@@ -109,6 +109,7 @@ spec:
             httpGet:
               {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.startupProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.webapp.startupProbe.periodSeconds }}
@@ -121,6 +122,7 @@ spec:
             httpGet:
               {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.readinessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.webapp.readinessProbe.periodSeconds }}
@@ -133,6 +135,7 @@ spec:
             httpGet:
               {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
               path: {{ .Values.webModeler.webapp.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.livenessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.webapp.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webModeler.webapp.livenessProbe.periodSeconds }}
@@ -151,7 +154,7 @@ spec:
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
-              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
           {{- if .Values.webModeler.webapp.extraVolumeMounts }}
@@ -165,12 +168,12 @@ spec:
           configMap:
             name: {{ include "webModeler.fullname" . }}-webapp-configuration
         {{- if .Values.global.documentStore.type.gcp.enabled }}
-        - name: gcp-credentials-volume
-          secret:
-            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
-            items:
-              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
-                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
         {{- end }}
         {{- if .Values.webModeler.webapp.extraVolumes }}
         {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}

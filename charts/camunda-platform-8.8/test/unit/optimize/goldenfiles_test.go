@@ -45,6 +45,7 @@ func TestGoldenDefaultsTemplateOptimize(t *testing.T) {
 			},
 			SetValues: map[string]string{
 				"optimize.enabled": "true",
+				"identity.enabled": "true",
 			},
 		})
 	}

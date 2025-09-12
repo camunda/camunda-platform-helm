@@ -193,21 +193,7 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
     {{- end -}}
 {{- end -}}
 
-{{/*
-[camunda-platform] Get Camunda license secret name.
-*/}}
-{{- define "camundaPlatform.licenseSecretName" -}}
-  {{- $defaultSecretName := printf "%s-license" (include "camundaPlatform.fullname" .) -}}
-  {{- .Values.global.license.existingSecret | default $defaultSecretName -}}
-{{- end -}}
 
-{{/*
-[camunda-platform] Get Camunda license secret key.
-*/}}
-{{- define "camundaPlatform.licenseSecretKey" -}}
-  {{- $defaultSecretKey := "CAMUNDA_LICENSE_KEY" -}}
-  {{- .Values.global.license.existingSecretKey | default $defaultSecretKey -}}
-{{- end -}}
 
 
 {{/*
@@ -332,67 +318,9 @@ Elasticsearch and Opensearch templates.
     {{ .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.global.opensearch.url.port }}
 {{- end -}}
 
-{{/*
-[elasticsearch] Get name of elasticsearch auth existing secret. For more details:
-https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
-*/}}
-{{- define "elasticsearch.authExistingSecret" -}}
-    {{- if .Values.global.elasticsearch.auth.existingSecret }}
-        {{- .Values.global.elasticsearch.auth.existingSecret -}}
-    {{- else -}}
-        {{ include "camundaPlatform.fullname" . }}-elasticsearch
-    {{- end }}
-{{- end -}}
 
-{{/*
-[elasticsearch] Get elasticsearch auth existing secret key.
-*/}}
-{{- define "elasticsearch.authExistingSecretKey" -}}
-    {{- if .Values.global.elasticsearch.auth.existingSecretKey }}
-        {{- .Values.global.elasticsearch.auth.existingSecretKey -}}
-    {{- else -}}
-        password
-    {{- end }}
-{{- end -}}
 
-{{/*
-[elasticsearch] Used as a boolean to determine whether any password is defined.
-Do not use this for its string value.
-*/}}
-{{- define "elasticsearch.passwordIsDefined" -}}
-{{- (cat .Values.global.elasticsearch.auth.existingSecret .Values.global.elasticsearch.auth.password) -}}
-{{- end -}}
 
-{{/*
-[opensearch] Used as a boolean to determine whether any password is defined.
-Do not use this for its string value.
-*/}}
-{{- define "opensearch.passwordIsDefined" -}}
-{{- (cat .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) -}}
-{{- end -}}
-
-{{/*
-[opensearch] Get name of elasticsearch auth existing secret. For more details:
-https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
-*/}}
-{{- define "opensearch.authExistingSecret" -}}
-    {{- if .Values.global.opensearch.auth.existingSecret }}
-        {{- .Values.global.opensearch.auth.existingSecret -}}
-    {{- else -}}
-        {{ include "camundaPlatform.fullname" . }}-opensearch
-    {{- end }}
-{{- end -}}
-
-{{/*
-[opensearch] Get opensearch auth existing secret key.
-*/}}
-{{- define "opensearch.authExistingSecretKey" -}}
-    {{- if .Values.global.opensearch.auth.existingSecretKey }}
-        {{- .Values.global.opensearch.auth.existingSecretKey -}}
-    {{- else -}}
-        password
-    {{- end }}
-{{- end -}}
 
 {{/*
 ********************************************************************************
@@ -783,6 +711,249 @@ Release templates.
     readiness: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath }}
     metrics: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus }}
   {{- end }}
+{{- end -}}
+
+{{/*
+normalizeSecretConfiguration
+Normalizes secret configuration from various input formats to a standardized output format.
+Supports both new-style (>= 8.8: secret.existingSecret/secret.inlineSecret) and legacy formats (< 8.8).
+Returns a dict with "ref" and "plaintext" keys.
+- "ref": dict with "name" and "key" fields for Kubernetes secret reference, or nil if not using secret
+- "plaintext": string value for inline plaintext, or empty string if using secret reference
+Usage:
+  {{ include "camundaPlatform.normalizeSecretConfiguration" (dict
+      "config" .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+      "defaultSecretName" "my-default-secret"
+      "defaultSecretKey" "password"
+  ) }}
+*/}}
+{{- define "camundaPlatform.normalizeSecretConfiguration" -}}
+{{- $config := .config | default dict -}}
+{{- $plaintextKey := .plaintextKey | default "password" -}}
+{{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+{{- $defName := .defaultSecretName | default "" -}}
+{{- $defKey := .defaultSecretKey | default "password" -}}
+
+{{- $result := dict "ref" nil "plaintext" "" -}}
+
+{{/* New (>= 8.8): existingSecret + existingSecretKey */}}
+{{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
+  {{- $_ := set $result "ref" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
+
+{{/* New (>= 8.8): inlineSecret for plaintext values */}}
+{{- else if and $config.secret $config.secret.inlineSecret -}}
+  {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
+
+{{/* Legacy (< 8.8): string + keyField => secret reference */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "string" $config.existingSecret)
+    $config.existingSecret
+    (hasKey $config $legacyKeyField)
+    (ne (get $config $legacyKeyField | default "") "")
+-}}
+  {{- $_ := set $result "ref" (dict "name" $config.existingSecret "key" (get $config $legacyKeyField)) -}}
+
+{{/* Legacy (< 8.8): object form for secret reference */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "map" $config.existingSecret)
+    (ne ($config.existingSecret.name | default "") "")
+-}}
+  {{- $_ := set $result "ref" (dict "name" $config.existingSecret.name "key" (get $config $legacyKeyField)) -}}
+
+{{/* Legacy (< 8.8): string fallback for plaintext values */}}
+{{- else if and
+    (hasKey $config "existingSecret")
+    (kindIs "string" $config.existingSecret)
+    $config.existingSecret
+-}}
+  {{- $_ := set $result "plaintext" $config.existingSecret -}}
+
+{{/* Fallback: direct plaintext key */}}
+{{- else if (hasKey $config $plaintextKey) -}}
+  {{- $_ := set $result "plaintext" (get $config $plaintextKey | default "") -}}
+{{- end }}
+
+{{/* Final fallback to the caller‑supplied default */}}
+{{- if and (not $result.ref) (not $result.plaintext) $defName -}}
+  {{- $_ := set $result "ref" (dict "name" $defName "key" $defKey) -}}
+{{- end }}
+
+{{- toYaml $result -}}
+{{- end -}}
+
+{{/*
+emitEnvVarFromSecretConfig
+Usage:
+  {{ include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+      "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+      "config"  .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitEnvVarFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.ref $norm.plaintext -}}
+- name: {{ .envName }}
+{{- if $norm.ref }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $norm.ref.name }}
+      key: {{ $norm.ref.key }}
+{{- else }}
+  value: {{ $norm.plaintext | quote }}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+hasSecretConfig
+Returns a string indicating whether there is a valid secret configuration.
+Named templates don't return bools, only strings [1].
+Usage:
+  {{ if eq (include "camundaPlatform.hasSecretConfig" (dict
+      "config"  .Values.identity.firstUser
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  )) "true" }}
+
+[1] https://github.com/helm/helm/issues/11231
+*/}}
+{{- define "camundaPlatform.hasSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if or $norm.ref $norm.plaintext -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+emitAwsDocumentStoreSecret
+Emits AWS Document Store environment variable handling both legacy and new secret patterns.
+Prioritizes new pattern over legacy pattern.
+Usage:
+  - name: AWS_ACCESS_KEY_ID
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "accessKeyId" "context" .) }}
+  - name: AWS_SECRET_ACCESS_KEY
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "secretAccessKey" "context" .) }}
+*/}}
+{{- define "camundaPlatform.emitAwsDocumentStoreSecret" -}}
+{{- $root := .context -}}
+{{- if $root.Values.global.documentStore.type.aws.enabled -}}
+{{- $awsConfig := $root.Values.global.documentStore.type.aws -}}
+{{- $secretType := .secretType -}}
+{{- $legacyKey := "" -}}
+{{- if eq $secretType "accessKeyId" -}}
+  {{- $legacyKey = $awsConfig.accessKeyIdKey -}}
+{{- else if eq $secretType "secretAccessKey" -}}
+  {{- $legacyKey = $awsConfig.secretAccessKeyKey -}}
+{{- end -}}
+{{/* New pattern - prioritize over legacy */}}
+{{- $secretConfig := (index $awsConfig $secretType) | default dict -}}
+{{- if and $secretConfig.secret (or $secretConfig.secret.existingSecret $secretConfig.secret.inlineSecret) -}}
+{{- if and $secretConfig.secret.existingSecret $secretConfig.secret.existingSecretKey -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ $secretConfig.secret.existingSecret }}
+    key: {{ $secretConfig.secret.existingSecretKey }}
+{{- else if $secretConfig.secret.inlineSecret -}}
+value: {{ $secretConfig.secret.inlineSecret | quote }}
+{{- end -}}
+{{/* Legacy pattern - fallback */}}
+{{- else if and $awsConfig.existingSecret $legacyKey -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ $awsConfig.existingSecret | quote }}
+    key: {{ $legacyKey | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+emitVolumeFromSecretConfig
+Emits volume definition using normalized secret configuration.
+Usage:
+  {{ include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+      "volumeName" "gcp-credentials-volume"
+      "config" .Values.global.documentStore.type.gcp
+      "legacyKeyField" "credentialsKey"
+      "fileName" (.Values.global.documentStore.type.gcp.fileName | default "service-account.json")
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitVolumeFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if $norm.ref }}
+- name: {{ .volumeName }}
+  secret:
+    secretName: {{ $norm.ref.name | quote }}
+    items:
+      - key: {{ $norm.ref.key | quote }}
+        path: {{ .fileName | quote }}
+{{- end }}
+{{- end -}}
+
+{{/*
+shouldAutogenerateSecret
+Determines whether a secret should be autogenerated for a given component configuration.
+Returns "true" if autogeneration should occur, "false" otherwise.
+
+This function handles both legacy (< 8.8) and new (>= 8.8) secret configuration patterns:
+1. If the component has no secret configuration at all -> autogenerate
+2. If the component explicitly references the autogenerated secret name -> autogenerate
+3. Otherwise -> do not autogenerate (user has their own secret config)
+
+Note: This helper assumes it's called within the context where global autogeneration is enabled,
+since the secret template only renders when .Values.global.secrets.autoGenerated is true.
+
+Usage:
+  {{ if eq (include "camundaPlatform.shouldAutogenerateSecret" (dict
+      "config" .Values.identity.firstUser
+      "autogeneratedSecretName" .Values.global.secrets.name
+      "plaintextKey" "password"
+      "legacyKeyField" "existingSecretKey"
+  )) "true" }}
+
+Parameters:
+- config: The component's configuration object
+- autogeneratedSecretName: The name of the autogenerated secret
+- plaintextKey: The key to check for plaintext values (optional)
+- legacyKeyField: The legacy key field name (optional, defaults to "existingSecretKey")
+*/}}
+{{- define "camundaPlatform.shouldAutogenerateSecret" -}}
+{{- $config := .config | default dict -}}
+{{- $autogenSecretName := .autogeneratedSecretName | default "" -}}
+{{- $plaintextKey := .plaintextKey | default "password" -}}
+{{- $legacyKeyField := .legacyKeyField | default "existingSecretKey" -}}
+
+{{- $result := "false" -}}
+
+{{/* Check if component has no secret configuration */}}
+{{- $hasSecretConfig := include "camundaPlatform.hasSecretConfig" (dict
+    "config" $config
+    "plaintextKey" $plaintextKey
+    "legacyKeyField" $legacyKeyField
+) -}}
+
+{{- if eq $hasSecretConfig "false" -}}
+  {{/* No secret config found -> autogenerate */}}
+  {{- $result = "true" -}}
+{{- else -}}
+  {{/* Check if component explicitly references the autogenerated secret */}}
+  {{- if and $config.existingSecret (eq (toString $config.existingSecret) (toString $autogenSecretName)) -}}
+    {{/* Legacy format points to autogen secret -> autogenerate */}}
+    {{- $result = "true" -}}
+  {{- else if and $config.secret $config.secret.existingSecret (eq (toString $config.secret.existingSecret) (toString $autogenSecretName)) -}}
+    {{/* New format points to autogen secret -> autogenerate */}}
+    {{- $result = "true" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $result -}}
 {{- end -}}
 
 {{/*

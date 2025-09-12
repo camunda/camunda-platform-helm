@@ -4,11 +4,13 @@
 
 ### Verification
 
-To verify the integrity of the Helm chart using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
+For quick verification of the Helm chart integrity using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob {{ getenv "CHART_NAME_WITH_VERSION" }}.tgz \
-  --bundle {{ getenv "CHART_NAME_WITH_VERSION" }}.cosign.bundle \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate-identity "https://github.com/{{ getenv "GITHUB_WORKFLOW_REF" }}"
+cosign verify-blob {{ getenv "CHART_RELEASE_NAME" }}.tgz \
+  --bundle "{{ getenv "CHART_RELEASE_NAME" }}-cosign-bundle.json" \
+  --certificate-identity-regex "https://github.com/{{ getenv "GITHUB_REPOSITORY" }}" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
+
+For detailed verification instructions, check the steps in the `{{ getenv "CHART_RELEASE_NAME" }}-cosign-verify.sh` file.

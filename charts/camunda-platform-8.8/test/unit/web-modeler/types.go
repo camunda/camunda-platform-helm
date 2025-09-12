@@ -118,7 +118,7 @@ type PusherConfig struct {
 	Host     string `toml:"host"`
 	Port     string `toml:"port"`
 	Path     string `toml:"path"`
-	ForceTLS string `toml:"forceTLS"`
+	ForceTLS bool   `toml:"forceTLS"`
 }
 
 type OAuth2Config struct {

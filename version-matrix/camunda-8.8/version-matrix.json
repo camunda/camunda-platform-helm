@@ -88,5 +88,22 @@
       "docker.io/camunda/web-modeler-webapp:8.8.0-alpha7",
       "docker.io/camunda/web-modeler-websockets:8.8.0-alpha7"
     ]
+  },
+  {
+    "chart_version": "13.0.0-alpha8",
+    "chart_images": [
+      "docker.io/bitnamilegacy/elasticsearch:8.18.0",
+      "docker.io/bitnamilegacy/os-shell:12-debian-12-r43",
+      "docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/camunda:8.8.0-alpha8",
+      "docker.io/camunda/connectors-bundle:8.8.0-alpha8",
+      "docker.io/camunda/console:8.8.0-alpha8.1",
+      "docker.io/camunda/identity:8.8.0-alpha8",
+      "docker.io/camunda/keycloak:26.3.1",
+      "docker.io/camunda/optimize:8.8.0-alpha8",
+      "docker.io/camunda/web-modeler-restapi:8.8.0-alpha8",
+      "docker.io/camunda/web-modeler-webapp:8.8.0-alpha8",
+      "docker.io/camunda/web-modeler-websockets:8.8.0-alpha8"
+    ]
   }
 ]

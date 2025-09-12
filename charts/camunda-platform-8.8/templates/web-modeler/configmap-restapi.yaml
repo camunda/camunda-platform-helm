@@ -54,7 +54,7 @@ data:
             version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
             authentication: {{ include "webModeler.authenticationType" . | quote }}
             authorizations:
-              enabled: {{ .Values.global.security.authorizations.enabled }}
+              enabled: {{ .Values.orchestration.security.authorizations.enabled }}
             url:
               grpc: "grpc://{{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}"
               rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}"

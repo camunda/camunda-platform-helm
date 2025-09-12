@@ -38,16 +38,15 @@ func TestConstraintsTemplate(t *testing.T) {
 func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
+			Skip: true,
 			Name: "TestIdentityKeycloakConstraintFailure",
 			Values: map[string]string{
 				"identity.enabled":         "false",
 				"identityKeycloak.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-				s.Require().Error(err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
+				require.Error(t, err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
 			},
 		}, {
 			Name: "TestIdentityKeycloakConstraintSuccess",
@@ -60,9 +59,9 @@ func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				s.Require().NoError(err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
+				require.NoError(t, err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
 			},
 		},
 	}

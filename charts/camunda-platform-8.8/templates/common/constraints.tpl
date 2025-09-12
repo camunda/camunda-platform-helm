@@ -96,12 +96,34 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{- end }}
 
 {{/*
-Fail with a message if Console is enabled but managed Identity is not enabled.
+Fail with a message if Console is enabled but management Identity is not enabled.
 */}}
 {{- if and .Values.console.enabled (not .Values.identity.enabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
-      "Console is enabled but managed Identity is not enabled."
-      "Please ensure that if Console is enabled, managed Identity must also be enabled."
+      "Console is enabled but management Identity is not enabled."
+      "Please ensure that if Console is enabled, management Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Optimize is enabled but management Identity is not enabled.
+*/}}
+{{- if and .Values.optimize.enabled (not .Values.identity.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Optimize is enabled but management Identity is not enabled."
+      "Please ensure that if Optimize is enabled, management Identity must also be enabled."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Web Modeler is enabled but management Identity is not enabled.
+*/}}
+{{- if and .Values.webModeler.enabled (not .Values.identity.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Web Modeler is enabled but management Identity is not enabled."
+      "Please ensure that if Web Modeler is enabled, management Identity must also be enabled."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
@@ -210,7 +232,123 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
   {{- end }}
+
+  {{/* Secret configuration warnings */}}
+  {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 {{- end }}
+
+{{/*
+**************************************************************
+Secret configuration constraint helpers.
+
+These constraints validate new vs legacy secret configuration usage across Camunda components
+**************************************************************
+*/}}
+
+{{/*
+camundaPlatform.secretConfigurationWarnings
+Generates warnings for secret configuration issues.
+Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+*/}}
+{{- define "camundaPlatform.secretConfigurationWarnings" -}}
+  {{- $secretConfigs := list 
+    (dict "path" "global.license" "config" .Values.global.license "plaintextKey" "key")
+    (dict "path" "global.elasticsearch.tls" "config" .Values.global.elasticsearch.tls)
+    (dict "path" "global.elasticsearch.auth" "config" .Values.global.elasticsearch.auth)
+    (dict "path" "global.opensearch.tls" "config" .Values.global.opensearch.tls) 
+    (dict "path" "global.opensearch.auth" "config" .Values.global.opensearch.auth)
+    (dict "path" "global.identity.auth.admin" "config" .Values.global.identity.auth.admin)
+    (dict "path" "global.identity.auth.console" "config" .Values.global.identity.auth.console)
+    (dict "path" "global.identity.auth.connectors" "config" .Values.global.identity.auth.connectors)
+    (dict "path" "global.identity.auth.core" "config" .Values.global.identity.auth.core)
+    (dict "path" "global.identity.auth.optimize" "config" .Values.global.identity.auth.optimize)
+    (dict "path" "identity.firstUser" "config" .Values.identity.firstUser)
+    (dict "path" "webModeler.restapi.externalDatabase" "config" .Values.webModeler.restapi.externalDatabase)
+    (dict "path" "webModeler.restapi.mail" "config" .Values.webModeler.restapi.mail "plaintextKey" "smtpPassword")
+    (dict "path" "global.documentStore.type.aws.accessKeyId" "config" .Values.global.documentStore.type.aws.accessKeyId "isAwsDocumentStore" true)
+    (dict "path" "global.documentStore.type.aws.secretAccessKey" "config" .Values.global.documentStore.type.aws.secretAccessKey "isAwsDocumentStore" true)
+    (dict "path" "global.documentStore.type.gcp" "config" .Values.global.documentStore.type.gcp "isGcpDocumentStore" true "legacySecretKey" "existingSecret" "legacyFileKey" "credentialsKey")
+  -}}
+
+  {{- range $secretConfigs -}}
+    {{- $config := .config -}}
+    {{- $path := .path -}}
+    {{- $component := $path -}}
+    {{- $plaintextKey := .plaintextKey | default "password" -}}
+    {{- $legacySecretKey := .legacySecretKey | default "existingSecret" -}}
+
+    {{/* Check if legacy configuration is used */}}
+    {{- $hasLegacyConfig := false -}}
+    {{- if .isAwsDocumentStore -}}
+      {{/* Special handling for AWS Document Store - check if legacy pattern exists */}}
+      {{- $awsConfig := $.Values.global.documentStore.type.aws -}}
+      {{- if and $awsConfig.existingSecret $awsConfig.accessKeyIdKey $awsConfig.secretAccessKeyKey -}}
+        {{- $hasLegacyConfig = true -}}
+      {{- end -}}
+    {{- else if and $config (kindOf $config | eq "map") -}}
+      {{- if or (and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "" | toString) "") (ne (get $config $legacySecretKey | toString) ""))
+                (and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "" | toString) "") (ne (get $config $plaintextKey | toString) "")) -}}
+        {{- $hasLegacyConfig = true -}}
+      {{- end -}}
+    {{- end -}}
+
+    {{/* Check if new configuration is used */}}
+    {{- $hasNewConfig := false -}}
+    {{- if and $config (kindOf $config | eq "map") (hasKey $config "secret") $config.secret -}}
+      {{- if or (ne ($config.secret.existingSecret | default "") "") (ne ($config.secret.inlineSecret | default "") "") -}}
+        {{- $hasNewConfig = true -}}
+      {{- end -}}
+    {{- end -}}
+
+    {{/* Warn about using old method instead of new */}}
+    {{- if and $hasLegacyConfig (not $hasNewConfig) -}}
+      {{- $warningMessage := printf "%s %s %s %s %s"
+          "[camunda][warning]"
+          (printf "DEPRECATION: %s is using legacy secret configuration at '%s'." $component $path)
+          "This method is deprecated and will be removed in a future version."
+          (printf "Please migrate to the new format: '%s.secret.existingSecret' for referencing secrets" $path)
+          (printf "or '%s.secret.inlineSecret' for plain-text values (non-production only)." $path)
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end -}}
+
+    {{/* Warn when both legacy and new are used */}}
+    {{- if and $hasLegacyConfig $hasNewConfig -}}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          (printf "%s has both legacy and new secret configuration defined at '%s'." $component $path)
+          "The new configuration will take precedence and the legacy configuration will be ignored."
+          "Please remove the legacy configuration to avoid confusion."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end -}}
+
+    {{/* Warn about insecure inlineSecret usage */}}
+    {{- if and $hasNewConfig (ne ($config.secret.inlineSecret | default "") "") -}}
+      {{- $warningMessage := printf "%s %s %s %s %s"
+          "[camunda][warning]"
+          (printf "SECURITY: %s is using 'inlineSecret' at '%s.secret.inlineSecret'." $component $path)
+          "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
+          "For production environments, please use Kubernetes Secrets"
+          (printf "with '%s.secret.existingSecret' and '%s.secret.existingSecretKey'." $path $path)
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end -}}
+
+    {{/* Warn about insecure legacy plaintext usage */}}
+    {{- if and $config (kindOf $config | eq "map") (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "" | toString) "") (ne (get $config $plaintextKey | toString) "") -}}
+      {{- $warningMessage := printf "%s %s %s %s %s"
+          "[camunda][warning]"
+          (printf "SECURITY: %s is using legacy plaintext field '%s' at '%s.%s'." $component $plaintextKey $path $plaintextKey)
+          "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
+          "For production environments, please use Kubernetes Secrets"
+          (printf "with '%s.secret.existingSecret' and '%s.secret.existingSecretKey'." $path $path)
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end -}}
+
+  {{- end -}}
+{{- end -}}
 
 {{/*
 **************************************************************
@@ -417,3 +555,39 @@ The old key was deprecated in 8.6 and removed in the 8.8 release.
   "condition" (((.Values.orchestration.ingress).rest).enabled)
   "oldName" "orchestration.ingress.rest"
 ) }}
+
+{{/*
+*******************************************************************************
+Security config moved from "global.security.*" to "orchestration.security.*"
+The keys moved in the 8.8 Alpha 8 version.
+*******************************************************************************
+*/}}
+
+{{- if .Values.orchestration.enabled -}}
+  {{/*
+  - renamed: global.security.authentication => orchestration.security.authentication
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.authentication)
+    "oldName" "global.security.authentication"
+    "newName" "orchestration.security.authentication"
+  ) }}
+
+  {{/*
+  - renamed: global.security.authorizations => orchestration.security.authorizations
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.authorizations)
+    "oldName" "global.security.authorizations"
+    "newName" "orchestration.security.authorizations"
+  ) }}
+
+  {{/*
+  - renamed: global.security.initialization => orchestration.security.initialization
+  */}}
+  {{ include "camundaPlatform.keyRenamed" (dict
+    "condition" (.Values.global.security.initialization)
+    "oldName" "global.security.initialization"
+    "newName" "orchestration.security.initialization"
+  ) }}
+{{- end }}
