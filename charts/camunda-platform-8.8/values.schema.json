@@ -592,17 +592,102 @@
                                         }
                                     }
                                 },
+                                "orchestration": {
+                                    "type": "object",
+                                    "properties": {
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
+                                            "default": "orchestration-api"
+                                        },
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
+                                            "default": "orchestration"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-orchestration-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
+                                        "redirectUrl": {
+                                            "type": "string",
+                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
+                                            "default": "http://localhost:8082"
+                                        },
+                                        "tokenScope": {
+                                            "type": "string",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
+                                            "default": ""
+                                        }
+                                    }
+                                },
+                                "connectors": {
+                                    "type": "object",
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
+                                            "default": "connectors"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-connectors-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "identity": {
                                     "type": "object",
                                     "properties": {
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Identity in authentication flows.",
+                                            "description": "defines the client id, which is used by Management Identity in authentication flows.",
                                             "default": "camunda-identity"
                                         },
                                         "audience": {
                                             "type": "string",
-                                            "description": "defines the audience, which is used by Identity.",
+                                            "description": "defines the audience, which is used by Management Identity.",
                                             "default": "camunda-identity-resource-server"
                                         },
                                         "existingSecretKey": {
@@ -612,17 +697,17 @@
                                         },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the redirect URL, which is used by the auth platform to access Identity.",
+                                            "description": "defines the redirect URL, which is used by the auth platform to access Management Identity.",
                                             "default": "http://localhost:8085"
                                         },
                                         "initialClaimName": {
                                             "type": "string",
-                                            "description": "defines the initial claim name, which is used by Identity to configure initial mapping rules,",
+                                            "description": "defines the initial claim name, which is used by Management Identity to configure initial mapping rules,",
                                             "default": "oid"
                                         },
                                         "initialClaimValue": {
                                             "type": "string",
-                                            "description": "defines the initial claim value, which is used by Identity to configure initial mapping rules.",
+                                            "description": "defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.",
                                             "default": ""
                                         }
                                     }
@@ -699,91 +784,6 @@
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
                                             "default": "http://localhost:8070"
-                                        }
-                                    }
-                                },
-                                "connectors": {
-                                    "type": "object",
-                                    "properties": {
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
-                                            "default": "connectors"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-connectors-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "orchestration": {
-                                    "type": "object",
-                                    "properties": {
-                                        "audience": {
-                                            "type": "string",
-                                            "description": "defines the audience, which is used by Orchestration Cluster.",
-                                            "default": "orchestration-api"
-                                        },
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
-                                            "default": "orchestration"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-orchestration-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        },
-                                        "redirectUrl": {
-                                            "type": "string",
-                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
-                                            "default": "http://localhost:8082"
-                                        },
-                                        "tokenScope": {
-                                            "type": "string",
-                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
-                                            "default": ""
                                         }
                                     }
                                 },
@@ -1069,12 +1069,12 @@
                 },
                 "fullnameOverride": {
                     "type": "string",
-                    "description": "can be used to override the full name of the Identity resources",
+                    "description": "can be used to override the full name of the Management Identity resources",
                     "default": ""
                 },
                 "nameOverride": {
                     "type": "string",
-                    "description": "can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)",
+                    "description": "can be used to partly override the name of the Management Identity resources (names will still be prefixed with the release name)",
                     "default": ""
                 },
                 "firstUser": {
@@ -1082,7 +1082,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, Identity will seed the first user in Keycloak.",
+                            "description": "if true, Management Identity will seed the first user in Keycloak.",
                             "default": true
                         },
                         "username": {
@@ -1112,7 +1112,7 @@
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "(DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Identity first user.",
+                            "description": "(DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Management Identity first user.",
                             "default": "camunda-credentials"
                         },
                         "existingSecretKey": {
@@ -1144,7 +1144,7 @@
                 },
                 "users": {
                     "type": "array",
-                    "description": "configuration to configure properties of the Identity users, which can be used to access web applications.",
+                    "description": "configuration to configure properties of the Management Identity users, which can be used to access web applications.",
                     "default": [],
                     "items": {}
                 },
@@ -1208,17 +1208,17 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
                     "default": "/identity"
                 },
                 "podAnnotations": {
                     "type": "object",
-                    "description": "can be used to define extra Identity pod annotations",
+                    "description": "can be used to define extra Management Identity pod annotations",
                     "default": {}
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra Identity pod labels",
+                    "description": "can be used to define extra Management Identity pod labels",
                     "default": {}
                 },
                 "logging": {
@@ -1478,7 +1478,7 @@
                 },
                 "nodeSelector": {
                     "type": "object",
-                    "description": "can be used to define on which nodes the Identity pods should run",
+                    "description": "can be used to define on which nodes the Management Identity pods should run",
                     "default": {}
                 },
                 "tolerations": {
@@ -1645,7 +1645,7 @@
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "(DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Identity.",
+                            "description": "(DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Management Identity.",
                             "default": ""
                         },
                         "existingSecretPasswordKey": {
@@ -1747,7 +1747,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "Enable Identity PostgreSQL Helm chart. Required for Multi-Tenancy.",
+                    "description": "Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.",
                     "default": false
                 },
                 "global": {
@@ -1792,7 +1792,7 @@
                 },
                 "nameOverride": {
                     "type": "string",
-                    "description": "the name used for Identity PostgreSQL.",
+                    "description": "the name used for Management Identity PostgreSQL.",
                     "default": "identity-postgresql"
                 },
                 "auth": {
@@ -1872,7 +1872,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "Enable Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
+                    "description": "Enable Management Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
                     "default": false
                 },
                 "global": {
@@ -1898,7 +1898,7 @@
                             "properties": {
                                 "allowInsecureImages": {
                                     "type": "boolean",
-                                    "description": "Allows the use of the Camunda build Keycloak image (including the Identity login theme)",
+                                    "description": "Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)",
                                     "default": true
                                 }
                             }
@@ -5363,7 +5363,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs",
+                                    "description": "if true, the migration of Management Identity data to the orchestration clusters Identity occurs",
                                     "default": false
                                 },
                                 "backoffLimit": {

@@ -7,21 +7,21 @@ console:
   image:
     repository: camunda/console
     tag: latest
-    digest: "sha256:a6e49d769d540daeaff2ff4972e29c5521a8277108bc2077269f89bf603348b9"
+    digest: "sha256:04433610af7c1690075304a305de3e028d15d9853e7b4a95763ebb0dc01c7c74"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
     tag: SNAPSHOT
-    digest: "sha256:5239534811f5572c364241527c51e05cb235450584862b508dc63f79edb5fb92"
+    digest: "sha256:8fc41a24d8b1983362914a8966e223563e34a2abec31ff6680035eb4d36a6ca5"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
     tag: 8.8-SNAPSHOT
-    digest: "sha256:730a72a1f1e6d3064a6a9a6afab4f96bde4673f1e3f5cb3a2e13a70847ebf3d2"
+    digest: "sha256:e89d2b4e6ec7e37690e3c905510ee06740e22aa49f3ff82abf3b06cc817c2fc5"
 
 #
 # Web Modeler
@@ -33,21 +33,21 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:4a1c2aa8a6c2bc7b0b9525b86a67a294be174b2fb6684cf25e701f6b1ab118f7"
+      digest: "sha256:8191a71e2586b99f3482b3acbdb80ff55c1aafdeb1d56280ebc46cf0c565c0b5"
 
   # https://hub.docker.com/r/camunda/web-modeler-webapp/tags
   webapp:
     image:
       repository: camunda/web-modeler-webapp
       tag: SNAPSHOT
-      digest: "sha256:a58c849214f3b19c417fee81111ef3ed00c272d253a1f089620a91df1da26557"
+      digest: "sha256:98476b0171c03411cd0ac2a1e97c9bfbbbad8362fbb05f5bd46cd794a0a5871b"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
     image:
       repository: camunda/web-modeler-websockets
       tag: SNAPSHOT
-      digest: "sha256:1c2764773df6c65b76cbb679647176f6a89fbed4a0dd114221c3205098862604"
+      digest: "sha256:d895ed9487f75bf8c7783805a26e471c1533e793b4f6ddf9f2779e22f5c44919"
 
 #
 # Orchestration Cluster
@@ -58,7 +58,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: 8.8-SNAPSHOT
-    digest: "sha256:29c6ec874b13c70aa83d7d911647daf8e2e45a58d72b5fde963744d931928081"
+    digest: "sha256:89faff33aa40de883c5cd1918614bbdb4baddc54b81a3b7463447e0ec491561f"
 
 #
 # Identity
