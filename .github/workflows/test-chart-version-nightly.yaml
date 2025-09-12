@@ -32,6 +32,18 @@ jobs:
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix-nightly
 
+  validation:
+    name: Camunda ${{ matrix.version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    with:
+      identifier: "${{ matrix.case }}-${{ matrix.scenario }}-vald-${{ matrix.version }}-${{ matrix.auth }}-${{ matrix.exclude }}"
+      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
   test:
     if: ${{ needs.init.outputs.matrix != '[]' }}
     name: Camunda ${{ matrix.version }}
