@@ -114,6 +114,16 @@ annotations:
     - kind: fixed
       description: "OpensearchURL for secondary storage in data migration"
     - kind: fixed
+      description: "Console digest now points to 8.8.0-alpha8.1"
+    - kind: fixed
+      description: "Migration secondary storage configuration"
+    - kind: fixed
+      description: "Management identity has incorrect role"
+    - kind: fixed
+      description: "Include retention configuration for migration config"
+    - kind: fixed
+      description: "Disable upgrade flow on alpha"
+    - kind: fixed
       description: "The elastic auth is missing for orchestration when using the global creds. this fixes that issue"
     - kind: fixed
       description: "Helper function function and checksum correction in migraiton"

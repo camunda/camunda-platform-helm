@@ -1,11 +1,16 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-13.0.0-alpha8](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha8) (2025-09-10)
+## [camunda-platform-13.0.0-alpha8](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha8) (2025-09-12)
 
 ### Fixes
 
 - Add secondary-storage config to data migration (#4129)
 - OpensearchURL for secondary storage in data migration (#4130)
+- Console digest now points to 8.8.0-alpha8.1 (#4133)
+- Migration secondary storage configuration (#4134)
+- Management identity has incorrect role (#4122)
+- Include retention configuration for migration config (#4135)
+- Disable upgrade flow on alpha (#4136)
 
 
 ## [camunda-platform-8.7-12.6.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.6.0) (2025-09-08)
