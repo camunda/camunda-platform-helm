@@ -216,4 +216,3 @@ Service names.
 {{- define "orchestration.serviceNameGatewayREST" }}
     {{- include "orchestration.serviceNameGateway" . -}}:{{ .Values.orchestration.service.restPort }}
 {{- end -}}
-
