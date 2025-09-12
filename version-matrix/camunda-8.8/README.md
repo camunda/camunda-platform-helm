@@ -26,15 +26,15 @@ Supported versions:
 
 Camunda images:
 
-- docker.io/camunda/camunda:8.8.0-alpha7
-- docker.io/camunda/connectors-bundle:8.8.0-alpha7
-- docker.io/camunda/console:8.8.0-alpha7
-- docker.io/camunda/identity:8.8.0-alpha7
+- docker.io/camunda/camunda:8.8.0-alpha8
+- docker.io/camunda/connectors-bundle:8.8.0-alpha8
+- docker.io/camunda/console:8.8.0-alpha8.1
+- docker.io/camunda/identity:8.8.0-alpha8
 - docker.io/camunda/keycloak:26.3.1
-- docker.io/camunda/optimize:8.8.0-alpha7
-- docker.io/camunda/web-modeler-restapi:8.8.0-alpha8-rc1
-- docker.io/camunda/web-modeler-webapp:8.8.0-alpha8-rc1
-- docker.io/camunda/web-modeler-websockets:8.8.0-alpha8-rc1
+- docker.io/camunda/optimize:8.8.0-alpha8
+- docker.io/camunda/web-modeler-restapi:8.8.0-alpha8
+- docker.io/camunda/web-modeler-webapp:8.8.0-alpha8
+- docker.io/camunda/web-modeler-websockets:8.8.0-alpha8
 
 Non-Camunda images:
 
