@@ -25,7 +25,7 @@ on:
         type: string
 
 env:
-  TOKEN: ${{ inputs.teleport-token }}
+  TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
   cleanup:

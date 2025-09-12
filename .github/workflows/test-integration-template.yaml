@@ -306,7 +306,7 @@ jobs:
         with:
           deployment-ttl: 30m
           setup-flow: install
-          platform: gke
+          platform: ${{ inputs.platforms }}
           identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
           ingress-hostname-base: ci.distro.ultrawombat.com
           chart-dir: ${{ inputs.camunda-helm-dir }}
