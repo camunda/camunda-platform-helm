@@ -44,7 +44,7 @@ data:
         clusters:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
-            version: "8.7.12"
+            version: "8.7.13"
             authentication: "BEARER_TOKEN"
             url:
               zeebe:
