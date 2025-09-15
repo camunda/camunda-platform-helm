@@ -230,10 +230,31 @@ data:
               name: {{ $user.name | quote }}
               email: {{ $user.email | quote }}
             {{- end }}
+          # admin role
           default-roles.admin.users:
           {{- range $user := .Values.orchestration.security.initialization.users }}
-            {{- if eq (index $user "admin") true }}
-            - {{ index $user "username" | quote }}
+            {{- range $role := $user.defaultRoles }}
+              {{- if eq $role "admin" }}
+            - {{ $user.username | quote }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          # connectors role
+          default-roles.connectors.users:
+          {{- range $user := .Values.orchestration.security.initialization.users }}
+            {{- range $role := $user.defaultRoles }}
+              {{- if eq $role "connectors" }}
+            - {{ $user.username | quote }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          # rba role
+          default-roles.rba.users:
+          {{- range $user := .Values.orchestration.security.initialization.users }}
+            {{- range $role := $user.defaultRoles }}
+              {{- if eq $role "rba" }}
+            - {{ $user.username | quote }}
+              {{- end }}
             {{- end }}
           {{- end }}
           {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}

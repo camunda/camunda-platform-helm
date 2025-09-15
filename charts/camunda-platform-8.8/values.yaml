@@ -2427,15 +2427,20 @@ orchestration:
       ## @param orchestration.security.initialization.users[0].name
       ## @param orchestration.security.initialization.users[0].email
       users:
-        ## @extra orchestration.security.initialization.users.username, the username of an initial user.
         - username: demo
-          ## @extra orchestration.security.initialization.users.password, the password of an initial user.
           password: demo
-          ## @extra orchestration.security.initialization.users.name, the name of an initial user.
           name: Demo User
-          ## @extra orchestration.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
-          admin: false
+        - username: connector
+          password: connector
+          name: Connectr User
+          email: connector@demo.com
+      ##  @extra orchestration.security.initialization.users.defaultRoles, Assigning default roles to initial users. More roles can be added to the dictionary.
+      defaultRoles:
+        admin:
+          - demo
+        connectors:
+          - connector
       mappingRules:
         ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
         - mappingRuleID: demo-user-mapping-rule
