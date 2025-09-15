@@ -81,7 +81,7 @@ jobs:
           echo "platforms=$platforms"
 
   integration:
-    name: ${{ matrix.platform }} - ITs
+    name: ${{ inputs.camunda-version }} - ${{ matrix.platform }} - ${{ inputs.case }} - ${{ inputs.shortname }}
     needs: [parse-platforms]
     permissions:
       contents: read
