@@ -93,7 +93,7 @@ jobs:
         platform: ${{ fromJson(needs.parse-platforms.outputs.platforms) }}
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "intg-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ matrix.platform }}"
+      identifier: "nightly-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ matrix.platform }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
       flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
