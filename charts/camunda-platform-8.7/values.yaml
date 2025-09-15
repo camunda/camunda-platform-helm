@@ -489,7 +489,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.7.71
+    tag: 8.7.72
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
