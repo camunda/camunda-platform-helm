@@ -112,7 +112,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
             - configMapRef:
-                name: {{ include "camundaPlatform.fullname" . }}-importer-env-vars
+                name: {{ include "orchestration.fullname" . }}-importer-env-vars
           {{- if .Values.orchestration.importer.envFrom }}
             {{- .Values.orchestration.importer.envFrom | toYaml | nindent 12 }}
           {{- end }}
