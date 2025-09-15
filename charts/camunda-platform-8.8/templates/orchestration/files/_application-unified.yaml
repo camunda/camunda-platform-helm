@@ -69,7 +69,7 @@ camunda:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
         username: {{ .Values.global.opensearch.auth.username | quote }}
-        password: ${VALUES_OPENSEARCH_PASSWORD:}
+        password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.global.opensearch.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
@@ -90,7 +90,7 @@ camunda:
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
           - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
         {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
-        {{/*
+        {{- /*
           TODO: Add "camundaPlatform.authIssuerBackendUrl" when "backend-url" config is supported by the Orchestration Identity.
           For more details: https://github.com/camunda/camunda-platform-helm/issues/3952
         */}}
@@ -277,13 +277,13 @@ zeebe:
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
       {{- end }}
-    {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+    {{- if not (eq (include "orchestration.secondaryStorage" .) "none") }}
       camundaexporter:
         className: "io.camunda.exporter.CamundaExporter"
         args:
           connect:
-            type: {{ if .Values.global.elasticsearch.enabled }}elasticsearch{{ else }}opensearch{{ end }}
-            url: {{ if .Values.global.elasticsearch.enabled }}{{ include "camundaPlatform.elasticsearchURL" . | quote }}{{ else }}{{ include "camundaPlatform.opensearchURL" . | quote }}{{- end }}
+            type: {{ include "orchestration.secondaryStorage" . | quote }}
+            url: {{ .Values.global.elasticsearch.enabled | ternary (include "camundaPlatform.elasticsearchURL" .) (include "camundaPlatform.opensearchURL" .) | quote }}
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
