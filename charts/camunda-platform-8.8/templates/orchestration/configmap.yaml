@@ -158,6 +158,7 @@ data:
               {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
                 username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
               {{- end }}
+                awsEnabled: {{ .Values.global.opensearch.aws.enabled | default false }}
               {{- if .Values.orchestration.retention.enabled }}
               retention:
                 enabled: true

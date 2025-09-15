@@ -103,6 +103,7 @@ data:
               connect:
                 type: elasticsearch
                 url: "http://camunda-platform-test-elasticsearch:9200"
+                awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"
                 rolloverInterval: "1d"
