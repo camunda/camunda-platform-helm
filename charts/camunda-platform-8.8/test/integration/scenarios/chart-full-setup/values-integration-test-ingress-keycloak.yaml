@@ -92,7 +92,6 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 orchestration:
-  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true

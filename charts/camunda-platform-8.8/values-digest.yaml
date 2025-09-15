@@ -1,19 +1,72 @@
+#
+# Camunda - Digest
+#
+
+console:
+  # https://hub.docker.com/r/camunda/console/tags
+  image:
+    repository: camunda/console
+    tag: latest
+    digest: "sha256:a1a683b828aa53bcfca30fc4bd32fadec01d801f8f10d922c582b24851d751c6"
+
 connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    digest: sha256:88f5dab42fefacc830a102bda3e2fbe790809b7a2e7ab49e90baa525e3b9d4e0
+    tag: SNAPSHOT
+    digest: "sha256:f9e0c19f150f96e1c266c077c6ed37360122c75fce2ee901869d9dc961b2a619"
 
 optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    digest: sha256:38ed7071d6dbb6c5d3d9ec120b98e2c1151136c0093134e31035a72bb6c52da2
+    tag: 8.8-SNAPSHOT
+    digest: "sha256:e648865d9707138aa25d005666005cbfd784cc55170c7cb71cb687c237bd3eb6"
+
+#
+# Web Modeler
+#
+
+webModeler:
+  # https://hub.docker.com/r/camunda/web-modeler-restapi/tags
+  restapi:
+    image:
+      repository: camunda/web-modeler-restapi
+      tag: SNAPSHOT
+      digest: "sha256:d67aaff646e9c2d7421899a60723d315d68e4f3dfd1bcd0e9cebd377228ca385"
+
+  # https://hub.docker.com/r/camunda/web-modeler-webapp/tags
+  webapp:
+    image:
+      repository: camunda/web-modeler-webapp
+      tag: SNAPSHOT
+      digest: "sha256:5d4d0b3870b1f0dfb5615c96cbeaa703baf8538efc7748de7c59fa30904aeb0d"
+
+  # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
+  websockets:
+    image:
+      repository: camunda/web-modeler-websockets
+      tag: SNAPSHOT
+      digest: "sha256:d895ed9487f75bf8c7783805a26e471c1533e793b4f6ddf9f2779e22f5c44919"
+
+#
+# Orchestration Cluster
+#
 
 orchestration:
+  # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    digest: sha256:19d112a5d8a7916722a13574c54901b8780930d96c5aff5adf99798a9c316149
+    tag: 8.8-SNAPSHOT
+    digest: "sha256:2b89bf87b405b1cfa47c620cd10c29a8c0465b98244c9ea5c6adaea0789d68e9"
+
+#
+# Identity
+#
 
 identity:
+  # https://hub.docker.com/r/camunda/identity/tags
   image:
-    digest: sha256:3021e0c8d43e0fdfbc2f98184810c1d2dcdabca18080e9c0ca49e981f055ff37
-
+    repository: camunda/identity
+    tag: SNAPSHOT
+    digest: "sha256:f94b375918862329419563a73ccb9a14c9d2c89d2bc40db1bf77aeb8d0cc3051"

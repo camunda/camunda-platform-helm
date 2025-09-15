@@ -265,6 +265,9 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
     (dict "path" "identity.firstUser" "config" .Values.identity.firstUser)
     (dict "path" "webModeler.restapi.externalDatabase" "config" .Values.webModeler.restapi.externalDatabase)
     (dict "path" "webModeler.restapi.mail" "config" .Values.webModeler.restapi.mail "plaintextKey" "smtpPassword")
+    (dict "path" "global.documentStore.type.aws.accessKeyId" "config" .Values.global.documentStore.type.aws.accessKeyId "isAwsDocumentStore" true)
+    (dict "path" "global.documentStore.type.aws.secretAccessKey" "config" .Values.global.documentStore.type.aws.secretAccessKey "isAwsDocumentStore" true)
+    (dict "path" "global.documentStore.type.gcp" "config" .Values.global.documentStore.type.gcp "isGcpDocumentStore" true "legacySecretKey" "existingSecret" "legacyFileKey" "credentialsKey")
   -}}
 
   {{- range $secretConfigs -}}
@@ -276,7 +279,13 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 
     {{/* Check if legacy configuration is used */}}
     {{- $hasLegacyConfig := false -}}
-    {{- if and $config (kindOf $config | eq "map") -}}
+    {{- if .isAwsDocumentStore -}}
+      {{/* Special handling for AWS Document Store - check if legacy pattern exists */}}
+      {{- $awsConfig := $.Values.global.documentStore.type.aws -}}
+      {{- if and $awsConfig.existingSecret $awsConfig.accessKeyIdKey $awsConfig.secretAccessKeyKey -}}
+        {{- $hasLegacyConfig = true -}}
+      {{- end -}}
+    {{- else if and $config (kindOf $config | eq "map") -}}
       {{- if or (and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "" | toString) "") (ne (get $config $legacySecretKey | toString) ""))
                 (and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "" | toString) "") (ne (get $config $plaintextKey | toString) "")) -}}
         {{- $hasLegacyConfig = true -}}
