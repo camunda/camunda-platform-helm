@@ -77,7 +77,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integation-tests:
-    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
+    name: Integrationa tests
     if: ${{ needs.init.outputs.matrix != '[]' }}
     needs: [init,validation]
     strategy:
