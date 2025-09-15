@@ -285,6 +285,7 @@ data:
           minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
           policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
         {{- end }}
+        awsEnabled: {{ .Values.global.opensearch.aws.enabled | default false }}
       {{- end }}
 
       #
