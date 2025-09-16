@@ -154,7 +154,7 @@ data:
         # Database full url
         url: "http://camunda-platform-test-elasticsearch:9200"
         index:
-          replicas: 1
+          numberOfReplicas: 1
         awsEnabled: false
 
       #
