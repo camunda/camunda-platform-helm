@@ -898,6 +898,7 @@ jobs:
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [playwright-e2e-tests, playwright-integration-tests, venom-test]
+    if: ${{ always() && contains(needs.*.result, 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
