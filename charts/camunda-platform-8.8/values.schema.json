@@ -5069,6 +5069,11 @@
                                     "description": "if true, then allow unauthenticated API access.",
                                     "default": false
                                 },
+                                "authenticationRefreshInterval": {
+                                    "type": "string",
+                                    "description": "defines the session's authentication refresh time, defaulted to PT30S.",
+                                    "default": "PT30S"
+                                },
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
