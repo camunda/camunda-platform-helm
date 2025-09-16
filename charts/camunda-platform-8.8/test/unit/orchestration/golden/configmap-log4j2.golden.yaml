@@ -153,6 +153,8 @@ data:
         clusterName: elasticsearch
         # Database full url
         url: "http://camunda-platform-test-elasticsearch:9200"
+        index:
+          numberOfReplicas: 1
         awsEnabled: false
 
       #

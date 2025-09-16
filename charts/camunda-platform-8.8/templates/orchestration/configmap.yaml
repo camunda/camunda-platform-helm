@@ -287,6 +287,8 @@ data:
           minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
           policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
         {{- end }}
+        index:
+          numberOfReplicas: {{ .Values.orchestration.index.replicas }}
         awsEnabled: {{ .Values.global.opensearch.aws.enabled | default false }}
       {{- end }}
 

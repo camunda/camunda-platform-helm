@@ -6078,6 +6078,11 @@
                             "type": "string",
                             "description": "if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use \"global.elasticsearch.prefix\".",
                             "default": ""
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch",
+                            "default": 1
                         }
                     }
                 },
