@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint - ${{ inputs.identifier }}
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: ℹ️ Print workflow inputs ℹ️
