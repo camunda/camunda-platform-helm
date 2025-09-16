@@ -130,7 +130,6 @@ data:
           method: "basic"
           unprotectedApi: false
           authenticationRefreshInterval: "PT30S"
-
         authorizations:
           enabled: true
         initialization:
