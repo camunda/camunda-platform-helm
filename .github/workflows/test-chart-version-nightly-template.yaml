@@ -65,35 +65,25 @@ permissions:
   contents: read
 
 jobs:
-  parse-platforms:
-    name: Parse platforms
-    runs-on: ubuntu-latest
-    env:
-      SCENARIOS_LIST: ${{ inputs.scenarios }}
-    outputs:
-      platforms: ${{ steps.make-json-array.outputs.platforms }}
-    steps:
-      - name: Convert string to JSON array and set as output
-        id: make-json-array
-        run: |
-          platforms="${{ inputs.platforms }}"
-          echo "platforms=$(jq -cn --arg p "$platforms" '$p | split(",")')" >> "$GITHUB_OUTPUT"
-          echo "platforms=$platforms"
+  validation:
+    name: Camunda ${{ inputs.camunda-version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ inputs.case }}-vald-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
-    name: ${{ inputs.camunda-version }} - ${{ matrix.platform }} - ${{ inputs.case }} - ${{ inputs.shortname }}
-    needs: [parse-platforms]
+    name: ${{ inputs.camunda-version }} - ${{ inputs.platforms }} - ${{ inputs.case }} - ${{ inputs.shortname }}
+    needs: [validation]
     permissions:
       contents: read
       id-token: write
       deployments: write
     secrets: inherit
-    strategy:
-      matrix:
-        platform: ${{ fromJson(needs.parse-platforms.outputs.platforms) }}
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "nightly-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ matrix.platform }}"
+      identifier: "nightly-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.platforms }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
       flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
@@ -105,7 +95,7 @@ jobs:
       shortname: ${{inputs.shortname}}
       auth: ${{inputs.auth}}
       exclude: ${{inputs.exclude}}
-      platforms: ${{ matrix.platform }}
+      platforms: ${{ inputs.platforms }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
       always-delete-namespace: true
       values-enterprise: "${{ inputs.values-enterprise }}"

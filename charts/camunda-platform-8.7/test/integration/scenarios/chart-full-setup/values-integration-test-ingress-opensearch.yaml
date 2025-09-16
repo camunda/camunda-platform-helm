@@ -30,7 +30,7 @@ operate:
     env:
       - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
         value: custom-operate
-      - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
+      - name: CAMUNDA_OPERATE_ZEEBEEOPENSEARCH_PREFIX
         value: custom-zeebe
 
 tasklist:

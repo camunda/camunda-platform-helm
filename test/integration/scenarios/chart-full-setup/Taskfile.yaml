@@ -153,8 +153,9 @@ tasks:
       {{ end }}
     - |
       {{ if eq .TEST_VALUES_SCENARIO "opensearch" }}
-        TEST_OPENSEARCH_PREFIX=$(cat /dev/urandom | tr -dc 'A-Za-z0-9' | fold -w 6 | head -n 1)
-        sed -i 's/custom/${TEST_OPENSEARCH_PREFIX}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        TEST_OPENSEARCH_PREFIX=$(tr -dc 'a-z0-9' < /dev/urandom | fold -w 6 | head -n 1)
+        echo "setting the index prefix to $TEST_OPENSEARCH_PREFIX"
+        sed -i "s/custom/${TEST_OPENSEARCH_PREFIX}/g" "{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml"
       {{ end }}
     - |
       {{ if eq .TEST_AUTH_TYPE "oidc" }}

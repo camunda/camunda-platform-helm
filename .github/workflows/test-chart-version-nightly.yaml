@@ -55,7 +55,7 @@ jobs:
     name: Generate chart matrix Nightly
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+      matrix: ${{ steps.add-platforms.outputs.matrix }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -63,23 +63,36 @@ jobs:
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix-nightly
-
-  validation:
-    name: Camunda ${{ matrix.version }} - Validation
-    uses: ./.github/workflows/chart-validate-template.yaml
-    needs: init
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-    with:
-      identifier: "${{ matrix.case }}-vald-${{ matrix.shortname }}-${{ matrix.version }}-${{ matrix.auth }}-${{ matrix.exclude }}"
-      camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      - name: Add platforms to matrix
+        id: add-platforms
+        run: |
+          platforms="gke" # eks is too unstable to run tests on it
+          matrix='${{ steps.generate-chart-versions.outputs.matrix }}'
+      
+          printf '%s\n' "$matrix" > matrix.json
+      
+          new_matrix=$(jq -c --arg platforms "$platforms" '
+            .include as $inc
+            | {include: [
+                $inc[] as $m
+                | ($platforms | split(",") | map(gsub("^\\s+|\\s+$";"")))[] as $p
+                | $m + {platform:$p}
+              ]}
+          ' matrix.json)
+      
+          echo "Expanded matrix:"
+          echo "$new_matrix" | jq .
+      
+          {
+            echo 'matrix<<JSON'
+            echo "$new_matrix"
+            echo 'JSON'
+          } >> "$GITHUB_OUTPUT"
 
   integation-tests:
-    name: Integrationa tests
+    name: ${{ matrix.version }} - ${{ matrix.platform }} - ${{ matrix.case }} - ${{ matrix.shortname }} - ${{ matrix.auth }} - ${{ matrix.exclude }}
     if: ${{ needs.init.outputs.matrix != '[]' }}
-    needs: [init,validation]
+    needs: [init]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -91,7 +104,7 @@ jobs:
       scenario: ${{ matrix.scenario }}
       shortname: ${{ matrix.shortname }}
       auth: ${{ matrix.auth }}
-      platforms: ${{ inputs.platforms || 'gke,eks' }}
+      platforms: ${{ matrix.platform }}
       exclude: ${{ matrix.exclude }}
       flows: ${{ inputs.flows || 'install,upgrade' }}
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
