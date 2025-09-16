@@ -5334,6 +5334,11 @@
                                             "description": "can be used to define the timeout when the import is finished.",
                                             "default": "PT1M"
                                         },
+                                        "legacyIndexRetentionAge": {
+                                            "type": "string",
+                                            "description": "defines when the legacy task index will be removed.",
+                                            "default": "30d"
+                                        },
                                         "retry": {
                                             "type": "object",
                                             "properties": {

@@ -97,7 +97,10 @@ data:
             retry-delay-multiplier: {{ .Values.orchestration.migration.data.tumetrics.retry.retryDelayMultiplier }}
         tasks:
           batch-size: {{ .Values.orchestration.migration.data.tasks.batchSize }}
-          importer-finished-timeout: {{ .Values.orchestration.migration.data.process.importerFinishedTimeout }}
+          importer-finished-timeout: {{ .Values.orchestration.migration.data.tasks.importerFinishedTimeout }}
+          {{- if .Values.orchestration.history.retention.enabled }}
+          legacy-index-retention-age: {{ .Values.orchestration.migration.data.tasks.legacyIndexRetentionAge | default .Values.orchestration.history.retention.minimumAge | quote }}
+          {{- end }}
           retry:
             max-retries: {{ .Values.orchestration.migration.data.process.retry.maxRetries }}
             max-retry-delay: {{ .Values.orchestration.migration.data.process.retry.maxRetryDelay }}
