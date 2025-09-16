@@ -2853,8 +2853,8 @@ orchestration:
   index:
     ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
     prefix: ""
-    ## @param orchestration.index.numberOfReplicas specifies the number of replicas for indices in Elasticsearch/Opensearch
-    numberOfReplicas: 1
+    ## @param orchestration.index.replicas can be used to specify the number of replicas for indices in Elasticsearch/Opensearch
+    replicas: 1
 
   ## @extra orchestration.retention configuration for Camunda exporter index.
   retention:
