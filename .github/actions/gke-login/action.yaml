@@ -33,7 +33,7 @@ runs:
     with:
       credentials_json: '${{ inputs.credentials-json }}'
   - name: Get GKE credentials
-    uses: google-github-actions/get-gke-credentials@64bc7249bbcf78056bb92f14d3cedc2da193946c # v2
+    uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395 # v3
     with:
       cluster_name: ${{ inputs.cluster-name }}
       location: ${{ inputs.cluster-location }}
