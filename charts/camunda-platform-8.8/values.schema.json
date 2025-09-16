@@ -6081,7 +6081,7 @@
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/Opensearch",
+                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch",
                             "default": 1
                         }
                     }
