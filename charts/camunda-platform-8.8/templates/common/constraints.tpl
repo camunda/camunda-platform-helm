@@ -29,12 +29,20 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}
-  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled }}
+  {{- if or .Values.global.elasticsearch.enabled .Values.global.opensearch.enabled .Values.elasticsearch.enabled }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s %s"
         "When \"global.noSecondaryStorage\" is enabled, both Elasticsearch and OpenSearch must be disabled."
-        "Please ensure that \"global.elasticsearch.enabled: false\" and \"global.opensearch.enabled: false\""
+        "Please ensure that \"global.elasticsearch.enabled: false\", \"global.opensearch.enabled: false\", and \"elasticsearch.enabled: false\""
         "are set when using \"global.noSecondaryStorage: true\"."
         "Secondary storage components cannot be enabled when noSecondaryStorage is true."
+    -}}
+    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+  {{- end }}
+  {{- if .Values.orchestration.security.authentication.method "basic" }}
+    {{- $errorMessage := printf "[camunda][error] %s %s %s"
+        "When \"global.noSecondaryStorage\" is enabled, basic authentication for Orchestration is not supported."
+        "Please set \"orchestration.security.authentication.method\" to \"oidc\" and configure OIDC authentication"
+        "when using \"global.noSecondaryStorage: true\"."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
