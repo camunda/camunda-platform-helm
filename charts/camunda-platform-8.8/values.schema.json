@@ -2361,7 +2361,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha8"
+                            "default": "8.8.0-alpha8.1"
                         },
                         "digest": {
                             "type": "string",
@@ -6081,7 +6081,7 @@
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "specifies the number of replicas for indices in Elasticsearch/Opensearch",
+                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/Opensearch",
                             "default": 1
                         }
                     }
