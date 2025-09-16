@@ -110,3 +110,13 @@ jobs:
       always-delete-namespace: true
       values-enterprise: "${{ inputs.values-enterprise }}"
       values-digest: "true"
+      values-config: |
+        {
+          "OPENSEARCH_PORT": "443",
+          "OPENSEARCH_PROTOCOL": "https"
+        }
+      vault-secret-mapping: |
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_USERNAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL | OPENSEARCH_HOST;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL;
