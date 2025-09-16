@@ -225,9 +225,9 @@ Camunda 8 Helm chart has a dependency on the [Elasticsearch 8 Helm Chart](https:
 > The default setup of the Elasticsearch 8 part of Camunda 8 uses nodes that have all roles (master, data, coordinating, and ingest).
 > For high-demand deployments, it's recommended to deploy the Elasticsearch master-eligible nodes as master-only nodes.
 
-| Section | Parameter | Description | Default |
-|-|-|-|-|
-| `elasticsearch`| `enabled` | If true, enables Elasticsearch deployment as part of the Camunda Helm chart | `true` |
+| Section         | Parameter | Description                                                                 | Default |
+| --------------- | --------- | --------------------------------------------------------------------------- | ------- |
+| `elasticsearch` | `enabled` | If true, enables Elasticsearch deployment as part of the Camunda Helm chart | `true`  |
 
 **Example:**
 
@@ -250,9 +250,9 @@ Since Keycloak is a dependency for Identity, all variables related to Keycloak c
 [bitnami/keycloak/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/keycloak/values.yaml)
 and can be set under `identityKeycloak`.
 
-| Section | Parameter | Description | Default |
-|-|-|-|-|
-| `identityKeycloak`| `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Helm chart | `true` |
+| Section            | Parameter | Description                                                                  | Default |
+| ------------------ | --------- | ---------------------------------------------------------------------------- | ------- |
+| `identityKeycloak` | `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Helm chart | `true`  |
 
 **Example:**
 
@@ -274,22 +274,22 @@ with custom values files, then you will need to add this to your own values file
 identity:
   keycloak:
     extraVolumes:
-    - name: camunda-theme
-      emptyDir:
-        sizeLimit: 10Mi
-    initContainers:
-    - name: copy-camunda-theme
-      image: >-
-        {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
-        {{- include "camundaPlatform.imageByParams" $identityImageParams }}
-      imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
-      command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
-      volumeMounts:
       - name: camunda-theme
-        mountPath: /mnt
+        emptyDir:
+          sizeLimit: 10Mi
+    initContainers:
+      - name: copy-camunda-theme
+        image: >-
+          {{- $identityImageParams := (dict "base" .Values.global "overlay" .Values.global.identity) -}}
+          {{- include "camundaPlatform.imageByParams" $identityImageParams }}
+        imagePullPolicy: "{{ .Values.global.image.pullPolicy }}"
+        command: ["sh", "-c", "cp -a /app/keycloak-theme/* /mnt"]
+        volumeMounts:
+          - name: camunda-theme
+            mountPath: /mnt
     extraVolumeMounts:
-    - name: camunda-theme
-      mountPath: /opt/bitnami/keycloak/themes/identity
+      - name: camunda-theme
+        mountPath: /opt/bitnami/keycloak/themes/identity
 ```
 
 ## Development
@@ -1311,6 +1311,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `orchestration.security.authentication`                               |                                                                                                                                                                                                                                                                                                             |                                                                                                                                                                  |
 | `orchestration.security.authentication.method`                        | defines the authentication method which should be used. Possible values: basic, oidc                                                                                                                                                                                                                        | `basic`                                                                                                                                                          |
 | `orchestration.security.authentication.unprotectedApi`                | if true, then allow unauthenticated API access.                                                                                                                                                                                                                                                             | `false`                                                                                                                                                          |
+| `orchestration.security.authentication.authenticationRefreshInterval` | defines the session's authentication refresh time, defaulted to PT30S.                                                                                                                                                                                                                                      | `PT30S`                                                                                                                                                          |
 | `orchestration.security.authentication.oidc.usernameClaim`            | username claim.                                                                                                                                                                                                                                                                                             | `preferred_username`                                                                                                                                             |
 | `orchestration.security.authentication.oidc.groupsClaim`              | group claim.                                                                                                                                                                                                                                                                                                | `groups`                                                                                                                                                         |
 | `orchestration.security.authorizations`                               |                                                                                                                                                                                                                                                                                                             |                                                                                                                                                                  |
