@@ -15,7 +15,7 @@
 package orchestration
 
 import (
-	"camunda-platform/test/unit/common"
+	camunda "camunda-platform/test/unit/common"
 	"camunda-platform/test/unit/testhelpers"
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
@@ -48,7 +48,7 @@ func TestConfigmapTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/orchestration/configmap.yaml"},
+		templates: []string{"templates/orchestration/configmap-unified.yaml"},
 	})
 }
 
@@ -63,7 +63,7 @@ func TestGoldenConfigmapWithLog4j2(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-log4j2",
-		Templates:      []string{"templates/orchestration/configmap.yaml"},
+		Templates:      []string{"templates/orchestration/configmap-unified.yaml"},
 		SetValues:      map[string]string{"orchestration.log4j2": "<xml>\n</xml>"},
 	})
 }
@@ -79,7 +79,7 @@ func TestGoldenConfigmapWithAuthorizationsEnabled(t *testing.T) {
 		Release:        "camunda-platform-test",
 		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 		GoldenFileName: "configmap-authorizations",
-		Templates:      []string{"templates/orchestration/configmap.yaml"},
+		Templates:      []string{"templates/orchestration/configmap-unified.yaml"},
 		SetValues:      map[string]string{"global.authorizations.enabled": "true"},
 	})
 }

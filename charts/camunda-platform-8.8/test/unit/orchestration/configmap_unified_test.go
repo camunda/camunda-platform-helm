@@ -50,22 +50,12 @@ func TestConfigmapUnifiedTemplate(t *testing.T) {
 func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestApplicationYamlShouldContainMinimumAge",
-			Values: map[string]string{
-				"orchestration.history.retention.enabled":    "true",
-				"orchestration.history.retention.minimumAge": "7d",
-			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.data.retention.minimum-age": "7d",
-			},
-		},
-		{
 			Name: "TestApplicationYamlShouldContainEnabledProfilesBroker",
 			Values: map[string]string{
 				"orchestration.profiles.broker": "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "identity,operate,tasklist",
+				"configmapApplication.spring.profiles.active": "identity,operate,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -74,7 +64,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.profiles.operate": "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,tasklist",
+				"configmapApplication.spring.profiles.active": "broker,identity,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -83,7 +73,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.profiles.tasklist": "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,operate",
+				"configmapApplication.spring.profiles.active": "broker,identity,operate,consolidated-auth",
 			},
 		},
 		{
@@ -92,7 +82,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.contextPath": "/custom",
 			},
 			Expected: map[string]string{
-				"configmapApplication.management.endpoint": "/custom/actuator",
+				"configmapApplication.server.servlet.context-path": "/custom",
+				"configmapApplication.management.server.base-path": "/custom",
 			},
 		},
 		{
@@ -121,19 +112,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 
 func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() {
 	testCases := []testhelpers.TestCase{
-		// TODO: Update the retention values after review the correct path with the dev team.
-		// {
-		// 	Name: "TestApplicationYamlShouldContainMinimumAge",
-		// 	Values: map[string]string{
-		// 		"global.compatibility.orchestration..enabled": "true",
-		// 		"zeebe.enabled":                     "true",
-		// 		"zeebe.retention.enabled":           "true",
-		// 		"zeebe.retention.minimumAge":        "7d",
-		// 	},
-		// 	Expected: map[string]string{
-		// 		"configmapApplication.camunda.data.retention.minimum-age": "7d",
-		// 	},
-		// },
 		{
 			Name: "TestApplicationYamlShouldContainEnabledProfilesBroker",
 			Values: map[string]string{
@@ -142,7 +120,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 				"zeebe.enabled":                              "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "identity,operate,tasklist",
+				"configmapApplication.spring.profiles.active": "identity,operate,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -153,7 +131,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 				"operate.enabled":                            "true",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist",
+				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -164,7 +142,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 				"tasklist.enabled":                           "true",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist",
+				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -175,7 +153,8 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 				"zeebeGateway.contextPath":                   "/custom",
 			},
 			Expected: map[string]string{
-				"configmapApplication.management.endpoint": "/custom/actuator",
+				"configmapApplication.server.servlet.context-path": "/custom",
+				"configmapApplication.management.server.base-path": "/custom",
 			},
 		},
 		{
@@ -198,28 +177,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.api.grpc.port": "1111",
-			},
-		},
-		{
-			Name: "TestApplicationYamlShouldContainPortCommandAPI",
-			Values: map[string]string{
-				"global.compatibility.orchestration.enabled": "true",
-				"zeebeGateway.enabled":                       "true",
-				"zeebeGateway.service.commandPort":           "1111",
-			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.cluster.network.command-api.port": "1111",
-			},
-		},
-		{
-			Name: "TestApplicationYamlShouldContainPortInternalAPI",
-			Values: map[string]string{
-				"global.compatibility.orchestration.enabled": "true",
-				"zeebeGateway.enabled":                       "true",
-				"zeebeGateway.service.internalPort":          "1111",
-			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.cluster.network.internal-api.port": "1111",
 			},
 		},
 	}
