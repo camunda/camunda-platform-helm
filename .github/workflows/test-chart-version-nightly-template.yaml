@@ -65,4 +65,5 @@ jobs:
       auth: "${{ inputs.auth }}"
       exclude: "${{ inputs.exclude }}"
       values-enterprise: "${{ inputs.values-enterprise }}"
+      values-digest: "true"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
