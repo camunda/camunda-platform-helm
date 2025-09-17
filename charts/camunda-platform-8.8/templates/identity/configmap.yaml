@@ -48,7 +48,7 @@ data:
       mapping-rules:
         - name: identityMigration
           claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
-          claim-value: {{ .Values.global.orchestration.migration.identity.idpApplicationId }}
+          claim-value: {{ .Values.orchestration.migration.identity.idpApplicationId }}
           operator: EQUALS
           rule-type: ROLE
           applied-role-names:
