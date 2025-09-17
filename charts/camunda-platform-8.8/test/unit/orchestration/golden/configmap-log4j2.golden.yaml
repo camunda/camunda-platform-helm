@@ -155,16 +155,10 @@ data:
     
         # zeebe.broker.cluster
         cluster:
-          # # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
-          # # The value of "nodeId" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-          # nodeId: ${VALUES_ORCHESTRATION_NODE_ID}
           initialContactPoints:
             - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
             - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
             - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
-          # clusterSize: "3"
-          # replicationFactor: "3"
-          # partitionsCount: "3"
           clusterName: camunda-platform-test-zeebe
     
         # zeebe.broker.exporters
@@ -175,6 +169,7 @@ data:
               connect:
                 type: "elasticsearch"
                 url: "http://camunda-platform-test-elasticsearch:9200"
+                numberOfReplicas: "1"
               history:
                 elsRolloverDateFormat: "date"
                 rolloverInterval: "1d"

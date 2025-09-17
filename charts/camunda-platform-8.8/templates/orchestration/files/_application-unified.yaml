@@ -96,6 +96,7 @@ camunda:
         */}}
         issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
         redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
+        authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
     {{- end }}
       method: {{ .Values.orchestration.security.authentication.method | quote }}
       unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
@@ -224,16 +225,10 @@ zeebe:
 
     # zeebe.broker.cluster
     cluster:
-      # # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
-      # # The value of "nodeId" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-      # nodeId: ${VALUES_ORCHESTRATION_NODE_ID}
       initialContactPoints:
       {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
         - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
       {{- end }}
-      # clusterSize: {{ .Values.orchestration.clusterSize | quote }}
-      # replicationFactor: {{ .Values.orchestration.replicationFactor | quote }}
-      # partitionsCount: {{ .Values.orchestration.partitionCount | quote }}
       clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
     # zeebe.broker.exporters
@@ -287,6 +282,7 @@ zeebe:
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
+            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
             username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
             password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
