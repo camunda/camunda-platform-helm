@@ -105,16 +105,9 @@ camunda:
     initialization:
       {{- if eq .Values.orchestration.security.authentication.method "basic" }}
       users:
-        {{- range $user := .Values.orchestration.security.initialization.users }}
-        - username: {{ $user.username | quote }}
-          password: {{ $user.password | quote }}
-          name: {{ $user.name | quote }}
-          email: {{ $user.email | quote }}
-        {{- end }}
-      default-roles.admin.users:
-        {{- range $user := .Values.orchestration.security.initialization.users }}
-        - {{ index $user "username" | quote }}
-        {{- end }}
+        {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
+      default-roles:
+        {{- .Values.orchestration.security.initialization.defaultRoles | toYaml | nindent 8 }}
       {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
       mapping-rules:
         - mapping-rule-id: "connectors-client-mapping-rule"
