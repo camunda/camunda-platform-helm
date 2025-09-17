@@ -2449,7 +2449,9 @@ orchestration:
           name: Demo User
           ## @extra orchestration.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
-      ##  @extra orchestration.security.initialization.users.defaultRoles, assigning initial users to default roles. More roles can be added to the dictionary.
+      ## @extra orchestration.security.initialization.defaultRoles assigning initial users to default roles. More roles can be added to the dictionary: https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/#default-roles
+      ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
+      ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
       defaultRoles:
         admin:
           users:
