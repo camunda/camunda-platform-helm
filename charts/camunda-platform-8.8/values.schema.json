@@ -5410,6 +5410,11 @@
                                     "type": "number",
                                     "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
+                                },
+                                "resourceAuthorizationsEnabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7",
+                                    "default": false
                                 }
                             }
                         }
