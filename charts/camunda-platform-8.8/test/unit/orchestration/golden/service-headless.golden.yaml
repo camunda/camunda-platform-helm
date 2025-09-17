@@ -1,31 +1,33 @@
 ---
-# Source: camunda-platform/templates/orchestration/service-gateway.yaml
+# Source: camunda-platform/templates/orchestration/service-headless.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: camunda-platform-test-zeebe-gateway
+  name: camunda-platform-test-zeebe-headless
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
-    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/component: zeebe-broker-headless
     app.kubernetes.io/version: "8.8.0-alpha8"
   annotations:
+    {}
 spec:
+  clusterIP: None
   publishNotReadyAddresses: true
   type: ClusterIP
   ports:
-    - port: 8080
-      protocol: TCP
-      name: http
     - port: 9600
       protocol: TCP
       name: server
-    - port: 26500
+    - port: 26502
       protocol: TCP
-      name: gateway
+      name: internal
+    - port: 26501
+      protocol: TCP
+      name: command
   selector:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

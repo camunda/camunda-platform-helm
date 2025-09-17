@@ -17,7 +17,7 @@ data:
   # Zeebe.
   ZEEBE_GATEWAY_CLUSTER_CLUSTER_NAME: "{{ tpl .Values.global.zeebeClusterName . }}"
   ZEEBE_GATEWAY_CLUSTER_PORT: "{{ .Values.orchestration.service.internalPort }}"
-  ZEEBE_GATEWAY_CLUSTER_INITIAL_CONTACT_POINTS: "{{ include "orchestration.serviceNameBroker" . }}:{{ .Values.orchestration.service.internalPort }}"
+  ZEEBE_GATEWAY_CLUSTER_INITIAL_CONTACT_POINTS: "{{ include "orchestration.serviceNameHeadless" . }}:{{ .Values.orchestration.service.internalPort }}"
 
   # Security.
   CAMUNDA_SECURITY_INITIALIZATION: ""
@@ -25,12 +25,12 @@ data:
   # Operate.
   CAMUNDA_OPERATE_IMPORTER_ENABLED: "true"
   CAMUNDA_OPERATE_WEBAPP_ENABLED: "false"
-  CAMUNDA_OPERATE_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGatewayGRPC" . }}"
-  CAMUNDA_OPERATE_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameBrokerGRPC" . }}"
+  CAMUNDA_OPERATE_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGRPC" . }}"
+  CAMUNDA_OPERATE_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameHeadlessGRPC" . }}"
 
   # Tasklist.
   CAMUNDA_TASKLIST_IMPORTER_ENABLED: "true"
   CAMUNDA_TASKLIST_WEBAPP_ENABLED: "false"
-  CAMUNDA_TASKLIST_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGatewayGRPC" . }}"
-  CAMUNDA_TASKLIST_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameBrokerGRPC" . }}"
+  CAMUNDA_TASKLIST_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGRPC" . }}"
+  CAMUNDA_TASKLIST_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameHeadlessGRPC" . }}"
 {{- end }}

@@ -2,14 +2,31 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "camundaPlatform.fullname" . }}-orchestration
+  name: {{ include "orchestration.serviceName" . }}
   labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
     {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
 spec:
   selector:
     matchLabels:
       {{- toYaml .Values.global.labels | nindent 6 }}
-      app.kubernetes.io/component: orchestration
+      app.kubernetes.io/component: {{ include "orchestration.componentName" . }}
+  endpoints:
+    - honorLabels: true
+      path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus) }}
+      port: {{ default "server" .Values.orchestration.service.managementName }}
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "orchestration.serviceNameHeadless" . }}
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+      app.kubernetes.io/component: {{ printf "%s-headless" (include "orchestration.componentName" .) }}
   endpoints:
     - honorLabels: true
       path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus) }}

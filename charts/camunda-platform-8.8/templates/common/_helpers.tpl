@@ -553,20 +553,6 @@ Orchestration templates.
 {{- end }}
 
 {{/*
-[camunda-platform] Orchestration internal URL.
-*/}}
-{{ define "camundaPlatform.OrchestrationURL" }}
-  {{- if .Values.orchestration.enabled -}}
-    {{-
-      printf "http://%s:%v%s"
-        (include "orchestration.fullname" .)
-        .Values.orchestration.service.httpPort
-        .Values.orchestration.contextPath
-    -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*
 ********************************************************************************
 Zeebe templates.
 ********************************************************************************
@@ -594,16 +580,28 @@ Zeebe templates.
 {{/*
 [camunda-platform] Zeebe Gateway REST internal URL.
 */}}
-{{ define "camundaPlatform.zeebeGatewayRESTURL" }}
+{{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
   {{- if .Values.orchestration.enabled -}}
     {{-
-      printf "http://%s:%v%s"
-        (include "orchestration.fullname" .)
-        .Values.orchestration.service.httpPort
+      printf "http://%s%s"
+        (include "orchestration.serviceNameHTTP" .)
         (.Values.orchestration.contextPath | default "")
     -}}
   {{- end -}}
 {{- end -}}
+
+{{/*
+[camunda-platform] Zeebe Gateway GRPC internal URL.
+*/}}
+{{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
+  {{- if .Values.orchestration.enabled -}}
+    {{-
+      printf "grpc://%s"
+        (include "orchestration.serviceNameGRPC" .)
+    -}}
+  {{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************

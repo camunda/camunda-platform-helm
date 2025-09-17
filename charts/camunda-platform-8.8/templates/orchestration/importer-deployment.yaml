@@ -13,13 +13,13 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "orchestrationImporter.matchLabels" . | nindent 6 }}
+      {{- include "orchestration.matchLabelsImporter" . | nindent 6 }}
   updateStrategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        {{- include "orchestrationImporter.labels" . | nindent 8 }}
+        {{- include "orchestration.labelsImporter" . | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
     spec:
@@ -47,7 +47,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: {{ include "orchestration.fullname" . }}
+              value: {{ include "orchestration.serviceNameHeadless" . | quote }}
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:

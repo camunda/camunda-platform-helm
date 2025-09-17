@@ -98,6 +98,13 @@ Orchestration compatibility.
             {{- $_ := set .Values.orchestration "contextPath" .Values.zeebeGateway.contextPath -}}
         {{- end -}}
         {{- if ((.Values.zeebeGateway).service) -}}
+            {{- if ((.Values.zeebeGateway.service).loadBalancerIP) -}}
+                {{- $_ := set .Values.orchestration.service "loadBalancerIP" .Values.zeebeGateway.service.loadBalancerIP -}}
+            {{- end -}}
+            {{- if ((.Values.zeebeGateway.service).loadBalancerSourceRanges) -}}
+                {{- $_ := set .Values.orchestration.service "loadBalancerSourceRanges" .Values.zeebeGateway.service.loadBalancerSourceRanges -}}
+            {{- end -}}
+            {{/* The key has been renamed in 8.8 for consistency, so now it's "httpPort" */}}
             {{- if ((.Values.zeebeGateway.service).restPort) -}}
                 {{- $_ := set .Values.orchestration.service "httpPort" .Values.zeebeGateway.service.restPort -}}
             {{- end -}}

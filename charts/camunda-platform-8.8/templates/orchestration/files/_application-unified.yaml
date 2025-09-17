@@ -166,7 +166,7 @@ camunda:
     # Zeebe instance
     zeebe:
       # Gateway address
-      gatewayAddress: {{ include "orchestration.serviceNameGatewayGRPC" . | quote }}
+      gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true
@@ -199,8 +199,8 @@ camunda:
     # Zeebe instance
     zeebe:
       # Gateway address
-      gatewayAddress: {{ include "orchestration.serviceNameGatewayGRPC" . | quote }}
-      restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+      gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
+      restAddress: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true
