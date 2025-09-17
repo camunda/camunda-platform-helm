@@ -2582,38 +2582,47 @@ orchestration:
     -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
     -XX:+ExitOnOutOfMemoryError
 
-  ## @extra orchestration.service configuration for the broker service
+  ## @extra orchestration.service configuration for the Orchestration Cluster service
   service:
     ## @param orchestration.service.annotations can be used to define annotations, which will be applied to the service
     annotations: {}
+    ## @extra orchestration.service configuration for the Orchestration Cluster headless service
+    headless:
+      ## @param orchestration.service.headless.annotations can be used to define annotations, which will be applied to the headless service
+      annotations: {}
     ## @param orchestration.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
-    httpPort: 8080
+    ## @param orchestration.service.loadBalancerIP defines public IP of the load balancer if the type is LoadBalancer
+    loadBalancerIP: ""
+    ## @param orchestration.service.loadBalancerSourceRanges defines list of allowed source IP address ranges if the type is LoadBalancer
+    loadBalancerSourceRanges: []
     ## @param orchestration.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-    ## @param orchestration.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
-    commandPort: 26501
-    ## @param orchestration.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 8080
+    ## @param orchestration.service.managementName defines the name of the management endpoint, where the management API is exposed
+    managementName: "server"
+    ## @param orchestration.service.managementPort defines the port of the management endpoint, where the management API is exposed
+    managementPort: 9600
+    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcName: "grpc"
+    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcPort: 26500
+    ## @param orchestration.service.commandName defines the name of the command API endpoint, where the broker commands are sent to
     commandName: "command"
-    ## @param orchestration.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-    internalPort: 26502
-    ## @param orchestration.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    ## @param orchestration.service.commandPort defines the port of the command API endpoint, where the broker commands are sent to
+    commandPort: 26501
+    ## @param orchestration.service.internalName defines the name of the internal API endpoint, which is used for internal communication
     internalName: "internal"
+    ## @param orchestration.service.internalPort defines the port of the internal API endpoint, which is used for internal communication
+    internalPort: 26502
+
     ## @param orchestration.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
     extraPorts: []
       # - name: hazelcast
       #   protocol: TCP
       #   port: 5701
       #   targetPort: 5701
-    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcPort: 26500
-    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcName: "gateway"
-    ## @param orchestration.service.managementPort
-    managementPort: 9600
-    ## @param orchestration.service.managementName
-    managementName: "server"
 
   ## @extra global.orchestration.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:

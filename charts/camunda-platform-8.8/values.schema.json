@@ -5533,66 +5533,87 @@
                             "description": "can be used to define annotations, which will be applied to the service",
                             "default": {}
                         },
+                        "headless": {
+                            "type": "object",
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations, which will be applied to the headless service",
+                                    "default": {}
+                                }
+                            }
+                        },
                         "type": {
                             "type": "string",
                             "description": "defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
                             "default": "ClusterIP"
                         },
-                        "httpPort": {
-                            "type": "number",
-                            "description": "defines the port of the http endpoint, where for example metrics are provided",
-                            "default": 8080
+                        "loadBalancerIP": {
+                            "type": "string",
+                            "description": "defines public IP of the load balancer if the type is LoadBalancer",
+                            "default": ""
+                        },
+                        "loadBalancerSourceRanges": {
+                            "type": "array",
+                            "description": "defines list of allowed source IP address ranges if the type is LoadBalancer",
+                            "default": [],
+                            "items": {}
                         },
                         "httpName": {
                             "type": "string",
                             "description": "defines the name of the http endpoint, where for example metrics are provided",
                             "default": "http"
                         },
-                        "commandPort": {
+                        "httpPort": {
                             "type": "number",
-                            "description": "defines the port of the command api endpoint, where the broker commands are sent to",
-                            "default": 26501
+                            "description": "defines the port of the http endpoint, where for example metrics are provided",
+                            "default": 8080
                         },
-                        "commandName": {
+                        "managementName": {
                             "type": "string",
-                            "description": "defines the name of the command api endpoint, where the broker commands are sent to",
-                            "default": "command"
+                            "description": "defines the name of the management endpoint, where the management API is exposed",
+                            "default": "server"
                         },
-                        "internalPort": {
+                        "managementPort": {
                             "type": "number",
-                            "description": "defines the port of the internal api endpoint, which is used for internal communication",
-                            "default": 26502
+                            "description": "defines the port of the management endpoint, where the management API is exposed",
+                            "default": 9600
                         },
-                        "internalName": {
+                        "grpcName": {
                             "type": "string",
-                            "description": "defines the name of the internal api endpoint, which is used for internal communication",
-                            "default": "internal"
-                        },
-                        "extraPorts": {
-                            "type": "array",
-                            "description": "can be used to expose any other ports which are required. Can be useful for exporters",
-                            "default": [],
-                            "items": {}
+                            "description": "defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to",
+                            "default": "grpc"
                         },
                         "grpcPort": {
                             "type": "number",
                             "description": "defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to",
                             "default": 26500
                         },
-                        "grpcName": {
+                        "commandName": {
                             "type": "string",
-                            "description": "defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to",
-                            "default": "gateway"
+                            "description": "defines the name of the command API endpoint, where the broker commands are sent to",
+                            "default": "command"
                         },
-                        "managementPort": {
+                        "commandPort": {
                             "type": "number",
-                            "description": "",
-                            "default": 9600
+                            "description": "defines the port of the command API endpoint, where the broker commands are sent to",
+                            "default": 26501
                         },
-                        "managementName": {
+                        "internalName": {
                             "type": "string",
-                            "description": "",
-                            "default": "server"
+                            "description": "defines the name of the internal API endpoint, which is used for internal communication",
+                            "default": "internal"
+                        },
+                        "internalPort": {
+                            "type": "number",
+                            "description": "defines the port of the internal API endpoint, which is used for internal communication",
+                            "default": 26502
+                        },
+                        "extraPorts": {
+                            "type": "array",
+                            "description": "can be used to expose any other ports which are required. Can be useful for exporters",
+                            "default": [],
+                            "items": {}
                         }
                     }
                 },

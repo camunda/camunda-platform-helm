@@ -64,7 +64,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: camunda-platform-test-zeebe
+              value: "camunda-platform-test-zeebe-headless"
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -90,7 +90,7 @@ spec:
             - containerPort: 9600
               name: server
             - containerPort: 26500
-              name: gateway
+              name: grpc
           readinessProbe:
             httpGet:
               path: /orchestration/actuator/health/readiness

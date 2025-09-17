@@ -38,7 +38,7 @@ data:
       client:
         {{- $baseURLInternal := printf "%s://%s"
           (lower .Values.orchestration.readinessProbe.scheme)
-          (include "orchestration.serviceNameGateway" .)
+          (include "orchestration.serviceNameMain" .)
         }}
         rest-address: {{ printf "%s:%v%s"
           $baseURLInternal

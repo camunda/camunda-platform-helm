@@ -2,27 +2,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "orchestration.serviceNameMain" . }}
+  name: {{ include "orchestration.serviceNameHeadless" . }}
   labels:
-    {{- include "orchestration.serviceLabelsMain" . | nindent 4 }}
+    {{- include "orchestration.serviceLabelsHeadless" . | nindent 4 }}
   annotations:
     {{- include "common.tplvalues.merge-overwrite" (dict
       "values" (list
         .Values.global.annotations
-        .Values.orchestration.service.annotations
+        .Values.orchestration.service.headless.annotations
       )
       "context" .
     ) | nindent 4 }}
 spec:
-  type: {{ .Values.orchestration.service.type }}
+  clusterIP: None
   publishNotReadyAddresses: true
-  {{- if .Values.orchestration.service.loadBalancerIP}}
-  loadBalancerIP: {{ .Values.orchestration.service.loadBalancerIP }}
-  {{- end }}
-  {{- if .Values.orchestration.service.loadBalancerSourceRanges}}
-  loadBalancerSourceRanges:
-    {{- toYaml .Values.orchestration.service.loadBalancerSourceRanges | nindent 6 }}
-  {{- end }}
+  type: {{ .Values.orchestration.service.type }}
   ports:
     {{- include "orchestration.servicePortsCommon" . | nindent 4 }}
     {{- if .Values.orchestration.service.extraPorts }}

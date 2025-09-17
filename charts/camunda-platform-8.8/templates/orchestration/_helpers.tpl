@@ -15,27 +15,50 @@
 {{/*
 [orchestration] Defines extra labels for orchestration.
 */}}
-{{ define "orchestration.extraLabels" -}}
+
+{{ define "orchestration.extraLabelsMain" -}}
 {{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
 app.kubernetes.io/component: zeebe-broker
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
+    "base" .Values.global
+    "overlay" .Values.orchestration
+    "chart" .Chart
+) | quote }}
+{{- end }}
+
+{{ define "orchestration.extraLabelsHeadless" -}}
+{{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
+app.kubernetes.io/component: zeebe-broker-headless
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
+    "base" .Values.global
+    "overlay" .Values.orchestration
+    "chart" .Chart
+) | quote }}
 {{- end }}
 
 {{/*
 [orchestration] Defines extra labels for orchestration.
 */}}
-{{ define "orchestrationMigration.extraLabels" -}}
+{{ define "orchestration.extraLabelsMigration" -}}
 {{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */ -}}
-app.kubernetes.io/component: orchestration-migration
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
+app.kubernetes.io/component: zeebe-broker-migration
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
+    "base" .Values.global
+    "overlay" .Values.orchestration
+    "chart" .Chart
+) | quote }}
 {{- end }}
 
 {{/*
-[orchestration Importer] Defines extra labels for orchestration importer.
+[orchestration] Defines extra labels for orchestration importer.
 */}}
-{{ define "orchestrationImporter.extraLabels" -}}
-app.kubernetes.io/component: orchestration-importer
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.orchestration "chart" .Chart) | quote }}
+{{ define "orchestration.extraLabelsImporter" -}}
+app.kubernetes.io/component: zeebe-broker-importer
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
+    "base" .Values.global
+    "overlay" .Values.orchestration
+    "chart" .Chart
+) | quote }}
 {{- end }}
 
 {{/*
@@ -45,27 +68,27 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 {{- define "orchestration.labels" -}}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
-    {{- include "orchestration.extraLabels" . }}
+    {{- include "orchestration.extraLabelsMain" . }}
 {{- end -}}
 
 {{/*
 [orchestration] Define common labels for orchestration cluster migrations, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
-{{- define "orchestrationMigration.labels" -}}
+{{- define "orchestration.labelsMigration" -}}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
-    {{- include "orchestrationMigration.extraLabels" . }}
+    {{- include "orchestration.extraLabelsMigration" . }}
 {{- end -}}
 
 {{/*
-[orchestration Importer] Define common labels for orchestration importer, combining the match labels and transient labels, which might change on updating
+[orchestration] Define common labels for orchestration importer, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
-{{- define "orchestrationImporter.labels" -}}
+{{- define "orchestration.labelsImporter" -}}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
-    {{- include "orchestrationImporter.extraLabels" . }}
+    {{- include "orchestration.extraLabelsImporter" . }}
 {{- end -}}
 
 {{/*
@@ -80,12 +103,12 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base
 
 
 {{/*
-[orchestration Importer] Defines match labels for orchestration importer, which are extended by sub-charts and should be used in matchLabels selectors.
+[orchestration] Defines match labels for orchestration importer, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
-{{- define "orchestrationImporter.matchLabels" -}}
+{{- define "orchestration.matchLabelsImporter" -}}
     {{- include "camundaPlatform.matchLabels" . }}
     {{- "\n" -}}
-    app.kubernetes.io/component: orchestration-importer
+    app.kubernetes.io/component: zeebe-broker-importer
 {{- end -}}
 
 {{/*
@@ -183,36 +206,84 @@ Service names.
 */}}
 
 {{/*
-[orchestration] Define Orchestration Cluster service - Broker.
+[orchestration] Define Orchestration Cluster service name - Main.
 */}}
-{{- define "orchestration.serviceNameBroker" }}
+{{- define "orchestration.serviceNameMain" }}
     {{- include "orchestration.fullname" . -}}
 {{- end -}}
 
 {{/*
-[orchestration] Define Orchestration Cluster service - Gateway.
+[orchestration] Define Orchestration Cluster service name - Main - gRPC.
 */}}
-{{- define "orchestration.serviceNameGateway" }}
-    {{- include "orchestration.fullname" . -}}-gateway
+{{- define "orchestration.serviceNameMainGRPC" }}
+    {{- include "orchestration.serviceNameMain" . -}}:{{ .Values.orchestration.service.grpcPort }}
 {{- end -}}
 
 {{/*
-[orchestration] Define Orchestration Cluster service - Broker - gRPC.
+[orchestration] Define Orchestration Cluster service name - Main - HTTP.
 */}}
-{{- define "orchestration.serviceNameBrokerGRPC" }}
-    {{- include "orchestration.serviceNameBroker" . -}}:{{ .Values.orchestration.service.grpcPort }}
+{{- define "orchestration.serviceNameMainHTTP" }}
+    {{- include "orchestration.serviceNameMain" . -}}:{{ .Values.orchestration.service.httpPort }}
 {{- end -}}
 
 {{/*
-[orchestration] Define Orchestration Cluster service - Gateway - gRPC.
+[orchestration] Define Orchestration Cluster service name - Headless.
 */}}
-{{- define "orchestration.serviceNameGatewayGRPC" }}
-    {{- include "orchestration.serviceNameGateway" . -}}:{{ .Values.orchestration.service.grpcPort }}
+{{- define "orchestration.serviceNameHeadless" }}
+    {{- include "orchestration.fullname" . -}}-headless
 {{- end -}}
 
 {{/*
-[orchestration] Define Orchestration Cluster service - Gateway - REST.
+[orchestration] Define Orchestration Cluster service name - Headless - gRPC.
 */}}
-{{- define "orchestration.serviceNameGatewayREST" }}
-    {{- include "orchestration.serviceNameGateway" . -}}:{{ .Values.orchestration.service.restPort }}
+{{- define "orchestration.serviceNameHeadlessGRPC" }}
+    {{- include "orchestration.serviceNameHeadless" . -}}:{{ .Values.orchestration.service.grpcPort }}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Service labels.
+********************************************************************************
+*/}}
+
+{{/*
+[orchestration] Define Orchestration Cluster service labels - Main.
+*/}}
+{{- define "orchestration.serviceLabelsMain" }}
+    {{- include "camundaPlatform.labels" . }}
+    {{- "\n" }}
+    {{- include "orchestration.extraLabelsMain" . }}
+{{- end -}}
+
+{{/*
+[orchestration] Define Orchestration Cluster service labels - Headless.
+*/}}
+{{- define "orchestration.serviceLabelsHeadless" }}
+    {{- include "camundaPlatform.labels" . }}
+    {{- "\n" }}
+    {{- include "orchestration.extraLabelsHeadless" . }}
+{{- end -}}
+
+{{/*
+********************************************************************************
+Service Ports.
+********************************************************************************
+*/}}
+
+{{- define "orchestration.servicePortsCommon" -}}
+- port: {{ .Values.orchestration.service.internalPort }}
+  protocol: TCP
+  name: {{ default "internal" .Values.orchestration.service.internalName  }}
+- port: {{ .Values.orchestration.service.commandPort }}
+  protocol: TCP
+  name: {{ default "command" .Values.orchestration.service.commandName }}
+- port: {{ .Values.orchestration.service.managementPort }}
+  protocol: TCP
+  name: {{ default "management" .Values.orchestration.service.managementName }}
+- port: {{ .Values.orchestration.service.httpPort }}
+  protocol: TCP
+  name: {{ default "http" .Values.orchestration.service.httpName  }}
+- port: {{ .Values.orchestration.service.grpcPort }}
+  protocol: TCP
+  name: {{ default "grpc" .Values.orchestration.service.grpcName }}
 {{- end -}}

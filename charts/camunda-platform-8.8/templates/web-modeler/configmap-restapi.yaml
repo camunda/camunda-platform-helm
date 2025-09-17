@@ -56,9 +56,9 @@ data:
             authorizations:
               enabled: {{ .Values.orchestration.security.authorizations.enabled }}
             url:
-              grpc: "grpc://{{ include "orchestration.fullname" . }}:{{ .Values.orchestration.service.grpcPort }}"
-              rest: "{{ include "camundaPlatform.zeebeGatewayRESTURL" . }}"
-              web-app: "{{ include "camundaPlatform.orchestrationExternalURL" . }}"
+              grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
+              rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+              web-app: {{ include "camundaPlatform.orchestrationExternalURL" . | quote }}
           {{- end }}
         {{- end }}
 

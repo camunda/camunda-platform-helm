@@ -9,7 +9,8 @@ spec:
   selector:
     matchLabels:
       {{- toYaml .Values.global.labels | nindent 6 }}
-      app.kubernetes.io/component: orchestration
+      {{- /* NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8. */}}
+      app.kubernetes.io/component: zeebe-broker
   endpoints:
     - honorLabels: true
       path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus) }}

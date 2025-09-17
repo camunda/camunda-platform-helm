@@ -13,10 +13,10 @@ metadata:
     app.kubernetes.io/component: zeebe-broker
     app.kubernetes.io/version: "8.8.0-alpha8"
   annotations:
+    {}
 spec:
-  clusterIP: None
-  publishNotReadyAddresses: true
   type: ClusterIP
+  publishNotReadyAddresses: true
   ports:
     - port: 26502
       protocol: TCP
@@ -27,6 +27,12 @@ spec:
     - port: 9600
       protocol: TCP
       name: server
+    - port: 8080
+      protocol: TCP
+      name: http
+    - port: 26500
+      protocol: TCP
+      name: grpc
   selector:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform

@@ -67,8 +67,8 @@
 
 The Cluster itself is not exposed as a service which means that you can use `kubectl port-forward` to access the Zeebe cluster from outside Kubernetes:
 
-> kubectl port-forward svc/{{ include "orchestration.serviceNameGateway" . }} 26500:26500 -n {{ .Release.Namespace }}
-> kubectl port-forward svc/{{ include "orchestration.serviceNameGateway" . }} 8088:8080 -n {{ .Release.Namespace }}
+> kubectl port-forward svc/{{ include "orchestration.serviceNameMain" . }} 26500:26500 -n {{ .Release.Namespace }}
+> kubectl port-forward svc/{{ include "orchestration.serviceNameMain" . }} 8088:8080 -n {{ .Release.Namespace }}
 
 Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:26500` for REST API usage.
 
