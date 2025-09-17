@@ -9,6 +9,7 @@ data:
       migration:
         identity:
           mode: {{ .Values.global.identity.auth.type }}
+          resource-authorizations-enabled: {{ .Values.orchestration.migration.identity.resourceAuthorizationsEnabled }}
           {{- if not ( eq .Values.global.identity.auth.type "KEYCLOAK" ) }}
           oidc:
             audiences:
