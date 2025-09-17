@@ -5129,6 +5129,41 @@
                                         }
                                     }
                                 },
+                                "defaultRoles": {
+                                    "type": "object",
+                                    "properties": {
+                                        "admin": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the admin permission",
+                                                    "default": [
+                                                        "demo"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "connectors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the connectors permission",
+                                                    "default": [
+                                                        "connector"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "mappingRules": {
                                     "type": "array",
                                     "description": "the mapping-rule-id of an initial mapping rule.",
