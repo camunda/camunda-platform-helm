@@ -105,16 +105,9 @@ camunda:
     initialization:
       {{- if eq .Values.orchestration.security.authentication.method "basic" }}
       users:
-        {{- range $user := .Values.orchestration.security.initialization.users }}
-        - username: {{ $user.username | quote }}
-          password: {{ $user.password | quote }}
-          name: {{ $user.name | quote }}
-          email: {{ $user.email | quote }}
-        {{- end }}
-      default-roles.admin.users:
-        {{- range $user := .Values.orchestration.security.initialization.users }}
-        - {{ index $user "username" | quote }}
-        {{- end }}
+        {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
+      default-roles:
+        {{- .Values.orchestration.security.initialization.defaultRoles | toYaml | nindent 8 }}
       {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
       mapping-rules:
         - mapping-rule-id: "connectors-client-mapping-rule"
@@ -233,7 +226,7 @@ zeebe:
 
     # zeebe.broker.exporters
     exporters:
-    {{- if or (and .Values.global.elasticsearch.enabled .Values.global.exporter.enabled) (and .Values.global.elasticsearch.enabled .Values.optimize.enabled) }}
+    {{- if or (and .Values.global.elasticsearch.enabled .Values.global.exporter.enabled) (and .Values.global.elasticsearch.enabled .Values.optimize.enabled) (and .Values.global.elasticsearch.enabled .Values.orchestration.migration.data.enabled) }}
       elasticsearch:
         className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         args:
@@ -251,7 +244,7 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
-    {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) }}
+    {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) (and .Values.global.opensearch.enabled .Values.orchestration.migration.data.enabled) }}
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
