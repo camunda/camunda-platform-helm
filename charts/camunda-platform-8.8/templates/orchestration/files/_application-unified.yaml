@@ -45,6 +45,12 @@ camunda:
       address: 0.0.0.0
       port: {{ .Values.orchestration.service.grpcPort }}
 
+  {{- if .Values.global.opensearch.enabled }}
+  # Database configuration - Separated syntax.
+  database:
+    awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+  {{- end }}
+
   data:
     snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
     primary-storage:
@@ -73,9 +79,9 @@ camunda:
         index-prefix: {{ .Values.global.opensearch.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
-    {{- end }}
+      {{- end }}
 
-  # Security configuration - Seperated syntax.
+  # Security configuration - Separated syntax.
   security:
     authentication:
     {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
@@ -138,7 +144,7 @@ camunda:
 {{- if .Values.orchestration.profiles.operate -}}
   {{- "\n" }}
   #
-  # Camunda Operate Configuration - Seperated syntax.
+  # Camunda Operate Configuration - Separated syntax.
   #
   operate:
     persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
@@ -148,7 +154,15 @@ camunda:
     identity:
       redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/operate"
     {{- end }}
-
+    {{- if .Values.global.opensearch.enabled }}
+    # OpenSearch
+    opensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+    zeebeOpensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      password: "${VALUES_OPENSEARCH_PASSWORD:}"
+    {{- end }}
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -163,7 +177,7 @@ camunda:
 {{- if .Values.orchestration.profiles.tasklist -}}
   {{- "\n" }}
   #
-  # Camunda Tasklist Configuration - Seperated syntax.
+  # Camunda Tasklist Configuration - Separated syntax.
   #
   tasklist:
     multiTenancy:
@@ -173,7 +187,15 @@ camunda:
     identity:
       redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/tasklist"
     {{- end }}
-
+    {{- if .Values.global.opensearch.enabled }}
+    # OpenSearch
+    opensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+    zeebeOpensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      password: "${VALUES_OPENSEARCH_PASSWORD:}"
+    {{- end }}
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -189,7 +211,7 @@ camunda:
 {{- if .Values.orchestration.profiles.broker -}}
 {{- "\n" }}
 #
-# Camunda Zeebe Configuration - Seperated syntax.
+# Camunda Zeebe Configuration - Separated syntax.
 #
 zeebe:
   host: 0.0.0.0
@@ -280,12 +302,13 @@ zeebe:
             username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
             password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
           {{- end }}
-          {{- if .Values.orchestration.retention.enabled }}
+            awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+        {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
-          {{- end }}
+        {{- end }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
             rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}
