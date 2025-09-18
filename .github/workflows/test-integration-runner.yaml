@@ -473,8 +473,14 @@ jobs:
             echo "::add-mask::${E2E_TESTS_LICENSE_KEY}"
             yq -i '.global.license.key = env(E2E_TESTS_LICENSE_KEY)' "$values_file"
           fi
-      
-          echo "Prepared values file: $values_file"
+
+          echo "Values file content: $values_file"
+          cat "$values_file"
+
+          test -f /tmp/extra-values-file.yaml && (
+            echo "Values file content: /tmp/extra-values-file.yaml"
+            cat /tmp/extra-values-file.yaml
+          )
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
