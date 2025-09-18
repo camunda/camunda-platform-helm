@@ -19,6 +19,7 @@ global:
       authenticationRefreshInterval: "PT30S"
 
 orchestration:
+  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true

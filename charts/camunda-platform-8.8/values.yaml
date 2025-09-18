@@ -698,7 +698,8 @@ identity:
   #       Which means that Management Identity cannot be configured in combined Ingress without HTTPS.
   #       To use Management Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
   ## @param identity.contextPath can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/identity"
+  # contextPath: "/identity"
+  contextPath: ""
 
   ## @param identity.podAnnotations can be used to define extra Management Identity pod annotations
   podAnnotations: {}
@@ -1245,7 +1246,7 @@ console:
     realm: "camunda-platform"
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/"
+  contextPath: ""
 
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
@@ -1441,8 +1442,9 @@ webModeler:
     pullSecrets: []
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
+  # contextPath: "/modeler"
   ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
-  contextPath: "/modeler"
+  contextPath: ""
 
   # WebModeler.
   ######                         #    ######  ###
@@ -2192,8 +2194,9 @@ connectors:
   ## @param connectors.replicas number of Connectors replicas
   replicas: 1
 
+  # contextPath: "/connectors"
   ## @param connectors.contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/connectors"
+  contextPath: ""
 
   ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
   podAnnotations: {}
@@ -2696,8 +2699,9 @@ orchestration:
         ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: camunda-platform-orchestration-grpc
 
+  # contextPath: "/orchestration"
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/orchestration"
+  contextPath: ""
 
   ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
@@ -2994,8 +2998,9 @@ optimize:
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
 
+  # contextPath: "/optimize"
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/optimize"
+  contextPath: ""
 
   ## @extra optimize.configMap configuration which will be applied to the mounted config map.
   configMap:
