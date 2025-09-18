@@ -46,8 +46,8 @@ data:
         mode: selfManaged
         auth:
           method: basic
-          username: "demo"
-          password: "demo"
+          username: "connector"
+          password: "connector"
       connector:
         headless:
           service-url: "camunda-platform-test-connectors-headless"

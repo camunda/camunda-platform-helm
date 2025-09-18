@@ -410,6 +410,14 @@ global:
         existingSecret: ""
         ## @param global.identity.auth.identity.existingSecretKey (DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
+        ## @extra global.identity.auth.identity.secret configuration to provide the identity client secret.
+        secret:
+          ## @param global.identity.auth.identity.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.identity.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
         ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Management Identity.
         # Should be publicly accessible, the default value works if a port-forward to Management Identity is created to 8085.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -2428,8 +2436,20 @@ orchestration:
       ## @param orchestration.security.initialization.users[0].password
       ## @param orchestration.security.initialization.users[0].name
       ## @param orchestration.security.initialization.users[0].email
+      ## @param orchestration.security.initialization.users[1].username
+      ## @param orchestration.security.initialization.users[1].password
+      ## @param orchestration.security.initialization.users[1].name
+      ## @param orchestration.security.initialization.users[1].email
       users:
-        ## @extra orchestration.security.initialization.users.username, the username of an initial user.
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
+        - username: connector
+          ## @extra orchestration.security.initialization.users.password, the password of an initial user, used for the connectors component.
+          password: connector
+          ## @extra orchestration.security.initialization.users.name, the name of an initial user, used for the connectors component.
+          name: Connector User
+          ## @extra orchestration.security.initialization.users.email, the email of an initial user, used for the connectors component.
+          email: connector@demo.com
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
         - username: demo
           ## @extra orchestration.security.initialization.users.password, the password of an initial user.
           password: demo
@@ -2437,6 +2457,16 @@ orchestration:
           name: Demo User
           ## @extra orchestration.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
+      ## @extra orchestration.security.initialization.defaultRoles assigning initial users to default roles. More roles can be added to the dictionary: https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/#default-roles
+      ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
+      ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
+      defaultRoles:
+        admin:
+          users:
+            - demo
+        connectors:
+          users:
+            - connector
       mappingRules:
         ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
         - mappingRuleID: demo-user-mapping-rule
@@ -2527,6 +2557,10 @@ orchestration:
       enabled: false
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
+      ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
+      resourceAuthorizationsEnabled: false
+      ## @param orchestration.migration.identity.idpApplicationId must be define the application ID if an external IdP is used.
+      idpApplicationId: ""
 
   ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
   importer:
