@@ -87,6 +87,7 @@ camunda:
     {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+        client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
         groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
         client-id: {{ include "orchestration.authClientId" . | quote }}
         client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
@@ -114,17 +115,6 @@ camunda:
       {{- if eq .Values.orchestration.security.authentication.method "basic" }}
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
-      {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
-      mapping-rules:
-        - mapping-rule-id: "connectors-client-mapping-rule"
-          claim-name: "client_id"
-          claim-value: "connectors"
-        {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
-        - mapping-rule-id: {{ index $mappingRule "mappingRuleID" | quote }}
-          claim-name: {{ index $mappingRule "claimName" | quote }}
-          claim-value: {{ index $mappingRule "claimValue" | quote }}
-        {{- end }}
-      {{- end }}
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
