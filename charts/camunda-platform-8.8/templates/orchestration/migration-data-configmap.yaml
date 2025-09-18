@@ -13,12 +13,12 @@ data:
             url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
             {{- if .Values.orchestration.index.prefix }}
             index-prefix: {{ .Values.orchestration.index.prefix | quote }}
-            {{- end}}
+            {{- end }}
             cluster-name: {{ .Values.global.elasticsearch.clusterName }}
             {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
             username: {{ .Values.global.elasticsearch.auth.username }}
             password: ${VALUES_ELASTICSEARCH_PASSWORD:}
-            {{- end}}
+            {{- end }}
       database:
         type: elasticsearch
         clusterName: {{ .Values.global.elasticsearch.clusterName }}
@@ -97,7 +97,10 @@ data:
             retry-delay-multiplier: {{ .Values.orchestration.migration.data.tumetrics.retry.retryDelayMultiplier }}
         tasks:
           batch-size: {{ .Values.orchestration.migration.data.tasks.batchSize }}
-          importer-finished-timeout: {{ .Values.orchestration.migration.data.process.importerFinishedTimeout }}
+          importer-finished-timeout: {{ .Values.orchestration.migration.data.tasks.importerFinishedTimeout }}
+          {{- if .Values.orchestration.history.retention.enabled }}
+          legacy-index-retention-age: {{ .Values.orchestration.migration.data.tasks.legacyIndexRetentionAge | default .Values.orchestration.history.retention.minimumAge | quote }}
+          {{- end }}
           retry:
             max-retries: {{ .Values.orchestration.migration.data.process.retry.maxRetries }}
             max-retry-delay: {{ .Values.orchestration.migration.data.process.retry.maxRetryDelay }}

@@ -695,6 +695,26 @@
                                             "description": "(DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.",
                                             "default": "identity-oidc-client-token"
                                         },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the redirect URL, which is used by the auth platform to access Management Identity.",
@@ -1209,7 +1229,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/identity"
+                    "default": ""
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -2420,7 +2440,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/"
+                    "default": ""
                 },
                 "initContainers": {
                     "type": "array",
@@ -2871,7 +2891,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
-                    "default": "/modeler"
+                    "default": ""
                 },
                 "restapi": {
                     "type": "object",
@@ -4587,7 +4607,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/connectors"
+                    "default": ""
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -5129,6 +5149,41 @@
                                         }
                                     }
                                 },
+                                "defaultRoles": {
+                                    "type": "object",
+                                    "properties": {
+                                        "admin": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the admin permission",
+                                                    "default": [
+                                                        "demo"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "connectors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the connectors permission",
+                                                    "default": [
+                                                        "connector"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "mappingRules": {
                                     "type": "array",
                                     "description": "the mapping-rule-id of an initial mapping rule.",
@@ -5334,6 +5389,11 @@
                                             "description": "can be used to define the timeout when the import is finished.",
                                             "default": "PT1M"
                                         },
+                                        "legacyIndexRetentionAge": {
+                                            "type": "string",
+                                            "description": "defines when the legacy task index will be removed, defaults to orchestration.history.retention.minimumAge",
+                                            "default": "30d"
+                                        },
                                         "retry": {
                                             "type": "object",
                                             "properties": {
@@ -5375,6 +5435,16 @@
                                     "type": "number",
                                     "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
+                                },
+                                "resourceAuthorizationsEnabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7",
+                                    "default": false
+                                },
+                                "idpApplicationId": {
+                                    "type": "string",
+                                    "description": "must be define the application ID if an external IdP is used.",
+                                    "default": ""
                                 }
                             }
                         }
@@ -5679,7 +5749,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/orchestration"
+                    "default": ""
                 },
                 "cpuThreadCount": {
                     "type": "string",
@@ -6078,6 +6148,11 @@
                             "type": "string",
                             "description": "if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use \"global.elasticsearch.prefix\".",
                             "default": ""
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch",
+                            "default": 1
                         }
                     }
                 },
@@ -6293,7 +6368,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/optimize"
+                    "default": ""
                 },
                 "configMap": {
                     "type": "object",

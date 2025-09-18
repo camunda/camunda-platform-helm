@@ -465,9 +465,13 @@ Also, recent OpenShift versions (> 4.10) have adjusted the virtual memory of the
 OpenShift.
 The label `tuned.openshift.io/elasticsearch` is added to ensure compatibility with the previous Camunda Helm charts.
 Without this label, the Helm upgrade will fail for OpenShift because it is already set for the volumeClaimTemplate.
+This is only needed when elasticsearch is actually enabled and deployed.
 */}}
 
-{{- if eq .Values.global.compatibility.openshift.adaptSecurityContext "force" -}}
+{{- if and (eq .Values.global.compatibility.openshift.adaptSecurityContext "force") .Values.elasticsearch.enabled -}}
+    {{- if not (hasKey .Values.elasticsearch "commonLabels") -}}
+        {{- $_ := set .Values.elasticsearch "commonLabels" (dict) -}}
+    {{- end -}}
     {{- if not (hasKey .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch") -}}
         {{- $_ := set .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch" "" -}}
     {{- end -}}
