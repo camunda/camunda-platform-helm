@@ -2541,6 +2541,8 @@ orchestration:
         batchSize: 5
         ## @param orchestration.migration.data.tasks.importerFinishedTimeout can be used to define the timeout when the import is finished.
         importerFinishedTimeout: PT1M
+        ## @param orchestration.migration.data.tasks.legacyIndexRetentionAge defines when the legacy task index will be removed, defaults to orchestration.history.retention.minimumAge
+        legacyIndexRetentionAge: 30d
         retry:
           ## @param orchestration.migration.data.tasks.retry.maxRetries can be used to define the maximum amount of retries.
           maxRetries: 5
