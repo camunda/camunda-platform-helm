@@ -33,13 +33,12 @@ data:
       address: 0.0.0.0
       port: 8080
       servlet:
-        context-path: "/orchestration"
     
     management:
       server:
         address: 0.0.0.0
         port: 9600
-        base-path: "/orchestration"
+        base-path: "/"
     
     camunda:
       license:
@@ -134,7 +133,7 @@ data:
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
-          restAddress: "http://camunda-platform-test-zeebe:8080/orchestration"
+          restAddress: "http://camunda-platform-test-zeebe:8080"
     
     #
     # Camunda Zeebe Configuration - Separated syntax.
