@@ -71,7 +71,7 @@ spec:
             {{- if .Values.global.identity.auth.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
-                "config" .Values.global.identity.auth.orchestration
+                "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}

@@ -157,15 +157,15 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 [orchestration] Define variables related to authentication.
 */}}
 {{- define "orchestration.authClientId" -}}
-    {{- .Values.global.identity.auth.orchestration.clientId | default "orchestration" -}}
+    {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}
 
 {{- define "orchestration.authAudience" -}}
-    {{- .Values.global.identity.auth.orchestration.audience | default "orchestration-api" -}}
+    {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
 {{- end -}}
 
 {{- define "orchestration.authTokenScope" -}}
-    {{- .Values.global.identity.auth.orchestration.tokenScope -}}
+    {{- .Values.orchestration.security.authentication.oidc.tokenScope -}}
 {{- end -}}
 
 {{- define "orchestration.enabledProfiles" -}}

@@ -133,6 +133,16 @@ Orchestration compatibility.
     {{- if and .Values.tasklist .Values.tasklist.enabled -}}
         {{- $_ := set .Values.orchestration.profiles "tasklist" .Values.tasklist.enabled -}}
     {{- end -}}
+
+    {{/*
+    Global Orchestration Auth => Orchestration Auth.
+    */}}
+    {{- if and ((.Values.global.identity.auth).orchestration) .Values.orchestration.enabled -}}
+        {{- $_ := set .Values.orchestration.security.authentication "oidc" (
+          deepCopy .Values.global.identity.auth.orchestration |
+            mergeOverwrite .Values.orchestration.security.authentication.oidc
+        ) -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*

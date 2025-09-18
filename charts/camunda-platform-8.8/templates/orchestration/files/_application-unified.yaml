@@ -92,7 +92,7 @@ camunda:
         client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
         audiences:
           - {{ include "orchestration.authClientId" . | quote }}
-          - {{ .Values.global.identity.auth.orchestration.audience | quote }}
+          - {{ .Values.orchestration.security.authentication.oidc.audience | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
           - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
         {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
@@ -101,7 +101,7 @@ camunda:
           For more details: https://github.com/camunda/camunda-platform-helm/issues/3952
         */}}
         issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
-        redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
+        redirect-uri: "{{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
     {{- end }}
       method: {{ .Values.orchestration.security.authentication.method | quote }}
@@ -152,7 +152,7 @@ camunda:
       enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
     {{- if .Values.global.identity.auth.enabled }}
     identity:
-      redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/operate"
+      redirectRootUrl: "{{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ }}/operate"
     {{- end }}
     {{- if .Values.global.opensearch.enabled }}
     # OpenSearch
@@ -185,7 +185,7 @@ camunda:
 
     {{- if .Values.global.identity.auth.enabled }}
     identity:
-      redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/tasklist"
+      redirectRootUrl: "{{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ }}/tasklist"
     {{- end }}
     {{- if .Values.global.opensearch.enabled }}
     # OpenSearch
