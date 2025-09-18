@@ -99,12 +99,17 @@ orchestration:
         external-dns.alpha.kubernetes.io/ttl: "60"
   security:
     initialization:
-      users:
       defaultRoles:
         admin:
-          clients:
-            # giving access to venom to deploy a model. Given access to connectors
+          users:
+            - demo
+          client:
             - venom
+        connectors:
+          users:
+            - connectors
+          clients:
+            - connectors
     authentication:
       method: oidc
       authenticationRefreshInterval: "PT30S"
