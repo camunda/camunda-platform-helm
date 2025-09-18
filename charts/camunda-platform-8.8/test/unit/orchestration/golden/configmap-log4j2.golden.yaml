@@ -84,7 +84,7 @@ data:
             history:
               policy-name: "camunda-history-retention-policy"
     
-      # Security configuration - Seperated syntax.
+      # Security configuration - Separated syntax.
       security:
         authentication:
           method: "basic"
@@ -113,25 +113,23 @@ data:
           apiEnabled: true
     
       #
-      # Camunda Operate Configuration - Seperated syntax.
+      # Camunda Operate Configuration - Separated syntax.
       #
       operate:
         persistentSessionsEnabled: true
         multiTenancy:
           enabled: false
-    
         # Zeebe instance
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
     
       #
-      # Camunda Tasklist Configuration - Seperated syntax.
+      # Camunda Tasklist Configuration - Separated syntax.
       #
       tasklist:
         multiTenancy:
           enabled: false
-    
         # Zeebe instance
         zeebe:
           # Gateway address
@@ -139,7 +137,7 @@ data:
           restAddress: "http://camunda-platform-test-zeebe:8080/orchestration"
     
     #
-    # Camunda Zeebe Configuration - Seperated syntax.
+    # Camunda Zeebe Configuration - Separated syntax.
     #
     zeebe:
       host: 0.0.0.0
@@ -179,6 +177,7 @@ data:
                 type: "elasticsearch"
                 url: "http://camunda-platform-test-elasticsearch:9200"
                 numberOfReplicas: "1"
+                awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"
                 rolloverInterval: "1d"
