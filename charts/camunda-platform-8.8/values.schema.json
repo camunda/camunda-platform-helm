@@ -1551,7 +1551,35 @@
                     "type": "array",
                     "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -2504,7 +2532,35 @@
                     "type": "array",
                     "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -4202,6 +4258,114 @@
                         }
                     }
                 }
+            },
+            "restapi": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "webapp": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "websockets": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
             }
         },
         "webModelerPostgresql": {
@@ -4519,7 +4683,35 @@
                     "type": "array",
                     "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -5336,7 +5528,35 @@
                     "type": "array",
                     "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -6194,7 +6414,35 @@
                     "type": "array",
                     "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -6599,6 +6847,42 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        }
+                    }
+                }
+            },
+            "migration": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
                         }
                     }
                 }
