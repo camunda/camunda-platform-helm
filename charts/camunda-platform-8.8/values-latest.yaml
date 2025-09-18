@@ -9,7 +9,6 @@ global:
     tag:
 
 console:
-  # Camunda Enterprise repository.
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
@@ -33,12 +32,15 @@ webModeler:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
     tag: SNAPSHOT
 
+#
+# Orchestration Cluster
+#
+
 orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: SNAPSHOT
-
+    tag: 8.8-SNAPSHOT
 
 #
 # Identity
@@ -53,8 +55,8 @@ identity:
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
-    repository: bitnamilegacy/keycloak
-    tag: 26.3.3
+    repository: camunda/keycloak
+    tag: 26.3.1
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:

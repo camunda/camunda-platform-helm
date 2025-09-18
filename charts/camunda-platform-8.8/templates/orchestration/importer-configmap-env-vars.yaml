@@ -1,0 +1,36 @@
+{{- if .Values.orchestration.importer.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "orchestration.fullname" . }}-importer-env-vars
+  labels:
+    {{- include "orchestration.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
+data:
+{{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
+  SPRING_PROFILES_ACTIVE: "tasklist,operate,consolidated-auth"
+{{- else }}
+  SPRING_PROFILES_ACTIVE: "operate,tasklist,auth"
+{{- end }}
+
+  # Zeebe.
+  ZEEBE_GATEWAY_CLUSTER_CLUSTER_NAME: "{{ tpl .Values.global.zeebeClusterName . }}"
+  ZEEBE_GATEWAY_CLUSTER_PORT: "{{ .Values.orchestration.service.internalPort }}"
+  ZEEBE_GATEWAY_CLUSTER_INITIAL_CONTACT_POINTS: "{{ include "orchestration.serviceNameBroker" . }}:{{ .Values.orchestration.service.internalPort }}"
+
+  # Security.
+  CAMUNDA_SECURITY_INITIALIZATION: ""
+
+  # Operate.
+  CAMUNDA_OPERATE_IMPORTER_ENABLED: "true"
+  CAMUNDA_OPERATE_WEBAPP_ENABLED: "false"
+  CAMUNDA_OPERATE_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGatewayGRPC" . }}"
+  CAMUNDA_OPERATE_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameBrokerGRPC" . }}"
+
+  # Tasklist.
+  CAMUNDA_TASKLIST_IMPORTER_ENABLED: "true"
+  CAMUNDA_TASKLIST_WEBAPP_ENABLED: "false"
+  CAMUNDA_TASKLIST_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGatewayGRPC" . }}"
+  CAMUNDA_TASKLIST_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameBrokerGRPC" . }}"
+{{- end }}

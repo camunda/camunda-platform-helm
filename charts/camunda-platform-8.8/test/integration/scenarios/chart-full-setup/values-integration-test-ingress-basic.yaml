@@ -16,9 +16,9 @@ global:
   security:
     authentication:
       method: basic
+      authenticationRefreshInterval: "PT30S"
 
 orchestration:
-  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true

@@ -2,14 +2,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "orchestration.fullname" . }}-gateway
+  name: {{ include "orchestration.serviceNameGateway" . }}
   labels:
     {{- include "orchestration.labels" . | nindent 4 }}
   annotations:
-    {{- if .Values.global.annotations}}
+    {{- if .Values.global.annotations }}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.orchestration.service.annotations}}
+    {{- if .Values.orchestration.service.annotations }}
       {{ .Values.orchestration.service.annotations | toYaml | nindent 4 }}
     {{- end }}
 spec:
@@ -25,7 +25,7 @@ spec:
     - port: {{ .Values.orchestration.service.grpcPort }}
       protocol: TCP
       name: {{ default "grpc-api" .Values.orchestration.service.grpcName }}
-    {{- if .Values.orchestration.service.extraPorts}}
+    {{- if .Values.orchestration.service.extraPorts }}
     {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
     {{- end }}
   selector:

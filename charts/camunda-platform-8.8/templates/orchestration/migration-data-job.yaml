@@ -1,18 +1,18 @@
-{{- if .Values.orchestration.migration.identity.enabled }}
+{{- if .Values.orchestration.migration.data.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "identity.fullname" . }}-migration
-  labels: {{- include "orchestration.labels" . | nindent 4 }}
+  name: {{ include "orchestration.fullname" . }}-data-migration
+  labels: {{- include "orchestrationMigration.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
-  backoffLimit: {{ .Values.orchestration.migration.identity.backoffLimit }}
+  backoffLimit: {{ .Values.orchestration.migration.data.backoffLimit }}
   template:
     metadata:
       labels:
-        {{- include "orchestration.labels" . | nindent 8 }}
+        {{- include "orchestrationMigration.labels" . | nindent 8 }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/orchestration/identity-migration-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/migration-data-configmap.yaml") . | sha256sum }}
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
@@ -29,7 +29,7 @@ spec:
             - sh
             - -c
             - |
-              until curl -sf http://{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
+              until curl -sf http://{{ include "orchestration.serviceNameGateway" . }}:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
                 echo "waiting for Orchestration Cluster"; sleep 5;
               done
       containers:
@@ -40,12 +40,23 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
+            {{/*
+            Passwords for variable substitution.
+            */}}
+            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
-                "config" .Values.global.identity.auth.orchestration
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.global.elasticsearch.auth
             ) | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
           command:
-            - /usr/local/camunda/bin/identity-migration
+            - /usr/local/camunda/bin/data-migration
           resources:
             limits:
               cpu: 500m
@@ -60,5 +71,5 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "identity.fullname" . }}-migration-configuration
+            name: {{ include "orchestration.fullname" . }}-data-migration-configuration
 {{- end }}

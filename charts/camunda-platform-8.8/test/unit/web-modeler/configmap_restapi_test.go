@@ -125,7 +125,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	}
 
 	// then
-	s.Require().Equal("http://custom-identity-fullname:80", configmapApplication.Camunda.Identity.BaseURL)
+	s.Require().Equal("http://custom-identity-fullname:80/identity", configmapApplication.Camunda.Identity.BaseURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
@@ -153,7 +153,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	}
 
 	// then
-	s.Require().Equal("http://camunda-platform-test-custom-identity:80", configmapApplication.Camunda.Identity.BaseURL)
+	s.Require().Equal("http://camunda-platform-test-custom-identity:80/identity", configmapApplication.Camunda.Identity.BaseURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {

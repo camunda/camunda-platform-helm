@@ -13,49 +13,49 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.6.88
+    tag: 8.6.89
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.6.17
+    tag: 8.6.18
 
 operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.6.25
+    tag: 8.6.27
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.6.15
+    tag: 8.6.16
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.6.25
+    tag: 8.6.27
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.17
+    tag: 8.6.18
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.25
+    tag: 8.6.27
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.25
+    tag: 8.6.27
 
 #
 # Identity
@@ -70,7 +70,7 @@ identity:
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
-    repository: bitnamilegacy/keycloak
+    repository: camunda/keycloak
     tag: 25.0.6
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
