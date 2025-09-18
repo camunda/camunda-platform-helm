@@ -103,7 +103,7 @@ orchestration:
         admin:
           users:
             - demo
-          client:
+          clients:
             - venom
         connectors:
           users:
