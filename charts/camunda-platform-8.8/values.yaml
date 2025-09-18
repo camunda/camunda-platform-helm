@@ -347,35 +347,6 @@ global:
           existingSecretKey: ""
 
       #######################
-      # Orchestration Cluster
-      #######################
-
-      ## @extra global.identity.auth.orchestration configuration to configure authentication specifics on global level, which can be accessed by other components
-      orchestration:
-        ## @param global.identity.auth.orchestration.audience defines the audience, which is used by Orchestration Cluster.
-        audience: orchestration-api
-        ## @param global.identity.auth.orchestration.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
-        clientId: orchestration
-        ## @param global.identity.auth.orchestration.existingSecret [string,object] (DEPRECATED - use global.identity.auth.orchestration.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.orchestration.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.orchestration.existingSecretKey (DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-orchestration-client-token
-        ## @extra global.identity.auth.orchestration.secret configuration to provide the orchestration client secret.
-        secret:
-          ## @param global.identity.auth.orchestration.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.orchestration.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.orchestration.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
-        ## @param global.identity.auth.orchestration.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8082"
-        ## @param global.identity.auth.orchestration.tokenScope defines the token scope, which is used by Orchestration Cluster.
-        tokenScope: ""
-
-      #######################
       # Connectors
       #######################
 
@@ -2425,6 +2396,28 @@ orchestration:
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.groupsClaim group claim.
         groupsClaim: "groups"
+        ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
+        audience: orchestration-api
+        ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
+        clientId: orchestration
+        ## @param orchestration.security.authentication.oidc.tokenScope defines the token scope, which is used by Orchestration Cluster.
+        tokenScope: ""
+        ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8082"
+        ## @param orchestration.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using orchestration.security.authentication.oidc.existingSecret.name.
+        existingSecret: ""
+        ## @param orchestration.security.authentication.oidc.existingSecretKey (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-orchestration-client-token
+        ## @extra orchestration.security.authentication.oidc.secret configuration to provide the orchestration client secret.
+        secret:
+          ## @param orchestration.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param orchestration.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
     ## Authorizations configuration.
     ## @extra orchestration.security.authorizations
     authorizations:

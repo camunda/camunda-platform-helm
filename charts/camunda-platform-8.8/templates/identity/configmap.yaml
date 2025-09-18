@@ -110,7 +110,7 @@ data:
               id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
               secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
           apis:
@@ -276,7 +276,7 @@ data:
               id: orchestration
               type: confidential
               secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
         optimize:
