@@ -115,6 +115,7 @@ camunda:
       {{- if eq .Values.orchestration.security.authentication.method "basic" }}
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
+      {{- end }}
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
