@@ -43,6 +43,18 @@ data:
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
       {{- end }}
 
+
+      {{- if and (ne .Values.global.identity.auth.type "KEYCLOAK") (.Values.orchestration.migration.identity.enabled)}}
+      mapping-rules:
+        - name: identityMigration
+          claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
+          claim-value: {{ .Values.orchestration.migration.identity.idpApplicationId }}
+          operator: EQUALS
+          rule-type: ROLE
+          applied-role-names:
+          - ManagementIdentity
+      {{- end }}
+
       component-presets:
         connectors:
           applications:

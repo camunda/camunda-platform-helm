@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.6.0
+version: 12.6.1
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -71,10 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "Upgrade keycloak version for 8.7"
-    - kind: fixed
-      description: "Downgrade nonexistant keycloak 26.3.2 to 26.3.1"
-    - kind: fixed
-      description: "Revert webmodeler externaldb change"
+  artifacthub.io/changes: ""

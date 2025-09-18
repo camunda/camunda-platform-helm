@@ -76,7 +76,7 @@ spec:
           # Orchestration.
           - backend:
               service:
-                name: {{ template "orchestration.fullname" . }}-gateway
+                name: {{ include "orchestration.serviceNameGateway" . }}
                 port:
                   number: {{ .Values.orchestration.service.httpPort }}
             path: {{ .Values.orchestration.contextPath }}
