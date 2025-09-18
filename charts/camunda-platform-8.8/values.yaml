@@ -2428,8 +2428,20 @@ orchestration:
       ## @param orchestration.security.initialization.users[0].password
       ## @param orchestration.security.initialization.users[0].name
       ## @param orchestration.security.initialization.users[0].email
+      ## @param orchestration.security.initialization.users[1].username
+      ## @param orchestration.security.initialization.users[1].password
+      ## @param orchestration.security.initialization.users[1].name
+      ## @param orchestration.security.initialization.users[1].email
       users:
-        ## @extra orchestration.security.initialization.users.username, the username of an initial user.
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
+        - username: connector
+          ## @extra orchestration.security.initialization.users.password, the password of an initial user, used for the connectors component.
+          password: connector
+          ## @extra orchestration.security.initialization.users.name, the name of an initial user, used for the connectors component.
+          name: Connector User
+          ## @extra orchestration.security.initialization.users.email, the email of an initial user, used for the connectors component.
+          email: connector@demo.com
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
         - username: demo
           ## @extra orchestration.security.initialization.users.password, the password of an initial user.
           password: demo
@@ -2437,6 +2449,16 @@ orchestration:
           name: Demo User
           ## @extra orchestration.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
+      ## @extra orchestration.security.initialization.defaultRoles assigning initial users to default roles. More roles can be added to the dictionary: https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/#default-roles
+      ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
+      ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
+      defaultRoles:
+        admin:
+          users:
+            - demo
+        connectors:
+          users:
+            - connector
       mappingRules:
         ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
         - mappingRuleID: demo-user-mapping-rule
@@ -2525,6 +2547,10 @@ orchestration:
       enabled: false
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
+      ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
+      resourceAuthorizationsEnabled: false
+      ## @param orchestration.migration.identity.idpApplicationId, must be define the application ID if an external IdP is used.
+      idpApplicationId: ""
 
   ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
   importer:
@@ -2853,6 +2879,8 @@ orchestration:
   index:
     ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
     prefix: ""
+    ## @param orchestration.index.replicas can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch
+    replicas: 1
 
   ## @extra orchestration.retention configuration for Camunda exporter index.
   retention:

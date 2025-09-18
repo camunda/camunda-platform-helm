@@ -57,7 +57,6 @@ spec:
               type: RuntimeDefault
           command: ["bash", "/usr/local/bin/startup.sh"]
           env:
-            
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -70,6 +69,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
             - name: K8S_POD_NAME
@@ -124,7 +124,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-configuration
+            name: camunda-platform-test-zeebe-configuration-unified
             defaultMode: 492
         - name: exporters
           emptyDir: {}
