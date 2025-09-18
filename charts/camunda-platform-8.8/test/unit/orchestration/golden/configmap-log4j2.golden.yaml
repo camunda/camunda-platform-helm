@@ -96,13 +96,15 @@ data:
               users:
               - demo
             connectors:
+              clients:
+              - connectors
               users:
-              - connector
+              - connectors
           users:
             - email: connector@demo.com
               name: Connector User
               password: connector
-              username: connector
+              username: connectors
             - email: demo@demo.com
               name: Demo User
               password: demo
