@@ -38,7 +38,7 @@ Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSe
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
-  {{- if .Values.orchestration.security.authentication.method "basic" }}
+  {{- if eq .Values.orchestration.security.authentication.method "basic" }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "When \"global.noSecondaryStorage\" is enabled, basic authentication for Orchestration is not supported."
         "Please set \"orchestration.security.authentication.method\" to \"oidc\" and configure OIDC authentication"
@@ -63,12 +63,12 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
 {{- end }}
 
 {{/*
-Fail with a message if global.identity.auth.identity.existingSecret is set and global.identity.auth.type is set to KEYCLOAK
+Fail with a message if global.identity.auth.identity secret configuration is set and global.identity.auth.type is set to KEYCLOAK
 */}}
 
-{{- if (.Values.global.identity.auth.identity.existingSecret) }}
+{{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
   {{- if eq (upper .Values.global.identity.auth.type) "KEYCLOAK" }}
-    {{- $errorMessage := "[camunda][error] global.identity.auth.identity.existingSecret does not need to be set when using Keycloak."
+    {{- $errorMessage := "[camunda][error] global.identity.auth.identity secret configuration does not need to be set when using Keycloak."
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
@@ -273,6 +273,7 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
     (dict "path" "global.identity.auth.console" "config" .Values.global.identity.auth.console)
     (dict "path" "global.identity.auth.connectors" "config" .Values.global.identity.auth.connectors)
     (dict "path" "global.identity.auth.core" "config" .Values.global.identity.auth.core)
+    (dict "path" "global.identity.auth.identity" "config" .Values.global.identity.auth.identity)
     (dict "path" "global.identity.auth.optimize" "config" .Values.global.identity.auth.optimize)
     (dict "path" "identity.firstUser" "config" .Values.identity.firstUser)
     (dict "path" "webModeler.restapi.externalDatabase" "config" .Values.webModeler.restapi.externalDatabase)
