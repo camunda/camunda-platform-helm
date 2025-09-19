@@ -259,18 +259,34 @@ test.describe("Camunda core", () => {
         ],
         { stdio: "inherit" },
       );
-      await new Promise((resolve) => setTimeout(resolve, 15000));
-      // TODO change this as it is not testing what we think it is testing
-      const r = await api.post(
-        `${config.base.operate}/v1/process-definitions/search`,
-        {
-          data: "{}",
-          headers: {
-            Authorization: `Bearer ${venomJWT}`,
-            "Content-Type": "application/json",
+      // This is needed because when using Opensearch operate takes time to index the new process definition. This is a known issue.
+      // Poll Operate for up to 2 minutes, waiting for a 200 response that confirms
+      // the newly-deployed process definition is visible.
+      const timeoutMs = 2 * 60 * 1000; // 2 minutes
+      const intervalMs = 5 * 1000; // poll every 5 seconds
+      const start = Date.now();
+      let r;
+      /* eslint-disable no-await-in-loop */
+      while (true) {
+        r = await api.post(
+          `${config.base.operate}/v1/process-definitions/search`,
+          {
+            data: "{}",
+            headers: {
+              Authorization: `Bearer ${venomJWT}`,
+              "Content-Type": "application/json",
+            },
           },
-        },
-      );
+        );
+
+        if (r.ok()) {
+          break; // success – we got a 200
+        }
+        if (Date.now() - start >= timeoutMs) {
+          break; // give up after timeout; expectation below will fail the test
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
       expect(
         r.ok(),
         `Process visibility check failed for ${label}: ${r.status()}`,
