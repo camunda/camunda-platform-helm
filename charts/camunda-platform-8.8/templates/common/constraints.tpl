@@ -579,7 +579,7 @@ The keys moved in the 8.8 Alpha 8 version.
   - renamed: global.security.authentication => orchestration.security.authentication
   */}}
   {{ include "camundaPlatform.keyRenamed" (dict
-    "condition" (.Values.global.security.authentication)
+    "condition" (and (hasKey .Values.global "security") (hasKey .Values.global.security "authentication"))
     "oldName" "global.security.authentication"
     "newName" "orchestration.security.authentication"
   ) }}
@@ -588,7 +588,7 @@ The keys moved in the 8.8 Alpha 8 version.
   - renamed: global.security.authorizations => orchestration.security.authorizations
   */}}
   {{ include "camundaPlatform.keyRenamed" (dict
-    "condition" (.Values.global.security.authorizations)
+    "condition" (and (hasKey .Values.global "security") (hasKey .Values.global.security "authorizations"))
     "oldName" "global.security.authorizations"
     "newName" "orchestration.security.authorizations"
   ) }}
@@ -597,7 +597,7 @@ The keys moved in the 8.8 Alpha 8 version.
   - renamed: global.security.initialization => orchestration.security.initialization
   */}}
   {{ include "camundaPlatform.keyRenamed" (dict
-    "condition" (.Values.global.security.initialization)
+    "condition" (and (hasKey .Values.global "security") (hasKey .Values.global.security "initialization"))
     "oldName" "global.security.initialization"
     "newName" "orchestration.security.initialization"
   ) }}
