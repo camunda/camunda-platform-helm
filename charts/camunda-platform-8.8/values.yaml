@@ -2465,7 +2465,7 @@ orchestration:
             - demo
         connectors:
           users:
-            ## @extra orchestration.security.initialization.defaultRoles.connectors.users[0].connectorsUser Needed for basic auth setup. Can be removed for OIDC. Define the connectors user with the connectors role.
+            ## @extra orchestration.security.initialization.defaultRoles.connectors.users[0].connectors Needed for basic auth setup. Can be removed for OIDC. Define the connectors user with the connectors role.
             - connectors
           clients:
             ## @extra orchestration.security.initialization.defaultRoles.connectors.clients[0].connectors Needed for OIDC setup. Can be removed for basic auth. Define the connectors client with the connrectors role.
