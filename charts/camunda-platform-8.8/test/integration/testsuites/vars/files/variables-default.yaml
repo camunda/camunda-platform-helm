@@ -8,9 +8,9 @@ preflightVars:
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071/modeler
-    orchestration: http://integration-zeebe-gateway:9600
-    orchestrationGRPC: http://integration-zeebe-gateway:26500
-    orchestrationREST: http://integration-zeebe-gateway:8080
+    orchestration: http://integration-zeebe:9600
+    orchestrationGRPC: http://integration-zeebe:26500
+    orchestrationREST: http://integration-zeebe:8080
 
 coreVars:
   authURL: "http://integration-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
@@ -21,8 +21,8 @@ coreVars:
     optimize: http://integration-optimize/optimize
     connectors: http://integration-connectors:8080/connectors/inbound
     webModelerRestapi: http://integration-web-modeler-restapi
-    orchestration: http://integration-zeebe-gateway:9600
-    orchestrationGRPC: integration-zeebe-gateway:26500
-    orchestrationREST: http://integration-zeebe-gateway:8080
+    orchestration: http://integration-zeebe:9600
+    orchestrationGRPC: integration-zeebe:26500
+    orchestrationREST: http://integration-zeebe:8080
   zbctl:
     extraArgs: "--insecure"
