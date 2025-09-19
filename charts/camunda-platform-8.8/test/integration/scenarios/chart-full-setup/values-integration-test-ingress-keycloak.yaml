@@ -103,7 +103,6 @@ orchestration:
         admin:
           users:
             - demo
-            - service-account-venom
           clients:
             - venom
     authentication:
