@@ -5,7 +5,7 @@ preflightVars:
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82/managementidentity
     optimize: http://integration-optimize
-    connectors: http://integration-connectors:8080/connectors
+    connectors: http://integration-connectors:8080
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071/modeler
     orchestration: http://integration-zeebe:9600
@@ -19,7 +19,7 @@ coreVars:
     keycloak: http://integration-keycloak
     identity: http://integration-identity/managementidentity
     optimize: http://integration-optimize/optimize
-    connectors: http://integration-connectors:8080/connectors/inbound
+    connectors: http://integration-connectors:8080/inbound
     webModelerRestapi: http://integration-web-modeler-restapi
     orchestration: http://integration-zeebe:9600
     orchestrationGRPC: integration-zeebe:26500
