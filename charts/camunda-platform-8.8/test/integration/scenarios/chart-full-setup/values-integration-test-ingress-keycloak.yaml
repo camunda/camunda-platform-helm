@@ -31,6 +31,10 @@ global:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
         existingSecret:
           name: "integration-test-credentials"
+      orchestration:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        existingSecret:
+          name: "integration-test-credentials"
 
 identity:
   enabled: true
