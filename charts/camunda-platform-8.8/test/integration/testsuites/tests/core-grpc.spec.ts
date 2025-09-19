@@ -215,23 +215,27 @@ test.describe("orchestration-grpc", () => {
             },
           },
         );
-        if (r.ok()) {
-          break; // success – we got a 200
+
+        try {
+          expect(
+            r.ok(),
+            `Process visibility check failed for ${label}: ${r.status()}`,
+          ).toBeTruthy();
+          const data = await r.json();
+          const ids = (
+            data.items as Array<{ processDefinitionId: string }>
+          ).map((i) => i.processDefinitionId);
+          expect(ids, `Process ${bpmnId} not found in Operate`).toContain(
+            bpmnId,
+          );
+        } catch (e) {
+          console.log(e);
         }
         if (Date.now() - start >= timeoutMs) {
           break; // give up after timeout; expectation below will fail the test
         }
         await new Promise((resolve) => setTimeout(resolve, intervalMs));
       }
-      expect(
-        r.ok(),
-        `Process visibility check failed for ${label}: ${r.status()}`,
-      ).toBeTruthy();
-      const data = await r.json();
-      const ids = (data.items as Array<{ processDefinitionId: string }>).map(
-        (i) => i.processDefinitionId,
-      );
-      expect(ids, `Process ${bpmnId} not found in Operate`).toContain(bpmnId);
     });
   }
 
