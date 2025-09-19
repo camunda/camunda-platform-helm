@@ -101,6 +101,9 @@ orchestration:
     initialization:
       defaultRoles:
         admin:
+          users:
+            - demo
+            - service-account-venom
           clients:
             - venom
     authentication:
