@@ -592,41 +592,6 @@
                                         }
                                     }
                                 },
-                                "connectors": {
-                                    "type": "object",
-                                    "properties": {
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
-                                            "default": "connectors"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-connectors-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
                                 "identity": {
                                     "type": "object",
                                     "properties": {
@@ -4505,6 +4470,51 @@
                     "type": "boolean",
                     "description": "if true, the Connectors deployment and its related resources are deployed via a helm release",
                     "default": true
+                },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
+                                            "default": "connectors"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use connectors.security.authentication.oidc.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-connectors-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
                 "image": {
                     "type": "object",

@@ -45,7 +45,7 @@ spec:
             {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
-                "config"        .Values.global.identity.auth.connectors
+                "config"        .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
@@ -67,7 +67,7 @@ spec:
               value: connectors
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "KEYCLOAK_CLIENTS_0_SECRET"
-                "config" .Values.global.identity.auth.connectors
+                "config" .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
               value: http://placeholder

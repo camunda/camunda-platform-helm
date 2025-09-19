@@ -143,6 +143,16 @@ Orchestration compatibility.
             mergeOverwrite .Values.orchestration.security.authentication.oidc
         ) -}}
     {{- end -}}
+
+    {{/*
+    Global Connectors Auth => Connectors Auth.
+    */}}
+    {{- if and ((.Values.global.identity.auth).connectors) .Values.connectors.enabled -}}
+        {{- $_ := set .Values.connectors.security.authentication "oidc" (
+          deepCopy .Values.global.identity.auth.connectors |
+            mergeOverwrite .Values.connectors.security.authentication.oidc
+        ) -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*

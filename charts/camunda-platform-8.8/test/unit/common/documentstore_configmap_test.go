@@ -60,7 +60,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.aws.bucket":                    "aws-bucket",
 				"global.documentStore.type.aws.bucketPath":             "/aws/path",
 				"identity.enabled":                                     "true",
-				"global.identity.auth.connectors.existingSecret.name":  "foo",
+				"connectors.security.authentication.oidc.existingSecret.name":  "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Expected: map[string]string{
@@ -79,7 +79,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.gcp.class":                 "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
 				"global.documentStore.type.gcp.bucket":                    "gcp-bucket",
 				"identity.enabled":                                     "true",
-				"global.identity.auth.connectors.existingSecret.name":  "foo",
+				"connectors.security.authentication.oidc.existingSecret.name":  "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Expected: map[string]string{
@@ -96,7 +96,7 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"global.documentStore.type.inmemory.storeId":           "INMEMORY",
 				"global.documentStore.type.inmemory.class":             "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 				"identity.enabled":                                     "true",
-				"global.identity.auth.connectors.existingSecret.name":  "foo",
+				"connectors.security.authentication.oidc.existingSecret.name":  "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Expected: map[string]string{
