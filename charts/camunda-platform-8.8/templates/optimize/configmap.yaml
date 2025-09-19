@@ -43,7 +43,7 @@ data:
     opensearch:
       settings:
         index:
-          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+          prefix: {{ .Values.global.opensearch.prefix | quote }}
     {{- end }}
 
     spring:
