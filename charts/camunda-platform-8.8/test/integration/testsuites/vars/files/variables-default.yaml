@@ -1,28 +1,28 @@
 preflightVars:
   baseURLs:
     elasticsearch: http://integration-elasticsearch:9200
-    console: http://integration-console:9100
+    console: http://integration-console:9100/console
     keycloak: http://integration-keycloak
-    identity: http://integration-identity:82
+    identity: http://integration-identity:82/managementidentity
     optimize: http://integration-optimize
     connectors: http://integration-connectors:8080/connectors
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071/modeler
-    orchestration: http://integration-zeebe-gateway:9600/orchestration
+    orchestration: http://integration-zeebe-gateway:9600
     orchestrationGRPC: http://integration-zeebe-gateway:26500
-    orchestrationREST: http://integration-zeebe-gateway:8080/orchestration
+    orchestrationREST: http://integration-zeebe-gateway:8080
 
 coreVars:
   authURL: "http://integration-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
   baseURLs:
-    console: http://integration-console
+    console: http://integration-console/console
     keycloak: http://integration-keycloak
-    identity: http://integration-identity/identity
+    identity: http://integration-identity/managementidentity
     optimize: http://integration-optimize/optimize
     connectors: http://integration-connectors:8080/connectors/inbound
     webModelerRestapi: http://integration-web-modeler-restapi
-    orchestration: http://integration-zeebe-gateway:9600/orchestration
+    orchestration: http://integration-zeebe-gateway:9600
     orchestrationGRPC: integration-zeebe-gateway:26500
-    orchestrationREST: http://integration-zeebe-gateway:8080/orchestration
+    orchestrationREST: http://integration-zeebe-gateway:8080
   zbctl:
     extraArgs: "--insecure"
