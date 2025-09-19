@@ -5062,6 +5062,11 @@
                                             "description": "username claim.",
                                             "default": "preferred_username"
                                         },
+                                        "clientIdClaim": {
+                                            "type": "string",
+                                            "description": "client ID claim.",
+                                            "default": "client_id"
+                                        },
                                         "groupsClaim": {
                                             "type": "string",
                                             "description": "group claim.",
@@ -5179,7 +5184,17 @@
                                                     "type": "array",
                                                     "description": "defines the initial users that will get the connectors permission",
                                                     "default": [
-                                                        "connector"
+                                                        "connectors"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "clients": {
+                                                    "type": "array",
+                                                    "description": "define clients for the orchestration cluster.",
+                                                    "default": [
+                                                        "connectors"
                                                     ],
                                                     "items": {
                                                         "type": "string"
@@ -5191,24 +5206,9 @@
                                 },
                                 "mappingRules": {
                                     "type": "array",
-                                    "description": "the mapping-rule-id of an initial mapping rule.",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "mappingRuleID": {
-                                                "type": "string",
-                                                "description": "the mapping-rule-id of an initial mapping rule."
-                                            },
-                                            "claimName": {
-                                                "type": "string",
-                                                "description": "the claim-name of an initial mapping rule."
-                                            },
-                                            "claimValue": {
-                                                "type": "string",
-                                                "description": "the claim-value of an initial mapping rule."
-                                            }
-                                        }
-                                    }
+                                    "description": "define mapping rules.",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         }
