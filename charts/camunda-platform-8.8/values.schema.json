@@ -5108,7 +5108,7 @@
                                                 "existingSecret": {
                                                     "type": "string",
                                                     "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
+                                                    "default": "identity-orchestration-client-token"
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
