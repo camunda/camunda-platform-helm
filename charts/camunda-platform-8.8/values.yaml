@@ -2417,7 +2417,7 @@ orchestration:
           ## @param orchestration.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
           inlineSecret: ""
           ## @param orchestration.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: "identity-orchestration-client-token"
+          existingSecret: ""
           ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
     ## Authorizations configuration.
