@@ -15,6 +15,7 @@ global:
       protocol: https
       host: "$AWS_HOST_URL"
       port: 443
+    prefix: $E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE-global-prefix
 elasticsearch:
   enabled: false
 orchestration:
