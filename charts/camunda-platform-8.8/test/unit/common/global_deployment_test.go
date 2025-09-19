@@ -54,8 +54,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"optimize.enabled": "false",
 				"identity.enabled": "true",
-				"global.identity.auth.connectors.existingSecret.name":    "foo",
-				"global.identity.auth.orchestration.existingSecret.name": "bar",
+				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -68,8 +68,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"operate.enabled":  "false",
 				"identity.enabled": "true",
-				"global.identity.auth.connectors.existingSecret.name":    "foo",
-				"global.identity.auth.orchestration.existingSecret.name": "bar",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -82,8 +82,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"tasklist.enabled": "false",
 				"identity.enabled": "true",
-				"global.identity.auth.connectors.existingSecret.name":    "foo",
-				"global.identity.auth.orchestration.existingSecret.name": "bar",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -109,8 +109,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"webModeler.enabled": "false",
 				"identity.enabled":   "true",
-				"global.identity.auth.connectors.existingSecret.name":    "foo",
-				"global.identity.auth.orchestration.existingSecret.name": "bar",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then

@@ -14,7 +14,7 @@ spec:
   selector:
     matchLabels:
       {{- include "orchestration.matchLabels" . | nindent 6 }}
-  serviceName: {{ include "orchestration.fullname" . }}
+  serviceName: {{ include "orchestration.serviceNameHeadless" . | quote }}
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
@@ -58,7 +58,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: {{ include "orchestration.fullname" . }}
+              value: {{ include "orchestration.serviceNameHeadless" . | quote }}
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -71,7 +71,7 @@ spec:
             {{- if .Values.global.identity.auth.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
-                "config" .Values.global.identity.auth.orchestration
+                "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
@@ -135,7 +135,7 @@ spec:
             - containerPort: {{ .Values.orchestration.service.managementPort }}
               name: {{ default "management" .Values.orchestration.service.managementName }}
             - containerPort: {{ .Values.orchestration.service.grpcPort }}
-              name: {{ default "gateway" .Values.orchestration.service.grpcName }}
+              name: {{ default "grpc" .Values.orchestration.service.grpcName }}
           {{- if .Values.orchestration.startupProbe.enabled }}
           startupProbe:
             httpGet:

@@ -47,7 +47,7 @@ spec:
             {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
-                "config" .Values.global.identity.auth.connectors
+                "config" .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}

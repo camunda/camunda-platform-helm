@@ -98,6 +98,13 @@ Orchestration compatibility.
             {{- $_ := set .Values.orchestration "contextPath" .Values.zeebeGateway.contextPath -}}
         {{- end -}}
         {{- if ((.Values.zeebeGateway).service) -}}
+            {{- if ((.Values.zeebeGateway.service).loadBalancerIP) -}}
+                {{- $_ := set .Values.orchestration.service "loadBalancerIP" .Values.zeebeGateway.service.loadBalancerIP -}}
+            {{- end -}}
+            {{- if ((.Values.zeebeGateway.service).loadBalancerSourceRanges) -}}
+                {{- $_ := set .Values.orchestration.service "loadBalancerSourceRanges" .Values.zeebeGateway.service.loadBalancerSourceRanges -}}
+            {{- end -}}
+            {{/* The key has been renamed in 8.8 for consistency, so now it's "httpPort" */}}
             {{- if ((.Values.zeebeGateway.service).restPort) -}}
                 {{- $_ := set .Values.orchestration.service "httpPort" .Values.zeebeGateway.service.restPort -}}
             {{- end -}}
@@ -125,6 +132,26 @@ Orchestration compatibility.
     */}}
     {{- if and .Values.tasklist .Values.tasklist.enabled -}}
         {{- $_ := set .Values.orchestration.profiles "tasklist" .Values.tasklist.enabled -}}
+    {{- end -}}
+
+    {{/*
+    Global Orchestration Auth => Orchestration Auth.
+    */}}
+    {{- if and ((.Values.global.identity.auth).orchestration) .Values.orchestration.enabled -}}
+        {{- $_ := set .Values.orchestration.security.authentication "oidc" (
+          deepCopy .Values.global.identity.auth.orchestration |
+            mergeOverwrite .Values.orchestration.security.authentication.oidc
+        ) -}}
+    {{- end -}}
+
+    {{/*
+    Global Connectors Auth => Connectors Auth.
+    */}}
+    {{- if and ((.Values.global.identity.auth).connectors) .Values.connectors.enabled -}}
+        {{- $_ := set .Values.connectors.security.authentication "oidc" (
+          deepCopy .Values.global.identity.auth.connectors |
+            mergeOverwrite .Values.connectors.security.authentication.oidc
+        ) -}}
     {{- end -}}
 {{- end -}}
 

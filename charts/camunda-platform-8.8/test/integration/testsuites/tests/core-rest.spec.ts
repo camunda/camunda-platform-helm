@@ -60,7 +60,11 @@ test.describe("orchestration-rest", () => {
 
   test.beforeAll(async ({ playwright }) => {
     api = await playwright.request.newContext();
-    venomJWT = await fetchToken(config.venomID, config.venomSec, api, config);
+    if (config.authType !== "basic") {
+      venomJWT = await fetchToken(config.venomID, config.venomSec, api, config);
+    } else {
+      venomJWT = "";
+    }
   });
 
   for (const [label, url, method, body] of [

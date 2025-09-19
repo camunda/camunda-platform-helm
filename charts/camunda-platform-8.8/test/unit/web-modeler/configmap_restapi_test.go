@@ -26,8 +26,8 @@ type configmapRestAPITemplateTest struct {
 var requiredValues = map[string]string{
 	"webModeler.enabled":                                     "true",
 	"webModeler.restapi.mail.fromAddress":                    "example@example.com",
-	"global.identity.auth.connectors.existingSecret.name":    "foo",
-	"global.identity.auth.orchestration.existingSecret.name": "foo",
+	"connectors.security.authentication.oidc.existingSecret.name":    "foo",
+	"orchestration.security.authentication.oidc.existingSecret.name": "foo",
 }
 
 func TestRestAPIConfigmapTemplate(t *testing.T) {
