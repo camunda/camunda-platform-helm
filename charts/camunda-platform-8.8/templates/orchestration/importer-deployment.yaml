@@ -54,7 +54,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: VALUES_ORCHESTRATION_NODE_ID
-              value: "0"
+              value: "-1"
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_LICENSE_KEY"
                 "config" .Values.global.license

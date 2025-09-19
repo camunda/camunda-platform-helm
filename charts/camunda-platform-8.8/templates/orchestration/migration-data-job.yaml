@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "orchestration.fullname" . }}-data-migration
+  name: {{ include "orchestration.fullname" . }}-migration-data
   labels: {{- include "orchestration.labelsMigration" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
@@ -42,7 +42,7 @@ spec:
           {{- end }}
           env:
             - name: VALUES_ORCHESTRATION_NODE_ID
-              value: "0"
+              value: "-1"
             {{/*
             Passwords for variable substitution.
             */}}
@@ -79,7 +79,4 @@ spec:
           configMap:
             name: {{ include "orchestration.fullname" . }}-configuration-unified
             defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
-        - name: config
-          configMap:
-            name: {{ include "orchestration.fullname" . }}-data-migration-configuration
 {{- end }}
