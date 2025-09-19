@@ -170,7 +170,7 @@ global:
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
   ## @param global.elasticsearch.auth.password (DEPRECATED - use global.elasticsearch.auth.secret instead) the password for external elasticsearch
@@ -182,14 +182,6 @@ global:
     tls:
       enabled: false
       existingSecret: ""
-      ## @extra global.elasticsearch.tls.secret configuration to provide the TLS secret.
-      secret:
-        ## @param global.elasticsearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
-        inlineSecret: ""
-        ## @param global.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
-        existingSecret: ""
-        ## @param global.elasticsearch.tls.secret.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: ""
     auth:
       username: ""
       password: ""
@@ -223,7 +215,7 @@ global:
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
   ## @param global.opensearch.auth.username the username for external opensearch
   ## @param global.opensearch.auth.password (DEPRECATED - use global.opensearch.auth.secret instead) the password for external opensearch
@@ -236,14 +228,6 @@ global:
     tls:
       enabled: false
       existingSecret: ""
-      ## @extra global.opensearch.tls.secret configuration to provide the TLS secret.
-      secret:
-        ## @param global.opensearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
-        inlineSecret: ""
-        ## @param global.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
-        existingSecret: ""
-        ## @param global.opensearch.tls.secret.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: ""
     auth:
       username: ""
       password: ""
