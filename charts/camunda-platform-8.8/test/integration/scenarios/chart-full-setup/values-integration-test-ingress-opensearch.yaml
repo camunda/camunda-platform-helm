@@ -23,12 +23,12 @@ orchestration:
   index:
     prefix: "custom-zeebe"
   env:
-    # Operate/Tasklist indices - use "custom" prefix
+    # group1
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
       value: custom
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
       value: custom
-    # Zeebe broker indices - use "custom-zeebe" prefix
+    # group2
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
       value: custom-zeebe
     #################### Only needed for keycloak auth
