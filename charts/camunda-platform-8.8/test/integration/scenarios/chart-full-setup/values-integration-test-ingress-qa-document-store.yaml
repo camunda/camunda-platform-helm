@@ -1,29 +1,32 @@
 global:
+  documentStore:
+    activeStoreId: "aws"
+    type:
+      aws:
+        enabled: true
+        storeId: "aws"
+        bucket: "camunda-ci-eks-prod-team-bucket-qa"
+        region: "eu-central-1"
+        bucketPath: "documents"
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        existingSecret: "s3-bucket-credentials"
+        accessKeyIdKey: "access-key-id"
+        secretAccessKeyKey: "secret-access-key"
   image:
     pullPolicy: Always
   identity:
     auth:
       enabled: true
-  elasticsearch:
-    enabled: false
-  opensearch:
-    enabled: true
     auth:
-      username: "$OPENSEARCH_USERNAME"
-      password: "$OPENSEARCH_PASSWORD"
-    url:
-      protocol: https
-      host: "$AWS_HOST_URL"
-      port: 443
-elasticsearch:
-  enabled: false
+      enabled: true
 orchestration:
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
   security:
     authentication:
       method: oidc
-      authenticationRefreshInterval: "PT30S"
+      oidc:
+        groupsClaim: ""
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping-rule"
@@ -49,31 +52,12 @@ orchestration:
       value: "venom-client-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
       value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
-      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
-    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
-      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 identityKeycloak:
   enabled: true
 optimize:
   enabled: true
   image:
     tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
-  env: 
-    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
-    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-      value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
-  migration:
-    env:
-      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-        value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
-      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-        value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
-webModelerPostgresql:
-  enabled: true
 webModeler:
   enabled: true
   restapi:
@@ -85,6 +69,8 @@ webModeler:
   websockets:
     image:
       tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+webModelerPostgresql:
+  enabled: true
 console:
   enabled: true
   image:
@@ -111,7 +97,7 @@ console:
                       url: "https://docs.camunda.io"
   env:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-      value: 'true'
+      value: 'true'      
 identity:
   enabled: true
   image:
@@ -321,3 +307,37 @@ connectors:
       value: username
     - name: password
       value: password
+    - name: IDP_AWS_BUCKET_NAME
+      value: "$IDP_AWS_BUCKET_NAME"
+    - name: IDP_AWS_REGION
+      value: "$IDP_AWS_REGION"
+    - name: IDP_AWS_SECRETKEY
+      value: "$IDP_AWS_SECRETKEY"
+#    - name: IDP_GCP_SERVICE_ACCOUNT
+#      value: "$IDP_GCP_SERVICE_ACCOUNT"
+#    - name: IDP_GCP_VERTEX_BUCKET_NAME
+#      value: "$IDP_GCP_VERTEX_BUCKET_NAME"
+#    - name: IDP_GCP_VERTEX_PROJECT_ID
+#      value: "$IDP_GCP_VERTEX_PROJECT_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_PROJECT_ID
+#      value: "$IDP_GCP_DOCUMENT_AI_PROJECT_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_PROCESSOR_ID
+#      value: "$IDP_GCP_DOCUMENT_AI_PROCESSOR_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_REGION
+#      value: "$IDP_GCP_DOCUMENT_AI_REGION"
+#    - name: IDP_GCP_VERTEX_REGION
+#      value: "$IDP_GCP_VERTEX_REGION"
+    - name: IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY
+      value: "$IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY"
+    - name: IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT
+      value: "$IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
+    - name: IDP_AZURE_AI_FOUNDRY_ENDPOINT
+      value: "$IDP_AZURE_AI_FOUNDRY_ENDPOINT"
+    - name: IDP_AZURE_AI_FOUNDRY_KEY
+      value: "$IDP_AZURE_AI_FOUNDRY_KEY"
+    - name: IDP_AZURE_OPEN_AI_ENDPOINT
+      value: "$IDP_AZURE_OPEN_AI_ENDPOINT"
+    - name: IDP_AZURE_OPEN_AI_KEY
+      value: "$IDP_AZURE_OPEN_AI_KEY"
+    - name: OPENAI_API_KEY
+      value: "$OPENAI_API_KEY"

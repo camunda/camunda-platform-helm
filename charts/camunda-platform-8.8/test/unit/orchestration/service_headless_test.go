@@ -45,7 +45,7 @@ func TestGatewayServiceTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/orchestration/gateway-service.yaml"},
+		templates: []string{"templates/orchestration/service-headless.yaml"},
 	})
 }
 
@@ -54,14 +54,14 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
-				"global.annotations.foo": "bar",
+				"global.annotations.foo": "bar-global-annotation",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
 				helm.UnmarshalK8SYaml(s.T(), output, &service)
 
 				// then
-				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar-global-annotation", service.ObjectMeta.Annotations["foo"])
 			},
 		}, {
 			Name: "TestExtraPorts",
@@ -88,18 +88,17 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerServiceAnnotations",
 			Values: map[string]string{
-				"orchestration.service.annotations.foo": "bar",
+				"orchestration.service.headless.annotations.foo": "bar-service-annotation",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
 				helm.UnmarshalK8SYaml(s.T(), output, &service)
 
 				// then
-				s.Require().Equal("bar", service.ObjectMeta.Annotations["foo"])
+				s.Require().Equal("bar-service-annotation", service.ObjectMeta.Annotations["foo"])
 			},
 		},
 	}
 
-	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

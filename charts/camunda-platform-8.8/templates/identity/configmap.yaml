@@ -43,6 +43,18 @@ data:
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
       {{- end }}
 
+
+      {{- if and (ne .Values.global.identity.auth.type "KEYCLOAK") (.Values.orchestration.migration.identity.enabled)}}
+      mapping-rules:
+        - name: identityMigration
+          claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
+          claim-value: {{ .Values.orchestration.migration.identity.idpApplicationId }}
+          operator: EQUALS
+          rule-type: ROLE
+          applied-role-names:
+          - ManagementIdentity
+      {{- end }}
+
       component-presets:
         connectors:
           applications:
@@ -98,7 +110,7 @@ data:
               id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
               secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
           apis:
@@ -264,7 +276,7 @@ data:
               id: orchestration
               type: confidential
               secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
         optimize:

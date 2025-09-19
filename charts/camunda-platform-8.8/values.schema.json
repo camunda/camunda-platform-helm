@@ -592,91 +592,6 @@
                                         }
                                     }
                                 },
-                                "orchestration": {
-                                    "type": "object",
-                                    "properties": {
-                                        "audience": {
-                                            "type": "string",
-                                            "description": "defines the audience, which is used by Orchestration Cluster.",
-                                            "default": "orchestration-api"
-                                        },
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
-                                            "default": "orchestration"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-orchestration-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        },
-                                        "redirectUrl": {
-                                            "type": "string",
-                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
-                                            "default": "http://localhost:8082"
-                                        },
-                                        "tokenScope": {
-                                            "type": "string",
-                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
-                                            "default": ""
-                                        }
-                                    }
-                                },
-                                "connectors": {
-                                    "type": "object",
-                                    "properties": {
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
-                                            "default": "connectors"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-connectors-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
                                 "identity": {
                                     "type": "object",
                                     "properties": {
@@ -694,6 +609,26 @@
                                             "type": "string",
                                             "description": "(DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.",
                                             "default": "identity-oidc-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -1209,7 +1144,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/identity"
+                    "default": ""
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -2420,7 +2355,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/"
+                    "default": ""
                 },
                 "initContainers": {
                     "type": "array",
@@ -2871,7 +2806,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
-                    "default": "/modeler"
+                    "default": ""
                 },
                 "restapi": {
                     "type": "object",
@@ -4536,6 +4471,51 @@
                     "description": "if true, the Connectors deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
+                                            "default": "connectors"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use connectors.security.authentication.oidc.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-connectors-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "image": {
                     "type": "object",
                     "properties": {
@@ -4587,7 +4567,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/connectors"
+                    "default": ""
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -5069,6 +5049,11 @@
                                     "description": "if true, then allow unauthenticated API access.",
                                     "default": false
                                 },
+                                "authenticationRefreshInterval": {
+                                    "type": "string",
+                                    "description": "defines the session's authentication refresh time, defaulted to PT30S.",
+                                    "default": "PT30S"
+                                },
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
@@ -5081,6 +5066,51 @@
                                             "type": "string",
                                             "description": "group claim.",
                                             "default": "groups"
+                                        },
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
+                                            "default": "orchestration-api"
+                                        },
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
+                                            "default": "orchestration"
+                                        },
+                                        "tokenScope": {
+                                            "type": "string",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
+                                            "default": ""
+                                        },
+                                        "redirectUrl": {
+                                            "type": "string",
+                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
+                                            "default": "http://localhost:8082"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use orchestration.security.authentication.oidc.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-orchestration-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -5120,6 +5150,41 @@
                                             "email": {
                                                 "type": "string",
                                                 "description": ""
+                                            }
+                                        }
+                                    }
+                                },
+                                "defaultRoles": {
+                                    "type": "object",
+                                    "properties": {
+                                        "admin": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the admin permission",
+                                                    "default": [
+                                                        "demo"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "connectors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the connectors permission",
+                                                    "default": [
+                                                        "connector"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -5329,6 +5394,11 @@
                                             "description": "can be used to define the timeout when the import is finished.",
                                             "default": "PT1M"
                                         },
+                                        "legacyIndexRetentionAge": {
+                                            "type": "string",
+                                            "description": "defines when the legacy task index will be removed, defaults to orchestration.history.retention.minimumAge",
+                                            "default": "30d"
+                                        },
                                         "retry": {
                                             "type": "object",
                                             "properties": {
@@ -5370,6 +5440,16 @@
                                     "type": "number",
                                     "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
+                                },
+                                "resourceAuthorizationsEnabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7",
+                                    "default": false
+                                },
+                                "idpApplicationId": {
+                                    "type": "string",
+                                    "description": "must be define the application ID if an external IdP is used.",
+                                    "default": ""
                                 }
                             }
                         }
@@ -5528,66 +5608,87 @@
                             "description": "can be used to define annotations, which will be applied to the service",
                             "default": {}
                         },
+                        "headless": {
+                            "type": "object",
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations, which will be applied to the headless service",
+                                    "default": {}
+                                }
+                            }
+                        },
                         "type": {
                             "type": "string",
                             "description": "defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
                             "default": "ClusterIP"
                         },
-                        "httpPort": {
-                            "type": "number",
-                            "description": "defines the port of the http endpoint, where for example metrics are provided",
-                            "default": 8080
+                        "loadBalancerIP": {
+                            "type": "string",
+                            "description": "defines public IP of the load balancer if the type is LoadBalancer",
+                            "default": ""
+                        },
+                        "loadBalancerSourceRanges": {
+                            "type": "array",
+                            "description": "defines list of allowed source IP address ranges if the type is LoadBalancer",
+                            "default": [],
+                            "items": {}
                         },
                         "httpName": {
                             "type": "string",
                             "description": "defines the name of the http endpoint, where for example metrics are provided",
                             "default": "http"
                         },
-                        "commandPort": {
+                        "httpPort": {
                             "type": "number",
-                            "description": "defines the port of the command api endpoint, where the broker commands are sent to",
-                            "default": 26501
+                            "description": "defines the port of the http endpoint, where for example metrics are provided",
+                            "default": 8080
                         },
-                        "commandName": {
+                        "managementName": {
                             "type": "string",
-                            "description": "defines the name of the command api endpoint, where the broker commands are sent to",
-                            "default": "command"
+                            "description": "defines the name of the management endpoint, where the management API is exposed",
+                            "default": "server"
                         },
-                        "internalPort": {
+                        "managementPort": {
                             "type": "number",
-                            "description": "defines the port of the internal api endpoint, which is used for internal communication",
-                            "default": 26502
+                            "description": "defines the port of the management endpoint, where the management API is exposed",
+                            "default": 9600
                         },
-                        "internalName": {
+                        "grpcName": {
                             "type": "string",
-                            "description": "defines the name of the internal api endpoint, which is used for internal communication",
-                            "default": "internal"
-                        },
-                        "extraPorts": {
-                            "type": "array",
-                            "description": "can be used to expose any other ports which are required. Can be useful for exporters",
-                            "default": [],
-                            "items": {}
+                            "description": "defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to",
+                            "default": "grpc"
                         },
                         "grpcPort": {
                             "type": "number",
                             "description": "defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to",
                             "default": 26500
                         },
-                        "grpcName": {
+                        "commandName": {
                             "type": "string",
-                            "description": "defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to",
-                            "default": "gateway"
+                            "description": "defines the name of the command API endpoint, where the broker commands are sent to",
+                            "default": "command"
                         },
-                        "managementPort": {
+                        "commandPort": {
                             "type": "number",
-                            "description": "",
-                            "default": 9600
+                            "description": "defines the port of the command API endpoint, where the broker commands are sent to",
+                            "default": 26501
                         },
-                        "managementName": {
+                        "internalName": {
                             "type": "string",
-                            "description": "",
-                            "default": "server"
+                            "description": "defines the name of the internal API endpoint, which is used for internal communication",
+                            "default": "internal"
+                        },
+                        "internalPort": {
+                            "type": "number",
+                            "description": "defines the port of the internal API endpoint, which is used for internal communication",
+                            "default": 26502
+                        },
+                        "extraPorts": {
+                            "type": "array",
+                            "description": "can be used to expose any other ports which are required. Can be useful for exporters",
+                            "default": [],
+                            "items": {}
                         }
                     }
                 },
@@ -5674,7 +5775,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/orchestration"
+                    "default": ""
                 },
                 "cpuThreadCount": {
                     "type": "string",
@@ -6073,6 +6174,11 @@
                             "type": "string",
                             "description": "if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use \"global.elasticsearch.prefix\".",
                             "default": ""
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch",
+                            "default": 1
                         }
                     }
                 },
@@ -6288,7 +6394,7 @@
                 "contextPath": {
                     "type": "string",
                     "description": "can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
-                    "default": "/optimize"
+                    "default": ""
                 },
                 "configMap": {
                     "type": "object",

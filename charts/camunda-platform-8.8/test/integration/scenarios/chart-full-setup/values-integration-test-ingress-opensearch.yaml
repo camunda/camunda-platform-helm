@@ -23,34 +23,14 @@ orchestration:
   index:
     prefix: "custom-zeebe"
   env:
-    - name: CAMUNDA_DATA_SECONDARY_STORAGE_TYPE
-      value: "opensearch"
-    - name: CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_USERNAME
-      value: "$OPENSEARCH_USERNAME"
-    - name: CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_PASSWORD
-      value: "$OPENSEARCH_PASSWORD"
-    - name: CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_INDEX_PREFIX
-      value: "custom-zeebe"
-    - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
-      value: "custom-zeebe"
-    - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
-      value: "custom-zeebe"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME
-      value: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_TYPE
-      value: "opensearch"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_CONNECT_URL
-      value: "$OPENSEARCH_PROTOCOL://$OPENSEARCH_HOST:$OPENSEARCH_PORT"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD
-      value: "$OPENSEARCH_PASSWORD"
+    # Operate/Tasklist indices - use "custom" prefix
+    - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
+      value: custom
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
+      value: custom
+    # Zeebe broker indices - use "custom-zeebe" prefix
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: "custom-zeebe"
-    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD
-      value: "$OPENSEARCH_PASSWORD"
-    - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
-      value: "custom-zeebe"
-    - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
-      value: "custom-zeebe"
+      value: custom-zeebe
     #################### Only needed for keycloak auth
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping-rule"

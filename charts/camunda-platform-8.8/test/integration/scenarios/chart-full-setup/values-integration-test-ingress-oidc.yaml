@@ -22,13 +22,7 @@ global:
       jwksUrl: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
       publicIssuerUrl: https://login.microsoftonline.com/<directoryId>/v2.0
       type: "MICROSOFT"
-      orchestration:
-        clientId: <clientId>
-        audience: <clientId>
-        existingSecret:
-          name: integration-test-credentials
-        existingSecretKey: entra-child-app-client-secret
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+
       identity:
         clientId: <clientId>
         audience: <clientId>
@@ -43,14 +37,6 @@ global:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
-      connectors:
-        clientId: <clientId>
-        audience: <clientId>
-        clientApiAudience: <clientId>
-        existingSecret:
-          name: integration-test-credentials
-        existingSecretKey: entra-child-app-client-secret
-        tokenScope: <clientId>/.default
       webModeler:
         clientId: <clientId>
         audience: <clientId>
@@ -93,6 +79,16 @@ identityKeycloak:
 connectors:
   enabled: true
   contextPath: "/connectors"
+  security:
+    authentication:
+      oidc:
+        clientId: <clientId>
+        audience: <clientId>
+        clientApiAudience: <clientId>
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
+        tokenScope: <clientId>/.default
   env:
     - name: CAMUNDA_CLIENT_AUTH_SCOPE
       value: <clientId>/.default
@@ -119,6 +115,7 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 orchestration:
+  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true

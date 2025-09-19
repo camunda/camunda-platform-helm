@@ -346,56 +346,6 @@ global:
           ## @param global.identity.auth.admin.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
 
-      #######################
-      # Orchestration Cluster
-      #######################
-
-      ## @extra global.identity.auth.orchestration configuration to configure authentication specifics on global level, which can be accessed by other components
-      orchestration:
-        ## @param global.identity.auth.orchestration.audience defines the audience, which is used by Orchestration Cluster.
-        audience: orchestration-api
-        ## @param global.identity.auth.orchestration.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
-        clientId: orchestration
-        ## @param global.identity.auth.orchestration.existingSecret [string,object] (DEPRECATED - use global.identity.auth.orchestration.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.orchestration.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.orchestration.existingSecretKey (DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-orchestration-client-token
-        ## @extra global.identity.auth.orchestration.secret configuration to provide the orchestration client secret.
-        secret:
-          ## @param global.identity.auth.orchestration.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.orchestration.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.orchestration.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
-        ## @param global.identity.auth.orchestration.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8082"
-        ## @param global.identity.auth.orchestration.tokenScope defines the token scope, which is used by Orchestration Cluster.
-        tokenScope: ""
-
-      #######################
-      # Connectors
-      #######################
-
-      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
-      connectors:
-        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
-        clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret [string,object] (DEPRECATED - use global.identity.auth.connectors.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.connectors.existingSecretKey (DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-connectors-client-token
-        ## @extra global.identity.auth.connectors.secret configuration to provide the connectors client secret.
-        secret:
-          ## @param global.identity.auth.connectors.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
-
       #####################
       # Management Identity
       #####################
@@ -410,6 +360,14 @@ global:
         existingSecret: ""
         ## @param global.identity.auth.identity.existingSecretKey (DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
+        ## @extra global.identity.auth.identity.secret configuration to provide the identity client secret.
+        secret:
+          ## @param global.identity.auth.identity.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param global.identity.auth.identity.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
         ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Management Identity.
         # Should be publicly accessible, the default value works if a port-forward to Management Identity is created to 8085.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -690,7 +648,8 @@ identity:
   #       Which means that Management Identity cannot be configured in combined Ingress without HTTPS.
   #       To use Management Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
   ## @param identity.contextPath can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/identity"
+  # contextPath: "/identity"
+  contextPath: ""
 
   ## @param identity.podAnnotations can be used to define extra Management Identity pod annotations
   podAnnotations: {}
@@ -1237,7 +1196,7 @@ console:
     realm: "camunda-platform"
 
   ## @param console.contextPath can be used to make Console web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/"
+  contextPath: ""
 
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
@@ -1433,8 +1392,9 @@ webModeler:
     pullSecrets: []
 
   # Note: The WebSocket application will be exposed on the configured path suffixed with "-ws", e.g. "/modeler-ws"
+  # contextPath: "/modeler"
   ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
-  contextPath: "/modeler"
+  contextPath: ""
 
   # WebModeler.
   ######                         #    ######  ###
@@ -2162,6 +2122,27 @@ connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
   enabled: true
 
+  ## @extra connectors.security.authentication.oidc configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
+  security:
+    ## Authentication configuration
+    ## @extra connectors.security.authentication
+    authentication:
+      oidc:
+        ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
+        clientId: connectors
+        ## @param connectors.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use connectors.security.authentication.oidc.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using connectors.security.authentication.oidc.existingSecret.name.
+        existingSecret: ""
+        ## @param connectors.security.authentication.oidc.existingSecretKey (DEPRECATED - use connectors.security.authentication.oidc.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-connectors-client-token
+        ## @extra connectors.security.authentication.oidc.secret configuration to provide the connectors client secret.
+        secret:
+          ## @param connectors.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param connectors.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param connectors.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
+
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
@@ -2184,8 +2165,9 @@ connectors:
   ## @param connectors.replicas number of Connectors replicas
   replicas: 1
 
+  # contextPath: "/connectors"
   ## @param connectors.contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/connectors"
+  contextPath: ""
 
   ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
   podAnnotations: {}
@@ -2407,11 +2389,35 @@ orchestration:
       method: basic
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
+      ## @param orchestration.security.authentication.authenticationRefreshInterval defines the session's authentication refresh time, defaulted to PT30S.
+      authenticationRefreshInterval: "PT30S"
       oidc:
         ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.groupsClaim group claim.
         groupsClaim: "groups"
+        ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
+        audience: orchestration-api
+        ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
+        clientId: orchestration
+        ## @param orchestration.security.authentication.oidc.tokenScope defines the token scope, which is used by Orchestration Cluster.
+        tokenScope: ""
+        ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8082"
+        ## @param orchestration.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using orchestration.security.authentication.oidc.existingSecret.name.
+        existingSecret: ""
+        ## @param orchestration.security.authentication.oidc.existingSecretKey (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-orchestration-client-token
+        ## @extra orchestration.security.authentication.oidc.secret configuration to provide the orchestration client secret.
+        secret:
+          ## @param orchestration.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param orchestration.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
     ## Authorizations configuration.
     ## @extra orchestration.security.authorizations
     authorizations:
@@ -2426,8 +2432,20 @@ orchestration:
       ## @param orchestration.security.initialization.users[0].password
       ## @param orchestration.security.initialization.users[0].name
       ## @param orchestration.security.initialization.users[0].email
+      ## @param orchestration.security.initialization.users[1].username
+      ## @param orchestration.security.initialization.users[1].password
+      ## @param orchestration.security.initialization.users[1].name
+      ## @param orchestration.security.initialization.users[1].email
       users:
-        ## @extra orchestration.security.initialization.users.username, the username of an initial user.
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
+        - username: connector
+          ## @extra orchestration.security.initialization.users.password, the password of an initial user, used for the connectors component.
+          password: connector
+          ## @extra orchestration.security.initialization.users.name, the name of an initial user, used for the connectors component.
+          name: Connector User
+          ## @extra orchestration.security.initialization.users.email, the email of an initial user, used for the connectors component.
+          email: connector@demo.com
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
         - username: demo
           ## @extra orchestration.security.initialization.users.password, the password of an initial user.
           password: demo
@@ -2435,6 +2453,16 @@ orchestration:
           name: Demo User
           ## @extra orchestration.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
+      ## @extra orchestration.security.initialization.defaultRoles assigning initial users to default roles. More roles can be added to the dictionary: https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/#default-roles
+      ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
+      ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
+      defaultRoles:
+        admin:
+          users:
+            - demo
+        connectors:
+          users:
+            - connector
       mappingRules:
         ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
         - mappingRuleID: demo-user-mapping-rule
@@ -2509,6 +2537,8 @@ orchestration:
         batchSize: 5
         ## @param orchestration.migration.data.tasks.importerFinishedTimeout can be used to define the timeout when the import is finished.
         importerFinishedTimeout: PT1M
+        ## @param orchestration.migration.data.tasks.legacyIndexRetentionAge defines when the legacy task index will be removed, defaults to orchestration.history.retention.minimumAge
+        legacyIndexRetentionAge: 30d
         retry:
           ## @param orchestration.migration.data.tasks.retry.maxRetries can be used to define the maximum amount of retries.
           maxRetries: 5
@@ -2523,6 +2553,10 @@ orchestration:
       enabled: false
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
+      ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
+      resourceAuthorizationsEnabled: false
+      ## @param orchestration.migration.identity.idpApplicationId must be define the application ID if an external IdP is used.
+      idpApplicationId: ""
 
   ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
   importer:
@@ -2580,38 +2614,47 @@ orchestration:
     -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
     -XX:+ExitOnOutOfMemoryError
 
-  ## @extra orchestration.service configuration for the broker service
+  ## @extra orchestration.service configuration for the Orchestration Cluster service
   service:
     ## @param orchestration.service.annotations can be used to define annotations, which will be applied to the service
     annotations: {}
+    ## @extra orchestration.service configuration for the Orchestration Cluster headless service
+    headless:
+      ## @param orchestration.service.headless.annotations can be used to define annotations, which will be applied to the headless service
+      annotations: {}
     ## @param orchestration.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
-    httpPort: 8080
+    ## @param orchestration.service.loadBalancerIP defines public IP of the load balancer if the type is LoadBalancer
+    loadBalancerIP: ""
+    ## @param orchestration.service.loadBalancerSourceRanges defines list of allowed source IP address ranges if the type is LoadBalancer
+    loadBalancerSourceRanges: []
     ## @param orchestration.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-    ## @param orchestration.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
-    commandPort: 26501
-    ## @param orchestration.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 8080
+    ## @param orchestration.service.managementName defines the name of the management endpoint, where the management API is exposed
+    managementName: "server"
+    ## @param orchestration.service.managementPort defines the port of the management endpoint, where the management API is exposed
+    managementPort: 9600
+    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcName: "grpc"
+    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcPort: 26500
+    ## @param orchestration.service.commandName defines the name of the command API endpoint, where the broker commands are sent to
     commandName: "command"
-    ## @param orchestration.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-    internalPort: 26502
-    ## @param orchestration.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    ## @param orchestration.service.commandPort defines the port of the command API endpoint, where the broker commands are sent to
+    commandPort: 26501
+    ## @param orchestration.service.internalName defines the name of the internal API endpoint, which is used for internal communication
     internalName: "internal"
+    ## @param orchestration.service.internalPort defines the port of the internal API endpoint, which is used for internal communication
+    internalPort: 26502
+
     ## @param orchestration.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
     extraPorts: []
       # - name: hazelcast
       #   protocol: TCP
       #   port: 5701
       #   targetPort: 5701
-    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcPort: 26500
-    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcName: "gateway"
-    ## @param orchestration.service.managementPort
-    managementPort: 9600
-    ## @param orchestration.service.managementName
-    managementName: "server"
 
   ## @extra global.orchestration.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
@@ -2658,8 +2701,9 @@ orchestration:
         ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
         secretName: camunda-platform-orchestration-grpc
 
+  # contextPath: "/orchestration"
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/orchestration"
+  contextPath: ""
 
   ## @param orchestration.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
@@ -2851,6 +2895,8 @@ orchestration:
   index:
     ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
     prefix: ""
+    ## @param orchestration.index.replicas can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch
+    replicas: 1
 
   ## @extra orchestration.retention configuration for Camunda exporter index.
   retention:
@@ -2954,8 +3000,9 @@ optimize:
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
 
+  # contextPath: "/optimize"
   ## @param optimize.contextPath can be used to make Optimize web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
-  contextPath: "/optimize"
+  contextPath: ""
 
   ## @extra optimize.configMap configuration which will be applied to the mounted config map.
   configMap:

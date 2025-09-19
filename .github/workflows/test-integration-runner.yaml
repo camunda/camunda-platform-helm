@@ -703,6 +703,9 @@ jobs:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [ci-setup]
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
     permissions:
@@ -738,6 +741,13 @@ jobs:
             task
             yq
             zbctl
+            jq
+
+      - name: Install CLI deps (jq, envsubst)
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y gettext-base
+          envsubst --version
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
@@ -858,7 +868,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: lts/*
           
@@ -908,6 +918,7 @@ jobs:
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [playwright-e2e-tests, playwright-integration-tests, venom-test]
+    if: ${{ always() && contains(needs.*.result, 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

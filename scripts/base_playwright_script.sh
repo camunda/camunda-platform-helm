@@ -63,7 +63,7 @@ get_ingress_hostname() {
 }
 
 check_required_cmds() {
-  required_cmds=(kubectl jq git envsubst npm npx make)
+  required_cmds=(kubectl jq git envsubst npm npx)
   for cmd in "${required_cmds[@]}"; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       echo "Error: required command '$cmd' not found in PATH" >&2
@@ -88,8 +88,6 @@ run_playwright_tests() {
   cd "$test_suite_path" || exit
 
   npm i --no-audit --no-fund --silent
-  sudo npx playwright install-deps
-  npx playwright install
 
   if [[ $show_html_report == "true" ]]; then
     reporter="html"

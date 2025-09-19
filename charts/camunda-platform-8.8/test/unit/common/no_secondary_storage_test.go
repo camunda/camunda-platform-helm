@@ -46,22 +46,24 @@ func TestNoSecondaryStorageTemplate(t *testing.T) {
 	})
 }
 
+// TODO: Move this test to each component config instead of this file.
 func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 	testCases := []testhelpers.TestCase{
 		{
 			Name:                 "TestGlobalNoSecondaryStorageTogglesAllExpectedValues",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.noSecondaryStorage":    "true",
-				"global.elasticsearch.enabled": "false",
-				"global.opensearch.enabled":    "false",
+				"global.noSecondaryStorage":                     "true",
+				"global.elasticsearch.enabled":                 "false",
+				"global.opensearch.enabled":                    "false",
+				"elasticsearch.enabled":                        "false",
+				"orchestration.security.authentication.method": "oidc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				// Database type should be none
-				require.Contains(t, output, "database:\n        type: none")
+				// Secondary storage type should be none
+				require.Contains(t, output, "secondary-storage:\n          type: \"none\"")
 				// Persistent sessions should be disabled
-				require.Contains(t, output, "sessions:\n          enabled: false")
 				require.Contains(t, output, "persistentSessionsEnabled: false")
 				// Agentic AI and inbound connectors should be disabled
 				require.Contains(t, output, "webhook:\n          enabled: false")

@@ -30,7 +30,7 @@ spec:
             pathType: {{ .Values.orchestration.ingress.grpc.pathType }}
             backend:
               service:
-                name: {{ include "orchestration.fullname" . }}-gateway
+                name: {{ include "orchestration.serviceName" . }}
                 port:
                   number: {{ .Values.orchestration.service.grpcPort }}
   {{- if .Values.orchestration.ingress.grpc.tls.enabled }}

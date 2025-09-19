@@ -76,7 +76,7 @@ spec:
             - name: CAMUNDA_IDENTITY_CLIENT_ID
               value: console
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
-              value: "/"
+              value: ""
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
