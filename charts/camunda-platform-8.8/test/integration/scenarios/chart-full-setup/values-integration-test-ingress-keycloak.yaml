@@ -101,15 +101,8 @@ orchestration:
     initialization:
       defaultRoles:
         admin:
-          users:
-            - demo
           clients:
             - venom
-        connectors:
-          users:
-            - connectors
-          clients:
-            - connectors
     authentication:
       method: oidc
       authenticationRefreshInterval: "PT30S"
