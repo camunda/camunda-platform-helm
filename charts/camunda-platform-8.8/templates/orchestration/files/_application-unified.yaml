@@ -69,6 +69,7 @@ camunda:
         index-prefix: {{ .Values.global.elasticsearch.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
+        number-of-replicas: {{ .Values.orchestration.index.replicas }}
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
@@ -79,6 +80,7 @@ camunda:
         index-prefix: {{ .Values.global.opensearch.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
+        number-of-replicas: {{ .Values.orchestration.index.replicas }}
       {{- end }}
 
   # Security configuration - Separated syntax.
