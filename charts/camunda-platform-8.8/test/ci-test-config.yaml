@@ -62,6 +62,11 @@ integration:
           exclude: []
           shortname: oske
           auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: osba
+          exclude: [identity,console,orchestration-grpc]
+          auth: basic
         - name: identity-migration
           enabled: true
           exclude: []

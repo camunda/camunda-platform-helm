@@ -1,22 +1,27 @@
 global:
   elasticsearch:
     enabled: false
+  exporter:
+    enabled: true
   opensearch:
     enabled: true
+    aws:
+      enabled: false
     auth:
-      username: camunda
-      password: camunda
+      username: "$OPENSEARCH_USERNAME"
+      password: "$OPENSEARCH_PASSWORD"
     url:
-      protocol: https
-      host: camunda.com
-      port: 443
+      protocol: $OPENSEARCH_PROTOCOL
+      host: "$OPENSEARCH_HOST"
+      port: $OPENSEARCH_PORT
+    prefix: "custom-zeebe"
 
 elasticsearch:
   enabled: false
 
 orchestration:
-  # index:
-  #   prefix: app
+  index:
+    prefix: "custom-zeebe"
   env:
     # group1
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
