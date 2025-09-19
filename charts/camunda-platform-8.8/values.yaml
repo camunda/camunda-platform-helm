@@ -2394,6 +2394,8 @@ orchestration:
       oidc:
         ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
+        ## @param orchestration.security.authentication.oidc.clientIdClaim client ID claim.
+        clientIdClaim: client_id
         ## @param orchestration.security.authentication.oidc.groupsClaim group claim.
         groupsClaim: "groups"
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
@@ -2438,7 +2440,7 @@ orchestration:
       ## @param orchestration.security.initialization.users[1].email
       users:
         ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
-        - username: connector
+        - username: connectors
           ## @extra orchestration.security.initialization.users.password, the password of an initial user, used for the connectors component.
           password: connector
           ## @extra orchestration.security.initialization.users.name, the name of an initial user, used for the connectors component.
@@ -2456,20 +2458,20 @@ orchestration:
       ## @extra orchestration.security.initialization.defaultRoles assigning initial users to default roles. More roles can be added to the dictionary: https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/#default-roles
       ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
       ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
+      ## @param orchestration.security.initialization.defaultRoles.connectors.clients define clients for the orchestration cluster.
       defaultRoles:
         admin:
           users:
             - demo
         connectors:
           users:
-            - connector
-      mappingRules:
-        ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
-        - mappingRuleID: demo-user-mapping-rule
-          ## @param orchestration.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
-          claimName: preferred_username
-          ## @param orchestration.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
-          claimValue: demo
+            ## @extra orchestration.security.initialization.defaultRoles.connectors.users[0].connectors Needed for basic auth setup. Can be removed for OIDC. Define the connectors user with the connectors role.
+            - connectors
+          clients:
+            ## @extra orchestration.security.initialization.defaultRoles.connectors.clients[0].connectors Needed for OIDC setup. Can be removed for basic auth. Define the connectors client with the connrectors role.
+            - connectors
+      ## @param orchestration.security.initialization.mappingRules define mapping rules.
+      mappingRules: []
   ## @extra orchestration.image configuration to configure the image specifics
   image:
     ## @param orchestration.image.registry can be used to set container image registry.
