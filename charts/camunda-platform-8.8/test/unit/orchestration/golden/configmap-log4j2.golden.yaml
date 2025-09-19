@@ -82,6 +82,7 @@ data:
             index-prefix: "zeebe-record"
             history:
               policy-name: "camunda-history-retention-policy"
+            number-of-replicas: 1
     
       # Security configuration - Separated syntax.
       security:
