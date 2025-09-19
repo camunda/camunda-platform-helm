@@ -346,27 +346,6 @@ global:
           ## @param global.identity.auth.admin.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
 
-      #######################
-      # Connectors
-      #######################
-
-      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
-      connectors:
-        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
-        clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret [string,object] (DEPRECATED - use global.identity.auth.connectors.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.connectors.existingSecretKey (DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-connectors-client-token
-        ## @extra global.identity.auth.connectors.secret configuration to provide the connectors client secret.
-        secret:
-          ## @param global.identity.auth.connectors.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
-
       #####################
       # Management Identity
       #####################
@@ -2142,6 +2121,27 @@ webModelerPostgresql:
 connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
   enabled: true
+
+  ## @extra connectors.security.authentication.oidc configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
+  security:
+    ## Authentication configuration
+    ## @extra connectors.security.authentication
+    authentication:
+      oidc:
+        ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
+        clientId: connectors
+        ## @param connectors.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use connectors.security.authentication.oidc.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using connectors.security.authentication.oidc.existingSecret.name.
+        existingSecret: ""
+        ## @param connectors.security.authentication.oidc.existingSecretKey (DEPRECATED - use connectors.security.authentication.oidc.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-connectors-client-token
+        ## @extra connectors.security.authentication.oidc.secret configuration to provide the connectors client secret.
+        secret:
+          ## @param connectors.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param connectors.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param connectors.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
 
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
