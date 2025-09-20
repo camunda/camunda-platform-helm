@@ -1856,7 +1856,7 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "26.3.1"
+                            "default": "26.3.3"
                         },
                         "digest": {
                             "type": "string",
