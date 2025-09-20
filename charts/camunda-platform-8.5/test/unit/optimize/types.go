@@ -2,7 +2,7 @@ package optimize
 
 type OptimizeConfigYAML struct {
 	Container ContainerYAML `yaml:"container"`
-	Zeebe ZeebeYAML `yaml:"zeebe"`
+	Zeebe     ZeebeYAML     `yaml:"zeebe"`
 }
 
 type ContainerYAML struct {
