@@ -272,7 +272,10 @@ global:
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
-  # Identity configuration to configure identity specifics on global level, which can be accessed by other components
+  # Management Identity global configuration
+  # Go to '@section Management Identity Parameters' for Management Identity specific configuration
+  # Use this section to configure an external Keycloak/OIDC provider or to customize the included Keycloak connection.
+  # These global values set and reuse configuration for the Web Modeler, Console, Optimize, Orchestration Cluster, Connectors, and Keycloak.
   identity:
     service:
       ## @param global.identity.service.url
