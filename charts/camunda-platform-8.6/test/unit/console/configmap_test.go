@@ -49,19 +49,19 @@ func TestConfigMapTemplate(t *testing.T) {
 
 func (s *configMapTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
-        {
-            Name: "Container should set correct identity type",
-            Values: map[string]string{
-                "console.enabled":                       "true",
-                "global.identity.auth.type":             "MICROSOFT",
-                "global.identity.auth.issuer":           "https://example.com",
-                "global.identity.auth.issuerBackendUrl": "https://example.com",
-            },
-            Expected: map[string]string{
-                "configmapApplication.camunda.console.oAuth.type": "MICROSOFT",
-            },
-        },
-    }
-		
+		{
+			Name: "Container should set correct identity type",
+			Values: map[string]string{
+				"console.enabled":                       "true",
+				"global.identity.auth.type":             "MICROSOFT",
+				"global.identity.auth.issuer":           "https://example.com",
+				"global.identity.auth.issuerBackendUrl": "https://example.com",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.console.oAuth.type": "MICROSOFT",
+			},
+		},
+	}
+
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

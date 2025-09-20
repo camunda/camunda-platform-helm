@@ -20,12 +20,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestGoldenDefaultsTemplate(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 	templateNames := []string{
@@ -35,21 +32,15 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 		"serviceaccount",
 	}
 
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform",
-			GoldenFileName: name,
-			Templates:      []string{"templates/execution-identity/" + name + ".yaml"},
-			SetValues: map[string]string{
-				"executionIdentity.enabled": "true",
-			},
-			IgnoredLines: []string{
-				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
-				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
-				`\s+version:\s+.*`,      // ignore release version in console config.
-			},
-		})
+	ignoredLines := []string{
+		`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+		`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+		`\s+version:\s+.*`,      // ignore release version in console config.
 	}
+
+	setValues := map[string]string{
+		"executionIdentity.enabled": "true",
+	}
+
+	utils.TestGoldenTemplates(t, chartPath, "execution-identity", templateNames, ignoredLines, setValues, nil)
 }
