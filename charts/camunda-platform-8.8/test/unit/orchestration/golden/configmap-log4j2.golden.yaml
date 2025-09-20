@@ -58,7 +58,7 @@ data:
         node-id: ${VALUES_ORCHESTRATION_NODE_ID}
         size: "3"
         replication-factor: "3"
-        partitions-count: "3"
+        partition-count: "3"
     
       api:
         grpc:
