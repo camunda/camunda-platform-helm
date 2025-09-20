@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestGoldenDefaultsTemplate(t *testing.T) {
@@ -35,21 +34,15 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 		"serviceaccount",
 	}
 
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform",
-			GoldenFileName: name,
-			Templates:      []string{"templates/console/" + name + ".yaml"},
-			SetValues: map[string]string{
-				"console.enabled": "true",
-			},
-			IgnoredLines: []string{
-				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
-				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
-				`\s+version:\s+.*`,      // ignore release version in console config.
-			},
-		})
+	setValues := map[string]string{
+		"console.enabled": "true",
 	}
+
+	ignoredLines := []string{
+		`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+		`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+		`\s+version:\s+.*`,      // ignore release version in console config.
+	}
+
+	utils.TestGoldenTemplates(t, chartPath, "console", templateNames, ignoredLines, setValues, nil)
 }
