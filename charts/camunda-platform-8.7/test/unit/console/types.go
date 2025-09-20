@@ -1,7 +1,7 @@
 package console
 
 type ConsoleYAML struct {
-	Camunda CamundaConfig `yaml:"camunda"`	
+	Camunda CamundaConfig `yaml:"camunda"`
 }
 
 type CamundaConfig struct {
