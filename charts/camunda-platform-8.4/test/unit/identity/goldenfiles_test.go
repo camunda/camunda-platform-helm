@@ -17,12 +17,9 @@ package identity
 import (
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestGoldenDefaultsTemplate(t *testing.T) {
@@ -32,17 +29,10 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 	require.NoError(t, err)
 	templateNames := []string{"service", "serviceaccount", "deployment"}
 
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-			GoldenFileName: name,
-			Templates:      []string{"charts/identity/templates/" + name + ".yaml"},
-			IgnoredLines: []string{
-				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
-				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
-			},
-		})
+	ignoredLines := []string{
+		`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+		`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 	}
+
+	utils.TestGoldenTemplates(t, chartPath, "identity", templateNames, ignoredLines, nil, nil)
 }
