@@ -150,7 +150,7 @@ spec:
             - name: config
               mountPath: /home/runner/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.webModeler.extraConfiguration }}
+          {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
             - name: config
               mountPath: /home/runner/config/{{ $key }}
               subPath: {{ $key }}
