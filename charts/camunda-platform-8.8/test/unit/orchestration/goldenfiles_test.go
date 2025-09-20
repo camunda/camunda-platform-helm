@@ -17,19 +17,16 @@ package orchestration
 import (
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
+
+	componentName := "orchestration"
 	templateNames := []string{
 		"service",
 		"service-headless",
@@ -38,16 +35,9 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 		"configmap-unified",
 	}
 
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-			GoldenFileName: name,
-			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
-			IgnoredLines: []string{
-				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
-			},
-		})
+	ignoredLines := []string{
+		`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 	}
+
+	utils.TestGoldenTemplates(t, chartPath, componentName, templateNames, ignoredLines, nil, nil)
 }

@@ -54,7 +54,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"optimize.enabled": "false",
 				"identity.enabled": "true",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

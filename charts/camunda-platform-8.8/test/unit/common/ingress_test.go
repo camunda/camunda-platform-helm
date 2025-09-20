@@ -62,12 +62,12 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"connectors.security.authentication.oidc.existingSecret.name": "foo",
-				"orchestration.security.authentication.oidc.existingSecret.name":       "bar",
-				"global.ingress.tls.enabled":                          "true",
-				"identity.contextPath":                                "/identity",
-				"identity.enabled":                                    "true",
-				"identityKeycloak.enabled":                            "true",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
+				"global.ingress.tls.enabled":                                     "true",
+				"identity.contextPath":                                           "/identity",
+				"identity.enabled":                                               "true",
+				"identityKeycloak.enabled":                                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -190,7 +190,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "/modeler",
-				"orchestration.contextPath":                    "/orchestration",
+				"orchestration.contextPath":           "/orchestration",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -213,7 +213,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "",
-				"orchestration.contextPath":                    "",
+				"orchestration.contextPath":           "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -231,7 +231,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				"global.ingress.enabled": "true",
 				"optimize.enabled":       "false",
 				"webModeler.enabled":     "false",
-				"orchestration.enabled":           "false",
+				"orchestration.enabled":  "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
@@ -295,11 +295,11 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestHttpIngressLabelMergeOverwrite",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.ingress.enabled":              "true",
-				"global.commonLabels.app":             "common-override",
-				"global.commonLabels.environment":     "common-env",
-				"global.ingress.labels.app":           "ingress-override",
-				"global.ingress.labels.team":          "ingress-team",
+				"global.ingress.enabled":          "true",
+				"global.commonLabels.app":         "common-override",
+				"global.commonLabels.environment": "common-env",
+				"global.ingress.labels.app":       "ingress-override",
+				"global.ingress.labels.team":      "ingress-team",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
@@ -349,11 +349,11 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressWithLabels",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                           "true",
-				"orchestration.ingress.grpc.enabled":              "true",
-				"orchestration.ingress.grpc.labels.test-label":    "grpc-test-value",
-				"orchestration.ingress.grpc.labels.external-dns":  "grpc-enabled",
-				"orchestration.ingress.grpc.labels.grpc-service":  "zeebe-gateway",
+				"orchestration.enabled":                          "true",
+				"orchestration.ingress.grpc.enabled":             "true",
+				"orchestration.ingress.grpc.labels.test-label":   "grpc-test-value",
+				"orchestration.ingress.grpc.labels.external-dns": "grpc-enabled",
+				"orchestration.ingress.grpc.labels.grpc-service": "zeebe-gateway",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress
@@ -388,9 +388,9 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressDisabled",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                           "true",
-				"orchestration.ingress.grpc.enabled":              "false",
-				"orchestration.ingress.grpc.labels.test-label":    "should-not-appear",
+				"orchestration.enabled":                        "true",
+				"orchestration.ingress.grpc.enabled":           "false",
+				"orchestration.ingress.grpc.labels.test-label": "should-not-appear",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then - no ingress should be rendered
@@ -401,10 +401,10 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressExternal",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                           "true",
-				"orchestration.ingress.grpc.enabled":              "true",
-				"orchestration.ingress.grpc.external":             "true",
-				"orchestration.ingress.grpc.labels.test-label":    "should-not-appear",
+				"orchestration.enabled":                        "true",
+				"orchestration.ingress.grpc.enabled":           "true",
+				"orchestration.ingress.grpc.external":          "true",
+				"orchestration.ingress.grpc.labels.test-label": "should-not-appear",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then - no ingress should be rendered when external is true
@@ -415,12 +415,12 @@ func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGrpcIngressLabelMergeOverwrite",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"orchestration.enabled":                           "true",
-				"orchestration.ingress.grpc.enabled":              "true",
-				"global.commonLabels.app":                         "common-grpc-override",
-				"global.commonLabels.environment":                 "common-grpc-env",
-				"orchestration.ingress.grpc.labels.app":           "grpc-specific-override",
-				"orchestration.ingress.grpc.labels.protocol":      "grpc",
+				"orchestration.enabled":                      "true",
+				"orchestration.ingress.grpc.enabled":         "true",
+				"global.commonLabels.app":                    "common-grpc-override",
+				"global.commonLabels.environment":            "common-grpc-env",
+				"orchestration.ingress.grpc.labels.app":      "grpc-specific-override",
+				"orchestration.ingress.grpc.labels.protocol": "grpc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var ingress netv1.Ingress

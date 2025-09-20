@@ -24,8 +24,8 @@ type configmapRestAPITemplateTest struct {
 }
 
 var requiredValues = map[string]string{
-	"webModeler.enabled":                                     "true",
-	"webModeler.restapi.mail.fromAddress":                    "example@example.com",
+	"webModeler.enabled":                                             "true",
+	"webModeler.restapi.mail.fromAddress":                            "example@example.com",
 	"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 	"orchestration.security.authentication.oidc.existingSecret.name": "foo",
 }

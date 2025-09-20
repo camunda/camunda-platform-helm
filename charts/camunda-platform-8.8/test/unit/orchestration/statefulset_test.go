@@ -103,8 +103,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
-				"global.image.registry": "global.custom.registry.io",
-				"global.image.tag":      "8.x.x",
+				"global.image.registry":          "global.custom.registry.io",
+				"global.image.tag":               "8.x.x",
 				"orchestration.image.registry":   "subchart.custom.registry.io",
 				"orchestration.image.repository": "camunda/camunda-test",
 				"orchestration.image.tag":        "snapshot",
@@ -132,8 +132,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
-				"global.image.pullSecrets[0].name": "SecretNameGlobal",
-				"orchestration.image.pullSecrets[0].name":   "SecretNameSubChart",
+				"global.image.pullSecrets[0].name":        "SecretNameGlobal",
+				"orchestration.image.pullSecrets[0].name": "SecretNameSubChart",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -199,8 +199,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
-				"global.image.tag": "a.b.c",
-				"orchestration.image.tag":   "",
+				"global.image.tag":        "a.b.c",
+				"orchestration.image.tag": "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -215,8 +215,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
-				"global.image.tag": "x.y.z",
-				"orchestration.image.tag":   "a.b.c",
+				"global.image.tag":        "x.y.z",
+				"orchestration.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet

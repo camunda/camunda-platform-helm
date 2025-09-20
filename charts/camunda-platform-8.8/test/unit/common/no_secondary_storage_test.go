@@ -53,7 +53,7 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 			Name:                 "TestGlobalNoSecondaryStorageTogglesAllExpectedValues",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.noSecondaryStorage":                     "true",
+				"global.noSecondaryStorage":                    "true",
 				"global.elasticsearch.enabled":                 "false",
 				"global.opensearch.enabled":                    "false",
 				"elasticsearch.enabled":                        "false",
