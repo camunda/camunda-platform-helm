@@ -17,12 +17,9 @@ package web_modeler
 import (
 	"camunda-platform/test/unit/utils"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestGoldenDefaultsTemplate(t *testing.T) {
@@ -42,24 +39,18 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 		"serviceaccount",
 	}
 
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-			GoldenFileName: name,
-			Templates:      []string{"templates/web-modeler/" + name + ".yaml"},
-			SetValues: map[string]string{
-				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"postgresql.enabled":                  "true",
-			},
-			IgnoredLines: []string{
-				`\s+pusher-app-key:\s+.*`,    // auto-generated and need to be ignored.
-				`\s+pusher-app-secret:\s+.*`, // auto-generated and need to be ignored.
-				`\s+.*-secret:\s+.*`,         // secrets are auto-generated and need to be ignored.
-				`\s+checksum/.+?:\s+.*`,      // ignore configmap checksum.
-			},
-		})
+	setValues := map[string]string{
+		"webModeler.enabled":                  "true",
+		"webModeler.restapi.mail.fromAddress": "example@example.com",
+		"postgresql.enabled":                  "true",
 	}
+
+	ignoredLines := []string{
+		`\s+pusher-app-key:\s+.*`,    // auto-generated and need to be ignored.
+		`\s+pusher-app-secret:\s+.*`, // auto-generated and need to be ignored.
+		`\s+.*-secret:\s+.*`,         // secrets are auto-generated and need to be ignored.
+		`\s+checksum/.+?:\s+.*`,      // ignore configmap checksum.
+	}
+
+	utils.TestGoldenTemplates(t, chartPath, "web-modeler", templateNames, ignoredLines, setValues, nil)
 }

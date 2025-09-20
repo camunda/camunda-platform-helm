@@ -484,7 +484,7 @@ func (s *ConfigmapRestAPITemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"webModeler.enabled":                           "true",
 				"webModeler.restapi.mail.fromAddress":          "example@example.com",
-				"postgresql.enabled": 					        "false",
+				"postgresql.enabled":                           "false",
 				"webModeler.restapi.externalDatabase.host":     "custom-db.example.com",
 				"webModeler.restapi.externalDatabase.port":     "65432",
 				"webModeler.restapi.externalDatabase.database": "custom-modeler-db",

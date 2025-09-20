@@ -20,14 +20,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestGoldenDefaultsTemplateConsole(t *testing.T) {
-	t.Parallel()
-
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
+
 	templateNames := []string{
 		"configmap",
 		"deployment",
@@ -35,24 +33,18 @@ func TestGoldenDefaultsTemplateConsole(t *testing.T) {
 		"serviceaccount",
 	}
 
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform",
-			GoldenFileName: name,
-			Templates:      []string{"templates/console/" + name + ".yaml"},
-			SetValues: map[string]string{
-				"console.enabled":                "true",
-				"identity.enabled":               "true",
-				"identityKeycloak.enabled":       "true",
-				"console.serviceAccount.enabled": "true",
-			},
-			IgnoredLines: []string{
-				`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
-				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
-				`\s+version:\s+.*`,      // ignore release version in console config.
-			},
-		})
+	ignoredLines := []string{
+		`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
+		`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+		`\s+version:\s+.*`,      // ignore release version in console config.
 	}
+
+	setValues := map[string]string{
+		"console.enabled":                "true",
+		"identity.enabled":               "true",
+		"identityKeycloak.enabled":       "true",
+		"console.serviceAccount.enabled": "true",
+	}
+
+	utils.TestGoldenTemplates(t, chartPath, "console", templateNames, ignoredLines, setValues, nil)
 }

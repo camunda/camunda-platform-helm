@@ -53,14 +53,14 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 		{
 			Name: "Document Handling: AWS",
 			Values: map[string]string{
-				"global.documentStore.activeStoreId":                  "aws",
-				"global.documentStore.type.aws.enabled":               "true",
-				"global.documentStore.type.aws.storeId":               "AWS",
-				"global.documentStore.type.aws.class":                 "io.camunda.document.store.aws.AwsDocumentStoreProvider",
-				"global.documentStore.type.aws.bucket":                    "aws-bucket",
-				"global.documentStore.type.aws.bucketPath":             "/aws/path",
-				"identity.enabled":                                     "true",
-				"connectors.security.authentication.oidc.existingSecret.name":  "foo",
+				"global.documentStore.activeStoreId":                             "aws",
+				"global.documentStore.type.aws.enabled":                          "true",
+				"global.documentStore.type.aws.storeId":                          "AWS",
+				"global.documentStore.type.aws.class":                            "io.camunda.document.store.aws.AwsDocumentStoreProvider",
+				"global.documentStore.type.aws.bucket":                           "aws-bucket",
+				"global.documentStore.type.aws.bucketPath":                       "/aws/path",
+				"identity.enabled":                                               "true",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Expected: map[string]string{
@@ -73,13 +73,13 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 		{
 			Name: "Document Handling: GCP",
 			Values: map[string]string{
-				"global.documentStore.activeStoreId":                  "gcp",
-				"global.documentStore.type.gcp.enabled":               "true",
-				"global.documentStore.type.gcp.storeId":               "GCP",
-				"global.documentStore.type.gcp.class":                 "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
-				"global.documentStore.type.gcp.bucket":                    "gcp-bucket",
-				"identity.enabled":                                     "true",
-				"connectors.security.authentication.oidc.existingSecret.name":  "foo",
+				"global.documentStore.activeStoreId":                             "gcp",
+				"global.documentStore.type.gcp.enabled":                          "true",
+				"global.documentStore.type.gcp.storeId":                          "GCP",
+				"global.documentStore.type.gcp.class":                            "io.camunda.document.store.gcp.GcpDocumentStoreProvider",
+				"global.documentStore.type.gcp.bucket":                           "gcp-bucket",
+				"identity.enabled":                                               "true",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Expected: map[string]string{
@@ -91,12 +91,12 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 		{
 			Name: "Document Handling: In Memory",
 			Values: map[string]string{
-				"global.documentStore.activeStoreId":                  "inmemory",
-				"global.documentStore.type.inmemory.enabled":              "true",
-				"global.documentStore.type.inmemory.storeId":           "INMEMORY",
-				"global.documentStore.type.inmemory.class":             "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
-				"identity.enabled":                                     "true",
-				"connectors.security.authentication.oidc.existingSecret.name":  "foo",
+				"global.documentStore.activeStoreId":                             "inmemory",
+				"global.documentStore.type.inmemory.enabled":                     "true",
+				"global.documentStore.type.inmemory.storeId":                     "INMEMORY",
+				"global.documentStore.type.inmemory.class":                       "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
+				"identity.enabled":                                               "true",
+				"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 			},
 			Expected: map[string]string{
