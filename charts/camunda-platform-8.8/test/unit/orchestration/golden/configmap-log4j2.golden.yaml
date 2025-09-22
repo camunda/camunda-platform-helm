@@ -91,22 +91,24 @@ data:
         authorizations:
           enabled: true
         initialization:
-          users:
-            - email: connector@demo.com
-              name: Connector User
-              password: connector
-              username: connector
-            - email: demo@demo.com
-              name: Demo User
-              password: demo
-              username: demo
           default-roles:
             admin:
               users:
               - demo
             connectors:
+              clients:
+              - connectors
               users:
-              - connector
+              - connectors
+          users:
+            - email: connector@demo.com
+              name: Connector User
+              password: connector
+              username: connectors
+            - email: demo@demo.com
+              name: Demo User
+              password: demo
+              username: demo
         multiTenancy:
           checksEnabled: false
           apiEnabled: true
