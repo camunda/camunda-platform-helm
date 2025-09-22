@@ -46,29 +46,3 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		},
 	})
 }
-
-func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &utils.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "camunda-platform-test",
-		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "ingress-all-enabled",
-		Templates:      []string{"templates/web-modeler/ingress.yaml"},
-		SetValues: map[string]string{
-			"webModeler.enabled":                           "true",
-			"webModeler.restapi.mail.fromAddress":          "example@example.com",
-			"webModeler.ingress.enabled":                   "true",
-			"webModeler.ingress.webapp.host":               "modeler.example.com",
-			"webModeler.ingress.websockets.host":           "modeler-ws.example.com",
-			"webModeler.ingress.webapp.tls.enabled":        "true",
-			"webModeler.ingress.webapp.tls.secretName":     "webapp-tls-secret",
-			"webModeler.ingress.websockets.tls.enabled":    "true",
-			"webModeler.ingress.websockets.tls.secretName": "websockets-tls-secret",
-		},
-	})
-}

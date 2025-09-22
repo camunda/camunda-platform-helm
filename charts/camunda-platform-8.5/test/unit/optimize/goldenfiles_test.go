@@ -27,12 +27,19 @@ func TestGoldenDefaultsTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	templateNames := []string{"service", "serviceaccount", "deployment"}
-
+	templateNames := []string{
+		"deployment",
+		"ingress",
+		"service",
+		"serviceaccount",
+	}
 	ignoredLines := []string{
 		`\s+.*-secret:\s+.*`,    // secrets are auto-generated and need to be ignored.
 		`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 	}
+	setValues := map[string]string{
+		"optimize.ingress.enabled": "true",
+	}
 
-	utils.TestGoldenTemplates(t, chartPath, "optimize", templateNames, ignoredLines, nil, nil)
+	utils.TestGoldenTemplates(t, chartPath, "optimize", templateNames, ignoredLines, setValues, nil)
 }

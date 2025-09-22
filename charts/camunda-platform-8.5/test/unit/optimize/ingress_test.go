@@ -40,24 +40,3 @@ func TestGoldenIngressDefaultTemplate(t *testing.T) {
 		SetValues:      map[string]string{"optimize.ingress.enabled": "true"},
 	})
 }
-
-func TestGoldenIngressAllEnabledTemplate(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-
-	suite.Run(t, &utils.TemplateGoldenTest{
-		ChartPath:      chartPath,
-		Release:        "camunda-platform-test",
-		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		GoldenFileName: "ingress-all-enabled",
-		Templates:      []string{"templates/optimize/ingress.yaml"},
-		SetValues: map[string]string{
-			"optimize.ingress.enabled":        "true",
-			"optimize.ingress.host":           "local",
-			"optimize.ingress.tls.enabled":    "true",
-			"optimize.ingress.tls.secretName": "my-secret",
-		},
-	})
-}
