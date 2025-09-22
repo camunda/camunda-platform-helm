@@ -31,6 +31,15 @@ go.test: helm.dependency-update
 go.test-golden-updated: helm.dependency-update
 	@$(call go_test_run, go test ./... -args -update-golden)
 
+.PHONY: go.update-golden-only-cleanup
+go.update-golden-only-cleanup: helm.dependency-update
+	@$(call go_test_run, (\
+		echo "Delete golden files ..."; \
+		find . -name "*golden*.yaml" -delete; \
+		echo "Generate golden files ..."; \
+		go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden \
+	))
+
 .PHONY: go.update-golden-only-lite
 go.update-golden-only-lite:
 	@$(call go_test_run, go test ./...$(APP) -run '^TestGolden.+$$' -args -update-golden)

@@ -71,9 +71,9 @@ jobs:
         run: |
           if [ -n "${CHANGED_CHARTS}" ]; then
             chartPath="${CHANGED_CHARTS}" \
-              make go.update-golden-only
+              make go.update-golden-only-cleanup
           else
-            make go.update-golden-only
+            make go.update-golden-only-cleanup
           fi
       - name: Update README
         run: |

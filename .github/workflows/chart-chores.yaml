@@ -92,7 +92,7 @@ jobs:
       - name: Update golden files
         run: |
           chartPath="${CHANGED_CHARTS}" \
-            make go.update-golden-only
+            make go.update-golden-only-cleanup
       - name: Update README
         run: |
           chartPath="${CHANGED_CHARTS}" \

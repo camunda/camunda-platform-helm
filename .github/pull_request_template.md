@@ -17,7 +17,7 @@ Please make sure to follow our [Contributing Guide](../blob/main/docs/contributi
 
 **Before opening the PR:**
 
-- [ ] In the repo's root dir, run `make go.update-golden-only`.
+- [ ] In the repo's root dir, run `make go.update-golden-only-cleanup`.
 - [ ] There is no other open [pull request](../pulls) for the same update/change.
 - [ ] Tests for charts are added (if needed).
 - [ ] In-repo [documentation](../blob/main/docs/contributing.md#documentation) are updated (if needed).
