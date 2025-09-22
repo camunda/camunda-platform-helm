@@ -3,7 +3,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: camunda-platform-test-zeebe
+  name: camunda-platform-test-zeebe-gateway
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -26,7 +26,7 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: camunda-platform-test-zeebe-headless
+  name: camunda-platform-test-zeebe
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
