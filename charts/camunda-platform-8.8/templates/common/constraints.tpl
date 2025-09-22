@@ -301,6 +301,13 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
                 (and (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "" | toString) "") (ne (get $config $plaintextKey | toString) "")) -}}
         {{- $hasLegacyConfig = true -}}
       {{- end -}}
+      
+      {{/* Unset legacy flag for identity.firstUser when using chart defaults */}}
+      {{- if and (eq $path "identity.firstUser") $hasLegacyConfig -}}
+        {{- if and (eq (get $config $legacySecretKey | toString) "camunda-credentials") (eq (get $config $plaintextKey | toString) "demo") -}}
+          {{- $hasLegacyConfig = false -}}
+        {{- end -}}
+      {{- end -}}
     {{- end -}}
 
     {{/* Check if new configuration is used */}}
@@ -348,14 +355,17 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 
     {{/* Warn about insecure legacy plaintext usage */}}
     {{- if and $config (kindOf $config | eq "map") (hasKey $config $plaintextKey) (ne (get $config $plaintextKey | default "" | toString) "") (ne (get $config $plaintextKey | toString) "") -}}
-      {{- $warningMessage := printf "%s %s %s %s %s"
-          "[camunda][warning]"
-          (printf "SECURITY: %s is using legacy plaintext field '%s' at '%s.%s'." $component $plaintextKey $path $plaintextKey)
-          "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
-          "For production environments, please use Kubernetes Secrets"
-          (printf "with '%s.secret.existingSecret' and '%s.secret.existingSecretKey'." $path $path)
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{/* Skip warning for identity.firstUser when using chart default password */}}
+      {{- if not (and (eq $path "identity.firstUser") (eq (get $config $plaintextKey | toString) "demo")) -}}
+        {{- $warningMessage := printf "%s %s %s %s %s"
+            "[camunda][warning]"
+            (printf "SECURITY: %s is using legacy plaintext field '%s' at '%s.%s'." $component $plaintextKey $path $plaintextKey)
+            "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
+            "For production environments, please use Kubernetes Secrets"
+            (printf "with '%s.secret.existingSecret' and '%s.secret.existingSecretKey'." $path $path)
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+      {{- end -}}
     {{- end -}}
 
   {{- end -}}
