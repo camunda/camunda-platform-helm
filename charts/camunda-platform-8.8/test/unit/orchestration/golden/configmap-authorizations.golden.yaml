@@ -123,7 +123,7 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: "camunda-platform-test-zeebe:26500"
+          gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
     
       #
       # Camunda Tasklist Configuration - Separated syntax.
@@ -134,8 +134,8 @@ data:
         # Zeebe instance
         zeebe:
           # Gateway address
-          gatewayAddress: "camunda-platform-test-zeebe:26500"
-          restAddress: "http://camunda-platform-test-zeebe:8080"
+          gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
+          restAddress: "http://camunda-platform-test-zeebe-gateway:8080"
     
     #
     # Camunda Zeebe Configuration - Separated syntax.

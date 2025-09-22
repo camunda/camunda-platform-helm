@@ -359,8 +359,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("8.8.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
-			s.Require().Equal("grpc://camunda-platform-test-zeebe:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-			s.Require().Equal("http://camunda-platform-test-zeebe:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
+			s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
+			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
 			s.Require().Equal("https://example.com/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
 		})
 	}
