@@ -44,7 +44,7 @@ data:
         mode: selfManaged
         auth:
           method: basic
-          username: "connector"
+          username: "connectors"
           password: "connector"
       connector:
         headless:
