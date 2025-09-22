@@ -267,3 +267,17 @@ Service labels.
     {{- "\n" }}
     {{- include "orchestration.extraLabelsHeadless" . }}
 {{- end -}}
+
+{{/*
+********************************************************************************
+URIs.
+********************************************************************************
+*/}}
+
+{{/*
+[orchestration] Orchestration Cluster Redirect URI.
+*/}}
+{{- define "orchestration.RedirectURI" -}}
+    {{- $redirectURIDefault := include "orchestration.serviceNameHTTP" . -}}
+    {{- tpl .Values.orchestration.security.authentication.oidc.redirectUrl . | default $redirectURIDefault -}}
+{{- end -}}

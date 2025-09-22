@@ -27,7 +27,7 @@ data:
     clientId = {{ include "webModeler.authClientId" . | quote }}
 
     [oAuth2.token]
-    jwksUrl = {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+    jwksUrl = {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
     audience = {{ include "webModeler.authClientApiAudience" . | quote }}
     issuer = {{ include "camundaPlatform.authIssuerUrl" . | quote }}
     usernameClaim = {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}

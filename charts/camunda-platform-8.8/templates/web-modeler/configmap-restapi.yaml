@@ -84,7 +84,7 @@ data:
             {{- if .Values.global.identity.auth.enabled }}
             jwt:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
             {{- else }}
             jwt: null
             {{- end }}
