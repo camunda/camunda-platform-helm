@@ -38,7 +38,7 @@ camunda:
     node-id: ${VALUES_ORCHESTRATION_NODE_ID}
     size: {{ .Values.orchestration.clusterSize | quote }}
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
-    partitions-count: {{ .Values.orchestration.partitionCount | quote }}
+    partition-count: {{ .Values.orchestration.partitionCount | quote }}
 
   api:
     grpc:
