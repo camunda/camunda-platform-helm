@@ -38,7 +38,7 @@ Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSe
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
-  {{- if eq .Values.orchestration.security.authentication.method "basic" }}
+  {{- if eq (include "orchestration.authType" .) "basic" }}
     {{- $errorMessage := printf "[camunda][error] %s %s %s"
         "When \"global.noSecondaryStorage\" is enabled, basic authentication for Orchestration is not supported."
         "Please set \"orchestration.security.authentication.method\" to \"oidc\" and configure OIDC authentication"

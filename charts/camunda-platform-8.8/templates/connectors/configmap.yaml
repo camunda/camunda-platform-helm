@@ -51,7 +51,7 @@ data:
             max-jobs-active: 32
             stream-enabled: true
         mode: selfManaged
-        {{- if eq .Values.orchestration.security.authentication.method "basic" }}
+        {{- if eq (include "orchestration.authType" .) "basic" }}
         auth:
           {{- $user := first .Values.orchestration.security.initialization.users }}
           method: basic

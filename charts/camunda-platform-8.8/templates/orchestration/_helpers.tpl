@@ -154,8 +154,39 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 
 
 {{/*
+********************************************************************************
+Authentication.
+********************************************************************************
+*/}}
+
+
+{{/*
 [orchestration] Define variables related to authentication.
 */}}
+
+{{- define "orchestration.authType" -}}
+    {{- if or
+        (eq .Values.orchestration.security.authentication.method "oidc")
+        .Values.global.identity.auth.enabled
+    -}}
+        oidc
+    {{- else if
+        eq .Values.orchestration.security.authentication.method "basic"
+    -}}
+        basic
+    {{- else -}}
+        none
+    {{- end }}
+{{- end -}}
+
+{{- define "orchestration.authEnabled" -}}
+    {{- if has (include "orchestration.authType" .) (list "oidc" "basic") -}}
+        true
+    {{- else -}}
+        false
+    {{- end -}}
+{{- end -}}
+
 {{- define "orchestration.authClientId" -}}
     {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}
@@ -179,7 +210,10 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 {{- end -}}
 
 {{- define "orchestration.enabledProfilesWithIdentity" -}}
-    {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
+    {{- if or
+        (eq (include "orchestration.authType" .) "oidc")
+        (eq (include "orchestration.authType" .) "basic")
+    }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}
         {{- include "orchestration.enabledProfiles" . | replace "identity" "auth" -}}

@@ -285,13 +285,11 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{- define "webModeler.authenticationType" -}}
-{{- if .Values.global.identity.auth.enabled }}
-  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
-    {{- "BEARER_TOKEN" }}
-  {{- else if eq .Values.orchestration.security.authentication.method "basic" }}
-    {{- "BASIC" }}
-  {{- end }}
-{{- else }}
-  {{- "NONE" }}
-{{- end }}
-{{- end }}
+  {{- if eq (include "orchestration.authType" .) "oidc" -}}
+    BEARER_TOKEN
+  {{- else if eq (include "orchestration.authType" .) "basic" -}}
+    BASIC
+  {{- else -}}
+    NONE
+  {{- end -}}
+{{- end -}}
