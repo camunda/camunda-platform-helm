@@ -19,7 +19,7 @@ data:
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
-        type: {{ include "camundaPlatform.authType" . | quote }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
       {{- end }}
 
       modeler:

@@ -187,6 +187,10 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
+{{- define "orchestration.authIssuerType" -}}
+    {{- .Values.orchestration.security.authentication.oidc.type | default (include "camundaPlatform.authIssuerType" .) -}}
+{{- end -}}
+
 {{- define "orchestration.authClientId" -}}
     {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}

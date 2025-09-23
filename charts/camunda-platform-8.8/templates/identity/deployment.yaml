@@ -42,7 +42,7 @@ spec:
                 "plaintextKey" "key"
             ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
-            {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
+            {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
                 "config"        .Values.connectors.security.authentication.oidc

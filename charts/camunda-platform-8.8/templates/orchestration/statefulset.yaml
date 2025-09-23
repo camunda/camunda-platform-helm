@@ -68,7 +68,7 @@ spec:
                 "config" .Values.global.license
                 "plaintextKey" "key"
             ) | nindent 12 }}
-            {{- if .Values.global.identity.auth.enabled }}
+            {{- if eq (include "orchestration.authEnabled" .) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
                 "config" .Values.orchestration.security.authentication.oidc
