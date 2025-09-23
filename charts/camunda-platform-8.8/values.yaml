@@ -546,10 +546,10 @@ global:
 
   ## @extra global.exporter allows disabling inbuilt exporters.
   exporter:
-    ## @param global.exporter.camunda.enabled if true, enables new Camunda exporter.
+    ## @param global.exporter.camunda.enabled if true, enables the new Camunda exporter.
     camunda:
       enabled: true
-    ## @param global.exporter.zeebe.enabled if true, enables old Elasticsearch and Opensearch exporters.
+    ## @param global.exporter.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
 
