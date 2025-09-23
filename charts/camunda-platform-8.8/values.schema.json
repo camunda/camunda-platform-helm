@@ -994,7 +994,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables the new Camunda exporter.",
+                                    "description": "if true, enables new Camunda exporter.",
                                     "default": true
                                 }
                             }
@@ -1004,7 +1004,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
+                                    "description": "if true, enables old Elasticsearch and Opensearch exporters.",
                                     "default": false
                                 }
                             }
