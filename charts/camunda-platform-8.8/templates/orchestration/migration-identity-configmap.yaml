@@ -40,6 +40,6 @@ data:
             client-id: {{ include "orchestration.authClientId" . | quote }}
           {{- end }}
             client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
-            issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            issuer-backend-url: {{ include "orchestration.authIssuerBackendUrl" . | quote }}
             issuer-type: {{ include "orchestration.authIssuerType" . }}
 {{- end }}

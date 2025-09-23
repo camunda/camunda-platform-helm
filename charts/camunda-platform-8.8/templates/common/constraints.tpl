@@ -588,15 +588,6 @@ The keys moved in the 8.8 Alpha 8 version.
 
 {{- if .Values.orchestration.enabled -}}
   {{/*
-  - renamed: global.security.authentication => orchestration.security.authentication
-  */}}
-  {{ include "camundaPlatform.keyRenamed" (dict
-    "condition" (and (hasKey .Values.global "security") (hasKey .Values.global.security "authentication"))
-    "oldName" "global.security.authentication"
-    "newName" "orchestration.security.authentication"
-  ) }}
-
-  {{/*
   - renamed: global.security.authorizations => orchestration.security.authorizations
   */}}
   {{ include "camundaPlatform.keyRenamed" (dict

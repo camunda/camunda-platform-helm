@@ -57,9 +57,9 @@ data:
           method: basic
           username: {{ $user.username | quote }}
           password: {{ $user.password | quote }}
-        {{- else }}
+        {{- else if eq (include "orchestration.authType" .) "oidc" }}
         auth:
-          token-url: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . }}
+          token-url: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . }}
           client-id: {{ include "connectors.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
           audience: {{ include "orchestration.authAudience" . | quote }}

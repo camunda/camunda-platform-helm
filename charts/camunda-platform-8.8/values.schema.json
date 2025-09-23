@@ -105,6 +105,21 @@
                         }
                     }
                 },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.",
+                                    "default": ""
+                                }
+                            }
+                        }
+                    }
+                },
                 "createReleaseInfo": {
                     "type": "boolean",
                     "description": "Create config that will be used in Camunda Console.",
@@ -2808,6 +2823,21 @@
                     "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
                     "default": ""
                 },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`.",
+                                    "default": "basic"
+                                }
+                            }
+                        }
+                    }
+                },
                 "restapi": {
                     "type": "object",
                     "properties": {
@@ -5041,7 +5071,7 @@
                             "properties": {
                                 "method": {
                                     "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc",
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`.",
                                     "default": "basic"
                                 },
                                 "unprotectedApi": {
@@ -5057,6 +5087,36 @@
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
+                                        "issuer": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuer`.",
+                                            "default": ""
+                                        },
+                                        "issuerBackendUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuerBackendUrl`.",
+                                            "default": ""
+                                        },
+                                        "tokenUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.tokenUrl`.",
+                                            "default": ""
+                                        },
+                                        "jwksUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`.",
+                                            "default": ""
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.type`.",
+                                            "default": ""
+                                        },
+                                        "publicIssuerUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.publicIssuerUrl`.",
+                                            "default": ""
+                                        },
                                         "usernameClaim": {
                                             "type": "string",
                                             "description": "username claim.",

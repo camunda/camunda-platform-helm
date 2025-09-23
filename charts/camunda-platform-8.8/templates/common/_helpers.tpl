@@ -257,6 +257,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 
 {{/*
 [camunda-platform] Identity auth type which used internally for Camunda apps.
+NOTE: This is for legacy Identity config, all new types will be supported via OIDC.
 */}}
 {{- define "camundaPlatform.authIssuerType" -}}
   {{- .Values.global.identity.auth.type -}}

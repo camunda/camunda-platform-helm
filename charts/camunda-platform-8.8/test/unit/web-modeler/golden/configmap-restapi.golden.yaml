@@ -45,7 +45,7 @@ data:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
             version: "8.8.0-alpha8"
-            authentication: "BEARER_TOKEN"
+            authentication: "BASIC"
             authorizations:
               enabled: true
             url:

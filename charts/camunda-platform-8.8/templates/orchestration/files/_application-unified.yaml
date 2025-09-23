@@ -96,9 +96,9 @@ camunda:
           - {{ .Values.orchestration.security.authentication.oidc.audience | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
           - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
-        authorization-uri: {{ include "camundaPlatform.authIssuerUrlEndpointAuth" . | quote }}
-        jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
-        token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
+        authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
+        jwk-set-uri: {{ include "orchestration.authIssuerBackendUrlEndpointCerts" . | quote }}
+        token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
         redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
     {{- end }}

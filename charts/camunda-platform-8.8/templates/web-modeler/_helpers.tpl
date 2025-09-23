@@ -284,10 +284,16 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- .Values.global.identity.auth.webModeler.publicApiAudience | default "web-modeler-public-api" -}}
 {{- end -}}
 
-{{- define "webModeler.authenticationType" -}}
-  {{- if eq (include "orchestration.authType" .) "oidc" -}}
+{{- define "webModeler.authType" -}}
+    {{- .Values.webModeler.security.authentication.method | default (
+        .Values.global.security.authentication.method | default "none"
+    ) -}}
+{{- end -}}
+
+{{- define "webModeler.authConfigValue" -}}
+  {{- if eq (include "webModeler.authType" .) "oidc" -}}
     BEARER_TOKEN
-  {{- else if eq (include "orchestration.authType" .) "basic" -}}
+  {{- else if eq (include "webModeler.authType" .) "basic" -}}
     BASIC
   {{- else -}}
     NONE
