@@ -620,7 +620,7 @@
                                                 },
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
