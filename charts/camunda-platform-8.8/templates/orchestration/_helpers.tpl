@@ -213,7 +213,7 @@ Service names.
 [orchestration] Define Orchestration Cluster service name - Main.
 */}}
 {{- define "orchestration.serviceName" }}
-    {{- include "orchestration.fullname" . -}}
+    {{- include "orchestration.fullname" . -}}-gateway
 {{- end -}}
 
 {{/*
@@ -234,7 +234,7 @@ Service names.
 [orchestration] Define Orchestration Cluster service name - Headless.
 */}}
 {{- define "orchestration.serviceNameHeadless" }}
-    {{- include "orchestration.fullname" . -}}-headless
+    {{- include "orchestration.fullname" . -}}
 {{- end -}}
 
 {{/*
@@ -266,4 +266,18 @@ Service labels.
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
     {{- include "orchestration.extraLabelsHeadless" . }}
+{{- end -}}
+
+{{/*
+********************************************************************************
+URIs.
+********************************************************************************
+*/}}
+
+{{/*
+[orchestration] Orchestration Cluster Redirect URI.
+*/}}
+{{- define "orchestration.RedirectURI" -}}
+    {{- $redirectURIDefault := include "orchestration.serviceNameHTTP" . -}}
+    {{- tpl .Values.orchestration.security.authentication.oidc.redirectUrl . | default $redirectURIDefault -}}
 {{- end -}}

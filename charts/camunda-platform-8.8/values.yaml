@@ -292,9 +292,8 @@ global:
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
-      ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
+      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
       enabled: false
-
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
       ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
@@ -348,7 +347,7 @@ global:
         secret:
           ## @param global.identity.auth.identity.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
           inlineSecret: ""
-          ## @param global.identity.auth.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          ## @param global.identity.auth.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
           existingSecret: ""
           ## @param global.identity.auth.identity.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""

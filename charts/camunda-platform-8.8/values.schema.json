@@ -479,7 +479,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables the identity authentication otherwise basic-auth will be used on all services.",
+                                    "description": "if true, enables authentication on Management Identity .",
                                     "default": false
                                 },
                                 "issuer": {
@@ -580,7 +580,7 @@
                                                 },
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {

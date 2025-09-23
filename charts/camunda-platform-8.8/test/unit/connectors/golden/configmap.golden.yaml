@@ -35,8 +35,8 @@ data:
 
     camunda:
       client:
-        rest-address: http://camunda-platform-test-zeebe:8080
-        grpc-address: http://camunda-platform-test-zeebe:26500
+        rest-address: http://camunda-platform-test-zeebe-gateway:8080
+        grpc-address: http://camunda-platform-test-zeebe-gateway:26500
         worker:
           defaults:
             max-jobs-active: 32
