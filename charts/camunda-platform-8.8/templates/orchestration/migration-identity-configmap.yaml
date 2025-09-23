@@ -18,9 +18,9 @@ data:
           oidc:
             audiences:
               identity: {{ include "identity.authAudience" . | quote }}
-              operate: {{ .Values.global.identity.auth.orchestration.audience }}
-              tasklist: {{ .Values.global.identity.auth.orchestration.audience }}
-              zeebe: {{ .Values.global.identity.auth.orchestration.audience }}
+              operate: {{ .Values.orchestration.security.authentication.oidc.audience }}
+              tasklist: {{ .Values.orchestration.security.authentication.oidc.audience }}
+              zeebe: {{ .Values.orchestration.security.authentication.oidc.audience }}
           {{- end }}
           cluster:
             cluster-name: {{ tpl .Values.global.zeebeClusterName . }}
@@ -29,7 +29,7 @@ data:
             replication-factor: {{ .Values.orchestration.replicationFactor }}
             initial-contact-points:
             {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-              - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.fullname" $ }}:{{ $.Values.orchestration.service.internalPort }}
+              - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.serviceNameHeadless" $ }}:{{ $.Values.orchestration.service.internalPort }}
             {{- end }}
           management-identity:
             audience: {{ include "identity.authAudience" . | quote }}

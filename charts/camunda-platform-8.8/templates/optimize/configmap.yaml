@@ -43,7 +43,7 @@ data:
     opensearch:
       settings:
         index:
-          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+          prefix: {{ .Values.global.opensearch.prefix | quote }}
     {{- end }}
 
     spring:
@@ -64,7 +64,7 @@ data:
           redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
     api:
       audience: {{ include "optimize.authAudience" . | quote }}
-      jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+      jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
     {{- end }}
   {{- end }}
 

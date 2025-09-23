@@ -33,13 +33,12 @@ data:
       address: 0.0.0.0
       port: 8080
       servlet:
-        context-path: "/orchestration"
     
     management:
       server:
         address: 0.0.0.0
         port: 9600
-        base-path: "/orchestration"
+        base-path: "/"
     
     camunda:
       license:
@@ -59,7 +58,7 @@ data:
         node-id: ${VALUES_ORCHESTRATION_NODE_ID}
         size: "3"
         replication-factor: "3"
-        partitions-count: "3"
+        partition-count: "3"
     
       api:
         grpc:
@@ -84,7 +83,7 @@ data:
             history:
               policy-name: "camunda-history-retention-policy"
     
-      # Security configuration - Seperated syntax.
+      # Security configuration - Separated syntax.
       security:
         authentication:
           method: "basic"
@@ -92,54 +91,54 @@ data:
         authorizations:
           enabled: true
         initialization:
-          users:
-            - email: connector@demo.com
-              name: Connector User
-              password: connector
-              username: connector
-            - email: demo@demo.com
-              name: Demo User
-              password: demo
-              username: demo
           default-roles:
             admin:
               users:
               - demo
             connectors:
+              clients:
+              - connectors
               users:
-              - connector
+              - connectors
+          users:
+            - email: connector@demo.com
+              name: Connector User
+              password: connector
+              username: connectors
+            - email: demo@demo.com
+              name: Demo User
+              password: demo
+              username: demo
         multiTenancy:
           checksEnabled: false
           apiEnabled: true
     
       #
-      # Camunda Operate Configuration - Seperated syntax.
+      # Camunda Operate Configuration - Separated syntax.
       #
       operate:
         persistentSessionsEnabled: true
         multiTenancy:
           enabled: false
-    
         # Zeebe instance
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
     
       #
-      # Camunda Tasklist Configuration - Seperated syntax.
+      # Camunda Tasklist Configuration - Separated syntax.
       #
       tasklist:
         multiTenancy:
           enabled: false
-    
         # Zeebe instance
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
-          restAddress: "http://camunda-platform-test-zeebe:8080/orchestration"
+          restAddress: "http://camunda-platform-test-zeebe-gateway:8080"
     
     #
-    # Camunda Zeebe Configuration - Seperated syntax.
+    # Camunda Zeebe Configuration - Separated syntax.
     #
     zeebe:
       host: 0.0.0.0
@@ -179,6 +178,7 @@ data:
                 type: "elasticsearch"
                 url: "http://camunda-platform-test-elasticsearch:9200"
                 numberOfReplicas: "1"
+                awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"
                 rolloverInterval: "1d"

@@ -226,6 +226,13 @@ Keycloak templates.
 {{- end -}}
 
 {{/*
+[camunda-platform] Keycloak auth URL which used externally by the user.
+*/}}
+{{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
+    {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
+{{- end -}}
+
+{{/*
 [camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
 TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
@@ -258,7 +265,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 {{/*
 [camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
 */}}
-{{- define "camundaPlatform.authIssuerBackendUrlTokenEndpoint" -}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
   {{- if .Values.global.identity.auth.tokenUrl -}}
     {{- .Values.global.identity.auth.tokenUrl -}}
   {{- else -}}
@@ -266,11 +273,10 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
   {{- end -}}
 {{- end -}}
 
-
 {{/*
 [camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
 */}}
-{{- define "camundaPlatform.authIssuerBackendUrlCertsEndpoint" -}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
   {{- if .Values.global.identity.auth.jwksUrl -}}
     {{- .Values.global.identity.auth.jwksUrl -}}
   {{- else -}}
@@ -553,20 +559,6 @@ Orchestration templates.
 {{- end }}
 
 {{/*
-[camunda-platform] Orchestration internal URL.
-*/}}
-{{ define "camundaPlatform.OrchestrationURL" }}
-  {{- if .Values.orchestration.enabled -}}
-    {{-
-      printf "http://%s:%v%s"
-        (include "orchestration.fullname" .)
-        .Values.orchestration.service.httpPort
-        .Values.orchestration.contextPath
-    -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*
 ********************************************************************************
 Zeebe templates.
 ********************************************************************************
@@ -594,16 +586,28 @@ Zeebe templates.
 {{/*
 [camunda-platform] Zeebe Gateway REST internal URL.
 */}}
-{{ define "camundaPlatform.zeebeGatewayRESTURL" }}
+{{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
   {{- if .Values.orchestration.enabled -}}
     {{-
-      printf "http://%s:%v%s"
-        (include "orchestration.fullname" .)
-        .Values.orchestration.service.httpPort
+      printf "http://%s%s"
+        (include "orchestration.serviceNameHTTP" .)
         (.Values.orchestration.contextPath | default "")
     -}}
   {{- end -}}
 {{- end -}}
+
+{{/*
+[camunda-platform] Zeebe Gateway GRPC internal URL.
+*/}}
+{{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
+  {{- if .Values.orchestration.enabled -}}
+    {{-
+      printf "grpc://%s"
+        (include "orchestration.serviceNameGRPC" .)
+    -}}
+  {{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************

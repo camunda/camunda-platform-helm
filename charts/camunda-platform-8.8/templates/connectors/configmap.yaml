@@ -38,7 +38,7 @@ data:
       client:
         {{- $baseURLInternal := printf "%s://%s"
           (lower .Values.orchestration.readinessProbe.scheme)
-          (include "orchestration.serviceNameGateway" .)
+          (include "orchestration.serviceName" .)
         }}
         rest-address: {{ printf "%s:%v%s"
           $baseURLInternal
@@ -59,7 +59,7 @@ data:
           password: {{ $user.password | quote }}
         {{- else }}
         auth:
-          token-url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . }}
+          token-url: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . }}
           client-id: {{ include "connectors.authClientId" . | quote }}
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
           audience: {{ include "orchestration.authAudience" . | quote }}

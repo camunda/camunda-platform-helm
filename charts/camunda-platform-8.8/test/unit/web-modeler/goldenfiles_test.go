@@ -55,8 +55,8 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
 				"webModelerPostgresql.enabled":                        "true",
 				"webModelerPostgresql.auth.existingSecret":            "camunda-platform-test-postgresql-web-modeler",
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "foo",
+				"connectors.security.authentication.oidc.existingSecret.name": "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name":       "foo",
 
 				"global.identity.auth.enabled": "true",
 				"identity.enabled":             "true",

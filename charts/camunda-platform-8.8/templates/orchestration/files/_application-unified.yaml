@@ -38,12 +38,18 @@ camunda:
     node-id: ${VALUES_ORCHESTRATION_NODE_ID}
     size: {{ .Values.orchestration.clusterSize | quote }}
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
-    partitions-count: {{ .Values.orchestration.partitionCount | quote }}
+    partition-count: {{ .Values.orchestration.partitionCount | quote }}
 
   api:
     grpc:
       address: 0.0.0.0
       port: {{ .Values.orchestration.service.grpcPort }}
+
+  {{- if .Values.global.opensearch.enabled }}
+  # Database configuration - Separated syntax.
+  database:
+    awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+  {{- end }}
 
   data:
     snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
@@ -73,29 +79,27 @@ camunda:
         index-prefix: {{ .Values.global.opensearch.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
-    {{- end }}
+      {{- end }}
 
-  # Security configuration - Seperated syntax.
+  # Security configuration - Separated syntax.
   security:
     authentication:
     {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+        client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
         groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
         client-id: {{ include "orchestration.authClientId" . | quote }}
         client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
         audiences:
           - {{ include "orchestration.authClientId" . | quote }}
-          - {{ .Values.global.identity.auth.orchestration.audience | quote }}
+          - {{ .Values.orchestration.security.authentication.oidc.audience | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
           - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
-        {{- $redirectURIDefault := printf "http://%s:8080" (include "orchestration.fullname" .) }}
-        {{- /*
-          TODO: Add "camundaPlatform.authIssuerBackendUrl" when "backend-url" config is supported by the Orchestration Identity.
-          For more details: https://github.com/camunda/camunda-platform-helm/issues/3952
-        */}}
-        issuer-uri: {{ (include "camundaPlatform.authIssuerUrl" .) | quote }}
-        redirect-uri: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | default $redirectURIDefault }}/sso-callback"
+        authorization-uri: {{ include "camundaPlatform.authIssuerUrlEndpointAuth" . | quote }}
+        jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+        token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
+        redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
     {{- end }}
       method: {{ .Values.orchestration.security.authentication.method | quote }}
@@ -103,33 +107,17 @@ camunda:
     authorizations:
       enabled: {{ .Values.orchestration.security.authorizations.enabled }}
     initialization:
+      default-roles:
+        {{- .Values.orchestration.security.initialization.defaultRoles | toYaml | nindent 8 }}
       {{- if eq .Values.orchestration.security.authentication.method "basic" }}
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
-      default-roles:
-        {{- .Values.orchestration.security.initialization.defaultRoles | toYaml | nindent 8 }}
-      {{- else if eq .Values.orchestration.security.authentication.method "oidc" }}
-      mapping-rules:
-        - mapping-rule-id: "connectors-client-mapping-rule"
-          claim-name: "client_id"
-          claim-value: "connectors"
-        {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
-        - mapping-rule-id: {{ index $mappingRule "mappingRuleID" | quote }}
-          claim-name: {{ index $mappingRule "claimName" | quote }}
-          claim-value: {{ index $mappingRule "claimValue" | quote }}
-        {{- end }}
-      default-roles.connectors.mappingRules:
-        - "connectors-client-mapping-rule"
-      default-roles.admin.mappingRules:
-        {{- range $mappingRule := .Values.orchestration.security.initialization.mappingRules }}
-        - {{ index $mappingRule "mappingRuleID" | quote }}
-        {{- end }}
       {{- end }}
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
 
-  {{- if .Values.global.identity.auth.enabled }}
+  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
   identity:
     clientId: {{ include "orchestration.authClientId" . | quote }}
     audience: {{ include "orchestration.authAudience" . | quote }}
@@ -138,21 +126,29 @@ camunda:
 {{- if .Values.orchestration.profiles.operate -}}
   {{- "\n" }}
   #
-  # Camunda Operate Configuration - Seperated syntax.
+  # Camunda Operate Configuration - Separated syntax.
   #
   operate:
     persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
     multiTenancy:
       enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
-    {{- if .Values.global.identity.auth.enabled }}
+    {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
     identity:
-      redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/operate"
+      redirectRootUrl: {{ printf "%s/operate" (include "orchestration.RedirectURI" .) | quote }}
     {{- end }}
-
+    {{- if .Values.global.opensearch.enabled }}
+    # OpenSearch
+    opensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+    zeebeOpensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      password: "${VALUES_OPENSEARCH_PASSWORD:}"
+    {{- end }}
     # Zeebe instance
     zeebe:
       # Gateway address
-      gatewayAddress: {{ include "orchestration.serviceNameGatewayGRPC" . | quote }}
+      gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true
@@ -163,22 +159,30 @@ camunda:
 {{- if .Values.orchestration.profiles.tasklist -}}
   {{- "\n" }}
   #
-  # Camunda Tasklist Configuration - Seperated syntax.
+  # Camunda Tasklist Configuration - Separated syntax.
   #
   tasklist:
     multiTenancy:
       enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
 
-    {{- if .Values.global.identity.auth.enabled }}
+    {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
     identity:
-      redirectRootUrl: "{{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ }}/tasklist"
+      redirectRootUrl: {{ printf "%s/tasklist" (include "orchestration.RedirectURI" .) | quote }}
     {{- end }}
-
+    {{- if .Values.global.opensearch.enabled }}
+    # OpenSearch
+    opensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+    zeebeOpensearch:
+      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      password: "${VALUES_OPENSEARCH_PASSWORD:}"
+    {{- end }}
     # Zeebe instance
     zeebe:
       # Gateway address
-      gatewayAddress: {{ include "orchestration.serviceNameGatewayGRPC" . | quote }}
-      restAddress: {{ include "camundaPlatform.zeebeGatewayRESTURL" . | quote }}
+      gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
+      restAddress: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
     {{- if .Values.orchestration.history.retention.enabled }}
     archiver:
       ilmEnabled: true
@@ -189,7 +193,7 @@ camunda:
 {{- if .Values.orchestration.profiles.broker -}}
 {{- "\n" }}
 #
-# Camunda Zeebe Configuration - Seperated syntax.
+# Camunda Zeebe Configuration - Separated syntax.
 #
 zeebe:
   host: 0.0.0.0
@@ -280,12 +284,13 @@ zeebe:
             username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
             password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
           {{- end }}
-          {{- if .Values.orchestration.retention.enabled }}
+            awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+        {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
-          {{- end }}
+        {{- end }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
             rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}

@@ -62,8 +62,8 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "bar",
+				"connectors.security.authentication.oidc.existingSecret.name": "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name":       "bar",
 				"global.ingress.tls.enabled":                          "true",
 				"identity.contextPath":                                "/identity",
 				"identity.enabled":                                    "true",

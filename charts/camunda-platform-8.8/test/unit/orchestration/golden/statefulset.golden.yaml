@@ -23,7 +23,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-broker
-  serviceName: camunda-platform-test-zeebe
+  serviceName: "camunda-platform-test-zeebe"
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
@@ -64,7 +64,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: camunda-platform-test-zeebe
+              value: "camunda-platform-test-zeebe"
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -90,10 +90,10 @@ spec:
             - containerPort: 9600
               name: server
             - containerPort: 26500
-              name: gateway
+              name: grpc
           readinessProbe:
             httpGet:
-              path: /orchestration/actuator/health/readiness
+              path: /actuator/health/readiness
               scheme: HTTP
               port: 9600
             initialDelaySeconds: 30
