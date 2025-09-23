@@ -519,7 +519,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables the identity authentication otherwise basic-auth will be used on all services.",
+                                    "description": "if true, enables authentication on Management Identity .",
                                     "default": false
                                 },
                                 "issuer": {
