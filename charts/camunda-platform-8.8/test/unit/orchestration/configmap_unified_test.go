@@ -183,3 +183,73 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainAuthOIDCClientId",
+			Values: map[string]string{
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.client-id":     "orchestration",
+				"configmapApplication.camunda.security.authentication.oidc.client-secret": "${VALUES_ORCHESTRATION_CLIENT_SECRET:}",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerAndKeycloakEnabled",
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"identityKeycloak.enabled":                               "true",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.auth.issuer":                            "https://issuer.com/realms/camunda",
+				"global.identity.auth.publicIssuerUrl":                   "https://public-issuer-url.com/realms/camunda", // this will be ignored as "issuer" is set.
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect.com/orchestration",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://issuer.com/realms/camunda/protocol/openid-connect/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.security.authentication.oidc.redirect-uri":      "https://redirect.com/orchestration/sso-callback",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainAuthOIDCWithPublicIssuerUrlAndKeycloakEnabled",
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"identityKeycloak.enabled":                               "true",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.auth.publicIssuerUrl":                   "https://public-issuer-url.com/realms/camunda",
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect.com/orchestration",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://public-issuer-url.com/realms/camunda/protocol/openid-connect/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.security.authentication.oidc.redirect-uri":      "https://redirect.com/orchestration/sso-callback",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerAndExternalBackendUrl",
+			Values: map[string]string{
+				"identity.enabled":                                       "false",
+				"identityKeycloak.enabled":                               "false",
+				"global.identity.auth.enabled":                           "false",
+				"global.identity.auth.issuer":                            "https://public-issuer-url.com/realms/camunda",
+				"global.identity.auth.issuerBackendUrl":                  "https://issuer-backend-url.com/realms/camunda",
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect-url.com/orchestration",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://public-issuer-url.com/realms/camunda/protocol/openid-connect/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://issuer-backend-url.com/realms/camunda/protocol/openid-connect/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://issuer-backend-url.com/realms/camunda/protocol/openid-connect/token",
+				"configmapApplication.camunda.security.authentication.oidc.redirect-uri":      "https://redirect-url.com/orchestration/sso-callback",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

@@ -31,10 +31,6 @@ global:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
         existingSecret:
           name: "integration-test-credentials"
-      orchestration:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
-        existingSecret:
-          name: "integration-test-credentials"
 
 identity:
   enabled: true
@@ -112,6 +108,10 @@ orchestration:
     authentication:
       method: oidc
       authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        existingSecret:
+          name: "integration-test-credentials"
 
 console:
   enabled: true

@@ -226,6 +226,13 @@ Keycloak templates.
 {{- end -}}
 
 {{/*
+[camunda-platform] Keycloak auth URL which used externally by the user.
+*/}}
+{{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
+    {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
+{{- end -}}
+
+{{/*
 [camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
 TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
@@ -258,7 +265,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 {{/*
 [camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
 */}}
-{{- define "camundaPlatform.authIssuerBackendUrlTokenEndpoint" -}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
   {{- if .Values.global.identity.auth.tokenUrl -}}
     {{- .Values.global.identity.auth.tokenUrl -}}
   {{- else -}}
@@ -266,11 +273,10 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
   {{- end -}}
 {{- end -}}
 
-
 {{/*
 [camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
 */}}
-{{- define "camundaPlatform.authIssuerBackendUrlCertsEndpoint" -}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
   {{- if .Values.global.identity.auth.jwksUrl -}}
     {{- .Values.global.identity.auth.jwksUrl -}}
   {{- else -}}
