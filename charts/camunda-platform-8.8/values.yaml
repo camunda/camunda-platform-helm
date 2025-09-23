@@ -363,7 +363,7 @@ global:
         secret:
           ## @param global.identity.auth.identity.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
           inlineSecret: ""
-          ## @param global.identity.auth.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          ## @param global.identity.auth.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
           existingSecret: ""
           ## @param global.identity.auth.identity.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
