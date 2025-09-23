@@ -544,10 +544,14 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
-  ## @extra global.exporter configuration for Elasticsearch and Opensearch exporters.
+  ## @extra global.exporter allows disabling inbuilt exporters.
   exporter:
-    ## @param global.exporter.enabled if true, enables Elasticsearch and Opensearch exporters.
-    enabled: false
+    ## @param global.exporter.camunda.enabled if true, enables new Camunda exporter.
+    camunda:
+      enabled: true
+    ## @param global.exporter.zeebe.enabled if true, enables old Elasticsearch and Opensearch exporters.
+    zeebe:
+      enabled: false
 
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:

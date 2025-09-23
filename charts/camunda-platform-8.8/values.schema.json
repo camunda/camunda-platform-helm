@@ -989,10 +989,25 @@
                 "exporter": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
-                            "default": false
+                        "camunda": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the new Camunda exporter.",
+                                    "default": true
+                                }
+                            }
+                        },
+                        "zeebe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
+                                    "default": false
+                                }
+                            }
                         }
                     }
                 },
