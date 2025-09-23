@@ -559,7 +559,7 @@
                                 },
                                 "type": {
                                     "type": "string",
-                                    "description": "defines the type of authentication which should be used. Defaults to Keycloak",
+                                    "description": "defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.",
                                     "default": "KEYCLOAK"
                                 },
                                 "publicIssuerUrl": {

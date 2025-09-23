@@ -260,7 +260,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 NOTE: This is for legacy Identity config, all new types will be supported via OIDC.
 */}}
 {{- define "camundaPlatform.authIssuerType" -}}
-  {{- .Values.global.identity.auth.type -}}
+  {{- upper .Values.global.identity.auth.type -}}
 {{- end -}}
 
 {{/*

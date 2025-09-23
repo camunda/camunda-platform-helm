@@ -323,7 +323,7 @@ global:
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
       jwksUrl: ""
-      ## @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
+      ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
