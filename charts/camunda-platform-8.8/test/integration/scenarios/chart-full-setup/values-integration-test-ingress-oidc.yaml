@@ -20,6 +20,7 @@ global:
       issuerBackendUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
       tokenUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/oauth2/v2.0/token
       jwksUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/discovery/v2.0/keys
+      authUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/oauth2/v2.0/authorize
       publicIssuerUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
       type: "MICROSOFT"
       orchestration:
@@ -33,7 +34,8 @@ global:
         clientId: $ENTRA_CHILD_APP_CLIENT_ID
         audience: $ENTRA_CHILD_APP_CLIENT_ID
         # this existngSecret must be a string literal
-        existingSecret: $ENTRA_CHILD_APP_CLIENT_SECRET
+        secret: 
+          inlineSecret: $ENTRA_CHILD_APP_CLIENT_SECRET
         initialClaimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
       optimize:
@@ -96,13 +98,13 @@ connectors:
   security:
     authentication:
       oidc:
-        clientId: <clientId>
-        audience: <clientId>
-        clientApiAudience: <clientId>
+        clientId: $ENTRA_CHILD_APP_CLIENT_ID
+        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        tokenScope: <clientId>/.default
+        tokenScope: $ENTRA_CHILD_APP_CLIENT_ID/.default
   env:
     - name: CAMUNDA_CLIENT_AUTH_SCOPE
       value: $ENTRA_CHILD_APP_CLIENT_ID/.default
