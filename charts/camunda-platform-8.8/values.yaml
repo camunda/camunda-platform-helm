@@ -104,6 +104,11 @@ global:
     ## @skip global.security.allowInsecureImages
     allowInsecureImages: true
 
+    ## @extra global.security.authentication
+    authentication:
+      ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
+      method: "basic"
+
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
 
@@ -170,7 +175,7 @@ global:
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
   ## @param global.elasticsearch.auth.password (DEPRECATED - use global.elasticsearch.auth.secret instead) the password for external elasticsearch
@@ -182,14 +187,6 @@ global:
     tls:
       enabled: false
       existingSecret: ""
-      ## @extra global.elasticsearch.tls.secret configuration to provide the TLS secret.
-      secret:
-        ## @param global.elasticsearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
-        inlineSecret: ""
-        ## @param global.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
-        existingSecret: ""
-        ## @param global.elasticsearch.tls.secret.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: ""
     auth:
       username: ""
       password: ""
@@ -223,7 +220,7 @@ global:
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
   ## @param global.opensearch.auth.username the username for external opensearch
   ## @param global.opensearch.auth.password (DEPRECATED - use global.opensearch.auth.secret instead) the password for external opensearch
@@ -236,14 +233,6 @@ global:
     tls:
       enabled: false
       existingSecret: ""
-      ## @extra global.opensearch.tls.secret configuration to provide the TLS secret.
-      secret:
-        ## @param global.opensearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
-        inlineSecret: ""
-        ## @param global.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
-        existingSecret: ""
-        ## @param global.opensearch.tls.secret.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: ""
     auth:
       username: ""
       password: ""
@@ -318,7 +307,7 @@ global:
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
       jwksUrl: ""
-      ## @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
+      ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
@@ -1395,6 +1384,13 @@ webModeler:
   ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
   contextPath: ""
 
+  security:
+    ## Authentication configuration
+    ## @extra webModeler.security.authentication
+    authentication:
+      ## @param webModeler.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
+
   # WebModeler.
   ######                         #    ######  ###
   #     # ######  ####  #####   # #   #     #  #
@@ -2384,13 +2380,28 @@ orchestration:
     ## Authentication configuration
     ## @extra orchestration.security.authentication
     authentication:
-      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
-      method: basic
+      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
       ## @param orchestration.security.authentication.authenticationRefreshInterval defines the session's authentication refresh time, defaulted to PT30S.
       authenticationRefreshInterval: "PT30S"
+
+      # @extra orchestration.security.authentication.oidc
       oidc:
+        ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
+        issuer: ""
+        ## @param orchestration.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`.
+        issuerBackendUrl: ""
+        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.
+        tokenUrl: ""
+        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
+        jwksUrl: ""
+        ## @param orchestration.security.authentication.oidc.type can be used to override `global.identity.auth.type`.
+        type: ""
+        ## @param orchestration.security.authentication.oidc.publicIssuerUrl can be used to override `global.identity.auth.publicIssuerUrl`.
+        publicIssuerUrl: ""
+      
         ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.clientIdClaim client ID claim.

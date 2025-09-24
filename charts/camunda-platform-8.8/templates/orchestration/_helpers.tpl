@@ -154,8 +154,66 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 
 
 {{/*
+********************************************************************************
+Authentication.
+********************************************************************************
+*/}}
+
+{{/*
 [orchestration] Define variables related to authentication.
 */}}
+
+{{- define "orchestration.authMethod" -}}
+    {{- .Values.orchestration.security.authentication.method | default (
+        .Values.global.security.authentication.method | default "none"
+    ) -}}
+{{- end -}}
+
+{{- define "orchestration.authEnabled" -}}
+    {{- if has (include "orchestration.authMethod" .) (list "oidc" "basic") -}}
+        true
+    {{- else -}}
+        false
+    {{- end -}}
+{{- end -}}
+
+{{/*
+TODO: This is only used for the migration job, it should be removed once the migration job is no longer needed.
+*/}}
+{{- define "orchestration.authIssuerBackendUrl" -}}
+    {{- .Values.orchestration.security.authentication.oidc.issuerBackendUrl | default (
+        include "camundaPlatform.authIssuerBackendUrl" .
+    ) -}}
+{{- end -}}
+
+{{- define "orchestration.authIssuerUrlEndpointAuth" -}}
+  {{- if .Values.orchestration.security.authentication.oidc.issuer -}}
+    {{- .Values.orchestration.security.authentication.oidc.issuer -}}
+  {{- else if .Values.orchestration.security.authentication.oidc.publicIssuerUrl -}}
+    {{- tpl .Values.orchestration.security.authentication.oidc.publicIssuerUrl . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerUrlEndpointAuth" . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "orchestration.authIssuerBackendUrlEndpointCerts" -}}
+    {{- .Values.orchestration.security.authentication.oidc.jwksUrl | default (
+        include "camundaPlatform.authIssuerBackendUrlEndpointCerts" .
+    ) -}}
+{{- end -}}
+
+{{- define "orchestration.authIssuerBackendUrlEndpointToken" -}}
+    {{- .Values.orchestration.security.authentication.oidc.tokenUrl | default (
+        include "camundaPlatform.authIssuerBackendUrlEndpointToken" .
+    ) -}}
+{{- end -}}
+
+{{- define "orchestration.authIssuerType" -}}
+    {{- .Values.orchestration.security.authentication.oidc.type | default (
+        include "camundaPlatform.authIssuerType" .
+    ) -}}
+{{- end -}}
+
 {{- define "orchestration.authClientId" -}}
     {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}
@@ -179,7 +237,10 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 {{- end -}}
 
 {{- define "orchestration.enabledProfilesWithIdentity" -}}
-    {{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
+    {{- if or
+        (eq (include "orchestration.authMethod" .) "oidc")
+        (eq (include "orchestration.authMethod" .) "basic")
+    }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}
         {{- include "orchestration.enabledProfiles" . | replace "identity" "auth" -}}

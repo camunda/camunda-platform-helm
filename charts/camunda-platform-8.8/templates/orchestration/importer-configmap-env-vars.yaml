@@ -8,7 +8,7 @@ metadata:
   annotations:
     {{- toYaml  .Values.global.annotations | nindent 4 }}
 data:
-{{- if or (eq .Values.orchestration.security.authentication.method "oidc") (eq .Values.orchestration.security.authentication.method "basic") }}
+{{- if eq (include "orchestration.authEnabled" .) "true" }}
   SPRING_PROFILES_ACTIVE: "tasklist,operate,consolidated-auth"
 {{- else }}
   SPRING_PROFILES_ACTIVE: "operate,tasklist,auth"

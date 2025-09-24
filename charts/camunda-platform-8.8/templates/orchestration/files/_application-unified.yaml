@@ -84,7 +84,7 @@ camunda:
   # Security configuration - Separated syntax.
   security:
     authentication:
-    {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+    {{- if eq (include "orchestration.authMethod" .) "oidc" }}
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
         client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
@@ -96,20 +96,20 @@ camunda:
           - {{ .Values.orchestration.security.authentication.oidc.audience | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
           - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
-        authorization-uri: {{ include "camundaPlatform.authIssuerUrlEndpointAuth" . | quote }}
-        jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
-        token-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointToken" . | quote }}
+        authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
+        jwk-set-uri: {{ include "orchestration.authIssuerBackendUrlEndpointCerts" . | quote }}
+        token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
         redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
     {{- end }}
-      method: {{ .Values.orchestration.security.authentication.method | quote }}
+      method: {{ include "orchestration.authMethod" . | quote }}
       unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
     authorizations:
       enabled: {{ .Values.orchestration.security.authorizations.enabled }}
     initialization:
       default-roles:
         {{- .Values.orchestration.security.initialization.defaultRoles | toYaml | nindent 8 }}
-      {{- if eq .Values.orchestration.security.authentication.method "basic" }}
+      {{- if eq (include "orchestration.authMethod" .) "basic" }}
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
       {{- end }}
@@ -117,7 +117,7 @@ camunda:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
 
-  {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+  {{- if eq (include "orchestration.authMethod" .) "oidc" }}
   identity:
     clientId: {{ include "orchestration.authClientId" . | quote }}
     audience: {{ include "orchestration.authAudience" . | quote }}
@@ -132,7 +132,7 @@ camunda:
     persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
     multiTenancy:
       enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
-    {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+    {{- if eq (include "orchestration.authMethod" .) "oidc" }}
     identity:
       redirectRootUrl: {{ printf "%s/operate" (include "orchestration.RedirectURI" .) | quote }}
     {{- end }}
@@ -165,7 +165,7 @@ camunda:
     multiTenancy:
       enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
 
-    {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+    {{- if eq (include "orchestration.authMethod" .) "oidc" }}
     identity:
       redirectRootUrl: {{ printf "%s/tasklist" (include "orchestration.RedirectURI" .) | quote }}
     {{- end }}
