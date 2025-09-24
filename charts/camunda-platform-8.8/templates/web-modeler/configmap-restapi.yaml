@@ -12,14 +12,14 @@ data:
   {{- else }}
   application.yaml: |
     camunda:
-      {{- if .Values.global.identity.auth.enabled }}
+      {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
       identity:
         {{- if .Values.identity.enabled }}
         base-url: {{ include "camundaPlatform.identityURL" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
-        type: {{ include "camundaPlatform.authType" . | quote }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
       {{- end }}
 
       modeler:
@@ -27,7 +27,7 @@ data:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
           port: {{ .Values.webModeler.websockets.service.port }}
 
-        {{- if .Values.global.identity.auth.enabled }}
+        {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
         security:
           jwt:
             issuer:
@@ -52,7 +52,7 @@ data:
           - id: "default-cluster"
             name: {{ tpl .Values.global.zeebeClusterName . | quote }}
             version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
-            authentication: {{ include "webModeler.authenticationType" . | quote }}
+            authentication: {{ include "webModeler.authConfigValue" . | quote }}
             authorizations:
               enabled: {{ .Values.orchestration.security.authorizations.enabled }}
             url:
@@ -81,7 +81,7 @@ data:
       security:
         oauth2:
           resourceserver:
-            {{- if .Values.global.identity.auth.enabled }}
+            {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
             jwt:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
               jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}

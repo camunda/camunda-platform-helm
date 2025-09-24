@@ -8,13 +8,13 @@ data:
     camunda:
       migration:
         identity:
-          {{- if eq .Values.global.identity.auth.type "KEYCLOAK" }}
+          {{- if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" }}
           mode: KEYCLOAK
           {{- else }}
           mode: OIDC
           {{- end }}
           resource-authorizations-enabled: {{ .Values.orchestration.migration.identity.resourceAuthorizationsEnabled }}
-          {{- if not ( eq .Values.global.identity.auth.type "KEYCLOAK" ) }}
+          {{- if not ( eq (include "orchestration.authIssuerType" .) "KEYCLOAK" ) }}
           oidc:
             audiences:
               identity: {{ include "identity.authAudience" . | quote }}
@@ -34,12 +34,12 @@ data:
           management-identity:
             audience: {{ include "identity.authAudience" . | quote }}
             base-url: {{ tpl .Values.global.identity.auth.identity.redirectUrl $ | quote }}
-          {{- if eq .Values.global.identity.auth.type "KEYCLOAK" }}
+          {{- if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" }}
             client-id: migration
           {{- else }}
             client-id: {{ include "orchestration.authClientId" . | quote }}
           {{- end }}
             client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
-            issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
-            issuer-type: {{ .Values.global.identity.auth.type }}
+            issuer-backend-url: {{ include "orchestration.authIssuerBackendUrl" . | quote }}
+            issuer-type: {{ include "orchestration.authIssuerType" . }}
 {{- end }}

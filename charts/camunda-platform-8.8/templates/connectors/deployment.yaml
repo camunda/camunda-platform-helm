@@ -44,7 +44,7 @@ spec:
                 "config" .Values.global.license
                 "plaintextKey" "key"
             ) | nindent 12 }}
-            {{- if eq .Values.orchestration.security.authentication.method "oidc" }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
                 "config" .Values.connectors.security.authentication.oidc
