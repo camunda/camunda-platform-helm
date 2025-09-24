@@ -26,13 +26,13 @@ data:
         {{- if .Values.orchestration.index.prefix }}
         indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
         {{- end }}
-        {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
-        username: {{ .Values.global.elasticsearch.auth.username }}
-        password: ${VALUES_ELASTICSEARCH_PASSWORD:}
         {{- if .Values.orchestration.index.replicas }}
         index:
           numberOfReplicas: {{ .Values.orchestration.index.replicas }}
         {{- end }}
+        {{- if and .Values.global.elasticsearch.auth.username .Values.global.elasticsearch.auth.password }}
+        username: {{ .Values.global.elasticsearch.auth.username }}
+        password: ${VALUES_ELASTICSEARCH_PASSWORD:}
         {{- end }}
         {{- if .Values.orchestration.history.retention.enabled }}
         retention:
@@ -63,6 +63,10 @@ data:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         {{- if .Values.orchestration.index.prefix }}
         indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+        {{- end }}
+        {{- if .Values.orchestration.index.replicas }}
+        index:
+          numberOfReplicas: {{ .Values.orchestration.index.replicas }}
         {{- end }}
         {{- if and .Values.global.opensearch.auth.username .Values.global.opensearch.auth.password }}
         username: {{ .Values.global.opensearch.auth.username }}
