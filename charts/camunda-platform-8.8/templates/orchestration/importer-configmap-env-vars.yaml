@@ -32,7 +32,7 @@ data:
   CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
   CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
   CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
-  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port }}
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote }}
 {{- if .Values.global.elasticsearch.external }}
   CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_USERNAME: {{ .Values.global.elasticsearch.auth.username | quote }}
 {{- end }}
@@ -42,7 +42,7 @@ data:
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
-  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port }}
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote}}
 {{- if .Values.global.opensearch.external }}
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
 {{- end }}
@@ -58,7 +58,7 @@ data:
   CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
   CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
   CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
-  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port }}
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote}}
 {{- if .Values.global.elasticsearch.external }}
   CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_USERNAME: {{ .Values.global.elasticsearch.auth.username | quote }}
 {{- end }}
@@ -68,7 +68,7 @@ data:
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
-  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port }}
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote }}
 {{- if .Values.global.opensearch.external }}
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
 {{- end }}
