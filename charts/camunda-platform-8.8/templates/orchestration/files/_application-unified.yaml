@@ -232,12 +232,12 @@ zeebe:
     exporters:
     {{- if and
       (or
-        (and .Values.global.elasticsearch.enabled .Values.global.exporter.zeebe.enabled)
+        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
         (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
         (and .Values.global.elasticsearch.enabled .Values.orchestration.migration.data.enabled)
       )
       (or
-        .Values.global.exporter.zeebe.enabled
+        .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
       )
     }}
@@ -258,7 +258,7 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
-    {{- else if or (and .Values.global.opensearch.enabled .Values.global.exporter.zeebe.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) (and .Values.global.opensearch.enabled .Values.orchestration.migration.data.enabled) }}
+    {{- else if or (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) (and .Values.global.opensearch.enabled .Values.orchestration.migration.data.enabled) }}
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
@@ -279,7 +279,7 @@ zeebe:
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
       {{- end }}
-    {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.global.exporter.camunda.enabled }}
+    {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled }}
       camundaexporter:
         className: "io.camunda.exporter.CamundaExporter"
         args:
