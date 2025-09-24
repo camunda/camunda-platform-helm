@@ -232,7 +232,6 @@ tasks:
         fi
 
         NEW_WEB_URIS=(
-          "https://{{ .TEST_INGRESS_HOST }}"
           "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback"
           "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback"
           "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback"
@@ -272,7 +271,9 @@ tasks:
             \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
           }" | cat
 
-
+  entra.template-yaml:
+    cmds:
+      - |
         export ENTRA_CHILD_APP_CLIENT_ID={{ .ENTRA_PARENT_APP_CLIENT_ID }}
         export ENTRA_CHILD_APP_CLIENT_SECRET={{ .ENTRA_PARENT_APP_CLIENT_SECRET }}
         export ENTRA_CHILD_APP_DIRECTORY_ID={{ .ENTRA_PARENT_APP_DIRECTORY_ID }}

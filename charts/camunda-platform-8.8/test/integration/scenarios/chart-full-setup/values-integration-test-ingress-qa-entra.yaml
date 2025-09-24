@@ -21,6 +21,7 @@ global:
       issuer: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
       issuerBackendUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
       tokenUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/oauth2/v2.0/token
+      authUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/oauth2/v2.0/authorize
       jwksUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/discovery/v2.0/keys
       publicIssuerUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
       type: "MICROSOFT"
@@ -30,21 +31,22 @@ global:
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.orchestration.contextPath }}"
       identity:
         clientId: $ENTRA_CHILD_APP_CLIENT_ID
         audience: $ENTRA_CHILD_APP_CLIENT_ID
         # this existngSecret must be a string literal
-        existingSecret: $ENTRA_CHILD_APP_CLIENT_SECRET
-        initialClaimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
+        secret: 
+          inlineSecret: $ENTRA_CHILD_APP_CLIENT_SECRET
+        initialClaimValue: $INITIAL_CLAIM_VALUE
+        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_CHILD_APP_CLIENT_ID
         audience: $ENTRA_CHILD_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.optimize.contextPath }}"
       connectors:
         clientId: $ENTRA_CHILD_APP_CLIENT_ID
         audience: $ENTRA_CHILD_APP_CLIENT_ID
@@ -58,7 +60,7 @@ global:
         audience: $ENTRA_CHILD_APP_CLIENT_ID
         clientApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
         publicApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.webModeler.contextPath }}"
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
         clientId: $ENTRA_CHILD_APP_CLIENT_ID
@@ -67,7 +69,7 @@ global:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_CHILD_APP_CLIENT_ID/.default
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
 
 orchestration:
   image:
@@ -82,35 +84,10 @@ orchestration:
     authorizations:
       enabled: true
     initialization:
-      mappingRules:
-        - mappingRuleID: demo-user-mapping-rule
-          claimName: oid
-          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
-  env:
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "oid"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: d70412f6-5a6e-4271-8e45-fa497056ac1e
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "venom"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
-      value: "connectors"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
-      value: "connectors-client-mapping-rule"
+      defaultRoles:
+        admin:
+          users:
+            - $INITIAL_CLAIM_VALUE 
 
 identityKeycloak:
   enabled: false

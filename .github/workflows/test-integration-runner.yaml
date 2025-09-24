@@ -172,6 +172,11 @@ on:
         default: false
         type: boolean
         required: false
+      initialClaimValue:
+        description: This is only used for testing Entra. This is here so we can do exploratory testing with Entra.
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -218,6 +223,7 @@ env:
   ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_CHILD_APP_CLIENT_SECRET }}
   ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_CHILD_APP_DIRECTORY_ID }}
   ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+  INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
   # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
@@ -246,6 +252,7 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: |
+          echo "::add-mask::${INITIAL_CLAIM_VALUE}"
           echo "Workflow Inputs:"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
@@ -419,7 +426,7 @@ jobs:
           fi
 
       - name: Helm - Install - Configure Helm with Entra Values
-        if: inputs.auth == 'oidc'
+        if: inputs.auth == 'oidc' && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
