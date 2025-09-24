@@ -1,0 +1,130 @@
+name: "Test - Chart Version - Upgrade Minor"
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/chart-validate-template.yaml"
+      - ".github/workflows/test-unit-template.yaml"
+      - ".github/workflows/test-integration-template.yaml"
+      - ".github/workflows/test-chart-version-template.yaml"
+      - ".github/workflows/test-chart-version.yaml"
+      - ".github/workflows/test-chart-version-upgrade-minor.yaml"
+      - ".github/config/external-secret/**"
+      - ".tool-versions"
+      - "charts/camunda-platform-8*/**"
+  push:
+    branches:
+      - helm-959-ci-upgrade-minor
+  workflow_dispatch: 
+    inputs:
+      manual-trigger:
+        description: "Manual trigger"
+        required: false
+        default: "none"
+        type: choice
+        options:
+          - none
+          - "all"
+          - "8.4"
+          - "8.5"
+          - "8.6"
+          - "8.7"
+          - "8.8"
+      run-all-e2e-tests:
+        description: "Run all E2E tests (playwright)"
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: The deployment cloud platform
+        default: "gke"
+        required: false
+        type: choice
+        options:
+          - gke
+          - eks
+          - rosa
+          - gke,eks
+      flows:
+        description: The flows to run
+        default: "install"
+        required: false
+        type: choice
+        options:
+          - install
+          - upgrade
+          - install,upgrade
+      e2e-enabled:
+        description: |
+          Whether to run the end-to-end tests (playwright).
+          Note: The full test suite is changing often. This might not work. We need to change the ways of working between the application teams, distro and QA.
+        required: false
+        default: true
+        type: boolean
+      deployment-ttl:
+        description: |
+          The deployment time-to-live, after which it will be automatically deleted.
+          Examples: "30m", "1h", "2h", "1d".
+        required: false
+        default: 1h
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+jobs:
+  init:
+    name: Generate chart matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Generate chart versions
+        id: generate-chart-versions
+        uses: ./.github/actions/generate-chart-matrix
+        with:
+          manual-trigger: ${{ github.event.inputs.manual-trigger }}
+
+  matrix-version-only:
+    # Generates a chart matrix of just the versions changed
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Generate versions from chart-matrix
+    runs-on: ubuntu-latest
+    needs: [init]
+    outputs:
+      matrix: ${{ steps.generate-chart-versions-only.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Generate chart versions
+        id: generate-chart-versions-only
+        run: |
+          printf matrix="$(echo '${{ needs.init.outputs.matrix }}' | jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
+
+  integration-tests:
+    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
+    needs: [init, matrix-version-only]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/test-chart-version-template.yaml
+    secrets: inherit
+    with:
+      pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
+      camunda-version: ${{ matrix.version }}
+      case: ${{ matrix.case }}
+      scenario: ${{ matrix.scenario }}
+      shortname: ${{ matrix.shortname }}
+      auth: ${{ matrix.auth }}
+      platforms: ${{ inputs.platforms || 'gke' }}
+      exclude: ${{ matrix.exclude }}
+      e2e-enabled: ${{ inputs.e2e-enabled || true }}
+      run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }}
+      flows: 'upgrade'
+      deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
