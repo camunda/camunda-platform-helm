@@ -43,6 +43,7 @@ data:
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote}}
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_AWSENABLED: "{{ .Values.global.opensearch.aws.enabled }}"
 {{- if .Values.global.opensearch.external }}
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
 {{- end }}
@@ -69,6 +70,7 @@ data:
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote }}
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_AWSENABLED: "{{ .Values.global.opensearch.aws.enabled }}"
 {{- if .Values.global.opensearch.external }}
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
 {{- end }}

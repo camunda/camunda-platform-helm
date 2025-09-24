@@ -55,6 +55,7 @@ data:
       database:
         clusterName: {{ .Values.global.opensearch.clusterName }}
         type: opensearch
+        awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         {{- if .Values.orchestration.index.prefix }}
         indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
