@@ -272,17 +272,19 @@ tasks:
             \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
           }" | cat
 
-        sed -i 's/<clientId>/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        sed -i 's/<clientSecret>/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        sed -i 's/<directoryId>/{{ .ENTRA_CHILD_APP_DIRECTORY_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        # sed -i 's/<objectId>/{{ .ENTRA_CHILD_APP_OBJECT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
 
-        echo "Setting up Entra for QA"
-        sed -i 's/<clientId>/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
-        sed -i 's/<clientSecret>/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
-        sed -i 's/<directoryId>/{{ .ENTRA_CHILD_APP_DIRECTORY_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
-        # sed -i 's/<objectId>/{{ .ENTRA_CHILD_APP_OBJECT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
+        export ENTRA_CHILD_APP_CLIENT_ID={{ .ENTRA_PARENT_APP_CLIENT_ID }}
+        export ENTRA_CHILD_APP_CLIENT_SECRET={{ .ENTRA_PARENT_APP_CLIENT_SECRET }}
+        export ENTRA_CHILD_APP_DIRECTORY_ID={{ .ENTRA_PARENT_APP_DIRECTORY_ID }}
+        export ENTRA_CHILD_APP_OBJECT_ID={{ .ENTRA_CHILD_APP_OBJECT_ID }}
+
+        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml.tmp
+        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml.tmp
+
+        mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
+
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
         cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
 
   upgrade.pre:
