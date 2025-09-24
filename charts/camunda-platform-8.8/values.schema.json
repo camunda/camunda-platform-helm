@@ -946,16 +946,6 @@
                         }
                     }
                 },
-                "exporter": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
-                            "default": false
-                        }
-                    }
-                },
                 "extraManifests": {
                     "type": "array",
                     "description": "Array of extra objects to deploy with the release.",
@@ -6186,6 +6176,31 @@
                     "type": "string",
                     "description": "can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass",
                     "default": ""
+                },
+                "exporters": {
+                    "type": "object",
+                    "properties": {
+                        "camunda": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the new Camunda exporter.",
+                                    "default": true
+                                }
+                            }
+                        },
+                        "zeebe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
+                                    "default": false
+                                }
+                            }
+                        }
+                    }
                 },
                 "index": {
                     "type": "object",
