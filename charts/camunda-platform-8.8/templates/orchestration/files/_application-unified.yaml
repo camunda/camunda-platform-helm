@@ -67,7 +67,7 @@ camunda:
         cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
-        index-prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+        index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
@@ -77,7 +77,7 @@ camunda:
         cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
         username: {{ .Values.global.opensearch.auth.username | quote }}
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
-        index-prefix: {{ .Values.global.opensearch.prefix | quote }}
+        index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}

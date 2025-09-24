@@ -27,10 +27,58 @@ data:
   CAMUNDA_OPERATE_WEBAPP_ENABLED: "false"
   CAMUNDA_OPERATE_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGRPC" . }}"
   CAMUNDA_OPERATE_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameHeadlessGRPC" . }}"
+{{- if .Values.global.elasticsearch.enabled }}
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote }}
+{{- if .Values.global.elasticsearch.external }}
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_USERNAME: {{ .Values.global.elasticsearch.auth.username | quote }}
+{{- end }}
+{{- end }}
+{{- if .Values.global.opensearch.enabled }}
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote}}
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_AWSENABLED: "{{ .Values.global.opensearch.aws.enabled }}"
+{{- if .Values.global.opensearch.external }}
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
+{{- end }}
+{{- end }}
 
   # Tasklist.
   CAMUNDA_TASKLIST_IMPORTER_ENABLED: "true"
   CAMUNDA_TASKLIST_WEBAPP_ENABLED: "false"
   CAMUNDA_TASKLIST_ZEEBE_GATEWAY_ADDRESS: "{{ include "orchestration.serviceNameGRPC" . }}"
   CAMUNDA_TASKLIST_ZEEBE_BROKER_CONTACT_POINT: "{{ include "orchestration.serviceNameHeadlessGRPC" . }}"
+{{- if .Values.global.elasticsearch.enabled }}
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote}}
+{{- if .Values.global.elasticsearch.external }}
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_USERNAME: {{ .Values.global.elasticsearch.auth.username | quote }}
+{{- end }}
+{{- end }}
+{{- if .Values.global.opensearch.enabled }}
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_CLUSTERNAME: "{{ .Values.global.elasticsearch.clusterName }}"
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX: "{{ .Values.global.elasticsearch.prefix }}"
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_HOST: "{{ include "camundaPlatform.elasticsearchHost" . }}"
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote }}
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_AWSENABLED: "{{ .Values.global.opensearch.aws.enabled }}"
+{{- if .Values.global.opensearch.external }}
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
+{{- end }}
+
+# Index replicas
+{{- if .Values.orchestration.index.replicas }}
+  CAMUNDA_DATABASE_INDEX_NUMBER_OF_REPLICAS: {{ .Values.orchestration.index.replicas }}
+{{- end }}
+
+{{- end }}
 {{- end }}

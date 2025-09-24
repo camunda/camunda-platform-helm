@@ -80,7 +80,7 @@ data:
             cluster-name: "elasticsearch"
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
-            index-prefix: "zeebe-record"
+            index-prefix: ""
             history:
               policy-name: "camunda-history-retention-policy"
     
