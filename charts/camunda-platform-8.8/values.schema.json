@@ -244,28 +244,8 @@
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "(DEPRECATED - use global.elasticsearch.tls.secret instead) provide an already existing tls secret for connecting to external elasticsearch",
+                                    "description": "provide an already existing tls secret for connecting to external elasticsearch",
                                     "default": ""
-                                },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "inlineSecret": {
-                                            "type": "string",
-                                            "description": "can be used to provide the TLS certificate as a plain-text value for non-production usage.",
-                                            "default": ""
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS certificate.",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "defines the key within the existing secret object.",
-                                            "default": ""
-                                        }
-                                    }
                                 }
                             }
                         },
@@ -379,28 +359,8 @@
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "(DEPRECATED - use global.opensearch.tls.secret instead) provide an already existing tls secret for connecting to external opensearch",
+                                    "description": "provide an already existing tls secret for connecting to external opensearch",
                                     "default": ""
-                                },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "inlineSecret": {
-                                            "type": "string",
-                                            "description": "can be used to provide the TLS certificate as a plain-text value for non-production usage.",
-                                            "default": ""
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS certificate.",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "defines the key within the existing secret object.",
-                                            "default": ""
-                                        }
-                                    }
                                 }
                             }
                         },
