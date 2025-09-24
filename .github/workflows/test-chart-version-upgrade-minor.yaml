@@ -109,7 +109,7 @@ jobs:
 
   integration-tests:
     name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
-    needs: [init, matrix-version-only]
+    needs: [init]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -128,3 +128,4 @@ jobs:
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }}
       flows: 'upgrade'
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
+      camunda-helm-upgrade-version: ${{ matrix.previousChartVersion }}

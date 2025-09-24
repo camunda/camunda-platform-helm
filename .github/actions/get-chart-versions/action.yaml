@@ -44,13 +44,13 @@ runs:
       run: |
         chart_versions_file="charts/chart-versions.yaml"
         cat << EOF | sed 's/^\s\+//g' >> $GITHUB_OUTPUT
-          all=$(yq '.versions | to_entries | map(.value) | flatten | join(" ")' ${chart_versions_file})
-          active=$(yq '.versions.alpha + .versions.supportStandard | join(" ")' ${chart_versions_file})
-          alpha=$(yq '.versions.alpha | join(" ")' ${chart_versions_file})
-          support-standard=$(yq '.versions.supportStandard | join(" ")' ${chart_versions_file})
-          support-standard-newest=$(yq '.versions.supportStandard.[0]' ${chart_versions_file})
-          support-standard-oldest=$(yq '.versions.supportStandard.[-1]' ${chart_versions_file})
-          support-extended=$(yq '.versions.supportExtended | join(" ")' ${chart_versions_file})
-          end-of-life=$(yq '.versions.endOfLife | join(" ")' ${chart_versions_file})
+          all=$(yq '.camundaVersions | to_entries | map(.value) | flatten | join(" ")' ${chart_versions_file})
+          active=$(yq '.camundaVersions.alpha + .camundaVersions.supportStandard | join(" ")' ${chart_versions_file})
+          alpha=$(yq '.camundaVersions.alpha | join(" ")' ${chart_versions_file})
+          support-standard=$(yq '.camundaVersions.supportStandard | join(" ")' ${chart_versions_file})
+          support-standard-newest=$(yq '.camundaVersions.supportStandard.[0]' ${chart_versions_file})
+          support-standard-oldest=$(yq '.camundaVersions.supportStandard.[-1]' ${chart_versions_file})
+          support-extended=$(yq '.camundaVersions.supportExtended | join(" ")' ${chart_versions_file})
+          end-of-life=$(yq '.camundaVersions.endOfLife | join(" ")' ${chart_versions_file})
         EOF
         echo "All versions outputs set successfully."

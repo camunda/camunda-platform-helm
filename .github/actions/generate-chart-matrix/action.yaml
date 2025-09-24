@@ -75,6 +75,9 @@ runs:
           local chart_dir="$2"
           echo "⭐ Generating matrix for $camunda_version and chart $chart_dir"
           if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
+            camunda_version_previous="$(echo "$camunda_version" | awk -F. '{printf "%d.%d", $1, $2-1}')"
+            chart_version_previous="$(yq '.version' charts/camunda-platform-${camunda_version_previous}/Chart.yaml)"
+
             readarray prScenarios < <(yq e -o=j -I=0 '.integration.case.pr.scenario.[]' $chart_dir/test/ci-test-config.yaml)
             for prScenario in "${prScenarios[@]}"; do
               enabled=$(echo "$prScenario" | yq e '.enabled' -)
@@ -82,6 +85,7 @@ runs:
                 continue
               fi
               echo "  - version: ${camunda_version}" >> matrix_versions.txt
+              echo "    previousChartVersion: $(echo "$chart_version_previous")" >> matrix_versions.txt
               echo "    case: pr" >> matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
               echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
