@@ -22,6 +22,7 @@ spec:
         {{- include "orchestration.labelsImporter" . | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
+        checksum/env-vars: {{ include (print $.Template.BasePath "/orchestration/importer-configmap-env-vars.yaml") . | sha256sum }}
     spec:
       imagePullSecrets:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
@@ -52,6 +53,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: VALUES_ORCHESTRATION_NODE_ID
+              value: "-1"
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_LICENSE_KEY"
                 "config" .Values.global.license

@@ -29,7 +29,7 @@ data:
             replication-factor: {{ .Values.orchestration.replicationFactor }}
             initial-contact-points:
             {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-              - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.serviceNameHeadless" $ }}:{{ $.Values.orchestration.service.internalPort }}
+              - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
             {{- end }}
           management-identity:
             audience: {{ include "identity.authAudience" . | quote }}

@@ -55,7 +55,7 @@ data:
       cluster:
         # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
         # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
-        node-id: ${VALUES_ORCHESTRATION_NODE_ID}
+        node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
         size: "3"
         replication-factor: "3"
         partition-count: "3"
