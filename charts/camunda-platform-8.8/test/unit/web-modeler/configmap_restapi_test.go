@@ -24,8 +24,8 @@ type configmapRestAPITemplateTest struct {
 }
 
 var requiredValues = map[string]string{
-	"webModeler.enabled":                                     "true",
-	"webModeler.restapi.mail.fromAddress":                    "example@example.com",
+	"webModeler.enabled":                                             "true",
+	"webModeler.restapi.mail.fromAddress":                            "example@example.com",
 	"connectors.security.authentication.oidc.existingSecret.name":    "foo",
 	"orchestration.security.authentication.oidc.existingSecret.name": "foo",
 }
@@ -313,9 +313,24 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 		authMethod             string
 		expectedAuthentication string
 	}{
-		{"OIDC Authentication", "true", "oidc", "BEARER_TOKEN"},
-		{"Basic Authentication", "true", "basic", "BASIC"},
-		{"No Authentication", "false", "basic", "NONE"},
+		{
+			name:                   "OIDC Authentication",
+			authEnabled:            "true",
+			authMethod:             "oidc",
+			expectedAuthentication: "BEARER_TOKEN",
+		},
+		{
+			name:                   "Basic Authentication",
+			authEnabled:            "true",
+			authMethod:             "basic",
+			expectedAuthentication: "BASIC",
+		},
+		{
+			name:                   "No Authentication",
+			authEnabled:            "false",
+			authMethod:             "none",
+			expectedAuthentication: "NONE",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -328,11 +343,11 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				"global.ingress.enabled":                        "true",
 				"global.ingress.tls.enabled":                    "true",
 				"global.ingress.host":                           "example.com",
+				"webModeler.security.authentication.method":     tc.authMethod,
 				"orchestration.image.tag":                       "8.8.x-alpha1",
 				"orchestration.contextPath":                     "/orchestration",
 				"orchestration.service.grpcPort":                "26600",
 				"orchestration.service.httpPort":                "8090",
-				"orchestration.security.authentication.method":  tc.authMethod,
 				"orchestration.security.authorizations.enabled": "false",
 			}
 			maps.Insert(values, maps.All(requiredValues))

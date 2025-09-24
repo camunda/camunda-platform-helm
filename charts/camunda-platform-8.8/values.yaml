@@ -104,6 +104,11 @@ global:
     ## @skip global.security.allowInsecureImages
     allowInsecureImages: true
 
+    ## @extra global.security.authentication
+    authentication:
+      ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
+      method: "basic"
+
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
 
@@ -302,7 +307,7 @@ global:
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
       jwksUrl: ""
-      ## @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
+      ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
@@ -1379,6 +1384,13 @@ webModeler:
   ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
   contextPath: ""
 
+  security:
+    ## Authentication configuration
+    ## @extra webModeler.security.authentication
+    authentication:
+      ## @param webModeler.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
+
   # WebModeler.
   ######                         #    ######  ###
   #     # ######  ####  #####   # #   #     #  #
@@ -2368,13 +2380,28 @@ orchestration:
     ## Authentication configuration
     ## @extra orchestration.security.authentication
     authentication:
-      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
-      method: basic
+      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
       ## @param orchestration.security.authentication.authenticationRefreshInterval defines the session's authentication refresh time, defaulted to PT30S.
       authenticationRefreshInterval: "PT30S"
+
+      # @extra orchestration.security.authentication.oidc
       oidc:
+        ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
+        issuer: ""
+        ## @param orchestration.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`.
+        issuerBackendUrl: ""
+        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.
+        tokenUrl: ""
+        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
+        jwksUrl: ""
+        ## @param orchestration.security.authentication.oidc.type can be used to override `global.identity.auth.type`.
+        type: ""
+        ## @param orchestration.security.authentication.oidc.publicIssuerUrl can be used to override `global.identity.auth.publicIssuerUrl`.
+        publicIssuerUrl: ""
+      
         ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.clientIdClaim client ID claim.

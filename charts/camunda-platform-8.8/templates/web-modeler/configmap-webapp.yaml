@@ -23,7 +23,7 @@ data:
     httpsOnly = {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
 
     [oAuth2]
-    type = {{ include "camundaPlatform.authType" . | quote }}
+    type = {{ include "camundaPlatform.authIssuerType" . | quote }}
     clientId = {{ include "webModeler.authClientId" . | quote }}
 
     [oAuth2.token]
