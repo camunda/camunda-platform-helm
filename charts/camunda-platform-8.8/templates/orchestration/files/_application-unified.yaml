@@ -59,6 +59,7 @@ camunda:
           processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
           replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
     secondary-storage:
+      autoconfigure-camunda-exporter: {{ .Values.orchestration.exporters.camunda.enabled | quote }}
       type: {{ include "orchestration.secondaryStorage" . | quote -}}
       {{- if .Values.global.elasticsearch.enabled }}
       elasticsearch:

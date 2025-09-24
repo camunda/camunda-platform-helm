@@ -73,6 +73,7 @@ data:
               processing: "2GB"
               replication: "1GB"
         secondary-storage:
+          autoconfigure-camunda-exporter: "true"
           type: "elasticsearch"
           elasticsearch:
             url: "http://camunda-platform-test-elasticsearch:9200"
