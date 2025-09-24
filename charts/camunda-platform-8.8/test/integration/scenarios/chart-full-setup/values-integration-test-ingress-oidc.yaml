@@ -16,41 +16,55 @@ global:
   identity:
     auth:
       enabled: true
-      issuer: https://login.microsoftonline.com/<directoryId>/v2.0
-      issuerBackendUrl: https://login.microsoftonline.com/<directoryId>/v2.0
-      tokenUrl: https://login.microsoftonline.com/<directoryId>/oauth2/v2.0/token
-      jwksUrl: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
-      publicIssuerUrl: https://login.microsoftonline.com/<directoryId>/v2.0
+      issuer: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
+      issuerBackendUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
+      tokenUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/oauth2/v2.0/token
+      jwksUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/discovery/v2.0/keys
+      publicIssuerUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
       type: "MICROSOFT"
-
+      orchestration:
+        clientId: $ENTRA_CHILD_APP_CLIENT_ID
+        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
       identity:
-        clientId: <clientId>
-        audience: <clientId>
+        clientId: $ENTRA_CHILD_APP_CLIENT_ID
+        audience: $ENTRA_CHILD_APP_CLIENT_ID
         # this existngSecret must be a string literal
-        existingSecret: <clientSecret>
+        existingSecret: $ENTRA_CHILD_APP_CLIENT_SECRET
         initialClaimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
       optimize:
-        clientId: <clientId>
-        audience: <clientId>
+        clientId: $ENTRA_CHILD_APP_CLIENT_ID
+        audience: $ENTRA_CHILD_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
-      webModeler:
-        clientId: <clientId>
-        audience: <clientId>
-        clientApiAudience: <clientId>
-        publicApiAudience: <clientId>
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
-      console:
-        wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
-        clientId: <clientId>
-        audience: <clientId>
+      connectors:
+        clientId: $ENTRA_CHILD_APP_CLIENT_ID
+        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        tokenScope: <clientId>/.default
+        tokenScope: $ENTRA_CHILD_APP_CLIENT_ID/.default
+      webModeler:
+        clientId: $ENTRA_CHILD_APP_CLIENT_ID
+        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
+        publicApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
+        clientId: $ENTRA_CHILD_APP_CLIENT_ID
+        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
+        tokenScope: $ENTRA_CHILD_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
 
 console:
@@ -58,7 +72,7 @@ console:
   contextPath: "/"
   env:
     - name: CAMUNDA_IDENTITY_JWKS_URL
-      value: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
+      value: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/discovery/v2.0/keys
 
 optimize:
   enabled: true
@@ -91,7 +105,7 @@ connectors:
         tokenScope: <clientId>/.default
   env:
     - name: CAMUNDA_CLIENT_AUTH_SCOPE
-      value: <clientId>/.default
+      value: $ENTRA_CHILD_APP_CLIENT_ID/.default
 
 webModeler:
   enabled: true
