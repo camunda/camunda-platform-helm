@@ -51,13 +51,13 @@ data:
             max-jobs-active: 32
             stream-enabled: true
         mode: selfManaged
-        {{- if eq (include "orchestration.authType" .) "basic" }}
+        {{- if eq (include "orchestration.authMethod" .) "basic" }}
         auth:
           {{- $user := first .Values.orchestration.security.initialization.users }}
           method: basic
           username: {{ $user.username | quote }}
           password: {{ $user.password | quote }}
-        {{- else if eq (include "orchestration.authType" .) "oidc" }}
+        {{- else if eq (include "orchestration.authMethod" .) "oidc" }}
         auth:
           token-url: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . }}
           client-id: {{ include "connectors.authClientId" . | quote }}

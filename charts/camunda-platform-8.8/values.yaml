@@ -107,7 +107,7 @@ global:
     ## @extra global.security.authentication
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
-      method: ""
+      method: "basic"
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
@@ -1404,8 +1404,8 @@ webModeler:
     ## Authentication configuration
     ## @extra webModeler.security.authentication
     authentication:
-      ## @param webModeler.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`.
-      method: basic
+      ## @param webModeler.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
 
   # WebModeler.
   ######                         #    ######  ###
@@ -2396,8 +2396,8 @@ orchestration:
     ## Authentication configuration
     ## @extra orchestration.security.authentication
     authentication:
-      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`.
-      method: basic
+      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
       ## @param orchestration.security.authentication.authenticationRefreshInterval defines the session's authentication refresh time, defaulted to PT30S.

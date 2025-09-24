@@ -114,7 +114,7 @@
                                 "method": {
                                     "type": "string",
                                     "description": "defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.",
-                                    "default": ""
+                                    "default": "basic"
                                 }
                             }
                         }
@@ -2831,8 +2831,8 @@
                             "properties": {
                                 "method": {
                                     "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`.",
-                                    "default": "basic"
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "default": ""
                                 }
                             }
                         }
@@ -5071,8 +5071,8 @@
                             "properties": {
                                 "method": {
                                     "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`.",
-                                    "default": "basic"
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "default": ""
                                 },
                                 "unprotectedApi": {
                                     "type": "boolean",

@@ -163,14 +163,14 @@ Authentication.
 [orchestration] Define variables related to authentication.
 */}}
 
-{{- define "orchestration.authType" -}}
+{{- define "orchestration.authMethod" -}}
     {{- .Values.orchestration.security.authentication.method | default (
         .Values.global.security.authentication.method | default "none"
     ) -}}
 {{- end -}}
 
 {{- define "orchestration.authEnabled" -}}
-    {{- if has (include "orchestration.authType" .) (list "oidc" "basic") -}}
+    {{- if has (include "orchestration.authMethod" .) (list "oidc" "basic") -}}
         true
     {{- else -}}
         false
@@ -238,8 +238,8 @@ TODO: This is only used for the migration job, it should be removed once the mig
 
 {{- define "orchestration.enabledProfilesWithIdentity" -}}
     {{- if or
-        (eq (include "orchestration.authType" .) "oidc")
-        (eq (include "orchestration.authType" .) "basic")
+        (eq (include "orchestration.authMethod" .) "oidc")
+        (eq (include "orchestration.authMethod" .) "basic")
     }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}

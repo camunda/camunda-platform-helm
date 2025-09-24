@@ -12,7 +12,7 @@ data:
   {{- else }}
   application.yaml: |
     camunda:
-      {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authType" .) "oidc") }}
+      {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
       identity:
         {{- if .Values.identity.enabled }}
         base-url: {{ include "camundaPlatform.identityURL" . | quote }}
@@ -27,7 +27,7 @@ data:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
           port: {{ .Values.webModeler.websockets.service.port }}
 
-        {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authType" .) "oidc") }}
+        {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
         security:
           jwt:
             issuer:
@@ -81,7 +81,7 @@ data:
       security:
         oauth2:
           resourceserver:
-            {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authType" .) "oidc") }}
+            {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
             jwt:
               issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
               jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
