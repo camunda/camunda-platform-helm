@@ -4,6 +4,7 @@ vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  INFRA_TYPE_SUFFIX: '{{ eq (env "PLATFORM") "eks" | ternary ("eks") "" }}-{{ .INFRA_TYPE }}'
 
 tasks:
   pre:
@@ -29,6 +30,6 @@ tasks:
         {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values {{ .INFRA_TYPE_VALUES }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}

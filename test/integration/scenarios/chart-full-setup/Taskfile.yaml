@@ -6,6 +6,7 @@ vars:
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" | default ">0.0.0" | quote }}'
   VALUES_CONFIG: '{{ env "VALUES_CONFIG" | default "{}" }}'
+  INFRA_TYPE_SUFFIX: '{{ eq (env "PLATFORM") "eks" | ternary ("-eks") "" }}-{{ .INFRA_TYPE }}'
 
 dotenv:
 - ../vars/common.env
@@ -52,9 +53,9 @@ tasks:
             
       # Step 1: Merge all YAMLs
       MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
-        "${TEST_VALUES_BASE_DIR}/common/values-integration-test.yaml" \
-        "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
-        "${INFRA_TYPE_VALUES}" \
+        "{{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml" \
+        "{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
+        "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml" \
         /tmp/extra-values-file.yaml)
       
       echo "--- Merged YAML ---"
@@ -70,7 +71,7 @@ tasks:
       
       echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
       echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-      #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .INFRA_TYPE_VALUES }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
+      #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_VALUES_SCENARIO" = "elasticsearch" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
       echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
@@ -78,7 +79,7 @@ tasks:
       echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
       cat "${VARIABLES_ENV_FILE}"
     - |
-      {{ if eq .TEST_CHART_FLOW "upgrade"}}
+      {{ if eq .TEST_CHART_FLOW "upgrade" }}
         # Extract OpenShift values from released chart for upgrade test.
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }} \
           --version {{ .TEST_CHART_VERSION }}
@@ -192,7 +193,7 @@ tasks:
       {{ end -}}
 
       echo "infra values:"
-      cat {{ .INFRA_TYPE_VALUES }}
+      cat {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml
 
       echo "extra-values-file.yaml:"
       cat /tmp/extra-values-file.yaml
@@ -211,9 +212,9 @@ tasks:
         echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
         # Step 1: Merge all YAMLs
         MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
-          "${TEST_VALUES_BASE_DIR}/common/values-integration-test.yaml" \
-          "${TEST_VALUES_BASE_DIR}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
-          "${INFRA_TYPE_VALUES}" \
+          "{{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml" \
+          "{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
+          "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml" \
           /tmp/extra-values-file.yaml)
         
         echo "--- Merged YAML ---"
@@ -229,7 +230,7 @@ tasks:
         
         echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
         echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-        #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .INFRA_TYPE_VALUES }} /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
+        #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
         echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
         # In case the Zeebe version has not been released officially yet.
@@ -254,7 +255,7 @@ tasks:
         {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values {{ .INFRA_TYPE_VALUES }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
         --wait \
