@@ -544,7 +544,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set orchestration.image.tag=SNAPSHOT"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
-      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - From Current Minor 🌟
         if: inputs.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
@@ -557,10 +557,10 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
-      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - Minor 🌟
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - From Previous Minor 🌟
         if: inputs.flow == 'upgrade-minor'
         env:
-          CHART_PATH: ${{ inputs.camunda-helm-dir }}
+          TEST_VALUES_BASE_DIR: "${{ env.TEST_VALUES_BASE_DIR_CURRENT_VERSION }}"
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
