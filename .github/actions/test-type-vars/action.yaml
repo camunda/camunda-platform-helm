@@ -58,6 +58,7 @@ runs:
         fi
         chart_path_current_version="charts/${{ inputs.chart-dir }}"
         echo "CHART_PATH=${chart_path}" | tee -a $GITHUB_ENV
+        echo "CHART_PATH_CURRENT_VERSION=${chart_path_current_version}" | tee -a $GITHUB_ENV
 
         # The relative path needed for the chart-full-setup Taskfile (test/integration/scenarios/chart-full-setup)
         test_relative_chart_path="${charts_base_dir}/${chart_path}"
