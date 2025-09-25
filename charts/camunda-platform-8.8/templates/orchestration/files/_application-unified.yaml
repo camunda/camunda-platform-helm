@@ -292,12 +292,13 @@ zeebe:
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
-            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
             username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
             password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
           {{- end }}
             awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+          index:
+            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
         {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
