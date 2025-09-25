@@ -46,6 +46,11 @@ outputs:
   matrix:
     description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
     value: ${{ steps.set-chart-versions.outputs.matrix }}
+  camunda-versions:
+    description: |
+      JSON array of changed Camunda versions (e.g., [8.4, 8.5]),
+      which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-camunda-versions.outputs.camunda-versions }}
 runs:
   using: composite
   steps:
@@ -158,3 +163,9 @@ runs:
         matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \
           | jq -c 'walk(if type == "number" then tostring else . end)')"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
+    - name: Generate matrix Camunda versions
+      shell: bash
+      id: set-camunda-versions
+      run: |
+        printf camunda-versions="$(echo '${{ needs.init.outputs.matrix }}' |
+          jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
