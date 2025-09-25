@@ -58,6 +58,9 @@ spec:
                 "config" .Values.global.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
+            {{- with .Values.orchestration.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "orchestration.fullname" . }}-importer-env-vars
