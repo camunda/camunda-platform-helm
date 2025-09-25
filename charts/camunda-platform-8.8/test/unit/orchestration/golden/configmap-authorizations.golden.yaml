@@ -178,8 +178,9 @@ data:
               connect:
                 type: "elasticsearch"
                 url: "http://camunda-platform-test-elasticsearch:9200"
-                numberOfReplicas: "1"
                 awsEnabled: false
+              index:
+                numberOfReplicas: "1"
               history:
                 elsRolloverDateFormat: "date"
                 rolloverInterval: "1d"
