@@ -16,14 +16,14 @@ integration:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
-    chartsBaseDir: ../../../../charts
+    chartsBaseDir: ../../../..
+    camundaVersionPrevious: 8.7
   case:
     pr:
       scenario:
         - name: elasticsearch
           enabled: true
           auth: keycloak
-          flow: install
           shortname: eske
           exclude: []
         - name: elasticsearch

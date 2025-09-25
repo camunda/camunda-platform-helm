@@ -17,7 +17,8 @@ integration:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
-    chartsBaseDir: ../../../../charts
+    chartsBaseDir: ../../../..
+    camundaVersionPrevious: 8.4
   case:
     pr:
       scenario:

@@ -228,8 +228,6 @@ env:
   CLUSTER_NAME: camunda-ci-eks
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
-  TEST_VALUES_BASE_DIR: ${{ inputs.camunda-upgrade-version }}
-
 jobs:
   ci-setup:
     if: github.event.action != 'closed'
@@ -344,10 +342,11 @@ jobs:
           platform: "${{ inputs.distro-platform }}"
           values-enterprise: "${{ inputs.values-enterprise }}"
           values-digest: "${{ inputs.values-digest }}"
+          flow: "${{ inputs.flow }}"
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
-          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          export chartPath="${{ env.CHART_PATH }}"
           make helm.repos-add
           make helm.dependency-update
 
@@ -400,7 +399,7 @@ jobs:
               -f .github/config/external-secret/external-secret-certificates.yaml
 
             # Dynamic version-specific external secret configuration
-            APP_VERSION=$(helm show chart "charts/${{ inputs.camunda-helm-dir }}" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
+            APP_VERSION=$(helm show chart "${{ env.CHART_PATH }}" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
             if [[ -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml" ]]; then
               echo "Applying version-specific external secret for app version: ${APP_VERSION}"
               kubectl apply -n $TEST_NAMESPACE \
@@ -441,7 +440,7 @@ jobs:
           # Configure OpenSearch environment if using opensearch scenario
           if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
             # Apply environment variable substitution to values file
-            values_file="charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+            values_file="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
             envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
           fi
           
@@ -466,7 +465,6 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          CHART_PATH: charts/${{ inputs.camunda-helm-dir }}
         run: |
           # write + parse JSON config to env vars (stringified)
           cfg="$(mktemp)"
@@ -478,7 +476,7 @@ jobs:
           rm -f "$cfg"
       
           # paths
-          scenarios_dir="$CHART_PATH/test/integration/scenarios/chart-full-setup"
+          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
           values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
       
           [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
@@ -549,6 +547,20 @@ jobs:
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         if: inputs.flow == 'upgrade'
         env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - Minor 🌟
+        if: inputs.flow == 'upgrade-minor'
+        env:
+          CHART_PATH: ${{ inputs.camunda-helm-dir }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
@@ -638,6 +650,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -669,10 +682,10 @@ jobs:
           EXTRA_VALUES: ${{ inputs.extra-values }}
         continue-on-error: false
         run: |
-          # Configure OpenSearch environment if using opensearch scenario
+          # Configure OpenSearch environment if using "opensearch" scenario
           if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
             # Apply environment variable substitution to values file
-            values_file="charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+            values_file="charts/${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
             envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
           fi
           
@@ -776,6 +789,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -899,6 +913,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: Install dependencies
         run: |
@@ -963,6 +978,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions

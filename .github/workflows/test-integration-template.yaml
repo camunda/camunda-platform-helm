@@ -164,7 +164,7 @@ permissions:
   deployments: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}
   cancel-in-progress: true
 
 env:
@@ -193,8 +193,6 @@ env:
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
-
-  TEST_VALUES_BASE_DIR: ${{ inputs.camunda-upgrade-version }}
 
 jobs:
   init:
@@ -226,8 +224,9 @@ jobs:
           export INPUTS_PLATFORMS_GKE=${{ contains(inputs.platforms, 'gke') }}
           export INPUTS_PLATFORMS_EKS=${{ contains(inputs.platforms, 'eks') }}
           export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
-          export INPUTS_FLOWS_INSTALL=${{ contains(inputs.flows, 'install') }}
-          export INPUTS_FLOWS_UPGRADE=${{ contains(inputs.flows, 'upgrade') }}
+          export INPUTS_FLOWS_INSTALL=${{inputs.flows == 'install' }}
+          export INPUTS_FLOWS_UPGRADE=${{ inputs.flows == 'upgrade' }}
+          export INPUTS_FLOWS_UPGRADE_MINOR=${{ inputs.flows == 'upgrade-minor' }}
           cat ${CI_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
           # Read matrix YAML file.
           matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"

@@ -82,6 +82,11 @@ runs:
       if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-upg"
       fi
+
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgm"
+      fi
+
       echo "TEST_NAMESPACE=$(printf '%s' "$TEST_NAMESPACE" | head -c 63 | sed 's/-$//')" | tee -a "$GITHUB_ENV"
 
       # Get alpha chart dir.

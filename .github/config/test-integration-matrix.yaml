@@ -31,6 +31,10 @@ matrix:
       desc: Upgrade chart from the latest released version to the current branch.
       flow: upgrade
       if: $INPUTS_FLOWS_UPGRADE
+    - name: Chart Upgrade
+      desc: Upgrade chart from the latest released version to the current branch.
+      flow: upgrade-minor
+      if: $INPUTS_FLOWS_UPGRADE_MINOR
   exclude:
     - distro:
         if: false
