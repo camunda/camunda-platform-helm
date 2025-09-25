@@ -19,7 +19,6 @@ runs:
     - name: Configure TLS Certificates/Secrets
       shell: bash
       run: |
-        set -x
         set -euo pipefail
 
         DISTRO_PLATFORM="${{ inputs.distro-platform }}"
@@ -46,7 +45,7 @@ runs:
 
           for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
-            kubectl describe externalsecret/"$secret" -n $TEST_NAMESPACE || true
+            kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
             kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
           done
 

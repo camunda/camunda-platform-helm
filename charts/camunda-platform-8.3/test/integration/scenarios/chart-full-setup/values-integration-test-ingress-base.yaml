@@ -97,12 +97,12 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
-#   auth:
-#     existingSecret: "integration-test-credentials"
-#     # Should be set to have a different name of Identity Keycloak PostgreSQL.
-#     secretKeys:
-#       adminPasswordKey: "webmodeler-postgresql-admin-password"
-#       userPasswordKey: "webmodeler-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    # Should be set to have a different name of Identity Keycloak PostgreSQL.
+    secretKeys:
+      adminPasswordKey: "webmodeler-postgresql-admin-password"
+      userPasswordKey: "webmodeler-postgresql-user-password"
 
 zeebe-gateway:
   ingress:

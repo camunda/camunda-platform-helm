@@ -66,18 +66,18 @@ tasks:
       
       echo "Elasticsearch enabled: $ES_ENABLED"
 
-      # Step 3: Determine if we should skip test
-      VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
+      # # Step 3: Determine if we should skip test
+      # VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
       
-      echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
-      echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-      #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_VALUES_SCENARIO" = "elasticsearch" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
-      echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
-      # In case the Zeebe version has not been released officially yet.
-      echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
-      cat "${VARIABLES_ENV_FILE}"
+      # echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
+      # echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
+      # #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
+      # echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_VALUES_SCENARIO" = "elasticsearch" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
+      # echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
+      # echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
+      # # In case the Zeebe version has not been released officially yet.
+      # echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
+      # cat "${VARIABLES_ENV_FILE}"
     - |
       {{ if eq .TEST_CHART_FLOW "upgrade" }}
         # Extract OpenShift values from released chart for upgrade test.
@@ -87,10 +87,6 @@ tasks:
         export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
         bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install-upgrade.sh
       {{ end }}
-    - |
-      # Create the local chart package to install.
-      pwd
-      helm package {{ .TEST_CHART_DIR }}/
     - |
       # Pre-run scripts in the install flow.
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
@@ -200,6 +196,15 @@ tasks:
 
       echo "--------------------"
 
+  setup.package:
+    cmds:
+    # Set Venom vars.
+    - |
+      # Create the local chart package to install.
+      echo "ℹ️ Packaging chart from {{ .TEST_CHART_DIR }}"
+      pwd
+      rm -rf *.tgz
+      helm package --dependency-update {{ .TEST_CHART_DIR }}/
   setup.venom.env:
     preconditions:
       - test -n "${TEST_INGRESS_HOST}"
