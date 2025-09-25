@@ -59,6 +59,9 @@ on:
       camunda-helm-upgrade-version:
         required: false
         type: string
+      camunda-upgrade-version:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}
@@ -113,3 +116,4 @@ jobs:
       always-delete-namespace: true
       values-digest: "true"
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+      camunda-upgrade-version: ${{ inputs.camunda-upgrade-version }}

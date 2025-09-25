@@ -31,6 +31,11 @@ on:
         required: false
         default: ""
         type: string
+      camunda-upgrade-version:
+        description: The Camunda version to upgrade from.
+        required: false
+        default: ""
+        type: string
       caller-git-ref:
         required: false
         default: main
@@ -189,6 +194,8 @@ env:
   CLUSTER_NAME: camunda-ci-eks
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
+  TEST_VALUES_BASE_DIR: ${{ inputs.camunda-upgrade-version }}
+
 jobs:
   init:
     # This job is used to generate the matrix for the plaform (gke, rosa, etc.) crossed with the
@@ -253,6 +260,7 @@ jobs:
       camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
       camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+      camunda-upgrade-version: ${{ inputs.camunda-upgrade-version }}
       caller-git-ref: ${{ inputs.caller-git-ref }}
       deployment-ttl: ${{ inputs.deployment-ttl }}
       distro-platform: ${{ matrix.distro.platform }}

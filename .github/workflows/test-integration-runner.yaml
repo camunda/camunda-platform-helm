@@ -41,6 +41,11 @@ on:
         required: false
         default: ""
         type: string
+      camunda-upgrade-version:
+        description: The Camunda version to upgrade from.
+        required: false
+        default: ""
+        type: string
       caller-git-ref:
         required: false
         default: main
@@ -222,6 +227,8 @@ env:
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
+
+  TEST_VALUES_BASE_DIR: ${{ inputs.camunda-upgrade-version }}
 
 jobs:
   ci-setup:

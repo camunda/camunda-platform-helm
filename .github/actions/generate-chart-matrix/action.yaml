@@ -90,7 +90,8 @@ runs:
                 continue
               fi
               echo "  - version: ${camunda_version}" >> matrix_versions.txt
-              echo "    previousChartVersion: $(echo "$chart_version_previous")" >> matrix_versions.txt
+              echo "    camundaVersionPrevious: $(echo "$camunda_version_previous")" >> matrix_versions.txt
+              echo "    chartVersionPrevious: $(echo "$chart_version_previous")" >> matrix_versions.txt
               echo "    case: pr" >> matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
               echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
@@ -167,5 +168,5 @@ runs:
       shell: bash
       id: set-camunda-versions
       run: |
-        printf camunda-versions="$(echo '${{ needs.init.outputs.matrix }}' |
-          jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
+        camunda_versions="$(echo '${{ steps.set-chart-versions.outputs.matrix }}' | jq -c '[.include.[].version] | unique')"
+        echo "camunda-versions=${camunda_versions}" | tee -a $GITHUB_OUTPUT
