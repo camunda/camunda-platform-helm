@@ -6,7 +6,7 @@ global:
   image:
     pullSecrets:
       - name: index-docker-io
-  labels:
+  commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
   secrets:
