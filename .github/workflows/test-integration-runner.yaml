@@ -538,7 +538,7 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
-      - name: Helm - Package - From Previous Minor
+      - name: Helm - Upgrade - Package - From Previous Minor
         if: inputs.flow == 'upgrade-minor'
         env:
           TEST_CHART_DIR: "${{ env.TEST_RELATIVE_CHART_PATH_CURRENT_VERSION }}"
@@ -553,6 +553,14 @@ jobs:
           chart-path: ${{ env.CHART_PATH_CURRENT_VERSION }}
           namespace: ${{ env.TEST_NAMESPACE }}
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
+
+      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks - From Previous Minor
+        if: inputs.flow == 'upgrade-minor'
+        env:
+          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR_CURRENT_VERSION }}
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - From Previous Minor 🌟
         if: inputs.flow == 'upgrade-minor'

@@ -10,11 +10,9 @@ on:
       - ".github/workflows/test-chart-version.yaml"
       - ".github/workflows/test-chart-version-upgrade-minor.yaml"
       - ".github/config/external-secret/**"
+      - ".github/**"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
-  push:
-    branches:
-      - helm-959-ci-upgrade-minor
   workflow_dispatch: 
     inputs:
       manual-trigger:
