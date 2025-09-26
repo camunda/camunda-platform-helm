@@ -557,7 +557,8 @@ jobs:
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - From Previous Minor 🌟
         if: inputs.flow == 'upgrade-minor'
         env:
-          TEST_VALUES_BASE_DIR: "${{ env.TEST_VALUES_BASE_DIR_CURRENT_VERSION }}"
+          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR_CURRENT_VERSION }}
+          CHART_PATH: ${{ env.CHART_PATH_CURRENT_VERSION }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
