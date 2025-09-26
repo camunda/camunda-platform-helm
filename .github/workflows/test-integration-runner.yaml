@@ -363,12 +363,11 @@ jobs:
         run: |
           echo $TEST_NAMESPACE
           kubectl delete ns --ignore-not-found=true \
-            -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ inputs.flow }}"
+            -l "github-id=${{ steps.vars.outputs.identifier }}"
           kubectl create ns $TEST_NAMESPACE
+          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl }}
@@ -538,10 +537,20 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
+      - name: CI Setup - Set test type vars - From Previous Minor
+        if: inputs.flow == 'upgrade-minor'
+        id: test-type-vars-upgrade-minor
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+          values-enterprise: "${{ inputs.values-enterprise }}"
+          values-digest: "${{ inputs.values-digest }}"
+          flow: "${{ inputs.flow }}"
+
       - name: Helm - Upgrade - Package - From Previous Minor
         if: inputs.flow == 'upgrade-minor'
-        env:
-          TEST_CHART_DIR: "${{ env.TEST_RELATIVE_CHART_PATH_CURRENT_VERSION }}"
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
@@ -550,23 +559,18 @@ jobs:
         uses: ./.github/actions/cluster-setup-secrets
         with:
           distro-platform: ${{ inputs.distro-platform }}
-          chart-path: ${{ env.CHART_PATH_CURRENT_VERSION }}
+          chart-path: ${{ env.CHART_PATH }}
           namespace: ${{ env.TEST_NAMESPACE }}
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks - From Previous Minor
         if: inputs.flow == 'upgrade-minor'
-        env:
-          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR_CURRENT_VERSION }}
-          TEST_CHART_FLOW: ${{ inputs.flow }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - From Previous Minor 🌟
         if: inputs.flow == 'upgrade-minor'
         env:
-          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR_CURRENT_VERSION }}
-          CHART_PATH: ${{ env.CHART_PATH_CURRENT_VERSION }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}

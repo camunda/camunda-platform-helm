@@ -317,7 +317,7 @@ jobs:
           identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
           ingress-hostname-base: ci.distro.ultrawombat.com
           chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: 8.7
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
 
       - name: Print outputs
