@@ -253,6 +253,7 @@ zeebe:
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
@@ -271,6 +272,7 @@ zeebe:
           {{- end }}
           index:
             prefix: {{ .Values.global.opensearch.prefix | quote }}
+            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if .Values.global.opensearch.aws.enabled }}
           aws:
             enabled: true
