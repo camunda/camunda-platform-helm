@@ -23,7 +23,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-broker-importer
-  updateStrategy:
+  strategy:
     type: RollingUpdate
   template:
     metadata:
