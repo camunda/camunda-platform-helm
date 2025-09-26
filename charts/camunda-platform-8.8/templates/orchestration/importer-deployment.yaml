@@ -14,7 +14,7 @@ spec:
   selector:
     matchLabels:
       {{- include "orchestration.matchLabelsImporter" . | nindent 6 }}
-  updateStrategy:
+  strategy:
     type: RollingUpdate
   template:
     metadata:
