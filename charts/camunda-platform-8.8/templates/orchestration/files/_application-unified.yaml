@@ -45,11 +45,13 @@ camunda:
       address: 0.0.0.0
       port: {{ .Values.orchestration.service.grpcPort }}
 
-  {{- if .Values.global.opensearch.enabled }}
   # Database configuration - Separated syntax.
   database:
+  {{- if .Values.global.opensearch.enabled }}
     awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
   {{- end }}
+    index:
+      numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
 
   data:
     snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
