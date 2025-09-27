@@ -46,6 +46,9 @@ spec:
                 "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
                 "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
+            {{- with .Values.orchestration.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
           command:
             - /usr/local/camunda/bin/identity-migration
           resources:
