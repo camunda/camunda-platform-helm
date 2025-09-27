@@ -210,12 +210,12 @@ Usage: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.context
 
 {{/*
 ********************************************************************************
-Keycloak templates.
+Keycloak/Entra templates.
 ********************************************************************************
 */}}
 
 {{/*
-[camunda-platform] Keycloak issuer public URL which used externally for Camunda apps.
+[camunda-platform] Keycloak/Entra issuer public URL which used externally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerUrl" -}}
   {{- if .Values.global.identity.auth.issuer -}}
@@ -226,10 +226,16 @@ Keycloak templates.
 {{- end -}}
 
 {{/*
-[camunda-platform] Keycloak auth URL which used externally by the user.
+[camunda-platform] Keycloak/Entra auth URL which used externally by the user.
 */}}
 {{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
+  {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "MICROSOFT" -}}
+    {{ required "global.identity.auth.authUrl must be set" .Values.global.identity.auth.authUrl }}
+  {{- else -}}
+    {{ fail "Unsupported auth type. Only 'KEYCLOAK' and 'MICROSOFT' are supported." }}
+  {{- end -}}
 {{- end -}}
 
 {{/*

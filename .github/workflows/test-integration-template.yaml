@@ -145,6 +145,11 @@ on:
         default: false
         type: boolean
         required: false
+      initialClaimValue:
+        description: This is only used for testing Entra. This is here so we can do exploratory testing with Entra.
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -284,6 +289,7 @@ jobs:
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
+      initialClaimValue: ${{ inputs.initialClaimValue }}
 
   print-outputs:
     name: Print outputs
