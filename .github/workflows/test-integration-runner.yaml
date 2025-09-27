@@ -343,7 +343,7 @@ jobs:
           values-enterprise: "${{ inputs.values-enterprise }}"
           values-digest: "${{ inputs.values-digest }}"
           flow: "${{ inputs.flow }}"
-          camunda-version-previous: ${{ inputs.camunda-version-previous }}
+          camunda-version-previous: "${{ inputs.camunda-version-previous }}"
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
