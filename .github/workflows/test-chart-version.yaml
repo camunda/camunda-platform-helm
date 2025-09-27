@@ -49,8 +49,11 @@ on:
         type: choice
         options:
           - install
-          - upgrade
-          - install,upgrade
+          - upgrade-patch
+          - upgrade-minor
+          - install,upgrade-patch
+          - install,upgrade-minor
+          - install,upgrade-patch,upgrade-minor
       e2e-enabled:
         description: |
           Whether to run the end-to-end tests (playwright).
@@ -154,5 +157,6 @@ jobs:
       exclude: ${{ matrix.exclude }}
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
-      flows: ${{ inputs.flows || matrix.flow || 'install,upgrade' }}
+      # flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
+      flows: ${{ 'install,upgrade-patch,upgrade-minor' }}
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
