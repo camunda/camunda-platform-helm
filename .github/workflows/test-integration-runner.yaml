@@ -704,7 +704,7 @@ jobs:
     needs: [ci-setup]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      image: mcr.microsoft.com/playwright:v1.55.1-noble
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
