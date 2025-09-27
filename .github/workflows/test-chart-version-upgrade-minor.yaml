@@ -111,5 +111,4 @@ jobs:
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }}
       flows: 'upgrade-minor'
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
-      # camunda-helm-upgrade-version: ${{ matrix.chartVersionPrevious }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}

@@ -574,6 +574,8 @@ jobs:
 
       - name: Helm - Upgrade Minor - Execute before upgrade lifecycle tasks
         if: inputs.flow == 'upgrade-minor'
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
@@ -704,6 +706,7 @@ jobs:
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
         continue-on-error: false
         run: |
           # Configure OpenSearch environment if using "opensearch" scenario

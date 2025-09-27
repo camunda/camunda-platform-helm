@@ -22,9 +22,6 @@ outputs:
   unitTestMatrix:
     description: JSON matrix of changed charts which will be used as input for GHA workflow matrix.
     value: ${{ steps.vars.outputs.unit-matrix }}
-  valuesBaseDir:
-    description: Path of the directory that has the integration tests values.
-    value: ${{ steps.vars.outputs.test-values-base-dir }}
 
 runs:
   using: composite
@@ -75,8 +72,6 @@ runs:
 
         integration_scenarios_values_dir="${chart_path_relative}/test/${values_base_dir}"
         echo "TEST_VALUES_BASE_DIR=${integration_scenarios_values_dir}" | tee -a $GITHUB_ENV
-        # The var is needed in some non-shell steps.
-        echo "test-values-base-dir=${integration_scenarios_values_dir}" | tee -a $GITHUB_OUTPUT
 
         # Charts dir.
         echo "TEST_CHART_DIR=${charts_base_dir}/${chart_path}" | tee -a $GITHUB_ENV

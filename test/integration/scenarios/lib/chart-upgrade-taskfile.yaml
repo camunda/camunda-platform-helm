@@ -10,6 +10,8 @@ tasks:
   pre:
     cmds:
     - |
+      echo "TEST_CHART_FLOW: {{ .TEST_CHART_FLOW }}"
+    - |
       {{ if eq .TEST_CHART_FLOW "upgrade" }}
         # Pre-run scripts in the upgrade flow.
         export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
