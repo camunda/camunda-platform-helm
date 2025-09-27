@@ -363,8 +363,7 @@ jobs:
       - name: Cluster Setup - Configure the namespace
         run: |
           echo $TEST_NAMESPACE
-          kubectl delete ns --ignore-not-found=true \
-            -l "github-id=${{ steps.vars.outputs.identifier }}"
+          kubectl delete ns --ignore-not-found=true $TEST_NAMESPACE
           kubectl create ns $TEST_NAMESPACE
           kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
@@ -379,6 +378,7 @@ jobs:
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
+          kubectl describe ns $TEST_NAMESPACE
       - name: Cluster Setup - Install docker registry on cluster
         run: |
           kubectl create secret docker-registry registry-camunda-cloud \
@@ -393,7 +393,6 @@ jobs:
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
 
       - name: Cluster Setup - Configure TLS Certificates/Secrets
-        if: inputs.flow == 'upgrade-minor'
         uses: ./.github/actions/cluster-setup-secrets
         with:
           distro-platform: ${{ inputs.distro-platform }}

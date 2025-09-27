@@ -45,7 +45,7 @@ on:
         type: string
       flows:
         description: The flows to run
-        default: "install,upgrade"
+        default: "install,upgrade-patch,upgrade-minor"
         type: string
         required: false
       e2e-enabled:

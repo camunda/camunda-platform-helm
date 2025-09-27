@@ -12,7 +12,7 @@ inputs:
   values-digest:
     description: Enable digest values
   flow:
-    description: Flow type, e.g., install, upgrade, upgrade-minor
+    description: Flow type, e.g., install, upgrade-patch, upgrade-minor
   camunda-version-previous:
     description: Previous Camunda version, e.g., 8.7
 outputs:

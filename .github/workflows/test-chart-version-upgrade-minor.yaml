@@ -50,8 +50,11 @@ on:
         type: choice
         options:
           - install
-          - upgrade
-          - install,upgrade
+          - upgrade-patch
+          - upgrade-minor
+          - install,upgrade-patch
+          - install,upgrade-minor
+          - install,upgrade-patch,upgrade-minor
       e2e-enabled:
         description: |
           Whether to run the end-to-end tests (playwright).

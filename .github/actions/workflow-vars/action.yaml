@@ -80,7 +80,7 @@ runs:
       fi
 
       if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-upg"
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgp"
       fi
 
       if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
