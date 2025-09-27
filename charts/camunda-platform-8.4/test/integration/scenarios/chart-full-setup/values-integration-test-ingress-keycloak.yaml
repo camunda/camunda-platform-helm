@@ -6,7 +6,7 @@ global:
   image:
     pullSecrets:
       - name: index-docker-io
-  labels:
+  commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
   secrets:
@@ -59,21 +59,19 @@ global:
 identity:
   contextPath: "/identity"
   fullURL: "https://{{ .Values.global.ingress.host }}/identity"
-
+  firstUser:
+    existingSecret: "integration-test-credentials"
   # Identity Keycloak.
   keycloak:
     postgresql:
       auth:
         existingSecret: "integration-test-credentials"
+        secretKeys:
+          adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+          userPasswordKey: "identity-keycloak-postgresql-user-password"
     auth:
       existingSecret: "integration-test-credentials"
-  firstUser:
-    existingSecret: "integration-test-credentials"
-
-  # Identity PostgreSQL.
-  postgresql:
-    auth:
-      existingSecret: "integration-test-credentials"
+      passwordSecretKey: "identity-keycloak-admin-password"
 
 operate:
   contextPath: "/operate"
@@ -102,13 +100,12 @@ webModeler:
 # database used by Web Modeler
 postgresql:
   enabled: true
-  # TODO: Uncomment after Camunda chart 9.4.0 release.
-  # auth:
-  #   existingSecret: "integration-test-credentials"
-  #   # Should be set to have a different name of Identity Keycloak PostgreSQL.
-  #   secretKeys:
-  #     adminPasswordKey: "webmodeler-postgresql-admin-password"
-  #     userPasswordKey: "webmodeler-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    # Should be set to have a different name of Identity Keycloak PostgreSQL.
+    secretKeys:
+      adminPasswordKey: "webmodeler-postgresql-admin-password"
+      userPasswordKey: "webmodeler-postgresql-user-password"
 
 zeebe-gateway:
   ingress:

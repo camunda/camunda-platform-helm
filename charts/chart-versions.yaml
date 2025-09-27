@@ -1,6 +1,6 @@
 # This file contains the supported versions of the chart.
 # Check the README for more information on how to update this file.
-versions:
+camundaVersions:
   alpha:
     - "8.8"
   supportStandard:

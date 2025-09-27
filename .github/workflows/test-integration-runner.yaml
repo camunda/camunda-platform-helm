@@ -41,6 +41,11 @@ on:
         required: false
         default: ""
         type: string
+      camunda-version-previous:
+        description: The Camunda version to upgrade from.
+        required: false
+        default: ""
+        type: string
       caller-git-ref:
         required: false
         default: main
@@ -328,7 +333,7 @@ jobs:
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
 
-      - name: CI Setup - Set test type vars
+      - name: CI Setup - ℹ️ Set test type vars ℹ️
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
         with:
@@ -337,10 +342,12 @@ jobs:
           platform: "${{ inputs.distro-platform }}"
           values-enterprise: "${{ inputs.values-enterprise }}"
           values-digest: "${{ inputs.values-digest }}"
+          flow: "${{ inputs.flow }}"
+          camunda-version-previous: "${{ inputs.camunda-version-previous }}"
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
-          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          export chartPath="${{ env.CHART_PATH }}"
           make helm.repos-add
           make helm.dependency-update
 
@@ -356,13 +363,11 @@ jobs:
       - name: Cluster Setup - Configure the namespace
         run: |
           echo $TEST_NAMESPACE
-          kubectl delete ns --ignore-not-found=true \
-            -l "github-id=${{ steps.vars.outputs.identifier }},test-flow=${{ inputs.flow }}"
+          kubectl delete ns --ignore-not-found=true $TEST_NAMESPACE
           kubectl create ns $TEST_NAMESPACE
+          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl }}
@@ -373,6 +378,7 @@ jobs:
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
+          kubectl describe ns $TEST_NAMESPACE
       - name: Cluster Setup - Install docker registry on cluster
         run: |
           kubectl create secret docker-registry registry-camunda-cloud \
@@ -387,36 +393,12 @@ jobs:
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
 
       - name: Cluster Setup - Configure TLS Certificates/Secrets
-        run: |
-          if [[ "${{ inputs.distro-platform }}" == "gke" || "${{ inputs.distro-platform }}" == "rosa" ]]; then
-            kubectl apply -n $TEST_NAMESPACE \
-              -f .github/config/external-secret/external-secret-certificates.yaml
-
-            # Dynamic version-specific external secret configuration
-            APP_VERSION=$(helm show chart "charts/${{ inputs.camunda-helm-dir }}" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
-            if [[ -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml" ]]; then
-              echo "Applying version-specific external secret for app version: ${APP_VERSION}"
-              kubectl apply -n $TEST_NAMESPACE \
-                -f ".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml"
-            else
-              echo "Version-specific external secret not found for app version: ${APP_VERSION}, using fallback"
-              # For backward compatibility with other versions (alpha, future versions).
-              kubectl apply -n $TEST_NAMESPACE \
-                -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
-            fi
-
-            # Ensure ExternalSecrets are created
-            for secret in $(kubectl get externalsecret -n distribution-team -o jsonpath='{.items[*].metadata.name}'); do
-              echo "Waiting for ExternalSecret: $secret"
-              kubectl describe externalsecret/$secret -n distribution-team
-              kubectl wait --for=condition=Ready externalsecret/$secret -n distribution-team --timeout=300s
-            done
-          else
-            # running in EKS
-            kubectl get secret -n ${NAMESPACE_PREFIX}-certs aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
-            sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
-            kubectl apply -f aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
-          fi
+        uses: ./.github/actions/cluster-setup-secrets
+        with:
+          distro-platform: ${{ inputs.distro-platform }}
+          chart-path: ${{ env.CHART_PATH }}
+          namespace: ${{ env.TEST_NAMESPACE }}
+          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
@@ -434,13 +416,16 @@ jobs:
           # Configure OpenSearch environment if using opensearch scenario
           if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
             # Apply environment variable substitution to values file
-            values_file="charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+            values_file="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
             envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
           fi
-          
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
+
+      - name: Helm - Package
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
       - name: Helm - Install - Setup Helm extra args
         env:
@@ -459,7 +444,6 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          CHART_PATH: charts/${{ inputs.camunda-helm-dir }}
         run: |
           # write + parse JSON config to env vars (stringified)
           cfg="$(mktemp)"
@@ -471,7 +455,7 @@ jobs:
           rm -f "$cfg"
       
           # paths
-          scenarios_dir="$CHART_PATH/test/integration/scenarios/chart-full-setup"
+          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
           values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
       
           [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
@@ -509,8 +493,12 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
+      ##########################################################################################################
+      # Upgrade From Current Minor Version
+      ##########################################################################################################
+
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
-        if: inputs.flow == 'upgrade'
+        if: inputs.flow == 'upgrade-patch'
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
@@ -524,13 +512,13 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
       - name: Helm - Upgrade - Setup Helm extra args
-        if: inputs.flow == 'upgrade'
+        if: inputs.flow == 'upgrade-patch'
         run: |
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS}"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
       - name: Helm - Upgrade ALPHA - Setup Helm extra args
-        if: inputs.flow == 'upgrade' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
+        if: inputs.flow == 'upgrade-patch' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
         run: |
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
           # The Zeebe team advised to use SNAPSHOT tag instead.
@@ -540,17 +528,73 @@ jobs:
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
-        if: inputs.flow == 'upgrade'
+        if: inputs.flow == 'upgrade-patch'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      ##########################################################################################################
+      # Upgrade From Previous Minor Version
+      ##########################################################################################################
+
+      - name: CI Setup - Upgrade Minor - Set test type vars
+        if: inputs.flow == 'upgrade-minor'
+        id: test-type-vars-upgrade-minor
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+          values-enterprise: "${{ inputs.values-enterprise }}"
+          values-digest: "${{ inputs.values-digest }}"
+          flow: "${{ inputs.flow }}"
+
+      - name: Helm - Upgrade Minor - Package
+        if: inputs.flow == 'upgrade-minor'
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
+
+      - name: Cluster Setup - Upgrade Minor - Configure TLS Certificates/Secrets
+        if: inputs.flow == 'upgrade-minor'
+        uses: ./.github/actions/cluster-setup-secrets
+        with:
+          distro-platform: ${{ inputs.distro-platform }}
+          chart-path: ${{ env.CHART_PATH }}
+          namespace: ${{ env.TEST_NAMESPACE }}
+          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
+
+      - name: Helm - Upgrade Minor - Execute before upgrade lifecycle tasks
+        if: inputs.flow == 'upgrade-minor'
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
+
+      - name: Helm - Upgrade Minor - 🌟 Upgrade Camunda chart 🌟
+        if: inputs.flow == 'upgrade-minor'
+        env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS_UPGRADE }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      ##########################################################################################################
+      # Misc
+      ##########################################################################################################
 
       - name: CI Setup - Update GitHub deployment status
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
@@ -631,6 +675,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -660,12 +705,13 @@ jobs:
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
           TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
         continue-on-error: false
         run: |
-          # Configure OpenSearch environment if using opensearch scenario
+          # Configure OpenSearch environment if using "opensearch" scenario
           if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
             # Apply environment variable substitution to values file
-            values_file="charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+            values_file="charts/${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
             envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
           fi
           
@@ -769,6 +815,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -892,6 +939,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: Install dependencies
         run: |
@@ -956,6 +1004,7 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           infra-type: "${{ inputs.infra-type }}"
           platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
 
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions

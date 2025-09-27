@@ -46,6 +46,11 @@ outputs:
   matrix:
     description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
     value: ${{ steps.set-chart-versions.outputs.matrix }}
+  camunda-versions:
+    description: |
+      JSON array of changed Camunda versions (e.g., [8.4, 8.5]),
+      which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-camunda-versions.outputs.camunda-versions }}
 runs:
   using: composite
   steps:
@@ -75,6 +80,9 @@ runs:
           local chart_dir="$2"
           echo "⭐ Generating matrix for $camunda_version and chart $chart_dir"
           if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
+            camunda_version_previous="$(echo "$camunda_version" | awk -F. '{printf "%d.%d", $1, $2-1}')"
+            chart_version_previous="$(yq '.version' charts/camunda-platform-${camunda_version_previous}/Chart.yaml)"
+
             readarray prScenarios < <(yq e -o=j -I=0 '.integration.case.pr.scenario.[]' $chart_dir/test/ci-test-config.yaml)
             for prScenario in "${prScenarios[@]}"; do
               enabled=$(echo "$prScenario" | yq e '.enabled' -)
@@ -82,6 +90,7 @@ runs:
                 continue
               fi
               echo "  - version: ${camunda_version}" >> matrix_versions.txt
+              echo "    camundaVersionPrevious: $(echo "$camunda_version_previous")" >> matrix_versions.txt
               echo "    case: pr" >> matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
               echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
@@ -154,3 +163,9 @@ runs:
         matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \
           | jq -c 'walk(if type == "number" then tostring else . end)')"
         echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
+    - name: Generate matrix Camunda versions
+      shell: bash
+      id: set-camunda-versions
+      run: |
+        camunda_versions="$(echo '${{ steps.set-chart-versions.outputs.matrix }}' | jq -c '[.include.[].version] | unique')"
+        echo "camunda-versions=${camunda_versions}" | tee -a $GITHUB_OUTPUT
