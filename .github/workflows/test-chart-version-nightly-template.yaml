@@ -29,9 +29,36 @@ on:
         required: false
         default: "false"
         type: string
+      shortname:
+        description: Shortname for the scenario within the identifier
+        required: true
+        type: string
+      run-all-e2e-tests:
+        description: "Run all E2E tests (playwright)"
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: The deployment cloud platform
+        default: gke
+        required: false
+        type: string
+      flows:
+        description: The flows to run
+        default: "install,upgrade"
+        type: string
+        required: false
+      e2e-enabled:
+        required: false
+        default: true
+        type: boolean
+      deployment-ttl:
+        required: false
+        default: 1h
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
+  group: ${{ github.workflow }}-nightly-template-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}
   cancel-in-progress: true
 
 permissions:
@@ -42,13 +69,13 @@ jobs:
     name: Camunda ${{ inputs.camunda-version }} - Validation
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ inputs.case }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
+      identifier: "${{ inputs.case }}-vald-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration:
-    name: Camunda ${{ inputs.camunda-version }} - ${{ matrix.scenario }}
-    needs: validation
+    name: ${{ inputs.camunda-version }} - ${{ inputs.platforms }} - ${{ inputs.case }} - ${{ inputs.shortname }}
+    needs: [validation]
     permissions:
       contents: read
       id-token: write
@@ -56,14 +83,30 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-integration-template.yaml
     with:
-      identifier: "${{ inputs.camunda-version }}"
-      platforms: "gke"
-      flows: "install,upgrade"
+      identifier: "nightly-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.platforms }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
+      flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
-      test-case: "${{ inputs.case }}"
-      scenario: "${{ inputs.scenario }}"
-      auth: "${{ inputs.auth }}"
-      exclude: "${{ inputs.exclude }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      test-case: ${{inputs.case}}
+      scenario: ${{inputs.scenario}}
+      e2e-enabled: ${{ inputs.e2e-enabled }}
+      shortname: ${{inputs.shortname}}
+      auth: ${{inputs.auth}}
+      exclude: ${{inputs.exclude}}
+      platforms: ${{ inputs.platforms }}
+      run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
+      always-delete-namespace: true
       values-enterprise: "${{ inputs.values-enterprise }}"
       values-digest: "true"
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      values-config: |
+        {
+          "OPENSEARCH_PORT": "443",
+          "OPENSEARCH_PROTOCOL": "https"
+        }
+      vault-secret-mapping: |
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_USERNAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL | OPENSEARCH_HOST;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL;

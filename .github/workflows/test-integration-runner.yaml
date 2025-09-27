@@ -998,17 +998,20 @@ jobs:
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace
         run: |
-          if [ "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]; then
-            if [ "${{ inputs.distro-type }}" == "kubernetes" ]; then
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
-              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+          if [[ "${{ inputs.always-delete-namespace }}" == "true" ]]; then
+            kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=1s --overwrite=true
+          elif [[ -n "${{ env.CI_DEPLOYMENT_TTL }}" ]]; then
+            if [[ "${{ inputs.distro-type }}" == "kubernetes" ]]; then
+              kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true
+              kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl="${CI_DEPLOYMENT_TTL}" --overwrite=true
             else
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
-              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+              kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s --overwrite=true
+              kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=1s --overwrite=true
             fi
           else
-            kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
-            kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+            kubectl annotate ns "$TEST_NAMESPACE" cleaner/ttl=1s --overwrite=true
+            kubectl annotate ns "$TEST_NAMESPACE" janitor/ttl=1s --overwrite=true
           fi
-          kubectl annotate ns ${{ env.TEST_NAMESPACE }} test-flow=${{ inputs.flow }}
-          kubectl annotate ns ${{ env.TEST_NAMESPACE }} build-failed=true
+          kubectl annotate ns "$TEST_NAMESPACE" test-flow="${{ inputs.flow }}"
+          kubectl annotate ns "$TEST_NAMESPACE" build-failed=true
