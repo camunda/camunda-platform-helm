@@ -41,7 +41,7 @@ on:
         required: false
         default: ""
         type: string
-      camunda-upgrade-version:
+      camunda-version-previous:
         description: The Camunda version to upgrade from.
         required: false
         default: ""
@@ -333,7 +333,7 @@ jobs:
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
 
-      - name: CI Setup - Set test type vars
+      - name: CI Setup - ℹ️ Set test type vars ℹ️
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
         with:
@@ -343,6 +343,7 @@ jobs:
           values-enterprise: "${{ inputs.values-enterprise }}"
           values-digest: "${{ inputs.values-digest }}"
           flow: "${{ inputs.flow }}"
+          camunda-version-previous: ${{ inputs.camunda-version-previous }}
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
@@ -493,6 +494,10 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
+      ##########################################################################################################
+      # Upgrade From Current Minor Version
+      ##########################################################################################################
+
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
         if: inputs.flow == 'upgrade'
         env:
@@ -523,7 +528,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS_UPGRADE} --set orchestration.image.tag=SNAPSHOT"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
-      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - From Current Minor 🌟
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         if: inputs.flow == 'upgrade'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
@@ -537,7 +542,11 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
-      - name: CI Setup - Set test type vars - From Previous Minor
+      ##########################################################################################################
+      # Upgrade From Previous Minor Version
+      ##########################################################################################################
+
+      - name: CI Setup - Upgrade Minor - Set test type vars
         if: inputs.flow == 'upgrade-minor'
         id: test-type-vars-upgrade-minor
         uses: ./.github/actions/test-type-vars
@@ -549,12 +558,12 @@ jobs:
           values-digest: "${{ inputs.values-digest }}"
           flow: "${{ inputs.flow }}"
 
-      - name: Helm - Upgrade - Package - From Previous Minor
+      - name: Helm - Upgrade Minor - Package
         if: inputs.flow == 'upgrade-minor'
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
-      - name: Cluster Setup - Configure TLS Certificates/Secrets - From Previous Minor
+      - name: Cluster Setup - Upgrade Minor - Configure TLS Certificates/Secrets
         if: inputs.flow == 'upgrade-minor'
         uses: ./.github/actions/cluster-setup-secrets
         with:
@@ -563,12 +572,12 @@ jobs:
           namespace: ${{ env.TEST_NAMESPACE }}
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
-      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks - From Previous Minor
+      - name: Helm - Upgrade Minor - Execute before upgrade lifecycle tasks
         if: inputs.flow == 'upgrade-minor'
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
-      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart - From Previous Minor 🌟
+      - name: Helm - Upgrade Minor - 🌟 Upgrade Camunda chart 🌟
         if: inputs.flow == 'upgrade-minor'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
@@ -581,6 +590,10 @@ jobs:
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      ##########################################################################################################
+      # CI Teardown
+      ##########################################################################################################
 
       - name: CI Setup - Update GitHub deployment status
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1

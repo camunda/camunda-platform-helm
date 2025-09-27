@@ -59,7 +59,7 @@ on:
       camunda-helm-upgrade-version:
         required: false
         type: string
-      camunda-upgrade-version:
+      camunda-version-previous:
         required: false
         type: string
 
@@ -116,4 +116,4 @@ jobs:
       always-delete-namespace: true
       values-digest: "true"
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-      camunda-upgrade-version: ${{ inputs.camunda-upgrade-version }}
+      camunda-version-previous: ${{ inputs.camunda-version-previous }}

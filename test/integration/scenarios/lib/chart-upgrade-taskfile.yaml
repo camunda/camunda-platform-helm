@@ -10,9 +10,11 @@ tasks:
   pre:
     cmds:
     - |
-      # Pre-run scripts in the upgrade flow.
-      export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
-      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-upgrade.sh
+      {{ if eq .TEST_CHART_FLOW "upgrade" }}
+        # Pre-run scripts in the upgrade flow.
+        export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-upgrade.sh
+      {{ end }}
     - |
       {{ if eq .TEST_CHART_FLOW "upgrade-minor" }}
         # Pre-run scripts in the upgrade-minor flow.

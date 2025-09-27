@@ -112,4 +112,4 @@ jobs:
       flows: 'upgrade-minor'
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
       # camunda-helm-upgrade-version: ${{ matrix.chartVersionPrevious }}
-      camunda-upgrade-version: ${{ matrix.camundaVersionPrevious }}
+      camunda-version-previous: ${{ matrix.camundaVersionPrevious }}

@@ -31,7 +31,7 @@ on:
         required: false
         default: ""
         type: string
-      camunda-upgrade-version:
+      camunda-version-previous:
         description: The Camunda version to upgrade from.
         required: false
         default: ""
@@ -259,7 +259,7 @@ jobs:
       camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
       camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-      camunda-upgrade-version: ${{ inputs.camunda-upgrade-version }}
+      camunda-version-previous: ${{ inputs.camunda-version-previous }}
       caller-git-ref: ${{ inputs.caller-git-ref }}
       deployment-ttl: ${{ inputs.deployment-ttl }}
       distro-platform: ${{ matrix.distro.platform }}
