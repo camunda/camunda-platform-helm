@@ -499,7 +499,7 @@ jobs:
       ##########################################################################################################
 
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
-        if: inputs.flow == 'upgrade'
+        if: inputs.flow == 'upgrade-patch'
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
@@ -513,13 +513,13 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
       - name: Helm - Upgrade - Setup Helm extra args
-        if: inputs.flow == 'upgrade'
+        if: inputs.flow == 'upgrade-patch'
         run: |
           TEST_HELM_EXTRA_ARGS_UPGRADE="${TEST_HELM_EXTRA_ARGS}"
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
       - name: Helm - Upgrade ALPHA - Setup Helm extra args
-        if: inputs.flow == 'upgrade' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
+        if: inputs.flow == 'upgrade-patch' && inputs.camunda-helm-dir == env.TEST_CAMUNDA_HELM_DIR_ALPHA
         run: |
           # Since Zeebe 8.6 it's not possible to upgrade from/to alpha version.
           # The Zeebe team advised to use SNAPSHOT tag instead.
@@ -529,7 +529,7 @@ jobs:
           echo "TEST_HELM_EXTRA_ARGS_UPGRADE=${TEST_HELM_EXTRA_ARGS_UPGRADE}" | tee -a $GITHUB_ENV
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
-        if: inputs.flow == 'upgrade'
+        if: inputs.flow == 'upgrade-patch'
         env:
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: ${{ inputs.test-case }}

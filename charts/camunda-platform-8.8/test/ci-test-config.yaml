@@ -17,7 +17,6 @@ integration:
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
     chartsBaseDir: ../../../..
-    camundaVersionPrevious: 8.7
   case:
     pr:
       scenario:

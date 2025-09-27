@@ -79,7 +79,7 @@ tasks:
       # echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
       # cat "${VARIABLES_ENV_FILE}"
     - |
-      {{ if eq .TEST_CHART_FLOW "upgrade" }}
+      {{ if eq .TEST_CHART_FLOW "upgrade-patch" }}
         # Extract OpenShift values from released chart for upgrade test.
         helm pull {{ .TEST_CHART_NAME }} --untar --untardir {{ .TEST_TMP_DIR }} \
           --version {{ .TEST_CHART_VERSION }}

@@ -30,7 +30,7 @@ matrix:
     - name: Chart Upgrade
       desc: Upgrade chart from the latest released version to the current branch.
       flow: upgrade
-      if: $INPUTS_FLOWS_UPGRADE
+      if: $INPUTS_FLOWS_UPGRADE_PATCH
     - name: Chart Upgrade
       desc: Upgrade chart from the latest released version to the current branch.
       flow: upgrade-minor

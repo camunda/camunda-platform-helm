@@ -2,7 +2,7 @@ name: Workflow vars
 description: Set common vars for workflow
 inputs:
   setup-flow:
-    description: The chart setup flow either "install" or "upgrade".
+    description: The chart setup flow either "install", "upgrade-patch", or "upgrade-minor".
     default: "install"
   ingress-hostname-base:
     description: The base of the Ingress hostname.
@@ -79,7 +79,7 @@ runs:
         TEST_NAMESPACE="${TEST_NAMESPACE}-${{ github.run_id }}-${GITHUB_WORKFLOW_JOB_ID}"
       fi
 
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-upg"
       fi
 
@@ -103,7 +103,7 @@ runs:
 
       # Deployment identifier.
       TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${local_identifier} | sed 's/\./-/g')"
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
         TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
       fi
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
@@ -127,7 +127,7 @@ runs:
     run: |
       # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
       # then upgraded from the PR branch to ensure upgradability.
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
         if [[ -n "${{ inputs.chart-upgrade-version }}" ]]; then
           TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
         fi

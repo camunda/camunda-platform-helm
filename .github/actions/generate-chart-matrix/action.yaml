@@ -91,7 +91,6 @@ runs:
               fi
               echo "  - version: ${camunda_version}" >> matrix_versions.txt
               echo "    camundaVersionPrevious: $(echo "$camunda_version_previous")" >> matrix_versions.txt
-              # echo "    chartVersionPrevious: $(echo "$chart_version_previous")" >> matrix_versions.txt
               echo "    case: pr" >> matrix_versions.txt
               echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
               echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
