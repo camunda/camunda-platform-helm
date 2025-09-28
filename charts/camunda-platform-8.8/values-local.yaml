@@ -2,30 +2,6 @@
 # This values file is used for local development and testing.
 # It disables some features and reduces the resource requirements to run the Camunda Platform locally.
 #
-global:
-  identity:
-    auth:
-      # Disable the Identity authentication for local development
-      # it will fall back to basic-auth: demo/demo as default user
-      enabled: false
-
-#
-# Management Cluster.
-#
-
-identity:
-  enabled: false
-
-identityKeycloak:
-  enabled: false
-
-#
-# Orchestration Cluster.
-#
-
-connectors:
-  inbound:
-    mode: disabled
 
 orchestration:
   replicas: 1
@@ -33,12 +9,18 @@ orchestration:
   partitionCount: "1"
   replicationFactor: "1"
   pvcSize: 10Gi
-
-optimize:
-  enabled: false
+  authentication:
+    unprotected-api: true
+  authorizations:
+    enabled: false
 
 elasticsearch:
   master:
     replicaCount: 1
     persistence:
       size: 10Gi
+
+connectors:
+  env:
+    - name: CONNECTOR_OUTBOUND_DISABLED
+      value: "io.camunda:connector-graphql:1,io.camunda:connector-automationanywhere:1,io.camunda:azure-blobstorage:1,io.camunda:aws-comprehend:1,io.camunda:aws-sns1:,io.camunda:google-sheets:1,io.camunda:google-drive:1,io.camunda:azure-blobstorage:1,io.camunda:aws-textract:1"
