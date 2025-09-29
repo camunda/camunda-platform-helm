@@ -880,7 +880,7 @@ identityPostgresql:
   ##
   image:
     repository: bitnamilegacy/postgresql
-    tag: 14.9.0-debian-11-r61
+    tag: 15.10.0-debian-12-r2
     digest: ""
   ## @param identityPostgresql.nameOverride the name used for Management Identity PostgreSQL.
   ##
@@ -2051,7 +2051,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
     repository: bitnamilegacy/postgresql
-    tag: 15.10.0-debian-12-r2
+    tag: 14.18.0-debian-12-r0
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
   auth:
