@@ -61,7 +61,7 @@ identityKeycloak:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
       repository: bitnamilegacy/postgresql
-      tag: 14.18.0-debian-12-r0
+      tag: 15.10.0-debian-12-r2
 
 #
 # Elasticsearch

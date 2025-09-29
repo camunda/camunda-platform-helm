@@ -28,7 +28,7 @@ identityPostgresql:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
-    tag: 14.19.0-debian-12-r0
+    tag: 15.14.0-debian-12-r2
     pullSecrets:
       - name: registry-camunda-cloud
 
@@ -65,7 +65,7 @@ identityKeycloak:
     image:
       registry: registry.camunda.cloud
       repository: vendor-ee/postgresql
-      tag: 14.19.0-debian-12-r0
+      tag: 15.14.0-debian-12-r2
       pullSecrets:
         - name: registry-camunda-cloud
 
