@@ -2896,6 +2896,14 @@ postgresql:
   ## @param postgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
+  # https://hub.docker.com/r/bitnami/postgresql/tags
+  ## @param postgresql.image.repository PostgreSQL repo
+  ## @param postgresql.image.tag PostgreSQL image tag
+  ## @param postgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+  image:
+    repository: bitnamilegacy/postgresql
+    tag: 14.18.0-debian-12-r0
+    digest: ""
   ## @extra postgresql.auth configuration of the database authentication
   auth:
     ## @param postgresql.auth.username defines the name of the database user to be created for Web Modeler

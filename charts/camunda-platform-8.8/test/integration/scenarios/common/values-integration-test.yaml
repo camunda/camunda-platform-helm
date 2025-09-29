@@ -48,3 +48,9 @@ identity:
       value: console-api
     - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
       value: "write:*"
+
+orchestration:
+  env:
+    # Allow to upgrade from alpha or snapshot versions.
+    - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
+      value: "false"

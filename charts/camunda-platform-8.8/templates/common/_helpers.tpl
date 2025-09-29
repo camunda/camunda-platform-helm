@@ -974,12 +974,9 @@ Release highlights.
 */}}
 
 {{- define "camundaPlatform.ReleaseHighlights" }}
-###
-### Helm chart release highlights
-###
+## [info] Helm chart release highlights
 - Some values have been renamed or moved in the new chart structure.
 - When upgraded from 8.7 to 8.8, manual adjustments may be required for some cases like custom configurations.
-- To enable the compatibility layer, users must set the `global.compatibility.enabled` value to `true`.
 - Please refer to the official docs for more details.
 https://docs.camunda.io/docs/next/self-managed/installation-methods/helm/upgrade/upgrade-hc-870-880/
 {{- end -}}

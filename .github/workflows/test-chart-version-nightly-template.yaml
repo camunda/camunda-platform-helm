@@ -58,7 +58,7 @@ jobs:
     with:
       identifier: "${{ inputs.camunda-version }}"
       platforms: "gke"
-      flows: "install,upgrade"
+      flows: "install,upgrade-patch,upgrade-minor"
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       test-case: "${{ inputs.case }}"
       scenario: "${{ inputs.scenario }}"
