@@ -1879,7 +1879,7 @@
                                 "tag": {
                                     "type": "string",
                                     "description": "image tag",
-                                    "default": "15.10.0-debian-12-r2"
+                                    "default": "14.18.0-debian-12-r0"
                                 },
                                 "digest": {
                                     "type": "string",
@@ -4307,7 +4307,7 @@
                         "tag": {
                             "type": "string",
                             "description": "PostgreSQL image tag",
-                            "default": "15.10.0-debian-12-r2"
+                            "default": "14.18.0-debian-12-r0"
                         },
                         "digest": {
                             "type": "string",
