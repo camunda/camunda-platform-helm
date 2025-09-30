@@ -18,57 +18,57 @@ global:
   identity:
     auth:
       enabled: true
-      issuer: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
-      issuerBackendUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
-      tokenUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/oauth2/v2.0/token
-      authUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/oauth2/v2.0/authorize
-      jwksUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/discovery/v2.0/keys
-      publicIssuerUrl: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/v2.0
+      issuer: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
+      issuerBackendUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
+      tokenUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/token
+      authUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/authorize
+      jwksUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+      publicIssuerUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
       type: "MICROSOFT"
       orchestration:
-        clientId: $ENTRA_CHILD_APP_CLIENT_ID
-        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.orchestration.contextPath }}"
       identity:
-        clientId: $ENTRA_CHILD_APP_CLIENT_ID
-        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         # this existngSecret must be a string literal
         secret: 
-          inlineSecret: $ENTRA_CHILD_APP_CLIENT_SECRET
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
         initialClaimValue: $INITIAL_CLAIM_VALUE
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.identity.contextPath }}"
       optimize:
-        clientId: $ENTRA_CHILD_APP_CLIENT_ID
-        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.optimize.contextPath }}"
       connectors:
-        clientId: $ENTRA_CHILD_APP_CLIENT_ID
-        audience: $ENTRA_CHILD_APP_CLIENT_ID
-        clientApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        tokenScope: $ENTRA_CHILD_APP_CLIENT_ID/.default
+        tokenScope: $ENTRA_APP_CLIENT_ID/.default
       webModeler:
-        clientId: $ENTRA_CHILD_APP_CLIENT_ID
-        audience: $ENTRA_CHILD_APP_CLIENT_ID
-        clientApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
-        publicApiAudience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_APP_CLIENT_ID
+        publicApiAudience: $ENTRA_APP_CLIENT_ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.webModeler.contextPath }}"
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
-        clientId: $ENTRA_CHILD_APP_CLIENT_ID
-        audience: $ENTRA_CHILD_APP_CLIENT_ID
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        tokenScope: $ENTRA_CHILD_APP_CLIENT_ID/.default
+        tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
 
 orchestration:
@@ -140,7 +140,7 @@ console:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
       value: 'true'      
     - name: CAMUNDA_IDENTITY_JWKS_URL
-      value: https://login.microsoftonline.com/$ENTRA_CHILD_APP_DIRECTORY_ID/discovery/v2.0/keys
+      value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
 
 identity:
   enabled: true
@@ -152,4 +152,4 @@ connectors:
     tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:
     - name: CAMUNDA_CLIENT_AUTH_SCOPE
-      value: $ENTRA_CHILD_APP_CLIENT_ID/.default
+      value: $ENTRA_APP_CLIENT_ID/.default

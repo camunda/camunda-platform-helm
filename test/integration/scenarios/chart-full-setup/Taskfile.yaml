@@ -210,18 +210,18 @@ tasks:
     desc: "Update Entra application redirect URIs for current TEST_INGRESS_HOST"
     preconditions:
       - test -n "{{ .TEST_INGRESS_HOST }}"
-      - test -n "{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}"
-      - test -n "{{ .ENTRA_PARENT_APP_CLIENT_ID }}"
-      - test -n "{{ .ENTRA_PARENT_APP_CLIENT_SECRET }}"
-      - test -n "{{ .ENTRA_CHILD_APP_OBJECT_ID }}"
+      - test -n "{{ .ENTRA_APP_DIRECTORY_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_SECRET }}"
+      - test -n "{{ .ENTRA_APP_OBJECT_ID }}"
     cmds:
       - |
         RESPONSE=$(curl -s -X POST \
-          https://login.microsoftonline.com/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
+          https://login.microsoftonline.com/{{ .ENTRA_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
           -H "Content-Type: application/x-www-form-urlencoded" \
-          -d "client_id={{ .ENTRA_PARENT_APP_CLIENT_ID }}" \
+          -d "client_id={{ .ENTRA_APP_CLIENT_ID }}" \
           -d "scope=https://graph.microsoft.com/.default" \
-          -d "client_secret={{ .ENTRA_PARENT_APP_CLIENT_SECRET }}" \
+          -d "client_secret={{ .ENTRA_APP_CLIENT_SECRET }}" \
           -d "grant_type=client_credentials")
 
         BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
@@ -244,7 +244,7 @@ tasks:
         )
 
         APP_JSON=$(curl -s -X GET \
-          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json")
 
@@ -263,7 +263,7 @@ tasks:
         echo $FINAL_SPA_URIS
 
         curl -s -X PATCH \
-          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_APP_OBJECT_ID }}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H "Content-Type: application/json" \
           -d "{
@@ -274,10 +274,10 @@ tasks:
   entra.template-yaml:
     cmds:
       - |
-        export ENTRA_CHILD_APP_CLIENT_ID={{ .ENTRA_PARENT_APP_CLIENT_ID }}
-        export ENTRA_CHILD_APP_CLIENT_SECRET={{ .ENTRA_PARENT_APP_CLIENT_SECRET }}
-        export ENTRA_CHILD_APP_DIRECTORY_ID={{ .ENTRA_PARENT_APP_DIRECTORY_ID }}
-        export ENTRA_CHILD_APP_OBJECT_ID={{ .ENTRA_CHILD_APP_OBJECT_ID }}
+        export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
+        export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
+        export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
+        export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
 
         envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml.tmp
         envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml.tmp
