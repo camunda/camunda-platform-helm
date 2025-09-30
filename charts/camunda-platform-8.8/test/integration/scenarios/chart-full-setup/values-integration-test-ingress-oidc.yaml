@@ -36,7 +36,7 @@ global:
         # this existngSecret must be a string literal
         secret: 
           inlineSecret: $ENTRA_CHILD_APP_CLIENT_SECRET
-        initialClaimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
+        initialClaimValue: $ENTRA_OBJECT_ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
       optimize:
         clientId: $ENTRA_CHILD_APP_CLIENT_ID
@@ -67,7 +67,7 @@ global:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_CHILD_APP_CLIENT_ID/.default
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/"
 
 console:
   enabled: true
@@ -157,32 +157,7 @@ orchestration:
       mappingRules:
         - mappingRuleID: demo-user-mapping-rule
           claimName: oid
-          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
-  env:
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "oid"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: d70412f6-5a6e-4271-8e45-fa497056ac1e
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "venom"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
-      value: "connectors"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
-      value: "connectors-client-mapping-rule"
+          claimValue: $ENTRA_OBJECT_ID
 
 elasticsearch:
   maxUnavailable: 0
