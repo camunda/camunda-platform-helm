@@ -279,14 +279,28 @@ test.describe("Camunda core", () => {
           },
         );
 
-        if (r.ok()) {
-          break; // success – we got a 200
+        try {
+          expect(
+            r.ok(),
+            `Process visibility check failed for ${label}: ${r.status()}`,
+          ).toBeTruthy();
+          const data = await r.json();
+          const ids = (data.items as Array<{ bpmnProcessId: string }>).map(
+            (i) => i.bpmnProcessId,
+          );
+          expect(ids, `Process ${bpmnId} not found in Operate`).toContain(
+            bpmnId,
+          );
+          break;
+        } catch (e) {
+          console.log(e);
         }
         if (Date.now() - start >= timeoutMs) {
           break; // give up after timeout; expectation below will fail the test
         }
         await new Promise((resolve) => setTimeout(resolve, intervalMs));
       }
+
       expect(
         r.ok(),
         `Process visibility check failed for ${label}: ${r.status()}`,

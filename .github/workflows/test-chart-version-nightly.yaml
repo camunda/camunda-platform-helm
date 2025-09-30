@@ -5,9 +5,41 @@ on:
   schedule:
     # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
     - cron: "0 4 * * *"
+  pull_request:
+    paths:
+      - ".github/workflows/test-chart-version-nightly-template.yaml"
+      - ".github/workflows/test-chart-version-nightly.yaml"
+      - ".github/workflows/test-integration-template.yaml"
+      - ".github/workflows/test-integration-runner.yaml"
+      - ".github/charts/*/test/ci-test-config.yaml"
   push:
     branches:
     - "feature/ee-images-prem"
+  workflow_dispatch: 
+    inputs:
+      platforms:
+        description: The deployment cloud platform
+        default: "gke"
+        required: false
+        type: choice
+        options:
+          - gke
+          - eks
+          - rosa
+          - gke,eks
+      flows:
+        description: The flows to run
+        default: "install"
+        required: false
+        type: choice
+        options:
+          - install
+          - upgrade
+          - install,upgrade
+      deployment-ttl:
+        required: false
+        default: 1h
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
@@ -23,7 +55,7 @@ jobs:
     name: Generate chart matrix Nightly
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+      matrix: ${{ steps.add-platforms.outputs.matrix }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -31,11 +63,36 @@ jobs:
       - name: Generate chart versions
         id: generate-chart-versions
         uses: ./.github/actions/generate-chart-matrix-nightly
+      - name: Add platforms to matrix
+        id: add-platforms
+        run: |
+          platforms="gke" # eks is too unstable to run tests on it
+          matrix='${{ steps.generate-chart-versions.outputs.matrix }}'
+      
+          printf '%s\n' "$matrix" > matrix.json
+      
+          new_matrix=$(jq -c --arg platforms "$platforms" '
+            .include as $inc
+            | {include: [
+                $inc[] as $m
+                | ($platforms | split(",") | map(gsub("^\\s+|\\s+$";"")))[] as $p
+                | $m + {platform:$p}
+              ]}
+          ' matrix.json)
+      
+          echo "Expanded matrix:"
+          echo "$new_matrix" | jq .
+      
+          {
+            echo 'matrix<<JSON'
+            echo "$new_matrix"
+            echo 'JSON'
+          } >> "$GITHUB_OUTPUT"
 
-  test:
+  integation-tests:
+    name: ${{ matrix.version }} - ${{ matrix.platform }} - ${{ matrix.case }} - ${{ matrix.shortname }} - ${{ matrix.auth }} - ${{ matrix.exclude }}
     if: ${{ needs.init.outputs.matrix != '[]' }}
-    name: Camunda ${{ matrix.version }}
-    needs: init
+    needs: [init]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -45,6 +102,38 @@ jobs:
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
       scenario: ${{ matrix.scenario }}
+      shortname: ${{ matrix.shortname }}
       auth: ${{ matrix.auth }}
+      platforms: ${{ matrix.platform }}
       exclude: ${{ matrix.exclude }}
+      flows: ${{ inputs.flows || 'install,upgrade' }}
+      deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
       values-enterprise: ${{ matrix.values-enterprise }}
+
+
+  report:
+    name: Report
+    runs-on: ubuntu-latest
+    needs: integation-tests
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+
+      - name: Upload message to Slack on failure
+        if: ${{ failure() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": "Job *${{ github.job }}* in workflow *${{ github.workflow }}* failed for *${{ github.repository }}*!\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\nLogs: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts|View Artifacts>"
+          }' \
+          "$SLACK_WEBHOOK_URL"

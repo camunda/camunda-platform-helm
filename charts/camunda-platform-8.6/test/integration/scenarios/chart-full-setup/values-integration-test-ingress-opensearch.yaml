@@ -4,12 +4,12 @@ global:
   opensearch:
     enabled: true
     auth:
-      username: camunda
-      password: camunda
+      username: $OPENSEARCH_USERNAME
+      password: $OPENSEARCH_PASSWORD
     url:
-      protocol: https
-      host: camunda.com
-      port: 443
+      protocol: $OPENSEARCH_PROTOCOL
+      host: $OPENSEARCH_HOST
+      port: $OPENSEARCH_PORT
 
 elasticsearch:
   enabled: false
@@ -17,37 +17,37 @@ elasticsearch:
 zeebe:
   env:
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: custom-zeebe
+      value: custom-zeebe-8-6
 
 operate:
   env:
     - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
-      value: custom-operate
+      value: custom-operate-8-6
     - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
-      value: custom-zeebe
+      value: custom-zeebe-8-6
   migration:
     env:
       - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
-        value: custom-operate
+        value: custom-operate-8-6
       - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
-        value: custom-zeebe
+        value: custom-zeebe-8-6
 
 tasklist:
   env:
     - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
-      value: custom-tasklist
+      value: custom-tasklist-8-6
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
-      value: custom-zeebe
+      value: custom-zeebe-8-6
 
 optimize:
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: custom-optimize
+      value: custom-optimize-8-6
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-      value: custom-zeebe
+      value: custom-zeebe-8-6
   migration:
     env:
       - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-        value: custom-optimize
+        value: custom-optimize-8-6
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-        value: custom-zeebe
+        value: custom-zeebe-8-6
