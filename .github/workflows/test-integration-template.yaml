@@ -145,6 +145,11 @@ on:
         default: false
         type: boolean
         required: false
+      initialClaimValue:
+        description: This is only used for testing Entra. This is here so we can do exploratory testing with Entra.
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -176,14 +181,10 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   # OIDC.
-  ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
-  ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
-  ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
-  ENTRA_PARENT_APP_OBJECT_ID: ${{ secrets.ENTRA_PARENT_APP_OBJECT_ID }}
-  ENTRA_CHILD_APP_CLIENT_ID: ${{ secrets.ENTRA_CHILD_APP_CLIENT_ID }}
-  ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_CHILD_APP_CLIENT_SECRET }}
-  ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_CHILD_APP_DIRECTORY_ID }}
-  ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+  ENTRA_APP_CLIENT_ID: ${{ secrets.ENTRA_APP_CLIENT_ID }}
+  ENTRA_APP_CLIENT_SECRET: ${{ secrets.ENTRA_APP_CLIENT_SECRET }}
+  ENTRA_APP_DIRECTORY_ID: ${{ secrets.ENTRA_APP_DIRECTORY_ID }}
+  ENTRA_APP_OBJECT_ID: ${{ secrets.ENTRA_APP_OBJECT_ID }}
   # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
@@ -284,6 +285,7 @@ jobs:
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
+      initialClaimValue: ${{ inputs.initialClaimValue }}
 
   print-outputs:
     name: Print outputs

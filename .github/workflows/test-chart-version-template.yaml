@@ -109,3 +109,8 @@ jobs:
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
       always-delete-namespace: true
       values-digest: "true"
+      vault-secret-mapping: |
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;

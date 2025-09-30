@@ -94,74 +94,11 @@ tasks:
       # Pre-run scripts in the install flow.
       export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
       bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-install.sh
-    - |
-      {{ if eq .TEST_AUTH_TYPE "oidc" }}
-        # This token will expire in June 2027, a new one can be created in the Azure Entra UI
-        RESPONSE=$(curl -X POST \
-          https://login.microsoftonline.com/{{ .ENTRA_PARENT_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
-          -H "Content-Type: application/x-www-form-urlencoded" \
-          -d "client_id={{ .ENTRA_PARENT_APP_CLIENT_ID }}" \
-          -d "scope=https://graph.microsoft.com/.default" \
-          -d "client_secret={{ .ENTRA_PARENT_APP_CLIENT_SECRET }}" \
-          -d "grant_type=client_credentials")
-
-        BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
-        # There is no way to append URIs from a single curl request so we have to first GET, append, deduplicate, then curl with the updated list.
-        NEW_WEB_URIS=(
-          "https://{{ .TEST_INGRESS_HOST }}"
-          "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback"
-          "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback"
-          "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback"
-          "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback"
-          "https://{{ .TEST_INGRESS_HOST }}/orchestration/sso-callback"
-        )
-        NEW_SPA_URIS=(
-          "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback"
-          "https://{{ .TEST_INGRESS_HOST }}/"
-        )
-
-        APP_JSON=$(curl -s -X GET \
-          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
-          -H "Authorization: Bearer ${BEARER_TOKEN}" \
-          -H "Content-Type: application/json")
-
-        WEB_URIS=$(echo "$APP_JSON" | jq -r '.web.redirectUris[]?')
-        SPA_URIS=$(echo "$APP_JSON" | jq -r '.spa.redirectUris[]?')
-
-        ALL_WEB_URIS=("${WEB_URIS[@]}" "${NEW_WEB_URIS[@]}")
-        ALL_SPA_URIS=("${SPA_URIS[@]}" "${NEW_SPA_URIS[@]}")
-
-        # Deduplicate using sort/uniq
-        FINAL_WEB_URIS=$(printf "%s\n" "${ALL_WEB_URIS[@]}" | sort -u | jq -R . | jq -s .)
-        FINAL_SPA_URIS=$(printf "%s\n" "${ALL_SPA_URIS[@]}" | sort -u | jq -R . | jq -s .)
-
-        # print out the final URIs
-        echo "web URIs:"
-        echo $FINAL_WEB_URIS
-        echo "SPA URIs:"
-        echo $FINAL_SPA_URIS
-
-        # PATCH the updated list
-        curl -X PATCH \
-          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_CHILD_APP_OBJECT_ID }}" \
-          -H "Authorization: Bearer ${BEARER_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"web\": { \"redirectUris\": $FINAL_WEB_URIS },
-            \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
-          }"
-      {{ end }}
+    - task: entra.update-redirect-uris
+      when: '{{ eq .TEST_AUTH_TYPE "oidc" }}'
     - |
       {{ if and (eq .TEST_VALUES_SCENARIO "opensearch") .TEST_OPENSEARCH_PREFIX }}
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      {{ end }}
-    - |
-      {{ if eq .TEST_AUTH_TYPE "oidc" }}
-        sed -i 's/<clientId>/{{ .ENTRA_CHILD_APP_CLIENT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        sed -i 's/<clientSecret>/{{ .ENTRA_CHILD_APP_CLIENT_SECRET }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        sed -i 's/<directoryId>/{{ .ENTRA_CHILD_APP_DIRECTORY_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        # sed -i 's/<objectId>/{{ .ENTRA_CHILD_APP_OBJECT_ID }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
-        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
       {{ end }}
 
   setup.venom.env:
@@ -268,6 +205,88 @@ tasks:
     cmds:
     - kubectl delete secret registry-camunda-cloud --ignore-not-found=true
     - git checkout {{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env
+
+  entra.update-redirect-uris:
+    desc: "Update Entra application redirect URIs for current TEST_INGRESS_HOST"
+    preconditions:
+      - test -n "{{ .TEST_INGRESS_HOST }}"
+      - test -n "{{ .ENTRA_APP_DIRECTORY_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_SECRET }}"
+      - test -n "{{ .ENTRA_APP_OBJECT_ID }}"
+    cmds:
+      - |
+        RESPONSE=$(curl -s -X POST \
+          https://login.microsoftonline.com/{{ .ENTRA_APP_DIRECTORY_ID }}/oauth2/v2.0/token \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id={{ .ENTRA_APP_CLIENT_ID }}" \
+          -d "scope=https://graph.microsoft.com/.default" \
+          -d "client_secret={{ .ENTRA_APP_CLIENT_SECRET }}" \
+          -d "grant_type=client_credentials")
+
+        BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
+        if [ -z "$BEARER_TOKEN" ] || [ "$BEARER_TOKEN" = "null" ]; then
+          echo "Failed to obtain Entra bearer token" >&2
+          echo "$RESPONSE" >&2
+          exit 1
+        fi
+
+        NEW_WEB_URIS=(
+          "https://{{ .TEST_INGRESS_HOST }}/identity/auth/login-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/operate/identity-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/optimize/api/authentication/callback"
+          "https://{{ .TEST_INGRESS_HOST }}/tasklist/identity-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/orchestration/sso-callback"
+        )
+        NEW_SPA_URIS=(
+          "https://{{ .TEST_INGRESS_HOST }}/modeler/login-callback"
+          "https://{{ .TEST_INGRESS_HOST }}/"
+        )
+
+        APP_JSON=$(curl -s -X GET \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_APP_OBJECT_ID }}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json")
+
+        WEB_URIS=$(echo "$APP_JSON" | jq -r '.web.redirectUris[]?' || true)
+        SPA_URIS=$(echo "$APP_JSON" | jq -r '.spa.redirectUris[]?' || true)
+
+        ALL_WEB_URIS=("${WEB_URIS[@]}" "${NEW_WEB_URIS[@]}")
+        ALL_SPA_URIS=("${SPA_URIS[@]}" "${NEW_SPA_URIS[@]}")
+
+        FINAL_WEB_URIS=$(printf "%s\n" "${ALL_WEB_URIS[@]}" | sed '/^$/d' | sort -u | jq -R . | jq -s .)
+        FINAL_SPA_URIS=$(printf "%s\n" "${ALL_SPA_URIS[@]}" | sed '/^$/d' | sort -u | jq -R . | jq -s .)
+
+        echo "web URIs:"
+        echo $FINAL_WEB_URIS
+        echo "SPA URIs:"
+        echo $FINAL_SPA_URIS
+
+        curl -s -X PATCH \
+          "https://graph.microsoft.com/v1.0/applications/{{ .ENTRA_APP_OBJECT_ID }}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"web\": { \"redirectUris\": $FINAL_WEB_URIS },
+            \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
+          }" | cat
+
+  entra.template-yaml:
+    cmds:
+      - |
+        export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
+        export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
+        export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
+        export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
+
+        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml.tmp
+        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml.tmp
+
+        mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
+
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
 
   upgrade.pre:
     deps: [upgrade:pre]
