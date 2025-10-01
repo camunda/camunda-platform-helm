@@ -72,11 +72,12 @@ func (suite *EnterpriseValuesTestSuite) TestIdentityPostgresqlConfiguration() {
 	
 	// Test that Helm template renders successfully with enterprise values
 	// NOTE: We need to enable Identity and PostgreSQL explicitly since they're disabled by default
+	// NOTE: In 8.8, the key changed from "identity.postgresql" to "identityPostgresql"
 	output := helm.RenderTemplate(suite.T(), &helm.Options{
 		ValuesFiles: []string{filepath.Join(suite.chartPath, "values-enterprise.yaml")},
 		SetValues: map[string]string{
 			"identity.enabled":           "true",
-			"identity.postgresql.enabled": "true",
+			"identityPostgresql.enabled": "true",
 		},
 		ExtraArgs: map[string][]string{
 			"template": {"--show-only", "charts/postgresql/templates/primary/statefulset.yaml"},
@@ -98,12 +99,13 @@ func (suite *EnterpriseValuesTestSuite) TestIdentityKeycloakConfiguration() {
 	
 	// Test that Helm template renders successfully with enterprise values
 	// NOTE: We need to enable Identity, Keycloak AND PostgreSQL since Keycloak depends on PostgreSQL
+	// NOTE: In 8.8, the key changed from "identity.postgresql" to "identityPostgresql"
 	output := helm.RenderTemplate(suite.T(), &helm.Options{
 		ValuesFiles: []string{filepath.Join(suite.chartPath, "values-enterprise.yaml")},
 		SetValues: map[string]string{
 			"identity.enabled":            "true",
 			"identity.keycloak.enabled":   "true",
-			"identity.postgresql.enabled": "true",
+			"identityPostgresql.enabled": "true",
 		},
 		ExtraArgs: map[string][]string{
 			"template": {"--show-only", "charts/keycloak/templates/statefulset.yaml"},
@@ -185,7 +187,7 @@ func (suite *EnterpriseValuesTestSuite) TestComprehensiveEnterpriseImageUsage() 
 			"registry.camunda.cloud/vendor-ee/os-shell", // volumePermissions
 		},
 		"keycloak": {
-			"registry.camunda.cloud/vendor-ee/keycloak",
+			"registry.camunda.cloud/keycloak-ee/keycloak",
 			// Note: keycloak-config-cli is a job that only runs under certain conditions
 			"registry.camunda.cloud/vendor-ee/postgresql", // embedded postgresql
 		},
@@ -193,12 +195,13 @@ func (suite *EnterpriseValuesTestSuite) TestComprehensiveEnterpriseImageUsage() 
 	
 	// Render the full template with enterprise values
 	// NOTE: Enable all components and metrics to validate all enterprise images
+	// NOTE: In 8.8, the key changed from "identity.postgresql" to "identityPostgresql"
 	output := helm.RenderTemplate(suite.T(), &helm.Options{
 		ValuesFiles: []string{filepath.Join(suite.chartPath, "values-enterprise.yaml")},
 		SetValues: map[string]string{
 			"identity.enabled":                     "true",
 			"identity.keycloak.enabled":            "true",
-			"identity.postgresql.enabled":          "true",
+			"identityPostgresql.enabled":           "true",
 			"elasticsearch.metrics.enabled":        "true",
 			"postgresql.enabled":                   "true",
 			"postgresql.metrics.enabled":           "true",
@@ -274,12 +277,13 @@ func (suite *EnterpriseValuesTestSuite) TestPullSecretsConfiguration() {
 	
 	// Render the full template with enterprise values
 	// NOTE: Enable all components to validate all pull secrets
+	// NOTE: In 8.8, the key changed from "identity.postgresql" to "identityPostgresql"
 	output := helm.RenderTemplate(suite.T(), &helm.Options{
 		ValuesFiles: []string{filepath.Join(suite.chartPath, "values-enterprise.yaml")},
 		SetValues: map[string]string{
 			"identity.enabled":            "true",
 			"identity.keycloak.enabled":   "true",
-			"identity.postgresql.enabled": "true",
+			"identityPostgresql.enabled": "true",
 		},
 	}, suite.chartPath, "camunda-platform-test", []string{})
 	

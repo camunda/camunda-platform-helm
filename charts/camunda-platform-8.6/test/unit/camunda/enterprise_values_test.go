@@ -185,7 +185,7 @@ func (suite *EnterpriseValuesTestSuite) TestComprehensiveEnterpriseImageUsage() 
 			"registry.camunda.cloud/vendor-ee/os-shell", // volumePermissions
 		},
 		"keycloak": {
-			"registry.camunda.cloud/vendor-ee/keycloak",
+			"registry.camunda.cloud/keycloak-ee/keycloak",
 			// Note: keycloak-config-cli is a job that only runs under certain conditions
 			"registry.camunda.cloud/vendor-ee/postgresql", // embedded postgresql
 		},
