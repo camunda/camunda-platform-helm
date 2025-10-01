@@ -22,7 +22,7 @@ data:
               - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
           management-identity:
             audience: "camunda-identity-resource-server"
-            base-url: "http://localhost:8085"
+            base-url: http://camunda-platform-test-identity:80
             client-id: migration
             client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
             issuer-backend-url: "http://:/auth/realms/camunda-platform"
