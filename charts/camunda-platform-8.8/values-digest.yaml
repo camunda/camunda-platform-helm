@@ -68,5 +68,5 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: SNAPSHOT
+    tag: 8.8-SNAPSHOT
     digest: "sha256:675a5137cd3bb1cb02ac3078b766997e2603120c7410a29a65450ab8409c72ca"
