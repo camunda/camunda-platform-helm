@@ -103,7 +103,7 @@ func (suite *EnterpriseValuesTestSuite) TestIdentityKeycloakConfiguration() {
 	}, suite.chartPath, "camunda-platform-test", []string{})
 
 	// Verify the Keycloak uses the correct enterprise image
-	suite.Contains(output, "registry.camunda.cloud/keycloak-ee/keycloak", 
+	suite.Contains(output, "registry.camunda.cloud/vendor-ee/keycloak", 
 		"identityKeycloak should use the enterprise registry and repository")
 	
 	// NOTE: We don't check for "error" or "failed" here because Keycloak config contains
@@ -173,7 +173,7 @@ func (suite *EnterpriseValuesTestSuite) TestComprehensiveEnterpriseImageUsage() 
 			"registry.camunda.cloud/vendor-ee/os-shell", // volumePermissions
 		},
 		"keycloak": {
-			"registry.camunda.cloud/keycloak-ee/keycloak",
+			"registry.camunda.cloud/vendor-ee/keycloak",
 			// Note: keycloak-config-cli is a job that only runs under certain conditions, not included here
 			"registry.camunda.cloud/vendor-ee/postgresql", // embedded postgresql
 		},
