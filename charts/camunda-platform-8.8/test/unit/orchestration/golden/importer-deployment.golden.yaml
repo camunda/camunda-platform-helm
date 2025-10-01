@@ -1,9 +1,9 @@
 ---
-# Source: camunda-platform/templates/zeebe/statefulset.yaml
+# Source: camunda-platform/templates/orchestration/importer-deployment.yaml
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: "camunda-platform-test-zeebe"
+  name: camunda-platform-test-zeebe-importer
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -11,10 +11,10 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.6.28"
+    app.kubernetes.io/version: "8.8.0-alpha8"
   annotations:
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: camunda-platform
@@ -22,11 +22,9 @@ spec:
       app.kubernetes.io/instance: camunda-platform-test
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
-      app.kubernetes.io/component: zeebe-broker
-  serviceName: "camunda-platform-test-zeebe"
-  updateStrategy:
+      app.kubernetes.io/component: zeebe-broker-importer
+  strategy:
     type: RollingUpdate
-  podManagementPolicy: Parallel
   template:
     metadata:
       labels:
@@ -35,8 +33,8 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
-        app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "8.6.28"
+        app.kubernetes.io/component: zeebe-broker-importer
+        app.kubernetes.io/version: "8.8.0-alpha8"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,9 +42,9 @@ spec:
       initContainers:
         []
       containers:
-        - name: zeebe
-          image: camunda/zeebe:8.6.28
-          imagePullPolicy: IfNotPresent
+        - name: orchestration-importer
+          image: camunda/camunda:8.8.0-alpha8
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -55,12 +53,8 @@ spec:
             runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
+          command: ["bash", "/usr/local/bin/startup.sh"]
           env:
-            - name: CAMUNDA_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-license
-                  key: CAMUNDA_LICENSE_KEY
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -73,42 +67,26 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
-              value: "$(K8S_NAME).$(K8S_SERVICE_NAME)"
-            - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
-              value:
-                $(K8S_SERVICE_NAME)-0.$(K8S_SERVICE_NAME):26502,
-                $(K8S_SERVICE_NAME)-1.$(K8S_SERVICE_NAME):26502,
-                $(K8S_SERVICE_NAME)-2.$(K8S_SERVICE_NAME):26502,
-            - name: ZEEBE_LOG_LEVEL
-              value: "info"
-            - name: ZEEBE_BROKER_GATEWAY_ENABLE
-              value: "false"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-              value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-              value: "http://camunda-platform-test-elasticsearch:9200"
-            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
-              value: "zeebe-record"
+            - name: VALUES_ORCHESTRATION_NODE_ID
+              value: "-1"
+            
+            - name: VALUES_ORCHESTRATION_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-orchestration-client-token
             - name: JAVA_TOOL_OPTIONS
-              value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
+              value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
             - name: K8S_POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
-              value: 5m
-            - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
-              value: 2GB
-            - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
-              value: 3GB
-          ports:
-            - containerPort: 9600
-              name: http
-            - containerPort: 26501
-              name: command
-            - containerPort: 26502
-              name: internal
+            
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
+            - configMapRef:
+                name: camunda-platform-test-zeebe-importer-env-vars
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
@@ -121,28 +99,30 @@ spec:
             timeoutSeconds: 1
           resources:
             limits:
-              cpu: 960m
-              memory: 1920Mi
+              cpu: 2000m
+              memory: 3000Mi
             requests:
-              cpu: 800m
-              memory: 1200Mi
+              cpu: 1000m
+              memory: 1500Mi
           volumeMounts:
             - name: config
               mountPath: /usr/local/bin/startup.sh
               subPath: startup.sh
             - name: data
-              mountPath: /usr/local/zeebe/data
+              mountPath: /usr/local/camunda/data
             - name: exporters
               mountPath: /exporters
             - mountPath: /tmp
               name: tmp
             - name: config
-              mountPath: /usr/local/zeebe/config/application.yaml
+              mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
       volumes:
+        - name: data
+          emptyDir: {}
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-configuration
+            name: camunda-platform-test-zeebe-configuration-unified
             defaultMode: 492
         - name: exporters
           emptyDir: {}
@@ -165,16 +145,3 @@ spec:
                 values:
                 - zeebe-broker
             topologyKey: kubernetes.io/hostname
-# yamllint enable
-  volumeClaimTemplates:
-    - apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: data
-        annotations:
-          {}
-      spec:
-        accessModes: [ReadWriteOnce]
-        resources:
-          requests:
-            storage: "32Gi"

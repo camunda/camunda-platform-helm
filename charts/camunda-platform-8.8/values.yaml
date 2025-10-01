@@ -528,11 +528,6 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
 
-  ## @extra global.exporter configuration for Elasticsearch and Opensearch exporters.
-  exporter:
-    ## @param global.exporter.enabled if true, enables Elasticsearch and Opensearch exporters.
-    enabled: false
-
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:
   # extraManifests:
@@ -2056,7 +2051,7 @@ webModelerPostgresql:
   ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
     repository: bitnamilegacy/postgresql
-    tag: 15.10.0-debian-12-r2
+    tag: 14.18.0-debian-12-r0
     digest: ""
   ## @extra postgresql.auth configuration of the database authentication
   auth:
@@ -2903,6 +2898,15 @@ orchestration:
 
   ## @param orchestration.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
+
+  ## @extra orchestration.exporters allows disabling inbuilt exporters.
+  exporters:
+    ## @param orchestration.exporters.camunda.enabled if true, enables the new Camunda exporter.
+    camunda:
+      enabled: true
+    ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
+    zeebe:
+      enabled: false
 
   index:
     ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".

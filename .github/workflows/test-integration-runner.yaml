@@ -172,6 +172,11 @@ on:
         default: false
         type: boolean
         required: false
+      initialClaimValue:
+        description: This is only used for testing Entra. This is here so we can do exploratory testing with Entra.
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -210,14 +215,11 @@ env:
   OPENSEARCH_HOST: "search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
   OPENSEARCH_PORT: "443"
   # OIDC.
-  ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
-  ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
-  ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
-  ENTRA_PARENT_APP_OBJECT_ID: ${{ secrets.ENTRA_PARENT_APP_OBJECT_ID }}
-  ENTRA_CHILD_APP_CLIENT_ID: ${{ secrets.ENTRA_CHILD_APP_CLIENT_ID }}
-  ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_CHILD_APP_CLIENT_SECRET }}
-  ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_CHILD_APP_DIRECTORY_ID }}
-  ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+  ENTRA_APP_CLIENT_ID: ${{ secrets.ENTRA_APP_CLIENT_ID }}
+  ENTRA_APP_CLIENT_SECRET: ${{ secrets.ENTRA_APP_CLIENT_SECRET }}
+  ENTRA_APP_DIRECTORY_ID: ${{ secrets.ENTRA_APP_DIRECTORY_ID }}
+  ENTRA_APP_OBJECT_ID: ${{ secrets.ENTRA_APP_OBJECT_ID }}
+  INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
   # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
@@ -246,6 +248,7 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: |
+          echo "::add-mask::${INITIAL_CLAIM_VALUE}"
           echo "Workflow Inputs:"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
@@ -417,6 +420,24 @@ jobs:
             kubectl apply -f aws-camunda-cloud-tls.yaml -n $TEST_NAMESPACE
           fi
 
+      - name: Helm - Install - Configure Helm with Entra Values
+        if: inputs.auth == 'oidc' && inputs.values-config == '{}'
+        timeout-minutes: 5
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          EXTRA_VALUES: ${{ inputs.extra-values }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          echo "Extra values from workflow:"
+          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+
       - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
         env:
@@ -487,6 +508,7 @@ jobs:
           fi
       
           echo "Prepared values file: $values_file"
+          cat "$values_file"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -703,7 +725,7 @@ jobs:
     needs: [ci-setup]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      image: mcr.microsoft.com/playwright:v1.55.1-noble
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}

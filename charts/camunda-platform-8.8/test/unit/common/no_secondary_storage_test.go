@@ -62,7 +62,7 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				// Secondary storage type should be none
-				require.Contains(t, output, "secondary-storage:\n          type: \"none\"")
+				require.Contains(t, output, "secondary-storage:\n          autoconfigure-camunda-exporter: true\n          type: \"none\"")
 				// Persistent sessions should be disabled
 				require.Contains(t, output, "persistentSessionsEnabled: false")
 				// Agentic AI and inbound connectors should be disabled

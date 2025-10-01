@@ -2,7 +2,8 @@ global:
   elasticsearch:
     enabled: false
   exporter:
-    enabled: true
+    zeebe:
+      enabled: true
   opensearch:
     enabled: true
     aws:
