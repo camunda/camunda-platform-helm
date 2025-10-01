@@ -2,7 +2,7 @@ name: Workflow vars
 description: Set common vars for workflow
 inputs:
   setup-flow:
-    description: The chart setup flow either "install" or "upgrade".
+    description: The chart setup flow either "install", "upgrade-patch", or "upgrade-minor".
     default: "install"
   ingress-hostname-base:
     description: The base of the Ingress hostname.
@@ -19,7 +19,7 @@ inputs:
     description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
     required: true
   chart-upgrade-version:
-    description: The Helm chart released version to upgrade from.
+    description: The Helm chart version used in the upgrade-patch flow.
     required: false
     default: ""
   prefix:
@@ -79,9 +79,14 @@ runs:
         TEST_NAMESPACE="${TEST_NAMESPACE}-${{ github.run_id }}-${GITHUB_WORKFLOW_JOB_ID}"
       fi
 
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-upg"
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgp"
       fi
+
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgm"
+      fi
+
       echo "TEST_NAMESPACE=$(printf '%s' "$TEST_NAMESPACE" | head -c 63 | sed 's/-$//')" | tee -a "$GITHUB_ENV"
 
       # Get alpha chart dir.
@@ -98,8 +103,11 @@ runs:
 
       # Deployment identifier.
       TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${local_identifier} | sed 's/\./-/g')"
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
-        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgrade"
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
+        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgp"
+      fi
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
+        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgm"
       fi
       echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
 
@@ -122,7 +130,7 @@ runs:
     run: |
       # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
       # then upgraded from the PR branch to ensure upgradability.
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade' ]]; then
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
         if [[ -n "${{ inputs.chart-upgrade-version }}" ]]; then
           TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
         fi

@@ -1,5 +1,5 @@
 global:
-  labels:
+  commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
   ingress:

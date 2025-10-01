@@ -29,11 +29,11 @@ data:
             replication-factor: {{ .Values.orchestration.replicationFactor }}
             initial-contact-points:
             {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-              - {{ include "orchestration.fullname" $ }}-{{ . }}.{{ include "orchestration.serviceNameHeadless" $ }}:{{ $.Values.orchestration.service.internalPort }}
+              - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
             {{- end }}
           management-identity:
             audience: {{ include "identity.authAudience" . | quote }}
-            base-url: {{ tpl .Values.global.identity.auth.identity.redirectUrl $ | quote }}
+            base-url: http://{{ include "identity.fullname" . }}:{{ .Values.identity.service.port }}{{ .Values.identity.contextPath }}
           {{- if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" }}
             client-id: migration
           {{- else }}

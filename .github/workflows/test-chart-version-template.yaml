@@ -45,7 +45,7 @@ on:
         type: string
       flows:
         description: The flows to run
-        default: "install,upgrade"
+        default: "install,upgrade-patch,upgrade-minor"
         type: string
         required: false
       e2e-enabled:
@@ -55,6 +55,12 @@ on:
       deployment-ttl:
         required: false
         default: 1h
+        type: string
+      camunda-helm-upgrade-version:
+        required: false
+        type: string
+      camunda-version-previous:
+        required: false
         type: string
 
 concurrency:
@@ -109,3 +115,10 @@ jobs:
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
       always-delete-namespace: true
       values-digest: "true"
+      camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+      camunda-version-previous: ${{ inputs.camunda-version-previous }}
+      vault-secret-mapping: |
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
