@@ -20,19 +20,6 @@ spec:
       {{- if .Values.orchestration.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      initContainers:
-        - name: wait-for-orchestration
-          {{- if .Values.orchestration.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
-          {{- end }}
-          image: curlimages/curl:8.15.0
-          command:
-            - sh
-            - -c
-            - |
-              until curl -sf http://{{ include "orchestration.serviceName" . }}:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
-                echo "Waiting for Orchestration Cluster"; sleep 5;
-              done
       containers:
         - name: camunda-migration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
@@ -63,7 +50,7 @@ spec:
             {{- end }}
           envFrom:
             - configMapRef:
-                name: {{ include "orchestration.fullname" . }}-importer-env-vars
+                name: {{ include "orchestration.fullname" . }}-data-migration-env-vars
           command:
             - /usr/local/camunda/bin/data-migration
           resources:
