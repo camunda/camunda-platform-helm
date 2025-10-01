@@ -82,3 +82,8 @@ integration:
           exclude: []
           shortname: docstr
           auth: keycloak
+        - name: keycloak-external-mimic
+          enabled: true
+          exclude: []
+          shortname: kcextm
+          auth: keycloak
