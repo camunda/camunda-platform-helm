@@ -31,14 +31,16 @@ runs:
           kubectl apply -n "$TEST_NAMESPACE" \
             -f .github/config/external-secret/external-secret-certificates.yaml
 
-          APP_VERSION=$(helm show chart "$CHART_PATH" | yq .appVersion | grep -o '^[0-9]*\.[0-9]*')
-          VERSION_FILE=".github/config/external-secret/external-secret-${APP_VERSION}-integration-test-credentials.yaml"
-
-          if [[ -f "$VERSION_FILE" ]]; then
-            echo "✅ Applying version-specific external secret for app version: ${APP_VERSION}"
-            kubectl apply -n "$TEST_NAMESPACE" -f "$VERSION_FILE"
+          # Apply external secret configuration for integration tests
+          # Check for chart-specific external secret first (better approach)
+          CHART_SPECIFIC_FILE="${CHART_PATH}/test/integration/external-secret-integration-test-credentials.yaml"
+          
+          if [[ -f "$CHART_SPECIFIC_FILE" ]]; then
+            echo "✅ Applying chart-specific external secret for integration tests: $CHART_SPECIFIC_FILE"
+            kubectl apply -n "$TEST_NAMESPACE" -f "$CHART_SPECIFIC_FILE"
           else
-            echo "⚠️ Version-specific external secret not found for app version: ${APP_VERSION}, using fallback"
+            echo "⚠️ Chart-specific external secret not found, using fallback"
+            # For backward compatibility with other versions (alpha, future versions).
             kubectl apply -n "$TEST_NAMESPACE" \
               -f .github/config/external-secret/external-secret-integration-test-credentials.yaml
           fi
