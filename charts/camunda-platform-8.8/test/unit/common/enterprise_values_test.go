@@ -99,12 +99,13 @@ func (suite *EnterpriseValuesTestSuite) TestIdentityKeycloakConfiguration() {
 	
 	// Test that Helm template renders successfully with enterprise values
 	// NOTE: We need to enable Identity, Keycloak AND PostgreSQL since Keycloak depends on PostgreSQL
-	// NOTE: In 8.8, the key changed from "identity.postgresql" to "identityPostgresql"
+	// NOTE: In 8.8, the keys changed from "identity.postgresql" to "identityPostgresql" 
+	// and from "identity.keycloak" to "identityKeycloak"
 	output := helm.RenderTemplate(suite.T(), &helm.Options{
 		ValuesFiles: []string{filepath.Join(suite.chartPath, "values-enterprise.yaml")},
 		SetValues: map[string]string{
 			"identity.enabled":            "true",
-			"identity.keycloak.enabled":   "true",
+			"identityKeycloak.enabled":    "true",
 			"identityPostgresql.enabled": "true",
 		},
 		ExtraArgs: map[string][]string{
@@ -195,12 +196,13 @@ func (suite *EnterpriseValuesTestSuite) TestComprehensiveEnterpriseImageUsage() 
 	
 	// Render the full template with enterprise values
 	// NOTE: Enable all components and metrics to validate all enterprise images
-	// NOTE: In 8.8, the key changed from "identity.postgresql" to "identityPostgresql"
+	// NOTE: In 8.8, the keys changed from "identity.postgresql" to "identityPostgresql"
+	// and from "identity.keycloak" to "identityKeycloak"
 	output := helm.RenderTemplate(suite.T(), &helm.Options{
 		ValuesFiles: []string{filepath.Join(suite.chartPath, "values-enterprise.yaml")},
 		SetValues: map[string]string{
 			"identity.enabled":                     "true",
-			"identity.keycloak.enabled":            "true",
+			"identityKeycloak.enabled":             "true",
 			"identityPostgresql.enabled":           "true",
 			"elasticsearch.metrics.enabled":        "true",
 			"postgresql.enabled":                   "true",
@@ -277,12 +279,13 @@ func (suite *EnterpriseValuesTestSuite) TestPullSecretsConfiguration() {
 	
 	// Render the full template with enterprise values
 	// NOTE: Enable all components to validate all pull secrets
-	// NOTE: In 8.8, the key changed from "identity.postgresql" to "identityPostgresql"
+	// NOTE: In 8.8, the keys changed from "identity.postgresql" to "identityPostgresql"
+	// and from "identity.keycloak" to "identityKeycloak"
 	output := helm.RenderTemplate(suite.T(), &helm.Options{
 		ValuesFiles: []string{filepath.Join(suite.chartPath, "values-enterprise.yaml")},
 		SetValues: map[string]string{
 			"identity.enabled":            "true",
-			"identity.keycloak.enabled":   "true",
+			"identityKeycloak.enabled":    "true",
 			"identityPostgresql.enabled": "true",
 		},
 	}, suite.chartPath, "camunda-platform-test", []string{})

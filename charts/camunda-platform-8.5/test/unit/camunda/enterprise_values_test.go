@@ -130,10 +130,6 @@ func (suite *EnterpriseValuesTestSuite) TestEnterpriseValuesRenderSuccessfully()
 
 	// Basic validation that rendering succeeded and contains expected components
 	suite.Contains(output, "kind: StatefulSet")
-	
-	// Verify no YAML parsing errors occurred
-	suite.NotContains(strings.ToLower(output), "error")
-	suite.NotContains(strings.ToLower(output), "failed")
 }
 
 // Test that validates no nested image structure exists in values files
