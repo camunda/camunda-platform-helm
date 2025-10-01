@@ -5087,6 +5087,18 @@
                                             "description": "defines the audience, which is used by Orchestration Cluster.",
                                             "default": "orchestration-api"
                                         },
+                                        "backwardsCompatibleAudiences": {
+                                            "type": "array",
+                                            "description": "defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
+                                            "default": [
+                                                "operate-api",
+                                                "tasklist-api",
+                                                "zeebe-api"
+                                            ],
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
                                         "clientId": {
                                             "type": "string",
                                             "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
