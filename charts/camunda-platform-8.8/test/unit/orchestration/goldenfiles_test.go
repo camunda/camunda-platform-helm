@@ -52,33 +52,6 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 	}
 }
 
-func TestGoldenDefaultsTemplateOrchestrationImporter(t *testing.T) {
-	t.Parallel()
-
-	chartPath, err := filepath.Abs("../../../")
-	require.NoError(t, err)
-	templateNames := []string{
-		"importer-configmap-env-vars",
-		"importer-deployment",
-	}
-
-	for _, name := range templateNames {
-		suite.Run(t, &utils.TemplateGoldenTest{
-			ChartPath:      chartPath,
-			Release:        "camunda-platform-test",
-			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
-			GoldenFileName: name,
-			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
-			SetValues: map[string]string{
-				"orchestration.importer.enabled": "true",
-			},
-			IgnoredLines: []string{
-				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
-			},
-		})
-	}
-}
-
 func TestGoldenDefaultsTemplateOrchestrationMigrationData(t *testing.T) {
 	t.Parallel()
 
@@ -87,6 +60,8 @@ func TestGoldenDefaultsTemplateOrchestrationMigrationData(t *testing.T) {
 	templateNames := []string{
 		"migration-data-configmap-env-vars",
 		"migration-data-job",
+		"importer-configmap-env-vars",
+		"importer-deployment",
 	}
 
 	for _, name := range templateNames {
