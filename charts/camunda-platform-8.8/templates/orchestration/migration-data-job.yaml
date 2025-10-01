@@ -63,7 +63,7 @@ spec:
             {{- end }}
           envFrom:
             - configMapRef:
-                name: {{ include "orchestration.fullname" . }}-importer-env-vars
+                name: {{ include "orchestration.fullname" . }}-data-migration-env-vars
           command:
             - /usr/local/camunda/bin/data-migration
           resources:
