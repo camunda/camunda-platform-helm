@@ -59,6 +59,7 @@ identity:
   contextPath: "/identity"
   firstUser:
     existingSecret: "integration-test-credentials"
+    existingSecretKey: "identity-user-password"
 
 identityKeycloak:
   postgresql:

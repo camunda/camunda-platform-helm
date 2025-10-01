@@ -98,6 +98,41 @@ tasks:
       {{ if and (eq .TEST_VALUES_SCENARIO "opensearch") .TEST_OPENSEARCH_PREFIX }}
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       {{ end }}
+    - |
+      # Print out all the values that are being applied for debugging purposes. Note, printing like this so we can see which file a value is coming from.
+
+      echo "Values being applied:"
+      echo "--------------------"
+
+      echo "common/values-integration-test.yaml:"
+      cat {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
+
+      echo "common/values-integration-test-pull-secrets.yaml:"
+      cat {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml
+
+      echo "values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml:"
+      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml
+
+      echo "values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml:"
+      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+
+      {{ if eq .PLATFORM "eks" -}}
+        echo "values-integration-test-ingress-infra.yaml:"
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml
+      {{ end -}}
+
+      {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
+        echo "helm-digest-values.yaml:"
+        cat {{ .TEST_HELM_DIGEST_VALUES }}
+      {{ end -}}
+
+      echo "infra values:"
+      cat {{ .INFRA_TYPE_VALUES }}
+
+      echo "extra-values-file.yaml:"
+      cat /tmp/extra-values-file.yaml
+
+      echo "--------------------"
 
   setup.package:
     cmds:
@@ -150,41 +185,6 @@ tasks:
     env:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
-    - |
-      # Print out all the values that are being applied for debugging purposes. Note, printing like this so we can see which file a value is coming from.
-      
-      echo "Values being applied:"
-      echo "--------------------"
-
-      echo "common/values-integration-test.yaml:"
-      cat {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
-
-      echo "common/values-integration-test-pull-secrets.yaml:"
-      cat {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml
-
-      echo "values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml:"
-      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml
-
-      echo "values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml:"
-      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-
-      {{ if eq .PLATFORM "eks" -}}
-        echo "values-integration-test-ingress-infra.yaml:"
-        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml
-      {{ end -}}
-
-      {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
-        echo "helm-digest-values.yaml:"
-        cat {{ .TEST_HELM_DIGEST_VALUES }}
-      {{ end -}}
-
-      echo "infra values:"
-      cat {{ .INFRA_TYPE_VALUES }}
-
-      echo "extra-values-file.yaml:"
-      cat /tmp/extra-values-file.yaml
-
-      echo "--------------------"
     - |
       helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
