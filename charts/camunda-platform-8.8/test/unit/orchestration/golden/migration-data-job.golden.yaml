@@ -36,24 +36,6 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      initContainers:
-        - name: wait-for-orchestration
-          securityContext:
-            allowPrivilegeEscalation: false
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1001
-            seccompProfile:
-              type: RuntimeDefault
-          image: curlimages/curl:8.15.0
-          command:
-            - sh
-            - -c
-            - |
-              until curl -sf http://camunda-platform-test-zeebe-gateway:9600/actuator/health/readiness; do
-                echo "Waiting for Orchestration Cluster"; sleep 5;
-              done
       containers:
         - name: camunda-migration
           image: camunda/camunda:8.8.0-alpha8
@@ -72,7 +54,7 @@ spec:
             
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-zeebe-importer-env-vars
+                name: camunda-platform-test-zeebe-data-migration-env-vars
           command:
             - /usr/local/camunda/bin/data-migration
           resources:
