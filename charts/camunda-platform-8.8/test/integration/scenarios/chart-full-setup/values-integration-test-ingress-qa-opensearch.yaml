@@ -79,6 +79,9 @@ webModelerPostgresql:
   enabled: true
 webModeler:
   enabled: true
+  security:
+    authentication:
+      method: oidc
   restapi:
     image:
       tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"

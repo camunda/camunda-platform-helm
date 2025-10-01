@@ -46,6 +46,9 @@ optimize:
     tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
 webModeler:
   enabled: true
+  security:
+    authentication:
+      method: oidc
   restapi:
     image:
       tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"

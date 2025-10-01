@@ -31,7 +31,6 @@ func TestGoldenDefaultsTemplateSecrets(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 	templateNames := []string{
-		"secret-camunda-license",
 		"secret-camunda",
 	}
 

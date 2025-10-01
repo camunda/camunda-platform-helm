@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "orchestration.fullname" . }}-data-migration
+  name: {{ include "orchestration.fullname" . }}-migration-data
   labels: {{- include "orchestration.labelsMigration" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
@@ -12,26 +12,14 @@ spec:
       labels:
         {{- include "orchestration.labelsMigration" . | nindent 8 }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/orchestration/migration-data-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
+        checksum/env-vars: {{ include (print $.Template.BasePath "/orchestration/migration-data-configmap-env-vars.yaml") . | sha256sum }}
     spec:
       restartPolicy: OnFailure
       imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       {{- if .Values.orchestration.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      initContainers:
-        - name: wait-for-orchestration
-          {{- if .Values.orchestration.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
-          {{- end }}
-          image: curlimages/curl:8.15.0
-          command:
-            - sh
-            - -c
-            - |
-              until curl -sf http://{{ include "orchestration.serviceName" . }}:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
-                echo "waiting for Orchestration Cluster"; sleep 5;
-              done
       containers:
         - name: camunda-migration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
@@ -40,6 +28,8 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
+            - name: VALUES_ORCHESTRATION_NODE_ID
+              value: "-1"
             {{/*
             Passwords for variable substitution.
             */}}
@@ -55,6 +45,12 @@ spec:
                 "config" .Values.global.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
+            {{- with .Values.orchestration.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "orchestration.fullname" . }}-data-migration-env-vars
           command:
             - /usr/local/camunda/bin/data-migration
           resources:
@@ -71,5 +67,6 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "orchestration.fullname" . }}-data-migration-configuration
+            name: {{ include "orchestration.fullname" . }}-configuration-unified
+            defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
 {{- end }}
