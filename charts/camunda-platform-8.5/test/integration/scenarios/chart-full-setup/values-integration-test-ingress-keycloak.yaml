@@ -6,7 +6,7 @@ global:
   image:
     pullSecrets:
       - name: index-docker-io
-  labels:
+  commonLabels:
     janitor/ttl: 1h
     camunda.cloud/ephemeral: "true"
   secrets:
@@ -59,13 +59,18 @@ identity:
   contextPath: "/identity"
   firstUser:
     existingSecret: "integration-test-credentials"
+    existingSecretKey: "identity-user-password"
 
 identityKeycloak:
   postgresql:
     auth:
       existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
   auth:
     existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
 
 identityPostgresql:
   auth:
