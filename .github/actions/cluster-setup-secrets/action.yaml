@@ -33,7 +33,7 @@ runs:
 
           # Apply external secret configuration for integration tests
           # Check for chart-specific external secret first (better approach)
-          CHART_SPECIFIC_FILE="${CHART_PATH}/test/integration/external-secret-integration-test-credentials.yaml"
+          CHART_SPECIFIC_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials.yaml"
           
           if [[ -f "$CHART_SPECIFIC_FILE" ]]; then
             echo "✅ Applying chart-specific external secret for integration tests: $CHART_SPECIFIC_FILE"
