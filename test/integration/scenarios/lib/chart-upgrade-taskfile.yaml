@@ -30,6 +30,21 @@ tasks:
   exec:
     cmds:
     - |
+      {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
+      export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
+      export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
+      export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
+      export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
+
+      envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml.tmp
+      envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml.tmp
+
+      mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+      mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
+
+      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-oidc.yaml
+      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-qa-entra.yaml
+      {{ end }}
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
