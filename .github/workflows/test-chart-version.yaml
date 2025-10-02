@@ -168,7 +168,8 @@ jobs:
       case: ${{ matrix.case }}
       #scenario: ${{ matrix.scenario }}
       scenario: ${{ inputs.scenario }}
-      shortname: ${{ matrix.shortname }}
+      #shortname: ${{ matrix.shortname }}
+      shortname: ${{ inputs.scenario }}
       auth: ${{ matrix.auth }}
       platforms: ${{ inputs.platforms || 'gke' }}
       exclude: ${{ matrix.exclude }}
