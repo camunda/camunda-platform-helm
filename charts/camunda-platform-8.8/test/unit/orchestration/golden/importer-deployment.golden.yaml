@@ -134,14 +134,3 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-# yamllint disable
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/component
-                operator: In
-                values:
-                - zeebe-broker
-            topologyKey: kubernetes.io/hostname
