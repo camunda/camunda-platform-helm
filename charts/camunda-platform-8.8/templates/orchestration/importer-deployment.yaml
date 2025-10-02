@@ -241,9 +241,4 @@ spec:
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
-# yamllint disable
-{{- with .Values.orchestration.affinity }}
-      affinity:
-{{ toYaml . | indent 8 }}
-{{- end }}
 {{- end }}
