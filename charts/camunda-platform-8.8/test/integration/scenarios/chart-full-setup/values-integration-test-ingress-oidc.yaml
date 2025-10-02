@@ -16,63 +16,65 @@ global:
   identity:
     auth:
       enabled: true
-      issuer: https://login.microsoftonline.com/<directoryId>/v2.0
-      issuerBackendUrl: https://login.microsoftonline.com/<directoryId>/v2.0
-      tokenUrl: https://login.microsoftonline.com/<directoryId>/oauth2/v2.0/token
-      jwksUrl: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
-      publicIssuerUrl: https://login.microsoftonline.com/<directoryId>/v2.0
+      issuer: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
+      issuerBackendUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
+      tokenUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/token
+      jwksUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+      authUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/authorize
+      publicIssuerUrl: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
       type: "MICROSOFT"
       orchestration:
-        clientId: <clientId>
-        audience: <clientId>
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
       identity:
-        clientId: <clientId>
-        audience: <clientId>
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         # this existngSecret must be a string literal
-        existingSecret: <clientSecret>
-        initialClaimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
+        secret: 
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
+        initialClaimValue: $ENTRA_APP_OBJECT_ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
       optimize:
-        clientId: <clientId>
-        audience: <clientId>
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
       connectors:
-        clientId: <clientId>
-        audience: <clientId>
-        clientApiAudience: <clientId>
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        tokenScope: <clientId>/.default
+        tokenScope: $ENTRA_APP_CLIENT_ID/.default
       webModeler:
-        clientId: <clientId>
-        audience: <clientId>
-        clientApiAudience: <clientId>
-        publicApiAudience: <clientId>
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_APP_CLIENT_ID
+        publicApiAudience: $ENTRA_APP_CLIENT_ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
-        clientId: <clientId>
-        audience: <clientId>
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
         existingSecret:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
-        tokenScope: <clientId>/.default
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+        tokenScope: $ENTRA_APP_CLIENT_ID/.default
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/"
 
 console:
   enabled: true
   contextPath: "/"
   env:
     - name: CAMUNDA_IDENTITY_JWKS_URL
-      value: https://login.microsoftonline.com/<directoryId>/discovery/v2.0/keys
+      value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
 
 optimize:
   enabled: true
@@ -93,9 +95,19 @@ identityKeycloak:
 connectors:
   enabled: true
   contextPath: "/connectors"
+  security:
+    authentication:
+      oidc:
+        clientId: $ENTRA_APP_CLIENT_ID
+        audience: $ENTRA_APP_CLIENT_ID
+        clientApiAudience: $ENTRA_APP_CLIENT_ID
+        existingSecret:
+          name: integration-test-credentials
+        existingSecretKey: entra-child-app-client-secret
+        tokenScope: $ENTRA_APP_CLIENT_ID/.default
   env:
     - name: CAMUNDA_CLIENT_AUTH_SCOPE
-      value: <clientId>/.default
+      value: $ENTRA_APP_CLIENT_ID/.default
 
 webModeler:
   enabled: true
@@ -145,32 +157,7 @@ orchestration:
       mappingRules:
         - mappingRuleID: demo-user-mapping-rule
           claimName: oid
-          claimValue: d70412f6-5a6e-4271-8e45-fa497056ac1e # Hamza's object ID
-  env:
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "oid"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: d70412f6-5a6e-4271-8e45-fa497056ac1e
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "venom"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
-      value: "connectors"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
-      value: "connectors-client-mapping-rule"
+          claimValue: $ENTRA_APP_OBJECT_ID
 
 elasticsearch:
   maxUnavailable: 0

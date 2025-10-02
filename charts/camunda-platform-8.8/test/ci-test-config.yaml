@@ -16,7 +16,7 @@ integration:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
-    chartsBaseDir: ../../../../charts
+    chartsBaseDir: ../../../..
   case:
     pr:
       scenario:
@@ -29,6 +29,7 @@ integration:
           enabled: false
           shortname: esba
           auth: basic
+          flow: install
           exclude: [identity,console,orchestration-grpc]
     nightly:
       scenario:
@@ -60,6 +61,11 @@ integration:
           exclude: []
           shortname: oske
           auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: osba
+          exclude: [identity,console,orchestration-grpc]
+          auth: basic
         - name: identity-migration
           enabled: true
           exclude: []
@@ -75,4 +81,9 @@ integration:
           enabled: false
           exclude: []
           shortname: docstr
+          auth: keycloak
+        - name: keycloak-external-mimic
+          enabled: true
+          exclude: []
+          shortname: kcextm
           auth: keycloak

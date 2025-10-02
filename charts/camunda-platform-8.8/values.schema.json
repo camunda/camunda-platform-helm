@@ -105,6 +105,21 @@
                         }
                     }
                 },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.",
+                                    "default": "basic"
+                                }
+                            }
+                        }
+                    }
+                },
                 "createReleaseInfo": {
                     "type": "boolean",
                     "description": "Create config that will be used in Camunda Console.",
@@ -229,28 +244,8 @@
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "(DEPRECATED - use global.elasticsearch.tls.secret instead) provide an already existing tls secret for connecting to external elasticsearch",
+                                    "description": "provide an already existing tls secret for connecting to external elasticsearch",
                                     "default": ""
-                                },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "inlineSecret": {
-                                            "type": "string",
-                                            "description": "can be used to provide the TLS certificate as a plain-text value for non-production usage.",
-                                            "default": ""
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS certificate.",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "defines the key within the existing secret object.",
-                                            "default": ""
-                                        }
-                                    }
                                 }
                             }
                         },
@@ -364,28 +359,8 @@
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "(DEPRECATED - use global.opensearch.tls.secret instead) provide an already existing tls secret for connecting to external opensearch",
+                                    "description": "provide an already existing tls secret for connecting to external opensearch",
                                     "default": ""
-                                },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "inlineSecret": {
-                                            "type": "string",
-                                            "description": "can be used to provide the TLS certificate as a plain-text value for non-production usage.",
-                                            "default": ""
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS certificate.",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "defines the key within the existing secret object.",
-                                            "default": ""
-                                        }
-                                    }
                                 }
                             }
                         },
@@ -519,7 +494,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enables the identity authentication otherwise basic-auth will be used on all services.",
+                                    "description": "if true, enables authentication on Management Identity .",
                                     "default": false
                                 },
                                 "issuer": {
@@ -544,7 +519,7 @@
                                 },
                                 "type": {
                                     "type": "string",
-                                    "description": "defines the type of authentication which should be used. Defaults to Keycloak",
+                                    "description": "defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.",
                                     "default": "KEYCLOAK"
                                 },
                                 "publicIssuerUrl": {
@@ -597,12 +572,12 @@
                                     "properties": {
                                         "clientId": {
                                             "type": "string",
-                                            "description": "defines the client id, which is used by Identity in authentication flows.",
+                                            "description": "defines the client id, which is used by Management Identity in authentication flows.",
                                             "default": "camunda-identity"
                                         },
                                         "audience": {
                                             "type": "string",
-                                            "description": "defines the audience, which is used by Identity.",
+                                            "description": "defines the audience, which is used by Management Identity.",
                                             "default": "camunda-identity-resource-server"
                                         },
                                         "existingSecretKey": {
@@ -610,19 +585,39 @@
                                             "description": "(DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.",
                                             "default": "identity-oidc-client-token"
                                         },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
                                         "redirectUrl": {
                                             "type": "string",
-                                            "description": "defines the redirect URL, which is used by the auth platform to access Identity.",
+                                            "description": "defines the redirect URL, which is used by the auth platform to access Management Identity.",
                                             "default": "http://localhost:8085"
                                         },
                                         "initialClaimName": {
                                             "type": "string",
-                                            "description": "defines the initial claim name, which is used by Identity to configure initial mapping rules,",
+                                            "description": "defines the initial claim name, which is used by Management Identity to configure initial mapping rules,",
                                             "default": "oid"
                                         },
                                         "initialClaimValue": {
                                             "type": "string",
-                                            "description": "defines the initial claim value, which is used by Identity to configure initial mapping rules.",
+                                            "description": "defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.",
                                             "default": ""
                                         }
                                     }
@@ -699,91 +694,6 @@
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
                                             "default": "http://localhost:8070"
-                                        }
-                                    }
-                                },
-                                "connectors": {
-                                    "type": "object",
-                                    "properties": {
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
-                                            "default": "connectors"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-connectors-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "orchestration": {
-                                    "type": "object",
-                                    "properties": {
-                                        "audience": {
-                                            "type": "string",
-                                            "description": "defines the audience, which is used by Orchestration Cluster.",
-                                            "default": "orchestration-api"
-                                        },
-                                        "clientId": {
-                                            "type": "string",
-                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
-                                            "default": "orchestration"
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.",
-                                            "default": "identity-orchestration-client-token"
-                                        },
-                                        "secret": {
-                                            "type": "object",
-                                            "properties": {
-                                                "inlineSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
-                                                    "default": ""
-                                                },
-                                                "existingSecret": {
-                                                    "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
-                                                    "default": ""
-                                                },
-                                                "existingSecretKey": {
-                                                    "type": "string",
-                                                    "description": "defines the key within the existing secret object.",
-                                                    "default": ""
-                                                }
-                                            }
-                                        },
-                                        "redirectUrl": {
-                                            "type": "string",
-                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
-                                            "default": "http://localhost:8082"
-                                        },
-                                        "tokenScope": {
-                                            "type": "string",
-                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
-                                            "default": ""
                                         }
                                     }
                                 },
@@ -887,18 +797,68 @@
                                         },
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "Reference to an existing Kubernetes secret containing AWS credentials.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret and global.documentStore.type.aws.secretAccessKey.secret instead) Reference to an existing Kubernetes secret containing AWS credentials.",
                                             "default": "aws-credentials"
                                         },
                                         "accessKeyIdKey": {
                                             "type": "string",
-                                            "description": "Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret instead) Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.",
                                             "default": "awsAccessKeyId"
                                         },
                                         "secretAccessKeyKey": {
                                             "type": "string",
-                                            "description": "Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.aws.secretAccessKey.secret instead) Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.",
                                             "default": "awsSecretAccessKey"
+                                        },
+                                        "accessKeyId": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the access key ID as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the access key ID.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "access-key-id"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "secretAccessKey": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the secret access key as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the secret access key.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "secret-access-key"
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -927,12 +887,12 @@
                                         },
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "Reference to an existing Kubernetes secret containing GCP credentials.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Reference to an existing Kubernetes secret containing GCP credentials.",
                                             "default": "gcp-credentials"
                                         },
                                         "credentialsKey": {
                                             "type": "string",
-                                            "description": "Key in the GCP credentials secret that contains the service-account JSON.",
+                                            "description": "(DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Key in the GCP credentials secret that contains the service-account JSON.",
                                             "default": "service-account.json"
                                         },
                                         "mountPath": {
@@ -944,6 +904,21 @@
                                             "type": "string",
                                             "description": "The file name for the GCP credentials JSON.",
                                             "default": "service-account.json"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the service account JSON.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": "service-account.json"
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -971,16 +946,6 @@
                         }
                     }
                 },
-                "exporter": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "if true, enables Elasticsearch and Opensearch exporters.",
-                            "default": false
-                        }
-                    }
-                },
                 "extraManifests": {
                     "type": "array",
                     "description": "Array of extra objects to deploy with the release.",
@@ -1004,12 +969,12 @@
                 },
                 "fullnameOverride": {
                     "type": "string",
-                    "description": "can be used to override the full name of the Identity resources",
+                    "description": "can be used to override the full name of the Management Identity resources",
                     "default": ""
                 },
                 "nameOverride": {
                     "type": "string",
-                    "description": "can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)",
+                    "description": "can be used to partly override the name of the Management Identity resources (names will still be prefixed with the release name)",
                     "default": ""
                 },
                 "firstUser": {
@@ -1017,7 +982,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, Identity will seed the first user in Keycloak.",
+                            "description": "if true, Management Identity will seed the first user in Keycloak.",
                             "default": true
                         },
                         "username": {
@@ -1047,7 +1012,7 @@
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "(DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Identity first user.",
+                            "description": "(DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Management Identity first user.",
                             "default": "camunda-credentials"
                         },
                         "existingSecretKey": {
@@ -1079,7 +1044,7 @@
                 },
                 "users": {
                     "type": "array",
-                    "description": "configuration to configure properties of the Identity users, which can be used to access web applications.",
+                    "description": "configuration to configure properties of the Management Identity users, which can be used to access web applications.",
                     "default": [],
                     "items": {}
                 },
@@ -1099,7 +1064,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -1143,17 +1108,17 @@
                 },
                 "contextPath": {
                     "type": "string",
-                    "description": "can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
+                    "description": "can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.",
                     "default": ""
                 },
                 "podAnnotations": {
                     "type": "object",
-                    "description": "can be used to define extra Identity pod annotations",
+                    "description": "can be used to define extra Management Identity pod annotations",
                     "default": {}
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra Identity pod labels",
+                    "description": "can be used to define extra Management Identity pod labels",
                     "default": {}
                 },
                 "logging": {
@@ -1413,7 +1378,7 @@
                 },
                 "nodeSelector": {
                     "type": "object",
-                    "description": "can be used to define on which nodes the Identity pods should run",
+                    "description": "can be used to define on which nodes the Management Identity pods should run",
                     "default": {}
                 },
                 "tolerations": {
@@ -1464,9 +1429,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -1552,7 +1545,7 @@
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "(DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Identity.",
+                            "description": "(DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Management Identity.",
                             "default": ""
                         },
                         "existingSecretPasswordKey": {
@@ -1654,7 +1647,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "Enable Identity PostgreSQL Helm chart. Required for Multi-Tenancy.",
+                    "description": "Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.",
                     "default": false
                 },
                 "global": {
@@ -1699,7 +1692,7 @@
                 },
                 "nameOverride": {
                     "type": "string",
-                    "description": "the name used for Identity PostgreSQL.",
+                    "description": "the name used for Management Identity PostgreSQL.",
                     "default": "identity-postgresql"
                 },
                 "auth": {
@@ -1779,7 +1772,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "Enable Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
+                    "description": "Enable Management Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
                     "default": false
                 },
                 "global": {
@@ -1805,7 +1798,7 @@
                             "properties": {
                                 "allowInsecureImages": {
                                     "type": "boolean",
-                                    "description": "Allows the use of the Camunda build Keycloak image (including the Identity login theme)",
+                                    "description": "Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)",
                                     "default": true
                                 }
                             }
@@ -2268,7 +2261,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8.1"
                         },
                         "digest": {
                             "type": "string",
@@ -2417,9 +2410,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each app container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -2737,7 +2758,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0-alpha8-rc1"
+                            "default": "8.8.0-alpha8"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2751,6 +2772,21 @@
                     "type": "string",
                     "description": "can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.",
                     "default": ""
+                },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "default": ""
+                                }
+                            }
+                        }
+                    }
                 },
                 "restapi": {
                     "type": "object",
@@ -2950,7 +2986,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in each restapi container",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3333,7 +3369,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in each webapp container",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3726,7 +3762,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in each websockets container",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -4117,6 +4153,114 @@
                         }
                     }
                 }
+            },
+            "restapi": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "webapp": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "websockets": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                }
             }
         },
         "webModelerPostgresql": {
@@ -4307,6 +4451,51 @@
                     "description": "if true, the Connectors deployment and its related resources are deployed via a helm release",
                     "default": true
                 },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "authentication": {
+                            "type": "object",
+                            "properties": {
+                                "oidc": {
+                                    "type": "object",
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Connectors in authentication flows.",
+                                            "default": "connectors"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use connectors.security.authentication.oidc.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-connectors-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "image": {
                     "type": "object",
                     "properties": {
@@ -4323,7 +4512,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -4432,9 +4621,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each Connector container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -4804,26 +5021,111 @@
                             "properties": {
                                 "method": {
                                     "type": "string",
-                                    "description": "defines the authentication method which should be used. Possible values: basic, oidc",
-                                    "default": "basic"
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "default": ""
                                 },
                                 "unprotectedApi": {
                                     "type": "boolean",
                                     "description": "if true, then allow unauthenticated API access.",
                                     "default": false
                                 },
+                                "authenticationRefreshInterval": {
+                                    "type": "string",
+                                    "description": "defines the session's authentication refresh time, defaulted to PT30S.",
+                                    "default": "PT30S"
+                                },
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
+                                        "issuer": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuer`.",
+                                            "default": ""
+                                        },
+                                        "issuerBackendUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.issuerBackendUrl`.",
+                                            "default": ""
+                                        },
+                                        "tokenUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.tokenUrl`.",
+                                            "default": ""
+                                        },
+                                        "jwksUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`.",
+                                            "default": ""
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.type`.",
+                                            "default": ""
+                                        },
+                                        "publicIssuerUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.publicIssuerUrl`.",
+                                            "default": ""
+                                        },
                                         "usernameClaim": {
                                             "type": "string",
                                             "description": "username claim.",
                                             "default": "preferred_username"
                                         },
+                                        "clientIdClaim": {
+                                            "type": "string",
+                                            "description": "client ID claim.",
+                                            "default": "client_id"
+                                        },
                                         "groupsClaim": {
                                             "type": "string",
                                             "description": "group claim.",
                                             "default": "groups"
+                                        },
+                                        "audience": {
+                                            "type": "string",
+                                            "description": "defines the audience, which is used by Orchestration Cluster.",
+                                            "default": "orchestration-api"
+                                        },
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
+                                            "default": "orchestration"
+                                        },
+                                        "tokenScope": {
+                                            "type": "string",
+                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
+                                            "default": ""
+                                        },
+                                        "redirectUrl": {
+                                            "type": "string",
+                                            "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
+                                            "default": "http://localhost:8082"
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use orchestration.security.authentication.oidc.secret instead) defines the key within the existing secret object.",
+                                            "default": "identity-orchestration-client-token"
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -4867,26 +5169,56 @@
                                         }
                                     }
                                 },
-                                "mappingRules": {
-                                    "type": "array",
-                                    "description": "the mapping-rule-id of an initial mapping rule.",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "mappingRuleID": {
-                                                "type": "string",
-                                                "description": "the mapping-rule-id of an initial mapping rule."
-                                            },
-                                            "claimName": {
-                                                "type": "string",
-                                                "description": "the claim-name of an initial mapping rule."
-                                            },
-                                            "claimValue": {
-                                                "type": "string",
-                                                "description": "the claim-value of an initial mapping rule."
+                                "defaultRoles": {
+                                    "type": "object",
+                                    "properties": {
+                                        "admin": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the admin permission",
+                                                    "default": [
+                                                        "demo"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "connectors": {
+                                            "type": "object",
+                                            "properties": {
+                                                "users": {
+                                                    "type": "array",
+                                                    "description": "defines the initial users that will get the connectors permission",
+                                                    "default": [
+                                                        "connectors"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "clients": {
+                                                    "type": "array",
+                                                    "description": "define clients for the orchestration cluster.",
+                                                    "default": [
+                                                        "connectors"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
                                             }
                                         }
                                     }
+                                },
+                                "mappingRules": {
+                                    "type": "array",
+                                    "description": "define mapping rules.",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         }
@@ -4908,7 +5240,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -4926,12 +5258,12 @@
                 "migration": {
                     "type": "object",
                     "properties": {
-                        "process": {
+                        "data": {
                             "type": "object",
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, the process migration occurs.",
+                                    "description": "if true, the data migration occurs.",
                                     "default": false
                                 },
                                 "backoffLimit": {
@@ -4939,38 +5271,168 @@
                                     "description": "if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
                                 },
-                                "batchSize": {
-                                    "type": "number",
-                                    "description": "can be used to define the batch size.",
-                                    "default": 5
-                                },
-                                "importFinishedTimeout": {
-                                    "type": "string",
-                                    "description": "can be used to define the timeout when the import is finished.",
-                                    "default": "PT1M"
-                                },
-                                "retry": {
+                                "process": {
                                     "type": "object",
                                     "properties": {
-                                        "maxRetries": {
+                                        "batchSize": {
                                             "type": "number",
-                                            "description": "can be used to define the maximum amount of retries.",
+                                            "description": "can be used to define the batch size.",
                                             "default": 5
                                         },
-                                        "maxRetryDelay": {
+                                        "importerFinishedTimeout": {
                                             "type": "string",
-                                            "description": "can be used to define the delay time between retries.",
+                                            "description": "can be used to define the timeout when the import is finished.",
                                             "default": "PT1M"
                                         },
-                                        "minRetryDelay": {
-                                            "type": "string",
-                                            "description": "can be used to define the delay time between retries.",
-                                            "default": "PT10s"
-                                        },
-                                        "retryDelayMultiplier": {
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "metrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
                                             "type": "number",
-                                            "description": "can be used to define the delay multiplier.",
-                                            "default": 2
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "tumetrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
+                                            "type": "number",
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "tasks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "batchSize": {
+                                            "type": "number",
+                                            "description": "can be used to define the batch size.",
+                                            "default": 5
+                                        },
+                                        "importerFinishedTimeout": {
+                                            "type": "string",
+                                            "description": "can be used to define the timeout when the import is finished.",
+                                            "default": "PT1M"
+                                        },
+                                        "legacyIndexRetentionAge": {
+                                            "type": "string",
+                                            "description": "defines when the legacy task index will be removed, defaults to orchestration.history.retention.minimumAge",
+                                            "default": "30d"
+                                        },
+                                        "retry": {
+                                            "type": "object",
+                                            "properties": {
+                                                "maxRetries": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the maximum amount of retries.",
+                                                    "default": 5
+                                                },
+                                                "maxRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT1M"
+                                                },
+                                                "minRetryDelay": {
+                                                    "type": "string",
+                                                    "description": "can be used to define the delay time between retries.",
+                                                    "default": "PT10s"
+                                                },
+                                                "retryDelayMultiplier": {
+                                                    "type": "number",
+                                                    "description": "can be used to define the delay multiplier.",
+                                                    "default": 2
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -4981,15 +5443,53 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs",
+                                    "description": "if true, the migration of Management Identity data to the orchestration clusters Identity occurs",
                                     "default": false
                                 },
                                 "backoffLimit": {
                                     "type": "number",
                                     "description": "can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy",
                                     "default": 6
+                                },
+                                "resourceAuthorizationsEnabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7",
+                                    "default": false
+                                },
+                                "idpApplicationId": {
+                                    "type": "string",
+                                    "description": "must be define the application ID if an external IdP is used.",
+                                    "default": ""
                                 }
                             }
+                        }
+                    }
+                },
+                "importer": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the orchestration cluster deployment and its related resources are deployed via a helm release",
+                            "default": false
+                        },
+                        "envFrom": {
+                            "type": "array",
+                            "description": "list of environment variables to import from configMapRef and secretRef",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumes": {
+                            "type": "array",
+                            "description": "can be used to define extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumeMounts": {
+                            "type": "array",
+                            "description": "can be used to mount extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
                         }
                     }
                 },
@@ -5041,9 +5541,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each broker container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -5090,66 +5618,87 @@
                             "description": "can be used to define annotations, which will be applied to the service",
                             "default": {}
                         },
+                        "headless": {
+                            "type": "object",
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations, which will be applied to the headless service",
+                                    "default": {}
+                                }
+                            }
+                        },
                         "type": {
                             "type": "string",
                             "description": "defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
                             "default": "ClusterIP"
                         },
-                        "httpPort": {
-                            "type": "number",
-                            "description": "defines the port of the http endpoint, where for example metrics are provided",
-                            "default": 8080
+                        "loadBalancerIP": {
+                            "type": "string",
+                            "description": "defines public IP of the load balancer if the type is LoadBalancer",
+                            "default": ""
+                        },
+                        "loadBalancerSourceRanges": {
+                            "type": "array",
+                            "description": "defines list of allowed source IP address ranges if the type is LoadBalancer",
+                            "default": [],
+                            "items": {}
                         },
                         "httpName": {
                             "type": "string",
                             "description": "defines the name of the http endpoint, where for example metrics are provided",
                             "default": "http"
                         },
-                        "commandPort": {
+                        "httpPort": {
                             "type": "number",
-                            "description": "defines the port of the command api endpoint, where the broker commands are sent to",
-                            "default": 26501
+                            "description": "defines the port of the http endpoint, where for example metrics are provided",
+                            "default": 8080
                         },
-                        "commandName": {
+                        "managementName": {
                             "type": "string",
-                            "description": "defines the name of the command api endpoint, where the broker commands are sent to",
-                            "default": "command"
+                            "description": "defines the name of the management endpoint, where the management API is exposed",
+                            "default": "server"
                         },
-                        "internalPort": {
+                        "managementPort": {
                             "type": "number",
-                            "description": "defines the port of the internal api endpoint, which is used for internal communication",
-                            "default": 26502
+                            "description": "defines the port of the management endpoint, where the management API is exposed",
+                            "default": 9600
                         },
-                        "internalName": {
+                        "grpcName": {
                             "type": "string",
-                            "description": "defines the name of the internal api endpoint, which is used for internal communication",
-                            "default": "internal"
-                        },
-                        "extraPorts": {
-                            "type": "array",
-                            "description": "can be used to expose any other ports which are required. Can be useful for exporters",
-                            "default": [],
-                            "items": {}
+                            "description": "defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to",
+                            "default": "grpc"
                         },
                         "grpcPort": {
                             "type": "number",
                             "description": "defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to",
                             "default": 26500
                         },
-                        "grpcName": {
+                        "commandName": {
                             "type": "string",
-                            "description": "defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to",
-                            "default": "gateway"
+                            "description": "defines the name of the command API endpoint, where the broker commands are sent to",
+                            "default": "command"
                         },
-                        "managementPort": {
+                        "commandPort": {
                             "type": "number",
-                            "description": "",
-                            "default": 9600
+                            "description": "defines the port of the command API endpoint, where the broker commands are sent to",
+                            "default": 26501
                         },
-                        "managementName": {
+                        "internalName": {
                             "type": "string",
-                            "description": "",
-                            "default": "server"
+                            "description": "defines the name of the internal API endpoint, which is used for internal communication",
+                            "default": "internal"
+                        },
+                        "internalPort": {
+                            "type": "number",
+                            "description": "defines the port of the internal API endpoint, which is used for internal communication",
+                            "default": 26502
+                        },
+                        "extraPorts": {
+                            "type": "array",
+                            "description": "can be used to expose any other ports which are required. Can be useful for exporters",
+                            "default": [],
+                            "items": {}
                         }
                     }
                 },
@@ -5628,6 +6177,31 @@
                     "description": "can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass",
                     "default": ""
                 },
+                "exporters": {
+                    "type": "object",
+                    "properties": {
+                        "camunda": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the new Camunda exporter.",
+                                    "default": true
+                                }
+                            }
+                        },
+                        "zeebe": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
+                                    "default": false
+                                }
+                            }
+                        }
+                    }
+                },
                 "index": {
                     "type": "object",
                     "properties": {
@@ -5635,6 +6209,11 @@
                             "type": "string",
                             "description": "if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use \"global.elasticsearch.prefix\".",
                             "default": ""
+                        },
+                        "replicas": {
+                            "type": "number",
+                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch",
+                            "default": 1
                         }
                     }
                 },
@@ -5775,7 +6354,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0-alpha7"
+                            "default": "8.8.0-alpha8"
                         },
                         "digest": {
                             "type": "string",
@@ -5800,7 +6379,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set environment variables for Optimize migration init container (Note: there is no need to define if optimize.env is defined)",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)",
                             "default": [],
                             "items": {}
                         },
@@ -5894,9 +6473,37 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in each Optimize container",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
                     "default": [],
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Environment variable name"
+                            },
+                            "value": {
+                                "description": "Environment variable value",
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "nullable": true
+                            },
+                            "valueFrom": {
+                                "description": "Source for the environment variable's value",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "envFrom": {
                     "type": "array",
@@ -6301,6 +6908,42 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        }
+                    }
+                }
+            },
+            "migration": {
+                "properties": {
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Environment variable name"
+                                },
+                                "value": {
+                                    "description": "Environment variable value",
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "nullable": true
+                                },
+                                "valueFrom": {
+                                    "description": "Source for the environment variable's value",
+                                    "type": "object"
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ],
+                            "additionalProperties": false
                         }
                     }
                 }

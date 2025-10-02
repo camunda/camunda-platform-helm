@@ -4,7 +4,13 @@ kind: Ingress
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-http
   labels:
-    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "camundaPlatform.labels" .)
+        .Values.global.ingress.labels
+      )
+      "context" .
+    ) | nindent 4 }}
 {{- with .Values.global.ingress.annotations }}
   annotations: {{ tpl (toYaml .) $ | nindent 4 }}
 {{- end }}
@@ -70,7 +76,7 @@ spec:
           # Orchestration.
           - backend:
               service:
-                name: {{ template "orchestration.fullname" . }}-gateway
+                name: {{ include "orchestration.serviceName" . }}
                 port:
                   number: {{ .Values.orchestration.service.httpPort }}
             path: {{ .Values.orchestration.contextPath }}

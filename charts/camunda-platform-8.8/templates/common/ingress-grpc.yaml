@@ -5,7 +5,13 @@ kind: Ingress
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-grpc
   labels:
-    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "camundaPlatform.labels" .)
+        .Values.orchestration.ingress.grpc.labels
+      )
+      "context" .
+    ) | nindent 4 }}
 {{- with .Values.orchestration.ingress.grpc.annotations }}
   annotations:
   {{- tpl (toYaml .) $ | nindent 4 }}
@@ -24,7 +30,7 @@ spec:
             pathType: {{ .Values.orchestration.ingress.grpc.pathType }}
             backend:
               service:
-                name: {{ include "orchestration.fullname" . }}-gateway
+                name: {{ include "orchestration.serviceName" . }}
                 port:
                   number: {{ .Values.orchestration.service.grpcPort }}
   {{- if .Values.orchestration.ingress.grpc.tls.enabled }}

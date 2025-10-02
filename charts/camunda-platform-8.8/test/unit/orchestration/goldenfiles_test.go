@@ -32,11 +32,10 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 	require.NoError(t, err)
 	templateNames := []string{
 		"service",
+		"service-headless",
 		"serviceaccount",
 		"statefulset",
-		"configmap",
 		"configmap-unified",
-		"gateway-service",
 	}
 
 	for _, name := range templateNames {
@@ -46,6 +45,87 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
 			GoldenFileName: name,
 			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
+			IgnoredLines: []string{
+				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+			},
+		})
+	}
+}
+
+func TestGoldenDefaultsTemplateOrchestrationImporter(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	templateNames := []string{
+		"importer-configmap-env-vars",
+		"importer-deployment",
+	}
+
+	for _, name := range templateNames {
+		suite.Run(t, &utils.TemplateGoldenTest{
+			ChartPath:      chartPath,
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+			GoldenFileName: name,
+			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
+			SetValues: map[string]string{
+				"orchestration.importer.enabled": "true",
+			},
+			IgnoredLines: []string{
+				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+			},
+		})
+	}
+}
+
+func TestGoldenDefaultsTemplateOrchestrationMigrationData(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	templateNames := []string{
+		"migration-data-configmap-env-vars",
+		"migration-data-job",
+	}
+
+	for _, name := range templateNames {
+		suite.Run(t, &utils.TemplateGoldenTest{
+			ChartPath:      chartPath,
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+			GoldenFileName: name,
+			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
+			SetValues: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+			},
+			IgnoredLines: []string{
+				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
+			},
+		})
+	}
+}
+
+func TestGoldenDefaultsTemplateOrchestrationMigrationIdentity(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+	templateNames := []string{
+		"migration-identity-configmap",
+		"migration-identity-job",
+	}
+
+	for _, name := range templateNames {
+		suite.Run(t, &utils.TemplateGoldenTest{
+			ChartPath:      chartPath,
+			Release:        "camunda-platform-test",
+			Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+			GoldenFileName: name,
+			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
+			SetValues: map[string]string{
+				"orchestration.migration.identity.enabled": "true",
+			},
 			IgnoredLines: []string{
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
 			},

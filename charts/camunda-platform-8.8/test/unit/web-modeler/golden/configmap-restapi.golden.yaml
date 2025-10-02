@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: web-modeler
-    app.kubernetes.io/version: "8.8.0-alpha8-rc1"
+    app.kubernetes.io/version: "8.8.0-alpha8"
   annotations:
     {}
 data:
@@ -44,13 +44,13 @@ data:
         clusters:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
-            version: "8.8.0-alpha7"
+            version: "8.8.0-alpha8"
             authentication: "BASIC"
             authorizations:
               enabled: true
             url:
-              grpc: "grpc://camunda-platform-test-zeebe:26500"
-              rest: "http://camunda-platform-test-zeebe:8080"
+              grpc: "grpc://camunda-platform-test-zeebe-gateway:26500"
+              rest: "http://camunda-platform-test-zeebe-gateway:8080"
               web-app: "http://localhost:8088"
 
     spring:

@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.8.0-alpha7"
+    app.kubernetes.io/version: "8.8.0-alpha8"
 data:
   application.yaml: |
     server:
@@ -44,8 +44,8 @@ data:
         mode: selfManaged
         auth:
           method: basic
-          username: "demo"
-          password: "demo"
+          username: "connectors"
+          password: "connector"
       connector:
         headless:
           service-url: "camunda-platform-test-connectors-headless"

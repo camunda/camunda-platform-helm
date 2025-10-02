@@ -32,15 +32,27 @@ data:
       {{- end }}
 
       authProvider:
-        {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
-        type: {{ include "camundaPlatform.authType" . | quote }}
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
         {{- end }}
         issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 
-      {{- if ne .Values.global.identity.auth.type "KEYCLOAK"}}
+      {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
       initial-claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
+      {{- end }}
+
+
+      {{- if and (ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (.Values.orchestration.migration.identity.enabled)}}
+      mapping-rules:
+        - name: identityMigration
+          claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
+          claim-value: {{ .Values.orchestration.migration.identity.idpApplicationId }}
+          operator: EQUALS
+          rule-type: ROLE
+          applied-role-names:
+          - ManagementIdentity
       {{- end }}
 
       component-presets:
@@ -53,6 +65,7 @@ data:
               permissions:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: read:*
+        {{- if .Values.console.enabled }}
         console:
           applications:
             - name: "Console"
@@ -73,6 +86,7 @@ data:
               permissions:
                 - audience: {{ include "console.authAudience" . | quote }}
                   definition: write:*
+        {{- end }}
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -85,7 +99,7 @@ data:
                 - definition: write
                   description: "Write permission"
           roles:
-            - name: "Identity"
+            - name: "ManagementIdentity"
               description: "Provides full access to Identity"
               permissions:
                 - audience: {{ include "identity.authAudience" . | quote }}
@@ -98,7 +112,7 @@ data:
               id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
               secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
-              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
           apis:
@@ -117,6 +131,7 @@ data:
                   definition: read:*
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
+        {{- if .Values.optimize.enabled }}
         optimize:
           applications:
             - name: Optimize
@@ -140,6 +155,8 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
+        {{- end }}
+        {{- if .Values.webModeler.enabled }}
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -184,23 +201,30 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
+        {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}
-    {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
+    {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
     keycloak:
       url: {{ include "identity.keycloak.url" . | quote }}
       setup:
         user: {{ include "identity.keycloak.authAdminUser" . | quote }}
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
+        {{- if .Values.console.enabled }}
         console:
           secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
+        {{- end }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
+        {{- if .Values.optimize.enabled }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        {{- end }}
+        {{- if .Values.webModeler.enabled }}
         webmodeler:
           root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+        {{- end }}
       # Clients are passed as environment variables.
       clients:
       users:
@@ -212,11 +236,17 @@ data:
           email: {{ .Values.identity.firstUser.email | quote }}
           {{- if .Values.global.identity.auth.enabled }}
           roles:
-            - Identity
+            - ManagementIdentity
+            {{- if .Values.optimize.enabled }}
             - Optimize
+            {{- end }}
+            {{- if .Values.webModeler.enabled }}
             - Web Modeler
             - Web Modeler Admin
+            {{- end }}
+            {{- if .Values.console.enabled }}
             - Console
+            {{- end }}
             - Orchestration
           {{- end }}
         {{- end }}
@@ -249,14 +279,20 @@ data:
                 definition: read
               - resourceServerId: {{ include "identity.authAudience" . | quote }}
                 definition: write
+            {{- if .Values.console.enabled }}
               - resourceServerId: {{ include "console.authAudience" . | quote }}
                 definition: "write:*"
+            {{- end }}
+            {{- if .Values.webModeler.enabled }}
               - resourceServerId: {{ include "webModeler.authClientApiAudience" . | quote }}
                 definition: "write:*"
+            {{- end }}
               - resourceServerId: {{ include "orchestration.authAudience" . | quote }}
                 definition: "write:*"
+            {{- if .Values.optimize.enabled }}
               - resourceServerId: {{ include "optimize.authAudience" . | quote }}
                 definition: "write:*"
+            {{- end }}
         {{- end }}
         orchestration:
           clients:
@@ -264,9 +300,10 @@ data:
               id: orchestration
               type: confidential
               secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-              root-url: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/identity-callback"
+        {{- if .Values.optimize.enabled }}
         optimize:
           clients:
             - name: Optimize
@@ -276,6 +313,8 @@ data:
               root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
               redirect-uris:
                 - "/api/authentication/callback"
+        {{- end }}
+        {{- if .Values.console.enabled }}
         console:
           clients:
             - name: "Console"
@@ -284,6 +323,7 @@ data:
               root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
               redirect-uris:
                 - "/"
+        {{- end }}
     {{- end }}
     {{- end }}
     server:
@@ -300,7 +340,7 @@ data:
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
       {{- if .Values.global.identity.auth.enabled }}
       profiles:
-        active: {{ eq .Values.global.identity.auth.type "KEYCLOAK" | ternary "keycloak" "oidc" }}
+        active: {{ eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" | ternary "keycloak" "oidc" }}
       {{- end }}
 
       {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
@@ -321,7 +361,7 @@ data:
         client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
         {{- end }}
         {{- end }}
-        {{- if ne .Values.global.identity.auth.type "KEYCLOAK" }}
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}

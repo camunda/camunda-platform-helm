@@ -233,11 +233,14 @@ test.describe("Camunda core", () => {
   }
 
   // Parameterized process visibility tests
+
   for (const [bpmnId, label, file] of [
     ["it-test-process", "Basic", "test-process.bpmn"],
     ["test-inbound-process", "Inbound", "test-inbound-process.bpmn"],
   ] as const) {
     test(`Process visible: ${label}`, async () => {
+      test.setTimeout(3 * 60 * 1000); // > polling window
+
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
       execFileSync(
@@ -259,27 +262,49 @@ test.describe("Camunda core", () => {
         ],
         { stdio: "inherit" },
       );
-      await new Promise((resolve) => setTimeout(resolve, 15000));
-      // TODO change this as it is not testing what we think it is testing
-      const r = await api.post(
-        `${config.base.operate}/v1/process-definitions/search`,
-        {
-          data: "{}",
-          headers: {
-            Authorization: `Bearer ${venomJWT}`,
-            "Content-Type": "application/json",
+
+      const timeoutMs = 2 * 60 * 1000;
+      const intervalMs = 5 * 1000;
+      const start = Date.now();
+
+      let found = false;
+      let lastStatus = 0;
+
+      /* eslint-disable no-await-in-loop */
+      while (Date.now() - start < timeoutMs) {
+        const r = await api.post(
+          `${config.base.operate}/v1/process-definitions/search`,
+          {
+            // Send JSON, not a string. Empty object returns all items.
+            data: {},
+            headers: {
+              Authorization: `Bearer ${venomJWT}`,
+              "Content-Type": "application/json",
+            },
           },
-        },
-      );
+        );
+
+        lastStatus = r.status();
+
+        if (r.ok()) {
+          const data = await r.json();
+          const ids = (data.items as Array<{ bpmnProcessId: string }> | []).map(
+            (i) => i.bpmnProcessId,
+          );
+
+          if (ids.includes(bpmnId)) {
+            found = true;
+            break; // success
+          }
+        }
+
+        await new Promise((res) => setTimeout(res, intervalMs));
+      }
+
       expect(
-        r.ok(),
-        `Process visibility check failed for ${label}: ${r.status()}`,
+        found,
+        `Process ${bpmnId} not visible in Operate within ${timeoutMs / 1000}s (last status ${lastStatus})`,
       ).toBeTruthy();
-      const data = await r.json();
-      const ids = (data.items as Array<{ bpmnProcessId: string }>).map(
-        (i) => i.bpmnProcessId,
-      );
-      expect(ids, `Process ${bpmnId} not found in Operate`).toContain(bpmnId);
     });
   }
 });

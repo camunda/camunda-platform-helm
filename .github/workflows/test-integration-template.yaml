@@ -27,7 +27,12 @@ on:
         default: main
         type: string
       camunda-helm-upgrade-version:
-        description: The Helm chart released version to upgrade from.
+        description: The Helm chart version used in the upgrade-patch flow.
+        required: false
+        default: ""
+        type: string
+      camunda-version-previous:
+        description: The Camunda version used in the upgrade-minor flow.
         required: false
         default: ""
         type: string
@@ -104,7 +109,7 @@ on:
         description: Enable enterprise values
       values-digest:
         required: false
-        default: "true"
+        default: "false"
         type: string
         description: Enable digest values
       camunda-helm-post-render:
@@ -145,6 +150,11 @@ on:
         default: false
         type: boolean
         required: false
+      initialClaimValue:
+        description: This is only used for testing Entra. This is here so we can do exploratory testing with Entra.
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -159,7 +169,7 @@ permissions:
   deployments: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.scenario }}-${{ inputs.auth }}
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}
   cancel-in-progress: true
 
 env:
@@ -176,14 +186,10 @@ env:
   TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
   TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
   # OIDC.
-  ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
-  ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
-  ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
-  ENTRA_PARENT_APP_OBJECT_ID: ${{ secrets.ENTRA_PARENT_APP_OBJECT_ID }}
-  ENTRA_CHILD_APP_CLIENT_ID: ${{ secrets.ENTRA_CHILD_APP_CLIENT_ID }}
-  ENTRA_CHILD_APP_CLIENT_SECRET: ${{ secrets.ENTRA_CHILD_APP_CLIENT_SECRET }}
-  ENTRA_CHILD_APP_DIRECTORY_ID: ${{ secrets.ENTRA_CHILD_APP_DIRECTORY_ID }}
-  ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+  ENTRA_APP_CLIENT_ID: ${{ secrets.ENTRA_APP_CLIENT_ID }}
+  ENTRA_APP_CLIENT_SECRET: ${{ secrets.ENTRA_APP_CLIENT_SECRET }}
+  ENTRA_APP_DIRECTORY_ID: ${{ secrets.ENTRA_APP_DIRECTORY_ID }}
+  ENTRA_APP_OBJECT_ID: ${{ secrets.ENTRA_APP_OBJECT_ID }}
   # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
@@ -220,7 +226,8 @@ jobs:
           export INPUTS_PLATFORMS_EKS=${{ contains(inputs.platforms, 'eks') }}
           export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
           export INPUTS_FLOWS_INSTALL=${{ contains(inputs.flows, 'install') }}
-          export INPUTS_FLOWS_UPGRADE=${{ contains(inputs.flows, 'upgrade') }}
+          export INPUTS_FLOWS_UPGRADE_PATCH=${{ contains(inputs.flows, 'upgrade-patch') }}
+          export INPUTS_FLOWS_UPGRADE_MINOR=${{ contains(inputs.flows, 'upgrade-minor') }}
           cat ${CI_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
           # Read matrix YAML file.
           matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
@@ -253,6 +260,7 @@ jobs:
       camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
       camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+      camunda-version-previous: ${{ inputs.camunda-version-previous }}
       caller-git-ref: ${{ inputs.caller-git-ref }}
       deployment-ttl: ${{ inputs.deployment-ttl }}
       distro-platform: ${{ matrix.distro.platform }}
@@ -284,6 +292,7 @@ jobs:
       values-enterprise: ${{ inputs.values-enterprise }}
       values-config: ${{ inputs.values-config }}
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
+      initialClaimValue: ${{ inputs.initialClaimValue }}
 
   print-outputs:
     name: Print outputs
@@ -306,11 +315,11 @@ jobs:
         with:
           deployment-ttl: 30m
           setup-flow: install
-          platform: gke
+          platform: ${{ inputs.platforms }}
           identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
           ingress-hostname-base: ci.distro.ultrawombat.com
           chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: 8.7
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
 
       - name: Print outputs

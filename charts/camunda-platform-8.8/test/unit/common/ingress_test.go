@@ -62,8 +62,8 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			},
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.identity.auth.connectors.existingSecret.name": "foo",
-				"global.identity.auth.orchestration.existingSecret.name":       "bar",
+				"connectors.security.authentication.oidc.existingSecret.name": "foo",
+				"orchestration.security.authentication.oidc.existingSecret.name":       "bar",
 				"global.ingress.tls.enabled":                          "true",
 				"identity.contextPath":                                "/identity",
 				"identity.enabled":                                    "true",
@@ -252,6 +252,188 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
 				require.NotContains(t, output, "kind: Ingress")
+			},
+		},
+		{
+			Name:                 "TestIngressWithGlobalLabels",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":                        "true",
+				"global.ingress.labels.test-label":              "test-value",
+				"global.ingress.labels.external-dns":            "enabled",
+				"global.ingress.labels.nginx\\.ingress\\.class": "public",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then
+				s.Require().Equal("test-value", ingress.Labels["test-label"])
+				s.Require().Equal("enabled", ingress.Labels["external-dns"])
+				s.Require().Equal("public", ingress.Labels["nginx.ingress.class"])
+			},
+		},
+		{
+			Name:                 "TestIngressWithoutLabels",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - should only have default chart labels, not custom labels
+				s.Require().NotContains(ingress.Labels, "test-label")
+				s.Require().NotContains(ingress.Labels, "external-dns")
+				// But should still have standard chart labels
+				s.Require().Contains(ingress.Labels, "app")
+				s.Require().Contains(ingress.Labels, "app.kubernetes.io/name")
+			},
+		},
+		{
+			Name:                 "TestHttpIngressLabelMergeOverwrite",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled":              "true",
+				"global.commonLabels.app":             "common-override",
+				"global.commonLabels.environment":     "common-env",
+				"global.ingress.labels.app":           "ingress-override",
+				"global.ingress.labels.team":          "ingress-team",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - ingress labels should override common labels for same keys
+				s.Require().Equal("ingress-override", ingress.Labels["app"], "ingress labels should override common labels for same key")
+				// and common labels should be present when no ingress label conflicts
+				s.Require().Equal("common-env", ingress.Labels["environment"], "common labels should be present when not overridden")
+				// and ingress-specific labels should be present
+				s.Require().Equal("ingress-team", ingress.Labels["team"], "ingress labels should be present")
+				// standard chart labels should still be there for non-conflicting keys
+				s.Require().Contains(ingress.Labels, "app.kubernetes.io/name")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+type GrpcIngressTemplateTest struct {
+	suite.Suite
+	chartPath string
+	release   string
+	namespace string
+	templates []string
+	extraArgs []string
+}
+
+func TestGrpcIngressTemplate(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &GrpcIngressTemplateTest{
+		chartPath: chartPath,
+		release:   "camunda-platform-test",
+		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		templates: []string{"templates/common/ingress-grpc.yaml"},
+	})
+}
+
+func (s *GrpcIngressTemplateTest) TestDifferentValuesInputs() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:                 "TestGrpcIngressWithLabels",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                           "true",
+				"orchestration.ingress.grpc.enabled":              "true",
+				"orchestration.ingress.grpc.labels.test-label":    "grpc-test-value",
+				"orchestration.ingress.grpc.labels.external-dns":  "grpc-enabled",
+				"orchestration.ingress.grpc.labels.grpc-service":  "zeebe-gateway",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then
+				s.Require().Equal("grpc-test-value", ingress.Labels["test-label"])
+				s.Require().Equal("grpc-enabled", ingress.Labels["external-dns"])
+				s.Require().Equal("zeebe-gateway", ingress.Labels["grpc-service"])
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressWithoutLabels",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":              "true",
+				"orchestration.ingress.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - should only have default chart labels, not custom labels
+				s.Require().NotContains(ingress.Labels, "test-label")
+				s.Require().NotContains(ingress.Labels, "external-dns")
+				// But should still have standard chart labels
+				s.Require().Contains(ingress.Labels, "app")
+				s.Require().Contains(ingress.Labels, "app.kubernetes.io/name")
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressDisabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                           "true",
+				"orchestration.ingress.grpc.enabled":              "false",
+				"orchestration.ingress.grpc.labels.test-label":    "should-not-appear",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then - no ingress should be rendered
+				require.NotContains(t, output, "kind: Ingress")
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressExternal",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                           "true",
+				"orchestration.ingress.grpc.enabled":              "true",
+				"orchestration.ingress.grpc.external":             "true",
+				"orchestration.ingress.grpc.labels.test-label":    "should-not-appear",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// then - no ingress should be rendered when external is true
+				require.NotContains(t, output, "kind: Ingress")
+			},
+		},
+		{
+			Name:                 "TestGrpcIngressLabelMergeOverwrite",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"orchestration.enabled":                           "true",
+				"orchestration.ingress.grpc.enabled":              "true",
+				"global.commonLabels.app":                         "common-grpc-override",
+				"global.commonLabels.environment":                 "common-grpc-env",
+				"orchestration.ingress.grpc.labels.app":           "grpc-specific-override",
+				"orchestration.ingress.grpc.labels.protocol":      "grpc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - grpc-specific labels should override common labels for same keys
+				s.Require().Equal("grpc-specific-override", ingress.Labels["app"], "grpc labels should override common labels for same key")
+				// and common labels should be present when no grpc label conflicts
+				s.Require().Equal("common-grpc-env", ingress.Labels["environment"], "common labels should be present when not overridden")
+				// and grpc-specific labels should be present
+				s.Require().Equal("grpc", ingress.Labels["protocol"], "grpc-specific labels should be present")
+				// standard chart labels should still be there for non-conflicting keys
+				s.Require().Contains(ingress.Labels, "app.kubernetes.io/name")
 			},
 		},
 	}

@@ -104,6 +104,11 @@ global:
     ## @skip global.security.allowInsecureImages
     allowInsecureImages: true
 
+    ## @extra global.security.authentication
+    authentication:
+      ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
+      method: "basic"
+
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
   createReleaseInfo: true
 
@@ -142,16 +147,14 @@ global:
     external: false
     ## @param global.ingress.className Ingress.className defines the class or configuration of ingress which should be used by the controller
     className: nginx
+    ## @param global.ingress.labels [object] can be used to define labels which will be applied to the global HTTP ingress resource
+    labels: {}
     ## @param global.ingress.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
     annotations:
       ingress.kubernetes.io/rewrite-target: "/"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       nginx.ingress.kubernetes.io/proxy-buffering: "on"
-      nginx.ingress.kubernetes.io/affinity: "cookie"
-      nginx.ingress.kubernetes.io/affinity-mode: "persistent"
-      nginx.ingress.kubernetes.io/session-cookie-name: "route"
-      nginx.ingress.kubernetes.io/session-cookie-path: "/"
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
@@ -172,7 +175,7 @@ global:
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
   ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
   ## @param global.elasticsearch.auth.password (DEPRECATED - use global.elasticsearch.auth.secret instead) the password for external elasticsearch
@@ -184,14 +187,6 @@ global:
     tls:
       enabled: false
       existingSecret: ""
-      ## @extra global.elasticsearch.tls.secret configuration to provide the TLS secret.
-      secret:
-        ## @param global.elasticsearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
-        inlineSecret: ""
-        ## @param global.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
-        existingSecret: ""
-        ## @param global.elasticsearch.tls.secret.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: ""
     auth:
       username: ""
       password: ""
@@ -225,7 +220,7 @@ global:
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
   ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
   ## @param global.opensearch.auth.username the username for external opensearch
   ## @param global.opensearch.auth.password (DEPRECATED - use global.opensearch.auth.secret instead) the password for external opensearch
@@ -238,14 +233,6 @@ global:
     tls:
       enabled: false
       existingSecret: ""
-      ## @extra global.opensearch.tls.secret configuration to provide the TLS secret.
-      secret:
-        ## @param global.opensearch.tls.secret.inlineSecret can be used to provide the TLS certificate as a plain-text value for non-production usage.
-        inlineSecret: ""
-        ## @param global.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS certificate.
-        existingSecret: ""
-        ## @param global.opensearch.tls.secret.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: ""
     auth:
       username: ""
       password: ""
@@ -310,9 +297,8 @@ global:
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:
-      ## @param global.identity.auth.enabled if true, enables the identity authentication otherwise basic-auth will be used on all services.
+      ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
       enabled: false
-
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
       ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
@@ -321,7 +307,7 @@ global:
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
       jwksUrl: ""
-      ## @param global.identity.auth.type defines the type of authentication which should be used. Defaults to Keycloak
+      ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
@@ -348,29 +334,41 @@ global:
           ## @param global.identity.auth.admin.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
 
-      #######################
-      # Management Group
-      #######################
+      #####################
+      # Management Identity
+      #####################
 
-      ## @extra global.identity.auth.identity configuration to configure Identity authentication specifics on global level, which can be accessed by other components
+      ## @extra global.identity.auth.identity configuration to configure Management Identity authentication specifics on global level, which can be accessed by other components
       identity:
-        ## @param global.identity.auth.identity.clientId defines the client id, which is used by Identity in authentication flows.
+        ## @param global.identity.auth.identity.clientId defines the client id, which is used by Management Identity in authentication flows.
         clientId: camunda-identity
-        ## @param global.identity.auth.identity.audience defines the audience, which is used by Identity.
+        ## @param global.identity.auth.identity.audience defines the audience, which is used by Management Identity.
         audience: camunda-identity-resource-server
         ## @param global.identity.auth.identity.existingSecret [string,object] (DEPRECATED - use global.identity.auth.identity.secret instead) can be used to reference an existing secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
         existingSecret: ""
         ## @param global.identity.auth.identity.existingSecretKey (DEPRECATED - use global.identity.auth.identity.secret instead) defines the key within the existing secret object.
         existingSecretKey: identity-oidc-client-token
-        ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Identity.
-        # Should be publicly accessible, the default value works if a port-forward to Identity is created to 8085.
+        ## @extra global.identity.auth.identity.secret configuration to provide the identity client secret.
+        secret:
+          ## @param global.identity.auth.identity.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.auth.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret. This should ONLY be used for an external OIDC provider. If not set, a random secret is generated.
+          existingSecret: ""
+          ## @param global.identity.auth.identity.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
+        ## @param global.identity.auth.identity.redirectUrl defines the redirect URL, which is used by the auth platform to access Management Identity.
+        # Should be publicly accessible, the default value works if a port-forward to Management Identity is created to 8085.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8085"
-        ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Identity to configure initial mapping rules,
+        ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Management Identity to configure initial mapping rules,
         # defaults to "oid".
         initialClaimName: "oid"
-        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Identity to configure initial mapping rules.
+        ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.
         initialClaimValue: ""
+
+      #####################
+      # Console
+      #####################
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
       console:
@@ -397,6 +395,10 @@ global:
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8087"
 
+      #####################
+      # Webmodeler
+      #####################
+
       ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
       webModeler:
         ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
@@ -410,52 +412,9 @@ global:
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8070"
 
-      #######################
-      # Orchestration Cluster
-      #######################
-
-      ## @extra global.identity.auth.connectors configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
-      connectors:
-        ## @param global.identity.auth.connectors.clientId defines the client id, which is used by Connectors in authentication flows.
-        clientId: connectors
-        ## @param global.identity.auth.connectors.existingSecret [string,object] (DEPRECATED - use global.identity.auth.connectors.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.connectors.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.connectors.existingSecretKey (DEPRECATED - use global.identity.auth.connectors.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-connectors-client-token
-        ## @extra global.identity.auth.connectors.secret configuration to provide the connectors client secret.
-        secret:
-          ## @param global.identity.auth.connectors.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.connectors.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
-
-      ## @extra global.identity.auth.orchestration configuration to configure authentication specifics on global level, which can be accessed by other components
-      orchestration:
-        ## @param global.identity.auth.orchestration.audience defines the audience, which is used by Orchestration Cluster.
-        audience: orchestration-api
-        ## @param global.identity.auth.orchestration.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
-        clientId: orchestration
-        ## @param global.identity.auth.orchestration.existingSecret [string,object] (DEPRECATED - use global.identity.auth.orchestration.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.orchestration.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.orchestration.existingSecretKey (DEPRECATED - use global.identity.auth.orchestration.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-orchestration-client-token
-        ## @extra global.identity.auth.orchestration.secret configuration to provide the orchestration client secret.
-        secret:
-          ## @param global.identity.auth.orchestration.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.orchestration.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.orchestration.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
-        ## @param global.identity.auth.orchestration.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
-        # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8082"
-        ## @param global.identity.auth.orchestration.tokenScope defines the token scope, which is used by Orchestration Cluster.
-        tokenScope: ""
-
+      #####################
+      # Optimize
+      #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
       optimize:
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
@@ -512,12 +471,32 @@ global:
         bucketTtl: 0
         ## @param global.documentStore.type.aws.class Fully qualified class name for the AWS document store provider.
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
-        ## @param global.documentStore.type.aws.existingSecret Reference to an existing Kubernetes secret containing AWS credentials.
+        ## @param global.documentStore.type.aws.existingSecret (DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret and global.documentStore.type.aws.secretAccessKey.secret instead) Reference to an existing Kubernetes secret containing AWS credentials.
         existingSecret: "aws-credentials"
-        ## @param global.documentStore.type.aws.accessKeyIdKey Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
+        ## @param global.documentStore.type.aws.accessKeyIdKey (DEPRECATED - use global.documentStore.type.aws.accessKeyId.secret instead) Key within the AWS credentials secret for AWS_ACCESS_KEY_ID.
         accessKeyIdKey: "awsAccessKeyId"
-        ## @param global.documentStore.type.aws.secretAccessKeyKey Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
+        ## @param global.documentStore.type.aws.secretAccessKeyKey (DEPRECATED - use global.documentStore.type.aws.secretAccessKey.secret instead) Key within the AWS credentials secret for AWS_SECRET_ACCESS_KEY.
         secretAccessKeyKey: "awsSecretAccessKey"
+        ## @extra global.documentStore.type.aws.accessKeyId configuration to provide the AWS access key ID.
+        accessKeyId:
+          ## @extra global.documentStore.type.aws.accessKeyId.secret configuration to provide the AWS access key ID secret.
+          secret:
+            ## @param global.documentStore.type.aws.accessKeyId.secret.inlineSecret can be used to provide the access key ID as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.aws.accessKeyId.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the access key ID.
+            existingSecret: ""
+            ## @param global.documentStore.type.aws.accessKeyId.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "access-key-id"
+        ## @extra global.documentStore.type.aws.secretAccessKey configuration to provide the AWS secret access key.
+        secretAccessKey:
+          ## @extra global.documentStore.type.aws.secretAccessKey.secret configuration to provide the AWS secret access key secret.
+          secret:
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.inlineSecret can be used to provide the secret access key as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the secret access key.
+            existingSecret: ""
+            ## @param global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "secret-access-key"
       gcp:
         ## @param global.documentStore.type.gcp.enabled Enable GCP document store configuration.
         enabled: false
@@ -527,14 +506,20 @@ global:
         bucket: "your-gcp-bucket"
         ## @param global.documentStore.type.gcp.class Fully qualified class name for the GCP document store provider.
         class: "io.camunda.document.store.gcp.GcpDocumentStoreProvider"
-        ## @param global.documentStore.type.gcp.existingSecret Reference to an existing Kubernetes secret containing GCP credentials.
+        ## @param global.documentStore.type.gcp.existingSecret (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Reference to an existing Kubernetes secret containing GCP credentials.
         existingSecret: "gcp-credentials"
-        ## @param global.documentStore.type.gcp.credentialsKey Key in the GCP credentials secret that contains the service-account JSON.
+        ## @param global.documentStore.type.gcp.credentialsKey (DEPRECATED - use global.documentStore.type.gcp.serviceAccount.secret instead) Key in the GCP credentials secret that contains the service-account JSON.
         credentialsKey: "service-account.json"
         ## @param global.documentStore.type.gcp.mountPath Mount path for the GCP credentials secret.
         mountPath: "/var/secrets/gcp"
         ## @param global.documentStore.type.gcp.fileName The file name for the GCP credentials JSON.
         fileName: "service-account.json"
+        ## @extra global.documentStore.type.gcp.secret configuration to provide the GCP service account credentials secret.
+        secret:
+          ## @param global.documentStore.type.gcp.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the service account JSON.
+          existingSecret: ""
+          ## @param global.documentStore.type.gcp.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: "service-account.json"
       inmemory:
         ## @param global.documentStore.type.inmemory.enabled Enable in-memory document store configuration.
         enabled: true
@@ -542,11 +527,6 @@ global:
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
-
-  ## @extra global.exporter configuration for Elasticsearch and Opensearch exporters.
-  exporter:
-    ## @param global.exporter.enabled if true, enables Elasticsearch and Opensearch exporters.
-    enabled: false
 
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:
@@ -573,27 +553,27 @@ global:
 ### #####  ###### #    #   #   #   #     #
 ############################################
 
-## @section Identity Parameters
-# Identity configuration for the identity sub chart.
+## @section Management Identity Parameters
+# Management Identity configuration for the identity sub chart.
 identity:
   ## @param identity.enabled if true, the identity deployment and its related resources are deployed via a helm release
   #
-  # Note: Identity is always required by WebModeler. By default, if no OIDC provider is specified, Keycloak is used by identity.
-  #       If you don't need WebModeler, make sure to disable Identity authentication, keycloak, and the WebModeler application by setting:
+  # Note: Management Identity is always required by WebModeler. By default, if no OIDC provider is specified, Keycloak is used by identity.
+  #       If you don't need WebModeler, make sure to disable Management Identity authentication, keycloak, and the WebModeler application by setting:
   #         global.identity.auth.enabled=false
   #         webModeler.enabled=false
   #         identityKeycloak.enabled=false
   enabled: false
 
-  ## @param identity.fullnameOverride can be used to override the full name of the Identity resources
+  ## @param identity.fullnameOverride can be used to override the full name of the Management Identity resources
   fullnameOverride: ""
-  ## @param identity.nameOverride can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)
+  ## @param identity.nameOverride can be used to partly override the name of the Management Identity resources (names will still be prefixed with the release name)
   nameOverride: ""
 
-  ## @extra identity.firstUser configuration to configure properties of the first Identity user, which can be used to access all
+  ## @extra identity.firstUser configuration to configure properties of the first Management Identity user, which can be used to access all
   # web applications
   firstUser:
-    ## @param identity.firstUser.enabled if true, Identity will seed the first user in Keycloak.
+    ## @param identity.firstUser.enabled if true, Management Identity will seed the first user in Keycloak.
     enabled: true
     ## @param identity.firstUser.username defines the username of the first user, needed to log in into the web applications
     username: demo
@@ -605,7 +585,7 @@ identity:
     firstName: Demo
     ## @param identity.firstUser.lastName defines the last name of the first user; a name is required to use WebModeler
     lastName: User
-    ## @param identity.firstUser.existingSecret (DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Identity first user.
+    ## @param identity.firstUser.existingSecret (DEPRECATED - use identity.firstUser.secret instead) can be used to use an own existing secret for Management Identity first user.
     existingSecret: camunda-credentials
     ## @param identity.firstUser.existingSecretKey (DEPRECATED - use identity.firstUser.secret instead) defines the key within the existing secret object.
     existingSecretKey: identity-firstuser-password
@@ -618,7 +598,7 @@ identity:
       ## @param identity.firstUser.secret.existingSecretKey defines the key within the existing secret object.
       existingSecretKey: ""
 
-  ## @param identity.users configuration to configure properties of the Identity users, which can be used to access web applications.
+  ## @param identity.users configuration to configure properties of the Management Identity users, which can be used to access web applications.
   users: []
 
   ## @extra identity.image configuration to configure the identity image specifics
@@ -628,7 +608,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -647,19 +627,19 @@ identity:
   ## @param identity.fullURL can be used when Ingress is configured (for both multi and single domain setup).
   fullURL: ""
 
-  # Note: Identity cannot be accessed over HTTP if a "contextPath" is configured.
-  #       Which means that Identity cannot be configured in combined Ingress without HTTPS.
-  #       To use Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
+  # Note: Management Identity cannot be accessed over HTTP if a "contextPath" is configured.
+  #       Which means that Management Identity cannot be configured in combined Ingress without HTTPS.
+  #       To use Management Identity over HTTP, setup a separated Ingress using "identity.ingress" and don't set "contextPath".
+  ## @param identity.contextPath can be used to make Management Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   # contextPath: "/identity"
-  ## @param identity.contextPath can be used to make Identity web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param identity.podAnnotations can be used to define extra Identity pod annotations
+  ## @param identity.podAnnotations can be used to define extra Management Identity pod annotations
   podAnnotations: {}
-  ## @param identity.podLabels can be used to define extra Identity pod labels
+  ## @param identity.podLabels can be used to define extra Management Identity pod labels
   podLabels: {}
 
-  ## @extra identity.logging configuration for the identity logging. This template will be directly included in the identity configuration YAML file
+  ## @extra identity.logging configuration for the Management Identity logging. This template will be directly included in the Management Identity configuration YAML file
   ## @param identity.logging.level.ROOT
   ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/next/self-managed/identity/user-guide/configuration/configure-logging/#general-configuration-options
   logging:
@@ -680,7 +660,7 @@ identity:
     ## @param identity.service.metricsName defines the name of the service on which the identity metrics will be available
     metricsName: metrics
 
-  ## @extra identity.podSecurityContext defines the security options the Identity pod should be run with
+  ## @extra identity.podSecurityContext defines the security options the Management Identity pod should be run with
   podSecurityContext:
     ## @param identity.podSecurityContext.runAsNonRoot
     runAsNonRoot: true
@@ -691,7 +671,7 @@ identity:
       ## @param identity.podSecurityContext.seccompProfile.type
       type: RuntimeDefault
 
-  ## @extra identity.containerSecurityContext defines the security options the Identity container should be run with
+  ## @extra identity.containerSecurityContext defines the security options the Management Identity container should be run with
   containerSecurityContext:
     ## @param identity.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: false
@@ -771,7 +751,7 @@ identity:
     ## @param identity.metrics.prometheus Prometheus metrics endpoint
     prometheus: /actuator/prometheus
 
-  ## @param identity.nodeSelector can be used to define on which nodes the Identity pods should run
+  ## @param identity.nodeSelector can be used to define on which nodes the Management Identity pods should run
   nodeSelector: {}
   ## @param identity.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
@@ -791,7 +771,7 @@ identity:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param identity.env can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -821,7 +801,7 @@ identity:
   ## @param identity.externalDatabase.username Non-root username
   ## @param identity.externalDatabase.password (DEPRECATED - use identity.externalDatabase.secret instead) Password for the non-root username
   ## @param identity.externalDatabase.database The database name
-  ## @param identity.externalDatabase.existingSecret (DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Identity.
+  ## @param identity.externalDatabase.existingSecret (DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing Kubernetes Secret containing the external database credentials for Management Identity.
   ## @param identity.externalDatabase.existingSecretPasswordKey (DEPRECATED - use identity.externalDatabase.secret instead) Name of an existing secret key containing the database credentials
   ##
   externalDatabase:
@@ -869,17 +849,17 @@ identity:
     ## @param identity.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
 
-# Identity.
+# Management Identity.
 #####   ####   ####  #####  ####  #####  ######  ####   ####  #
 #    # #    # #        #   #    # #    # #      #      #    # #
 #    # #    #  ####    #   #      #    # #####   ####  #    # #
 #####  #    #      #   #   #  ### #####  #           # #  # # #
 #      #    # #    #   #   #    # #   #  #      #    # #   #  #
 #       ####   ####    #    ####  #    # ######  ####   ### # ######
-## @section Identity - PostgreSQL Parameters
-## @extra identityPostgresql configuration for the PostgreSQL dependency chart used by Identity. For more details, check [Bitnami package for PostgreSQL](https://artifacthub.io/packages/helm/bitnami/postgresql#parameters) documentation.
+## @section Management Identity - PostgreSQL Parameters
+## @extra identityPostgresql configuration for the PostgreSQL dependency chart used by Management Identity. For more details, check [Bitnami package for PostgreSQL](https://artifacthub.io/packages/helm/bitnami/postgresql#parameters) documentation.
 identityPostgresql:
-  ## @param identityPostgresql.enabled Enable Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
+  ## @param identityPostgresql.enabled Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
   ##
   enabled: false
   ## @extra identityPostgresql.global.compatibility Compatibility adaptations for Kubernetes platforms
@@ -902,7 +882,7 @@ identityPostgresql:
     repository: bitnamilegacy/postgresql
     tag: 15.10.0-debian-12-r2
     digest: ""
-  ## @param identityPostgresql.nameOverride the name used for Identity PostgreSQL.
+  ## @param identityPostgresql.nameOverride the name used for Management Identity PostgreSQL.
   ##
   nameOverride: identity-postgresql
   auth:
@@ -932,17 +912,17 @@ identityPostgresql:
       ## @param identityPostgresql.metrics.image.repository
       repository: bitnamilegacy/postgres-exporter
 
-# Identity.
+# Management Identity.
 #    # ###### #   #  ####  #       ####    ##   #    #
 #   #  #       # #  #    # #      #    #  #  #  #   #
 ####   #####    #   #      #      #    # #    # ####
 #  #   #        #   #      #      #    # ###### #  #
 #   #  #        #   #    # #      #    # #    # #   #
 #    # ######   #    ####  ######  ####  #    # #    #
-## @section Identity - Keycloak Parameters
-## @extra identityKeycloak configuration, for the Keycloak dependency chart which is used by Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
+## @section Management Identity - Keycloak Parameters
+## @extra identityKeycloak configuration, for the Keycloak dependency chart which is used by Management Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
 identityKeycloak:
-  ## @param identityKeycloak.enabled Enable Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
+  ## @param identityKeycloak.enabled Enable Management Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
   enabled: false
   ## @extra identityKeycloak.global.compatibility Compatibility adaptations for Kubernetes platforms
   global:
@@ -956,7 +936,7 @@ identityKeycloak:
         ##
         adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
     security:
-      ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Identity login theme)
+      ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)
       allowInsecureImages: true
 
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
@@ -1110,6 +1090,8 @@ identityKeycloak:
     tls: false
     ## @param identityKeycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
     extraTls: []
+    ## @param identityKeycloak.ingress.labels [object] can be used to define labels which will be applied to the Keycloak ingress resource
+    labels: {}
     ## @param identityKeycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
     annotations:
       ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
@@ -1170,7 +1152,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8.1
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1236,7 +1218,7 @@ console:
       cpu: 2
       memory: 2Gi
 
-  ## @param console.env can be used to set extra environment variables in each app container
+  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -1388,7 +1370,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0-alpha8-rc1
+    tag: 8.8.0-alpha8
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1396,6 +1378,13 @@ webModeler:
   # contextPath: "/modeler"
   ## @param webModeler.contextPath can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.
   contextPath: ""
+
+  security:
+    ## Authentication configuration
+    ## @extra webModeler.security.authentication
+    authentication:
+      ## @param webModeler.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
 
   # WebModeler.
   ######                         #    ######  ###
@@ -1517,7 +1506,7 @@ webModeler:
         io.camunda.modeler: DEBUG
         io.grpc: TRACE
 
-    ## @param webModeler.restapi.env can be used to set extra environment variables in each restapi container
+    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1687,7 +1676,7 @@ webModeler:
     ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels
     podLabels: {}
 
-    ## @param webModeler.webapp.env can be used to set extra environment variables in each webapp container
+    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1866,7 +1855,7 @@ webModeler:
     ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels
     podLabels: {}
 
-    ## @param webModeler.websockets.env can be used to set extra environment variables in each websockets container
+    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
     ## @param webModeler.websockets.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -2123,6 +2112,27 @@ connectors:
   ## @param connectors.enabled if true, the Connectors deployment and its related resources are deployed via a helm release
   enabled: true
 
+  ## @extra connectors.security.authentication.oidc configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
+  security:
+    ## Authentication configuration
+    ## @extra connectors.security.authentication
+    authentication:
+      oidc:
+        ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
+        clientId: connectors
+        ## @param connectors.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use connectors.security.authentication.oidc.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using connectors.security.authentication.oidc.existingSecret.name.
+        existingSecret: ""
+        ## @param connectors.security.authentication.oidc.existingSecretKey (DEPRECATED - use connectors.security.authentication.oidc.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-connectors-client-token
+        ## @extra connectors.security.authentication.oidc.secret configuration to provide the connectors client secret.
+        secret:
+          ## @param connectors.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param connectors.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param connectors.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
+
   ## @extra connectors.image configuration to configure the Connectors image specifics
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
@@ -2131,7 +2141,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2184,7 +2194,7 @@ connectors:
       cpu: 2
       memory: 2Gi
 
-  ## @param connectors.env can be used to set extra environment variables in each Connector container
+  ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param connectors.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -2365,15 +2375,56 @@ orchestration:
     ## Authentication configuration
     ## @extra orchestration.security.authentication
     authentication:
-      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc
-      method: basic
+      ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
+      ## @param orchestration.security.authentication.authenticationRefreshInterval defines the session's authentication refresh time, defaulted to PT30S.
+      authenticationRefreshInterval: "PT30S"
+
+      # @extra orchestration.security.authentication.oidc
       oidc:
+        ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
+        issuer: ""
+        ## @param orchestration.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`.
+        issuerBackendUrl: ""
+        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.
+        tokenUrl: ""
+        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
+        jwksUrl: ""
+        ## @param orchestration.security.authentication.oidc.type can be used to override `global.identity.auth.type`.
+        type: ""
+        ## @param orchestration.security.authentication.oidc.publicIssuerUrl can be used to override `global.identity.auth.publicIssuerUrl`.
+        publicIssuerUrl: ""
+      
         ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
         usernameClaim: preferred_username
+        ## @param orchestration.security.authentication.oidc.clientIdClaim client ID claim.
+        clientIdClaim: client_id
         ## @param orchestration.security.authentication.oidc.groupsClaim group claim.
         groupsClaim: "groups"
+        ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
+        audience: orchestration-api
+        ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
+        clientId: orchestration
+        ## @param orchestration.security.authentication.oidc.tokenScope defines the token scope, which is used by Orchestration Cluster.
+        tokenScope: ""
+        ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
+        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
+        # Can be overwritten if ingress is in use and an external IP is available.
+        redirectUrl: "http://localhost:8082"
+        ## @param orchestration.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using orchestration.security.authentication.oidc.existingSecret.name.
+        existingSecret: ""
+        ## @param orchestration.security.authentication.oidc.existingSecretKey (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) defines the key within the existing secret object.
+        existingSecretKey: identity-orchestration-client-token
+        ## @extra orchestration.security.authentication.oidc.secret configuration to provide the orchestration client secret.
+        secret:
+          ## @param orchestration.security.authentication.oidc.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param orchestration.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: ""
+          ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: ""
     ## Authorizations configuration.
     ## @extra orchestration.security.authorizations
     authorizations:
@@ -2388,8 +2439,20 @@ orchestration:
       ## @param orchestration.security.initialization.users[0].password
       ## @param orchestration.security.initialization.users[0].name
       ## @param orchestration.security.initialization.users[0].email
+      ## @param orchestration.security.initialization.users[1].username
+      ## @param orchestration.security.initialization.users[1].password
+      ## @param orchestration.security.initialization.users[1].name
+      ## @param orchestration.security.initialization.users[1].email
       users:
-        ## @extra orchestration.security.initialization.users.username, the username of an initial user.
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
+        - username: connectors
+          ## @extra orchestration.security.initialization.users.password, the password of an initial user, used for the connectors component.
+          password: connector
+          ## @extra orchestration.security.initialization.users.name, the name of an initial user, used for the connectors component.
+          name: Connector User
+          ## @extra orchestration.security.initialization.users.email, the email of an initial user, used for the connectors component.
+          email: connector@demo.com
+        ## @extra orchestration.security.initialization.users.username, the username of an initial user, used for the connectors component.
         - username: demo
           ## @extra orchestration.security.initialization.users.password, the password of an initial user.
           password: demo
@@ -2397,13 +2460,23 @@ orchestration:
           name: Demo User
           ## @extra orchestration.security.initialization.users.email, the email of an initial user.
           email: demo@demo.com
-      mappingRules:
-        ## @param orchestration.security.initialization.mappingRules[0].mappingRuleID the mapping-rule-id of an initial mapping rule.
-        - mappingRuleID: demo-user-mapping-rule
-          ## @param orchestration.security.initialization.mappingRules[0].claimName the claim-name of an initial mapping rule.
-          claimName: preferred_username
-          ## @param orchestration.security.initialization.mappingRules[0].claimValue the claim-value of an initial mapping rule.
-          claimValue: demo
+      ## @extra orchestration.security.initialization.defaultRoles assigning initial users to default roles. More roles can be added to the dictionary: https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/#default-roles
+      ## @param orchestration.security.initialization.defaultRoles.admin.users defines the initial users that will get the admin permission
+      ## @param orchestration.security.initialization.defaultRoles.connectors.users defines the initial users that will get the connectors permission
+      ## @param orchestration.security.initialization.defaultRoles.connectors.clients define clients for the orchestration cluster.
+      defaultRoles:
+        admin:
+          users:
+            - demo
+        connectors:
+          users:
+            ## @extra orchestration.security.initialization.defaultRoles.connectors.users[0].connectors Needed for basic auth setup. Can be removed for OIDC. Define the connectors user with the connectors role.
+            - connectors
+          clients:
+            ## @extra orchestration.security.initialization.defaultRoles.connectors.clients[0].connectors Needed for OIDC setup. Can be removed for basic auth. Define the connectors client with the connrectors role.
+            - connectors
+      ## @param orchestration.security.initialization.mappingRules define mapping rules.
+      mappingRules: []
   ## @extra orchestration.image configuration to configure the image specifics
   image:
     ## @param orchestration.image.registry can be used to set container image registry.
@@ -2411,7 +2484,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2419,29 +2492,89 @@ orchestration:
 
   ## @extra orchestration.migration configuration for migration purposes for the orchestration cluster
   migration:
-    process:
-      ## @param orchestration.migration.process.enabled if true, the process migration occurs.
+    data:
+      ## @param orchestration.migration.data.enabled if true, the data migration occurs.
       enabled: false
-      ## @param orchestration.migration.process.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
+      ## @param orchestration.migration.data.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
-      ## @param orchestration.migration.process.batchSize can be used to define the batch size.
-      batchSize: 5
-      ## @param orchestration.migration.process.importFinishedTimeout can be used to define the timeout when the import is finished.
-      importFinishedTimeout: PT1M
-      retry:
-        ## @param orchestration.migration.process.retry.maxRetries can be used to define the maximum amount of retries.
-        maxRetries: 5
-        ## @param orchestration.migration.process.retry.maxRetryDelay can be used to define the delay time between retries.
-        maxRetryDelay: PT1M
-        ## @param orchestration.migration.process.retry.minRetryDelay can be used to define the delay time between retries.
-        minRetryDelay: PT10s
-        ## @param orchestration.migration.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
-        retryDelayMultiplier: 2.0
+      process:
+        ## @param orchestration.migration.data.process.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.process.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.process.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.process.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.process.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      metrics:
+        ## @param orchestration.migration.data.metrics.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.metrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.metrics.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.metrics.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.metrics.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.metrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      tumetrics:
+        ## @param orchestration.migration.data.tumetrics.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.tumetrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        retry:
+          ## @param orchestration.migration.data.tumetrics.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.tumetrics.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.tumetrics.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.tumetrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
+      tasks:
+        ## @param orchestration.migration.data.tasks.batchSize can be used to define the batch size.
+        batchSize: 5
+        ## @param orchestration.migration.data.tasks.importerFinishedTimeout can be used to define the timeout when the import is finished.
+        importerFinishedTimeout: PT1M
+        ## @param orchestration.migration.data.tasks.legacyIndexRetentionAge defines when the legacy task index will be removed, defaults to orchestration.history.retention.minimumAge
+        legacyIndexRetentionAge: 30d
+        retry:
+          ## @param orchestration.migration.data.tasks.retry.maxRetries can be used to define the maximum amount of retries.
+          maxRetries: 5
+          ## @param orchestration.migration.data.tasks.retry.maxRetryDelay can be used to define the delay time between retries.
+          maxRetryDelay: PT1M
+          ## @param orchestration.migration.data.tasks.retry.minRetryDelay can be used to define the delay time between retries.
+          minRetryDelay: PT10s
+          ## @param orchestration.migration.data.tasks.retry.retryDelayMultiplier can be used to define the delay multiplier.
+          retryDelayMultiplier: 2.0
     identity:
-      ## @param orchestration.migration.identity.enabled if true, the migration of data from Management Identity to Identity (in the orchestration cluster) occurs
+      ## @param orchestration.migration.identity.enabled if true, the migration of Management Identity data to the orchestration clusters Identity occurs
       enabled: false
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
+      ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
+      resourceAuthorizationsEnabled: false
+      ## @param orchestration.migration.identity.idpApplicationId must be define the application ID if an external IdP is used.
+      idpApplicationId: ""
+
+  ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
+  importer:
+    ## @param orchestration.importer.enabled if true, the orchestration cluster deployment and its related resources are deployed via a helm release
+    enabled: false
+    ## @param orchestration.importer.envFrom list of environment variables to import from configMapRef and secretRef
+    envFrom: []
+    ## @param orchestration.importer.extraVolumes can be used to define extra volumes for the importer pod
+    extraVolumes: []
+    ## @param orchestration.importer.extraVolumeMounts can be used to mount extra volumes for the importer pod
+    extraVolumeMounts: []
 
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
@@ -2462,10 +2595,8 @@ orchestration:
   partitionCount: "3"
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @param orchestration.env can be used to set extra environment variables in each broker container
+  ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
-    # - name: LOGGING_LEVEL_IO_CAMUNDA
-    #   value: DEBUG
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
     #   value: TRACE
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
@@ -2490,38 +2621,47 @@ orchestration:
     -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
     -XX:+ExitOnOutOfMemoryError
 
-  ## @extra orchestration.service configuration for the broker service
+  ## @extra orchestration.service configuration for the Orchestration Cluster service
   service:
     ## @param orchestration.service.annotations can be used to define annotations, which will be applied to the service
     annotations: {}
+    ## @extra orchestration.service configuration for the Orchestration Cluster headless service
+    headless:
+      ## @param orchestration.service.headless.annotations can be used to define annotations, which will be applied to the headless service
+      annotations: {}
     ## @param orchestration.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
-    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
-    httpPort: 8080
+    ## @param orchestration.service.loadBalancerIP defines public IP of the load balancer if the type is LoadBalancer
+    loadBalancerIP: ""
+    ## @param orchestration.service.loadBalancerSourceRanges defines list of allowed source IP address ranges if the type is LoadBalancer
+    loadBalancerSourceRanges: []
     ## @param orchestration.service.httpName defines the name of the http endpoint, where for example metrics are provided
     httpName: "http"
-    ## @param orchestration.service.commandPort defines the port of the command api endpoint, where the broker commands are sent to
-    commandPort: 26501
-    ## @param orchestration.service.commandName defines the name of the command api endpoint, where the broker commands are sent to
+    ## @param orchestration.service.httpPort defines the port of the http endpoint, where for example metrics are provided
+    httpPort: 8080
+    ## @param orchestration.service.managementName defines the name of the management endpoint, where the management API is exposed
+    managementName: "server"
+    ## @param orchestration.service.managementPort defines the port of the management endpoint, where the management API is exposed
+    managementPort: 9600
+    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcName: "grpc"
+    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
+    grpcPort: 26500
+    ## @param orchestration.service.commandName defines the name of the command API endpoint, where the broker commands are sent to
     commandName: "command"
-    ## @param orchestration.service.internalPort defines the port of the internal api endpoint, which is used for internal communication
-    internalPort: 26502
-    ## @param orchestration.service.internalName defines the name of the internal api endpoint, which is used for internal communication
+    ## @param orchestration.service.commandPort defines the port of the command API endpoint, where the broker commands are sent to
+    commandPort: 26501
+    ## @param orchestration.service.internalName defines the name of the internal API endpoint, which is used for internal communication
     internalName: "internal"
+    ## @param orchestration.service.internalPort defines the port of the internal API endpoint, which is used for internal communication
+    internalPort: 26502
+
     ## @param orchestration.service.extraPorts can be used to expose any other ports which are required. Can be useful for exporters
     extraPorts: []
       # - name: hazelcast
       #   protocol: TCP
       #   port: 5701
       #   targetPort: 5701
-    ## @param orchestration.service.grpcPort defines the port of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcPort: 26500
-    ## @param orchestration.service.grpcName defines the name of the gateway gRPC endpoint, where client commands (grpc) are sent to
-    grpcName: "gateway"
-    ## @param orchestration.service.managementPort
-    managementPort: 9600
-    ## @param orchestration.service.managementName
-    managementName: "server"
 
   ## @extra global.orchestration.ServiceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
@@ -2542,6 +2682,8 @@ orchestration:
       external: false
       ## @param orchestration.ingress.grpc.className defines the class or configuration of ingress which should be used by the controller
       className: nginx
+      ## @param orchestration.ingress.grpc.labels [object] can be used to define labels which will be applied to the orchestration gRPC ingress resource
+      labels: {}
       ## @param orchestration.ingress.grpc.annotations [object] defines the ingress related annotations, consumed mostly by the ingress controller
       ## @skip orchestration.ingress.grpc.annotations.ingress.kubernetes.io/rewrite-target
       ## @skip orchestration.ingress.grpc.annotations.nginx.ingress.kubernetes.io/ssl-redirect
@@ -2757,9 +2899,20 @@ orchestration:
   ## @param orchestration.priorityClassName can be used to define the broker pods priority https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
   priorityClassName: ""
 
+  ## @extra orchestration.exporters allows disabling inbuilt exporters.
+  exporters:
+    ## @param orchestration.exporters.camunda.enabled if true, enables the new Camunda exporter.
+    camunda:
+      enabled: true
+    ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
+    zeebe:
+      enabled: false
+
   index:
     ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
     prefix: ""
+    ## @param orchestration.index.replicas can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch
+    replicas: 1
 
   ## @extra orchestration.retention configuration for Camunda exporter index.
   retention:
@@ -2834,7 +2987,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0-alpha7
+    tag: 8.8.0-alpha8
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2844,7 +2997,7 @@ optimize:
   migration:
     ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
     enabled: true
-    ## @param optimize.migration.env can be used to set environment variables for Optimize migration init container (Note: there is no need to define if optimize.env is defined)
+    ## @param optimize.migration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)
     env: []
 
     ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -2887,7 +3040,7 @@ optimize:
 
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
-  ## @param optimize.env can be used to set extra environment variables in each Optimize container
+  ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
   ## @param optimize.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []

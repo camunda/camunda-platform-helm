@@ -210,18 +210,31 @@ Usage: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.context
 
 {{/*
 ********************************************************************************
-Keycloak templates.
+Keycloak/Entra templates.
 ********************************************************************************
 */}}
 
 {{/*
-[camunda-platform] Keycloak issuer public URL which used externally for Camunda apps.
+[camunda-platform] Keycloak/Entra issuer public URL which used externally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerUrl" -}}
   {{- if .Values.global.identity.auth.issuer -}}
     {{- .Values.global.identity.auth.issuer -}}
   {{- else -}}
     {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Keycloak/Entra auth URL which used externally by the user.
+*/}}
+{{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
+  {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
+    {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "MICROSOFT" -}}
+    {{ required "global.identity.auth.authUrl must be set" .Values.global.identity.auth.authUrl }}
+  {{- else -}}
+    {{ fail "Unsupported auth type. Only 'KEYCLOAK' and 'MICROSOFT' are supported." }}
   {{- end -}}
 {{- end -}}
 
@@ -250,15 +263,16 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 
 {{/*
 [camunda-platform] Identity auth type which used internally for Camunda apps.
+NOTE: This is for legacy Identity config, all new types will be supported via OIDC.
 */}}
-{{- define "camundaPlatform.authType" -}}
-  {{- .Values.global.identity.auth.type -}}
+{{- define "camundaPlatform.authIssuerType" -}}
+  {{- upper .Values.global.identity.auth.type -}}
 {{- end -}}
 
 {{/*
 [camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
 */}}
-{{- define "camundaPlatform.authIssuerBackendUrlTokenEndpoint" -}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
   {{- if .Values.global.identity.auth.tokenUrl -}}
     {{- .Values.global.identity.auth.tokenUrl -}}
   {{- else -}}
@@ -266,11 +280,10 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
   {{- end -}}
 {{- end -}}
 
-
 {{/*
 [camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
 */}}
-{{- define "camundaPlatform.authIssuerBackendUrlCertsEndpoint" -}}
+{{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
   {{- if .Values.global.identity.auth.jwksUrl -}}
     {{- .Values.global.identity.auth.jwksUrl -}}
   {{- else -}}
@@ -553,20 +566,6 @@ Orchestration templates.
 {{- end }}
 
 {{/*
-[camunda-platform] Orchestration internal URL.
-*/}}
-{{ define "camundaPlatform.OrchestrationURL" }}
-  {{- if .Values.orchestration.enabled -}}
-    {{-
-      printf "http://%s:%v%s"
-        (include "orchestration.fullname" .)
-        .Values.orchestration.service.httpPort
-        .Values.orchestration.contextPath
-    -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*
 ********************************************************************************
 Zeebe templates.
 ********************************************************************************
@@ -594,16 +593,28 @@ Zeebe templates.
 {{/*
 [camunda-platform] Zeebe Gateway REST internal URL.
 */}}
-{{ define "camundaPlatform.zeebeGatewayRESTURL" }}
+{{ define "camundaPlatform.orchestrationHTTPInternalURL" }}
   {{- if .Values.orchestration.enabled -}}
     {{-
-      printf "http://%s:%v%s"
-        (include "orchestration.fullname" .)
-        .Values.orchestration.service.httpPort
+      printf "http://%s%s"
+        (include "orchestration.serviceNameHTTP" .)
         (.Values.orchestration.contextPath | default "")
     -}}
   {{- end -}}
 {{- end -}}
+
+{{/*
+[camunda-platform] Zeebe Gateway GRPC internal URL.
+*/}}
+{{ define "camundaPlatform.orchestrationGRPCInternalURL" }}
+  {{- if .Values.orchestration.enabled -}}
+    {{-
+      printf "grpc://%s"
+        (include "orchestration.serviceNameGRPC" .)
+    -}}
+  {{- end -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************
@@ -833,6 +844,71 @@ false
 {{- end -}}
 
 {{/*
+emitAwsDocumentStoreSecret
+Emits AWS Document Store environment variable handling both legacy and new secret patterns.
+Prioritizes new pattern over legacy pattern.
+Usage:
+  - name: AWS_ACCESS_KEY_ID
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "accessKeyId" "context" .) }}
+  - name: AWS_SECRET_ACCESS_KEY
+    {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "secretAccessKey" "context" .) }}
+*/}}
+{{- define "camundaPlatform.emitAwsDocumentStoreSecret" -}}
+{{- $root := .context -}}
+{{- if $root.Values.global.documentStore.type.aws.enabled -}}
+{{- $awsConfig := $root.Values.global.documentStore.type.aws -}}
+{{- $secretType := .secretType -}}
+{{- $legacyKey := "" -}}
+{{- if eq $secretType "accessKeyId" -}}
+  {{- $legacyKey = $awsConfig.accessKeyIdKey -}}
+{{- else if eq $secretType "secretAccessKey" -}}
+  {{- $legacyKey = $awsConfig.secretAccessKeyKey -}}
+{{- end -}}
+{{/* New pattern - prioritize over legacy */}}
+{{- $secretConfig := (index $awsConfig $secretType) | default dict -}}
+{{- if and $secretConfig.secret (or $secretConfig.secret.existingSecret $secretConfig.secret.inlineSecret) -}}
+{{- if and $secretConfig.secret.existingSecret $secretConfig.secret.existingSecretKey -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ $secretConfig.secret.existingSecret }}
+    key: {{ $secretConfig.secret.existingSecretKey }}
+{{- else if $secretConfig.secret.inlineSecret -}}
+value: {{ $secretConfig.secret.inlineSecret | quote }}
+{{- end -}}
+{{/* Legacy pattern - fallback */}}
+{{- else if and $awsConfig.existingSecret $legacyKey -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ $awsConfig.existingSecret | quote }}
+    key: {{ $legacyKey | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+emitVolumeFromSecretConfig
+Emits volume definition using normalized secret configuration.
+Usage:
+  {{ include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+      "volumeName" "gcp-credentials-volume"
+      "config" .Values.global.documentStore.type.gcp
+      "legacyKeyField" "credentialsKey"
+      "fileName" (.Values.global.documentStore.type.gcp.fileName | default "service-account.json")
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitVolumeFromSecretConfig" -}}
+{{- $norm := include "camundaPlatform.normalizeSecretConfiguration" . | fromYaml -}}
+{{- if $norm.ref }}
+- name: {{ .volumeName }}
+  secret:
+    secretName: {{ $norm.ref.name | quote }}
+    items:
+      - key: {{ $norm.ref.key | quote }}
+        path: {{ .fileName | quote }}
+{{- end }}
+{{- end -}}
+
+{{/*
 shouldAutogenerateSecret
 Determines whether a secret should be autogenerated for a given component configuration.
 Returns "true" if autogeneration should occur, "false" otherwise.
@@ -878,12 +954,14 @@ Parameters:
   {{/* No secret config found -> autogenerate */}}
   {{- $result = "true" -}}
 {{- else -}}
-  {{/* Check if component explicitly references the autogenerated secret */}}
-  {{- if and $config.existingSecret (eq (toString $config.existingSecret) (toString $autogenSecretName)) -}}
-    {{/* Legacy format points to autogen secret -> autogenerate */}}
-    {{- $result = "true" -}}
-  {{- else if and $config.secret $config.secret.existingSecret (eq (toString $config.secret.existingSecret) (toString $autogenSecretName)) -}}
-    {{/* New format points to autogen secret -> autogenerate */}}
+  {{/* Check if component explicitly references the autogenerated secret name in any possible field */}}
+  {{- if or 
+      (and $config.existingSecret (kindIs "string" $config.existingSecret) (eq (toString $config.existingSecret) (toString $autogenSecretName)))
+      (and $config.existingSecret (kindIs "map" $config.existingSecret) (eq (toString $config.existingSecret.name) (toString $autogenSecretName)))
+      (and $config.secret $config.secret.existingSecret (eq (toString $config.secret.existingSecret) (toString $autogenSecretName)))
+      (and $config.auth $config.auth.existingSecret (eq (toString $config.auth.existingSecret) (toString $autogenSecretName)))
+      (and $config.postgresql $config.postgresql.auth $config.postgresql.auth.existingSecret (eq (toString $config.postgresql.auth.existingSecret) (toString $autogenSecretName)))
+  -}}
     {{- $result = "true" -}}
   {{- end -}}
 {{- end -}}
@@ -898,12 +976,9 @@ Release highlights.
 */}}
 
 {{- define "camundaPlatform.ReleaseHighlights" }}
-###
-### Helm chart release highlights
-###
+## [info] Helm chart release highlights
 - Some values have been renamed or moved in the new chart structure.
 - When upgraded from 8.7 to 8.8, manual adjustments may be required for some cases like custom configurations.
-- To enable the compatibility layer, users must set the `global.compatibility.enabled` value to `true`.
 - Please refer to the official docs for more details.
 https://docs.camunda.io/docs/next/self-managed/installation-methods/helm/upgrade/upgrade-hc-870-880/
 {{- end -}}
