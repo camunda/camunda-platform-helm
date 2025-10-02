@@ -130,6 +130,12 @@ identity:
 
 identityPostgresql:
   enabled: true
+  auth:
+    existingSecret: integration-test-credentials
+    secretKeys:
+      adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
+      userPasswordKey: identity-keycloak-postgresql-user-password
+
 
 connectors:
   contextPath: "/connectors"
