@@ -5112,7 +5112,7 @@
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",
-                                            "default": "http://localhost:8082"
+                                            "default": "http://localhost:8080"
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
@@ -6287,7 +6287,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, the ILM Policy is created and applied to the index templates.",
+                                    "description": "if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).",
                                     "default": false
                                 },
                                 "minimumAge": {

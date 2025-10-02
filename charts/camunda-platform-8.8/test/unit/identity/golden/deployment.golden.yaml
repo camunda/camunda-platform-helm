@@ -103,7 +103,7 @@ spec:
                   name: camunda-credentials
                   key: identity-orchestration-client-token
             - name: KEYCLOAK_CLIENTS_1_ROOT_URL
-              value: "http://localhost:8082"
+              value: "http://localhost:8080"
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
               value: /login/oauth2/code/orchestration
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_1
