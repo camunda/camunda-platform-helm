@@ -62,6 +62,10 @@ on:
       camunda-version-previous:
         required: false
         type: string
+      test-enabled:
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}
@@ -99,6 +103,7 @@ jobs:
     with:
       identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}-${{ matrix.platform }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
+      test-enabled: ${{ inputs.test-enabled }}
       flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
