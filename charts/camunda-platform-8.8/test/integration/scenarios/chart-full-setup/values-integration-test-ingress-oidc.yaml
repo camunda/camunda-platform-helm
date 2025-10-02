@@ -158,6 +158,17 @@ orchestration:
         - mappingRuleID: demo-user-mapping-rule
           claimName: oid
           claimValue: $ENTRA_APP_OBJECT_ID
+  importer:
+    enabled: false
+  migration:
+    identity:
+      idpApplicationId: "65aa0601-56a2-4915-a64c-9de360424df5"
+      enabled: true
+      backoffLimit: 12
+    process:
+      enabled: false
+    data:
+      enabled: false
 
 elasticsearch:
   maxUnavailable: 0
