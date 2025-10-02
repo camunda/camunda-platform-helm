@@ -36,13 +36,13 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.5.19
+    tag: 8.5.20
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.5.23
+    tag: 8.5.24
 
 webModeler:
   # Camunda Enterprise repository.
