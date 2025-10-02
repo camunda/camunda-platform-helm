@@ -67,8 +67,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            # Gossip protocol - unique node id (int) within a cluster
             - name: VALUES_ORCHESTRATION_NODE_ID
               value: "-1"
+            # Swim protocol - unique member id (string) within a cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
             
             - name: VALUES_ORCHESTRATION_CLIENT_SECRET
               valueFrom:
