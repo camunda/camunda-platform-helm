@@ -55,12 +55,12 @@ spec:
                   fieldPath: metadata.namespace
             {{/*
             Gossip protocol - unique node id (int) within a cluster
-            */}}
+            */ -}}
             - name: VALUES_ORCHESTRATION_NODE_ID
               value: {{ sub -1 .Values.global.multiregion.regionId | quote }}
             {{/*
             Swim protocol - unique member id (string) within a cluster
-            */}}
+            */ -}}
             - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
               valueFrom:
                 fieldRef:
