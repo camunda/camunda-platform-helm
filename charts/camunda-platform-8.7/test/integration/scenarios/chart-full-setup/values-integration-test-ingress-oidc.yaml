@@ -106,10 +106,6 @@ webModeler:
 
 postgresql:
   enabled: true
-  auth:
-    existingSecret: web-modeler-postgres-credentials
-    secretKeys:
-      userPasswordKey: password
 
 console:
   enabled: true
@@ -146,10 +142,6 @@ identity:
 
 identityPostgresql:
   enabled: true
-  auth:
-    existingSecret: identity-postgres-credentials
-    secretKeys:
-      userPasswordKey: password
 
 connectors:
   contextPath: "/connectors"
