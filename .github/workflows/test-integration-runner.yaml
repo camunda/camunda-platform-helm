@@ -425,6 +425,7 @@ jobs:
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.template-yaml
 
       - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
