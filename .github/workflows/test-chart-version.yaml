@@ -68,6 +68,22 @@ on:
         required: false
         default: 1h
         type: string
+      scenario:
+        description: Scenario
+        required: false
+        default: "elasticsearch"
+        type: choice
+        options:
+          - elasticsearch
+          - opensearch
+          - basic
+          - oidc
+          - keycloak
+      test-enabled:
+        description: Whether to run the IT tests
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -150,8 +166,10 @@ jobs:
       pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
-      scenario: ${{ matrix.scenario }}
-      shortname: ${{ matrix.shortname }}
+      #scenario: ${{ matrix.scenario }}
+      scenario: ${{ inputs.scenario }}
+      #shortname: ${{ matrix.shortname }}
+      shortname: ${{ inputs.scenario }}
       auth: ${{ matrix.auth }}
       platforms: ${{ inputs.platforms || 'gke' }}
       exclude: ${{ matrix.exclude }}
@@ -160,3 +178,4 @@ jobs:
       flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
+      test-enabled: ${{ inputs.test-enabled }}
