@@ -68,6 +68,11 @@ on:
         required: false
         default: 1h
         type: string
+      scenario:
+        description: Scenario
+        required: false
+        default: "elasticsearch"
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -150,7 +155,8 @@ jobs:
       pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
-      scenario: ${{ matrix.scenario }}
+      #scenario: ${{ matrix.scenario }}
+      scenario: ${{ inputs.scenario }}
       shortname: ${{ matrix.shortname }}
       auth: ${{ matrix.auth }}
       platforms: ${{ inputs.platforms || 'gke' }}
