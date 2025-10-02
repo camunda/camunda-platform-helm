@@ -79,6 +79,11 @@ on:
           - basic
           - oidc
           - keycloak
+      test-enabled:
+        description: Whether to run the IT tests
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -172,3 +177,4 @@ jobs:
       flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
+      test-enabled: ${{ inputs.test-enabled }}
