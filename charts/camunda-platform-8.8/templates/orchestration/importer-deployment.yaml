@@ -53,8 +53,19 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            {{/*
+            Gossip protocol - unique node id (int) within a cluster
+            */ -}}
             - name: VALUES_ORCHESTRATION_NODE_ID
               value: {{ sub -1 .Values.global.multiregion.regionId | quote }}
+            {{/*
+            Swim protocol - unique member id (string) within a cluster
+            */ -}}
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_LICENSE_KEY"
                 "config" .Values.global.license
