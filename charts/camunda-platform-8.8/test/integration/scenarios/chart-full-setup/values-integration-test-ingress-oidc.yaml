@@ -88,6 +88,9 @@ identityPostgresql:
   enabled: true
   auth:
     existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
+      userPasswordKey: identity-keycloak-postgresql-user-password
 
 identityKeycloak:
   enabled: false
