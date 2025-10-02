@@ -1,4 +1,4 @@
-# ({{ .Chart.Name }} - {{ .Chart.Version }})
+# (Chart version: {{ .Chart.Name }} {{ .Chart.Version }} - Camunda compatibility version: {{ .Chart.AppVersion }})
 
  ######     ###    ##     ## ##     ## ##    ## ########     ###
 ##    ##   ## ##   ###   ### ##     ## ###   ## ##     ##   ## ##

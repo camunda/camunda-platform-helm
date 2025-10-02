@@ -95,6 +95,9 @@ camunda:
         client-id: {{ include "orchestration.authClientId" . | quote }}
         client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
         audiences:
+          {{- range .Values.orchestration.security.authentication.oidc.backwardsCompatibleAudiences }}
+          - {{ . | quote }}
+          {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ .Values.orchestration.security.authentication.oidc.audience | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}

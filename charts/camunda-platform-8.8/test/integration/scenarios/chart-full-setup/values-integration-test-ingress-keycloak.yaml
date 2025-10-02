@@ -31,12 +31,24 @@ global:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
         existingSecret:
           name: "integration-test-credentials"
+      ## This section will be enabled by the pre-install-upgrade.sh for backwards compatibility with alpha8 chart.
+      ## TODO: Remove this section after the 8.8 release.
+      ## START pre-install-upgrade.sh COMMENT
+      # orchestration:
+      #   redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+      #   existingSecret:
+      #     name: "integration-test-credentials"
+      # connectors:
+      #   existingSecret:
+      #     name: "integration-test-credentials"
+      ## END pre-install-upgrade.sh COMMENT
 
 identity:
   enabled: true
   contextPath: "/identity"
   firstUser:
     existingSecret: "integration-test-credentials"
+    existingSecretKey: "identity-user-password"
 
 identityKeycloak:
   enabled: true

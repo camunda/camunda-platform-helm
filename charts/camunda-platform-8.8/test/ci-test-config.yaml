@@ -16,14 +16,13 @@ integration:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
-    chartsBaseDir: ../../../../charts
+    chartsBaseDir: ../../../..
   case:
     pr:
       scenario:
         - name: elasticsearch
           enabled: true
           auth: keycloak
-          flow: install
           shortname: eske
           exclude: []
         - name: elasticsearch
@@ -82,4 +81,9 @@ integration:
           enabled: false
           exclude: []
           shortname: docstr
+          auth: keycloak
+        - name: keycloak-external-mimic
+          enabled: true
+          exclude: []
+          shortname: kcextm
           auth: keycloak
