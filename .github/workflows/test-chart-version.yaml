@@ -72,7 +72,13 @@ on:
         description: Scenario
         required: false
         default: "elasticsearch"
-        type: string
+        type: choice
+        options:
+          - elasticsearch
+          - opensearch
+          - basic
+          - oidc
+          - keycloak
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
