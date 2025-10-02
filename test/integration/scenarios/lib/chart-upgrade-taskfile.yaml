@@ -42,15 +42,15 @@ tasks:
       {{ end }}
 
       # Uncomment if Console is enabled.
-      # export CONSOLE_SECRET=$(kubectl get secret "integration-console-identity-secret" -o jsonpath="{.data.console-secret}" | base64 --decode)
-      export TASKLIST_SECRET=$(kubectl get secret "integration-tasklist-identity-secret" -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
-      export OPTIMIZE_SECRET=$(kubectl get secret "integration-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
-      export OPERATE_SECRET=$(kubectl get secret "integration-operate-identity-secret" -o jsonpath="{.data.operate-secret}" | base64 --decode)
-      export CONNECTORS_SECRET=$(kubectl get secret "integration-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
-      export ZEEBE_SECRET=$(kubectl get secret "integration-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
-      export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret "integration-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
-      export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret "integration-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
-      export POSTGRESQL_SECRET=$(kubectl get secret "integration-identity-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
+      # export CONSOLE_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-console-identity-secret" -o jsonpath="{.data.console-secret}" | base64 --decode)
+      export TASKLIST_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-tasklist-identity-secret" -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
+      export OPTIMIZE_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
+      export OPERATE_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-operate-identity-secret" -o jsonpath="{.data.operate-secret}" | base64 --decode)
+      export CONNECTORS_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
+      export ZEEBE_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
+      export KEYCLOAK_ADMIN_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
+      export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
+      export POSTGRESQL_SECRET=$(kubectl get -n {{ .TEST_NAMESPACE }} secret "integration-identity-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
 
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
@@ -66,6 +66,8 @@ tasks:
         --set identityKeycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
         --set identityKeycloak.auth.managementPassword=$KEYCLOAK_MANAGEMENT_SECRET \
         --set identityKeycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
+        --set identityPostgresql.auth.existingSecret="" \
+        --set identityPostgresql.auth.password=$POSTGRESQL_SECRET \
         {{ if eq .PLATFORM "eks" -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
         {{ end -}}
