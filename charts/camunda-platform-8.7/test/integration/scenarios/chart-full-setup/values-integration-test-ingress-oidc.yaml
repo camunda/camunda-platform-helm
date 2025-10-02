@@ -72,18 +72,6 @@ global:
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
 
-zeebe:
-  clusterSize: 1
-  partitionCount: 3
-  replicationFactor: 1
-  image:
-    tag: "8.7.13"
-
-zeebeGateway:
-  replicas: 1
-  image:
-    tag: "8.7.13"
-
 operate:
   contextPath: "/operate"
 
