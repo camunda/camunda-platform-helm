@@ -65,7 +65,7 @@ tasks:
         --set global.identity.auth.zeebe.existingSecret=$ZEEBE_SECRET \
         --set identityKeycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
         --set identityKeycloak.auth.managementPassword=$KEYCLOAK_MANAGEMENT_SECRET \
-        --set identityKeycloak.postgresql.auth.password=$POSTGRESQL_SECRET  
+        --set identityKeycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
         {{ if eq .PLATFORM "eks" -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
         {{ end -}}
