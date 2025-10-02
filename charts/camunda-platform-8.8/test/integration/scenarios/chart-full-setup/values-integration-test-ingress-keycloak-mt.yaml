@@ -111,6 +111,14 @@ orchestration:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
+  migration:
+    identity:
+      enabled: true
+      backoffLimit: 12
+    process:
+      enabled: false
+    data:
+      enabled: false
   security:
     initialization:
       defaultRoles:
