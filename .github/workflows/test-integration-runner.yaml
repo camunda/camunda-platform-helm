@@ -409,7 +409,7 @@ jobs:
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Install - Configure Helm with Entra Values
-        if: inputs.auth == 'oidc' && inputs.values-config == '{}'
+        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
