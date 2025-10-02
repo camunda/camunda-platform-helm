@@ -50,7 +50,7 @@ tasks:
       export ZEEBE_SECRET=$(kubectl get secret "camunda-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
       export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret "camunda-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
       export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret "camunda-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
-      export POSTGRESQL_SECRET=$(kubectl get secret "camunda-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
+      export POSTGRESQL_SECRET=$(kubectl get secret "integration-test-credentials" -o jsonpath="{.data.identity-postgresql-user-password}" | base64 --decode)
 
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
