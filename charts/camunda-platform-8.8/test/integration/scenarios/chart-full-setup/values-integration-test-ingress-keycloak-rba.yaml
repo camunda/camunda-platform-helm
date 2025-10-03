@@ -7,39 +7,25 @@ global:
     auth:
       enabled: true
 orchestration:
-  image:
-    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+  contextPath: "/orchestration"
   security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
     authentication:
       method: oidc
       authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        existingSecret:
+          name: "integration-test-credentials"
   env:
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "preferred_username"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: "demo"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "venom"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
-      value: "connectors"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
-      value: "connectors-client-mapping-rule"
     - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
-      value: false
+      value: "false"
   migration:
     identity:
       resourceAuthorizationsEnabled: true
@@ -53,51 +39,30 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+  contextPath: "/optimize"
 webModeler:
   enabled: true
+  contextPath: "/modeler"
   security:
     authentication:
       method: oidc
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
   restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  websockets:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    mail:
+      # This value is required, otherwise the restapi pod wouldn't start.
+      fromAddress: noreply@example.com
 webModelerPostgresql:
   enabled: true
 console:
   enabled: true
+  contextPath: "/"
   image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
-  overrideConfiguration: |
-    camunda:
-      console:
-        managed:
-          releases:
-            - name: integration
-              namespace: "$TEST_NAMESPACE"
-              tags:
-                - dev
-                - custom
-                - stage
-                - prod
-                - test
-              custom-properties:
-                - description: "This is the main integration environment for the Camunda Platform."
-                  links:
-                    - name: "Camunda"
-                      url: "https://camunda.com"
-                    - name: "Camunda Docs"
-                      url: "https://docs.camunda.io"
-  env:
-    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-      value: 'true'      
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
 identityPostgresql:
   enabled: true
   auth:
@@ -109,8 +74,6 @@ identity:
   enabled: true
   externalDatabase:
     enabled: false
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
     enabled: false
   # Keycloak client seed which is used to query Camunda APIs. 
@@ -125,7 +88,7 @@ identity:
     - name: KEYCLOAK_USERS_0_LASTNAME
       value: 'User'
     - name: KEYCLOAK_USERS_0_PASSWORD
-      value: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+      value: demo
     - name: KEYCLOAK_USERS_0_ROLES_0
       value: ManagementIdentity
     - name: KEYCLOAK_USERS_0_ROLES_1
@@ -171,7 +134,7 @@ identity:
     - name: KEYCLOAK_USERS_1_USERNAME
       value: lisa
     - name: KEYCLOAK_USERS_1_PASSWORD
-      value: $DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+      value: lisa
     - name: KEYCLOAK_USERS_1_ROLES_0
       value: ManagementIdentity
     - name: KEYCLOAK_USERS_1_ROLES_1
@@ -193,7 +156,7 @@ identity:
     - name: KEYCLOAK_USERS_2_USERNAME
       value: bart
     - name: KEYCLOAK_USERS_2_PASSWORD
-      value: $DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+      value: bart
     - name: KEYCLOAK_USERS_2_ROLES_0
       value: ManagementIdentity
     - name: KEYCLOAK_USERS_2_ROLES_1
@@ -309,18 +272,14 @@ identity:
     - name: RESOURCE_PERMISSIONS_ENABLED
       value: 'true'
 connectors:
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  contextPath: "/connectors"
+  security:
+    authentication:
+      oidc:
+        existingSecret:
+          name: "integration-test-credentials"
   env:
     - name: username
       value: username
     - name: password
       value: password
-tasklist:
-  env:
-    - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
-      value: 'true'
-operate:
-  env:
-    - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
-      value: 'true'

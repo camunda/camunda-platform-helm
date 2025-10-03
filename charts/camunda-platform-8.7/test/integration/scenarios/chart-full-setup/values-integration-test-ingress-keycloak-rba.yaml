@@ -1,37 +1,47 @@
 global:
   image:
     pullPolicy: Always
-zeebe:
-  image:
-    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
 tasklist:
-  image:
-    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
+  contextPath: "/tasklist"
   env:
     - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
       value: 'true'
 operate:
-  image:
-    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
+  contextPath: "/operate"
   env:
     - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
       value: 'true'
 optimize:
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+  contextPath: "/optimize"
+zeebeGateway:
+  contextPath: "/zeebe"
+  ingress:
+    grpc:
+      enabled: true
+      className: nginx
+      host: "zeebe-{{ .Values.global.ingress.host }}"
+      tls:
+        enabled: true
+        # A wildcard certificate will be used.
+        secretName: camunda-platform-zeebe-gateway
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/ttl: "60"
+
 webModeler:
-  restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  websockets:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-console:
+  enabled: true
+  contextPath: "/modeler"
   image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+    pullSecrets:
+    - name: index-docker-io
+    - name: registry-camunda-cloud
+  restapi:
+    mail:
+      # This value is required, otherwise the restapi pod wouldn't start.
+      fromAddress: noreply@example.com
+console:
+  enabled: true
+  contextPath: "/"
   overrideConfiguration: |
     camunda:
       console:
@@ -56,8 +66,7 @@ console:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
       value: "true"
 identity:
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  enabled: true
   postgresql:
     enabled: true
   firstUser:
@@ -267,8 +276,7 @@ identity:
     - name: RESOURCE_PERMISSIONS_ENABLED
       value: 'true'
 connectors:
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  contextPath: "/connectors"
   env:
     - name: username
       value: username
