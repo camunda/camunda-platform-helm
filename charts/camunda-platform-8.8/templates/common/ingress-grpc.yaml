@@ -34,21 +34,18 @@ spec:
                 port:
                   number: {{ .Values.orchestration.service.grpcPort }}
   {{- if .Values.orchestration.ingress.grpc.tls.enabled }}
-  {{- if and 
-    (not .Values.orchestration.ingress.grpc.tls.secretName) 
-    (contains "openshift-"  (default "" .Values.orchestration.ingress.grpc.className)) 
-  }}
-    # The tls block is not applied because secretName is empty and className contains "openshift-".
-    # This is necessary to use the certificate managed by the OpenShift Ingress operator,
-    # which will automatically convert this Ingress into a Route (https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress).
-  {{- else }}
   tls:
+    {{- if eq .Values.orchestration.ingress.grpc.tls.secretName "-" }}
+    {{/* Use secretName: "-" to generate an empty TLS block for automatic certificate management. */}}
+    {{/* This is useful for environments like OpenShift where the Ingress Operator manages certificates automatically. */}}
+    - {}
+    {{- else }}
     - hosts:
         - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
       {{- if .Values.orchestration.ingress.grpc.tls.secretName }}
       secretName: {{ .Values.orchestration.ingress.grpc.tls.secretName }}
       {{- end }}
-  {{- end }}
+    {{- end }}
   {{- end }}
 {{- end }}
 {{- end }}
