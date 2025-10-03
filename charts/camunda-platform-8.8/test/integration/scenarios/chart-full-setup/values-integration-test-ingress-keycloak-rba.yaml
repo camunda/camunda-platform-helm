@@ -86,7 +86,7 @@ identity:
   # Keycloak client seed which is used to query Camunda APIs. 
   env:
     - name: RESOURCE_PERMISSIONS_ENABLED
-      value: 'true'
+      value: 'false'
 connectors:
   contextPath: "/connectors"
   security:
@@ -99,3 +99,11 @@ connectors:
       value: username
     - name: password
       value: password
+tasklist:
+  env:
+    - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
+      value: 'false'
+operate:
+  env:
+    - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
+      value: 'false'

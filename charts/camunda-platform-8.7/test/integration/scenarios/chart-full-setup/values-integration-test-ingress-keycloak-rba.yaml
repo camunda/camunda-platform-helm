@@ -5,12 +5,12 @@ tasklist:
   contextPath: "/tasklist"
   env:
     - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
-      value: 'true'
+      value: 'false'
 operate:
   contextPath: "/operate"
   env:
     - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
-      value: 'true'
+      value: 'false'
 optimize:
   contextPath: "/optimize"
 zeebeGateway:
@@ -274,7 +274,7 @@ identity:
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_DEFINITION
       value: "write:*"
     - name: RESOURCE_PERMISSIONS_ENABLED
-      value: 'true'
+      value: 'false'
 
 identityKeycloak:
   postgresql:
