@@ -62,6 +62,18 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+      {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.affinity }}
+      affinity:
+        {{- toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.tolerations }}
+      tolerations:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
       volumes:
         - name: config
           configMap:
