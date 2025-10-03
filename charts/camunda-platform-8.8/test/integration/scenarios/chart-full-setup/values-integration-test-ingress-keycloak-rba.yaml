@@ -29,15 +29,15 @@ orchestration:
       value: 'true'
     - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
       value: 'true'
+  importer:
+    enabled: true
   migration:
     identity:
       resourceAuthorizationsEnabled: true
       enabled: true
       backoffLimit: 12
-    process:
-      enabled: false
     data:
-      enabled: false
+      enabled: true
 
 optimize:
   enabled: true
