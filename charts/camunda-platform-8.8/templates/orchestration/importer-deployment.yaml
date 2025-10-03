@@ -248,8 +248,16 @@ spec:
       {{- if .Values.orchestration.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-{{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
+      {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-{{ toYaml . | indent 8 }}
-{{- end }}
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.affinity }}
+      affinity:
+        {{- toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.tolerations }}
+      tolerations:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
 {{- end }}
