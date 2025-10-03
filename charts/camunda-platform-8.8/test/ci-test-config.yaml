@@ -37,7 +37,7 @@ integration:
           auth: basic
           flow: install
           exclude: [identity,console,orchestration-grpc]
-        - name: elasticsearch-oidc
+        - name: oidc
           enabled: true
           exclude: []
           shortname: esoi
