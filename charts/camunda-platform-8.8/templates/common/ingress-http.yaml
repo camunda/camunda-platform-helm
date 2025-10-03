@@ -103,20 +103,18 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
-  {{- if and 
-    (not .Values.global.ingress.tls.secretName) 
-    (contains "openshift-"  (default "" .Values.global.ingress.className)) 
-  }}
-    # The tls block is not applied because secretName is empty and className contains "openshift-".
-    # This is necessary to use the certificate managed by the OpenShift Ingress operator,
-    # which will automatically convert this Ingress into a Route (https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress).
-  {{- else }}
   tls:
+    {{- if and (not .Values.global.ingress.tls.secretName) (contains "openshift-" (default "" .Values.global.ingress.className)) }}
+    # For OpenShift: Use empty TLS block to allow OpenShift Ingress Operator to manage certificates automatically.
+    # The Ingress will be converted to a Route with automatic certificate provisioning.
+    # See: https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress
+    - {}
+    {{- else }}
     - hosts:
         - {{ .Values.global.ingress.host }}
       {{- if .Values.global.ingress.tls.secretName }}
       secretName: {{ .Values.global.ingress.tls.secretName }}
       {{- end }}
-  {{- end }}
+    {{- end }}
   {{- end }}
 {{- end }}
