@@ -77,6 +77,8 @@ identityPostgresql:
       userPasswordKey: "identity-keycloak-postgresql-user-password"
 identity:
   enabled: true
+  image:
+    tag: 8.8-SNAPSHOT # Used for now until the digest is updated
   externalDatabase:
     enabled: false
   firstUser:
