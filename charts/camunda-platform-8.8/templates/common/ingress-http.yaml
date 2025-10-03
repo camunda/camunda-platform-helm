@@ -104,10 +104,9 @@ spec:
           {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
   tls:
-    {{- if and (not .Values.global.ingress.tls.secretName) (contains "openshift-" (default "" .Values.global.ingress.className)) }}
-    # For OpenShift: Use empty TLS block to allow OpenShift Ingress Operator to manage certificates automatically.
-    # The Ingress will be converted to a Route with automatic certificate provisioning.
-    # See: https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress
+    {{- if eq .Values.global.ingress.tls.secretName "-" }}
+    {{/* Use secretName: "-" to generate an empty TLS block for automatic certificate management. */}}
+    {{/* This is useful for environments like OpenShift where the Ingress Operator manages certificates automatically. */}}
     - {}
     {{- else }}
     - hosts:
