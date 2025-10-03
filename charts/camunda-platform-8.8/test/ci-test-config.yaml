@@ -25,6 +25,12 @@ integration:
           auth: keycloak
           shortname: eske
           exclude: []
+        - name: upgrade-migration
+          enabled: true
+          flow: upgrade-minor
+          auth: keycloak
+          shortname: eske-upgm
+          exclude: []
         - name: elasticsearch
           enabled: false
           shortname: esba
