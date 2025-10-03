@@ -44,7 +44,7 @@ on:
           - gke,eks
       flows:
         description: The flows to run
-        default: "install"
+        default: ""
         required: false
         type: choice
         options:
@@ -78,6 +78,7 @@ on:
           - upgrade-migration
           - keycloak
           - keycloak-mt
+          - keycloak-rba
           - oidc
       test-enabled:
         description: Whether to run the IT tests

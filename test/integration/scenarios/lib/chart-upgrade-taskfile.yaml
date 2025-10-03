@@ -70,6 +70,7 @@ tasks:
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
+        --force \
         --timeout 20m0s \
         --wait-for-jobs \
         --wait {{ .TEST_HELM_EXTRA_ARGS }} 
