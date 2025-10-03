@@ -186,6 +186,24 @@ tasks:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
+      VENOM_KEYCLOAK_CLIENT_NUMBER="$(helm template integration {{ .TEST_CHART_NAME }} \
+        --version {{ .TEST_CHART_VERSION }} \
+        --namespace {{ .TEST_NAMESPACE }} \
+        {{ (and (eq .TEST_CHART_VERSION "13.0.0-alpha7") (eq .TEST_AUTH_TYPE "keycloak")) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        {{ if eq .PLATFORM "eks" -}}
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
+        {{ end -}}
+        {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
+        --values {{ .TEST_HELM_DIGEST_VALUES }} \
+        {{ end -}}
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
+        --values /tmp/extra-values-file.yaml | awk -f {{ .TEST_VALUES_BASE_DIR }}/highest_client_id.awk -)"
+
+      sed -i "s/KEYCLOAK_CLIENTS_[0-9]*/KEYCLOAK_CLIENTS_$VENOM_KEYCLOAK_CLIENT_NUMBER/" {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
+
       helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
