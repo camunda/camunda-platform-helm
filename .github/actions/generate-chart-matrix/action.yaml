@@ -93,6 +93,7 @@ runs:
                 continue
               fi
               if [[ "${{ inputs.manual-scenario }}" != "none" && "${{ inputs.manual-scenario }}" != "all" ]]; then
+                echo "$(echo "$prScenario" | yq e '.name' -)"
                 if [[ "${{ inputs.manual-scenario }}" != "$(echo "$prScenario" | yq e '.name' -)" ]]; then
                   continue
                 fi
