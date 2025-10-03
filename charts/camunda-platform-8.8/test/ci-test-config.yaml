@@ -38,10 +38,16 @@ integration:
           flow: install
           exclude: [identity,console,orchestration-grpc]
         - name: elasticsearch-oidc
-          enabled: false
+          enabled: true
           exclude: []
           shortname: esoi
           auth: oidc
+          flow: upgrade-minor
+        - name: keycloak-mt
+          enabled: true
+          exclude: []
+          shortname: kemt
+          auth: keycloak
           flow: upgrade-minor
     nightly:
       scenario:
