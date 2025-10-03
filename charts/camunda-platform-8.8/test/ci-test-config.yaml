@@ -31,12 +31,17 @@ integration:
           auth: keycloak
           shortname: eske-upgm
           exclude: []
-        - name: elasticsearch
+        - name: elasticsearch-basic
           enabled: false
           shortname: esba
           auth: basic
           flow: install
           exclude: [identity,console,orchestration-grpc]
+        - name: elasticsearch-oidc
+          enabled: false
+          exclude: []
+          shortname: esoi
+          auth: oidc
     nightly:
       scenario:
         - name: elasticsearch
@@ -45,13 +50,13 @@ integration:
           shortname: eskey
           auth: keycloak
           # The following integration tests need to be exluded when basic-auth is enabled.
-        - name: elasticsearch
+        - name: elasticsearch-basic
           enabled: true
           auth: basic
           shortname: esba
           exclude: [identity,console,orchestration-grpc]
           # deployment should work but integration tests are not passing
-        - name: elasticsearch
+        - name: elasticsearch-oidc
           enabled: false
           exclude: []
           shortname: esoi
