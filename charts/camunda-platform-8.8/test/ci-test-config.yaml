@@ -49,6 +49,12 @@ integration:
           shortname: kemt
           auth: keycloak
           flow: upgrade-minor
+        - name: keycloak
+          enabled: true
+          exclude: []
+          shortname: keyc
+          auth: keycloak
+          flow: upgrade-minor
     nightly:
       scenario:
         - name: elasticsearch
