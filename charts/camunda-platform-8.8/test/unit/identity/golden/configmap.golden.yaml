@@ -65,7 +65,7 @@ data:
               id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
               secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
-              root-url: "http://localhost:8082"
+              root-url: "http://localhost:8080"
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
           apis:
@@ -120,7 +120,7 @@ data:
               id: orchestration
               type: confidential
               secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-              root-url: "http://localhost:8082"
+              root-url: "http://localhost:8080"
               redirect-uris:
                 - "/identity-callback"
     server:

@@ -2416,9 +2416,9 @@ orchestration:
         ## @param orchestration.security.authentication.oidc.tokenScope defines the token scope, which is used by Orchestration Cluster.
         tokenScope: ""
         ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
-        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8082.
+        # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
-        redirectUrl: "http://localhost:8082"
+        redirectUrl: "http://localhost:8080"
         ## @param orchestration.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) A string literal password can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using orchestration.security.authentication.oidc.existingSecret.name.
         existingSecret: ""
         ## @param orchestration.security.authentication.oidc.existingSecretKey (DEPRECATED - use orchestration.security.authentication.oidc.secret instead) defines the key within the existing secret object.
@@ -2920,7 +2920,7 @@ orchestration:
     ## @param orchestration.index.replicas can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch
     replicas: 1
 
-  ## @extra orchestration.retention configuration for Camunda exporter index.
+  ## @extra orchestration.retention configuration to enable ILM Policy creation and application for Zeebe record (legacy Elasticsearch/Opensearch exporter) indices; controls their retention.
   retention:
     ## @param orchestration.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: false
@@ -2946,7 +2946,7 @@ orchestration:
     maxDelayBetweenRuns: 60000
     ## @extra orchestration.history.retention configuration for retention of the Camunda harmonized historical indices.
     retention:
-      ## @param orchestration.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+      ## @param orchestration.history.retention.enabled if true, applies ILM Policy to the archived orchestration indices (operate, tasklist, camunda).
       enabled: false
       ## @param orchestration.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 30d
