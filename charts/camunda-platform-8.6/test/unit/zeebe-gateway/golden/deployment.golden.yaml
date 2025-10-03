@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-gateway
-    app.kubernetes.io/version: "8.6.28"
+    app.kubernetes.io/version: "8.6.29"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: zeebe-gateway
-        app.kubernetes.io/version: "8.6.28"
+        app.kubernetes.io/version: "8.6.29"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,7 +44,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: camunda/zeebe:8.6.28
+          image: camunda/zeebe:8.6.29
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9600
