@@ -121,7 +121,7 @@ jobs:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     uses: ./.github/workflows/test-unit-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-unit-${{ matrix.version }}"
+      identifier: "${{ github.event.pull_request.number || github.ref }}-unit-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
@@ -135,7 +135,7 @@ jobs:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
+      identifier: "${{ github.event.pull_request.number || github.ref }}-vald-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
@@ -152,7 +152,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-local-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-loc-${{ matrix.version }}"
+      identifier: "${{ github.event.pull_request.number || github.ref }}-loc-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
