@@ -220,7 +220,7 @@ identity:
     - name: KEYCLOAK_CLIENTS_3_NAME
       value: Test
     - name: KEYCLOAK_CLIENTS_3_SECRET
-      value: $DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
+      value: nothing
     - name: KEYCLOAK_CLIENTS_3_REDIRECT_URIS_0
       value: /dummy
     - name: KEYCLOAK_CLIENTS_3_ROOT_URL
