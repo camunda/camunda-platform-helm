@@ -1,18 +1,22 @@
 global:
   image:
     pullPolicy: Always
+
 tasklist:
   contextPath: "/tasklist"
   env:
     - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
-      value: 'false'
+      value: 'true'
+
 operate:
   contextPath: "/operate"
   env:
     - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
-      value: 'false'
+      value: 'true'
+
 optimize:
   contextPath: "/optimize"
+
 zeebeGateway:
   contextPath: "/zeebe"
   ingress:
@@ -39,6 +43,7 @@ webModeler:
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
+
 console:
   enabled: true
   contextPath: "/"
@@ -65,6 +70,7 @@ console:
   env:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
       value: "true"
+
 identity:
   enabled: true
   postgresql:
@@ -274,7 +280,7 @@ identity:
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_DEFINITION
       value: "write:*"
     - name: RESOURCE_PERMISSIONS_ENABLED
-      value: 'false'
+      value: 'true'
 
 identityKeycloak:
   postgresql:
@@ -286,6 +292,14 @@ identityKeycloak:
   auth:
     existingSecret: "integration-test-credentials"
     passwordSecretKey: "identity-keycloak-admin-password"
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+      userPasswordKey: "identity-keycloak-postgresql-user-password"
 
 connectors:
   contextPath: "/connectors"
