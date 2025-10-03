@@ -42,7 +42,7 @@ inputs:
   manual-trigger:
     description: Input used by workflow dispatch to trigger a build on a specific chart version
     default: "none"
-  manal-scenario:
+  manual-scenario:
     description: Input used by workflow dispatch to trigger a build on a specific scenario
     default: "none"
 outputs:
@@ -92,8 +92,8 @@ runs:
               if [ "$enabled" = "false" ]; then
                 continue
               fi
-              if [[ "${{ inputs.manal-scenario }}" != "none" && "${{ inputs.manal-scenario }}" != "all" ]]; then
-                if [[ "${{ inputs.manal-scenario }}" != "$(echo "$prScenario" | yq e '.name' -)" ]]; then
+              if [[ "${{ inputs.manual-scenario }}" != "none" && "${{ inputs.manual-scenario }}" != "all" ]]; then
+                if [[ "${{ inputs.manual-scenario }}" != "$(echo "$prScenario" | yq e '.name' -)" ]]; then
                   continue
                 fi
               fi
