@@ -39,7 +39,7 @@ integration:
           exclude: [identity,console,orchestration-grpc]
         - name: oidc
           enabled: true
-          exclude: []
+          exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
           flow: upgrade-minor
@@ -47,6 +47,12 @@ integration:
           enabled: true
           exclude: []
           shortname: kemt
+          auth: keycloak
+          flow: upgrade-minor
+        - name: keycloak-rba
+          enabled: true
+          exclude: []
+          shortname: kerba
           auth: keycloak
           flow: upgrade-minor
         - name: keycloak
