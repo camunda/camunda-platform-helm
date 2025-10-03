@@ -31,7 +31,7 @@ integration:
           shortname: kemt
           exclude: []
           auth: keycloak
-        - name: elasticsearch-oidc
+        - name: oidc
           enabled: true
           shortname: esoi
           exclude: []

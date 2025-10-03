@@ -78,7 +78,7 @@ on:
           - upgrade-migration
           - keycloak
           - keycloak-mt
-          - elasticsearch-oidc
+          - oidc
       test-enabled:
         description: Whether to run the IT tests
         required: false
