@@ -94,6 +94,11 @@ webModeler:
 
 postgresql:
   enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "webmodeler-postgresql-admin-password"
+      userPasswordKey: "webmodeler-postgresql-user-password"
 
 console:
   enabled: true

@@ -26,6 +26,21 @@ integration:
           shortname: es
           exclude: []
           auth: keycloak
+        - name: keycloak-mt
+          enabled: true
+          shortname: kemt
+          exclude: []
+          auth: keycloak
+        - name: oidc
+          enabled: true
+          shortname: esoi
+          exclude: []
+          auth: oidc
+        - name: keycloak
+          enabled: true
+          shortname: keyc
+          exclude: []
+          auth: keycloak
     nightly:
       scenario:
         - name: elasticsearch

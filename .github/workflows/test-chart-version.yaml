@@ -74,12 +74,11 @@ on:
         default: "elasticsearch"
         type: choice
         options:
-          - elasticsearch
-          - opensearch
-          - basic
-          - oidc
+          - all
+          - upgrade-migration
           - keycloak
           - keycloak-mt
+          - oidc
       test-enabled:
         description: Whether to run the IT tests
         required: false
@@ -109,6 +108,7 @@ jobs:
         uses: ./.github/actions/generate-chart-matrix
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
+          manual-scenario: ${{ github.event.inputs.scenario }}
 
   unit-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' }}
@@ -167,10 +167,8 @@ jobs:
       pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
-      #scenario: ${{ matrix.scenario }}
-      scenario: ${{ inputs.scenario }}
-      #shortname: ${{ matrix.shortname }}
-      shortname: ${{ inputs.scenario }}
+      scenario: ${{ matrix.scenario }}
+      shortname: ${{ matrix.shortname }}
       auth: ${{ matrix.auth }}
       platforms: ${{ inputs.platforms || 'gke' }}
       exclude: ${{ matrix.exclude }}
