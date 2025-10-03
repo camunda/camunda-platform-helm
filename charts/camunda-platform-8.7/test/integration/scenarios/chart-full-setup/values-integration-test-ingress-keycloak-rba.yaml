@@ -275,6 +275,18 @@ identity:
       value: "write:*"
     - name: RESOURCE_PERMISSIONS_ENABLED
       value: 'true'
+
+identityKeycloak:
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
+
 connectors:
   contextPath: "/connectors"
   env:
