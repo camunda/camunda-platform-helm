@@ -42,6 +42,7 @@ integration:
           exclude: []
           shortname: esoi
           auth: oidc
+          flow: upgrade-minor
     nightly:
       scenario:
         - name: elasticsearch
