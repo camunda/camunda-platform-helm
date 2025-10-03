@@ -293,6 +293,14 @@ identityKeycloak:
     existingSecret: "integration-test-credentials"
     passwordSecretKey: "identity-keycloak-admin-password"
 
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+      userPasswordKey: "identity-keycloak-postgresql-user-password"
+
 connectors:
   contextPath: "/connectors"
   env:
