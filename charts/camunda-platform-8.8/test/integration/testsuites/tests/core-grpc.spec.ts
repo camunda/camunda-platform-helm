@@ -120,61 +120,15 @@ test.describe("orchestration-grpc", () => {
       ).toBeTruthy();
     });
   }
-  /*
-    test("WebModeler login page", async () => {
-      const r = await api.get(config.base.webModeler, { timeout: 45_000 });
-      expect(r.ok(), "WebModeler login page failed").toBeTruthy();
-      expect(await r.text(), "WebModeler login page contains error").not.toMatch(
-        /error/i,
-      );
-    });
-  */
-  //  test("Zeebe status (gRPC)", async () => {
-  //    const extra =
-  //      process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
-  //    const out = execFileSync(
-  //      "zbctl",
-  //      [
-  //        "status",
-  //        "--clientCache",
-  //        "/tmp/zeebe",
-  //        "--clientId",
-  //        config.venomID,
-  //        "--clientSecret",
-  //        config.venomSec,
-  //        "--authzUrl",
-  //        config.authURL,
-  //        "--address",
-  //        config.base.zeebeGRPC,
-  //        ...extra,
-  //      ],
-  //      { encoding: "utf-8" },
-  //    );
-  //    expect(out, "zbctl status output missing Leader, Healthy").toMatch(
-  //      /Leader, Healthy/,
-  //    );
-  //    expect(out, "zbctl status output contains Unhealthy").not.toMatch(
-  //      /Unhealthy/,
-  //    );
-  //  });
-  //
-  //  test("Zeebe topology (REST)", async () => {
-  //    const r = await api.get(`${config.base.zeebeREST}/v1/topology`, {
-  //      headers: { Authorization: `Bearer ${venomJWT}` },
-  //    });
-  //    expect(r.ok(), "Zeebe topology REST call failed").toBeTruthy();
-  //    expect(
-  //      await r.json(),
-  //      "Zeebe topology response missing brokers",
-  //    ).toHaveProperty("brokers");
-  //  });
-  //
   // Parameterized BPMN deploy tests
+
   for (const [bpmnId, label, file] of [
     ["it-test-process", "Basic", "test-process.bpmn"],
     ["test-inbound-process", "Inbound", "test-inbound-process.bpmn"],
   ] as const) {
-    test(`Deploy and check model: ${label}`, async () => {
+    test(`Deploy and check model: ${label}`, async ({ request }) => {
+      test.setTimeout(3 * 60 * 1000); // 3 minutes, > polling window
+
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
       execFileSync(
@@ -196,27 +150,47 @@ test.describe("orchestration-grpc", () => {
         ],
         { stdio: "inherit" },
       );
-      await new Promise((resolve) => setTimeout(resolve, 15000));
 
-      const r = await api.post(
-        `${config.base.orchestrationOperate}/v2/process-definitions/search`,
-        {
-          data: "{}",
-          headers: {
-            Authorization: await authHeader(api, config),
-            "Content-Type": "application/json",
+      const timeoutMs = 2 * 60 * 1000;
+      const intervalMs = 5 * 1000;
+      const start = Date.now();
+      let found = false;
+
+      /* eslint-disable no-await-in-loop */
+      while (Date.now() - start < timeoutMs) {
+        const r = await request.post(
+          `${config.base.orchestrationOperate}/v2/process-definitions/search`,
+          {
+            data: {}, // send JSON, not a string
+            headers: {
+              Authorization: await authHeader(request, config),
+              "Content-Type": "application/json",
+            },
           },
-        },
-      );
+        );
+
+        if (r.ok()) {
+          const data = await r.json();
+          const ids = (
+            data.items as Array<{ processDefinitionId: string }>
+          ).map((i) => i.processDefinitionId);
+
+          if (ids.includes(bpmnId)) {
+            found = true;
+            break; // success — stop polling
+          }
+        } else {
+          // optional: log status for debugging
+          console.warn(`Operate search ${label} -> ${r.status()}`);
+        }
+
+        await new Promise((res) => setTimeout(res, intervalMs));
+      }
+
       expect(
-        r.ok(),
-        `Process visibility check failed for ${label}: ${r.status()}`,
+        found,
+        `Process ${bpmnId} not found in Operate within ${timeoutMs / 1000}s`,
       ).toBeTruthy();
-      const data = await r.json();
-      const ids = (data.items as Array<{ processDefinitionId: string }>).map(
-        (i) => i.processDefinitionId,
-      );
-      expect(ids, `Process ${bpmnId} not found in Operate`).toContain(bpmnId);
     });
   }
 

@@ -18,6 +18,6 @@ spec:
       app.kubernetes.io/component: connectors
   endpoints:
     - honorLabels: true
-      path: /connectors/actuator/prometheus
+      path: /actuator/prometheus
       port: http
       interval: 10s

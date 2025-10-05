@@ -44,8 +44,8 @@ jobs:
           buildx-enabled: "false"
           java-enabled: "false"
           python-enabled: "false"
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential gawk
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential gawk make
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -53,15 +53,13 @@ jobs:
             helm
             kind
             kubectl
-            make
             task
-      - name: Debug failed asdf
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: CI Setup - Set test type vars
+        uses: ./.github/actions/test-type-vars
         with:
-          path: /home/runner/.asdf/downloads/make/4.3
-          name: install.log
-          if-no-files-found: error
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          values-enterprise: false
+          values-digest: true
       - name: Create KIND cluster
         run: |
           kind create cluster --name camunda-platform-local
@@ -79,13 +77,16 @@ jobs:
         run: |
           make helm.repos-add
           helm package --dependency-update "charts/${{ inputs.camunda-helm-dir }}"
-      - name: Install Camunda Helm chart
+      - name: ⭐ Install Camunda Helm chart ⭐
         timeout-minutes: 10
         run: |
+          test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
+            TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
           helm install camunda-platform *.tgz --wait --timeout 10m0s \
             --namespace ${{ env.TEST_NAMESPACE }} \
             --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
-            --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml"
+            --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
+            ${TEST_HELM_EXTRA_ARGS}
       - name: Get Pods
         if: failure()
         run: |

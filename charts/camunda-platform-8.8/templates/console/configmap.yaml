@@ -17,8 +17,8 @@ data:
           audience: {{ .Values.global.identity.auth.console.audience | quote }}
           clientId: {{ .Values.global.identity.auth.console.clientId | quote }}
           issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
-          jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
-          type: {{ include "camundaPlatform.authType" . | quote }}
+          jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+          type: {{ include "camundaPlatform.authIssuerType" . | quote }}
           wellKnown: {{ .Values.global.identity.auth.console.wellKnown | quote }}
         managed:
           method: plain

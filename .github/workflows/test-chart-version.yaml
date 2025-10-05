@@ -49,13 +49,22 @@ on:
         type: choice
         options:
           - install
-          - upgrade
-          - install,upgrade
+          - upgrade-patch
+          - upgrade-minor
+          - install,upgrade-patch
+          - install,upgrade-minor
+          - install,upgrade-patch,upgrade-minor
       e2e-enabled:
+        description: |
+          Whether to run the end-to-end tests (playwright).
+          Note: The full test suite is changing often. This might not work. We need to change the ways of working between the application teams, distro and QA.
         required: false
         default: true
         type: boolean
       deployment-ttl:
+        description: |
+          The deployment time-to-live, after which it will be automatically deleted.
+          Examples: "30m", "1h", "2h", "1d".
         required: false
         default: 1h
         type: string
@@ -75,6 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+      camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Generate chart versions
@@ -83,29 +93,14 @@ jobs:
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
 
-  matrix-version-only:
-    # Generates a chart matrix of just the versions changed
-    if: ${{ needs.init.outputs.matrix != '[]' }}
-    name: Generate versions from chart-matrix
-    runs-on: ubuntu-latest
-    needs: [init]
-    outputs:
-      matrix: ${{ steps.generate-chart-versions-only.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - name: Generate chart versions
-        id: generate-chart-versions-only
-        run: |
-          printf matrix="$(echo '${{ needs.init.outputs.matrix }}' | jq -c '[.include.[].version] | unique')" | tee -a $GITHUB_OUTPUT
-
   unit-testing:
-    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
+    if: ${{ needs.init.outputs.camunda-versions != '[]' }}
     name: ${{ matrix.version }} - Unit Test
-    needs: [init, matrix-version-only]
+    needs: [init]
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
+        version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     uses: ./.github/workflows/test-unit-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}-unit-${{ matrix.version }}"
@@ -113,13 +108,13 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   validation:
-    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
+    if: ${{ needs.init.outputs.camunda-versions != '[]' }}
     name: ${{ matrix.version }} - Validation
-    needs: [init, matrix-version-only]
+    needs: [init]
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
+        version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
       identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
@@ -127,13 +122,13 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   kind-testing:
-    if: ${{ needs.matrix-version-only.outputs.matrix != '[]' }}
+    if: ${{ needs.init.outputs.camunda-versions != '[]' }}
     name: Local cluster - KIND ${{ matrix.version }}
-    needs: [init, matrix-version-only, validation]
+    needs: [init, validation]
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.matrix-version-only.outputs.matrix) }}
+        version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     permissions:
       contents: read
     secrets: inherit
@@ -143,9 +138,9 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
-  integation-tests:
+  integration-tests:
     name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
-    needs: [init, matrix-version-only, validation]
+    needs: [init, validation]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -162,5 +157,6 @@ jobs:
       exclude: ${{ matrix.exclude }}
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
-      flows: ${{ inputs.flows || matrix.flow || 'install,upgrade' }}
+      flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
+      camunda-version-previous: ${{ matrix.camundaVersionPrevious }}

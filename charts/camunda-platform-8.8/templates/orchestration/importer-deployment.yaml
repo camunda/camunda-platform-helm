@@ -13,15 +13,16 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "orchestrationImporter.matchLabels" . | nindent 6 }}
-  updateStrategy:
+      {{- include "orchestration.matchLabelsImporter" . | nindent 6 }}
+  strategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        {{- include "orchestrationImporter.labels" . | nindent 8 }}
+        {{- include "orchestration.labelsImporter" . | nindent 8 }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
+        checksum/env-vars: {{ include (print $.Template.BasePath "/orchestration/importer-configmap-env-vars.yaml") . | sha256sum }}
     spec:
       imagePullSecrets:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
@@ -40,52 +41,6 @@ spec:
           command: ["bash", "/usr/local/bin/startup.sh"]
           {{- end }}
           env:
-            - name: ZEEBE_GATEWAY_CLUSTER_HOST
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: status.podIP
-            # the unique member id (in this case the pod name) that is used as identifier inside the SWIM cluster
-            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.name
-            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_OPERATE_OPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_AUTHENTICATION_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_DATABASE_PASSWORD"
-                "config" .Values.global.opensearch.auth
-            ) | nindent 12 }}
-            {{- end }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "CAMUNDA_LICENSE_KEY"
-                "config" .Values.global.license
-                "plaintextKey" "key"
-            ) | nindent 12 }}
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -93,15 +48,33 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: {{ include "orchestration.fullname" . }}
+              value: {{ include "orchestration.serviceNameHeadless" . | quote }}
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            {{- if .Values.global.identity.auth.enabled }}
+            {{/*
+            Gossip protocol - unique node id (int) within a cluster
+            */ -}}
+            - name: VALUES_ORCHESTRATION_NODE_ID
+              value: {{ sub -1 .Values.global.multiregion.regionId | quote }}
+            {{/*
+            Swim protocol - unique member id (string) within a cluster
+            */ -}}
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName" "VALUES_CAMUNDA_ORCHESTRATION_CLIENT_SECRET"
-                "config" .Values.global.identity.auth.orchestration
+                "envName" "VALUES_ORCHESTRATION_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            {{- if eq (include "orchestration.authEnabled" .) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
+                "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
@@ -120,22 +93,22 @@ spec:
             {{- end }}
             {{- if .Values.global.documentStore.type.aws.enabled }}
             - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
             - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
-                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
             {{- end }}
             {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
             {{/*
-            Passwords for variable substitution.
+            Variable substitution for passwords.
             */}}
             {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -152,6 +125,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+            - configMapRef:
+                name: {{ include "orchestration.fullname" . }}-importer-env-vars
           {{- if .Values.orchestration.importer.envFrom }}
             {{- .Values.orchestration.importer.envFrom | toYaml | nindent 12 }}
           {{- end }}
@@ -246,7 +221,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ include "orchestration.fullname" . }}-importer-configuration
+            name: {{ include "orchestration.fullname" . }}-configuration-unified
             defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
         - name: exporters
           emptyDir: {}
@@ -273,13 +248,16 @@ spec:
       {{- if .Values.orchestration.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-{{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
+      {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-{{ toYaml . | indent 8 }}
-{{- end }}
-# yamllint disable
-{{- with .Values.orchestration.affinity }}
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.affinity }}
       affinity:
-{{ toYaml . | indent 8 }}
-{{- end }}
+        {{- toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.tolerations }}
+      tolerations:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
 {{- end }}

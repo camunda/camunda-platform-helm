@@ -2,15 +2,15 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "identity.fullname" . }}-migration
-  labels: {{- include "orchestration.labels" . | nindent 4 }}
+  name: {{ include "orchestration.fullname" . }}-migration-identity
+  labels: {{- include "orchestration.labelsMigration" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 spec:
   backoffLimit: {{ .Values.orchestration.migration.identity.backoffLimit }}
   template:
     metadata:
       labels:
-        {{- include "orchestration.labels" . | nindent 8 }}
+        {{- include "orchestration.labelsMigration" . | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/migration-identity-configmap.yaml") . | sha256sum }}
     spec:
@@ -29,8 +29,8 @@ spec:
             - sh
             - -c
             - |
-              until curl -sf http://{{ include "orchestration.fullname" . }}-gateway:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
-                echo "waiting for Orchestration Cluster"; sleep 5;
+              until curl -sf http://{{ include "orchestration.serviceName" . }}:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
+                echo "Waiting for Orchestration Cluster"; sleep 5;
               done
       containers:
         - name: camunda-migration
@@ -40,10 +40,15 @@ spec:
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
+            - name: K8S_SERVICE_NAME
+              value: {{ include "orchestration.serviceNameHeadless" . | quote }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
-                "config" .Values.global.identity.auth.orchestration
+                "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
+            {{- with .Values.orchestration.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
           command:
             - /usr/local/camunda/bin/identity-migration
           resources:
@@ -57,6 +62,18 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+      {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.affinity }}
+      affinity:
+        {{- toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.tolerations }}
+      tolerations:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
       volumes:
         - name: config
           configMap:

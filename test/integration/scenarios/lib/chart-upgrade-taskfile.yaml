@@ -4,14 +4,27 @@ vars:
   TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" }}'
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  INFRA_TYPE_SUFFIX: '{{ eq (env "PLATFORM") "eks" | ternary ("eks") "" }}-{{ .INFRA_TYPE }}'
 
 tasks:
   pre:
+    env:
+      # Needed for sub scripts.
+      TEST_VALUES_BASE_DIR: "{{ .TEST_VALUES_BASE_DIR }}"
+      TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
     cmds:
     - |
-      # Pre-run scripts in the upgrade flow.
-      export TEST_NAMESPACE={{ .TEST_NAMESPACE }}
-      bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-run-scripts/pre-upgrade.sh
+      echo "TEST_CHART_FLOW: {{ .TEST_CHART_FLOW }}"
+    - |
+      {{ if eq .TEST_CHART_FLOW "upgrade-patch" }}
+        # Pre-run scripts in the upgrade flow.
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-upgrade-patch.sh
+      {{ end }}
+    - |
+      {{ if eq .TEST_CHART_FLOW "upgrade-minor" }}
+        # Pre-run scripts in the upgrade-minor flow.
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-upgrade-minor.sh
+      {{ end }}
 
   # https://docs.camunda.io/docs/self-managed/setup/upgrade/
   exec:
@@ -19,16 +32,16 @@ tasks:
     - |
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
         {{ if eq .PLATFORM "eks" -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
         {{ end -}}
         {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values {{ .INFRA_TYPE_VALUES }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --timeout 20m0s \
         --wait {{ .TEST_HELM_EXTRA_ARGS }}

@@ -4,12 +4,13 @@ global:
   opensearch:
     enabled: true
     auth:
-      username: camunda
-      password: camunda
+      username: "$OPENSEARCH_USERNAME"
+      password: "$OPENSEARCH_PASSWORD"
     url:
-      protocol: https
-      host: camunda.com
-      port: 443
+      protocol: $OPENSEARCH_PROTOCOL
+      host: "$OPENSEARCH_HOST"
+      port: $OPENSEARCH_PORT
+    prefix: custom-zeebe-global-prefix
 
 elasticsearch:
   enabled: false

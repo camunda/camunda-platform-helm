@@ -16,8 +16,6 @@ data:
   application.yaml: |
     server:
       port: 8080
-      servlet:
-        context-path: "/connectors"
 
     management:
       endpoints:
@@ -37,7 +35,7 @@ data:
 
     camunda:
       client:
-        rest-address: http://camunda-platform-test-zeebe-gateway:8080/orchestration
+        rest-address: http://camunda-platform-test-zeebe-gateway:8080
         grpc-address: http://camunda-platform-test-zeebe-gateway:26500
         worker:
           defaults:
@@ -46,8 +44,8 @@ data:
         mode: selfManaged
         auth:
           method: basic
-          username: "demo"
-          password: "demo"
+          username: "connectors"
+          password: "connector"
       connector:
         headless:
           service-url: "camunda-platform-test-connectors-headless"

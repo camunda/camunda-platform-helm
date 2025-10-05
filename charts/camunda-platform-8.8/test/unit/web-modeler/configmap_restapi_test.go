@@ -24,10 +24,10 @@ type configmapRestAPITemplateTest struct {
 }
 
 var requiredValues = map[string]string{
-	"webModeler.enabled":                                     "true",
-	"webModeler.restapi.mail.fromAddress":                    "example@example.com",
-	"global.identity.auth.connectors.existingSecret.name":    "foo",
-	"global.identity.auth.orchestration.existingSecret.name": "foo",
+	"webModeler.enabled":                                             "true",
+	"webModeler.restapi.mail.fromAddress":                            "example@example.com",
+	"connectors.security.authentication.oidc.existingSecret.name":    "foo",
+	"orchestration.security.authentication.oidc.existingSecret.name": "foo",
 }
 
 func TestRestAPIConfigmapTemplate(t *testing.T) {
@@ -125,7 +125,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	}
 
 	// then
-	s.Require().Equal("http://custom-identity-fullname:80/identity", configmapApplication.Camunda.Identity.BaseURL)
+	s.Require().Equal("http://custom-identity-fullname:80", configmapApplication.Camunda.Identity.BaseURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithNameOverride() {
@@ -153,7 +153,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	}
 
 	// then
-	s.Require().Equal("http://camunda-platform-test-custom-identity:80/identity", configmapApplication.Camunda.Identity.BaseURL)
+	s.Require().Equal("http://camunda-platform-test-custom-identity:80", configmapApplication.Camunda.Identity.BaseURL)
 }
 
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
@@ -313,9 +313,24 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 		authMethod             string
 		expectedAuthentication string
 	}{
-		{"OIDC Authentication", "true", "oidc", "BEARER_TOKEN"},
-		{"Basic Authentication", "true", "basic", "BASIC"},
-		{"No Authentication", "false", "basic", "NONE"},
+		{
+			name:                   "OIDC Authentication",
+			authEnabled:            "true",
+			authMethod:             "oidc",
+			expectedAuthentication: "BEARER_TOKEN",
+		},
+		{
+			name:                   "Basic Authentication",
+			authEnabled:            "true",
+			authMethod:             "basic",
+			expectedAuthentication: "BASIC",
+		},
+		{
+			name:                   "No Authentication",
+			authEnabled:            "false",
+			authMethod:             "none",
+			expectedAuthentication: "NONE",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -328,11 +343,11 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				"global.ingress.enabled":                        "true",
 				"global.ingress.tls.enabled":                    "true",
 				"global.ingress.host":                           "example.com",
+				"webModeler.security.authentication.method":     tc.authMethod,
 				"orchestration.image.tag":                       "8.8.x-alpha1",
 				"orchestration.contextPath":                     "/orchestration",
 				"orchestration.service.grpcPort":                "26600",
 				"orchestration.service.httpPort":                "8090",
-				"orchestration.security.authentication.method":  tc.authMethod,
 				"orchestration.security.authorizations.enabled": "false",
 			}
 			maps.Insert(values, maps.All(requiredValues))
@@ -359,8 +374,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			s.Require().Equal("8.8.x-alpha1", configmapApplication.Camunda.Modeler.Clusters[0].Version)
 			s.Require().Equal(tc.expectedAuthentication, configmapApplication.Camunda.Modeler.Clusters[0].Authentication)
 			s.Require().Equal(false, configmapApplication.Camunda.Modeler.Clusters[0].Authorizations.Enabled)
-			s.Require().Equal("grpc://camunda-platform-test-zeebe:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
-			s.Require().Equal("http://camunda-platform-test-zeebe:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
+			s.Require().Equal("grpc://camunda-platform-test-zeebe-gateway:26600", configmapApplication.Camunda.Modeler.Clusters[0].Url.Grpc)
+			s.Require().Equal("http://camunda-platform-test-zeebe-gateway:8090/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.Rest)
 			s.Require().Equal("https://example.com/orchestration", configmapApplication.Camunda.Modeler.Clusters[0].Url.WebApp)
 		})
 	}

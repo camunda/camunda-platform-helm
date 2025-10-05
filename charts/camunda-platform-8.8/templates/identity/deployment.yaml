@@ -42,14 +42,14 @@ spec:
                 "plaintextKey" "key"
             ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
-            {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
+            {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
-                "config"        .Values.global.identity.auth.connectors
+                "config"        .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
-                "config"        .Values.global.identity.auth.orchestration
+                "config"        .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_CONSOLE_SECRET"
@@ -67,7 +67,7 @@ spec:
               value: connectors
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "KEYCLOAK_CLIENTS_0_SECRET"
-                "config" .Values.global.identity.auth.connectors
+                "config" .Values.connectors.security.authentication.oidc
             ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
               value: http://placeholder
@@ -83,10 +83,10 @@ spec:
               value: "orchestration"
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "KEYCLOAK_CLIENTS_1_SECRET"
-                "config" .Values.global.identity.auth.orchestration
+                "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_1_ROOT_URL
-              value: {{ tpl .Values.global.identity.auth.orchestration.redirectUrl $ | quote }}
+              value: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_0
               value: /login/oauth2/code/orchestration
             - name: KEYCLOAK_CLIENTS_1_REDIRECT_URIS_1
@@ -110,7 +110,7 @@ spec:
               value: Migration
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "KEYCLOAK_CLIENTS_2_SECRET"
-                "config" .Values.global.identity.auth.orchestration
+                "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
               value: /dummy

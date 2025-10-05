@@ -6,18 +6,18 @@ Supported versions:
 
 - Camunda applications: [8.5](https://github.com/camunda/camunda/releases?q=tag%3A8.5&expanded=true)
 - Camunda version matrix: [8.5](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.5)
-- Helm values: [10.11.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/10.11.1#parameters)
+- Helm values: [10.11.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/10.11.2#parameters)
 - Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
 
 Camunda images:
 
 - docker.io/camunda/connectors-bundle:8.5.21
-- docker.io/camunda/identity:8.5.20
-- docker.io/camunda/operate:8.5.20
+- docker.io/camunda/identity:8.5.21
+- docker.io/camunda/operate:8.5.21
 - docker.io/camunda/optimize:8.5.19
-- docker.io/camunda/tasklist:8.5.22
+- docker.io/camunda/tasklist:8.5.23
 - docker.io/camunda/zeebe:8.5.24
-- registry.camunda.cloud/console/console-sm:8.5.118
+- registry.camunda.cloud/console/console-sm:8.5.119
 - registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.5.22
 - registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.5.22
 - registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.5.22
@@ -35,10 +35,10 @@ Non-Camunda images:
 For quick verification of the Helm chart integrity using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-10.11.1.tgz \
-  --bundle "camunda-platform-10.11.1-cosign-bundle.json" \
+cosign verify-blob camunda-platform-10.11.2.tgz \
+  --bundle "camunda-platform-10.11.2-cosign-bundle.json" \
   --certificate-identity-regex "https://github.com/camunda/camunda-platform-helm" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
-For detailed verification instructions, check the steps in the `camunda-platform-10.11.1-cosign-verify.sh` file.
+For detailed verification instructions, check the steps in the `camunda-platform-10.11.2-cosign-verify.sh` file.

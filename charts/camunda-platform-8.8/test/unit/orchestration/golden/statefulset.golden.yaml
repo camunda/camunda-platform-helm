@@ -23,7 +23,7 @@ spec:
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/part-of: camunda-platform
       app.kubernetes.io/component: zeebe-broker
-  serviceName: camunda-platform-test-zeebe
+  serviceName: "camunda-platform-test-zeebe"
   updateStrategy:
     type: RollingUpdate
   podManagementPolicy: Parallel
@@ -57,7 +57,6 @@ spec:
               type: RuntimeDefault
           command: ["bash", "/usr/local/bin/startup.sh"]
           env:
-            
             - name: LC_ALL
               value: C.UTF-8
             - name: K8S_NAME
@@ -65,11 +64,17 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: K8S_SERVICE_NAME
-              value: camunda-platform-test-zeebe
+              value: "camunda-platform-test-zeebe"
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            
+            - name: VALUES_ORCHESTRATION_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-orchestration-client-token
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
             - name: K8S_POD_NAME
@@ -90,10 +95,10 @@ spec:
             - containerPort: 9600
               name: server
             - containerPort: 26500
-              name: gateway
+              name: grpc
           readinessProbe:
             httpGet:
-              path: /orchestration/actuator/health/readiness
+              path: /actuator/health/readiness
               scheme: HTTP
               port: 9600
             initialDelaySeconds: 30
@@ -124,7 +129,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: camunda-platform-test-zeebe-configuration
+            name: camunda-platform-test-zeebe-configuration-unified
             defaultMode: 492
         - name: exporters
           emptyDir: {}
@@ -136,18 +141,16 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-# yamllint disable
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/component
-                operator: In
-                values:
-                - zeebe-broker
-            topologyKey: kubernetes.io/hostname
-# yamllint enable
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - zeebe-broker
+              topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim

@@ -76,7 +76,7 @@ spec:
           # Orchestration.
           - backend:
               service:
-                name: {{ template "orchestration.fullname" . }}-gateway
+                name: {{ include "orchestration.serviceName" . }}
                 port:
                   number: {{ .Values.orchestration.service.httpPort }}
             path: {{ .Values.orchestration.contextPath }}
@@ -103,20 +103,17 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
   {{- if .Values.global.ingress.tls.enabled }}
-  {{- if and 
-    (not .Values.global.ingress.tls.secretName) 
-    (contains "openshift-"  (default "" .Values.global.ingress.className)) 
-  }}
-    # The tls block is not applied because secretName is empty and className contains "openshift-".
-    # This is necessary to use the certificate managed by the OpenShift Ingress operator,
-    # which will automatically convert this Ingress into a Route (https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress).
-  {{- else }}
   tls:
+    {{- if eq .Values.global.ingress.tls.secretName "-" }}
+    {{/* Use secretName: "-" to generate an empty TLS block for automatic certificate management. */}}
+    {{/* This is useful for environments like OpenShift where the Ingress Operator manages certificates automatically. */}}
+    - {}
+    {{- else }}
     - hosts:
         - {{ .Values.global.ingress.host }}
       {{- if .Values.global.ingress.tls.secretName }}
       secretName: {{ .Values.global.ingress.tls.secretName }}
       {{- end }}
-  {{- end }}
+    {{- end }}
   {{- end }}
 {{- end }}

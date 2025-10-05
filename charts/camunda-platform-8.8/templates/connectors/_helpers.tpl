@@ -56,7 +56,7 @@ app.kubernetes.io/component: connectors
 [connectors] Defines the auth client
 */}}
 {{- define "connectors.authClientId" -}}
-  {{- .Values.global.identity.auth.connectors.clientId -}}
+  {{- .Values.connectors.security.authentication.oidc.clientId -}}
 {{- end }}
 
 {{/*

@@ -16,15 +16,20 @@ integration:
     # Using the common test dir.
     tasksBaseDir: ../../../test/integration/scenarios
     valuesBaseDir: integration/scenarios
-    chartsBaseDir: ../../../../charts
+    chartsBaseDir: ../../../..
   case:
     pr:
       scenario:
         - name: elasticsearch
           enabled: true
           auth: keycloak
-          flow: install
           shortname: eske
+          exclude: []
+        - name: upgrade-migration
+          enabled: true
+          flow: upgrade-minor
+          auth: keycloak
+          shortname: eske-upgm
           exclude: []
         - name: elasticsearch
           enabled: false
@@ -62,6 +67,11 @@ integration:
           exclude: []
           shortname: oske
           auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: osba
+          exclude: [identity,console,orchestration-grpc]
+          auth: basic
         - name: identity-migration
           enabled: true
           exclude: []
@@ -77,4 +87,9 @@ integration:
           enabled: false
           exclude: []
           shortname: docstr
+          auth: keycloak
+        - name: keycloak-external-mimic
+          enabled: true
+          exclude: []
+          shortname: kcextm
           auth: keycloak
