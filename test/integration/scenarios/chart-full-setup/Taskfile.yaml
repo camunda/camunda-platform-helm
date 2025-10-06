@@ -203,6 +203,7 @@ tasks:
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
         --wait \
+        --wait-for-jobs \
         {{ .TEST_HELM_EXTRA_ARGS }}
 
   setup.post:
