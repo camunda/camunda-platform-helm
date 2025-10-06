@@ -5468,10 +5468,30 @@
                                     "description": "if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7",
                                     "default": false
                                 },
-                                "idpApplicationId": {
+                                "clientId": {
                                     "type": "string",
-                                    "description": "must be define the application ID if an external IdP is used.",
+                                    "description": "must be the clientId used by the migration to access Management Identity. Only needed if external IdP is used (requires read permission).",
                                     "default": ""
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "inlineSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the client secret as a plain-text value for non-production usage.",
+                                            "default": ""
+                                        },
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to reference an existing Kubernetes Secret containing the client secret.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "defines the key within the existing secret object.",
+                                            "default": ""
+                                        }
+                                    }
                                 }
                             }
                         }
