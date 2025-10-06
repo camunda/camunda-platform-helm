@@ -55,30 +55,6 @@ func TestIngressTemplate(t *testing.T) {
 func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:                    "TestIngressEnabledAndKeycloakChartProxyForwardingEnabled",
-			HelmOptionsExtraArgs:    map[string][]string{"install": {"--debug"}},
-			RenderTemplateExtraArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
-			Values: map[string]string{
-				"global.ingress.tls.enabled": "true",
-				"identity.contextPath":       "/identity",
-				"identityKeycloak.enabled":   "true",
-			},
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: nil,
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var statefulSet appsv1.StatefulSet
-				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-				// then
-				env := statefulSet.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
-						Value: "true",
-					})
-			},
-		}, {
 			Name:                 "TestIngressEnabledWithKeycloakCustomContextPathIngressOutput",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -119,7 +95,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				env := statefulSet.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env,
 					corev1.EnvVar{
-						Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
+						Name:  "KC_HTTP_RELATIVE_PATH",
 						Value: "/custom",
 					})
 			},

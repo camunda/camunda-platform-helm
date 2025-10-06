@@ -1821,7 +1821,7 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "26.3.1"
+                            "default": "26.3.3"
                         },
                         "digest": {
                             "type": "string",
@@ -2136,6 +2136,12 @@
                     "type": "string",
                     "description": "defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
                     "default": "/auth/"
+                },
+                "extraEnvVars": {
+                    "type": "array",
+                    "description": "can be used set extra environment variables to be set on Keycloak container.",
+                    "default": [],
+                    "items": {}
                 },
                 "ingress": {
                     "type": "object",

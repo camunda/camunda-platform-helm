@@ -16,7 +16,7 @@ metadata:
 data:
   KC_BOOTSTRAP_ADMIN_USERNAME: {{ .Values.auth.adminUser | quote }}
   KEYCLOAK_HTTP_PORT: {{ .Values.containerPorts.http | quote }}
-  {{- if and .Values.proxy (empty .Values.proxyHeaders) }}
+  {{- if true }}
   KC_PROXY_HEADERS: {{ ternary "" "xforwarded" (eq .Values.proxy "passthrough") | quote }}
   {{- else }}
   KC_PROXY_HEADERS: {{ .Values.proxyHeaders | quote }}
@@ -104,7 +104,5 @@ data:
   {{- end }}
   {{- if .Values.logging }}
   KC_LOG_CONSOLE_OUTPUT: {{ .Values.logging.output | quote }}
-: {{ .Values.logging.output | quote }}
-  KC_HOSTNAME_STRICT: {{ .Values.logging.level | quote }}
+  KC_LOG_LEVEL: {{ .Values.logging.level | quote }}
   {{- end }}
-

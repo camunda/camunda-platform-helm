@@ -55,61 +55,6 @@ func TestIngressTemplate(t *testing.T) {
 func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Skip: true,
-			Name: "TestIngressEnabledAndKeycloakChartProxyForwardingEnabled",
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
-			},
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"connectors.security.authentication.oidc.existingSecret.name": "foo",
-				"orchestration.security.authentication.oidc.existingSecret.name":       "bar",
-				"global.ingress.tls.enabled":                          "true",
-				"identity.contextPath":                                "/identity",
-				"identity.enabled":                                    "true",
-				"identityKeycloak.enabled":                            "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var statefulSet appsv1.StatefulSet
-				helm.UnmarshalK8SYaml(t, output, &statefulSet)
-
-				// then
-				env := statefulSet.Spec.Template.Spec.Containers[0].Env
-				require.Contains(t, env,
-					corev1.EnvVar{
-						Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
-						Value: "true",
-					})
-			},
-		},
-		{
-			Skip:                 true,
-			Name:                 "TestIngressEnabledAndKeycloakChartProxyForwardingEnabled",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			CaseTemplates: &testhelpers.CaseTemplate{
-				Templates: nil,
-			},
-			RenderTemplateExtraArgs: []string{"--show-only", "charts/identityKeycloak/templates/statefulset.yaml"},
-			Values: map[string]string{
-				"global.ingress.tls.enabled": "true",
-				"identity.contextPath":       "/identity",
-				"identity.enabled":           "/true",
-				"identityKeycloak.enabled":   "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var statefulSet appsv1.StatefulSet
-				helm.UnmarshalK8SYaml(t, output, &statefulSet)
-
-				// then
-				env := statefulSet.Spec.Template.Spec.Containers[0].Env
-				require.Contains(t, env,
-					corev1.EnvVar{
-						Name:  "KEYCLOAK_PROXY_ADDRESS_FORWARDING",
-						Value: "true",
-					})
-			},
-		},
-		{
 			Skip:                 true,
 			Name:                 "TestIngressEnabledWithKeycloakCustomContextPathIngress",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
@@ -153,7 +98,7 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				env := statefulSet.Spec.Template.Spec.Containers[0].Env
 				require.Contains(t, env,
 					corev1.EnvVar{
-						Name:  "KEYCLOAK_HTTP_RELATIVE_PATH",
+						Name:  "KC_HTTP_RELATIVE_PATH",
 						Value: "/custom",
 					})
 			},

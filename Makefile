@@ -1,5 +1,6 @@
 # Makefile for managing the Helm charts
 MAKEFLAGS += --silent
+SHELL := /bin/bash
 chartPath := $(if $(chartPath),$(chartPath),charts/camunda-platform-*)
 chartVersion = $(shell grep -Po '(?<=^version: ).+' $(chartPath)/Chart.yaml)
 releaseName = camunda-platform-test
@@ -159,8 +160,9 @@ helm.template: helm.dependency-update
 # helm.readme-update: generate readme from values file
 .PHONY: helm.readme-update
 helm.readme-update:
-	for chart_dir in $(chartPath); do\
+	set -x; for chart_dir in $(chartPath); do\
 		test "camunda-platform-8.2" = "$$(basename $${chart_dir})" && continue;\
+		[[ "$$(basename $${chart_dir})" != *camunda-platform* ]] && continue;\
 		echo "\n[$@] Chart dir: $${chart_dir}";\
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
