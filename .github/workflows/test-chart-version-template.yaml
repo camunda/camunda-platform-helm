@@ -125,6 +125,7 @@ jobs:
       values-digest: "true"
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
+      always-delete-namespace: "${{ inputs.always-delete-namespace }}"
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
