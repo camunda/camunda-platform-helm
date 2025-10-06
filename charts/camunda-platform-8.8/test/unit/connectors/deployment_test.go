@@ -580,12 +580,14 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetInboundModeOauthIdentity",
 			Values: map[string]string{
-				"connectors.enabled":                           "true",
-				"connectors.inbound.mode":                      "oauth",
-				"identity.enabled":                             "true",
-				"identityKeycloak.enabled":                     "true",
-				"global.identity.auth.enabled":                 "true",
-				"orchestration.security.authentication.method": "oidc",
+				"connectors.enabled":                                               "true",
+				"connectors.inbound.mode":                                          "oauth",
+				"identity.enabled":                                                 "true",
+				"identityKeycloak.enabled":                                         "true",
+				"global.identity.auth.enabled":                                     "true",
+				"orchestration.security.authentication.method":                     "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "camunda-platform-test-connectors-identity-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "identity-connectors-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -663,6 +665,5 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		},
 	}
 
-	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
