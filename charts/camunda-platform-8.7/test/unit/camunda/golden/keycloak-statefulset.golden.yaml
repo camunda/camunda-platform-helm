@@ -61,7 +61,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-write-dirs
-          image: docker.io/camunda/keycloak:26.3.3
+          image: docker.io/camunda/keycloak:26.3.2
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -103,7 +103,7 @@ spec:
              mountPath: /emptydir
       containers:
         - name: keycloak
-          image: docker.io/camunda/keycloak:26.3.3
+          image: docker.io/camunda/keycloak:26.3.2
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
