@@ -1,13 +1,13 @@
 preflightVars:
   baseURLs:
     elasticsearch: http://integration-elasticsearch:9200
-    console: http://integration-console:9100/console
+    console: http://integration-console:9100
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82/managementidentity
     optimize: http://integration-optimize
     connectors: http://integration-connectors:8080
     webModelerRestapi: http://integration-web-modeler-restapi:8091
-    webModelerWebapp: http://integration-web-modeler-webapp:8071/modeler
+    webModelerWebapp: http://integration-web-modeler-webapp:8071
     orchestration: http://integration-zeebe-gateway:9600
     orchestrationGRPC: http://integration-zeebe-gateway:26500
     orchestrationREST: http://integration-zeebe-gateway:8080
