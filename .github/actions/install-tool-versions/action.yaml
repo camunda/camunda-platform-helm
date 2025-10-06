@@ -29,10 +29,12 @@ runs:
         cat .tool-versions
 
     - name: Restore cache
+      id: restore-tools-cache
       uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
       with:
-        # Using $HOME instead of /home/runner as inside of the container the home directory is might not be /home/runner.
-        path: $HOME/.asdf
+        # Using /home/runner/.asdf instead of ${{ env.HOME }}/.asdf because there is a github bug where ${{ env.HOME }} is not set. This causes the cache action to report a cache miss but what is really happening is the action cannot write a cache hit to the root directory.
+        # Also, ASDF_DIR has not yet been set in the environment at this point.
+        path: /home/runner/.asdf 
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: Install asdf and tools
@@ -67,9 +69,11 @@ runs:
         fi
 
     - name: Save cache
+      if: steps.restore-tools-cache.outputs.cache-hit != 'true'
+      continue-on-error: true
       uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
       with:
-        path: $HOME/.asdf
+        path: ${{ env.ASDF_DIR }}
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions
