@@ -175,11 +175,11 @@ spec:
               value: {{ printf "/opt/bitnami/keycloak/secrets/db-%s" (include "keycloak.databaseSecretDatabaseKey" .) }}
             {{- end }}
             {{- if and .Values.tls.enabled (or .Values.tls.keystorePassword .Values.tls.passwordsSecret) }}
-            - name: KEYCLOAK_HTTPS_KEY_STORE_PASSWORD_FILE
+            - name: KC_HTTPS_KEY_STORE_PASSWORD
               value: "/opt/bitnami/keycloak/secrets/tls-keystore-password"
             {{- end }}
             {{- if and .Values.tls.enabled (or .Values.tls.truststorePassword .Values.tls.passwordsSecret) }}
-            - name: KEYCLOAK_HTTPS_TRUST_STORE_PASSWORD_FILE
+            - name: KC_HTTPS_TRUST_STORE_PASSWORD
               value: "/opt/bitnami/keycloak/secrets/tls-truststore-password"
             {{- end }}
             {{- if and .Values.spi.existingSecret (or .Values.spi.truststorePassword .Values.spi.passwordsSecret) }}
@@ -226,14 +226,14 @@ spec:
                   key: {{ include "keycloak.databaseSecretDatabaseKey" . }}
             {{- end }}
             {{- if and .Values.tls.enabled (or .Values.tls.keystorePassword .Values.tls.passwordsSecret) }}
-            - name: KEYCLOAK_HTTPS_KEY_STORE_PASSWORD
+            - name: KC_HTTPS_KEY_STORE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "keycloak.tlsPasswordsSecretName" . }}
                   key: "tls-keystore-password"
             {{- end }}
             {{- if and .Values.tls.enabled (or .Values.tls.truststorePassword .Values.tls.passwordsSecret) }}
-            - name: KEYCLOAK_HTTPS_TRUST_STORE_PASSWORD
+            - name: KC_HTTPS_TRUST_STORE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "keycloak.tlsPasswordsSecretName" . }}
@@ -247,7 +247,7 @@ spec:
                   key: "spi-truststore-password"
             {{- end }}
             {{- end }}
-            - name: KEYCLOAK_HTTP_RELATIVE_PATH
+            - name: KC_HTTP_RELATIVE_PATH
               value: {{ .Values.httpRelativePath | quote }}
             {{- if .Values.extraStartupArgs }}
             - name: KEYCLOAK_EXTRA_ARGS

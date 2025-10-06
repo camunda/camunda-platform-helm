@@ -2137,23 +2137,6 @@
                     "description": "defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
                     "default": "/auth/"
                 },
-                "extraEnvVars": {
-                    "type": "array",
-                    "description": "",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": ""
-                            },
-                            "value": {
-                                "type": "string",
-                                "description": ""
-                            }
-                        }
-                    }
-                },
                 "ingress": {
                     "type": "object",
                     "properties": {
