@@ -44,4 +44,5 @@ tasks:
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --timeout 20m0s \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }}
+        --wait-for-jobs \
+        --wait {{ .TEST_HELM_EXTRA_ARGS }} 
