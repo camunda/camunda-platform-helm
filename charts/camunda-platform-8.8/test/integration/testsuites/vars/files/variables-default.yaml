@@ -4,7 +4,7 @@ preflightVars:
     console: http://integration-console:9100
     keycloak: http://integration-keycloak
     identity: http://integration-identity:82/managementidentity
-    optimize: http://integration-optimize
+    optimize: http://integration-optimize/optimize
     connectors: http://integration-connectors:8080
     webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
