@@ -6,7 +6,7 @@ preflightVars:
     identity: http://integration-identity:82/managementidentity
     optimize: http://integration-optimize
     connectors: http://integration-connectors:8080
-    webModelerRestapi: http://integration-web-Pmodeler-restapi:8091
+    webModelerRestapi: http://integration-web-modeler-restapi:8091
     webModelerWebapp: http://integration-web-modeler-webapp:8071
     orchestration: http://integration-zeebe-gateway:9600
     orchestrationGRPC: http://integration-zeebe-gateway:26500
