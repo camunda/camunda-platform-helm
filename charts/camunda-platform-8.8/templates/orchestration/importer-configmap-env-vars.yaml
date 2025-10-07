@@ -1,4 +1,4 @@
-{{- if .Values.orchestration.importer.enabled -}}
+{{- if .Values.orchestration.migration.data.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
