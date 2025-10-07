@@ -26,7 +26,7 @@ coreVars:
     webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
     webModelerRestapi: http://integration-web-modeler-restapi
     orchestration: "https://{{ .TEST_INGRESS_HOST }}"
-    orchestrationGRPC: "zeebe.{{ .TEST_INGRESS_HOST }}:443"
+    orchestrationGRPC: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
     orchestrationREST: "https://{{ .TEST_INGRESS_HOST }}"
     prometheus: "prometheus-operated.kube-prometheus-stack.svc.cluster.local:9090"
   zbctl:
