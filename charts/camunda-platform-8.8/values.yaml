@@ -2568,7 +2568,7 @@ orchestration:
       backoffLimit: 6
       ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
       resourceAuthorizationsEnabled: false
-      ## @param orchestration.migration.identity.claimName (OIDC setups only) defines the claim name in the Access Token to identity the client by. This is required to grant the migration client the identity read permissions.
+      ## @param orchestration.migration.identity.claimName (OIDC setups only) defines the claim name in the Access Token to authorize the client by. This is required to grant the migration client the identity read permissions.
       claimName: "sub"
       ## @param orchestration.migration.identity.claimValue (OIDC setups only) defines the claim value in the set claimName that identifies the migration client. This is required to grant the migration client the identity read permissions.
       claimValue: ""
