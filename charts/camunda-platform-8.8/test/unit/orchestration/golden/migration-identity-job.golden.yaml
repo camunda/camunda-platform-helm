@@ -69,7 +69,8 @@ spec:
           env:
             - name: K8S_SERVICE_NAME
               value: "camunda-platform-test-zeebe"
-            
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+              value: "very-secret-thus-plaintext"
           command:
             - /usr/local/camunda/bin/identity-migration
           resources:
