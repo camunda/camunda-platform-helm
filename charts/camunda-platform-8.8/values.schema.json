@@ -18,7 +18,8 @@
                             "description": "defines the name of the secret object that has the auto-generated passwords.",
                             "default": "camunda-credentials"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "license": {
                     "type": "object",
@@ -56,9 +57,11 @@
                                     "description": "defines the key within the existing secret object.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "compatibility": {
                     "type": "object",
@@ -71,7 +74,8 @@
                                     "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                     "default": "disabled"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "orchestration": {
                             "type": "object",
@@ -81,9 +85,11 @@
                                     "description": "if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "config": {
                     "type": "object",
@@ -93,7 +99,8 @@
                             "description": "defines applications request body size which used for upload files.",
                             "default": "10MB"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "multitenancy": {
                     "type": "object",
@@ -103,7 +110,8 @@
                             "description": "if true, then enable multitenancy in all applicable components.",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "security": {
                     "type": "object",
@@ -116,9 +124,11 @@
                                     "description": "defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.",
                                     "default": "basic"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "createReleaseInfo": {
                     "type": "boolean",
@@ -128,7 +138,8 @@
                 "annotations": {
                     "type": "object",
                     "description": "Annotations can be used to define common annotations, which should be applied to all deployments",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "labels": {
                     "type": "object",
@@ -138,17 +149,20 @@
                             "description": "Name of the application",
                             "default": "camunda-platform"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "commonLabels": {
                     "type": "object",
                     "description": "can be used to apply mutable labels to all Camunda resources.",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define Kubernetes node selectors to run Camunda components, unless overridden by component-specific nodeSelector.",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -174,7 +188,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "ingress": {
                     "type": "object",
@@ -217,9 +232,11 @@
                                     "description": "defines the secret name which contains the TLS private key and certificate",
                                     "default": "camunda-platform"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "elasticsearch": {
                     "type": "object",
@@ -247,7 +264,8 @@
                                     "description": "provide an already existing tls secret for connecting to external elasticsearch",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -290,9 +308,11 @@
                                             "description": "defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "disableExporter": {
                             "type": "boolean",
@@ -317,7 +337,8 @@
                                     "description": "Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed",
                                     "default": 9200
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "clusterName": {
                             "type": "string",
@@ -329,7 +350,8 @@
                             "description": "Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes",
                             "default": "zeebe-record"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "opensearch": {
                     "type": "object",
@@ -347,7 +369,8 @@
                                     "description": "Enabling AWS IRSA",
                                     "default": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "tls": {
                             "type": "object",
@@ -362,7 +385,8 @@
                                     "description": "provide an already existing tls secret for connecting to external opensearch",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -405,9 +429,11 @@
                                             "description": "defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "url": {
                             "type": "object",
@@ -427,7 +453,8 @@
                                     "description": "defines the external opensearch port, under which opensearch can be accessed",
                                     "default": 443
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "clusterName": {
                             "type": "string",
@@ -439,7 +466,8 @@
                             "description": "defines the prefix used for OpenSearch indices or records.",
                             "default": "zeebe-record"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "zeebeClusterName": {
                     "type": "string",
@@ -457,7 +485,8 @@
                                     "description": "",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "keycloak": {
                             "type": "object",
@@ -470,7 +499,8 @@
                                 "url": {
                                     "type": "object",
                                     "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart.",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": false
                                 },
                                 "contextPath": {
                                     "type": "string",
@@ -485,9 +515,11 @@
                                 "auth": {
                                     "type": "object",
                                     "description": "same as \"identityKeycloak.auth\" but it's used for existing Keycloak.",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -563,9 +595,11 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "identity": {
                                     "type": "object",
@@ -603,7 +637,8 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "redirectUrl": {
                                             "type": "string",
@@ -620,7 +655,8 @@
                                             "description": "defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "console": {
                                     "type": "object",
@@ -663,14 +699,16 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
                                             "default": "http://localhost:8087"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "webModeler": {
                                     "type": "object",
@@ -695,7 +733,8 @@
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
                                             "default": "http://localhost:8070"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "optimize": {
                                     "type": "object",
@@ -733,18 +772,22 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Optimize.",
                                             "default": "http://localhost:8083"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "documentStore": {
                     "type": "object",
@@ -831,9 +874,11 @@
                                                             "description": "defines the key within the existing secret object.",
                                                             "default": "access-key-id"
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "secretAccessKey": {
                                             "type": "object",
@@ -856,11 +901,14 @@
                                                             "description": "defines the key within the existing secret object.",
                                                             "default": "secret-access-key"
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "gcp": {
                                     "type": "object",
@@ -918,9 +966,11 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": "service-account.json"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "inmemory": {
                                     "type": "object",
@@ -940,11 +990,14 @@
                                             "description": "Fully qualified class name for the in-memory document store provider.",
                                             "default": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "extraManifests": {
                     "type": "array",
@@ -957,7 +1010,8 @@
                     "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
                     "default": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "identity": {
             "type": "object",
@@ -1038,9 +1092,11 @@
                                     "description": "defines the key within the existing secret object.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "users": {
                     "type": "array",
@@ -1077,7 +1133,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "multitenancy": {
                     "type": "object",
@@ -1087,7 +1144,8 @@
                             "description": "can be used to enable multitenancy in management identity",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -1114,12 +1172,14 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra Management Identity pod annotations",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra Management Identity pod labels",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "logging": {
                     "type": "object",
@@ -1132,9 +1192,11 @@
                                     "description": "",
                                     "default": "DEBUG"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -1142,7 +1204,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the identity service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "type": {
                             "type": "string",
@@ -1164,7 +1227,8 @@
                             "description": "defines the name of the service on which the identity metrics will be available",
                             "default": "metrics"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -1187,9 +1251,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -1227,9 +1293,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "startupProbe": {
                     "type": "object",
@@ -1274,7 +1342,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -1319,7 +1388,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -1364,7 +1434,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -1374,12 +1445,14 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the Management Identity pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "tolerations": {
                     "type": "array",
@@ -1390,7 +1463,8 @@
                 "affinity": {
                     "type": "object",
                     "description": "can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -1408,7 +1482,8 @@
                                     "description": "",
                                     "default": "600m"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -1423,9 +1498,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "env": {
                     "type": "array",
@@ -1452,7 +1529,8 @@
                             },
                             "valueFrom": {
                                 "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "type": "object",
+                                "additionalProperties": false
                             }
                         },
                         "required": [
@@ -1501,14 +1579,16 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the identity service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": true
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "externalDatabase": {
                     "type": "object",
@@ -1571,9 +1651,11 @@
                                     "description": "defines the key within the existing secret object.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "configuration": {
                     "type": "string",
@@ -1583,7 +1665,8 @@
                 "extraConfiguration": {
                     "type": "object",
                     "description": "if specified, contents will be used for any extra configuration files such as the log4j2.xml",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -1593,7 +1676,8 @@
                 "dnsConfig": {
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "persistence": {
                     "type": "object",
@@ -1631,16 +1715,20 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "selector": {
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "identityPostgresql": {
             "type": "object",
@@ -1664,11 +1752,14 @@
                                             "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -1688,7 +1779,8 @@
                             "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nameOverride": {
                     "type": "string",
@@ -1731,9 +1823,11 @@
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "identity-postgresql-user-password"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "volumePermissions": {
                     "type": "object",
@@ -1746,9 +1840,11 @@
                                     "description": "",
                                     "default": "bitnamilegacy/os-shell"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -1761,11 +1857,14 @@
                                     "description": "",
                                     "default": "bitnamilegacy/postgres-exporter"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "identityKeycloak": {
             "type": "object",
@@ -1789,9 +1888,11 @@
                                             "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "security": {
                             "type": "object",
@@ -1801,9 +1902,11 @@
                                     "description": "Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nameOverride": {
                     "type": "string",
@@ -1828,7 +1931,8 @@
                             "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -1846,7 +1950,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -1861,9 +1966,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "postgresql": {
                     "type": "object",
@@ -1886,7 +1993,8 @@
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -1909,9 +2017,11 @@
                                             "description": "defines the key within the existing secret object for PostgreSQL user.",
                                             "default": "identity-keycloak-postgresql-user-password"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "primary": {
                             "type": "object",
@@ -1962,7 +2072,8 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "seccompProfile": {
                                             "type": "object",
@@ -1972,9 +2083,11 @@
                                                     "description": "",
                                                     "default": "RuntimeDefault"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "podSecurityContext": {
                                     "type": "object",
@@ -1994,9 +2107,11 @@
                                             "description": "",
                                             "default": 1001
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "volumePermissions": {
                             "type": "object",
@@ -2009,9 +2124,11 @@
                                             "description": "",
                                             "default": "bitnamilegacy/os-shell"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "metrics": {
                             "type": "object",
@@ -2024,11 +2141,14 @@
                                             "description": "",
                                             "default": "bitnamilegacy/postgres-exporter"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "proxy": {
                     "type": "string",
@@ -2043,7 +2163,8 @@
                             "description": "enabling tls",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "extraVolumeMounts": {
                     "type": "array",
@@ -2059,7 +2180,8 @@
                                 "type": "string",
                                 "description": ""
                             }
-                        }
+                        },
+                        "additionalProperties": false
                     }
                 },
                 "containerSecurityContext": {
@@ -2103,7 +2225,8 @@
                                         "type": "string"
                                     }
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "seccompProfile": {
                             "type": "object",
@@ -2113,9 +2236,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -2130,7 +2255,8 @@
                             "description": "",
                             "default": 1001
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "httpRelativePath": {
                     "type": "string",
@@ -2151,7 +2277,8 @@
                                 "type": "string",
                                 "description": ""
                             }
-                        }
+                        },
+                        "additionalProperties": false
                     }
                 },
                 "ingress": {
@@ -2178,7 +2305,8 @@
                             "description": "defines Ingress path type.",
                             "default": "Prefix"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -2188,7 +2316,8 @@
                             "description": "can be set to change the service type.",
                             "default": "ClusterIP"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "auth": {
                     "type": "object",
@@ -2208,7 +2337,8 @@
                             "description": "defines the key within the existing secret object.",
                             "default": "identity-keycloak-admin-password"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "keycloakConfigCli": {
                     "type": "object",
@@ -2221,11 +2351,14 @@
                                     "description": "",
                                     "default": "bitnamilegacy/keycloak-config-cli"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "console": {
             "type": "object",
@@ -2274,7 +2407,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -2305,7 +2439,8 @@
                             "description": "Certificate Key filename",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "keycloak": {
                     "type": "object",
@@ -2315,7 +2450,8 @@
                             "description": "Specifies the Keycloak realm used for authentication.",
                             "default": "camunda-platform"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "contextPath": {
                     "type": "string",
@@ -2331,17 +2467,20 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra Console pod annotations",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra Console pod labels",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "logging": {
                     "type": "object",
                     "description": "configuration for the Console logging. This template will be directly included in the configuration YAML file",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -2349,7 +2488,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the Console service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "type": {
                             "type": "string",
@@ -2371,7 +2511,8 @@
                             "description": "defines the management port used to access metrics and app status",
                             "default": 9100
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -2389,7 +2530,8 @@
                                     "description": "",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -2404,9 +2546,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "env": {
                     "type": "array",
@@ -2433,7 +2577,8 @@
                             },
                             "valueFrom": {
                                 "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "type": "object",
+                                "additionalProperties": false
                             }
                         },
                         "required": [
@@ -2509,7 +2654,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -2554,7 +2700,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -2599,7 +2746,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -2609,7 +2757,8 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -2627,14 +2776,16 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -2657,9 +2808,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -2697,14 +2850,17 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the Console pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "tolerations": {
                     "type": "array",
@@ -2715,7 +2871,8 @@
                 "affinity": {
                     "type": "object",
                     "description": "can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -2725,9 +2882,11 @@
                 "dnsConfig": {
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "webModeler": {
             "type": "object",
@@ -2766,7 +2925,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "contextPath": {
                     "type": "string",
@@ -2784,9 +2944,11 @@
                                     "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "restapi": {
                     "type": "object",
@@ -2804,7 +2966,8 @@
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "sidecars": {
                             "type": "array",
@@ -2874,9 +3037,11 @@
                                             "description": "defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "mail": {
                             "type": "object",
@@ -2929,7 +3094,8 @@
                                             "description": "defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "fromAddress": {
                                     "type": "string",
@@ -2941,7 +3107,8 @@
                                     "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
                                     "default": "Camunda 8"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "pusher": {
                             "type": "object",
@@ -2964,9 +3131,11 @@
                                             "description": "defines the key within the existing secret object",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "clusters": {
                             "type": "array",
@@ -2977,12 +3146,14 @@
                         "podAnnotations": {
                             "type": "object",
                             "description": "can be used to define extra restapi pod annotations",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "podLabels": {
                             "type": "object",
                             "description": "can be used to define extra restapi pod labels",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "env": {
                             "type": "array",
@@ -3040,9 +3211,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -3080,9 +3253,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "startupProbe": {
                             "type": "object",
@@ -3127,7 +3302,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "readinessProbe": {
                             "type": "object",
@@ -3172,7 +3348,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "livenessProbe": {
                             "type": "object",
@@ -3217,7 +3394,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "metrics": {
                             "type": "object",
@@ -3227,12 +3405,14 @@
                                     "description": "Prometheus metrics endpoint",
                                     "default": "/metrics"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "nodeSelector": {
                             "type": "object",
                             "description": "can be used to select the nodes the restapi pods should run on",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "tolerations": {
                             "type": "array",
@@ -3243,7 +3423,8 @@
                         "affinity": {
                             "type": "object",
                             "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "resources": {
                             "type": "object",
@@ -3261,7 +3442,8 @@
                                             "description": "",
                                             "default": "1Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -3276,9 +3458,11 @@
                                             "description": "",
                                             "default": "2Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "service": {
                             "type": "object",
@@ -3286,7 +3470,8 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations which will be applied to the service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": false
                                 },
                                 "type": {
                                     "type": "string",
@@ -3303,7 +3488,8 @@
                                     "description": "defines the management port of the service",
                                     "default": 8091
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "configuration": {
                             "type": "string",
@@ -3313,7 +3499,8 @@
                         "extraConfiguration": {
                             "type": "object",
                             "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "dnsPolicy": {
                             "type": "string",
@@ -3323,9 +3510,11 @@
                         "dnsConfig": {
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "webapp": {
                     "type": "object",
@@ -3343,7 +3532,8 @@
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "sidecars": {
                             "type": "array",
@@ -3360,12 +3550,14 @@
                         "podAnnotations": {
                             "type": "object",
                             "description": "can be used to define extra webapp pod annotations",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "podLabels": {
                             "type": "object",
                             "description": "can be used to define extra webapp pod labels",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "env": {
                             "type": "array",
@@ -3423,9 +3615,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -3463,9 +3657,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "startupProbe": {
                             "type": "object",
@@ -3510,7 +3706,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "readinessProbe": {
                             "type": "object",
@@ -3555,7 +3752,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "livenessProbe": {
                             "type": "object",
@@ -3600,7 +3798,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "metrics": {
                             "type": "object",
@@ -3610,12 +3809,14 @@
                                     "description": "Prometheus metrics endpoint",
                                     "default": "/metrics"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "nodeSelector": {
                             "type": "object",
                             "description": "can be used to select the nodes the webapp pods should run on",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "tolerations": {
                             "type": "array",
@@ -3626,7 +3827,8 @@
                         "affinity": {
                             "type": "object",
                             "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "resources": {
                             "type": "object",
@@ -3644,7 +3846,8 @@
                                             "description": "",
                                             "default": "256Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -3659,9 +3862,11 @@
                                             "description": "",
                                             "default": "512Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "service": {
                             "type": "object",
@@ -3669,7 +3874,8 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations which will be applied to the service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": false
                                 },
                                 "type": {
                                     "type": "string",
@@ -3686,7 +3892,8 @@
                                     "description": "defines the management port of the service",
                                     "default": 8071
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "configuration": {
                             "type": "string",
@@ -3696,7 +3903,8 @@
                         "extraConfiguration": {
                             "type": "object",
                             "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "dnsPolicy": {
                             "type": "string",
@@ -3706,9 +3914,11 @@
                         "dnsConfig": {
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "websockets": {
                     "type": "object",
@@ -3726,7 +3936,8 @@
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "sidecars": {
                             "type": "array",
@@ -3753,12 +3964,14 @@
                         "podAnnotations": {
                             "type": "object",
                             "description": "can be used to define extra websockets pod annotations",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "podLabels": {
                             "type": "object",
                             "description": "can be used to define extra websockets pod labels",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "env": {
                             "type": "array",
@@ -3811,9 +4024,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -3851,9 +4066,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "startupProbe": {
                             "type": "object",
@@ -3898,7 +4115,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "readinessProbe": {
                             "type": "object",
@@ -3943,7 +4161,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "livenessProbe": {
                             "type": "object",
@@ -3988,12 +4207,14 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "nodeSelector": {
                             "type": "object",
                             "description": "can be used to select the nodes the websockets pods should run on",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "tolerations": {
                             "type": "array",
@@ -4004,7 +4225,8 @@
                         "affinity": {
                             "type": "object",
                             "description": "can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "resources": {
                             "type": "object",
@@ -4022,7 +4244,8 @@
                                             "description": "",
                                             "default": "64Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -4037,9 +4260,11 @@
                                             "description": "",
                                             "default": "128Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "service": {
                             "type": "object",
@@ -4047,7 +4272,8 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations which will be applied to the service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": false
                                 },
                                 "type": {
                                     "type": "string",
@@ -4059,7 +4285,8 @@
                                     "description": "defines the port of the service",
                                     "default": 80
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "configuration": {
                             "type": "string",
@@ -4069,7 +4296,8 @@
                         "extraConfiguration": {
                             "type": "object",
                             "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "dnsPolicy": {
                             "type": "string",
@@ -4079,9 +4307,11 @@
                         "dnsConfig": {
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -4099,14 +4329,16 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the WebModeler service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "persistence": {
                     "type": "object",
@@ -4144,14 +4376,17 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "selector": {
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
             },
             "restapi": {
@@ -4179,7 +4414,8 @@
                                 },
                                 "valueFrom": {
                                     "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": false
                                 }
                             },
                             "required": [
@@ -4215,7 +4451,8 @@
                                 },
                                 "valueFrom": {
                                     "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": false
                                 }
                             },
                             "required": [
@@ -4251,7 +4488,8 @@
                                 },
                                 "valueFrom": {
                                     "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": false
                                 }
                             },
                             "required": [
@@ -4261,7 +4499,8 @@
                         }
                     }
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "webModelerPostgresql": {
             "type": "object",
@@ -4285,11 +4524,14 @@
                                             "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nameOverride": {
                     "type": "string",
@@ -4314,7 +4556,8 @@
                             "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "auth": {
                     "type": "object",
@@ -4352,9 +4595,11 @@
                                     "description": "defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "web-modeler-postgresql-user-password"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "primary": {
                     "type": "object",
@@ -4405,7 +4650,8 @@
                                                 "type": "string"
                                             }
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "seccompProfile": {
                                     "type": "object",
@@ -4415,9 +4661,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "podSecurityContext": {
                             "type": "object",
@@ -4437,11 +4685,14 @@
                                     "description": "",
                                     "default": 1001
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "connectors": {
             "type": "object",
@@ -4488,13 +4739,17 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -4525,7 +4780,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -4552,12 +4808,14 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra Connectors pod annotations",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra Connectors pod labels",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -4565,7 +4823,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the Connectors service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "type": {
                             "type": "string",
@@ -4582,7 +4841,8 @@
                             "description": "defines the port name where the Connector web application will be available",
                             "default": "http"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -4600,7 +4860,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -4615,9 +4876,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "env": {
                     "type": "array",
@@ -4644,7 +4907,8 @@
                             },
                             "valueFrom": {
                                 "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "type": "object",
+                                "additionalProperties": false
                             }
                         },
                         "required": [
@@ -4720,7 +4984,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -4765,7 +5030,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -4810,7 +5076,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -4820,7 +5087,8 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -4838,14 +5106,16 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -4868,9 +5138,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -4908,14 +5180,17 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the Connectors pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "tolerations": {
                     "type": "array",
@@ -4926,7 +5201,8 @@
                 "affinity": {
                     "type": "object",
                     "description": "can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "configuration": {
                     "type": "string",
@@ -4936,7 +5212,8 @@
                 "extraConfiguration": {
                     "type": "object",
                     "description": "if specified, contents will be used for any extra configuration files such as the log4j2.xml",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -4946,7 +5223,8 @@
                 "dnsConfig": {
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "persistence": {
                     "type": "object",
@@ -4984,16 +5262,20 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "selector": {
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "orchestration": {
             "type": "object",
@@ -5137,11 +5419,14 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "authorizations": {
                             "type": "object",
@@ -5151,7 +5436,8 @@
                                     "description": "if true, then enable authorizations checks in all applicable components.",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "initialization": {
                             "type": "object",
@@ -5178,7 +5464,8 @@
                                                 "type": "string",
                                                 "description": ""
                                             }
-                                        }
+                                        },
+                                        "additionalProperties": false
                                     }
                                 },
                                 "defaultRoles": {
@@ -5197,7 +5484,8 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "connectors": {
                                             "type": "object",
@@ -5222,9 +5510,11 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "mappingRules": {
                                     "type": "array",
@@ -5232,9 +5522,11 @@
                                     "default": [],
                                     "items": {}
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -5265,7 +5557,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "migration": {
                     "type": "object",
@@ -5319,9 +5612,11 @@
                                                     "description": "can be used to define the delay multiplier.",
                                                     "default": 2
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "metrics": {
                                     "type": "object",
@@ -5359,9 +5654,11 @@
                                                     "description": "can be used to define the delay multiplier.",
                                                     "default": 2
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "tumetrics": {
                                     "type": "object",
@@ -5399,9 +5696,11 @@
                                                     "description": "can be used to define the delay multiplier.",
                                                     "default": 2
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "tasks": {
                                     "type": "object",
@@ -5444,11 +5743,14 @@
                                                     "description": "can be used to define the delay multiplier.",
                                                     "default": 2
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "identity": {
                             "type": "object",
@@ -5473,9 +5775,11 @@
                                     "description": "must be define the application ID if an external IdP is used.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "importer": {
                     "type": "object",
@@ -5498,7 +5802,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -5517,7 +5822,8 @@
                                     "description": "if true, then enable multitenancy checks in all applicable components.",
                                     "default": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "api": {
                             "type": "object",
@@ -5527,9 +5833,11 @@
                                     "description": "if true, then enable multitenancy API used for tenant management.",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "clusterSize": {
                     "type": "string",
@@ -5571,7 +5879,8 @@
                             },
                             "valueFrom": {
                                 "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "type": "object",
+                                "additionalProperties": false
                             }
                         },
                         "required": [
@@ -5594,7 +5903,8 @@
                             "description": "can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623",
                             "default": 754
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "command": {
                     "type": "array",
@@ -5623,7 +5933,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "headless": {
                             "type": "object",
@@ -5631,9 +5942,11 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations, which will be applied to the headless service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "type": {
                             "type": "string",
@@ -5707,7 +6020,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -5725,14 +6039,16 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the broker service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "ingress": {
                     "type": "object",
@@ -5783,11 +6099,14 @@
                                             "description": "defines the secret name which contains the TLS private key and certificate",
                                             "default": "camunda-platform-orchestration-grpc"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "contextPath": {
                     "type": "string",
@@ -5820,7 +6139,8 @@
                                     "description": "",
                                     "default": "1500Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -5835,9 +6155,11 @@
                                     "description": "",
                                     "default": "3000Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "persistenceType": {
                     "type": "string",
@@ -5867,12 +6189,14 @@
                 "pvcAnnotations": {
                     "type": "object",
                     "description": "can be used to specify custom annotations for persistent volume claims, enhancing storage configuration flexibility.",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "pvcSelector": {
                     "type": "object",
                     "description": "can be used to specify a label selector for persistent volume claims for further filtering of the set of persistent volumes to select.",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "data": {
                     "type": "object",
@@ -5898,11 +6222,14 @@
                                             "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "1GB"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "extraVolumes": {
                     "type": "array",
@@ -5931,12 +6258,14 @@
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra broker pod annotations",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra broker pod labels",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "podDisruptionBudget": {
                     "type": "object",
@@ -5956,7 +6285,8 @@
                             "description": "can be used to set how many pods should be at max. unavailable",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -5979,9 +6309,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -6019,9 +6351,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "startupProbe": {
                     "type": "object",
@@ -6066,7 +6400,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -6111,7 +6446,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -6156,7 +6492,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -6166,12 +6503,14 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the broker pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "tolerations": {
                     "type": "array",
@@ -6195,7 +6534,8 @@
                                     "description": "if true, enables the new Camunda exporter.",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "zeebe": {
                             "type": "object",
@@ -6205,9 +6545,11 @@
                                     "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
                                     "default": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "index": {
                     "type": "object",
@@ -6222,7 +6564,8 @@
                             "description": "can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "retention": {
                     "type": "object",
@@ -6242,7 +6585,8 @@
                             "description": "defines the name of the created and applied ILM policy.",
                             "default": "zeebe-record-retention-policy"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "history": {
                     "type": "object",
@@ -6305,9 +6649,11 @@
                                     "description": "defines the name of the created and applied ILM policy to usage metric indices.",
                                     "default": "camunda-usage-metrics-retention-policy"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "configuration": {
                     "type": "string",
@@ -6317,7 +6663,8 @@
                 "extraConfiguration": {
                     "type": "object",
                     "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -6327,7 +6674,8 @@
                 "dnsConfig": {
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "extraVolumeClaimTemplates": {
                     "type": "array",
@@ -6335,7 +6683,8 @@
                     "default": [],
                     "items": {}
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "optimize": {
             "type": "object",
@@ -6374,7 +6723,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "migration": {
                     "type": "object",
@@ -6406,7 +6756,8 @@
                                             "description": "",
                                             "default": "1Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -6421,11 +6772,14 @@
                                             "description": "",
                                             "default": "2Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -6446,17 +6800,20 @@
                             "description": "can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.",
                             "default": 754
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podAnnotations": {
                     "type": "object",
                     "description": "can be used to define extra Optimize pod annotations",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "podLabels": {
                     "type": "object",
                     "description": "can be used to define extra Optimize pod labels",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "logLevel": {
                     "type": "string",
@@ -6503,7 +6860,8 @@
                             },
                             "valueFrom": {
                                 "description": "Source for the environment variable's value",
-                                "type": "object"
+                                "type": "object",
+                                "additionalProperties": false
                             }
                         },
                         "required": [
@@ -6558,14 +6916,16 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the Optimize service account",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -6573,7 +6933,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the Optimize service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "type": {
                             "type": "string",
@@ -6590,7 +6951,8 @@
                             "description": "defines the port where actuator will be available. Also required to reach backup API",
                             "default": 8092
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -6613,9 +6975,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -6653,9 +7017,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "startupProbe": {
                     "type": "object",
@@ -6700,7 +7066,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -6745,7 +7112,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -6790,7 +7158,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -6800,12 +7169,14 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
                     "description": "can be used to define on which nodes the Optimize pods should run",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "tolerations": {
                     "type": "array",
@@ -6816,7 +7187,8 @@
                 "affinity": {
                     "type": "object",
                     "description": "can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -6834,7 +7206,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -6849,9 +7222,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "configuration": {
                     "type": "string",
@@ -6861,7 +7236,8 @@
                 "extraConfiguration": {
                     "type": "object",
                     "description": "if specified, contents will be used for any extra configuration files such as environment-logback.xml",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -6871,7 +7247,8 @@
                 "dnsConfig": {
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
-                    "default": {}
+                    "default": {},
+                    "additionalProperties": false
                 },
                 "persistence": {
                     "type": "object",
@@ -6909,14 +7286,17 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations to add to the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         },
                         "selector": {
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
             },
             "migration": {
@@ -6944,7 +7324,8 @@
                                 },
                                 "valueFrom": {
                                     "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": false
                                 }
                             },
                             "required": [
@@ -6954,7 +7335,8 @@
                         }
                     }
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "elasticsearch": {
             "type": "object",
@@ -6978,11 +7360,14 @@
                                             "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -7002,7 +7387,8 @@
                             "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "master": {
                     "type": "object",
@@ -7025,7 +7411,8 @@
                                     "description": "",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "masterOnly": {
                             "type": "boolean",
@@ -7045,7 +7432,8 @@
                                     "description": "",
                                     "default": "64Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "resources": {
                             "type": "object",
@@ -7063,7 +7451,8 @@
                                             "description": "request",
                                             "default": "2Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -7078,9 +7467,11 @@
                                             "description": "memory limit",
                                             "default": "2Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "extraEnvVars": {
                             "type": "array",
@@ -7096,10 +7487,12 @@
                                         "type": "string",
                                         "description": "env value"
                                     }
-                                }
+                                },
+                                "additionalProperties": false
                             }
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sysctlImage": {
                     "type": "object",
@@ -7114,7 +7507,8 @@
                             "description": "",
                             "default": "bitnamilegacy/os-shell"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "data": {
                     "type": "object",
@@ -7124,7 +7518,8 @@
                             "description": "",
                             "default": 0
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "coordinating": {
                     "type": "object",
@@ -7134,7 +7529,8 @@
                             "description": "",
                             "default": 0
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "ingest": {
                     "type": "object",
@@ -7144,7 +7540,8 @@
                             "description": "",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -7157,9 +7554,11 @@
                                     "description": "",
                                     "default": "bitnamilegacy/elasticsearch-exporter"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "volumePermissions": {
                     "type": "object",
@@ -7172,9 +7571,11 @@
                                     "description": "",
                                     "default": "bitnamilegacy/os-shell"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "copyTlsCerts": {
                     "type": "object",
@@ -7187,11 +7588,14 @@
                                     "description": "",
                                     "default": "bitnamilegacy/os-shell"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "prometheusServiceMonitor": {
             "type": "object",
@@ -7209,14 +7613,17 @@
                             "description": "",
                             "default": "metrics"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "scrapeInterval": {
                     "type": "string",
                     "description": "can be set to configure the interval at which metrics should be scraped",
                     "default": "10s"
                 }
-            }
+            },
+            "additionalProperties": false
         }
-    }
+    },
+    "additionalProperties": false
 }
