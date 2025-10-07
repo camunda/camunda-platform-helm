@@ -19,12 +19,14 @@ data:
     zeebe:
       enabled: true
       partitionCount: {{ .Values.optimize.partitionCount }}
+      {{- if .Values.global.elasticsearch.enabled }}
+      name: {{ .Values.global.elasticsearch.prefix | quote }}
+      {{- else if .Values.global.opensearch.enabled }}
+      name: {{ .Values.global.opensearch.prefix | quote }}
+      {{- end }}
 
     {{- if .Values.global.elasticsearch.enabled }}
     es:
-      settings:
-        index:
-          prefix: {{ .Values.global.elasticsearch.prefix | quote }}
       connection:
         nodes:
           - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
@@ -37,12 +39,6 @@ data:
           enabled: "true"
         {{- end }}
       {{- end }}
-
-    {{- else if .Values.global.opensearch.enabled }}
-    opensearch:
-      settings:
-        index:
-          prefix: {{ .Values.global.opensearch.prefix | quote }}
     {{- end }}
 
     spring:
