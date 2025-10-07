@@ -9,6 +9,9 @@ orchestration:
       enabled: true
     identity:
       enabled: true
+      existingSecret:
+        name: integration-test-credentials
+      existingSecretKey: identity-admin-client-password
     process:
       enabled: true
 
