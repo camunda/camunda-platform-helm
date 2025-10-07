@@ -10,8 +10,8 @@ orchestration:
     identity:
       enabled: true
       secret:
-        existingSecret: "integration-test-credentials"
-        existingSecretKey: identity-admin-client-password
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-migration-client-secret
     process:
       enabled: true
 
