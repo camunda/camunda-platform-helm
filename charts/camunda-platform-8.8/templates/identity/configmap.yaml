@@ -47,8 +47,8 @@ data:
       {{- if and (ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") (.Values.orchestration.migration.identity.enabled)}}
       mapping-rules:
         - name: identityMigration
-          claim-name: {{ .Values.orchestration.migration.identity.clientIdClaimName }}
-          claim-value: {{ .Values.orchestration.migration.identity.clientId }}
+          claim-name: {{ .Values.orchestration.migration.identity.claimName }}
+          claim-value: {{ .Values.orchestration.migration.identity.claimValue }}
           operator: EQUALS
           rule-type: ROLE
           applied-role-names:
