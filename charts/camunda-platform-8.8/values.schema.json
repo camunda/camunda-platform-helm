@@ -5470,7 +5470,7 @@
                                 },
                                 "claimName": {
                                     "type": "string",
-                                    "description": "(OIDC setups only) defines the claim name in the Access Token to identity the client by. This is required to grant the migration client the identity read permissions.",
+                                    "description": "(OIDC setups only) defines the claim name in the Access Token to authorize the client by. This is required to grant the migration client the identity read permissions.",
                                     "default": "sub"
                                 },
                                 "claimValue": {
