@@ -168,7 +168,11 @@ orchestration:
     enabled: true
   migration:
     identity:
-      idpApplicationId: "65aa0601-56a2-4915-a64c-9de360424df5"
+      claimName: "oid"
+      claimValue: "65aa0601-56a2-4915-a64c-9de360424df5"
+      clientId: $ENTRA_APP_CLIENT_ID
+      secret:
+        inlineSecret: $ENTRA_APP_CLIENT_SECRET
       enabled: true
       backoffLimit: 12
     data:
