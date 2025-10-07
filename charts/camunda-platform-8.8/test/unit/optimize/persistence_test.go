@@ -217,6 +217,5 @@ func TestPVCManifestCreated(t *testing.T) {
 		},
 	}
 
-	t.Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-optimize", []string{"templates/optimize/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
 }

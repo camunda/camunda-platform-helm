@@ -54,7 +54,6 @@ func TestPersistenceTemplate(t *testing.T) {
 }
 
 func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
-	s.T().Skip("Skipping until 8.8 reenables these")
 	testCases := []testhelpers.TestCase{
 		{
 			Name: "TestPersistenceDisabledUsesEmptyDir",
