@@ -5468,6 +5468,11 @@
                                     "description": "if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7",
                                     "default": false
                                 },
+                                "clientIdClaimName": {
+                                    "type": "string",
+                                    "description": "defines the claim name in which the client Id is available in the access Token. This is required to grant the migration client the identity read permissions.",
+                                    "default": "azp"
+                                },
                                 "clientId": {
                                     "type": "string",
                                     "description": "must be the clientId used by the migration to access Management Identity. Only needed if external IdP is used (requires read permission).",
