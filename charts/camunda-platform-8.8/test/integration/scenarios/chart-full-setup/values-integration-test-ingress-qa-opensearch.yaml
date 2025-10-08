@@ -15,7 +15,7 @@ global:
       protocol: https
       host: "$AWS_HOST_URL"
       port: 443
-    prefix: $E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE-global-prefix
+    prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
 elasticsearch:
   enabled: false
 orchestration:
@@ -67,13 +67,13 @@ optimize:
   env: 
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
   migration:
     env:
       - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
         value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
-      - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
         value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
 webModelerPostgresql:
   enabled: true
