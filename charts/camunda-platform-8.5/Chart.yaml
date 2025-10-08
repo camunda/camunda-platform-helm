@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 10.11.2
+version: 10.11.3
 appVersion: 8.5.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -67,4 +67,8 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Correct sysctlImage structure in values-enterprise.yaml"
+    - kind: fixed
+      description: "Web modeler extraConfiguration uses subcomponent subkey"
