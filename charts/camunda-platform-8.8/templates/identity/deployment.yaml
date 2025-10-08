@@ -140,7 +140,7 @@ spec:
             {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
-              "config" .Values.orchestration.security.authentication.oidc
+              "config" .Values.global.identity.auth.identity
             ) | nindent 12 }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
