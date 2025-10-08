@@ -1,6 +1,5 @@
 # Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md
 name: "Test - Integration - Runner"
-
 on:
   workflow_call:
     inputs:
@@ -291,6 +290,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
+
       - name: Import Vault secrets
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
