@@ -222,10 +222,6 @@ TODO: This is only used for the migration job, it should be removed once the mig
     {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
 {{- end -}}
 
-{{- define "orchestration.authTokenScope" -}}
-    {{- .Values.orchestration.security.authentication.oidc.tokenScope -}}
-{{- end -}}
-
 {{- define "orchestration.enabledProfiles" -}}
     {{- $enabledProfiles := list -}}
     {{- range $key, $value := .Values.orchestration.profiles }}

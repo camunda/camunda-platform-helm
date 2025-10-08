@@ -5093,11 +5093,6 @@
                                             "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
                                             "default": "orchestration"
                                         },
-                                        "tokenScope": {
-                                            "type": "string",
-                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
-                                            "default": ""
-                                        },
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.",

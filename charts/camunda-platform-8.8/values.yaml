@@ -2407,8 +2407,6 @@ orchestration:
 
         ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
         clientId: orchestration
-        ## @param orchestration.security.authentication.oidc.tokenScope defines the token scope, which is used by Orchestration Cluster.
-        tokenScope: ""
         ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
         # Should be publicly accessible, the default value works if a port-forward to Orchestration Cluster is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
