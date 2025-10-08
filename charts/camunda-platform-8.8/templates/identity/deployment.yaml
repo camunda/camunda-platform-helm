@@ -110,7 +110,7 @@ spec:
               value: Migration
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "KEYCLOAK_CLIENTS_2_SECRET"
-                "config" .Values.orchestration.security.authentication.oidc
+                "config" .Values.orchestration.migration.identity
             ) | nindent 12 }}
             - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
               value: /dummy
