@@ -41,22 +41,6 @@ tasks:
       cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
       {{ end }}
 
-      VENOM_KEYCLOAK_CLIENT_NUMBER="$(helm template integration {{ .TEST_CHART_NAME }} \
-        --namespace {{ .TEST_NAMESPACE }} \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        {{ if eq .PLATFORM "eks" -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
-        {{ end -}}
-        {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
-        --values {{ .TEST_HELM_DIGEST_VALUES }} \
-        {{ end -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml | awk -f {{ .TEST_VALUES_BASE_DIR }}/highest_client_id.awk -)"
-
-      sed -i "s/KEYCLOAK_CLIENTS_[0-9]*/$VENOM_KEYCLOAK_CLIENT_NUMBER/" {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
-
       helm upgrade integration {{ .TEST_CHART_NAME }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
