@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/chart-validate-template.yaml"
       - ".github/workflows/test-unit-template.yaml"
+      - ".github/workflows/test-integration-runner.yaml"
       - ".github/workflows/test-integration-template.yaml"
       - ".github/workflows/test-chart-version-template.yaml"
       - ".github/workflows/test-chart-version.yaml"
@@ -109,7 +110,7 @@ jobs:
         uses: ./.github/actions/generate-chart-matrix
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
-          manual-scenario: ${{ github.event.inputs.scenario }}
+          manual-scenario: ${{ github.event.inputs.scenario || "none" }}
 
   unit-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' }}
