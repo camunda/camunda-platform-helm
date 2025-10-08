@@ -475,10 +475,11 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretValue",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                             "true",
-				"optimize.enabled":                             "true",
-				"global.identity.auth.enabled":                 "true",
-				"global.identity.auth.optimize.existingSecret": "secretValue",
+				"identity.enabled":                                       "true",
+				"optimize.enabled":                                       "true",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.auth.optimize.secret.existingSecret":    "camunda-platform-test-optimize-identity-secret",
+				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -834,6 +835,5 @@ es:
 		},
 	}
 
-	s.T().Skip("Skipping until 8.8 reenables these")
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
