@@ -1821,7 +1821,7 @@
                         "tag": {
                             "type": "string",
                             "description": "image tag",
-                            "default": "26.3.1"
+                            "default": "26.3.3"
                         },
                         "digest": {
                             "type": "string",
@@ -2139,20 +2139,9 @@
                 },
                 "extraEnvVars": {
                     "type": "array",
-                    "description": "",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": ""
-                            },
-                            "value": {
-                                "type": "string",
-                                "description": ""
-                            }
-                        }
-                    }
+                    "description": "can be used set extra environment variables to be set on Keycloak container.",
+                    "default": [],
+                    "items": {}
                 },
                 "ingress": {
                     "type": "object",

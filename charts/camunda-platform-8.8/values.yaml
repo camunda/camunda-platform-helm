@@ -948,7 +948,7 @@ identityKeycloak:
     ## @param identityKeycloak.image.repository image repo
     repository: camunda/keycloak
     ## @param identityKeycloak.image.tag image tag
-    tag: 26.3.1
+    tag: 26.3.3
     ## @param identityKeycloak.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
 
@@ -1072,14 +1072,8 @@ identityKeycloak:
   # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
   # NOTE: In Keycloak v23, accessing this path without the trailing slash will return "Internal Server Error".
   httpRelativePath: /auth/
-  ## @extra identityKeycloak.extraEnvVars
-  ## @param identityKeycloak.extraEnvVars[0].name
-  ## @param identityKeycloak.extraEnvVars[0].value
-  extraEnvVars:
-    # KEYCLOAK_PROXY_ADDRESS_FORWARDING can be used with Ingress that has SSL Termination. It will be "true" if the TLS
-    # in global Ingress is enabled, but it could be overwritten with separate Ingress setup.
-    - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
-      value: "{{ .Values.global.ingress.tls.enabled }}"
+  ## @param identityKeycloak.extraEnvVars can be used set extra environment variables to be set on Keycloak container.
+  extraEnvVars: []
 
   # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
   # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress

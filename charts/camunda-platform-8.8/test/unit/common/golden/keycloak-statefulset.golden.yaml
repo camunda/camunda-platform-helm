@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/instance: camunda-platform-test
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: keycloak
-    app.kubernetes.io/version: 26.3.2
+    app.kubernetes.io/version: 26.3.3
     app.kubernetes.io/component: keycloak
 spec:
   replicas: 1
@@ -31,9 +31,9 @@ spec:
         app.kubernetes.io/instance: camunda-platform-test
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: keycloak
-        app.kubernetes.io/version: 26.3.2
+        app.kubernetes.io/version: 26.3.3
         app.kubernetes.io/component: keycloak
-        app.kubernetes.io/app-version: 26.3.2
+        app.kubernetes.io/app-version: 26.3.3
     spec:
       serviceAccountName: camunda-platform-test-keycloak
       
@@ -61,7 +61,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-write-dirs
-          image: docker.io/camunda/keycloak:26.3.1
+          image: docker.io/camunda/keycloak:26.3.3
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -103,7 +103,7 @@ spec:
              mountPath: /emptydir
       containers:
         - name: keycloak
-          image: docker.io/camunda/keycloak:26.3.1
+          image: docker.io/camunda/keycloak:26.3.3
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -130,12 +130,10 @@ spec:
               value: /opt/bitnami/keycloak/secrets/identity-keycloak-admin-password
             - name: KEYCLOAK_DATABASE_PASSWORD_FILE
               value: /opt/bitnami/keycloak/secrets/db-identity-keycloak-postgresql-user-password
-            - name: KEYCLOAK_HTTP_RELATIVE_PATH
+            - name: KC_HTTP_RELATIVE_PATH
               value: "/auth/"
             - name: KC_SPI_ADMIN_REALM
               value: "master"
-            - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
-              value: 'false'
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-keycloak-env-vars
