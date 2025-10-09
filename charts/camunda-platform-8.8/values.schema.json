@@ -4446,6 +4446,11 @@
                         "authentication": {
                             "type": "object",
                             "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "default": ""
+                                },
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
@@ -4453,6 +4458,11 @@
                                             "type": "string",
                                             "description": "defines the client id, which is used by Connectors in authentication flows.",
                                             "default": "connectors"
+                                        },
+                                        "tokenScope": {
+                                            "type": "string",
+                                            "description": "defines the token scope, which is used by Connectors.",
+                                            "default": ""
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
