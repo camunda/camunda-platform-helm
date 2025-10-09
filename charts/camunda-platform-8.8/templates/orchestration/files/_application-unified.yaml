@@ -106,9 +106,12 @@ camunda:
         token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
         redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
+        {{- if .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
         prefer-username-claim: {{ .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
+        {{- end }}
         {{- if .Values.orchestration.security.authentication.oidc.scope }}
-        scope: {{ .Values.orchestration.security.authentication.oidc.scope | quote }}
+        scope:
+          {{- include "common.tplvalues.render" ( dict "value" .Values.orchestration.security.authentication.oidc.scope "context" $ ) | nindent 10 }}
         {{- end }}
       {{- end }}
       method: {{ include "orchestration.authMethod" . | quote }}

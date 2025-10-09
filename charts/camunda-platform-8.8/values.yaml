@@ -2408,8 +2408,8 @@ orchestration:
         groupsClaim: "groups"
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
         audience: orchestration-api
-        ## @param orchestration.security.authentication.oidc.scope defines a comma-separated list of scopes to request in the OIDC token. If not set, it will use the application defaults.
-        scope: ""
+        ## @param orchestration.security.authentication.oidc.scope defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.
+        scope: []
         ## @param orchestration.security.authentication.oidc.backwardsCompatibleAudiences defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version
         backwardsCompatibleAudiences:
           - operate-api
