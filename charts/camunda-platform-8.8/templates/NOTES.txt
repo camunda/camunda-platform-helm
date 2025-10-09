@@ -92,6 +92,10 @@ If you don't have an ingress controller you can use `kubectl port-forward` to ac
 Identity:
 > kubectl port-forward svc/{{ .Release.Name }}-identity 8084:80
 {{- end }}
+{{ if .Values.optimize.enabled -}}
+Optimize:
+> kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
+{{- end }}
 {{ if .Values.webModeler.enabled -}}
 Web Modeler:
 > kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8070:80
