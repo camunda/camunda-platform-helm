@@ -106,7 +106,10 @@ camunda:
         token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
         redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
-    {{- end }}
+        {{- if .Values.orchestration.security.authentication.oidc.scope }}
+        scope: {{ .Values.orchestration.security.authentication.oidc.scope | quote }}
+        {{- end }}
+      {{- end }}
       method: {{ include "orchestration.authMethod" . | quote }}
       unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
     authorizations:

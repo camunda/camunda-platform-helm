@@ -5096,6 +5096,11 @@
                                             "description": "defines the audience, which is used by Orchestration Cluster.",
                                             "default": "orchestration-api"
                                         },
+                                        "scope": {
+                                            "type": "string",
+                                            "description": "defines a comma-separated list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
+                                            "default": ""
+                                        },
                                         "backwardsCompatibleAudiences": {
                                             "type": "array",
                                             "description": "defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
