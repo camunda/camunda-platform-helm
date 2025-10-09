@@ -327,3 +327,6 @@ connectors:
       value: username
     - name: password
       value: password
+  security:
+    authentication:
+      method: oidc

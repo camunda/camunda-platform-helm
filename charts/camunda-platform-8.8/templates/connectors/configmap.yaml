@@ -11,75 +11,10 @@ data:
     {{ .Values.connectors.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
-    server:
-      port: {{ .Values.connectors.service.serverPort }}
-    {{- if .Values.connectors.contextPath }}
-      servlet:
-        context-path: {{ .Values.connectors.contextPath | quote }}
-    {{- end }}
-
-    management:
-      endpoints:
-        web:
-          exposure:
-            include: metrics,health,prometheus
-      endpoint:
-        health:
-          show-details: always
-          show-components: always
-          group:
-            readiness:
-              include:
-              - processDefinitionImport
-              - zeebeClient
-      context-path: /actuator
-
-    camunda:
-      client:
-        {{- $baseURLInternal := printf "%s://%s"
-          (lower .Values.orchestration.readinessProbe.scheme)
-          (include "orchestration.serviceName" .)
-        }}
-        rest-address: {{ printf "%s:%v%s"
-          $baseURLInternal
-          .Values.orchestration.service.httpPort
-          (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | trimSuffix "/")
-        }}
-        grpc-address: {{ printf "%s:%v" $baseURLInternal .Values.orchestration.service.grpcPort }}
-        worker:
-          defaults:
-            max-jobs-active: 32
-            stream-enabled: true
-        mode: selfManaged
-        {{- if eq (include "orchestration.authMethod" .) "basic" }}
-        auth:
-          {{- $user := first .Values.orchestration.security.initialization.users }}
-          method: basic
-          username: {{ $user.username | quote }}
-          password: {{ $user.password | quote }}
-        {{- else if eq (include "orchestration.authMethod" .) "oidc" }}
-        auth:
-          token-url: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . }}
-          client-id: {{ include "connectors.authClientId" . | quote }}
-          client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
-          audience: {{ include "orchestration.authAudience" . | quote }}
-        {{- end }}
-      connector:
-        headless:
-          service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
-        webhook:
-          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
-        polling:
-          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
-        agenticai:
-          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
-    logging:
-{{- with .Values.connectors.logging }}
-{{ . | toYaml | indent 6 }}
-{{- end }}
+    {{- (include (print $.Template.BasePath "/connectors/files/_application.yaml") $) | indent 4 }}
+  {{- end }}
   {{- range $key, $val := .Values.connectors.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
   {{- end }}
-{{- end }}
 {{- end }}

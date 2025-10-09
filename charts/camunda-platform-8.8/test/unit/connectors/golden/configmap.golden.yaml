@@ -13,11 +13,12 @@ metadata:
     app.kubernetes.io/component: connectors
     app.kubernetes.io/version: "8.8.0-alpha8"
 data:
-  application.yaml: |
+  application.yaml: |    
     server:
       port: 8080
-
+    
     management:
+      context-path: /actuator
       endpoints:
         web:
           exposure:
@@ -31,8 +32,7 @@ data:
               include:
               - processDefinitionImport
               - zeebeClient
-      context-path: /actuator
-
+    
     camunda:
       client:
         rest-address: http://camunda-platform-test-zeebe-gateway:8080
@@ -55,6 +55,7 @@ data:
           enabled: true
         agenticai:
           enabled: true
+    
     logging:
       level:
-        io.camunda.connector: ERROR
+        io.camunda.connector: INFO

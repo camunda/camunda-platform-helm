@@ -80,5 +80,5 @@ data:
 
     logging:
       level:
-        io.camunda.modeler: DEBUG
-        io.grpc: TRACE
+        io.camunda.modeler: INFO
+        io.grpc: INFO

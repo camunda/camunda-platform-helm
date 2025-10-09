@@ -103,6 +103,7 @@ connectors:
   contextPath: "/connectors"
   security:
     authentication:
+      method: oidc
       oidc:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
@@ -111,13 +112,13 @@ connectors:
           name: integration-test-credentials
         existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
-  env:
-    - name: CAMUNDA_CLIENT_AUTH_SCOPE
-      value: $ENTRA_APP_CLIENT_ID/.default
 
 webModeler:
   enabled: true
   contextPath: "/modeler"
+  security:
+    authentication:
+      method: oidc
   image:
     pullSecrets:
       - name: index-docker-io

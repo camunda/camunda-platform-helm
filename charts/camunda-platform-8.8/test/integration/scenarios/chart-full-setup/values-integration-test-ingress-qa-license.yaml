@@ -4,8 +4,6 @@ global:
   identity:
     auth:
       enabled: true
-    auth:
-      enabled: true
   license:
     key:
 orchestration:
@@ -262,6 +260,9 @@ identity:
     - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_DEFINITION
       value: "write:*"
 connectors:
+  security:
+    authentication:
+      method: oidc
   image:
     tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:

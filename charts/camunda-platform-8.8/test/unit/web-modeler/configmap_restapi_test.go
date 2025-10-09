@@ -162,8 +162,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 		"identity.enabled":                             "true",
 		"global.identity.auth.enabled":                 "true",
 		"global.identity.auth.type":                    "MICROSOFT",
-		"global.identity.auth.issuerBackendUrl":        "https://example.com",
 		"global.identity.auth.identity.existingSecret": "foo",
+		"global.identity.auth.issuer":                  "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+		"global.identity.auth.issuerBackendUrl":        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+		"global.identity.auth.authUrl":                 "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
+		"global.identity.auth.tokenUrl":                "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
+		"global.identity.auth.jwksUrl":                 "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
