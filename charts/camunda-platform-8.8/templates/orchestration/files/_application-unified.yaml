@@ -101,7 +101,6 @@ camunda:
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
-          - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
         authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
         jwk-set-uri: {{ include "orchestration.authIssuerBackendUrlEndpointCerts" . | quote }}
         token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
