@@ -5079,14 +5079,8 @@
                                         "backwardsCompatibleAudiences": {
                                             "type": "array",
                                             "description": "defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version",
-                                            "default": [
-                                                "operate-api",
-                                                "tasklist-api",
-                                                "zeebe-api"
-                                            ],
-                                            "items": {
-                                                "type": "string"
-                                            }
+                                            "default": [],
+                                            "items": {}
                                         },
                                         "clientId": {
                                             "type": "string",
