@@ -1,0 +1,23 @@
+{{- if .Values.orchestration.leaderBalancing.enabled -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: leader-balancer
+  labels:
+    {{- include "orchestration.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.orchestration.leaderBalancing.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - image: "curlimages/curl:8.16.0"
+              name: curl
+              args: ["-L", "-v", "-X", "POST", "http://{{ include "orchestration.serviceName" . }}:{{ .Values.orchestration.service.managementPort }}/actuator/rebalance"]
+          restartPolicy: OnFailure
+{{- end }}
