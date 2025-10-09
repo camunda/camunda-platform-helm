@@ -58,4 +58,4 @@ data:
     
     logging:
       level:
-        io.camunda.connector: ERROR
+        io.camunda.connector: INFO

@@ -1135,7 +1135,7 @@
                                 "ROOT": {
                                     "type": "string",
                                     "description": "",
-                                    "default": "DEBUG"
+                                    "default": "INFO"
                                 }
                             }
                         }

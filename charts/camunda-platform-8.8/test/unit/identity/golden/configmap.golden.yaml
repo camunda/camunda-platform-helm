@@ -139,5 +139,5 @@ data:
         audience: "camunda-identity-resource-server"
     logging:
       level:
-        ROOT: DEBUG
-        io.camunda.identity: DEBUG
+        ROOT: INFO
+        io.camunda.identity: INFO

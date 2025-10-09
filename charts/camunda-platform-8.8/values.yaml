@@ -646,8 +646,8 @@ identity:
   ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/next/self-managed/identity/user-guide/configuration/configure-logging/#general-configuration-options
   logging:
     level:
-      ROOT: DEBUG
-      io.camunda.identity: DEBUG
+      ROOT: INFO
+      io.camunda.identity: INFO
 
   ## @extra identity.service configuration to configure the identity service.
   service:
@@ -1499,8 +1499,8 @@ webModeler:
     ## @param webModeler.restapi.logging.level.io.grpc
     logging:
       level:
-        io.camunda.modeler: DEBUG
-        io.grpc: TRACE
+        io.camunda.modeler: INFO
+        io.grpc: INFO
 
     ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
     env: []
@@ -2168,7 +2168,7 @@ connectors:
   ## @param connectors.logging.level.io.camunda.connector
   logging:
     level:
-      io.camunda.connector: ERROR
+      io.camunda.connector: INFO
 
   ## @extra connectors.service configuration to configure the Connectors service.
   service:
