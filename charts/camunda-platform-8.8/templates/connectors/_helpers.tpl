@@ -53,13 +53,6 @@ app.kubernetes.io/component: connectors
 {{- end -}}
 
 {{/*
-[connectors] Defines the auth client
-*/}}
-{{- define "connectors.authClientId" -}}
-  {{- .Values.connectors.security.authentication.oidc.clientId -}}
-{{- end }}
-
-{{/*
 [connectors] Get the image pull secrets.
 */}}
 {{- define "connectors.imagePullSecrets" -}}
@@ -76,3 +69,37 @@ app.kubernetes.io/component: connectors
 {{- define "connectors.serviceHeadlessName" -}}
   {{ include "connectors.fullname" . }}-headless
 {{- end }}
+
+
+{{/*
+********************************************************************************
+Authentication.
+********************************************************************************
+*/}}
+
+{{/*
+[connectors] Define variables related to authentication.
+*/}}
+
+{{- define "connectors.authMethod" -}}
+    {{- .Values.connectors.security.authentication.method | default (
+        .Values.global.security.authentication.method | default "none"
+    ) -}}
+{{- end -}}
+
+{{/*
+[connectors] Defines the auth client
+*/}}
+{{- define "connectors.authClientId" -}}
+    {{- .Values.connectors.security.authentication.oidc.clientId -}}
+{{- end }}
+
+{{- define "connectors.authAudience" -}}
+    {{- .Values.connectors.security.authentication.oidc.audience |
+      default (include "orchestration.authAudience" .)
+    -}}
+{{- end -}}
+
+{{- define "connectors.authTokenScope" -}}
+    {{- .Values.connectors.security.authentication.oidc.tokenScope -}}
+{{- end -}}

@@ -2111,9 +2111,13 @@ connectors:
     ## Authentication configuration
     ## @extra connectors.security.authentication
     authentication:
+      ## @param connectors.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      method: ""
       oidc:
         ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
         clientId: connectors
+        ## @param connectors.security.authentication.oidc.tokenScope defines the token scope, which is used by Connectors.
+        tokenScope: ""
         ## @param connectors.security.authentication.oidc.existingSecret [string,object] (DEPRECATED - use connectors.security.authentication.oidc.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using connectors.security.authentication.oidc.existingSecret.name.
         existingSecret: ""
         ## @param connectors.security.authentication.oidc.existingSecretKey (DEPRECATED - use connectors.security.authentication.oidc.secret instead) defines the key within the existing secret object.
