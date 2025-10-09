@@ -169,7 +169,7 @@ permissions:
   deployments: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}
   cancel-in-progress: true
 
 env:

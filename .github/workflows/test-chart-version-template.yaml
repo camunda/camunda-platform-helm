@@ -45,7 +45,7 @@ on:
         type: string
       flows:
         description: The flows to run
-        default: "install,upgrade-patch,upgrade-minor"
+        default: "install"
         type: string
         required: false
       e2e-enabled:
@@ -68,7 +68,7 @@ on:
         type: boolean
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}
   cancel-in-progress: true
 
 permissions:
@@ -76,7 +76,7 @@ permissions:
 
 jobs:
   parse-platforms:
-    name: Parse platforms
+    name: Parse platforms - ${{ intputs.flows }}
     runs-on: ubuntu-latest
     env:
       SCENARIOS_LIST: ${{ inputs.scenarios }}
