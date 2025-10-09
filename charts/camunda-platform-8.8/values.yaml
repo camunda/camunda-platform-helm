@@ -303,6 +303,8 @@ global:
       issuer: ""
       ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
       issuerBackendUrl: ""
+      ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access.
+      authUrl: ""
       ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens.
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
@@ -2386,6 +2388,8 @@ orchestration:
         issuer: ""
         ## @param orchestration.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`.
         issuerBackendUrl: ""
+        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`.
+        authUrl: ""
         ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.

@@ -507,6 +507,11 @@
                                     "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.",
                                     "default": ""
                                 },
+                                "authUrl": {
+                                    "type": "string",
+                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access.",
+                                    "default": ""
+                                },
                                 "tokenUrl": {
                                     "type": "string",
                                     "description": "defines the token URL, which is used by the services to request JWT tokens.",
@@ -5044,6 +5049,11 @@
                                         "issuerBackendUrl": {
                                             "type": "string",
                                             "description": "can be used to override `global.identity.auth.issuerBackendUrl`.",
+                                            "default": ""
+                                        },
+                                        "authUrl": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.authUrl`.",
                                             "default": ""
                                         },
                                         "tokenUrl": {

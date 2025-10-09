@@ -226,19 +226,6 @@ Keycloak/Entra templates.
 {{- end -}}
 
 {{/*
-[camunda-platform] Keycloak/Entra auth URL which used externally by the user.
-*/}}
-{{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
-  {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
-    {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
-  {{- else if eq (include "camundaPlatform.authIssuerType" .) "MICROSOFT" -}}
-    {{ required "global.identity.auth.authUrl must be set" .Values.global.identity.auth.authUrl }}
-  {{- else -}}
-    {{ fail "Unsupported auth type. Only 'KEYCLOAK' and 'MICROSOFT' are supported." }}
-  {{- end -}}
-{{- end -}}
-
-{{/*
 [camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
 TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
@@ -270,7 +257,18 @@ NOTE: This is for legacy Identity config, all new types will be supported via OI
 {{- end -}}
 
 {{/*
-[camunda-platform] Keycloak auth token URL which used internally for Camunda apps.
+[camunda-platform] Auth URL which used externally by the user.
+*/}}
+{{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
+  {{- if .Values.global.identity.auth.authUrl -}}
+    {{- .Values.global.identity.auth.authUrl -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth token URL which used internally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
   {{- if .Values.global.identity.auth.tokenUrl -}}
@@ -281,7 +279,7 @@ NOTE: This is for legacy Identity config, all new types will be supported via OI
 {{- end -}}
 
 {{/*
-[camunda-platform] Keycloak auth certs URL which used internally for Camunda apps.
+[camunda-platform] Auth certs URL which used internally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
   {{- if .Values.global.identity.auth.jwksUrl -}}
