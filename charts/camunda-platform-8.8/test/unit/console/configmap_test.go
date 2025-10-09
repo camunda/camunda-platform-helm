@@ -50,13 +50,16 @@ func TestConfigMapTemplate(t *testing.T) {
 func (s *configMapTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "Container should set correct identity type",
+			Name: "ContainerShouldSetCorrectIdentityType",
 			Values: map[string]string{
 				"identity.enabled":                      "true",
 				"console.enabled":                       "true",
 				"global.identity.auth.type":             "MICROSOFT",
-				"global.identity.auth.issuer":           "https://example.com",
-				"global.identity.auth.issuerBackendUrl": "https://example.com",
+				"global.identity.auth.issuer":           "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+				"global.identity.auth.issuerBackendUrl": "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+				"global.identity.auth.authUrl":          "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
+				"global.identity.auth.tokenUrl":         "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
+				"global.identity.auth.jwksUrl":          "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.console.oAuth.type": "MICROSOFT",

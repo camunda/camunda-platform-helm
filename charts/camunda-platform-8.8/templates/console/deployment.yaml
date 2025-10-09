@@ -60,7 +60,7 @@ spec:
             - name: KEYCLOAK_INTERNAL_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
             - name: KEYCLOAK_BASE_URL
-              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrlWithFallback" .) "" | quote }}
             - name: KEYCLOAK_REALM
               value: {{ .Values.console.keycloak.realm | quote }}
             {{- end }}

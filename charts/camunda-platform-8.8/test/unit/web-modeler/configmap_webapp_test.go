@@ -226,7 +226,11 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                    "true",
 				"webModeler.restapi.mail.fromAddress":   "example@example.com",
 				"global.identity.auth.type":             "MICROSOFT",
-				"global.identity.auth.issuerBackendUrl": "https://example.com",
+				"global.identity.auth.issuer":           "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+				"global.identity.auth.issuerBackendUrl": "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+				"global.identity.auth.authUrl":          "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
+				"global.identity.auth.tokenUrl":         "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
+				"global.identity.auth.jwksUrl":          "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap

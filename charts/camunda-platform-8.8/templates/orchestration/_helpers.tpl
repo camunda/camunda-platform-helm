@@ -177,20 +177,23 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
-{{/*
-TODO: This is only used for the migration job, it should be removed once the migration job is no longer needed.
-*/}}
-{{- define "orchestration.authIssuerBackendUrl" -}}
-    {{- .Values.orchestration.security.authentication.oidc.issuerBackendUrl | default (
-        include "camundaPlatform.authIssuerBackendUrl" .
+{{- define "orchestration.authIssuerType" -}}
+    {{- .Values.orchestration.security.authentication.oidc.type | default (
+        include "camundaPlatform.authIssuerType" .
     ) -}}
 {{- end -}}
 
-{{- define "orchestration.authIssuerUrlEndpointAuth" -}}
+{{- define "orchestration.authIssuerUrl" -}}
   {{- if .Values.orchestration.security.authentication.oidc.issuer -}}
     {{- .Values.orchestration.security.authentication.oidc.issuer -}}
-  {{- else if .Values.orchestration.security.authentication.oidc.publicIssuerUrl -}}
-    {{- tpl .Values.orchestration.security.authentication.oidc.publicIssuerUrl . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerUrl" . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "orchestration.authIssuerUrlEndpointAuth" -}}
+  {{- if .Values.orchestration.security.authentication.oidc.authUrl -}}
+    {{- .Values.orchestration.security.authentication.oidc.authUrl -}}
   {{- else -}}
     {{- include "camundaPlatform.authIssuerUrlEndpointAuth" . -}}
   {{- end -}}
@@ -208,22 +211,12 @@ TODO: This is only used for the migration job, it should be removed once the mig
     ) -}}
 {{- end -}}
 
-{{- define "orchestration.authIssuerType" -}}
-    {{- .Values.orchestration.security.authentication.oidc.type | default (
-        include "camundaPlatform.authIssuerType" .
-    ) -}}
-{{- end -}}
-
 {{- define "orchestration.authClientId" -}}
     {{- .Values.orchestration.security.authentication.oidc.clientId | default "orchestration" -}}
 {{- end -}}
 
 {{- define "orchestration.authAudience" -}}
     {{- .Values.orchestration.security.authentication.oidc.audience | default "orchestration-api" -}}
-{{- end -}}
-
-{{- define "orchestration.authTokenScope" -}}
-    {{- .Values.orchestration.security.authentication.oidc.tokenScope -}}
 {{- end -}}
 
 {{- define "orchestration.enabledProfiles" -}}

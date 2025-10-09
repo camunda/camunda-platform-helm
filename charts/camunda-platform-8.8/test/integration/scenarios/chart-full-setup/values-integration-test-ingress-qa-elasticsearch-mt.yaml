@@ -322,6 +322,9 @@ identity:
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
 connectors:
+  security:
+    authentication:
+      method: oidc
   image:
     tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:

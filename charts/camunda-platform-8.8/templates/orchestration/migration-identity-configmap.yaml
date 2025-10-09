@@ -18,9 +18,9 @@ data:
           oidc:
             audiences:
               identity: {{ include "identity.authAudience" . | quote }}
-              operate: {{ .Values.orchestration.security.authentication.oidc.audience }}
-              tasklist: {{ .Values.orchestration.security.authentication.oidc.audience }}
-              zeebe: {{ .Values.orchestration.security.authentication.oidc.audience }}
+              operate: {{ include "orchestration.authAudience" . | quote }}
+              tasklist: {{ include "orchestration.authAudience" . | quote }}
+              zeebe: {{ include "orchestration.authAudience" . | quote }}
           {{- end }}
           cluster:
             cluster-name: {{ tpl .Values.global.zeebeClusterName . }}
@@ -40,6 +40,6 @@ data:
             client-id: {{ .Values.orchestration.migration.identity.clientId }}
           {{- end }}
             client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
-            issuer-backend-url: {{ include "orchestration.authIssuerBackendUrl" . | quote }}
+            issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
             issuer-type: {{ include "orchestration.authIssuerType" . }}
 {{- end }}

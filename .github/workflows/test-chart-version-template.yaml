@@ -31,7 +31,7 @@ on:
       exclude:
         description: Exclude
         required: false
-        default: ""
+        default: "no-exclude"
         type: string
       run-all-e2e-tests:
         description: "Run all E2E tests (playwright)"
@@ -74,8 +74,6 @@ jobs:
   parse-platforms:
     name: Parse platforms
     runs-on: ubuntu-latest
-    env:
-      SCENARIOS_LIST: ${{ inputs.scenarios }}
     outputs:
       platforms: ${{ steps.make-json-array.outputs.platforms }}
     steps:
@@ -105,18 +103,18 @@ jobs:
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       caller-git-ref: "${{ github.event.pull_request.head.sha }}"
-      test-case: ${{inputs.case}}
-      scenario: ${{inputs.scenario}}
-      e2e-enabled: ${{ inputs.e2e-enabled }}
-      shortname: ${{inputs.shortname}}
-      auth: ${{inputs.auth}}
-      exclude: ${{inputs.exclude}}
-      platforms: ${{ matrix.platform }}
-      run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
+      test-case: "${{ inputs.case }}"
+      scenario: "${{ inputs.scenario }}"
+      e2e-enabled: "${{ inputs.e2e-enabled }}"
+      shortname: "${{ inputs.shortname }}"
+      auth: "${{ inputs.auth }}"
+      exclude: "${{ inputs.exclude }}"
+      platforms: "${{ matrix.platform }}"
+      run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
       always-delete-namespace: true
       values-digest: "true"
-      camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-      camunda-version-previous: ${{ inputs.camunda-version-previous }}
+      camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
+      camunda-version-previous: "${{ inputs.camunda-version-previous }}"
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;

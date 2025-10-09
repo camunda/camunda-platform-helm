@@ -99,15 +99,25 @@ camunda:
           - {{ . | quote }}
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
-          - {{ .Values.orchestration.security.authentication.oidc.audience | quote }}
+          - {{ include "orchestration.authAudience" . | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
-          - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
+        {{ if (include "orchestration.authIssuerUrl" .) }}
+        issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
+        {{- else }}
         authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
         jwk-set-uri: {{ include "orchestration.authIssuerBackendUrlEndpointCerts" . | quote }}
         token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
+        {{- end }}
         redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
-    {{- end }}
+        {{- if .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
+        prefer-username-claim: {{ .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
+        {{- end }}
+        {{- if .Values.orchestration.security.authentication.oidc.scope }}
+        scope:
+          {{- include "common.tplvalues.render" ( dict "value" .Values.orchestration.security.authentication.oidc.scope "context" $ ) | nindent 10 }}
+        {{- end }}
+      {{- end }}
       method: {{ include "orchestration.authMethod" . | quote }}
       unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
     authorizations:

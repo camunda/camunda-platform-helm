@@ -35,7 +35,7 @@ data:
         {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
         type: {{ include "camundaPlatform.authIssuerType" . | quote }}
         {{- end }}
-        issuer-url: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+        issuer-url: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 
       {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -363,7 +363,7 @@ data:
         {{- end }}
         {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
         baseUrl: {{ include "identity.internalUrl" . | quote }}
-        issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
     logging:

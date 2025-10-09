@@ -507,6 +507,11 @@
                                     "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.",
                                     "default": ""
                                 },
+                                "authUrl": {
+                                    "type": "string",
+                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access.",
+                                    "default": ""
+                                },
                                 "tokenUrl": {
                                     "type": "string",
                                     "description": "defines the token URL, which is used by the services to request JWT tokens.",
@@ -519,7 +524,7 @@
                                 },
                                 "type": {
                                     "type": "string",
-                                    "description": "defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.",
+                                    "description": "defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.",
                                     "default": "KEYCLOAK"
                                 },
                                 "publicIssuerUrl": {
@@ -1130,7 +1135,7 @@
                                 "ROOT": {
                                     "type": "string",
                                     "description": "",
-                                    "default": "DEBUG"
+                                    "default": "INFO"
                                 }
                             }
                         }
@@ -4446,6 +4451,11 @@
                         "authentication": {
                             "type": "object",
                             "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
+                                    "default": ""
+                                },
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
@@ -4453,6 +4463,11 @@
                                             "type": "string",
                                             "description": "defines the client id, which is used by Connectors in authentication flows.",
                                             "default": "connectors"
+                                        },
+                                        "tokenScope": {
+                                            "type": "string",
+                                            "description": "defines the token scope, which is used by Connectors.",
+                                            "default": ""
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
@@ -5026,14 +5041,19 @@
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.type`.",
+                                            "default": ""
+                                        },
                                         "issuer": {
                                             "type": "string",
                                             "description": "can be used to override `global.identity.auth.issuer`.",
                                             "default": ""
                                         },
-                                        "issuerBackendUrl": {
+                                        "authUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.issuerBackendUrl`.",
+                                            "description": "can be used to override `global.identity.auth.authUrl`.",
                                             "default": ""
                                         },
                                         "tokenUrl": {
@@ -5046,35 +5066,36 @@
                                             "description": "can be used to override `global.identity.auth.jwksUrl`.",
                                             "default": ""
                                         },
-                                        "type": {
-                                            "type": "string",
-                                            "description": "can be used to override `global.identity.auth.type`.",
-                                            "default": ""
-                                        },
-                                        "publicIssuerUrl": {
-                                            "type": "string",
-                                            "description": "can be used to override `global.identity.auth.publicIssuerUrl`.",
-                                            "default": ""
-                                        },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "username claim.",
+                                            "description": "can be used to set username claim.",
                                             "default": "preferred_username"
+                                        },
+                                        "preferUsernameClaim": {
+                                            "type": "boolean",
+                                            "description": "can be used to set OIDC prefer-username-claim.",
+                                            "default": false
                                         },
                                         "clientIdClaim": {
                                             "type": "string",
-                                            "description": "client ID claim.",
+                                            "description": "can be used to set client ID claim.",
                                             "default": "client_id"
                                         },
                                         "groupsClaim": {
                                             "type": "string",
-                                            "description": "group claim.",
+                                            "description": "can be used to set group claim.",
                                             "default": "groups"
                                         },
                                         "audience": {
                                             "type": "string",
                                             "description": "defines the audience, which is used by Orchestration Cluster.",
                                             "default": "orchestration-api"
+                                        },
+                                        "scope": {
+                                            "type": "array",
+                                            "description": "defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.",
+                                            "default": [],
+                                            "items": {}
                                         },
                                         "backwardsCompatibleAudiences": {
                                             "type": "array",
@@ -5086,11 +5107,6 @@
                                             "type": "string",
                                             "description": "defines the client id, which is used by Orchestration Cluster in authentication flows.",
                                             "default": "orchestration"
-                                        },
-                                        "tokenScope": {
-                                            "type": "string",
-                                            "description": "defines the token scope, which is used by Orchestration Cluster.",
-                                            "default": ""
                                         },
                                         "redirectUrl": {
                                             "type": "string",

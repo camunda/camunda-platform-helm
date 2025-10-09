@@ -23,9 +23,6 @@ orchestration:
     authentication:
       method: basic
       authenticationRefreshInterval: "PT30S"
-
-orchestration:
-  contextPath: "/orchestration"
   ingress:
     grpc:
       enabled: true
@@ -57,3 +54,6 @@ prometheusServiceMonitor:
 
 connectors:
   contextPath: "/connectors"
+  security:
+    authentication:
+      method: basic
