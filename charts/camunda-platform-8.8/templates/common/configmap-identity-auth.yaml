@@ -8,6 +8,6 @@ metadata:
 data:
   CAMUNDA_IDENTITY_BASEURL: {{ include "camundaPlatform.identityURL" . | quote }}
   CAMUNDA_IDENTITY_TYPE: {{ include "camundaPlatform.authIssuerType" . | quote }}
-  CAMUNDA_IDENTITY_ISSUER: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+  CAMUNDA_IDENTITY_ISSUER: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
   CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
 {{- end }}

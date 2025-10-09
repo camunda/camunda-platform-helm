@@ -200,14 +200,21 @@ Authentication.
 */}}
 
 {{/*
-[camunda-platform] Auth issuer public URL which used externally for Camunda apps.
+[camunda-platform] Auth issuer public URL which used externally for Camunda apps (with a fallback to publicIssuerUrl).
 */}}
-{{- define "camundaPlatform.authIssuerUrl" -}}
+{{- define "camundaPlatform.authIssuerUrlWithFallback" -}}
   {{- if .Values.global.identity.auth.issuer -}}
     {{- .Values.global.identity.auth.issuer -}}
   {{- else -}}
     {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
   {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Auth issuer public URL which used externally for Camunda apps.
+*/}}
+{{- define "camundaPlatform.authIssuerUrl" -}}
+  {{- .Values.global.identity.auth.issuer -}}
 {{- end -}}
 
 {{/*
@@ -248,7 +255,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
   {{- if or .Values.global.identity.auth.authUrl -}}
     {{- .Values.global.identity.auth.authUrl -}}
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
-    {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
+    {{- include "camundaPlatform.authIssuerUrlWithFallback" . -}}/protocol/openid-connect/auth
   {{- end -}}
 {{- end -}}
 

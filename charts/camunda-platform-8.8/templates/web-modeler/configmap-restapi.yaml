@@ -16,7 +16,7 @@ data:
       identity:
         {{- if .Values.identity.enabled }}
         base-url: {{ include "camundaPlatform.identityURL" . | quote }}
-        issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
         {{- end }}
         type: {{ include "camundaPlatform.authIssuerType" . | quote }}
@@ -83,7 +83,7 @@ data:
           resourceserver:
             {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
             jwt:
-              issuer-uri: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+              issuer-uri: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
               jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
             {{- else }}
             jwt: null

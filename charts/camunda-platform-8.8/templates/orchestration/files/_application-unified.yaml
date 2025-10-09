@@ -101,9 +101,13 @@ camunda:
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+        {{ if (include "orchestration.authIssuerUrl" .) }}
+        issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
+        {{- else }}
         authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
         jwk-set-uri: {{ include "orchestration.authIssuerBackendUrlEndpointCerts" . | quote }}
         token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
+        {{- end }}
         redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
         {{- if .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
