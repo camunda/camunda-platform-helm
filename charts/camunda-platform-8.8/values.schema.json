@@ -524,7 +524,7 @@
                                 },
                                 "type": {
                                     "type": "string",
-                                    "description": "defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.",
+                                    "description": "defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.",
                                     "default": "KEYCLOAK"
                                 },
                                 "publicIssuerUrl": {
@@ -5041,6 +5041,11 @@
                                 "oidc": {
                                     "type": "object",
                                     "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "description": "can be used to override `global.identity.auth.type`.",
+                                            "default": ""
+                                        },
                                         "issuer": {
                                             "type": "string",
                                             "description": "can be used to override `global.identity.auth.issuer`.",
@@ -5064,11 +5069,6 @@
                                         "jwksUrl": {
                                             "type": "string",
                                             "description": "can be used to override `global.identity.auth.jwksUrl`.",
-                                            "default": ""
-                                        },
-                                        "type": {
-                                            "type": "string",
-                                            "description": "can be used to override `global.identity.auth.type`.",
                                             "default": ""
                                         },
                                         "publicIssuerUrl": {

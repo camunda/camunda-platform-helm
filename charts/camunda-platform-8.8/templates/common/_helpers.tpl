@@ -193,29 +193,14 @@ Usage: {{ include "camundaPlatform.serviceAccountName" (dict "component" "operat
     {{- end -}}
 {{- end -}}
 
-
-
-
-{{/*
-[camunda-platform] Joins an arbirtary number of subpaths (e.g., contextPath+probePath) for HTTP paths.
-Slashes are trimmed from the beginning and end of each part, and a single slash is inserted between parts, leading slash added at the beginning.
-Usage: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}
-*/}}
-{{- define "camundaPlatform.joinpath" -}}
-  {{- $paths := join "/" . -}}
-  {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
-  {{- printf "/%s" $pathsSanitized -}}
-{{- end -}}
-
-
 {{/*
 ********************************************************************************
-Keycloak/Entra templates.
+Authentication.
 ********************************************************************************
 */}}
 
 {{/*
-[camunda-platform] Keycloak/Entra issuer public URL which used externally for Camunda apps.
+[camunda-platform] Auth issuer public URL which used externally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerUrl" -}}
   {{- if .Values.global.identity.auth.issuer -}}
@@ -226,13 +211,13 @@ Keycloak/Entra templates.
 {{- end -}}
 
 {{/*
-[camunda-platform] Keycloak issuer backend URL which used internally for Camunda apps.
+[camunda-platform] Auth issuer backend URL which used internally for Camunda apps.
 TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it should be in the main chart.
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrl" -}}
   {{- if .Values.global.identity.auth.issuerBackendUrl -}}
     {{- .Values.global.identity.auth.issuerBackendUrl -}}
-  {{- else -}}
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- if .Values.global.identity.keycloak.url -}}
       {{-
         printf "%s://%s:%v%s%s"
@@ -249,8 +234,8 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 {{- end -}}
 
 {{/*
-[camunda-platform] Identity auth type which used internally for Camunda apps.
-NOTE: This is for legacy Identity config, all new types will be supported via OIDC.
+[camunda-platform] Auth type which used internally for Camunda apps.
+NOTE: This is for Management Identity config, all new types will be supported via OIDC.
 */}}
 {{- define "camundaPlatform.authIssuerType" -}}
   {{- upper .Values.global.identity.auth.type -}}
@@ -260,9 +245,9 @@ NOTE: This is for legacy Identity config, all new types will be supported via OI
 [camunda-platform] Auth URL which used externally by the user.
 */}}
 {{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
-  {{- if .Values.global.identity.auth.authUrl -}}
+  {{- if or .Values.global.identity.auth.authUrl -}}
     {{- .Values.global.identity.auth.authUrl -}}
-  {{- else -}}
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerUrl" . -}}/protocol/openid-connect/auth
   {{- end -}}
 {{- end -}}
@@ -273,7 +258,7 @@ NOTE: This is for legacy Identity config, all new types will be supported via OI
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
   {{- if .Values.global.identity.auth.tokenUrl -}}
     {{- .Values.global.identity.auth.tokenUrl -}}
-  {{- else -}}
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
   {{- end -}}
 {{- end -}}
@@ -284,7 +269,7 @@ NOTE: This is for legacy Identity config, all new types will be supported via OI
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
   {{- if .Values.global.identity.auth.jwksUrl -}}
     {{- .Values.global.identity.auth.jwksUrl -}}
-  {{- else -}}
+  {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
   {{- end -}}
 {{- end -}}

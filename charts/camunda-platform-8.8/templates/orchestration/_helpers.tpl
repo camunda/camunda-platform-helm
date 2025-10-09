@@ -177,9 +177,12 @@ Authentication.
     {{- end -}}
 {{- end -}}
 
-{{/*
-TODO: This is only used for the migration job, it should be removed once the migration job is no longer needed.
-*/}}
+{{- define "orchestration.authIssuerType" -}}
+    {{- .Values.orchestration.security.authentication.oidc.type | default (
+        include "camundaPlatform.authIssuerType" .
+    ) -}}
+{{- end -}}
+
 {{- define "orchestration.authIssuerBackendUrl" -}}
     {{- .Values.orchestration.security.authentication.oidc.issuerBackendUrl | default (
         include "camundaPlatform.authIssuerBackendUrl" .
@@ -187,10 +190,8 @@ TODO: This is only used for the migration job, it should be removed once the mig
 {{- end -}}
 
 {{- define "orchestration.authIssuerUrlEndpointAuth" -}}
-  {{- if .Values.orchestration.security.authentication.oidc.issuer -}}
-    {{- .Values.orchestration.security.authentication.oidc.issuer -}}
-  {{- else if .Values.orchestration.security.authentication.oidc.publicIssuerUrl -}}
-    {{- tpl .Values.orchestration.security.authentication.oidc.publicIssuerUrl . -}}
+  {{- if .Values.orchestration.security.authentication.oidc.authUrl -}}
+    {{- .Values.orchestration.security.authentication.oidc.authUrl -}}
   {{- else -}}
     {{- include "camundaPlatform.authIssuerUrlEndpointAuth" . -}}
   {{- end -}}
@@ -205,12 +206,6 @@ TODO: This is only used for the migration job, it should be removed once the mig
 {{- define "orchestration.authIssuerBackendUrlEndpointToken" -}}
     {{- .Values.orchestration.security.authentication.oidc.tokenUrl | default (
         include "camundaPlatform.authIssuerBackendUrlEndpointToken" .
-    ) -}}
-{{- end -}}
-
-{{- define "orchestration.authIssuerType" -}}
-    {{- .Values.orchestration.security.authentication.oidc.type | default (
-        include "camundaPlatform.authIssuerType" .
     ) -}}
 {{- end -}}
 

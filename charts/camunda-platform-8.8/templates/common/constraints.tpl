@@ -49,16 +49,60 @@ Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSe
 {{- end }}
 
 {{/*
-Fail with a message if the auth type is set to non-Keycloak and its requirements are not met which are:
-- Global Identity issuerBackendUrl.
+Fail with a message if the auth type is not in the enums (KEYCLOAK, MICROSOFT, or GENERIC).
 */}}
-{{- if not (eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK") }}
-  {{- if not .Values.global.identity.auth.issuerBackendUrl }}
-    {{- $errorMessage := printf "[camunda][error] %s %s"
-        "The Identity auth type is set to non-Keycloak but the issuerBackendUrl is not configured."
-        "Ensure that \"global.identity.auth.issuerBackendUrl\" is set."
-    -}}
-    {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- if not (has (include "camundaPlatform.authIssuerType" .) (list "KEYCLOAK" "MICROSOFT" "GENERIC")) }}
+  {{- $errorMessage := printf "[camunda][error] %s"
+      "The Identity auth type should be one of the following values: KEYCLOAK, MICROSOFT, or GENERIC."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if the auth type is set to non-Keycloak and its requirements are not met.
+*/}}
+{{- if has (include "camundaPlatform.authIssuerType" .) (list "MICROSOFT" "GENERIC") }}
+  {{/*
+  TODO: Add the other Camunda components when we implement the new auth style for them.
+        The new style allows to override the global identity auth settings per component under "*.security.authentication.oidc".
+  */}}
+  {{- if .Values.orchestration.enabled -}}
+    {{/* orchestration.authIssuerBackendUrl */}}
+    {{ include "camundaPlatform.failWithMessageOnCondition" (dict
+      "condition" (empty (include "orchestration.authIssuerBackendUrl" .))
+      "errorType" "[camunda][error]"
+      "errorMessage" (printf "%s %s"
+        "When the authentication type is MICROSOFT or GENERIC, then one of the following values must be set:"
+        "global.identity.auth.issuerBackendUrl, orchestration.security.authentication.oidc.issuerBackendUrl"
+      )
+    ) }}
+    {{/* orchestration.authIssuerUrlEndpointAuth */}}
+    {{ include "camundaPlatform.failWithMessageOnCondition" (dict
+      "condition" (empty (include "orchestration.authIssuerUrlEndpointAuth" .))
+      "errorType" "[camunda][error]"
+      "errorMessage" (printf "%s %s"
+        "When the authentication type is MICROSOFT or GENERIC, then one of the following values must be set:"
+        "global.identity.auth.authUrl, orchestration.security.authentication.oidc.authUrl"
+      )
+    ) }}
+    {{/* orchestration.authIssuerBackendUrlEndpointCerts */}}
+    {{ include "camundaPlatform.failWithMessageOnCondition" (dict
+      "condition" (empty (include "orchestration.authIssuerBackendUrlEndpointCerts" .))
+      "errorType" "[camunda][error]"
+      "errorMessage" (printf "%s %s"
+        "When the authentication type is MICROSOFT or GENERIC, then one of the following values must be set:"
+        "global.identity.auth.jwksUrl, orchestration.security.authentication.oidc.jwksUrl"
+      )
+    ) }}
+    {{/* orchestration.authIssuerBackendUrlEndpointToken */}}
+    {{ include "camundaPlatform.failWithMessageOnCondition" (dict
+      "condition" (empty (include "orchestration.authIssuerBackendUrlEndpointToken" .))
+      "errorType" "[camunda][error]"
+      "errorMessage" (printf "%s %s"
+        "When the authentication type is MICROSOFT or GENERIC, then one of the following values must be set:"
+        "global.identity.auth.tokenUrl, orchestration.security.authentication.oidc.tokenUrl"
+      )
+    ) }}
   {{- end }}
 {{- end }}
 

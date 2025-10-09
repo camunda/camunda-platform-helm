@@ -309,7 +309,7 @@ global:
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
       jwksUrl: ""
-      ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK` or `MICROSOFT`.
+      ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
@@ -2384,6 +2384,8 @@ orchestration:
 
       # @extra orchestration.security.authentication.oidc
       oidc:
+        ## @param orchestration.security.authentication.oidc.type can be used to override `global.identity.auth.type`.
+        type: ""
         ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
         issuer: ""
         ## @param orchestration.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`.
@@ -2394,8 +2396,6 @@ orchestration:
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
         jwksUrl: ""
-        ## @param orchestration.security.authentication.oidc.type can be used to override `global.identity.auth.type`.
-        type: ""
         ## @param orchestration.security.authentication.oidc.publicIssuerUrl can be used to override `global.identity.auth.publicIssuerUrl`.
         publicIssuerUrl: ""
       
