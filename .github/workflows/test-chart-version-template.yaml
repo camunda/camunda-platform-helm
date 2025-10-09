@@ -76,7 +76,7 @@ permissions:
 
 jobs:
   parse-platforms:
-    name: Parse platforms - ${{ intputs.flows }}
+    name: Parse platforms - ${{ inputs.flows }}
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.make-json-array.outputs.platforms }}
