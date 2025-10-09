@@ -5051,11 +5051,6 @@
                                             "description": "can be used to override `global.identity.auth.issuer`.",
                                             "default": ""
                                         },
-                                        "issuerBackendUrl": {
-                                            "type": "string",
-                                            "description": "can be used to override `global.identity.auth.issuerBackendUrl`.",
-                                            "default": ""
-                                        },
                                         "authUrl": {
                                             "type": "string",
                                             "description": "can be used to override `global.identity.auth.authUrl`.",

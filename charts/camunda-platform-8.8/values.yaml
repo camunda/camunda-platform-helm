@@ -2388,8 +2388,6 @@ orchestration:
         type: ""
         ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
         issuer: ""
-        ## @param orchestration.security.authentication.oidc.issuerBackendUrl can be used to override `global.identity.auth.issuerBackendUrl`.
-        issuerBackendUrl: ""
         ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`.
         authUrl: ""
         ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.

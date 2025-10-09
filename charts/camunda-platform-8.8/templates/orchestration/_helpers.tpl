@@ -191,12 +191,6 @@ Authentication.
   {{- end -}}
 {{- end -}}
 
-{{- define "orchestration.authIssuerBackendUrl" -}}
-    {{- .Values.orchestration.security.authentication.oidc.issuerBackendUrl | default (
-        include "camundaPlatform.authIssuerBackendUrl" .
-    ) -}}
-{{- end -}}
-
 {{- define "orchestration.authIssuerUrlEndpointAuth" -}}
   {{- if .Values.orchestration.security.authentication.oidc.authUrl -}}
     {{- .Values.orchestration.security.authentication.oidc.authUrl -}}
