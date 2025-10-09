@@ -2396,8 +2396,6 @@ orchestration:
         tokenUrl: ""
         ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
         jwksUrl: ""
-        ## @param orchestration.security.authentication.oidc.publicIssuerUrl can be used to override `global.identity.auth.publicIssuerUrl`.
-        publicIssuerUrl: ""
         ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
         usernameClaim: preferred_username
         ## @param orchestration.security.authentication.oidc.preferUsernameClaim can be used to set OIDC prefer-username-claim.

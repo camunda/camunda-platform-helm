@@ -5071,11 +5071,6 @@
                                             "description": "can be used to override `global.identity.auth.jwksUrl`.",
                                             "default": ""
                                         },
-                                        "publicIssuerUrl": {
-                                            "type": "string",
-                                            "description": "can be used to override `global.identity.auth.publicIssuerUrl`.",
-                                            "default": ""
-                                        },
                                         "usernameClaim": {
                                             "type": "string",
                                             "description": "can be used to set username claim.",
