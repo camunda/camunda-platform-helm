@@ -65,6 +65,7 @@ Fail with a message if the auth type is set to non-Keycloak and its requirements
   {{/*
   TODO: Add the other Camunda components when we implement the new auth style for them.
         The new style allows to override the global identity auth settings per component under "*.security.authentication.oidc".
+  TODO: Convert the items below to a list so it fails at the end with all missing items instead of one by one.
   */}}
   {{- if .Values.orchestration.enabled -}}
     {{/* orchestration.authIssuerBackendUrl */}}

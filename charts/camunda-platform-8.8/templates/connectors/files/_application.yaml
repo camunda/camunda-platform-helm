@@ -46,7 +46,9 @@ camunda:
       client-id: {{ include "connectors.authClientId" . | quote }}
       client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
       audience: {{ include "connectors.authAudience" . | quote }}
+      {{- if (include "connectors.authTokenScope" .) }}
       scope: {{ include "connectors.authTokenScope" . | quote }}
+      {{- end }}
     {{- end }}
   connector:
     headless:

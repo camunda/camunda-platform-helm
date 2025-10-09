@@ -70,6 +70,7 @@ connectors:
   contextPath: "/connectors"
   security:
     authentication:
+      method: oidc
       oidc:
         existingSecret:
           name: "integration-test-credentials"
@@ -77,6 +78,9 @@ connectors:
 webModeler:
   enabled: true
   contextPath: "/modeler"
+  security:
+    authentication:
+      method: oidc
   image:
     pullSecrets:
       - name: index-docker-io
