@@ -1,5 +1,6 @@
 # Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md
 name: "Test - Integration - Runner"
+
 on:
   workflow_call:
     inputs:
