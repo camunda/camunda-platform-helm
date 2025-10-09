@@ -32,6 +32,15 @@
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
   {{- end }}
+- Optimize:
+  - Enabled: {{ .Values.optimize.enabled }}
+  {{- if .Values.optimize.enabled }}
+    {{- if .Values.optimize.image.tag }}
+  - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.optimize.image.tag }}
+    {{- else }}
+  - Docker Image used for Optimize: {{ .Values.optimize.image.repository }}:{{ .Values.global.image.tag }}
+    {{- end }}
+  {{- end }}
 - Connectors:
   - Enabled: {{ .Values.connectors.enabled }}
   {{- if .Values.connectors.enabled }}
