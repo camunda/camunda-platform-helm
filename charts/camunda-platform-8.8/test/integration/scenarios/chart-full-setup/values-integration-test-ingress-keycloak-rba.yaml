@@ -19,6 +19,10 @@ orchestration:
       method: oidc
       authenticationRefreshInterval: "PT30S"
       oidc:
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
         existingSecret:
           name: "integration-test-credentials"
