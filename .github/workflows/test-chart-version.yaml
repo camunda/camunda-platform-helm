@@ -179,4 +179,4 @@ jobs:
       flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
       deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
-      test-enabled: ${{ inputs.test-enabled }}
+      test-enabled: ${{ inputs.test-enabled || true }}
