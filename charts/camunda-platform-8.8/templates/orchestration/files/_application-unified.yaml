@@ -99,7 +99,7 @@ camunda:
           - {{ . | quote }}
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
-          - {{ .Values.orchestration.security.authentication.oidc.audience | quote }}
+          - {{ include "orchestration.authAudience" . | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
           - {{ .Values.global.identity.auth.webModeler.publicApiAudience | quote }}
         authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
