@@ -70,7 +70,6 @@ connectors:
   contextPath: "/connectors"
   security:
     authentication:
-      method: oidc
       oidc:
         existingSecret:
           name: "integration-test-credentials"
@@ -78,9 +77,6 @@ connectors:
 webModeler:
   enabled: true
   contextPath: "/modeler"
-  security:
-    authentication:
-      method: oidc
   image:
     pullSecrets:
       - name: index-docker-io
@@ -115,6 +111,15 @@ orchestration:
         external-dns.alpha.kubernetes.io/ttl: "60"
   importer:
     enabled: true
+  migration:
+    identity:
+      enabled: true
+      backoffLimit: 12
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-migration-client-secret
+    data:
+      enabled: true
   security:
     initialization:
       defaultRoles:

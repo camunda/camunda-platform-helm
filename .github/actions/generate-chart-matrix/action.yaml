@@ -85,6 +85,7 @@ runs:
           if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
             camunda_version_previous="$(echo "$camunda_version" | awk -F. '{printf "%d.%d", $1, $2-1}')"
             chart_version_previous="$(yq '.version' charts/camunda-platform-${camunda_version_previous}/Chart.yaml)"
+            declare -A used_shortnames=()
 
             readarray prScenarios < <(yq e -o=j -I=0 '.integration.case.pr.scenario.[]' $chart_dir/test/ci-test-config.yaml)
             for prScenario in "${prScenarios[@]}"; do
@@ -98,14 +99,44 @@ runs:
                   continue
                 fi
               fi
-              echo "  - version: ${camunda_version}" >> matrix_versions.txt
-              echo "    camundaVersionPrevious: $(echo "$camunda_version_previous")" >> matrix_versions.txt
-              echo "    case: pr" >> matrix_versions.txt
-              echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
-              echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
-              echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
-              echo "    flow: $(echo "$prScenario" | yq e '.flow' -)" >> matrix_versions.txt
-              echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+              flows_raw=$(echo "$prScenario" | yq e -r '.flow' -)
+              if [ -z "$flows_raw" ] || [ "$flows_raw" = "null" ]; then
+                flows_raw="install"
+              fi
+              IFS=',' read -r -a flow_items <<< "$flows_raw"
+              for flow_item in "${flow_items[@]}"; do
+                flow_trimmed=$(echo "$flow_item" | sed 's/^ *//;s/ *$//')
+                if [ -z "$flow_trimmed" ] || [ "$flow_trimmed" = "null" ]; then
+                  flow_trimmed="install"
+                fi
+                case "$flow_trimmed" in
+                  install|upgrade-patch|upgrade-minor)
+                    ;;
+                  *)
+                    echo "❌ Invalid flow '$flow_trimmed'. Valid flows: install, upgrade-patch, upgrade-minor" >&2
+                    exit 1
+                    ;;
+                esac
+                base_shortname=$(echo "$prScenario" | yq e -r '.shortname' -)
+                flow_slug=$(echo "$flow_trimmed" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-\+//;s/-\+$//')
+                shortname="${base_shortname}-${flow_slug}"
+                if [[ -v used_shortnames[$shortname] ]]; then
+                  count=${used_shortnames[$shortname]}
+                  count=$((count+1))
+                  used_shortnames[$shortname]=$count
+                  shortname="${shortname}-${count}"
+                else
+                  used_shortnames[$shortname]=1
+                fi
+                echo "  - version: ${camunda_version}" >> matrix_versions.txt  
+                echo "    camundaVersionPrevious: $(echo "$camunda_version_previous")" >> matrix_versions.txt
+                echo "    case: pr" >> matrix_versions.txt
+                echo "    scenario: $(echo "$prScenario" | yq e '.name' -)" >> matrix_versions.txt
+                echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
+                echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
+                echo "    flow: ${flow_trimmed}" >> matrix_versions.txt
+                echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+              done
             done
             sed -i -e '$s/,$/]\n/' matrix_versions.txt
           fi

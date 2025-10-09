@@ -158,7 +158,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration-tests:
-    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
+    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.flow }} - ${{ matrix.shortname }}
     needs: [init]
     strategy:
       fail-fast: false
@@ -177,6 +177,6 @@ jobs:
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
       flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
-      deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
+      deployment-ttl: ${{ inputs.deployment-ttl }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}

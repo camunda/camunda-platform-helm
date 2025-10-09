@@ -55,7 +55,7 @@ integration:
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
-        - name: keycloak
+        - name: keycloak-original
           enabled: true
           exclude: []
           shortname: keyc
