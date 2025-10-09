@@ -2400,11 +2400,7 @@ orchestration:
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
         audience: orchestration-api
         ## @param orchestration.security.authentication.oidc.backwardsCompatibleAudiences defines audiences, which need to be set for backwards compatibility to allow the access the Orchestration Cluster. This is only important and set if you're coming from an earlier version
-        backwardsCompatibleAudiences:
-          - operate-api
-          - tasklist-api
-          - zeebe-api
-
+        backwardsCompatibleAudiences: []
         ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
         clientId: orchestration
         ## @param orchestration.security.authentication.oidc.tokenScope defines the token scope, which is used by Orchestration Cluster.
