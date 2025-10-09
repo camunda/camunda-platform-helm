@@ -5078,17 +5078,22 @@
                                         },
                                         "usernameClaim": {
                                             "type": "string",
-                                            "description": "username claim.",
+                                            "description": "can be used to set username claim.",
                                             "default": "preferred_username"
+                                        },
+                                        "preferUsernameClaim": {
+                                            "type": "boolean",
+                                            "description": "can be used to set OIDC prefer-username-claim.",
+                                            "default": false
                                         },
                                         "clientIdClaim": {
                                             "type": "string",
-                                            "description": "client ID claim.",
+                                            "description": "can be used to set client ID claim.",
                                             "default": "client_id"
                                         },
                                         "groupsClaim": {
                                             "type": "string",
-                                            "description": "group claim.",
+                                            "description": "can be used to set group claim.",
                                             "default": "groups"
                                         },
                                         "audience": {

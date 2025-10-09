@@ -2398,12 +2398,13 @@ orchestration:
         jwksUrl: ""
         ## @param orchestration.security.authentication.oidc.publicIssuerUrl can be used to override `global.identity.auth.publicIssuerUrl`.
         publicIssuerUrl: ""
-      
-        ## @param orchestration.security.authentication.oidc.usernameClaim username claim.
+        ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
         usernameClaim: preferred_username
-        ## @param orchestration.security.authentication.oidc.clientIdClaim client ID claim.
+        ## @param orchestration.security.authentication.oidc.preferUsernameClaim can be used to set OIDC prefer-username-claim.
+        preferUsernameClaim: false
+        ## @param orchestration.security.authentication.oidc.clientIdClaim can be used to set client ID claim.
         clientIdClaim: client_id
-        ## @param orchestration.security.authentication.oidc.groupsClaim group claim.
+        ## @param orchestration.security.authentication.oidc.groupsClaim can be used to set group claim.
         groupsClaim: "groups"
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
         audience: orchestration-api
@@ -2414,7 +2415,6 @@ orchestration:
           - operate-api
           - tasklist-api
           - zeebe-api
-
         ## @param orchestration.security.authentication.oidc.clientId defines the client id, which is used by Orchestration Cluster in authentication flows.
         clientId: orchestration
         ## @param orchestration.security.authentication.oidc.redirectUrl defines the root (or redirect) URL, which is used by Keycloak to access Tasklist.
@@ -2433,11 +2433,13 @@ orchestration:
           existingSecret: ""
           ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
+
     ## Authorizations configuration.
     ## @extra orchestration.security.authorizations
     authorizations:
       ## @param orchestration.security.authorizations.enabled if true, then enable authorizations checks in all applicable components.
       enabled: true
+
     ## Initialization configuration
     ## @extra orchestration.security.initialization
     initialization:

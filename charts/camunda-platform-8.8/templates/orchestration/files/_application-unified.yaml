@@ -106,6 +106,7 @@ camunda:
         token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
         redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
         authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
+        prefer-username-claim: {{ .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
         {{- if .Values.orchestration.security.authentication.oidc.scope }}
         scope: {{ .Values.orchestration.security.authentication.oidc.scope | quote }}
         {{- end }}
