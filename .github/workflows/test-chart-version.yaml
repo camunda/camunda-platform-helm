@@ -83,6 +83,7 @@ on:
           - keycloak-mt
           - keycloak-rba
           - oidc
+          - oidc-multi
       test-enabled:
         description: Whether to run the IT tests
         required: false
