@@ -165,7 +165,7 @@ orchestration:
   migration:
     identity:
       claimName: "oid"
-      claimValue: "65aa0601-56a2-4915-a64c-9de360424df5"
+      claimValue: "0d9af2dd-f3ac-4657-b96a-8f556bb55c50"
       clientId: $ENTRA_ORCHESTRATION_CLIENT_ID
       secret:
         inlineSecret: $ENTRA_ORCHESTRATION_CLIENT_SECRET
