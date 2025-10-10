@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "orchestration.fullname" . }}-importer-env-vars
   labels:
-    {{- include "orchestration.labels" . | nindent 4 }}
+    {{- include "orchestration.labelsImporter" . | nindent 4 }}
   annotations:
     {{- toYaml  .Values.global.annotations | nindent 4 }}
 data:

@@ -17,15 +17,35 @@
 */}}
 
 {{ define "orchestration.componentName" -}}
+orchestration
+{{- end }}
+
+{{ define "orchestration.brokerName" -}}
 {{- /*
     NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8,
-          later, it should be changed to "orchestration".
 */ -}}
 zeebe-broker
 {{- end }}
 
-{{ define "orchestration.extraLabels" -}}
-app.kubernetes.io/component: {{ include "orchestration.componentName" . }}
+{{ define "orchestration.gatewayName" -}}
+{{- /*
+    NOTE: The value is set to "zeebe-gateway" for backward compatibility between 8.7 and 8.8
+*/ -}}
+zeebe-gateway
+{{- end }}
+
+{{- /*
+    NOTE: The gateway and broker labels are for backward compatibility between 8.7 and 8.8.
+*/ -}}
+{{ define "orchestration.gatewayLabel" -}}
+app.kubernetes.io/component: {{ include "orchestration.gatewayName" . }}
+{{- end }}
+
+{{ define "orchestration.brokerLabel" -}}
+app.kubernetes.io/component: {{ include "orchestration.brokerName" . }}
+{{- end }}
+
+{{ define "orchestration.versionLabel" -}}
 app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
     "base" .Values.global
     "overlay" .Values.orchestration
@@ -33,13 +53,16 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 ) | quote }}
 {{- end }}
 
-{{ define "orchestration.extraLabelsHeadless" -}}
-app.kubernetes.io/component: {{ printf "%s-headless" (include "orchestration.componentName" .) }}
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
-    "base" .Values.global
-    "overlay" .Values.orchestration
-    "chart" .Chart
-) | quote }}
+{{ define "orchestration.extraLabelsGatewayService" -}}
+    {{- include "orchestration.gatewayLabel" . }}
+    {{- "\n" }}
+    {{- include "orchestration.versionLabel" . }}
+{{- end }}
+
+{{ define "orchestration.extraLabelsBrokerServiceHeadless" -}}
+    {{- include "orchestration.brokerLabel" . }}
+    {{- "\n" }}
+    {{- include "orchestration.versionLabel" . }}
 {{- end }}
 
 {{/*
@@ -73,7 +96,9 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 {{- define "orchestration.labels" -}}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
-    {{- include "orchestration.extraLabels" . }}
+    {{- include "orchestration.brokerLabel" . }}
+    {{- "\n" }}
+    {{- include "orchestration.versionLabel" . }}
 {{- end -}}
 
 {{/*
@@ -102,9 +127,9 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 {{- define "orchestration.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
     {{- "\n" -}}
-    app.kubernetes.io/component: {{ include "orchestration.componentName" . }}
+    {{/*    For backward compatibility, the component label is set to "zeebe-broker".*/}}
+    {{- include "orchestration.brokerLabel" . }}
 {{- end -}}
-
 
 {{/*
 [orchestration] Defines match labels for orchestration importer, which are extended by sub-charts and should be used in matchLabels selectors.
@@ -310,7 +335,7 @@ Service labels.
 {{- define "orchestration.serviceLabels" }}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
-    {{- include "orchestration.extraLabels" . }}
+    {{- include "orchestration.extraLabelsGatewayService" . }}
 {{- end -}}
 
 {{/*
@@ -319,7 +344,7 @@ Service labels.
 {{- define "orchestration.serviceLabelsHeadless" }}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
-    {{- include "orchestration.extraLabelsHeadless" . }}
+    {{- include "orchestration.extraLabelsBrokerServiceHeadless" . }}
 {{- end -}}
 
 {{/*

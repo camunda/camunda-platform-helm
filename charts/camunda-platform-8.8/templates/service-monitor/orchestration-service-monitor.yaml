@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       {{- toYaml .Values.global.labels | nindent 6 }}
-      app.kubernetes.io/component: {{ include "orchestration.componentName" . }}
+      {{- include "orchestration.gatewayLabel" . | nindent 6 }}
   endpoints:
     - honorLabels: true
       path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus) }}
