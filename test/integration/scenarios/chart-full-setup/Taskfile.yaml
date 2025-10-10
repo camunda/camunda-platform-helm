@@ -295,6 +295,7 @@ tasks:
         APP_NAMES=(
           "APP"
           "CONSOLE"
+          "CONNECTORS"
           "IDENTITY"
           "OPTIMIZE"
           "OPERATE"
@@ -356,20 +357,30 @@ tasks:
 
           echo "Updating redirect URIs for ${NAME} (${OBJ_ID})"
 
-          # Obtain token for this specific application/tenant
+          # Obtain token, prefer admin creds if provided for this directory
+          if [ -n "${ENTRA_APP_DIRECTORY_ID:-}" ] && [ -n "${ENTRA_APP_CLIENT_ID:-}" ] && [ -n "${ENTRA_APP_CLIENT_SECRET:-}" ] && [ "${ENTRA_APP_DIRECTORY_ID}" = "${DIR_ID}" ]; then
+            TOKEN_DIR_ID="${ENTRA_APP_DIRECTORY_ID}"
+            TOKEN_CLIENT_ID="${ENTRA_APP_CLIENT_ID}"
+            TOKEN_CLIENT_SECRET="${ENTRA_APP_CLIENT_SECRET}"
+          else
+            TOKEN_DIR_ID="${DIR_ID}"
+            TOKEN_CLIENT_ID="${CID}"
+            TOKEN_CLIENT_SECRET="${CSECRET}"
+          fi
+
           RESPONSE=$(curl -s -X POST \
-            https://login.microsoftonline.com/${DIR_ID}/oauth2/v2.0/token \
+            https://login.microsoftonline.com/${TOKEN_DIR_ID}/oauth2/v2.0/token \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "client_id=${CID}" \
+            -d "client_id=${TOKEN_CLIENT_ID}" \
             -d "scope=https://graph.microsoft.com/.default" \
-            -d "client_secret=${CSECRET}" \
+            -d "client_secret=${TOKEN_CLIENT_SECRET}" \
             -d "grant_type=client_credentials")
 
           BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
           if [ -z "$BEARER_TOKEN" ] || [ "$BEARER_TOKEN" = "null" ]; then
             echo "Failed to obtain Entra bearer token for ${NAME}" >&2
             echo "$RESPONSE" >&2
-            exit 1
+            continue
           fi
 
           APP_JSON=$(curl -s -X GET \
