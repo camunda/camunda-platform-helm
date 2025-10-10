@@ -43,6 +43,12 @@ integration:
           shortname: esoi
           auth: oidc
           flow: upgrade-minor
+        - name: oidc-multi
+          enabled: true
+          exclude: [identity,console,orchestration-grpc]
+          shortname: esoim
+          auth: oidc-multi
+          flow: install
         - name: keycloak-mt
           enabled: true
           exclude: []
