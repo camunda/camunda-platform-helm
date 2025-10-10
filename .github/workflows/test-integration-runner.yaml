@@ -232,7 +232,7 @@ env:
 jobs:
   ci-setup:
     if: github.event.action != 'closed' && inputs.flow != 'modular-upgrade-minor'
-    name: ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
+    name: install for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
@@ -547,7 +547,7 @@ jobs:
 
   upgrade:
     if: always() && github.event.action != 'closed' && (needs.ci-setup.result == 'success' || needs.ci-setup.result == 'skipped') && inputs.flow != 'install'
-    name: ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
+    name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
     needs: [ci-setup]
     outputs:
