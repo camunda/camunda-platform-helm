@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "identity.fullname" . }}-migration-configuration
+  labels: {{- include "orchestration.labelsMigration" . | nindent 4 }}
 data:
   application.yaml: |
     camunda:
