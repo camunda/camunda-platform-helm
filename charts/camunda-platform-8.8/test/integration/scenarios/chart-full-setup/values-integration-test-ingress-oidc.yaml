@@ -156,6 +156,10 @@ orchestration:
       method: oidc
       unprotectedApi: false
       oidc:
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
         usernameClaim: oid
         groupsClaim: ""
     authorizations:
