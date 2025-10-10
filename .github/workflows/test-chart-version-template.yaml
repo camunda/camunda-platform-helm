@@ -121,7 +121,6 @@ jobs:
       exclude: "${{ inputs.exclude }}"
       platforms: "${{ matrix.platform }}"
       run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
-      always-delete-namespace: ${{ inputs.always-delete-namespace }}
       values-digest: "true"
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
