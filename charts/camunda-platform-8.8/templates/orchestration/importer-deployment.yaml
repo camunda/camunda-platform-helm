@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "orchestration.fullname" . }}-importer
   labels:
-    {{- include "orchestration.labelsMigration" . | nindent 4 }}
+    {{- include "orchestration.labelsImporter" . | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.global.annotations }}
     {{ $key }}: {{ $value | quote }}
