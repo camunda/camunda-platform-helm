@@ -30,7 +30,7 @@ tasks:
   exec:
     cmds:
     - |
-      {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
+      {{ if eq .TEST_VALUES_SCENARIO "oidc" || eq .TEST_VALUES_SCENARIO "oidc-multi" }}
       export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
       export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
       export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
