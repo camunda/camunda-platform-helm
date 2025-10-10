@@ -58,28 +58,16 @@ spec:
                 local ver1="$1"
                 local ver2="$2"
                 
-                IFS='.' read -ra v1_parts <<< "$ver1"
-                IFS='.' read -ra v2_parts <<< "$ver2"
+                # Convert versions to comparable format by removing all dots
+                local v1_num=$(echo "$ver1" | sed 's/\.//g')
+                local v2_num=$(echo "$ver2" | sed 's/\.//g')
                 
-                # Ensure both arrays have the same length by padding with zeros
-                local max_parts=3
-                while [ ${#v1_parts[@]} -lt $max_parts ]; do v1_parts+=("0"); done
-                while [ ${#v2_parts[@]} -lt $max_parts ]; do v2_parts+=("0"); done
+                # Pad shorter version with zeros to make them same length
+                while [ ${#v1_num} -lt ${#v2_num} ]; do v1_num="${v1_num}0"; done
+                while [ ${#v2_num} -lt ${#v1_num} ]; do v2_num="${v2_num}0"; done
                 
-                # Compare each part
-                for i in $(seq 0 $((max_parts-1))); do
-                    local part1=${v1_parts[$i]:-0}
-                    local part2=${v2_parts[$i]:-0}
-                    
-                    if [ "$part1" -gt "$part2" ]; then
-                        return 0  # ver1 > ver2
-                    elif [ "$part1" -lt "$part2" ]; then
-                        return 1  # ver1 < ver2
-                    fi
-                    # If equal, continue to next part
-                done
-                
-                return 0  # versions are equal, so ver1 >= ver2
+                # Compare as integers
+                [ "$v1_num" -ge "$v2_num" ]
               }
               
               # Wait for Elasticsearch and verify version
@@ -91,7 +79,7 @@ spec:
               done
               
               # Extract version from Elasticsearch response
-              ES_VERSION=$(echo "$ES_RESPONSE" | grep -o '"number" *: *"[^"]*"' | cut -d'"' -f4)
+              ES_VERSION=$(echo "$ES_RESPONSE" | sed -n 's/.*"number" *: *"\([^"]*\)".*/\1/p')
               
               if [ -z "$ES_VERSION" ]; then
                 echo "Error: Could not determine Elasticsearch version"
