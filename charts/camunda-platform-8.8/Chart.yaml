@@ -123,6 +123,8 @@ annotations:
     - kind: fixed
       description: "Correct 13.0.0 version number"
     - kind: fixed
+      description: "Undo part of the release notes thats wrong version"
+    - kind: fixed
       description: "NoSecondaryStorage constraint no longer breaks unit tests"
     - kind: fixed
       description: "Wrong openshift compatibilty helper elasticsearch commonLabels usage"
