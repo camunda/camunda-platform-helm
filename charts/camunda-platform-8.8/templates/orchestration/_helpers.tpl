@@ -94,6 +94,8 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 {{- define "orchestration.labels" -}}
     {{- include "camundaPlatform.labels" . }}
     {{- "\n" }}
+    {{- include "orchestration.brokerLabel" . }}
+    {{- "\n" }}
     {{- include "orchestration.versionLabel" . }}
 {{- end -}}
 
