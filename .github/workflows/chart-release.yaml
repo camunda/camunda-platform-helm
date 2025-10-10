@@ -23,90 +23,22 @@ permissions:
   packages: write
 
 jobs:
-  init:
-    name: Generate release matrix
-    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.release.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - name: Generate chart versions
-        id: generate-chart-versions
-        uses: ./.github/actions/generate-chart-matrix
-      - name: Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            yq
-      - name: ⭐ Create release matrix
-        id: release
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        run: |
-          echo "Generating release matrix ..."
-          matrix_file="matrix_versions.txt"
-
-          # Create a tmp file and ensure it's empty.
-          echo "" > "${matrix_file}"
-
-          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.include.[0].version' | while read -r dir_id; do
-            chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
-
-            # Extract version info.
-            chart_version="$(yq '.version' "${chart_file}")"
-            camunda_version="$(yq '.appVersion' "${chart_file}" | sed 's/.x//')"
-            chart_prerelease="$(yq '.annotations."artifacthub.io/prerelease" // "false"' "${chart_file}")"
-
-            # Check if the release already exists.
-            if gh release view "camunda-platform-${chart_version}" > /dev/null 2>&1; then
-              echo "⚠️ Release Skipped ⚠️" >> "${GITHUB_STEP_SUMMARY}"
-              cat << EOF >> "${GITHUB_STEP_SUMMARY}"
-                - The release for chart dir \`camunda-platform-${dir_id}\` with version \`${chart_version}\` already exists.
-                - To rerelease, delete the GH release first.
-                - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
-              ---
-          EOF
-            else
-              echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
-              cat << EOF >> "${matrix_file}"
-                {
-                  "dirID": "${dir_id}",
-                  "version": "${chart_version}",
-                  "appVersion": "${camunda_version}",
-                  "prerelease": ${chart_prerelease}
-                }
-          EOF
-            fi
-          done
-
-          # Generate JSON matrix and set it as a GH output.
-          matrix_versions="$(jq --slurp --compact-output '.' ${matrix_file})"
-          echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
-
   release:
-    name: Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
+    name: Release - 8.7 (camunda-platform-8.7)
     if: ${{ needs.init.outputs.matrix != '[]' }}
     needs: init
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      # It's not expected to run more than one release in the same PR,
-      # but just for safety to avoid race condition of updating the Helm repo index.yaml file.
-      max-parallel: 1
-      matrix:
-        chart: ${{ fromJson(needs.init.outputs.matrix) }}
     permissions:
       contents: write
       id-token: write
     env:
       CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
-      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
-      CHART_RELEASE_VERSION: "${{ matrix.chart.version }}"
-      CHART_RELEASE_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
-      CHART_RELEASE_PACKAGE_FILE: "camunda-platform-${{ matrix.chart.version }}.tgz"
-      CHART_RELEASE_COSIGN_BUNDLE_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-bundle.json"
-      CHART_RELEASE_COSIGN_VERIFY_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-verify.sh"
+      CHART_DIR: "charts/camunda-platform-8.7"
+      CHART_RELEASE_VERSION: "12.6.2"
+      CHART_RELEASE_TAG_NAME: "camunda-platform-8.7-12.6.2"
+      CHART_RELEASE_PACKAGE_FILE: "camunda-platform-12.6.2.tgz"
+      CHART_RELEASE_COSIGN_BUNDLE_FILE: "camunda-platform-12.6.2-cosign-bundle.json"
+      CHART_RELEASE_COSIGN_VERIFY_FILE: "camunda-platform-12.6.2-cosign-verify.sh"
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
@@ -195,14 +127,6 @@ jobs:
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
             --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
-      - name: Set GitHub release type
-        if: ${{ matrix.chart.prerelease }}
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        run: |
-          gh release edit "${{ env.CHART_RELEASE_TAG_NAME }}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --prerelease
 
       # Sign and upload the signature.
       - name: Sign Helm chart with Cosign
@@ -260,23 +184,15 @@ jobs:
           EOF
 
   post-release:
-    name: Post-Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
-    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Post-Release - 8.7 (camunda-platform-8.7)
     needs: [init, release]
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      # It's not expected to run more than one release in the same PR,
-      # but just for safety to avoid race condition.
-      max-parallel: 1
-      matrix:
-        chart: ${{ fromJson(needs.init.outputs.matrix) }}
     permissions:
       contents: write
       pull-requests: write
       issues: write
     env:
-      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
+      CHART_DIR: "charts/camunda-platform-8.7"
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
