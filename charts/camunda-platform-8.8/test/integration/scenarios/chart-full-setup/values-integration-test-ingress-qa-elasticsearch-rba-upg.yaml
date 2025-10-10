@@ -11,6 +11,10 @@ orchestration:
     authentication:
       method: oidc
       authenticationRefreshInterval: "PT30S"
+      backwardsCompatibleAudiences:
+        - operate-api
+        - tasklist-api
+        - zeebe-api
   importer:
     enabled: true
   migration:
