@@ -15,7 +15,7 @@ spec:
   selector:
     matchLabels:
       app: camunda-platform
-      app.kubernetes.io/component: zeebe-broker
+      app.kubernetes.io/component: zeebe-gateway
   endpoints:
     - honorLabels: true
       path: /actuator/prometheus

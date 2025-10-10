@@ -17,6 +17,10 @@
 */}}
 
 {{ define "orchestration.componentName" -}}
+orchestration
+{{- end }}
+
+{{ define "orchestration.brokerName" -}}
 {{- /*
     NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8,
 */ -}}
@@ -38,7 +42,7 @@ app.kubernetes.io/component: {{ include "orchestration.gatewayName" . }}
 {{- end }}
 
 {{ define "orchestration.brokerLabel" -}}
-app.kubernetes.io/component: {{ include "orchestration.componentName" . }}
+app.kubernetes.io/component: {{ include "orchestration.brokerName" . }}
 {{- end }}
 
 {{ define "orchestration.versionLabel" -}}
@@ -123,9 +127,9 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 {{- define "orchestration.matchLabels" -}}
     {{- include "camundaPlatform.matchLabels" . }}
     {{- "\n" -}}
-    app.kubernetes.io/component: {{ include "orchestration.componentName" . }}
+    {{/*    For backward compatibility, the component label is set to "zeebe-broker".*/}}
+    {{- include "orchestration.brokerLabel" . }}
 {{- end -}}
-
 
 {{/*
 [orchestration] Defines match labels for orchestration importer, which are extended by sub-charts and should be used in matchLabels selectors.
