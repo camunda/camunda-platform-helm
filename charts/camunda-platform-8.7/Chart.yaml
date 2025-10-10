@@ -71,4 +71,16 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: changed
+      description: "Upgrade keycloak image from 26.3.1 to 26.3.3"
+    - kind: fixed
+      description: "2 issues.. the configmap for optimize was using the elasticsearch prefix value for opensearch and the QA scenarios where reusing the global prefix to shared OS failed CI"
+    - kind: fixed
+      description: "This PR is enabling Entra for testing"
+    - kind: fixed
+      description: "Correct sysctlImage structure in values-enterprise.yaml"
+    - kind: fixed
+      description: "Revert renovate bot version bump"
+    - kind: fixed
+      description: "Web modeler extraConfiguration uses subcomponent subkey"
