@@ -4,5 +4,5 @@
     "charts/camunda-platform-8.5": "10.11.3",
     "charts/camunda-platform-8.6": "11.10.1",
     "charts/camunda-platform-8.7": "12.6.2",
-    "charts/camunda-platform-8.8": "13.1.0-alpha8"
+    "charts/camunda-platform-8.8": "13.0.0"
 }
