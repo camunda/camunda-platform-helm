@@ -165,7 +165,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration-tests:
-    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.flow }} - ${{ matrix.shortname }}
+    name: ${{ matrix.version }} - ${{ matrix.shortname }} - ${{ matrix.flow }} - ${{ matrix.case }} - ${{ inputs.platforms || 'gke' }}
     needs: [init]
     strategy:
       fail-fast: false
