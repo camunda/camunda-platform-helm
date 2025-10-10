@@ -27,7 +27,72 @@ spec:
       imagePullSecrets:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+        - name: elasticsearch-version-check
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          image: curlimages/curl:8.15.0
+          command:
+            - sh
+            - -c
+            - |
+              version_compare() {
+                local ver1="$1"
+                local ver2="$2"
+                
+                IFS='.' read -ra v1_parts <<< "$ver1"
+                IFS='.' read -ra v2_parts <<< "$ver2"
+                
+                # Ensure both arrays have the same length by padding with zeros
+                local max_parts=3
+                while [ ${#v1_parts[@]} -lt $max_parts ]; do v1_parts+=("0"); done
+                while [ ${#v2_parts[@]} -lt $max_parts ]; do v2_parts+=("0"); done
+                
+                # Compare each part
+                for i in $(seq 0 $((max_parts-1))); do
+                    local part1=${v1_parts[$i]:-0}
+                    local part2=${v2_parts[$i]:-0}
+                    
+                    if [ "$part1" -gt "$part2" ]; then
+                        return 0  # ver1 > ver2
+                    elif [ "$part1" -lt "$part2" ]; then
+                        return 1  # ver1 < ver2
+                    fi
+                    # If equal, continue to next part
+                done
+                
+                return 0  # versions are equal, so ver1 >= ver2
+              }
+              
+              # Wait for Elasticsearch and verify version
+              echo "Checking Elasticsearch version..."
+              {{- if .Values.global.elasticsearch.enabled }}
+              ES_URL={{ include "camundaPlatform.elasticsearchURL" . | quote }}
+              {{- else }}
+              ES_URL={{ include "camundaPlatform.opensearchURL" . | quote }}
+              {{- end }}
+              
+              until ES_RESPONSE=$(curl -sf "$ES_URL" 2>/dev/null); do
+                echo "Waiting for Elasticsearch at $ES_URL"; sleep 5;
+              done
+              
+              # Extract version from Elasticsearch response
+              ES_VERSION=$(echo "$ES_RESPONSE" | grep -o '"number" *: *"[^"]*"' | cut -d'"' -f4)
+              
+              if [ -z "$ES_VERSION" ]; then
+                echo "Error: Could not determine Elasticsearch version"
+                exit 1
+              fi
+              
+              echo "Found Elasticsearch version: $ES_VERSION"
+              
+              # Check if version is >= 8.18.0
+              if version_compare "$ES_VERSION" "8.18.0"; then
+                echo "Elasticsearch version $ES_VERSION meets minimum requirement (>= 8.18.0)"
+              else
+                echo "Error: Elasticsearch version $ES_VERSION is below minimum requirement (8.18.0)"
+                exit 1
+              fi
       containers:
         - name: orchestration-importer
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
