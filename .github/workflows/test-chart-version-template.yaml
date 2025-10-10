@@ -45,7 +45,7 @@ on:
         type: string
       flows:
         description: The flows to run
-        default: "install,upgrade-patch,upgrade-minor"
+        default: "install"
         type: string
         required: false
       e2e-enabled:
@@ -62,9 +62,13 @@ on:
       camunda-version-previous:
         required: false
         type: string
+      test-enabled:
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}
   cancel-in-progress: true
 
 permissions:
@@ -72,7 +76,7 @@ permissions:
 
 jobs:
   parse-platforms:
-    name: Parse platforms
+    name: Parse platforms - ${{ inputs.flows }}
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.make-json-array.outputs.platforms }}
@@ -99,6 +103,7 @@ jobs:
     with:
       identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}-${{ matrix.platform }}"
       deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
+      test-enabled: ${{ inputs.test-enabled }}
       flows: ${{ inputs.flows }}
       camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

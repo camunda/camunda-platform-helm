@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/chart-validate-template.yaml"
       - ".github/workflows/test-unit-template.yaml"
+      - ".github/workflows/test-integration-runner.yaml"
       - ".github/workflows/test-integration-template.yaml"
       - ".github/workflows/test-chart-version-template.yaml"
       - ".github/workflows/test-chart-version.yaml"
@@ -44,7 +45,7 @@ on:
           - gke,eks
       flows:
         description: The flows to run
-        default: "install"
+        default: ""
         required: false
         type: choice
         options:
@@ -68,6 +69,23 @@ on:
         required: false
         default: 1h
         type: string
+      scenario:
+        description: Scenario
+        required: false
+        default: "elasticsearch"
+        type: choice
+        options:
+          - all
+          - upgrade-migration
+          - keycloak
+          - keycloak-mt
+          - keycloak-rba
+          - oidc
+      test-enabled:
+        description: Whether to run the IT tests
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -92,6 +110,7 @@ jobs:
         uses: ./.github/actions/generate-chart-matrix
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
+          manual-scenario: ${{ github.event.inputs.scenario || 'none' }}
 
   unit-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' }}
@@ -103,7 +122,7 @@ jobs:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     uses: ./.github/workflows/test-unit-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-unit-${{ matrix.version }}"
+      identifier: "${{ github.event.pull_request.number || github.ref }}-unit-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
@@ -117,7 +136,7 @@ jobs:
         version: ${{ fromJson(needs.init.outputs.camunda-versions) }}
     uses: ./.github/workflows/chart-validate-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-vald-${{ matrix.version }}"
+      identifier: "${{ github.event.pull_request.number || github.ref }}-vald-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
@@ -134,13 +153,13 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/test-local-template.yaml
     with:
-      identifier: "${{ github.event.pull_request.number }}-loc-${{ matrix.version }}"
+      identifier: "${{ github.event.pull_request.number || github.ref }}-loc-${{ matrix.version }}"
       camunda-helm-dir: "camunda-platform-${{ matrix.version }}"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration-tests:
-    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.shortname }}
-    needs: [init, validation]
+    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.flow }} - ${{ matrix.shortname }}
+    needs: [init]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
@@ -158,5 +177,6 @@ jobs:
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
       flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
-      deployment-ttl: ${{ inputs.deployment-ttl || '1h' }}
+      deployment-ttl: ${{ inputs.deployment-ttl }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
+      test-enabled: ${{ inputs.test-enabled || true }}

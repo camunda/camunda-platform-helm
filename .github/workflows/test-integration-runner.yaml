@@ -1,6 +1,5 @@
 # Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md
 name: "Test - Integration - Runner"
-
 on:
   workflow_call:
     inputs:
@@ -291,6 +290,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
+
       - name: Import Vault secrets
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -374,8 +374,8 @@ jobs:
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl }}
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl }}
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }}
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }}
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
@@ -409,7 +409,7 @@ jobs:
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Install - Configure Helm with Entra Values
-        if: inputs.auth == 'oidc' && inputs.values-config == '{}'
+        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -425,6 +425,7 @@ jobs:
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.template-yaml
 
       - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
@@ -719,7 +720,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.55.1-noble
       options: --ipc=host
     timeout-minutes: 5
-    if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) }}
+    if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
       id-token: write
@@ -1003,6 +1004,7 @@ jobs:
 
       - name: CI Cleanup - Cleanup GitHub deployment
         if: always() && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')
+        continue-on-error: true # We don't want to fail if the deployment is not found.
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
           step: delete-env
@@ -1013,11 +1015,11 @@ jobs:
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace
         run: |
-          if [ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" == "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]; then
+          if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" == "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
           else
-            if [ "${{ inputs.distro-type }}" == "kubernetes" ]; then
+            if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
             else

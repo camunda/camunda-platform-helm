@@ -26,6 +26,7 @@ integration:
           exclude: []
           shortname: es
           auth: keycloak
+          flow: install,upgrade-patch
     nightly:
       scenario:
         - name: elasticsearch

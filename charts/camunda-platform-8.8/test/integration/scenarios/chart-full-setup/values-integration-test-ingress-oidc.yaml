@@ -13,6 +13,9 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
+  security:
+    authentication:
+      method: oidc
   identity:
     auth:
       enabled: true
@@ -88,6 +91,9 @@ identityPostgresql:
   enabled: true
   auth:
     existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
+      userPasswordKey: identity-keycloak-postgresql-user-password
 
 identityKeycloak:
   enabled: false
@@ -159,6 +165,19 @@ orchestration:
         - mappingRuleID: demo-user-mapping-rule
           claimName: oid
           claimValue: $ENTRA_APP_OBJECT_ID
+  importer:
+    enabled: true
+  migration:
+    identity:
+      claimName: "oid"
+      claimValue: "65aa0601-56a2-4915-a64c-9de360424df5"
+      clientId: $ENTRA_APP_CLIENT_ID
+      secret:
+        inlineSecret: $ENTRA_APP_CLIENT_SECRET
+      enabled: true
+      backoffLimit: 12
+    data:
+      enabled: true
 
 elasticsearch:
   maxUnavailable: 0
