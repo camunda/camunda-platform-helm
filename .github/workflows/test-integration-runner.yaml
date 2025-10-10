@@ -74,7 +74,7 @@ on:
         type: boolean
       e2e-enabled:
         required: false
-        default: true
+        default: false
         type: boolean
       extra-values:
         description: Pass extra values to the Helm chart.
@@ -1020,7 +1020,8 @@ jobs:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [ci-setup]
     runs-on: gcp-core-32-longrunning-big-ssd
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+    if: false # The scripts are out dated. This will likely by replaced as calling the QA repo is a better approach.
+    #if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
     timeout-minutes: 20
     env:
       TEST_EXCLUDE: ${{ inputs.exclude }}
