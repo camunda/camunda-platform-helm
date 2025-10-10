@@ -326,7 +326,7 @@
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes",
+                            "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -436,7 +436,7 @@
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "defines the prefix used for OpenSearch indices or records.",
+                            "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -6243,7 +6243,7 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use \"global.elasticsearch.prefix\".",
+                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for the new exporter and Orchestration Cluster. For old exporter or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {

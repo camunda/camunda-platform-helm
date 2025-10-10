@@ -212,7 +212,7 @@ global:
       port: 9200
     ## @param global.elasticsearch.clusterName defines the name of the Elasticsearch cluster.
     clusterName: "elasticsearch"
-    ## @param global.elasticsearch.prefix Elasticsearch.prefix defines the prefix which is used by the Zeebe Elasticsearch Exporter to create Elasticsearch indexes
+    ## @param global.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
     prefix: zeebe-record
   # Opensearch configuration which is shared between the sub charts
   ## @extra global.opensearch
@@ -256,7 +256,7 @@ global:
       port: 443
     ## @param global.opensearch.clusterName defines the name of the OpenSearch cluster.
     clusterName: "opensearch"
-    ## @param global.opensearch.prefix defines the prefix used for OpenSearch indices or records.
+    ## @param global.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
     prefix: zeebe-record
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
@@ -2922,7 +2922,7 @@ orchestration:
       enabled: false
 
   index:
-    ## @param orchestration.index.prefix if specified, defines web apps index prefix in Elasticsearch/OpenSearch. Note, for Zeebe index prefix, use "global.elasticsearch.prefix".
+    ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for the new exporter and Orchestration Cluster. For old exporter or Optimize use the "global.elasticsearch.prefix" or OpenSearch equivalent.
     prefix: ""
     ## @param orchestration.index.replicas can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch
     replicas: 1
