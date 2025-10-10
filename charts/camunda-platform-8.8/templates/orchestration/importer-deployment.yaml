@@ -135,7 +135,7 @@ spec:
               value: {{ .Values.orchestration.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.orchestration.javaOpts | quote }}
+              value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
             {{- end }}
             - name: K8S_POD_NAME
               valueFrom:
@@ -257,6 +257,10 @@ spec:
             {{- if .Values.orchestration.importer.extraVolumeMounts }}
             {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
+          ports:
+            - containerPort: 5005
+              name: debug
+              protocol: TCP
       volumes:
         {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore
