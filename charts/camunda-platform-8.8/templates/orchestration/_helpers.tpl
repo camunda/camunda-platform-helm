@@ -19,15 +19,13 @@
 {{ define "orchestration.componentName" -}}
 {{- /*
     NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8,
-          later, it should be changed to "orchestration".
 */ -}}
 zeebe-broker
 {{- end }}
 
 {{ define "orchestration.gatewayName" -}}
 {{- /*
-    NOTE: The value is set to "zeebe-gateway" for backward compatibility between 8.7 and 8.8,
-          later, it should be changed to "orchestration".
+    NOTE: The value is set to "zeebe-gateway" for backward compatibility between 8.7 and 8.8
 */ -}}
 zeebe-gateway
 {{- end }}
