@@ -44,6 +44,10 @@ orchestration:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
         existingSecret:
           name: "integration-test-credentials"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
   env:
     - name: JAVA_TOOL_OPTIONS
       value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
