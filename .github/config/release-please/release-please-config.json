@@ -5,10 +5,9 @@
   "draft": false,
   "packages": {
     "charts/camunda-platform-8.8": {
-      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda Alpha 8.8",
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.8",
       "release-type": "helm",
-      "versioning": "prerelease",
-      "extra-label": "version/alpha,version/8.8,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "extra-label": "version/8.8,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
       "component": "camunda-platform-8.8",
       "include-v-in-tag": false
     },
