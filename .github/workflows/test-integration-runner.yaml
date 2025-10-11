@@ -74,7 +74,7 @@ on:
         type: boolean
       e2e-enabled:
         required: false
-        default: true
+        default: false
         type: boolean
       extra-values:
         description: Pass extra values to the Helm chart.
@@ -231,8 +231,8 @@ env:
 
 jobs:
   ci-setup:
-    if: github.event.action != 'closed'
-    name: ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
+    if: github.event.action != 'closed' && inputs.flow != 'modular-upgrade-minor'
+    name: install for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
@@ -383,6 +383,7 @@ jobs:
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
           kubectl describe ns $TEST_NAMESPACE
+
       - name: Cluster Setup - Install docker registry on cluster
         run: |
           kubectl create secret docker-registry registry-camunda-cloud \
@@ -510,60 +511,11 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
       ##########################################################################################################
-      # Upgrade
-      ##########################################################################################################
-
-      - name: CI Setup - Upgrade - Set test type vars
-        if: inputs.flow == 'upgrade-patch' || inputs.flow == 'upgrade-minor'
-        id: test-type-vars-upgrade-minor
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
-          values-enterprise: "${{ inputs.values-enterprise }}"
-          values-digest: "${{ inputs.values-digest }}"
-          flow: "${{ inputs.flow }}"
-
-      - name: Helm - Upgrade - Package
-        if: inputs.flow == 'upgrade-patch' || inputs.flow == 'upgrade-minor'
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
-
-      - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
-        if: inputs.flow == 'upgrade-patch' || inputs.flow == 'upgrade-minor'
-        uses: ./.github/actions/cluster-setup-secrets
-        with:
-          distro-platform: ${{ inputs.distro-platform }}
-          chart-path: ${{ env.CHART_PATH }}
-          namespace: ${{ env.TEST_NAMESPACE }}
-          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
-
-      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
-        if: inputs.flow == 'upgrade-patch' || inputs.flow == 'upgrade-minor'
-        env:
-          TEST_CHART_FLOW: ${{ inputs.flow }}
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
-
-      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
-        if: inputs.flow == 'upgrade-patch' || inputs.flow == 'upgrade-minor'
-        env:
-          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
-          TEST_HELM_EXTRA_ARGS: >-
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
-
-      ##########################################################################################################
       # Misc
       ##########################################################################################################
 
       - name: CI Setup - Update GitHub deployment status
+        if: inputs.flow == 'install'
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
           step: finish
@@ -588,6 +540,237 @@ jobs:
 
           echo "SHARD_TOTAL=${SHARD_TOTAL}" | tee -a "$GITHUB_ENV"
           echo "SHARD_INDEX=${SHARD_INDEX_LIST}" | tee -a "$GITHUB_ENV"
+
+      - name: 🚨 Get failed Pods info 🚨
+        if: failure()
+        uses: ./.github/actions/failed-pods-info
+
+  upgrade:
+    if: always() && github.event.action != 'closed' && (needs.ci-setup.result == 'success' || needs.ci-setup.result == 'skipped') && inputs.flow != 'install'
+    name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
+    runs-on: ubuntu-latest
+    needs: [ci-setup]
+    outputs:
+      vars-identifier: ${{ steps.vars.outputs.identifier }}
+      vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}      
+      vars-namespace: ${{ env.TEST_NAMESPACE }}
+      SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
+      SHARD_INDEX: ${{ env.SHARD_INDEX }}
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    env:
+      TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
+
+    steps:
+      - name: Info - ℹ️ Print workflow inputs ℹ️
+        env:
+          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+        run: |
+          echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          echo "Workflow Inputs:"
+          echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
+          echo "Workflow Inputs - Extra Values:"
+          echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
+
+      - name: CI Setup - Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            kubectl
+            oc
+            task
+            yq
+            zbctl
+
+      # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
+      # and populate environment variables from Vault
+      - name: CI Setup - Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        if: inputs.vault-secret-mapping != ''
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: ${{ inputs.vault-secret-mapping }}
+          exportEnv: true
+
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
+            secret/data/products/distribution/ci NEXUS_USERNAME;
+            secret/data/products/distribution/ci NEXUS_PASSWORD;
+          exportEnv: true
+
+      - name: CI Setup - Authenticate to cluster
+        id: cluster-auth
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
+          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
+          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
+          GKE_SA:           ${{ secrets[inputs.service-account] }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: CI Setup - ℹ️ Set test type vars ℹ️
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+          values-enterprise: "${{ inputs.values-enterprise }}"
+          values-digest: "${{ inputs.values-digest }}"
+          flow: "${{ inputs.flow }}"
+          camunda-version-previous: "${{ inputs.camunda-version-previous }}"
+
+      - name: CI Setup - Add Helm repos and update Helm dependencies
+        run: |
+          export chartPath="${{ env.CHART_PATH }}"
+          make helm.repos-add
+          make helm.dependency-update
+
+      ##########################################################################################################
+      # Upgrade
+      ##########################################################################################################
+      - name: Helm - Install - Configure Helm with Entra Values
+        if: inputs.auth == 'oidc' && inputs.values-config == '{}'
+        timeout-minutes: 5
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          EXTRA_VALUES: ${{ inputs.extra-values }}
+          TEST_HELM_EXTRA_ARGS: >-
+            ${{ env.TEST_HELM_EXTRA_ARGS }}
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          echo "Extra values from workflow:"
+          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+
+      - name: CI Setup - Upgrade - Set test type vars
+        id: test-type-vars-upgrade-minor
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+          values-enterprise: "${{ inputs.values-enterprise }}"
+          values-digest: "${{ inputs.values-digest }}"
+          flow: "${{ inputs.flow }}"
+
+      - name: Helm - Upgrade - Package
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
+
+      - name: Helm – prepare values from values-config
+        if: inputs.values-config != '{}'
+        shell: bash
+        env:
+          VALS_CONFIG: ${{ inputs.values-config }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+        run: |
+          # write + parse JSON config to env vars (stringified)
+          cfg="$(mktemp)"
+          printf '%s' "$VALS_CONFIG" > "$cfg"
+          while IFS='=' read -r k v; do
+            # export as strings; tolerate empty values
+            export "$k"="$v"
+          done < <(jq -r 'to_entries[] | "\(.key)=\(.value|tostring)"' "$cfg")
+          rm -f "$cfg"
+      
+          # paths
+          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
+          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+      
+          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
+      
+          # template substitution
+          tmp="$(mktemp)"
+          envsubst < "$values_file" > "$tmp"
+          mv "$tmp" "$values_file"
+      
+          # optional license key
+          if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
+            echo "::add-mask::${E2E_TESTS_LICENSE_KEY}"
+            yq -i '.global.license.key = env(E2E_TESTS_LICENSE_KEY)' "$values_file"
+          fi
+      
+          echo "Prepared values file: $values_file"
+          cat "$values_file"
+
+      - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
+        uses: ./.github/actions/cluster-setup-secrets
+        with:
+          distro-platform: ${{ inputs.distro-platform }}
+          chart-path: ${{ env.CHART_PATH }}
+          namespace: ${{ env.TEST_NAMESPACE }}
+          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
+
+      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
+
+      - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
+        env:
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: ${{ inputs.test-case }}
+          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_HELM_EXTRA_ARGS: >-
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      ##########################################################################################################
+      # Misc
+      ##########################################################################################################
 
       - name: 🚨 Get failed Pods info 🚨
         if: failure()
@@ -714,7 +897,7 @@ jobs:
 
   playwright-integration-tests:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [ci-setup]
+    needs: [ci-setup, upgrade]
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.55.1-noble
@@ -837,7 +1020,8 @@ jobs:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [ci-setup]
     runs-on: gcp-core-32-longrunning-big-ssd
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+    if: false # The scripts are out dated. This will likely by replaced as calling the QA repo is a better approach.
+    #if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
     timeout-minutes: 20
     env:
       TEST_EXCLUDE: ${{ inputs.exclude }}
