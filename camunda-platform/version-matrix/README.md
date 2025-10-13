@@ -15,11 +15,12 @@ For the best experience, please remember:
 
 - Always use the `Helm CLI` version that's used with the Helm chart. It's mentioned in the matrix for all charts or under chart annotation `camunda.io/helmCLIVersion` for newer charts.
 
-- During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions).
+- During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/).
 
 
 ## [Camunda 8.8](./camunda-8.8)
 
+### [Helm chart 13.0.0](./camunda-8.8/#helm-chart-1300)
 ### [Helm chart 13.0.0-alpha8](./camunda-8.8/#helm-chart-1300-alpha8)
 ### [Helm chart 13.0.0-alpha7](./camunda-8.8/#helm-chart-1300-alpha7)
 ### [Helm chart 13.0.0-alpha6](./camunda-8.8/#helm-chart-1300-alpha6)
