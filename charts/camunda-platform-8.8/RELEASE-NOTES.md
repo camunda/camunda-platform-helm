@@ -1,84 +1,111 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-13.0.0-alpha8](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0-alpha8) (2025-09-12)
-
-### Fixes
-
-- Add secondary-storage config to data migration (#4129)
-- OpensearchURL for secondary storage in data migration (#4130)
-- Console digest now points to 8.8.0-alpha8.1 (#4133)
-- Migration secondary storage configuration (#4134)
-- Management identity has incorrect role (#4122)
-- Include retention configuration for migration config (#4135)
-- Disable upgrade flow on alpha (#4136)
-
-
-## [camunda-platform-8.7-12.6.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.6.0) (2025-09-08)
-
-### Features
-
-- Add data migrations for 8.8 (#4090)
-- Add tasklist and operate importer as a separate deployment (#4058)
-- Add custom ingress label values (#4063)
+## [camunda-platform-13.0.0](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.0.0) (2025-10-13)
 
 ### Refactor
 
-- Update orchestration config forward-headers-strategy to native (#4099)
-- Remove ingress affinity annotations (#4108)
-- Set default value for contextPath in all components (#4096)
+- Upgrade keycloak image from 26.3.1 to 26.3.3 (#4386)
+- Streamline OIDC and Microsoft Entra auth (#4416)
+- Rename zeebe/orchestration labels (#4430)
 
 ### Fixes
 
-- The elastic auth is missing for orchestration when using the global creds. this fixes that issue (#4093)
-- Helper function function and checksum correction in migraiton (#4098)
-- Update snapshot image of orchestration cluster (#4107)
-- Data migration configmap fix importer-finished-timeout (#4110)
-- Update keycloak in values-latest (#4109)
-- Update documentstore secrets to new schema (#4086)
+- No default backwardsCompatibleAudiences (#4421)
+- Remove duplicate servicemonitor (#4428)
+- Release-please should create a non-alpha release for 8.8.0 (#4439)
+- Correct 13.0.0 version number
+- Undo part of the release notes thats wrong version
+- Fix doc links for 8.8 (#4453)
 
 
-## [camunda-platform-8.5-10.11.1](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.5-10.11.1) (2025-09-04)
+## [camunda-platform-8.5-10.11.3](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.5-10.11.3) (2025-10-08)
 
 ### Features
 
-- Adding extra configuration options to the process migration (#3928)
-- Backport - implement joinPath helper for constructing paths (#3934)
-- Add usage metrics retention configuration (#3946)
-- Create extra values file for legacy bitnami repo name (#3996)
-- 1898 enhancement inconsistent inputs for existingsecret (#3838)
-- Add schema validation for env keys (#4084)
+- Support legacy retention age (#4179)
+- Support issuer backend url in the orchestration config (#4265)
 
 ### Refactor
 
-- **⚠ BREAKING CHANGE** Rename core to orchestration (#3935)
-- Rename templates dir and add release highlights (#3948)
-- Set orchestration retention and history retention (#3970)
-- Move global.security.* to orchestration.security.* (#3944)
-- Rename connectors config file from yml to yaml (#4068)
-- Revert to zeebe as name for orchestration cluster (#4077)
+- Differentiate between orchestration services (#4190)
+- Move orchestration oidc from global to component (#4233)
+- Move connectors oidc from global to component (#4234)
+- Support auth values in components (#4279)
+- Use the main config in migrations (#4235)
+- Use postgresql 14 for web modeler (#4287)
+- Use postgres 14 for web modeler (#4327)
+- Add nodeSelector, affinity, and tolerations to orchestration extra resources (#4366)
 
 ### Fixes
 
-- Align ports and minor localhost-port-forward fixes (#3922)
-- Malformed issuer-uri (#3943)
-- TODO comment to add issuer backend URL to orchestration configmap (#3953)
-- The ttl was blank causing the namespaces to never be cleaned up.… (#3909)
-- Fixup missing references to global.multitenancy.enabled (#3903)
-- Missing else in identity multitenancy configuration (#3965)
-- Add checksum annotations to migration pods (#3930)
-- The region is mapped to the document store env (#3623)
-- Use orchestration instead of core for configmap annotation (#3971)
-- Disable persistent sessions in noSecondaryStorage mode (#3951)
-- Add optimize and web modeler constraint requiring management identity (#3907)
-- Refactor restapi pusher secret to new secret convention (#4025)
-- Moved global.secutity to orchestration.security (#4022)
-- Define one security section in orchestration configmap (#4042)
-- Set orchestration cluster sts matchLabels to zeebe-broker (#4033)
-- Set the groups claim empty so groups can be tested on the orchId… (#4075)
-- Update the role name to match the snapshot updates (#4073)
-- Added missing config to orchestration cluster (#4080)
-- Refactor autogenerated secrets (#3988)
-- Revert webmodeler externaldb change (#4071)
+- NoSecondaryStorage constraint no longer breaks unit tests (#4223)
+- Wrong openshift compatibilty helper elasticsearch commonLabels usage (#4180)
+- Operate opensearch access in the unified config (#4224)
+- 2 issues.. the configmap for optimize was using the elasticsearch prefix value for opensearch and the QA scenarios where reusing the global prefix to shared OS failed CI (#4238)
+- Add the oidc group claim to opensearch (#4244)
+- Simplify oidc mappings in 8.8 (#4229)
+- Firstuser defaults should not fire constraint (#4227)
+- Partition-count typo in 8.8 chart (#4245)
+- Identity migration inital contactPoint port number (#4260)
+- Revert orchestration service name for backward compatibility (#4264)
+- Comment in values.yaml for enabling management identity auth (#4273)
+- Comment for identity existing secret (#4275)
+- Add conditional properties for management components in manageme… (#4276)
+- Revert tls secret placeholders (#4239)
+- Add missing opensearch fields in templates (#4280)
+- Reintroduce capability to disable all exporters again (#4272)
+- Add security config to webmodeler (#4285)
+- Data migration and importer config (#4286)
+- Opensearch config and index replica placement (#4297)
+- Use correct upgrade strategy for importer deployment (#4310)
+- Data and identity migraiton accept orchestration env (#4291)
+- Es/os exporter inherit index replicas (#4309)
+- Clean up redundant secret templates (#4328)
+- This PR is enabling Entra for testing (#4294)
+- Correctly configure data migration (#4343)
+- Define importer node id based on regionId (#4349)
+- Adjust autogenerated secret detection patterns (#4342)
+- Fix configurations of identity migration (#4344)
+- Remove importer affinity in 8.8 (#4357)
+- Unique importer ids for swim (#4360)
+- Add audiences for backward compatibility (#4351)
+- Correct sysctlImage structure in values-enterprise.yaml (#4339)
+- Web modeler extraConfiguration uses subcomponent subkey (#4097)
+- Should be using 8.8 instead of 8.9 connectors (#4267)
+- Couple importer deployment with migration (#4346)
+- In optimize cm, set the zeebe name to be equal to prefix (#4382)
+- Set correct value for identity migration configmap (#4387)
+- Set client secret based on what it's bound to on identity-side (#4400)
+- Update QA 8.8 opensearch values file (#4405)
+
+### Revert
+
+- "refactor: set default value for contextPath in all component… (#4221)
+
+
+## [camunda-platform-8.5-10.11.2](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.5-10.11.2) (2025-09-18)
+
+### Features
+
+- Opensearch aws enabled config now affects usage of AWS credentials (#4163)
+- Add the document store scenario to the qa scenario list (#4117)
+- Introduce authenticationRefreshInterval config parameter (#3958)
+- Add resource authorizations flag to identity migration (#4197)
+- Add default roles for initial users (#4194)
+- Add extra mapping for initial client for identity OIDC migration (#4202)
+
+### Refactor
+
+- Set default replicas to 1 for secondary storage (#4150)
+- Run orchestration cluster from unified config (#4138)
+
+### Fixes
+
+- Update migration job labels so requests are not routed to them (#4143)
+- Enable exporters when data migration is enabled (#4196)
+- Add constraints for ES and Basic auth in noSecondaryStorage mode (#4170)
+- Adjust secret constraint to reflect new secrets management (#4182)
+- Add missing global.identity.auth.identity.secret configuration (#4222)
 
 <!-- generated by git-cliff -->
 ### Release Info
@@ -87,25 +114,26 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.0.0-alpha8](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8#parameters)
+- Helm values: [13.0.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0#parameters)
 - Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
 
 Camunda images:
 
-- docker.io/camunda/camunda:8.8.0-alpha7
-- docker.io/camunda/connectors-bundle:8.8.0-alpha7
-- docker.io/camunda/console:8.8.0-alpha7
-- docker.io/camunda/identity:8.8.0-alpha7
-- docker.io/camunda/keycloak:26.3.1
-- docker.io/camunda/optimize:8.8.0-alpha7
-- docker.io/camunda/web-modeler-restapi:8.8.0-alpha8-rc1
-- docker.io/camunda/web-modeler-webapp:8.8.0-alpha8-rc1
-- docker.io/camunda/web-modeler-websockets:8.8.0-alpha8-rc1
+- docker.io/camunda/camunda:8.8.0
+- docker.io/camunda/connectors-bundle:8.8.0
+- docker.io/camunda/console:8.8.3
+- docker.io/camunda/identity:8.8.0
+- docker.io/camunda/keycloak:26.3.3
+- docker.io/camunda/optimize:8.8.0
+- docker.io/camunda/web-modeler-restapi:8.8.0
+- docker.io/camunda/web-modeler-webapp:8.8.0
+- docker.io/camunda/web-modeler-websockets:8.8.0
 
 Non-Camunda images:
 
 - docker.io/bitnamilegacy/elasticsearch:8.18.0
 - docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+- docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
 ### Verification
@@ -113,10 +141,10 @@ Non-Camunda images:
 For quick verification of the Helm chart integrity using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-13.0.0-alpha8.tgz \
-  --bundle "camunda-platform-13.0.0-alpha8-cosign-bundle.json" \
+cosign verify-blob camunda-platform-13.0.0.tgz \
+  --bundle "camunda-platform-13.0.0-cosign-bundle.json" \
   --certificate-identity-regex "https://github.com/camunda/camunda-platform-helm" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
-For detailed verification instructions, check the steps in the `camunda-platform-13.0.0-alpha8-cosign-verify.sh` file.
+For detailed verification instructions, check the steps in the `camunda-platform-13.0.0-cosign-verify.sh` file.

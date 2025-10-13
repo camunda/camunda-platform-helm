@@ -400,7 +400,7 @@ Usage:
         "[camunda][error] The Helm values file key changed from \"%s\" to \"%s\". %s %s"
         .oldName .newName
         "For more details, please check Camunda Helm chart documentation."
-        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
+        "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}
@@ -422,7 +422,7 @@ Usage:
         "[camunda][error] The Helm values file key \"%s\" has been removed. %s %s"
         .oldName
         "For more details, please check Camunda Helm chart documentation."
-        "https://docs.camunda.io/docs/self-managed/setup/upgrade/#version-update-instructions"
+        "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}

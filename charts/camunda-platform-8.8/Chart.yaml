@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.0.0-alpha8
+version: 13.0.0
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -73,104 +73,144 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Add data migrations for 8.8"
+      description: "Support legacy retention age"
     - kind: added
-      description: "Add tasklist and operate importer as a separate deployment"
+      description: "Support issuer backend url in the orchestration config"
     - kind: added
-      description: "Add custom ingress label values"
+      description: "Opensearch aws enabled config now affects usage of AWS credentials"
     - kind: added
-      description: "Adding extra configuration options to the process migration"
+      description: "Add the document store scenario to the qa scenario list"
     - kind: added
-      description: "Backport - implement joinPath helper for constructing paths"
+      description: "Introduce authenticationRefreshInterval config parameter"
     - kind: added
-      description: "Add usage metrics retention configuration"
+      description: "Add resource authorizations flag to identity migration"
     - kind: added
-      description: "Create extra values file for legacy bitnami repo name"
+      description: "Add default roles for initial users"
     - kind: added
-      description: "1898 enhancement inconsistent inputs for existingsecret"
-    - kind: added
-      description: "Add schema validation for env keys"
+      description: "Add extra mapping for initial client for identity OIDC migration"
     - kind: changed
-      description: "Update orchestration config forward-headers-strategy to native"
+      description: "Upgrade keycloak image from 26.3.1 to 26.3.3"
     - kind: changed
-      description: "Remove ingress affinity annotations"
+      description: "Streamline OIDC and Microsoft Entra auth"
     - kind: changed
-      description: "Set default value for contextPath in all components"
+      description: "Rename zeebe/orchestration labels"
     - kind: changed
-      description: "**⚠ BREAKING CHANGE** Rename core to orchestration"
+      description: "Differentiate between orchestration services"
     - kind: changed
-      description: "Rename templates dir and add release highlights"
+      description: "Move orchestration oidc from global to component"
     - kind: changed
-      description: "Set orchestration retention and history retention"
+      description: "Move connectors oidc from global to component"
     - kind: changed
-      description: "Move global.security.* to orchestration.security.*"
+      description: "Support auth values in components"
     - kind: changed
-      description: "Rename connectors config file from yml to yaml"
+      description: "Use the main config in migrations"
     - kind: changed
-      description: "Revert to zeebe as name for orchestration cluster"
+      description: "Use postgresql 14 for web modeler"
+    - kind: changed
+      description: "Use postgres 14 for web modeler"
+    - kind: changed
+      description: "Add nodeSelector, affinity, and tolerations to orchestration extra resources"
+    - kind: changed
+      description: "Set default replicas to 1 for secondary storage"
+    - kind: changed
+      description: "Run orchestration cluster from unified config"
     - kind: fixed
-      description: "Add secondary-storage config to data migration"
+      description: "No default backwardsCompatibleAudiences"
     - kind: fixed
-      description: "OpensearchURL for secondary storage in data migration"
+      description: "Remove duplicate servicemonitor"
     - kind: fixed
-      description: "Console digest now points to 8.8.0-alpha8.1"
+      description: "Release-please should create a non-alpha release for 8.8.0"
     - kind: fixed
-      description: "Migration secondary storage configuration"
+      description: "Correct 13.0.0 version number"
     - kind: fixed
-      description: "Management identity has incorrect role"
+      description: "Undo part of the release notes thats wrong version"
     - kind: fixed
-      description: "Include retention configuration for migration config"
+      description: "Fix doc links for 8.8"
     - kind: fixed
-      description: "Disable upgrade flow on alpha"
+      description: "NoSecondaryStorage constraint no longer breaks unit tests"
     - kind: fixed
-      description: "The elastic auth is missing for orchestration when using the global creds. this fixes that issue"
+      description: "Wrong openshift compatibilty helper elasticsearch commonLabels usage"
     - kind: fixed
-      description: "Helper function function and checksum correction in migraiton"
+      description: "Operate opensearch access in the unified config"
     - kind: fixed
-      description: "Update snapshot image of orchestration cluster"
+      description: "2 issues.. the configmap for optimize was using the elasticsearch prefix value for opensearch and the QA scenarios where reusing the global prefix to shared OS failed CI"
     - kind: fixed
-      description: "Data migration configmap fix importer-finished-timeout"
+      description: "Add the oidc group claim to opensearch"
     - kind: fixed
-      description: "Update keycloak in values-latest"
+      description: "Simplify oidc mappings in 8.8"
     - kind: fixed
-      description: "Update documentstore secrets to new schema"
+      description: "Firstuser defaults should not fire constraint"
     - kind: fixed
-      description: "Align ports and minor localhost-port-forward fixes"
+      description: "Partition-count typo in 8.8 chart"
     - kind: fixed
-      description: "Malformed issuer-uri"
+      description: "Identity migration inital contactPoint port number"
     - kind: fixed
-      description: "TODO comment to add issuer backend URL to orchestration configmap"
+      description: "Revert orchestration service name for backward compatibility"
     - kind: fixed
-      description: "The ttl was blank causing the namespaces to never be cleaned up.…"
+      description: "Comment in values.yaml for enabling management identity auth"
     - kind: fixed
-      description: "Fixup missing references to global.multitenancy.enabled"
+      description: "Comment for identity existing secret"
     - kind: fixed
-      description: "Missing else in identity multitenancy configuration"
+      description: "Add conditional properties for management components in manageme…"
     - kind: fixed
-      description: "Add checksum annotations to migration pods"
+      description: "Revert tls secret placeholders"
     - kind: fixed
-      description: "The region is mapped to the document store env"
+      description: "Add missing opensearch fields in templates"
     - kind: fixed
-      description: "Use orchestration instead of core for configmap annotation"
+      description: "Reintroduce capability to disable all exporters again"
     - kind: fixed
-      description: "Disable persistent sessions in noSecondaryStorage mode"
+      description: "Add security config to webmodeler"
     - kind: fixed
-      description: "Add optimize and web modeler constraint requiring management identity"
+      description: "Data migration and importer config"
     - kind: fixed
-      description: "Refactor restapi pusher secret to new secret convention"
+      description: "Opensearch config and index replica placement"
     - kind: fixed
-      description: "Moved global.secutity to orchestration.security"
+      description: "Use correct upgrade strategy for importer deployment"
     - kind: fixed
-      description: "Define one security section in orchestration configmap"
+      description: "Data and identity migraiton accept orchestration env"
     - kind: fixed
-      description: "Set orchestration cluster sts matchLabels to zeebe-broker"
+      description: "Es/os exporter inherit index replicas"
     - kind: fixed
-      description: "Set the groups claim empty so groups can be tested on the orchId…"
+      description: "Clean up redundant secret templates"
     - kind: fixed
-      description: "Update the role name to match the snapshot updates"
+      description: "This PR is enabling Entra for testing"
     - kind: fixed
-      description: "Added missing config to orchestration cluster"
+      description: "Correctly configure data migration"
     - kind: fixed
-      description: "Refactor autogenerated secrets"
+      description: "Define importer node id based on regionId"
     - kind: fixed
-      description: "Revert webmodeler externaldb change"
+      description: "Adjust autogenerated secret detection patterns"
+    - kind: fixed
+      description: "Fix configurations of identity migration"
+    - kind: fixed
+      description: "Remove importer affinity in 8.8"
+    - kind: fixed
+      description: "Unique importer ids for swim"
+    - kind: fixed
+      description: "Add audiences for backward compatibility"
+    - kind: fixed
+      description: "Correct sysctlImage structure in values-enterprise.yaml"
+    - kind: fixed
+      description: "Web modeler extraConfiguration uses subcomponent subkey"
+    - kind: fixed
+      description: "Should be using 8.8 instead of 8.9 connectors"
+    - kind: fixed
+      description: "Couple importer deployment with migration"
+    - kind: fixed
+      description: "In optimize cm, set the zeebe name to be equal to prefix"
+    - kind: fixed
+      description: "Set correct value for identity migration configmap"
+    - kind: fixed
+      description: "Set client secret based on what it's bound to on identity-side"
+    - kind: fixed
+      description: "Update QA 8.8 opensearch values file"
+    - kind: fixed
+      description: "Update migration job labels so requests are not routed to them"
+    - kind: fixed
+      description: "Enable exporters when data migration is enabled"
+    - kind: fixed
+      description: "Add constraints for ES and Basic auth in noSecondaryStorage mode"
+    - kind: fixed
+      description: "Adjust secret constraint to reflect new secrets management"
+    - kind: fixed
+      description: "Add missing global.identity.auth.identity.secret configuration"
