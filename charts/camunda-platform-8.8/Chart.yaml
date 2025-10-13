@@ -125,6 +125,8 @@ annotations:
     - kind: fixed
       description: "Undo part of the release notes thats wrong version"
     - kind: fixed
+      description: "Fix doc links for 8.8"
+    - kind: fixed
       description: "NoSecondaryStorage constraint no longer breaks unit tests"
     - kind: fixed
       description: "Wrong openshift compatibilty helper elasticsearch commonLabels usage"

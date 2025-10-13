@@ -15,6 +15,7 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 - Release-please should create a non-alpha release for 8.8.0 (#4439)
 - Correct 13.0.0 version number
 - Undo part of the release notes thats wrong version
+- Fix doc links for 8.8 (#4453)
 
 
 ## [camunda-platform-8.5-10.11.3](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.5-10.11.3) (2025-10-08)
