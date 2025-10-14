@@ -28,26 +28,12 @@ runs:
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
 
-    - name: Determine ASDF_DIR
-      shell: bash
-      run: |
-        set -euo pipefail
-        # Compute a safe ASDF_DIR that works on both hosted runners and containers (e.g., Playwright image)
-        home="${HOME:-/home/runner}"
-        if [[ ! -d "$home" || ! -w "$home" ]]; then
-          if [[ -d "/home/runner" && -w "/home/runner" ]]; then
-            home="/home/runner"
-          fi
-        fi
-        echo "ASDF_DIR=$home/.asdf" >> "$GITHUB_ENV"
-        mkdir -p "$home/.asdf"
-
     - name: Restore cache
       id: restore-tools-cache
       uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
       with:
-        # Use the resolved ASDF_DIR so caching works on both /home/runner and container users like /home/pwuser.
-        path: ${{ env.ASDF_DIR }}
+        # Using $HOME instead of /home/runner as inside of the container the home directory is might not be /home/runner.
+        path: $HOME/.asdf
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: Install asdf and tools
@@ -57,7 +43,6 @@ runs:
         # See: https://www.gnu.org/prep/ftp.en.html
         # Used by asdf-make: https://github.com/yacchi/asdf-make/blob/2b8c33adca11b79158298f1e35fe6a9ea363b6b0/lib/utils.bash#L7
         MAKE_CUSTOM_MIRROR: https://ftpmirror.gnu.org/
-        ASDF_DIR: ${{ env.ASDF_DIR }}
       with:
         # TODO: Upgrade to 0.16 when it's supported in the GHA.
         asdf_branch: v0.15.0
@@ -83,11 +68,9 @@ runs:
         fi
 
     - name: Save cache
-      if: steps.restore-tools-cache.outputs.cache-hit != 'true'
-      continue-on-error: true
       uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
       with:
-        path: ${{ env.ASDF_DIR }}
+        path: $HOME/.asdf
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions
