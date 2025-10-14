@@ -9,3 +9,16 @@ Chart.lock
 !scripts/*.tgz
 .env
 **/*.png
+
+node_modules/
+**/node_modules/
+
+test-results/
+**/test-results/
+
+playwright-report/
+**/playwright-report/
+
+.release-please-config.json
+.release-please-manifest.json
+.release-please-release-notes.md

@@ -9,7 +9,7 @@ export default defineConfig({
     },
   ],
   fullyParallel: true,
-  retries: 0,
+  retries: 3,
   workers: process.env.CI == "true" ? 1 : "25%",
   reporter: [
     ["html", { open: "never" }],

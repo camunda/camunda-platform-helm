@@ -51,6 +51,7 @@ data:
         upgrade:
           enable-version-check: true
     
+    
       cluster:
         # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
         # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
