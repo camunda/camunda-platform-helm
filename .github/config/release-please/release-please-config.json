@@ -4,6 +4,13 @@
   "bump-minor-pre-major": false,
   "draft": false,
   "packages": {
+    "charts/camunda-platform-8.9": {
+      "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.9",
+      "release-type": "helm",
+      "extra-label": "version/alpha,version/8.9,automation/release-please,release/pr,kind/chore,chart/camunda-platform",
+      "component": "camunda-platform-8.8",
+      "include-v-in-tag": false
+    },
     "charts/camunda-platform-8.8": {
       "pull-request-title-pattern": "chore(release): Camunda Platform Helm Chart ${version} - Camunda 8.8",
       "release-type": "helm",

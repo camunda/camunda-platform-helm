@@ -170,6 +170,41 @@
       ],
       pinDigests: true,
     },
+    {
+      groupName: 'camunda-platform-8.9',
+      addLabels: [
+        'version/8.9',
+        'deps/charts',
+      ],
+      matchFileNames: [
+        'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.9/values*.yaml',
+        'charts/camunda-platform-8.9/go.*',
+      ],
+      matchUpdateTypes: [
+        'major',
+        'minor',
+        'patch',
+      ],
+      pinDigests: false,
+    },
+    {
+      groupName: 'camunda-platform-8.9-digest',
+      matchManagers: [
+        'regex',
+      ],
+      addLabels: [
+        'version/8.9',
+        'deps/charts',
+      ],
+      matchFileNames: [
+        'charts/camunda-platform-8.9/values-digest.yaml',
+      ],
+      matchUpdateTypes: [
+        'digest',
+      ],
+      pinDigests: true,
+    },
     // End of minor cycle chores.
 
     //
@@ -400,7 +435,7 @@
       ],
       matchFileNames: [
         // bump these to whatever the latest alpha is
-        'charts/camunda-platform-8.8/Chart.yaml',
+        'charts/camunda-platform-8.9/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
@@ -440,7 +475,7 @@
         'camunda/camunda',
       ],
       matchFileNames: [
-        'charts/camunda-platform-8.8/Chart.yaml',
+        'charts/camunda-platform-8.9/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
@@ -455,8 +490,8 @@
         'regex',
       ],
       matchFileNames: [
-        'charts/camunda-platform-8.8/Chart.yaml',
-        'charts/camunda-platform-8.8/values*.yaml',
+        'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.9/values*.yaml',
       ],
       // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
       // which is not the case.

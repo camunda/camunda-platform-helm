@@ -28,6 +28,7 @@ on:
           - "8.6"
           - "8.7"
           - "8.8"
+          - "8.9"
       run-all-e2e-tests:
         description: "Run all E2E tests (playwright)"
         required: false
