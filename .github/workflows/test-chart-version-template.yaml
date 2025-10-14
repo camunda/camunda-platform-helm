@@ -66,11 +66,6 @@ on:
         required: false
         default: true
         type: boolean
-      always-delete-namespace:
-        description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
-        default: false
-        type: boolean
-        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}
@@ -121,10 +116,10 @@ jobs:
       exclude: "${{ inputs.exclude }}"
       platforms: "${{ matrix.platform }}"
       run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
+      always-delete-namespace: true
       values-digest: "true"
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
-      always-delete-namespace: "${{ inputs.always-delete-namespace }}"
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;

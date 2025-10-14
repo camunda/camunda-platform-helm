@@ -37,40 +37,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           ref: "${{ inputs.camunda-helm-git-ref }}"
       # Configurtion.
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          git fetch --depth=1 origin main
+          git fetch origin main
       - name: Don't check version increment if there is no release label
         if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
         run: |
           echo "check-version-increment: false" >> .github/config/chart-testing.yaml
       # Dependencies.
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6
+        with:
+          python-version: 3.13
       - name: Cache Helm chart dependencies
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: charts/${{ inputs.camunda-helm-dir }}/charts
-          key: ${{ runner.os }}-helm-${{ inputs.camunda-helm-dir }}-${{ hashFiles(format('charts/{0}/Chart.lock', inputs.camunda-helm-dir)) || hashFiles(format('charts/{0}/Chart.yaml', inputs.camunda-helm-dir)) || 'nohash' }}
+          key: ${{ runner.os }}-helm-${{ hashFiles('charts/${{ inputs.camunda-helm-dir }}/Chart.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-helm-${{ inputs.camunda-helm-dir }}-
+            ${{ runner.os }}-helm-
+      - name: Cache Go modules
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Cache pip
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            golang
             helm
+            helm-ct
             yamllint
-      - name: Cache Helm client cache
-        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
-        with:
-          path: |
-            $HOME/.cache/helm
-          key: ${{ runner.os }}-helmcache-${{ inputs.camunda-helm-dir }}-${{ hashFiles(format('charts/{0}/Chart.lock', inputs.camunda-helm-dir)) || hashFiles(format('charts/{0}/Chart.yaml', inputs.camunda-helm-dir)) || 'nohash' }}
-          restore-keys: |
-            ${{ runner.os }}-helmcache-${{ inputs.camunda-helm-dir }}-
+            yq
       - name: Add helm repos
         run: |
           make helm.repos-add
@@ -81,19 +95,21 @@ jobs:
           export chartPath="charts/${{ inputs.camunda-helm-dir }}"
           make helm.dependency-update
       - name: Install Chart Verifier
-        if: ${{ contains(github.event.*.labels.*.name, 'release') }}
         uses: redhat-actions/openshift-tools-installer@144527c7d98999f2652264c048c7a9bd103f8a82 # v1
         with:
           source: "github"
           chart-verifier: "latest"
       # Lint.
+      - name: Run Helm lint
+        run: |
+          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          make helm.lint
       - name: Run CT lint
         run: |
           ct lint --charts charts/${{ inputs.camunda-helm-dir }} \
             --lint-conf .github/config/chart-testing.yaml \
             --config .github/config/chart-testing.yaml
       - name: Run Chart Verifier
-        if: ${{ contains(github.event.*.labels.*.name, 'release') }}
         run: |
           cd charts/${{ inputs.camunda-helm-dir }}
           chart-verifier verify .
