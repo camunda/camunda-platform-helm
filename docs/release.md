@@ -68,6 +68,7 @@ Follows the list of changes that should be done for the minor version release. A
 4. Update GitHub Actions with input of versions (search in the repo for `type: choice`)
 5. Update GitHub Action for snapshot artifact [chart-release-snapshot.yaml](../.github/workflows/chart-release-snapshot.yaml)
 6. Update GitHub Action PR labeler config file [pr-labeler.yaml](../.github/config/pr-labeler.yaml) and add the new version.
+7. Update docs/release.md file with the new version in examples.
 
 **Finally, create a PR with the changes, and once merged, follow the normal release process.
 **
