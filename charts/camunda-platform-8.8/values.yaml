@@ -2977,9 +2977,9 @@ orchestration:
   ## @param orchestration.extraVolumeClaimTemplates can be used to specify an array of extra PersistentVolumeClaim templates to be appended to the StatefulSet's volumeClaimTemplates. WARNING: volumeClaimTemplates is immutable after creation; changing this requires manual intervention (such as deleting the StatefulSet and its PVCs). Use with caution!
   extraVolumeClaimTemplates: []
 
-  ### @param orchestration.upgrade is a structure that holds upgrade specific configurations
+  ## @param orchestration.upgrade is a structure that holds upgrade specific configurations
   upgrade:
-    ### @param orchestration.upgrade.allowPreReleaseImages if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flah should only be used for testing purposes.
+    ## @param orchestration.upgrade.allowPreReleaseImages if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.
     allowPreReleaseImages: false
 
 #############################################
