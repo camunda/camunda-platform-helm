@@ -214,3 +214,4 @@ annotations:
       description: "Adjust secret constraint to reflect new secrets management"
     - kind: fixed
       description: "Add missing global.identity.auth.identity.secret configuration"
+
