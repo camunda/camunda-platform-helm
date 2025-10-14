@@ -74,5 +74,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --force \
         --timeout 20m0s \
+        --set orchestration.upgrade.allowPreReleaseImages=true \
+        --force \
         --wait-for-jobs \
         --wait {{ .TEST_HELM_EXTRA_ARGS }} 

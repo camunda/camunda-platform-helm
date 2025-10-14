@@ -55,6 +55,7 @@ on:
           - install,upgrade-patch
           - install,upgrade-minor
           - install,upgrade-patch,upgrade-minor
+          - modular-upgrade-minor
       e2e-enabled:
         description: |
           Whether to run the end-to-end tests (playwright).
@@ -86,6 +87,11 @@ on:
         required: false
         default: true
         type: boolean
+      always-delete-namespace:
+        description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
+        default: true
+        type: boolean
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -103,6 +109,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
       camunda-versions: ${{ steps.generate-chart-versions.outputs.camunda-versions }}
+      workspace: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Generate chart versions
@@ -158,7 +165,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration-tests:
-    name: ${{ matrix.version }} - ${{ inputs.platforms || 'gke' }} - ${{ matrix.case }} - ${{ matrix.flow }} - ${{ matrix.shortname }}
+    name: ${{ matrix.version }} - ${{ matrix.shortname }} - ${{ matrix.flow }} - ${{ matrix.case }} - ${{ inputs.platforms || 'gke' }}
     needs: [init]
     strategy:
       fail-fast: false
@@ -180,3 +187,4 @@ jobs:
       deployment-ttl: ${{ inputs.deployment-ttl }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
+      always-delete-namespace: ${{ inputs.always-delete-namespace || true }}

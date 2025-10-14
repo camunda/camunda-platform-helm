@@ -266,7 +266,7 @@ jobs:
       distro-platform: ${{ matrix.distro.platform }}
       distro-type: ${{ matrix.distro.type }}
       infra-type: ${{ inputs.infra-type }}
-      flow: ${{ matrix.scenario.flow }}
+      flow: ${{ inputs.flows || matrix.scenario.flow }}
       test-enabled: ${{ inputs.test-enabled }}
       e2e-enabled: ${{ inputs.e2e-enabled }}
       extra-values: ${{ inputs.extra-values }}

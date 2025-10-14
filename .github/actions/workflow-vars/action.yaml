@@ -76,7 +76,7 @@ runs:
       echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
 
       if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
-        TEST_NAMESPACE="${TEST_NAMESPACE}-${{ github.run_id }}-${GITHUB_WORKFLOW_JOB_ID}"
+        TEST_NAMESPACE="${TEST_NAMESPACE}-${GITHUB_WORKFLOW_JOB_ID}"
       fi
 
       if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
