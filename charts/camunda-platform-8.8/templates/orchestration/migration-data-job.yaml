@@ -21,7 +21,7 @@ spec:
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
       containers:
-        - name: camunda-migration
+        - name: camunda-migration-data
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.orchestration.containerSecurityContext }}
@@ -50,7 +50,7 @@ spec:
             {{- end }}
           envFrom:
             - configMapRef:
-                name: {{ include "orchestration.fullname" . }}-data-migration-env-vars
+                name: {{ include "orchestration.fullname" . }}-migration-data-env-vars
           command:
             - /usr/local/camunda/bin/data-migration
           resources:
