@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "orchestration.fullname" . }}-importer
+  name: {{ include "orchestration.fullname" . }}-migration-importer
   labels:
     {{- include "orchestration.labelsImporter" . | nindent 4 }}
   annotations:
@@ -29,7 +29,7 @@ spec:
       initContainers:
         {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
       containers:
-        - name: orchestration-importer
+        - name: orchestration-migration-importer
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           {{- if .Values.orchestration.containerSecurityContext }}
@@ -126,7 +126,7 @@ spec:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
             - configMapRef:
-                name: {{ include "orchestration.fullname" . }}-importer-env-vars
+                name: {{ include "orchestration.fullname" . }}-migration-importer-env-vars
           {{- if .Values.orchestration.importer.envFrom }}
             {{- .Values.orchestration.importer.envFrom | toYaml | nindent 12 }}
           {{- end }}

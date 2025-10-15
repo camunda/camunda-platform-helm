@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "orchestration.fullname" . }}-importer-env-vars
+  name: {{ include "orchestration.fullname" . }}-migration-importer-env-vars
   labels:
     {{- include "orchestration.labelsImporter" . | nindent 4 }}
   annotations:
