@@ -211,10 +211,6 @@ data:
         user: {{ include "identity.keycloak.authAdminUser" . | quote }}
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
-        {{- if .Values.console.enabled }}
-        console:
-          secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
-        {{- end }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- if .Values.optimize.enabled }}
