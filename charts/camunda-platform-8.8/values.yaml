@@ -2579,6 +2579,27 @@ orchestration:
         existingSecret: ""
         ## @param orchestration.migration.identity.secret.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: ""
+    ## @extra orchestration.migration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+    # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+    # It uses a hard requirement for scheduling and works based on the pod labels
+    ## @skip orchestration.migration.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight
+    ## @skip orchestration.migration.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchExpressions[0].key
+    ## @skip orchestration.migration.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchExpressions[0].operator
+    ## @skip orchestration.migration.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.labelSelector.matchExpressions[0].values
+    ## @skip orchestration.migration.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].podAffinityTerm.topologyKey
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: "app.kubernetes.io/component"
+                    operator: In
+                    # NOTE: The value is set to "zeebe-broker" for backward compatibility between 8.7 and 8.8.
+                    values:
+                      - zeebe-broker
+              topologyKey: "kubernetes.io/hostname"
 
   ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
   importer:
@@ -2676,7 +2697,7 @@ orchestration:
       #   port: 5701
       #   targetPort: 5701
 
-  ## @extra global.orchestration.ServiceAccount configuration for the service account where the broker pods are assigned to
+  ## @extra orchestration.serviceAccount configuration for the service account where the broker pods are assigned to
   serviceAccount:
     ## @param orchestration.serviceAccount.enabled if true, enables the broker service account
     enabled: true
@@ -2890,7 +2911,7 @@ orchestration:
   nodeSelector: {}
   ## @param orchestration.tolerations can be used to define pod toleration's https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: []
-  ## @extra global.orchestration.Affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ## @extra orchestration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
   # It uses a hard requirement for scheduling and works based on the pod labels
   ## @skip orchestration.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
