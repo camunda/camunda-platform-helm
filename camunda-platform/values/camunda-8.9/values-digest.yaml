@@ -20,8 +20,8 @@ optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: latest
-    digest: "sha256:2d5d1e5675e1bfd47970cf11ed3ab82b718f00c2277aedb8cfd65cb3948f8a41"
+    tag: 8-latest
+    digest: "sha256:c96fd86b1845cccb564cb5b08de79c001f436aaaacf7abb522db2722143384bf"
 
 #
 # Web Modeler
