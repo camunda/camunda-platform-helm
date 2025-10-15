@@ -211,6 +211,10 @@ data:
         user: {{ include "identity.keycloak.authAdminUser" . | quote }}
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
+        {{- if .Values.console.enabled }}
+        console:
+          root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+        {{- end }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- if .Values.optimize.enabled }}
