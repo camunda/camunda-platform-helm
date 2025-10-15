@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: camunda-platform-test-zeebe-importer
+  name: camunda-platform-test-zeebe-migration-importer
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
@@ -42,7 +42,7 @@ spec:
       initContainers:
         []
       containers:
-        - name: orchestration-importer
+        - name: orchestration-migration-importer
           image: camunda/camunda:8.8.0
           imagePullPolicy: Always
           securityContext:
@@ -91,7 +91,7 @@ spec:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
             - configMapRef:
-                name: camunda-platform-test-zeebe-importer-env-vars
+                name: camunda-platform-test-zeebe-migration-importer-env-vars
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

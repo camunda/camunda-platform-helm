@@ -37,7 +37,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: camunda-migration
+        - name: camunda-migration-data
           image: camunda/camunda:8.8.0
           imagePullPolicy: Always
           securityContext:
@@ -54,7 +54,7 @@ spec:
             
           envFrom:
             - configMapRef:
-                name: camunda-platform-test-zeebe-data-migration-env-vars
+                name: camunda-platform-test-zeebe-migration-data-env-vars
           command:
             - /usr/local/camunda/bin/data-migration
           resources:

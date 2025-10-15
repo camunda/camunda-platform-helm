@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-zeebe-importer-env-vars
+  name: camunda-platform-test-zeebe-migration-importer-env-vars
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
