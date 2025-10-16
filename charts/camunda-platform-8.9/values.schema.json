@@ -1409,10 +1409,7 @@
                                     "default": "400Mi"
                                 },
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "600m"
                                 }
@@ -1422,10 +1419,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -1848,10 +1842,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "1000m"
                                 },
@@ -1866,10 +1857,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -2391,12 +2379,9 @@
                                     "default": "1Gi"
                                 },
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
-                                    "default": 1
+                                    "default": "1000m"
                                 }
                             }
                         },
@@ -2404,12 +2389,9 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
-                                    "default": 2
+                                    "default": "2000m"
                                 },
                                 "memory": {
                                     "type": "string",
@@ -3264,10 +3246,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "500m"
                                         },
@@ -3282,10 +3261,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "1000m"
                                         },
@@ -3653,10 +3629,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "400m"
                                         },
@@ -3671,10 +3644,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "800m"
                                         },
@@ -4037,10 +4007,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "100m"
                                         },
@@ -4055,10 +4022,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "200m"
                                         },
@@ -4631,12 +4595,9 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
-                                    "default": 1
+                                    "default": "1000m"
                                 },
                                 "memory": {
                                     "type": "string",
@@ -4649,12 +4610,9 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
-                                    "default": 2
+                                    "default": "2000m"
                                 },
                                 "memory": {
                                     "type": "string",
@@ -5882,10 +5840,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "1000m"
                                 },
@@ -5900,10 +5855,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -6484,10 +6436,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "600m"
                                         },
@@ -6502,10 +6451,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "2000m"
                                         },
@@ -6918,10 +6864,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "600m"
                                 },
@@ -6936,10 +6879,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -7153,12 +7093,9 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "cpu request",
-                                            "default": 1
+                                            "default": "1000m"
                                         },
                                         "memory": {
                                             "type": "string",
@@ -7171,12 +7108,9 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                    "anyOf": [
-                                        {"type": "string"},
-                                        {"type": "number"}
-                                    ],
+                                            "type": "string",
                                             "description": "cpu limit",
-                                            "default": 2
+                                            "default": "2000m"
                                         },
                                         "memory": {
                                             "type": "string",
