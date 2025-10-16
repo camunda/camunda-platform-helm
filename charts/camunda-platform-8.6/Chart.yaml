@@ -73,6 +73,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Correct sysctlImage structure in values-enterprise.yaml"
-    - kind: fixed
-      description: "Web modeler extraConfiguration uses subcomponent subkey"
+      description: "Fix link to upgrade instructions"
