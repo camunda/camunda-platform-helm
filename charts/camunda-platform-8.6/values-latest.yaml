@@ -13,7 +13,7 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.6.89
+    tag: 8.6.90
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -43,7 +43,7 @@ webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.6.19
+    tag: 8.6.20
 
 zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
