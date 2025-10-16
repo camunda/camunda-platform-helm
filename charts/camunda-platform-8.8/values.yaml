@@ -1208,10 +1208,10 @@ console:
   ## @param console.resources.requests.cpu
   resources:
     requests:
-      cpu: 1
+      cpu: 1000m
       memory: 1Gi
     limits:
-      cpu: 2
+      cpu: 2000m
       memory: 2Gi
 
   ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
@@ -2188,10 +2188,10 @@ connectors:
   ## @param connectors.resources.limits.memory
   resources:
     requests:
-      cpu: 1
+      cpu: 1000m
       memory: 1Gi
     limits:
-      cpu: 2
+      cpu: 2000m
       memory: 2Gi
 
   ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
@@ -3310,12 +3310,12 @@ elasticsearch:
     resources:
       requests:
         ## @param elasticsearch.master.resources.requests.cpu cpu request
-        cpu: 1
+        cpu: 1000m
         ## @param elasticsearch.master.resources.requests.memory request
         memory: 2Gi
       limits:
         ## @param elasticsearch.master.resources.limits.cpu cpu limit
-        cpu: 2
+        cpu: 2000m
         ## @param elasticsearch.master.resources.limits.memory memory limit
         memory: 2Gi
     extraEnvVars:
