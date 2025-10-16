@@ -2377,22 +2377,12 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "1Gi"
-                                },
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1000m"
                                 }
                             }
                         },
                         "limits": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2000m"
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4594,11 +4584,6 @@
                         "requests": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "1000m"
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4609,11 +4594,6 @@
                         "limits": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "string",
-                                    "description": "",
-                                    "default": "2000m"
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -7092,11 +7072,6 @@
                                 "requests": {
                                     "type": "object",
                                     "properties": {
-                                        "cpu": {
-                                            "type": "string",
-                                            "description": "cpu request",
-                                            "default": "1000m"
-                                        },
                                         "memory": {
                                             "type": "string",
                                             "description": "request",
@@ -7107,11 +7082,6 @@
                                 "limits": {
                                     "type": "object",
                                     "properties": {
-                                        "cpu": {
-                                            "type": "string",
-                                            "description": "cpu limit",
-                                            "default": "2000m"
-                                        },
                                         "memory": {
                                             "type": "string",
                                             "description": "memory limit",
