@@ -1409,14 +1409,7 @@
                                     "default": "400Mi"
                                 },
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "600m"
                                 }
@@ -1426,14 +1419,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -1856,14 +1842,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "1000m"
                                 },
@@ -1878,14 +1857,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -2283,7 +2255,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.8"
+                            "default": "8.8.10"
                         },
                         "digest": {
                             "type": "string",
@@ -2407,14 +2379,7 @@
                                     "default": "1Gi"
                                 },
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "1000m"
                                 }
@@ -2424,14 +2389,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -3288,14 +3246,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "500m"
                                         },
@@ -3310,14 +3261,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "1000m"
                                         },
@@ -3685,14 +3629,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "400m"
                                         },
@@ -3707,14 +3644,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "800m"
                                         },
@@ -4077,14 +4007,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "100m"
                                         },
@@ -4099,14 +4022,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "200m"
                                         },
@@ -4600,7 +4516,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0"
+                            "default": "8.8.1"
                         },
                         "digest": {
                             "type": "string",
@@ -4679,14 +4595,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "1000m"
                                 },
@@ -4701,14 +4610,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -5938,14 +5840,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "1000m"
                                 },
@@ -5960,14 +5855,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -6548,14 +6436,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "600m"
                                         },
@@ -6570,14 +6451,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "",
                                             "default": "2000m"
                                         },
@@ -6990,14 +6864,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "600m"
                                 },
@@ -7012,14 +6879,7 @@
                             "type": "object",
                             "properties": {
                                 "cpu": {
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "number"
-                                        }
-                                    ],
+                                    "type": "string",
                                     "description": "",
                                     "default": "2000m"
                                 },
@@ -7233,14 +7093,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "cpu request",
                                             "default": "1000m"
                                         },
@@ -7255,14 +7108,7 @@
                                     "type": "object",
                                     "properties": {
                                         "cpu": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "type": "number"
-                                                }
-                                            ],
+                                            "type": "string",
                                             "description": "cpu limit",
                                             "default": "2000m"
                                         },
