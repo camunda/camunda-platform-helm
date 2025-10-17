@@ -130,7 +130,7 @@ runs:
     run: |
       # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
       # then upgraded from the PR branch to ensure upgradability.
-      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' || "${{ inputs.setup-flow" }} == 'upgrade-minor' ]]; then
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' || "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
         if [[ -n "${{ inputs.chart-upgrade-version }}" ]]; then
           TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
         fi
