@@ -5,7 +5,6 @@ vars:
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   INFRA_TYPE_SUFFIX: '{{ eq (env "PLATFORM") "eks" | ternary ("eks") "" }}-{{ .INFRA_TYPE }}'
-  TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" }}'
 
 tasks:
   pre:
@@ -46,7 +45,7 @@ tasks:
         VENOM_KEYCLOAK_CLIENT_NUMBER="$(helm template integration {{ .TEST_CHART_NAME }} \
           --namespace {{ .TEST_NAMESPACE }} \
           --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-          {{ if (.TEST_CHART_VERSION | hasPrefix "13") -}}
+          {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
           --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
           {{ end -}}
           --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
@@ -68,7 +67,7 @@ tasks:
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-        {{ if (.TEST_CHART_VERSION | hasPrefix "13") -}}
+        {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
