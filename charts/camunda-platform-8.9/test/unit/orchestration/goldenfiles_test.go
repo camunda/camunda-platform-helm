@@ -72,7 +72,6 @@ func TestGoldenDefaultsTemplateOrchestrationMigrationData(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"orchestration.migration.data.enabled": "true",
 			},
 			IgnoredLines: []string{
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
@@ -99,8 +98,6 @@ func TestGoldenDefaultsTemplateOrchestrationMigrationIdentity(t *testing.T) {
 			GoldenFileName: name,
 			Templates:      []string{"templates/orchestration/" + name + ".yaml"},
 			SetValues: map[string]string{
-				"orchestration.migration.identity.enabled": "true",
-				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
 			},
 			IgnoredLines: []string{
 				`\s+checksum/.+?:\s+.*`, // ignore configmap checksum.
