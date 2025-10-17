@@ -1,9 +1,9 @@
 
 orchestration:
   importer:
-    enabled: false
+    enabled: true
   migration:
     identity:
-      enabled: false
+      enabled: true
     data:
-      enabled: false
+      enabled: true

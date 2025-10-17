@@ -9,13 +9,9 @@ orchestration:
           - operate-api
           - tasklist-api
           - zeebe-api
-  importer:
-    enabled: true
   migration:
     data:
-      enabled: true
     identity:
-      enabled: true
       secret:
         existingSecret: integration-test-credentials
         existingSecretKey: identity-migration-client-secret
