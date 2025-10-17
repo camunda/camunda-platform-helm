@@ -10,13 +10,10 @@ orchestration:
           - tasklist-api
           - zeebe-api
   migration:
-    data:
     identity:
       secret:
         existingSecret: integration-test-credentials
         existingSecretKey: identity-migration-client-secret
-    process:
-      enabled: true
 
 # We need to use different client order for test here to not interfere with the identity migration client.
 # This overrides the env vars in ../common/values-integration-test.yaml
