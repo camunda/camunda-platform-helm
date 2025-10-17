@@ -184,7 +184,6 @@ helm.schema-update:
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
 			--schema "$${chart_dir}/values.schema.json"; \
-		# Merge with extra schema if exists. \
 		if [ ! -f "$${chart_dir}/values.schema.extra.json" ]; then \
 			echo "[$@] No extra schema to merge"; \
 			continue; \

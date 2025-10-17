@@ -65,10 +65,10 @@ spec:
                 name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
-              cpu: 2
+              cpu: 2000m
               memory: 2Gi
             requests:
-              cpu: 1
+              cpu: 1000m
               memory: 1Gi
           readinessProbe:
             httpGet:

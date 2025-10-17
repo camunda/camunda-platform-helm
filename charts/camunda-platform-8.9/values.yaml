@@ -1203,15 +1203,16 @@ console:
 
   ## console.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   ## @param console.resources.requests.memory
-  ## @param console.resources.limits.cpu
+  ## @skip console.resources.limits.cpu
   ## @param console.resources.limits.memory
-  ## @param console.resources.requests.cpu
+  ## @skip console.resources.requests.cpu
+  ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
   resources:
     requests:
-      cpu: 1
+      cpu: "1000m"
       memory: 1Gi
     limits:
-      cpu: 2
+      cpu: "2000m"
       memory: 2Gi
 
   ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
@@ -2182,16 +2183,17 @@ connectors:
     serverName: http
 
   ## @extra connectors.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param connectors.resources.requests.cpu
+  ## @skip connectors.resources.requests.cpu
   ## @param connectors.resources.requests.memory
-  ## @param connectors.resources.limits.cpu
+  ## @skip connectors.resources.limits.cpu
   ## @param connectors.resources.limits.memory
+  ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
   resources:
     requests:
-      cpu: 1
+      cpu: "1000m"
       memory: 1Gi
     limits:
-      cpu: 2
+      cpu: "2000m"
       memory: 2Gi
 
   ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
@@ -3286,16 +3288,17 @@ elasticsearch:
     persistence:
       ## @param elasticsearch.master.persistence.size
       size: 64Gi
+    ## @skip elasticsearch.master.resources.requests.cpu cpu request
+    ## @param elasticsearch.master.resources.requests.memory request
+    ## @skip elasticsearch.master.resources.limits.cpu cpu limit
+    ## @param elasticsearch.master.resources.limits.memory memory limit
+    ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
     resources:
       requests:
-        ## @param elasticsearch.master.resources.requests.cpu cpu request
-        cpu: 1
-        ## @param elasticsearch.master.resources.requests.memory request
+        cpu: "1000m"
         memory: 2Gi
       limits:
-        ## @param elasticsearch.master.resources.limits.cpu cpu limit
-        cpu: 2
-        ## @param elasticsearch.master.resources.limits.memory memory limit
+        cpu: "2000m"
         memory: 2Gi
     extraEnvVars:
       ## @param elasticsearch.master.extraEnvVars[0].name env
