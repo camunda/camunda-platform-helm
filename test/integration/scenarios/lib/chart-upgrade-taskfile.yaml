@@ -5,6 +5,7 @@ vars:
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   INFRA_TYPE_SUFFIX: '{{ eq (env "PLATFORM") "eks" | ternary ("eks") "" }}-{{ .INFRA_TYPE }}'
+  TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" }}'
 
 tasks:
   pre:
