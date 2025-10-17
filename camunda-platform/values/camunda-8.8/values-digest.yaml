@@ -14,7 +14,7 @@ connectors:
   image:
     repository: camunda/connectors-bundle
     tag: 8.8-SNAPSHOT
-    digest: "sha256:5621c5bccba60d3ceb3767655792eb8a09c8ac669269276ce3e65ce81a721962"
+    digest: "sha256:6ecacb483665a435c6b7e4dcd914f0643a3030e0aab8a9075f95779b9d2ae490"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -58,7 +58,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: 8.8-SNAPSHOT
-    digest: "sha256:24f4311af5a4e8516411a9f10bd60ffc4aaac1e57322938069098669c4c570d2"
+    digest: "sha256:59ad298a92ee06e62d4aa7eaeee34df1083b23afe278150751d40ee3b32affde"
 
 #
 # Identity
