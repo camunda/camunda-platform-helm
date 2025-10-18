@@ -84,3 +84,4 @@ annotations:
       description: "Revert renovate bot version bump"
     - kind: fixed
       description: "Web modeler extraConfiguration uses subcomponent subkey"
+
