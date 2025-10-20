@@ -29,6 +29,7 @@ jobs:
         # NOTE: Once we move to Helm OCI repo, the logic here will be simpler
         #       as Cosign can work directly with the OCI registry.
         run: |
+          set -x
           # Track verification results.
           skipped_tags=()
           skipped_verifications=()
