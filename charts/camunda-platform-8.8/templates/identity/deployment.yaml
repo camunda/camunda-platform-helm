@@ -122,6 +122,11 @@ spec:
               value: {{ $perm.definition | quote }}
             {{- end }}
             {{- end }}
+            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "identity.keycloak.authExistingSecret" . }}
+                  key: {{ include "identity.keycloak.authExistingSecretKey" . }}
             {{- if .Values.identity.firstUser.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
