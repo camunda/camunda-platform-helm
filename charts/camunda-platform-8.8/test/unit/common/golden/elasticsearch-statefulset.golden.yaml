@@ -106,10 +106,10 @@ spec:
               type: RuntimeDefault
           resources:
             limits:
-              cpu: 2
+              cpu: 2000m
               memory: 2Gi
             requests:
-              cpu: 1
+              cpu: 1000m
               memory: 2Gi
           command:
             - /bin/bash
@@ -204,10 +204,10 @@ spec:
                 - /opt/bitnami/scripts/elasticsearch/healthcheck.sh
           resources:
             limits:
-              cpu: 2
+              cpu: 2000m
               memory: 2Gi
             requests:
-              cpu: 1
+              cpu: 1000m
               memory: 2Gi
           volumeMounts:
             - name: empty-dir
