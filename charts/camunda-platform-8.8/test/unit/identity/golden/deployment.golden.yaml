@@ -116,6 +116,11 @@ spec:
               value: "orchestration-api"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
               value: "write:*"
+            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-keycloak-admin-password
             - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
               valueFrom:
                 secretKeyRef:
