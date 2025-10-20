@@ -76,7 +76,50 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"configmapApplication.camunda.client.auth.scope":     "",
 			},
 		},
+		{
+			Name: "TestContainerSetAuthMethodGlobally",
+			Values: map[string]string{
+				"connectors.enabled":                    "true",
+				"connectors.contextPath":                "/connectors",
+				"global.security.authentication.method": "oidc",
+				"global.identity.auth.tokenUrl":         "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication ConnectorsConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			},
+		},
+		{
+			Name: "TestContainerSetAuthMethodConnectors",
+			Values: map[string]string{
+				"connectors.enabled":                        "true",
+				"connectors.contextPath":                    "/connectors",
+				"connectors.security.authentication.method": "oidc",
+				"global.identity.auth.tokenUrl":             "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication ConnectorsConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
