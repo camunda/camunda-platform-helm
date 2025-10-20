@@ -44,7 +44,7 @@ jobs:
             echo "##################################################"
 
             chart_version_prefix="camunda-platform-${camunda_version}"
-            chart_git_tags=$(git tag -l | grep "${chart_version_prefix}-")
+            chart_git_tags=$(git tag -l | grep "${chart_version_prefix}-" || true)
             for chart_tag_name in ${chart_git_tags}; do
               chart_version="$(echo "${chart_tag_name}" | sed "s/${chart_version_prefix}-//")"
               chart_cosign_verify_file="camunda-platform-${chart_version}-cosign-verify.sh"
