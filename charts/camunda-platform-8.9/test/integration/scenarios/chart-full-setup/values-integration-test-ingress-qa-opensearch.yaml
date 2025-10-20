@@ -69,12 +69,6 @@ optimize:
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
-  migration:
-    env:
-      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-        value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
-      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-        value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
 webModelerPostgresql:
   enabled: true
 webModeler:

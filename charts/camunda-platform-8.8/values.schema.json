@@ -2255,7 +2255,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.8"
+                            "default": "8.8.10"
                         },
                         "digest": {
                             "type": "string",
@@ -2377,22 +2377,12 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "1Gi"
-                                },
-                                "cpu": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 1
                                 }
                             }
                         },
                         "limits": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 2
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -2752,7 +2742,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.0"
+                            "default": "8.8.1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4516,7 +4506,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.0"
+                            "default": "8.8.1"
                         },
                         "digest": {
                             "type": "string",
@@ -4594,11 +4584,6 @@
                         "requests": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 1
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -4609,11 +4594,6 @@
                         "limits": {
                             "type": "object",
                             "properties": {
-                                "cpu": {
-                                    "type": "number",
-                                    "description": "",
-                                    "default": 2
-                                },
                                 "memory": {
                                     "type": "string",
                                     "description": "",
@@ -7092,11 +7072,6 @@
                                 "requests": {
                                     "type": "object",
                                     "properties": {
-                                        "cpu": {
-                                            "type": "number",
-                                            "description": "cpu request",
-                                            "default": 1
-                                        },
                                         "memory": {
                                             "type": "string",
                                             "description": "request",
@@ -7107,11 +7082,6 @@
                                 "limits": {
                                     "type": "object",
                                     "properties": {
-                                        "cpu": {
-                                            "type": "number",
-                                            "description": "cpu limit",
-                                            "default": 2
-                                        },
                                         "memory": {
                                             "type": "string",
                                             "description": "memory limit",

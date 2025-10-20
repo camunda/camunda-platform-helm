@@ -26,7 +26,8 @@ integration:
           shortname: eske
           exclude: []
         - name: upgrade-migration
-          enabled: true
+          # upgrade migrators are only for 8.7 -> 8.8, not for 8.9
+          enabled: false
           flow: upgrade-minor
           auth: keycloak
           shortname: eske-upgm
