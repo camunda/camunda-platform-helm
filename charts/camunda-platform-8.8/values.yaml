@@ -3365,6 +3365,7 @@ elasticsearch:
 
 ## @section Prometheus Parameters
 
+
 ## @extra PrometheusServiceMonitor configuration to configure a prometheus service monitor
 prometheusServiceMonitor:
   ## @param prometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods
