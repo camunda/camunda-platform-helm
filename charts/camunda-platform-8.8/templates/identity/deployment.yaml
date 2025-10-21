@@ -97,6 +97,25 @@ spec:
               -}}
               {{- $clients = append $clients $migration -}}
             {{- end }}
+            {{- if .Values.global.identity.auth.admin }}
+              {{- $admin := dict
+                "name" (tpl .Values.global.identity.auth.admin.clientId $ | title | default "Admin")
+                "id" (tpl .Values.global.identity.auth.admin.clientId $ | default "admin")
+                "rootUrl" "http://dummy"
+                "redirectUris" (list "/dummy")
+                "type" "Confidential"
+                "permissions" (list
+                  (dict "resourceServerId" (include "identity.authAudience" .) "definition" "read")
+                  (dict "resourceServerId" (include "identity.authAudience" .) "definition" "write")
+                  (dict "resourceServerId" (include "orchestration.authAudience" .) "definition" "write:*")
+                  (dict "resourceServerId" (include "console.authAudience" .) "definition" "write:*")
+                  (dict "resourceServerId" (include "webModeler.authClientApiAudience" .) "definition" "write:*")
+                  (dict "resourceServerId" (include "optimize.authAudience" .) "definition" "write:*")
+                )
+                "secretConfig" .Values.global.identity.auth.admin
+              -}}
+              {{- $clients = append $clients $admin -}}
+            {{- end }}
             {{- /* Iterate over dynamic client list to set environment variables */ -}}
             {{- range $i, $client := $clients }}
             - name: KEYCLOAK_CLIENTS_{{ $i }}_NAME
