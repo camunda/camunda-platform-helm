@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Cosign
-        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
@@ -42,7 +42,7 @@ jobs:
             echo "##################################################"
 
             chart_version_prefix="camunda-platform-${camunda_version}"
-            chart_git_tags=$(git tag -l | grep "${chart_version_prefix}-")
+            chart_git_tags=$(git tag -l | grep "${chart_version_prefix}-" || true)
             for chart_tag_name in ${chart_git_tags}; do
               chart_version="$(echo "${chart_tag_name}" | sed "s/${chart_version_prefix}-//")"
               chart_cosign_verify_file="camunda-platform-${chart_version}-cosign-verify.sh"

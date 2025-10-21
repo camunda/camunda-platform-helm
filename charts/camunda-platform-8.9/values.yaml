@@ -1148,7 +1148,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.3
+    tag: 8.8.12
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1367,7 +1367,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.0
+    tag: 8.8.1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2142,7 +2142,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.0
+    tag: 8.8.1
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2494,93 +2494,6 @@ orchestration:
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
-
-  ## @extra orchestration.migration configuration for migration purposes for the orchestration cluster
-  migration:
-    data:
-      ## @param orchestration.migration.data.enabled if true, the data migration occurs.
-      enabled: false
-      ## @param orchestration.migration.data.backoffLimit if true, can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
-      backoffLimit: 6
-      process:
-        ## @param orchestration.migration.data.process.batchSize can be used to define the batch size.
-        batchSize: 5
-        ## @param orchestration.migration.data.process.importerFinishedTimeout can be used to define the timeout when the import is finished.
-        importerFinishedTimeout: PT1M
-        retry:
-          ## @param orchestration.migration.data.process.retry.maxRetries can be used to define the maximum amount of retries.
-          maxRetries: 5
-          ## @param orchestration.migration.data.process.retry.maxRetryDelay can be used to define the delay time between retries.
-          maxRetryDelay: PT1M
-          ## @param orchestration.migration.data.process.retry.minRetryDelay can be used to define the delay time between retries.
-          minRetryDelay: PT10s
-          ## @param orchestration.migration.data.process.retry.retryDelayMultiplier can be used to define the delay multiplier.
-          retryDelayMultiplier: 2.0
-      metrics:
-        ## @param orchestration.migration.data.metrics.batchSize can be used to define the batch size.
-        batchSize: 5
-        ## @param orchestration.migration.data.metrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
-        importerFinishedTimeout: PT1M
-        retry:
-          ## @param orchestration.migration.data.metrics.retry.maxRetries can be used to define the maximum amount of retries.
-          maxRetries: 5
-          ## @param orchestration.migration.data.metrics.retry.maxRetryDelay can be used to define the delay time between retries.
-          maxRetryDelay: PT1M
-          ## @param orchestration.migration.data.metrics.retry.minRetryDelay can be used to define the delay time between retries.
-          minRetryDelay: PT10s
-          ## @param orchestration.migration.data.metrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
-          retryDelayMultiplier: 2.0
-      tumetrics:
-        ## @param orchestration.migration.data.tumetrics.batchSize can be used to define the batch size.
-        batchSize: 5
-        ## @param orchestration.migration.data.tumetrics.importerFinishedTimeout can be used to define the timeout when the import is finished.
-        importerFinishedTimeout: PT1M
-        retry:
-          ## @param orchestration.migration.data.tumetrics.retry.maxRetries can be used to define the maximum amount of retries.
-          maxRetries: 5
-          ## @param orchestration.migration.data.tumetrics.retry.maxRetryDelay can be used to define the delay time between retries.
-          maxRetryDelay: PT1M
-          ## @param orchestration.migration.data.tumetrics.retry.minRetryDelay can be used to define the delay time between retries.
-          minRetryDelay: PT10s
-          ## @param orchestration.migration.data.tumetrics.retry.retryDelayMultiplier can be used to define the delay multiplier.
-          retryDelayMultiplier: 2.0
-      tasks:
-        ## @param orchestration.migration.data.tasks.batchSize can be used to define the batch size.
-        batchSize: 5
-        ## @param orchestration.migration.data.tasks.importerFinishedTimeout can be used to define the timeout when the import is finished.
-        importerFinishedTimeout: PT1M
-        ## @param orchestration.migration.data.tasks.legacyIndexRetentionAge defines when the legacy task index will be removed, defaults to orchestration.history.retention.minimumAge
-        legacyIndexRetentionAge: 30d
-        retry:
-          ## @param orchestration.migration.data.tasks.retry.maxRetries can be used to define the maximum amount of retries.
-          maxRetries: 5
-          ## @param orchestration.migration.data.tasks.retry.maxRetryDelay can be used to define the delay time between retries.
-          maxRetryDelay: PT1M
-          ## @param orchestration.migration.data.tasks.retry.minRetryDelay can be used to define the delay time between retries.
-          minRetryDelay: PT10s
-          ## @param orchestration.migration.data.tasks.retry.retryDelayMultiplier can be used to define the delay multiplier.
-          retryDelayMultiplier: 2.0
-    identity:
-      ## @param orchestration.migration.identity.enabled if true, the migration of Management Identity data to the orchestration clusters Identity occurs
-      enabled: false
-      ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
-      backoffLimit: 6
-      ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
-      resourceAuthorizationsEnabled: false
-      ## @param orchestration.migration.identity.claimName (OIDC setups only) defines the claim name in the Access Token to authorize the client by. This is required to grant the migration client the identity read permissions.
-      claimName: "sub"
-      ## @param orchestration.migration.identity.claimValue (OIDC setups only) defines the claim value in the set claimName that identifies the migration client. This is required to grant the migration client the identity read permissions.
-      claimValue: ""
-      ## @param orchestration.migration.identity.clientId must be the clientId used by the migration to access Management Identity. Only needed if external IdP is used (requires read permission).
-      clientId: ""
-      ## @extra orchestration.migration.identity.secret configuration to provide the identity migration client secret.
-      secret:
-        ## @param orchestration.migration.identity.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-        inlineSecret: ""
-        ## @param orchestration.migration.identity.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-        existingSecret: ""
-        ## @param orchestration.migration.identity.secret.existingSecretKey defines the key within the existing secret object.
-        existingSecretKey: ""
 
   ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
   importer:

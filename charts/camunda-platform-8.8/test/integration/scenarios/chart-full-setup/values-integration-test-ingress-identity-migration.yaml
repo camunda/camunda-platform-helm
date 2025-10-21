@@ -8,7 +8,6 @@ orchestration:
           - zeebe-api
   migration:
     identity:
-      enabled: true
       secret:
         existingSecret: integration-test-credentials
         existingSecretKey: identity-migration-client-secret

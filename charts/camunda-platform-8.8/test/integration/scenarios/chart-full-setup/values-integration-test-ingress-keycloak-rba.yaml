@@ -38,7 +38,6 @@ orchestration:
   migration:
     identity:
       resourceAuthorizationsEnabled: true
-      enabled: true
       backoffLimit: 12
       secret:
         existingSecret: integration-test-credentials
