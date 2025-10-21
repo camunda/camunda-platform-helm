@@ -296,14 +296,26 @@
         'charts/camunda-platform-8.8/Chart.yaml',
         'charts/camunda-platform-8.8/values*.yaml',
       ],
-      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
-      // which is not the case.
-      versionCompatibility: '^(?<version>\\d+.\\d+.\\d+(-alpha[1-9])?)(?<compatibility>.*)$',
-      // setting versioning to semver is important because by default docker versioning will
-      // assume that anything after the dash is a compatibility rather than a prerelease
-      // indicator. Some docker images have versions like 8.5.0-alpine but in camunda
-      // images, we use 8.5.0-alpha3.
-      versioning: 'semver',
+      matchUpdateTypes: ['major', 'minor', 'patch'],
+      addLabels: ['camunda-platform', 'priority-high'],
+    },
+    {
+      enabled: true,
+      groupName: 'camunda-platform-digests',
+      matchPackageNames: [
+        '/.*camunda.*/',
+      ],
+      matchDatasources: [
+        'helm',
+        'docker',
+        'regex',
+      ],
+      matchFileNames: [
+        // bump these to whatever the latest alpha is
+        'charts/camunda-platform-8.8/Chart.yaml',
+        'charts/camunda-platform-8.8/values*.yaml',
+      ],
+      matchUpdateTypes: ['digest'],
       addLabels: ['camunda-platform', 'priority-high'],
     },
     {
@@ -335,10 +347,25 @@
         'charts/camunda-platform-8.9/Chart.yaml',
         'charts/camunda-platform-8.9/values*.yaml',
       ],
-      // Ignore non-semver versions like 8.6.0-alpha3-rc3 which has a higher precedence than 8.6.0-alpha3
-      // which is not the case.
-      versionCompatibility: '^(?<version>\\d+.\\d+.\\d+(-alpha[1-9])?)(?<compatibility>.*)$',
-      versioning: 'semver',
+      matchUpdateTypes: ['major', 'minor', 'patch'],
+      addLabels: ['camunda-platform', 'priority-high'],
+    },
+    {
+      enabled: true,
+      groupName: 'camunda-platform-digests',
+      matchPackageNames: [
+        '/.*camunda.*/',
+      ],
+      matchDatasources: [
+        'helm',
+        'docker',
+        'regex',
+      ],
+      matchFileNames: [
+        'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.9/values*.yaml',
+      ],
+      matchUpdateTypes: ['digest'],
       addLabels: ['camunda-platform', 'priority-high'],
     },
     {
