@@ -76,16 +76,19 @@
     {
       description: 'Schedule major updates for Friday nights.',
       matchUpdateTypes: ['major'],
+      excludePackageNames: ['/.*camunda.*/'],
       schedule: ['* 0-6,18-23 * * 5'],
     },
     {
       description: 'Schedule minor updates for Saturdays.',
       matchUpdateTypes: ['minor'],
+      excludePackageNames: ['/.*camunda.*/'],
       schedule: ['* * * * 6'],
     },
     {
       description: 'Schedule patch/digest updates for Sundays.',
       matchUpdateTypes: ['pin', 'digest', 'patch'],
+      excludePackageNames: ['/.*camunda.*/'],
       schedule: ['* * * * 0'],
     },
     {
@@ -278,8 +281,6 @@
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
-    //
-    // General.
     {
       enabled: true,
       groupName: 'camunda-platform-images',
@@ -292,11 +293,42 @@
         'regex',
       ],
       matchFileNames: [
-        // bump these to whatever the latest alpha is
+        'charts/camunda-platform-8.2/Chart.yaml',
+        'charts/camunda-platform-8.2/values*.yaml',
+        'charts/camunda-platform-8.3/Chart.yaml',
+        'charts/camunda-platform-8.3/values*.yaml',
+        'charts/camunda-platform-8.4/Chart.yaml',
+        'charts/camunda-platform-8.4/values*.yaml',
+        'charts/camunda-platform-8.5/Chart.yaml',
+        'charts/camunda-platform-8.5/values*.yaml',
+        'charts/camunda-platform-8.6/Chart.yaml',
+        'charts/camunda-platform-8.6/values*.yaml',
+        'charts/camunda-platform-8.7/Chart.yaml',
+        'charts/camunda-platform-8.7/values*.yaml',
+      ],
+      matchUpdateTypes: ['patch', 'pin'],
+      schedule: ['every day'],
+      addLabels: ['camunda-platform', 'priority-high'],
+    },
+    {
+      enabled: true,
+      groupName: 'camunda-platform-images',
+      matchPackageNames: [
+        '/.*camunda.*/',
+      ],
+      matchDatasources: [
+        'helm',
+        'docker',
+        'regex',
+      ],
+      matchFileNames: [
         'charts/camunda-platform-8.8/Chart.yaml',
         'charts/camunda-platform-8.8/values*.yaml',
+        'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.9/values*.yaml',
       ],
       matchUpdateTypes: ['major', 'minor', 'patch'],
+      schedule: ['every day'],
       addLabels: ['camunda-platform', 'priority-high'],
     },
     {
@@ -311,15 +343,16 @@
         'regex',
       ],
       matchFileNames: [
-        // bump these to whatever the latest alpha is
         'charts/camunda-platform-8.8/Chart.yaml',
         'charts/camunda-platform-8.8/values*.yaml',
+        'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.9/values*.yaml',
       ],
       matchUpdateTypes: ['digest'],
+      schedule: ['every day'],
       addLabels: ['camunda-platform', 'priority-high'],
     },
     {
-      // Limit alpha chart version to alpha tags only.
       enabled: true,
       matchDatasources: [
         'github-tags',
@@ -331,42 +364,6 @@
         'charts/camunda-platform-8.9/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
-    },
-    {
-      enabled: true,
-      groupName: 'camunda-platform-images',
-      matchPackageNames: [
-        '/.*camunda.*/',
-      ],
-      matchDatasources: [
-        'helm',
-        'docker',
-        'regex',
-      ],
-      matchFileNames: [
-        'charts/camunda-platform-8.9/Chart.yaml',
-        'charts/camunda-platform-8.9/values*.yaml',
-      ],
-      matchUpdateTypes: ['major', 'minor', 'patch'],
-      addLabels: ['camunda-platform', 'priority-high'],
-    },
-    {
-      enabled: true,
-      groupName: 'camunda-platform-digests',
-      matchPackageNames: [
-        '/.*camunda.*/',
-      ],
-      matchDatasources: [
-        'helm',
-        'docker',
-        'regex',
-      ],
-      matchFileNames: [
-        'charts/camunda-platform-8.9/Chart.yaml',
-        'charts/camunda-platform-8.9/values*.yaml',
-      ],
-      matchUpdateTypes: ['digest'],
-      addLabels: ['camunda-platform', 'priority-high'],
     },
     {
       matchFileNames: [
