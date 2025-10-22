@@ -375,6 +375,7 @@
         '.github/actions/*',
         'charts/**',
       ],
+      matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
       addLabels: [
         'automerge',
         'automation/renovatebot',
