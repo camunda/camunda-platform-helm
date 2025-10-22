@@ -1,3 +1,4 @@
+jq 1.7.1
 git-cliff 2.5.0
 golang 1.25.0
 gomplate v4.3.3

@@ -1,6 +1,12 @@
 {
     "title": "Chart Values",
     "type": "object",
+    "patternProperties": {
+        "^(?!(global|identity|identityPostgresql|identityKeycloak|console|webModeler|webModelerPostgresql|connectors|orchestration|optimize|elasticsearch|prometheusServiceMonitor)$).*$": {
+            "description": "Allows user-defined top-level properties for YAML anchors. This property is not used by the chart.",
+            "x-ignore": true
+        }
+    },
     "properties": {
         "global": {
             "type": "object",
@@ -7624,6 +7630,5 @@
             },
             "additionalProperties": false
         }
-    },
-    "additionalProperties": false
+    }
 }
