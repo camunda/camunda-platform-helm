@@ -59,8 +59,6 @@ camunda:
   {{- if .Values.global.opensearch.enabled }}
     awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
   {{- end }}
-    index:
-      numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
     {{- if .Values.orchestration.history.retention.enabled }}
     retention:
       enabled: true
@@ -87,6 +85,9 @@ camunda:
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+        number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
+        history:
+          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
@@ -95,6 +96,9 @@ camunda:
         username: {{ .Values.global.opensearch.auth.username | quote }}
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+        number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
+        history:
+          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
 
   # Security configuration - Separated syntax.
@@ -276,7 +280,6 @@ zeebe:
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
@@ -304,7 +307,6 @@ zeebe:
           {{- end }}
           index:
             prefix: {{ .Values.global.opensearch.prefix | quote }}
-            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if .Values.global.opensearch.aws.enabled }}
           aws:
             enabled: true
