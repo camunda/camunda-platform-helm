@@ -307,7 +307,7 @@
         'charts/camunda-platform-8.7/values*.yaml',
       ],
       matchUpdateTypes: ['patch', 'pin'],
-      schedule: ['every day'],
+      schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
     },
     {
@@ -328,7 +328,7 @@
         'charts/camunda-platform-8.9/values*.yaml',
       ],
       matchUpdateTypes: ['major', 'minor', 'patch'],
-      schedule: ['every day'],
+      schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
     },
     {
@@ -349,7 +349,7 @@
         'charts/camunda-platform-8.9/values*.yaml',
       ],
       matchUpdateTypes: ['digest'],
-      schedule: ['every day'],
+      schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
     },
     {
