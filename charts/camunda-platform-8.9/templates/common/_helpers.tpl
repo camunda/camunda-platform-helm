@@ -362,7 +362,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
 [camunda-platform] Operate external URL.
 */}}
 {{- define "camundaPlatform.operateExternalURL" }}
-  {{- printf "%s/operate" (include "camundaPlatform.orchestrationExternalURL" .) -}}
+  {{- printf "%s/operate" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
 {{- end -}}
 
 
@@ -400,7 +400,7 @@ Tasklist templates.
 [camunda-platform] Tasklist external URL.
 */}}
 {{- define "camundaPlatform.tasklistExternalURL" }}
-  {{- printf "%s/tasklist" (include "camundaPlatform.orchestrationExternalURL" .) -}}
+  {{- printf "%s/tasklist" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
 {{- end -}}
 
 
@@ -414,7 +414,7 @@ Orchestration Identity templates.
 [camunda-platform] Orchestration Identity external URL.
 */}}
 {{- define "camundaPlatform.orchestrationIdentityExternalURL" }}
-  {{- printf "%s/identity" (include "camundaPlatform.orchestrationExternalURL" .) -}}
+  {{- printf "%s/identity" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
 {{- end -}}
 
 
@@ -566,7 +566,7 @@ Zeebe templates.
 {{- define "camundaPlatform.orchestrationExternalURL" }}
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto .Values.global.ingress.host .Values.orchestration.contextPath -}}
+    {{- printf "%s://%s%s" $proto .Values.global.ingress.host (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
     {{- printf "http://localhost:8088" -}}
   {{- end -}}
@@ -666,7 +666,7 @@ Release templates.
     id: optimize
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
     url: {{ include "camundaPlatform.optimizeExternalURL" . }}
-    readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
+    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
   {{- end }}
 
@@ -677,7 +677,7 @@ Release templates.
     id: connectors
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
     url: {{ include "camundaPlatform.connectorsExternalURL" . }}
-    readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.connectors.service.serverPort .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath }}
+    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort .Values.connectors.metrics.prometheus }}
   {{- end }}
 
@@ -688,20 +688,20 @@ Release templates.
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
     url: {{ include "camundaPlatform.operateExternalURL" . }}
-    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
   - name: Tasklist
     id: tasklist
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
     url: {{ include "camundaPlatform.tasklistExternalURL" . }}
-    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
   - name: Orchestration Identity
     id: orchestrationIdentity
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
     url: {{ include "camundaPlatform.orchestrationIdentityExternalURL" . }}
-    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
 
   - name: Orchestration Cluster
     id: orchestration
@@ -709,8 +709,8 @@ Release templates.
     urls:
       grpc: {{ include "camundaPlatform.orchestrationGRPCExternalURL" . }}
       http: {{ include "camundaPlatform.orchestrationExternalURL" . }}
-    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
   {{- end }}
 {{- end -}}
 
