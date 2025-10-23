@@ -2495,6 +2495,17 @@ orchestration:
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
 
+  # LeaderBalancing configuration for the auto rebalancing feature, which allows to rebalance periodically the orchestration cluster
+  # This might be useful in scenarios where low latency is important and the load is not evenly distributed across the brokers.
+  # For more details see https://docs.camunda.io/docs/self-managed/zeebe-deployment/operations/rebalancing/
+  leaderBalancing:
+    # @param orchestration.leaderBalancing.enabled if true, enables the auto leader rebalancing
+    enabled: true
+    # orchestration.leaderBalancing.schedule defines the schedule of the auto leader rebalancing feature.
+    schedule: "*/15 * * * *"
+    # orchestration.leaderBalancing.image defines the curl image which is used to call the rebalancing endpoint
+    image: "curlimages/curl:8.16.0"
+
   ## Multitenancy configuration
   ## @extra orchestration.multitenancy
   multitenancy:
