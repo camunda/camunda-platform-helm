@@ -423,7 +423,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
       {{- printf "%s://%s" $proto (index .context.Values .component "ingress" "host") -}}
     {{- else if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values .component "contextPath") -}}
+      {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (include "camundaPlatform.joinpath" (list (index .context.Values .component "contextPath"))) -}}
     {{- else -}}
       {{- $portMapping := (dict
       "operate" "8081"
@@ -677,8 +677,8 @@ Release templates.
     id: operate
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.operate) }}
     url: {{ include "camundaPlatform.operateExternalURL" . }}
-    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.operate.contextPath .Values.operate.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.operate.contextPath .Values.operate.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.operate.contextPath .Values.operate.metrics.prometheus)) }}
   {{- end }}
 
   {{- if .Values.optimize.enabled }}
@@ -687,7 +687,7 @@ Release templates.
     id: optimize
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
     url: {{ include "camundaPlatform.optimizeExternalURL" . }}
-    readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.optimize.service.port .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath }}
+    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.port (include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath)) }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.optimize.service.managementPort .Values.optimize.metrics.prometheus }}
   {{- end }}
 
@@ -698,7 +698,7 @@ Release templates.
     id: connectors
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
     url: {{ include "camundaPlatform.connectorsExternalURL" . }}
-    readiness: {{ printf "%s:%v%s%s" $baseURLInternal .Values.connectors.service.serverPort .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath }}
+    readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) }}
     metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort .Values.connectors.metrics.prometheus }}
   {{- end }}
 
@@ -708,8 +708,8 @@ Release templates.
     id: tasklist
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
     url: {{ include "camundaPlatform.tasklistExternalURL" . }}
-    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.metrics.prometheus)) }}
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
@@ -730,8 +730,8 @@ Release templates.
     urls:
       grpc: {{ include "camundaPlatform.zeebeGatewayGRPCExternalURL" . }}
       http: {{ include "camundaPlatform.zeebeGatewayExternalURL" . }}
-    readiness: {{ printf "%s%s%s" $baseURLInternal .Values.zeebeGateway.contextPath .Values.zeebeGateway.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s%s" $baseURLInternal .Values.zeebeGateway.contextPath .Values.zeebeGateway.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.zeebeGateway.contextPath .Values.zeebeGateway.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.zeebeGateway.contextPath .Values.zeebeGateway.metrics.prometheus)) }}
   {{- $baseURLInternal := printf "http://%s.%s:%v" (include "zeebe.names.broker" . | trimAll "\"") .Release.Namespace .Values.zeebe.service.httpPort }}
   - name: Zeebe
     id: zeebe
