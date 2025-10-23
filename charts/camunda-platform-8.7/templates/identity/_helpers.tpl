@@ -179,7 +179,7 @@ This is mainly used to access the external Keycloak service in the global Ingres
 [identity] Get Keycloak contextPath based on global value.
 */}}
 {{- define "identity.keycloak.contextPath" -}}
-    {{ .Values.global.identity.keycloak.contextPath | default "/auth/" }}
+    {{ .Values.global.identity.keycloak.contextPath | default "/" }}
 {{- end -}}
 
 {{/*
