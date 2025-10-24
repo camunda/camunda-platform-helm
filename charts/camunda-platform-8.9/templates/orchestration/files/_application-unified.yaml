@@ -96,6 +96,13 @@ camunda:
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
       {{- end }}
+      {{- if .Values.orchestration.exporters.rdbms.enabled }}
+      # RDBMS exporter is configured and enabled automatically when type is rdbms
+      rdbms:
+        url: {{ .Values.rdbms.url | quote }}
+        username: {{ .Values.rdbms.username | quote }}
+        password: {{ .Values.rdbms.password | quote }}
+      {{- end }}
 
   # Security configuration - Separated syntax.
   security:

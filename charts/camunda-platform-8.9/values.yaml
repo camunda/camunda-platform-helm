@@ -2859,6 +2859,9 @@ orchestration:
     ## @param orchestration.exporters.camunda.enabled if true, enables the new Camunda exporter.
     camunda:
       enabled: true
+    ## @param orchestration.exporters.rdbms.enabled if true, enables the new RDBMS exporter.
+    rdbms:
+      enabled: false
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
