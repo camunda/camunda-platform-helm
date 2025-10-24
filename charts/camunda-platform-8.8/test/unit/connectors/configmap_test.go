@@ -6,12 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/yaml.v3"
-	corev1 "k8s.io/api/core/v1"
 )
 
 type ConfigMapTemplateTest struct {
@@ -44,23 +41,45 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"connectors.enabled":     "true",
 				"connectors.contextPath": "/connectors",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var configmapApplication ConnectorsConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// then
-				s.Require().Equal("/connectors", configmapApplication.Server.Servlet.ContextPath)
+			Expected: map[string]string{
+				"configmapApplication.server.servlet.context-path": "/connectors",
 			},
 		},
+		{
+			Name: "TestConnectorsOIDCTokenScope",
+			Values: map[string]string{
+				"connectors.enabled": "true",
+				"connectors.security.authentication.method":                        "oidc",
+				"connectors.security.authentication.oidc.clientId":                 "test-client-id",
+				"connectors.security.authentication.oidc.tokenScope":               "test-client-id/.default",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "test-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "test-orch-secret",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.client-id": "test-client-id",
+				"configmapApplication.camunda.client.auth.scope":     "test-client-id/.default",
+			},
+		},
+		{
+			Name: "TestConnectorsOIDCWithoutTokenScope",
+			Values: map[string]string{
+				"connectors.enabled": "true",
+				"connectors.security.authentication.method":                        "oidc",
+				"connectors.security.authentication.oidc.clientId":                 "test-client-id",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "test-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "test-orch-secret",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.client-id": "test-client-id",
+				"configmapApplication.camunda.client.auth.scope":     "",
+			},
+		},
+
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
 // // TODO: Refactor the tests to work with the new Connectors config.
