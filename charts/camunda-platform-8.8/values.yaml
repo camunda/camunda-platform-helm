@@ -2484,7 +2484,7 @@ orchestration:
           clients:
             ## @extra orchestration.security.initialization.defaultRoles.connectors.clients[0].connectors Needed for OIDC setup. Can be removed for basic auth. Define the connectors client with the connrectors role.
             - connectors
-      ## @param orchestration.security.initialization.mappingRules define mapping rules when connected to an OIDC provider.
+      ## @param orchestration.security.initialization.mappingRules defines the mapping rules when connected to an OIDC provider.
       # Example:
       # mappingRules:
       #   - mappingRuleID: demo-user-mapping-rule
