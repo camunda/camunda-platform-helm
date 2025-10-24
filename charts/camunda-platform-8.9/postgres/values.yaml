@@ -1,0 +1,18 @@
+# TODO this file probably shouldn't be in this chart but somewhere else?
+
+auth:
+  username: camunda
+  password: camunda
+  database: camunda
+
+image:
+  repository: bitnamilegacy/postgresql
+primary:
+  # default resources for postgres are not sufficient for running Zeebe with default starter/worker benchmark setup
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 512Mi

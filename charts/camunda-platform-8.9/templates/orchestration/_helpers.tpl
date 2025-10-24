@@ -276,8 +276,10 @@ Authentication.
         elasticsearch
     {{- else if .Values.global.opensearch.enabled -}}
         opensearch
+    {{- else if .Values.orchestration.exporters.rdbms.enabled -}}
+        rdbms
     {{- else -}}
-        {{- fail "Please enable a secondary storage type. Either Elasticsearch or OpenSearch" -}}
+        {{- fail "Please enable a secondary storage type. Either Elasticsearch, OpenSearch or Postgres" -}}
     {{- end -}}
 {{- end -}}
 
