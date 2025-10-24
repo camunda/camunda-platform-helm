@@ -5219,7 +5219,7 @@
                                 },
                                 "mappingRules": {
                                     "type": "array",
-                                    "description": "define mapping rules when connected to an OIDC provider.",
+                                    "description": "defines the mapping rules when connected to an OIDC provider.",
                                     "default": [],
                                     "items": {}
                                 }
