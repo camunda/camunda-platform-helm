@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.0.0
+version: 13.1.0
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -214,4 +214,3 @@ annotations:
       description: "Adjust secret constraint to reflect new secrets management"
     - kind: fixed
       description: "Add missing global.identity.auth.identity.secret configuration"
-
