@@ -5175,12 +5175,6 @@
                                                     "items": {
                                                         "type": "string"
                                                     }
-                                                },
-                                                "mappingRules": {
-                                                    "type": "array",
-                                                    "description": "defines the mapping rule IDs for role assignment",
-                                                    "default": [],
-                                                    "items": {}
                                                 }
                                             }
                                         },
@@ -5206,12 +5200,6 @@
                                                     "items": {
                                                         "type": "string"
                                                     }
-                                                },
-                                                "mappingRules": {
-                                                    "type": "array",
-                                                    "description": "defines the mapping rule IDs for role assignment",
-                                                    "default": [],
-                                                    "items": {}
                                                 }
                                             }
                                         }
@@ -5219,7 +5207,7 @@
                                 },
                                 "mappingRules": {
                                     "type": "array",
-                                    "description": "defines the mapping rules when connected to an OIDC provider.",
+                                    "description": "define mapping rules.",
                                     "default": [],
                                     "items": {}
                                 }
