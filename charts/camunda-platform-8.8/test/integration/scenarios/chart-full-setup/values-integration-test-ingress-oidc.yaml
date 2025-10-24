@@ -164,11 +164,6 @@ orchestration:
         groupsClaim: ""
     authorizations:
       enabled: true
-    initialization:
-      mappingRules:
-        - mappingRuleID: demo-user-mapping-rule
-          claimName: oid
-          claimValue: $ENTRA_APP_OBJECT_ID
   migration:
     identity:
       claimName: "oid"
