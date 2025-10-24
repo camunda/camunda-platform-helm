@@ -165,6 +165,10 @@ orchestration:
     authorizations:
       enabled: true
     initialization:
+      defaultRoles:
+        admin:
+          mappingrules:
+            - demo-user-mapping-rule
       mappingRules:
         - mappingRuleID: demo-user-mapping-rule
           claimName: oid
