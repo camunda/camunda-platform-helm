@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: orchestration-importer
-    app.kubernetes.io/version: "8.8.1"
+    app.kubernetes.io/version: "8.8.2"
   annotations:
 spec:
   replicas: 1
@@ -34,7 +34,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: orchestration-importer
-        app.kubernetes.io/version: "8.8.1"
+        app.kubernetes.io/version: "8.8.2"
       annotations:
     spec:
       imagePullSecrets:
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: orchestration-migration-importer
-          image: camunda/camunda:8.8.1
+          image: camunda/camunda:8.8.2
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
