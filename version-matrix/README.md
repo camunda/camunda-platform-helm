@@ -18,6 +18,10 @@ For the best experience, please remember:
 - During the upgrade from the non-patch versions, ensure to review [version update instructions](https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/).
 
 
+## [Camunda 8.9](./camunda-8.9)
+
+### [Helm chart 14.0.0-alpha0](./camunda-8.9/#helm-chart-1400-alpha0)
+
 ## [Camunda 8.8](./camunda-8.8)
 
 ### [Helm chart 13.0.0](./camunda-8.8/#helm-chart-1300)
@@ -33,6 +37,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.7](./camunda-8.7)
 
+### [Helm chart 12.6.3](./camunda-8.7/#helm-chart-1263)
 ### [Helm chart 12.6.2](./camunda-8.7/#helm-chart-1262)
 ### [Helm chart 12.6.1](./camunda-8.7/#helm-chart-1261)
 ### [Helm chart 12.6.0](./camunda-8.7/#helm-chart-1260)
