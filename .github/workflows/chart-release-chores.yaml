@@ -71,10 +71,13 @@ jobs:
         env:
           GH_TOKEN: "${{ steps.generate-github-token.outputs.token }}"
         run: |
+          set -euo pipefail
+
           git fetch origin main:main
-          pr_nubmer="$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" }; { print $3 }')"
-          # Set PR project.
-          gh pr edit "${pr_nubmer}" --add-project "Distribution Team"
+
+          pr_number="$(echo "$GITHUB_REF" | awk 'BEGIN { FS = "/" } { print $3 }')"
+          gh project item-add --owner camunda --number 33 \
+            --url "https://github.com/camunda/camunda-platform-helm/pull/$pr_number" >/dev/null || true
       - name: Update golden files
         run: |
           chartPath="${CHANGED_CHARTS}" \
