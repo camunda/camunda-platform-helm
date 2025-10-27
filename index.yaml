@@ -4,6 +4,97 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Data injection during testing"
+        - kind: fixed
+          description: "Consistent naming for migrations and importer"
+        - kind: fixed
+          description: "Changing pod anti-affinity rules for migration jobs and importer"
+        - kind: fixed
+          description: "Allows cpu to be set as either string or number"
+        - kind: fixed
+          description: "Delete the migrator from 8.9"
+        - kind: fixed
+          description: "The oidc scenario was always running the upgrade. Removing here …"
+        - kind: fixed
+          description: "Use joinPath helper to fix double slash issues in console configmap"
+        - kind: fixed
+          description: "Apply dual-region exclusion logic to opensearch exporter as well"
+        - kind: fixed
+          description: "Add back mapping rules in the orchestration cluster"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.19.0
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2025-10-27T12:20:58.454503817Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: ffaa1cfc4e052532fa7f116af6575a990f86a88723c306c0d109f192488f4b40
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.1.0/camunda-platform-13.1.0.tgz
+    version: 13.1.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Support legacy retention age"
         - kind: added
           description: "Support issuer backend url in the orchestration config"
@@ -22290,4 +22381,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-10-21T12:53:14.270553474Z"
+generated: "2025-10-27T12:20:58.455193453Z"
