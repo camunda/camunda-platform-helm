@@ -153,6 +153,222 @@ entries:
           url: https://docs.camunda.io/docs/self-managed/about-self-managed/
         - name: Camunda 8 Self-Managed Helm charts
           url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/helmCLIVersion: 3.18.6
+    apiVersion: v2
+    appVersion: 8.9.x
+    created: "2025-10-27T12:09:36.91905858Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 7e50bdc489a2323d3c82fffe25396dc022fb8c9aa105869d2e07469d8357e6c2
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.9-14.0.0-alpha0/camunda-platform-14.0.0-alpha0.tgz
+    version: 14.0.0-alpha0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Support legacy retention age"
+        - kind: added
+          description: "Support issuer backend url in the orchestration config"
+        - kind: added
+          description: "Opensearch aws enabled config now affects usage of AWS credentials"
+        - kind: added
+          description: "Add the document store scenario to the qa scenario list"
+        - kind: added
+          description: "Introduce authenticationRefreshInterval config parameter"
+        - kind: added
+          description: "Add resource authorizations flag to identity migration"
+        - kind: added
+          description: "Add default roles for initial users"
+        - kind: added
+          description: "Add extra mapping for initial client for identity OIDC migration"
+        - kind: changed
+          description: "Upgrade keycloak image from 26.3.1 to 26.3.3"
+        - kind: changed
+          description: "Streamline OIDC and Microsoft Entra auth"
+        - kind: changed
+          description: "Rename zeebe/orchestration labels"
+        - kind: changed
+          description: "Differentiate between orchestration services"
+        - kind: changed
+          description: "Move orchestration oidc from global to component"
+        - kind: changed
+          description: "Move connectors oidc from global to component"
+        - kind: changed
+          description: "Support auth values in components"
+        - kind: changed
+          description: "Use the main config in migrations"
+        - kind: changed
+          description: "Use postgresql 14 for web modeler"
+        - kind: changed
+          description: "Use postgres 14 for web modeler"
+        - kind: changed
+          description: "Add nodeSelector, affinity, and tolerations to orchestration extra resources"
+        - kind: changed
+          description: "Set default replicas to 1 for secondary storage"
+        - kind: changed
+          description: "Run orchestration cluster from unified config"
+        - kind: fixed
+          description: "No default backwardsCompatibleAudiences"
+        - kind: fixed
+          description: "Remove duplicate servicemonitor"
+        - kind: fixed
+          description: "Release-please should create a non-alpha release for 8.8.0"
+        - kind: fixed
+          description: "Correct 13.0.0 version number"
+        - kind: fixed
+          description: "Undo part of the release notes thats wrong version"
+        - kind: fixed
+          description: "Fix doc links for 8.8"
+        - kind: fixed
+          description: "NoSecondaryStorage constraint no longer breaks unit tests"
+        - kind: fixed
+          description: "Wrong openshift compatibilty helper elasticsearch commonLabels usage"
+        - kind: fixed
+          description: "Operate opensearch access in the unified config"
+        - kind: fixed
+          description: "2 issues.. the configmap for optimize was using the elasticsearch prefix value for opensearch and the QA scenarios where reusing the global prefix to shared OS failed CI"
+        - kind: fixed
+          description: "Add the oidc group claim to opensearch"
+        - kind: fixed
+          description: "Simplify oidc mappings in 8.8"
+        - kind: fixed
+          description: "Firstuser defaults should not fire constraint"
+        - kind: fixed
+          description: "Partition-count typo in 8.8 chart"
+        - kind: fixed
+          description: "Identity migration inital contactPoint port number"
+        - kind: fixed
+          description: "Revert orchestration service name for backward compatibility"
+        - kind: fixed
+          description: "Comment in values.yaml for enabling management identity auth"
+        - kind: fixed
+          description: "Comment for identity existing secret"
+        - kind: fixed
+          description: "Add conditional properties for management components in manageme…"
+        - kind: fixed
+          description: "Revert tls secret placeholders"
+        - kind: fixed
+          description: "Add missing opensearch fields in templates"
+        - kind: fixed
+          description: "Reintroduce capability to disable all exporters again"
+        - kind: fixed
+          description: "Add security config to webmodeler"
+        - kind: fixed
+          description: "Data migration and importer config"
+        - kind: fixed
+          description: "Opensearch config and index replica placement"
+        - kind: fixed
+          description: "Use correct upgrade strategy for importer deployment"
+        - kind: fixed
+          description: "Data and identity migraiton accept orchestration env"
+        - kind: fixed
+          description: "Es/os exporter inherit index replicas"
+        - kind: fixed
+          description: "Clean up redundant secret templates"
+        - kind: fixed
+          description: "This PR is enabling Entra for testing"
+        - kind: fixed
+          description: "Correctly configure data migration"
+        - kind: fixed
+          description: "Define importer node id based on regionId"
+        - kind: fixed
+          description: "Adjust autogenerated secret detection patterns"
+        - kind: fixed
+          description: "Fix configurations of identity migration"
+        - kind: fixed
+          description: "Remove importer affinity in 8.8"
+        - kind: fixed
+          description: "Unique importer ids for swim"
+        - kind: fixed
+          description: "Add audiences for backward compatibility"
+        - kind: fixed
+          description: "Correct sysctlImage structure in values-enterprise.yaml"
+        - kind: fixed
+          description: "Web modeler extraConfiguration uses subcomponent subkey"
+        - kind: fixed
+          description: "Should be using 8.8 instead of 8.9 connectors"
+        - kind: fixed
+          description: "Couple importer deployment with migration"
+        - kind: fixed
+          description: "In optimize cm, set the zeebe name to be equal to prefix"
+        - kind: fixed
+          description: "Set correct value for identity migration configmap"
+        - kind: fixed
+          description: "Set client secret based on what it's bound to on identity-side"
+        - kind: fixed
+          description: "Update QA 8.8 opensearch values file"
+        - kind: fixed
+          description: "Update migration job labels so requests are not routed to them"
+        - kind: fixed
+          description: "Enable exporters when data migration is enabled"
+        - kind: fixed
+          description: "Add constraints for ES and Basic auth in noSecondaryStorage mode"
+        - kind: fixed
+          description: "Adjust secret constraint to reflect new secrets management"
+        - kind: fixed
+          description: "Add missing global.identity.auth.identity.secret configuration"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
       camunda.io/helmCLIVersion: 3.18.6
     apiVersion: v2
     appVersion: 8.8.x
@@ -22290,4 +22506,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-10-21T12:53:14.270553474Z"
+generated: "2025-10-27T12:09:36.919789113Z"
