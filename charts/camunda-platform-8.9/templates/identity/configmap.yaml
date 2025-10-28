@@ -200,7 +200,7 @@ data:
       init:
         {{- if .Values.console.enabled }}
         console:
-          secret: ${VALUES_KEYCLOAK_INIT_CONSOLE_SECRET:}
+          root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
         {{- end }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}

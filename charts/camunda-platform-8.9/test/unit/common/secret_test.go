@@ -115,7 +115,6 @@ func (s *secretTest) TestSecretContainsIdentityAuthTokens() {
 	expectedTokens := []string{
 		"identity-admin-client-token",
 		"identity-connectors-client-token",
-		"identity-console-client-token",
 		"identity-orchestration-client-token",
 		"identity-optimize-client-token",
 	}
@@ -266,7 +265,6 @@ func (s *secretTest) TestSecretGenerationDependsOnConfiguration() {
 	// then - auth tokens should not be present
 	s.Require().NotContains(secret.Data, "identity-admin-client-token")
 	s.Require().NotContains(secret.Data, "identity-connectors-client-token")
-	s.Require().NotContains(secret.Data, "identity-console-client-token")
 	s.Require().NotContains(secret.Data, "identity-orchestration-client-token")
 	s.Require().NotContains(secret.Data, "identity-optimize-client-token")
 
