@@ -155,7 +155,6 @@ type: Opaque
 data:
   # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
@@ -194,7 +193,6 @@ type: Opaque
 data:
   # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
