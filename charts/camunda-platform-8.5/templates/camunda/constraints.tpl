@@ -148,7 +148,6 @@ data:
   tasklist-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   keycloak-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
   admin-password: <base64-encoded-secret> # used for keycloak
@@ -184,7 +183,6 @@ data:
   tasklist-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   keycloak-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
   admin-password: <base64-encoded-secret> # used for keycloak
