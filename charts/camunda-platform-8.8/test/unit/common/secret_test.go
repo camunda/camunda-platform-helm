@@ -115,7 +115,6 @@ func (s *secretTest) TestSecretContainsIdentityAuthTokens() {
 	expectedTokens := []string{
 		"identity-admin-client-token",
 		"identity-connectors-client-token",
-		"identity-console-client-token",
 		"identity-orchestration-client-token",
 		"identity-optimize-client-token",
 	}
