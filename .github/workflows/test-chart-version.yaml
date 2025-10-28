@@ -13,7 +13,7 @@ on:
       - ".github/config/external-secret/**"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
-  workflow_dispatch: 
+  workflow_dispatch:
     inputs:
       manual-trigger:
         description: "Manual trigger"
@@ -79,7 +79,7 @@ on:
         options:
           - all
           - upgrade-migration
-          - keycloak
+          - keycloak-original
           - keycloak-mt
           - keycloak-rba
           - oidc
