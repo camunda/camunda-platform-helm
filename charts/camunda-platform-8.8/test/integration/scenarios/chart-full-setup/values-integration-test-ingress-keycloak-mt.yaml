@@ -15,10 +15,33 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
+  elasticsearch:
+    enabled: true
+    external: true
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    auth:
+      username: elastic
+      secret:
+        existingSecret: infra-credentials
+        existingSecretKey: elasticsearch-password
+    url:
+      protocol: http
+      host: elasticsearch.elasticsearch-21-6-3.svc.cluster.local
+      port: 9200
   identity:
+    keycloak:
+      url:
+        protocol: http
+        host: keycloak-headless.keycloak-24-9-0.svc.cluster.local
+        port: 8080
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
     auth:
       enabled: true
-      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/$KEYCLOAK_REALM"
       admin:
         enabled: true
         existingSecret:
@@ -47,26 +70,30 @@ global:
 
 identity:
   enabled: true
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
+    json:
+      enabled: true
+      configMapName: realm-json
+      mountPath: /config
+      fileName: realm.json
   contextPath: "/identity"
   firstUser:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"
 
 identityKeycloak:
-  enabled: true
-  postgresql:
-    auth:
-      existingSecret: "integration-test-credentials"
-      secretKeys:
-        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
-        userPasswordKey: "identity-keycloak-postgresql-user-password"
-  auth:
-    existingSecret: "integration-test-credentials"
-    passwordSecretKey: "identity-keycloak-admin-password"
+  enabled: false
 
 optimize:
   enabled: true
   contextPath: "/optimize"
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 connectors:
   contextPath: "/connectors"
@@ -99,6 +126,8 @@ webModelerPostgresql:
 
 orchestration:
   contextPath: "/orchestration"
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW 
   ingress:
     grpc:
       enabled: true
@@ -154,7 +183,7 @@ identityPostgresql:
       userPasswordKey: identity-keycloak-postgresql-user-password
 
 elasticsearch:
-  maxUnavailable: 0
+  enabled: false
 
 prometheusServiceMonitor:
   enabled: true
