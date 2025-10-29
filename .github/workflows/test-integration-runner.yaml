@@ -486,6 +486,11 @@ jobs:
           echo "Prepared values file: $values_file"
           cat "$values_file"
 
+      - name: Helm - Load keycloak realm json into the namespace
+        shell: bash
+        run: |
+          ./scripts/load-keycloak-configmap.sh "${{ env.CHART_PATH }}" "${{ env.KEYCLOAK_REALM }}" "${{ env.TEST_NAMESPACE }}"
+
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
