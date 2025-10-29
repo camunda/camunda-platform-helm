@@ -280,7 +280,7 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.persistentSessionsEnabled" -}}
-    {{- not .Values.global.noSecondaryStorage -}}
+    {{- and (not .Values.global.noSecondaryStorage) (not .Values.orchestration.exporters.rdbms.enabled) -}}
 {{- end -}}
 
 
