@@ -21,6 +21,11 @@ management:
     base-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
 
 camunda:
+  {{- if .Values.orchestration.exporters.rdbms.enabled }}
+  backup:
+    webapps:
+      enabled: false
+  {{- end }}
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
 
@@ -268,6 +273,7 @@ zeebe:
     # zeebe.broker.exporters
     exporters:
     {{- if and
+      (not .Values.orchestration.exporters.rdbms.enabled)
       (or
         (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
         (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
@@ -326,7 +332,7 @@ zeebe:
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
       {{- end }}
-    {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled }}
+    {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) }}
       camundaexporter:
         className: "io.camunda.exporter.CamundaExporter"
         args:
