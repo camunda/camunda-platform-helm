@@ -164,13 +164,6 @@ orchestration:
         groupsClaim: ""
     authorizations:
       enabled: true
-    initialization:
-      mappingRules:
-        - mappingRuleID: demo-user-mapping-rule
-          claimName: oid
-          claimValue: $ENTRA_APP_OBJECT_ID
-  importer:
-    enabled: true
   migration:
     identity:
       claimName: "oid"
@@ -178,10 +171,7 @@ orchestration:
       clientId: $ENTRA_APP_CLIENT_ID
       secret:
         inlineSecret: $ENTRA_APP_CLIENT_SECRET
-      enabled: true
       backoffLimit: 12
-    data:
-      enabled: true
 
 elasticsearch:
   maxUnavailable: 0

@@ -65,3 +65,35 @@ func (s *configMapTemplateTest) TestDifferentValuesInputs() {
 		
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *configMapTemplateTest) TestContextPathRootDoesNotCreateDoubleSlashes() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "ContextPathRootShouldNotCauseDoubleSlashesInURLs",
+			Values: map[string]string{
+				"console.enabled":                       "true",
+				"identity.enabled":                      "true",
+				"operate.enabled":                       "true",
+				"tasklist.enabled":                      "true",
+				"optimize.enabled":                      "true",
+				"global.ingress.enabled":                "true",
+				"global.ingress.host":                   "camunda.example.com",
+				"operate.contextPath":                   "/",
+				"tasklist.contextPath":                  "/",
+				"optimize.contextPath":                  "/",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Verify that URLs don't contain double slashes (except in http://)
+				// Looking for patterns like "://hostname//" which indicate double slashes
+				require.NotContains(t, output, ".com//", "URLs should not contain double slashes after hostname")
+				require.NotContains(t, output, ":80//", "URLs should not contain double slashes after port")
+				require.NotContains(t, output, ":82//", "URLs should not contain double slashes after port")
+				require.NotContains(t, output, ":8080//", "URLs should not contain double slashes after port")
+				require.NotContains(t, output, ":9600//", "URLs should not contain double slashes after port")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

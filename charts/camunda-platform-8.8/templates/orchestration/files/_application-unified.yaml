@@ -134,6 +134,10 @@ camunda:
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
       {{- end }}
+      {{- if .Values.orchestration.security.initialization.mappingRules }}
+      mapping-rules:
+        {{- .Values.orchestration.security.initialization.mappingRules | toYaml | nindent 8 }}
+      {{- end }}
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
@@ -280,7 +284,17 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
-    {{- else if or (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled) (and .Values.global.opensearch.enabled .Values.optimize.enabled) (and .Values.global.opensearch.enabled .Values.orchestration.migration.data.enabled) }}
+    {{- else if and
+      (or
+        (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+        (and .Values.global.opensearch.enabled .Values.optimize.enabled)
+        (and .Values.global.opensearch.enabled .Values.orchestration.migration.data.enabled)
+      )
+      (or
+        .Values.orchestration.exporters.zeebe.enabled
+        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+      )
+    }}
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
