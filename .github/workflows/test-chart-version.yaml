@@ -69,7 +69,7 @@ on:
           The deployment time-to-live, after which it will be automatically deleted.
           Examples: "30m", "1h", "2h", "1d".
         required: false
-        default: 1h
+        default: ""
         type: string
       scenario:
         description: Scenario
