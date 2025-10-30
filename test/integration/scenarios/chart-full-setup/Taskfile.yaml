@@ -197,7 +197,7 @@ tasks:
           {{ if eq .PLATFORM "eks" -}}
           --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
           {{ end -}}
-          {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
+          {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
           --values {{ .TEST_HELM_DIGEST_VALUES }} \
           {{ end -}}
           --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
@@ -216,7 +216,7 @@ tasks:
         {{ if eq .PLATFORM "eks" -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
         {{ end -}}
-        {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
+        {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
