@@ -1,0 +1,96 @@
+master:
+  replicaCount: 3
+  resources:
+    requests: { cpu: "2000m", memory: "2Gi" }
+    limits: { cpu: "4000m", memory: "2Gi" }
+  roles:
+    master: true
+    data: false
+    ingest: false
+    coordinating: false
+  persistence:
+    enabled: false
+  pdb:
+    create: true
+    minAvailable: 2
+  service: { type: ClusterIP }
+  heapSize: 1g
+  extraEnvVars:
+    - name: ELASTICSEARCH_ENABLE_REST_TLS
+      value: "false"
+    - name: ELASTICSEARCH_IS_DEDICATED_NODE
+      value: "yes"
+    - name: ELASTICSEARCH_ACTION_DESTRUCTIVE_REQUIRES_NAME
+      value: "false"
+
+data:
+  replicaCount: 2
+  heapSize: 1g
+  resources:
+    requests: { cpu: "2000m", memory: "2Gi" }
+    limits: { cpu: "4000m", memory: "2Gi" }
+  roles:
+    master: false
+    data: true
+    ingest: false
+    coordinating: false
+  persistence:
+    enabled: true
+    size: 50Gi
+  pdb:
+    create: true
+    minAvailable: 1
+  extraEnvVars:
+    - name: ELASTICSEARCH_HEAP_SIZE
+      value: "1g"
+    - name: ELASTICSEARCH_ENABLE_REST_TLS
+      value: "false"
+
+coordinating:
+  replicaCount: 0
+
+ingest:
+  replicaCount: 0
+
+antiAffinity: "soft"
+podAntiAffinityPreset: "soft"
+
+readinessProbe:
+  initialDelaySeconds: 45
+  periodSeconds: 10
+livenessProbe:
+  initialDelaySeconds: 90
+  periodSeconds: 20
+
+global:
+  security:
+    allowInsecureImages: true
+  kibanaEnabled: false
+
+security:
+  existingSecret: infra-credentials
+
+sysctlImage:
+  repository: bitnamilegacy/os-shell
+  pullPolicy: IfNotPresent
+
+image:
+  repository: bitnamilegacy/elasticsearch
+  tag: 8.18.0
+  digest: ""
+
+extraConfig:
+  logger.org.elasticsearch.deprecation: "OFF"
+
+esConfig:
+  elasticsearch.yml: |
+    xpack.security.enabled: false
+    action.auto_create_index: true
+    cluster.routing.allocation.enable: all
+    action.destructive_requires_name: false
+  jvm.options: |
+    -Xms1g
+    -Xmx1g
+
+updateStrategy:
+  type: RollingUpdate

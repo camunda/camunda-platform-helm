@@ -1,0 +1,47 @@
+# --- CI-oriented Keycloak setup (non-production) ---
+replicaCount: 1
+
+# --- Disable external exposure (ClusterIP only) ---
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+
+# --- Image pinning ---
+image:
+  registry: docker.io
+  repository: bitnamilegacy/keycloak
+  pullPolicy: IfNotPresent
+# --- Health probes tuned for quick restarts ---
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 20
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+# --- Environment configuration ---
+auth:
+  adminUser: admin
+  existingSecret: infra-credentials
+  passwordSecretKey: keycloak-admin-password
+
+# --- High availability hints ---
+podAntiAffinityPreset: "soft" # prefer separation, don’t block small node pools
+updateStrategy:
+  type: RollingUpdate
+pdb:
+  create: true
+  minAvailable: 1
+
+# --- ServiceAccount + RBAC ---
+global:
+  security:
+    allowInsecureImages: true
+
+httpRelativePath: /auth/
+postgresql:
+  image:
+    repository: bitnamilegacy/postgresql
