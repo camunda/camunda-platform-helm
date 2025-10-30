@@ -56,7 +56,6 @@ on:
           - install,upgrade-patch
           - install,upgrade-minor
           - install,upgrade-patch,upgrade-minor
-          - modular-upgrade-minor
       e2e-enabled:
         description: |
           Whether to run the end-to-end tests (playwright).
@@ -175,7 +174,7 @@ jobs:
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
-      pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
+      pr-number: ${{ github.event.pull_request.number || matrix.flow }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
       scenario: ${{ matrix.scenario }}
