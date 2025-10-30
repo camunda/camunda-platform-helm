@@ -174,8 +174,8 @@ global:
   ## @param global.elasticsearch.enabled if true, enables elasticsearch for all components
   ## @param global.elasticsearch.external if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls
-  ## @param global.elasticsearch.tls.enabled enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret provide an already existing tls secret for connecting to external elasticsearch
+  ## @param global.elasticsearch.tls.enabled if true, enable tls for external elasticsearch
+  ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth
   ## @param global.elasticsearch.auth.username the username for external elasticsearch
   ## @param global.elasticsearch.auth.password (DEPRECATED - use global.elasticsearch.auth.secret instead) the password for external elasticsearch
@@ -187,6 +187,12 @@ global:
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.elasticsearch.tls.secret configuration for new secret pattern (>= 8.9)
+      secret:
+        ## @param global.elasticsearch.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificate
+        existingSecret: ""
+        ## @param global.elasticsearch.tls.secret.existingSecretKey can be used to provide the key within the secret containing the certificate
+        existingSecretKey: "externaldb.jks"
     auth:
       username: ""
       password: ""
@@ -219,8 +225,8 @@ global:
   ## @param global.opensearch.enabled enabled external opensearch
   ## @param global.opensearch.aws.enabled Enabling AWS IRSA
   ## @extra global.opensearch.tls
-  ## @param global.opensearch.tls.enabled enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret provide an already existing tls secret for connecting to external opensearch
+  ## @param global.opensearch.tls.enabled if true, enable tls for external opensearch
+  ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth
   ## @param global.opensearch.auth.username the username for external opensearch
   ## @param global.opensearch.auth.password (DEPRECATED - use global.opensearch.auth.secret instead) the password for external opensearch
@@ -233,6 +239,12 @@ global:
     tls:
       enabled: false
       existingSecret: ""
+      ## @extra global.opensearch.tls.secret configuration for new secret pattern (>= 8.9)
+      secret:
+        ## @param global.opensearch.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificate
+        existingSecret: ""
+        ## @param global.opensearch.tls.secret.existingSecretKey can be used to provide the key within the secret containing the certificate
+        existingSecretKey: "externaldb.jks"
     auth:
       username: ""
       password: ""
@@ -1162,12 +1174,16 @@ console:
 
   ## console.tls Configure the Console TLS options
   tls:
-    ## @param console.tls.enabled Enable TLS traffic for console
+    ## @param console.tls.enabled if true, enable TLS traffic for console
     enabled: false
-    ## @param console.tls.existingSecret The name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.
+    ## @param console.tls.existingSecret (DEPRECATED - use console.tls.secret instead) can be used to provide the name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.
     existingSecret: ""
-    ## @param console.tls.certKeyFilename Certificate Key filename
+    ## @param console.tls.certKeyFilename defines certificate Key filename
     certKeyFilename: ""
+    ## console.tls.secret New secret configuration pattern (>= 8.9)
+    secret:
+      ## @param console.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificates
+      existingSecret: ""
 
   ## console.keycloak configuration to configure Keycloak authentication settings.
   keycloak:

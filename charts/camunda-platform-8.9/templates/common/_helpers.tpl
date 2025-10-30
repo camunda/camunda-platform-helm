@@ -960,6 +960,72 @@ Parameters:
 {{- end -}}
 
 {{/*
+emitTlsVolumeFromSecretConfig
+Emits volume definition for TLS secrets.
+Handles both legacy (< 8.9) and new (>= 8.9) secret patterns.
+Usage:
+  {{ include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+      "volumeName" "keystore"
+      "config" .Values.global.elasticsearch.tls
+  ) }}
+*/}}
+{{- define "camundaPlatform.emitTlsVolumeFromSecretConfig" -}}
+{{- $config := .config | default dict -}}
+{{- $secretName := "" -}}
+
+{{/* New (>= 8.9): config.secret.existingSecret */}}
+{{- if and $config.secret $config.secret.existingSecret -}}
+  {{- $secretName = $config.secret.existingSecret -}}
+{{/* Legacy (< 8.9): config.existingSecret */}}
+{{- else if and $config.existingSecret (kindIs "string" $config.existingSecret) -}}
+  {{- $secretName = $config.existingSecret -}}
+{{- end -}}
+
+{{- if $secretName }}
+- name: {{ .volumeName }}
+  secret:
+    secretName: {{ $secretName | quote }}
+    optional: false
+{{- end }}
+{{- end -}}
+
+{{/*
+getTlsSecretKey
+Returns the secret key name from TLS config.
+New pattern uses config.secret.existingSecretKey, legacy defaults to "externaldb.jks".
+Accepts root context (.) and uses the enabled database type (ES or OS).
+Usage:
+  {{ include "camundaPlatform.getTlsSecretKey" . }}
+  {{ include "camundaPlatform.getTlsSecretKey" (dict "config" .Values.global.elasticsearch.tls) }}
+*/}}
+{{- define "camundaPlatform.getTlsSecretKey" -}}
+{{- $config := dict -}}
+
+{{/* If caller passes .config dict, use it directly for backwards compatibility */}}
+{{- if .config -}}
+  {{- $config = .config -}}
+{{/* Otherwise, determine which database TLS config to use from root context */}}
+{{- else if .Values -}}
+  {{/* Use OpenSearch if enabled, otherwise Elasticsearch */}}
+  {{- if .Values.global.opensearch.enabled -}}
+    {{- $config = .Values.global.opensearch.tls -}}
+  {{- else -}}
+    {{- $config = .Values.global.elasticsearch.tls -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $secretKey := "" -}}
+{{/* New (>= 8.9): config.secret.existingSecretKey */}}
+{{- if and $config.secret $config.secret.existingSecretKey -}}
+  {{- $secretKey = $config.secret.existingSecretKey -}}
+{{/* Legacy (< 8.9): config.existingSecret - use hardcoded default */}}
+{{- else if and $config.existingSecret (kindIs "string" $config.existingSecret) -}}
+  {{- $secretKey = "externaldb.jks" -}}
+{{- end -}}
+{{- $secretKey -}}
+{{- end -}}
+
+{{/*
 ********************************************************************************
 Release highlights.
 ********************************************************************************
