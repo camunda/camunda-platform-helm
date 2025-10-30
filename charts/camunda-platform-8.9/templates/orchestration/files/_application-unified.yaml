@@ -43,6 +43,11 @@ camunda:
     size: {{ .Values.orchestration.clusterSize | quote }}
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
+    # zeebe.broker.cluster
+    initial-contact-points:
+    {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+      - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
 
   api:
     grpc:
@@ -242,10 +247,6 @@ zeebe:
 
     # zeebe.broker.cluster
     cluster:
-      initialContactPoints:
-      {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
-        - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
-      {{- end }}
       clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
     # zeebe.broker.exporters

@@ -58,6 +58,11 @@ data:
         size: "3"
         replication-factor: "3"
         partition-count: "3"
+        # zeebe.broker.cluster
+        initial-contact-points:
+          - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
     
       api:
         grpc:
@@ -168,10 +173,6 @@ data:
     
         # zeebe.broker.cluster
         cluster:
-          initialContactPoints:
-            - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
           clusterName: camunda-platform-test-zeebe
     
         # zeebe.broker.exporters
