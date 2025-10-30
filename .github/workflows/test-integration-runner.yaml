@@ -1083,6 +1083,8 @@ jobs:
           if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" == "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+            scripts/get-credientials-from-cluster.sh --namespace "elasticsearch-21-6-3"
+            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --username "elastic" --password "${ELASTICSEARCH_PASSWORD}"
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
@@ -1090,6 +1092,8 @@ jobs:
             else
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
+              scripts/get-credientials-from-cluster.sh --namespace "elasticsearch-21-6-3"
+              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --username "elastic" --password "${ELASTICSEARCH_PASSWORD}"
             fi
           fi
           kubectl annotate ns ${{ env.TEST_NAMESPACE }} test-flow=${{ inputs.flow }}
