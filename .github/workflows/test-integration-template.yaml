@@ -236,7 +236,7 @@ jobs:
   # we can shard the tests across multiple jobs (this is done via the matrix). If the tests where another job in this workflow, we
   # would need to wait for all the install/upgrade flows to complete before we can run the tests.
   runner:
-    name: Scenario - ${{ inputs.shortname }} - ${{ matrix.distro.platform }}
+    name: ${{ inputs.shortname }} - ${{ matrix.scenario.flow }} - ${{ matrix.distro.platform }}
     needs: [init]
     uses: ./.github/workflows/test-integration-runner.yaml
     secrets: inherit
@@ -261,7 +261,7 @@ jobs:
       distro-platform: ${{ matrix.distro.platform }}
       distro-type: ${{ matrix.distro.type }}
       infra-type: ${{ inputs.infra-type }}
-      flow: ${{ inputs.flows || matrix.scenario.flow }}
+      flow: ${{ matrix.scenario.flow }}
       test-enabled: ${{ inputs.test-enabled }}
       e2e-enabled: ${{ inputs.e2e-enabled }}
       extra-values: ${{ inputs.extra-values }}

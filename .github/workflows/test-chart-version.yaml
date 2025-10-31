@@ -56,7 +56,6 @@ on:
           - install,upgrade-patch
           - install,upgrade-minor
           - install,upgrade-patch,upgrade-minor
-          - modular-upgrade-minor
       e2e-enabled:
         description: |
           Whether to run the end-to-end tests (playwright).
@@ -119,6 +118,7 @@ jobs:
         with:
           manual-trigger: ${{ github.event.inputs.manual-trigger }}
           manual-scenario: ${{ github.event.inputs.scenario || 'none' }}
+          manual-flow: ${{ github.event.inputs.flows || 'none' }}
 
   unit-testing:
     if: ${{ needs.init.outputs.camunda-versions != '[]' }}
@@ -174,7 +174,7 @@ jobs:
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
-      pr-number: ${{ github.event.pull_request.number || github.event.inputs.manual-trigger }}
+      pr-number: ${{ github.event.pull_request.number || matrix.flow }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
       scenario: ${{ matrix.scenario }}
@@ -184,7 +184,7 @@ jobs:
       exclude: ${{ matrix.exclude }}
       e2e-enabled: ${{ inputs.e2e-enabled || true }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests || false }} # The full test suite is changing often. This might not work. We need to change the ways of working between the applciation teams, distro and QA
-      flows: ${{ inputs.flows || matrix.flow || 'install,upgrade-patch,upgrade-minor' }}
+      flows: ${{ matrix.flow }}
       deployment-ttl: ${{ inputs.deployment-ttl }}
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}

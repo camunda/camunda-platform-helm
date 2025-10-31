@@ -223,6 +223,7 @@ env:
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
+  FLOW: ${{ inputs.flow }}
 
 jobs:
   ci-setup:
@@ -451,12 +452,23 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
       - name: Helm – prepare values from values-config
-        if: inputs.values-config != '{}'
         shell: bash
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
         run: |
+          # paths
+          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
+          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+      
+          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
+          
+          if [[ -z "$VALS_CONFIG" || "$VALS_CONFIG" == "{}" ]]; then
+            tmp="$(mktemp)"
+            envsubst < "$values_file" > "$tmp"
+            mv "$tmp" "$values_file"
+            exit 0
+          fi
           # write + parse JSON config to env vars (stringified)
           cfg="$(mktemp)"
           printf '%s' "$VALS_CONFIG" > "$cfg"
@@ -465,12 +477,6 @@ jobs:
             export "$k"="$v"
           done < <(jq -r 'to_entries[] | "\(.key)=\(.value|tostring)"' "$cfg")
           rm -f "$cfg"
-      
-          # paths
-          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
-          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
-      
-          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
       
           # template substitution
           tmp="$(mktemp)"
@@ -707,12 +713,23 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
       - name: Helm – prepare values from values-config
-        if: inputs.values-config != '{}'
         shell: bash
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
         run: |
+          # paths
+          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
+          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
+      
+          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
+          
+          if [[ -z "$VALS_CONFIG" || "$VALS_CONFIG" == "{}" ]]; then
+            tmp="$(mktemp)"
+            envsubst < "$values_file" > "$tmp"
+            mv "$tmp" "$values_file"
+            exit 0
+          fi
           # write + parse JSON config to env vars (stringified)
           cfg="$(mktemp)"
           printf '%s' "$VALS_CONFIG" > "$cfg"
@@ -721,12 +738,6 @@ jobs:
             export "$k"="$v"
           done < <(jq -r 'to_entries[] | "\(.key)=\(.value|tostring)"' "$cfg")
           rm -f "$cfg"
-      
-          # paths
-          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
-          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
-      
-          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
       
           # template substitution
           tmp="$(mktemp)"
