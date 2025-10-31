@@ -80,7 +80,7 @@ Orchestration compatibility.
         {{- $_ := set .Values.orchestration "javaOpts" (.Values.orchestration.javaOpts | replace "zeebe" "camunda") -}}
     {{- end -}}
 
-    {{- if and .Values.zeebe -}}
+    {{- if and .Values.zeebe (hasKey .Values.zeebe "enabled") -}}
         {{/*
             zeebe.enabled => orchestration.profiles.broker
         */}}
