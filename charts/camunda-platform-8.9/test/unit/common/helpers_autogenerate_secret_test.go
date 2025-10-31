@@ -87,13 +87,13 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithExistingS
 func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithExistingSecretObject() {
 	// Test case: component has existingSecret as object with name pointing to autogen secret
 	config := map[string]string{
-		"global.identity.auth.console.existingSecret.name": "camunda-credentials",
+		"global.identity.auth.optimize.existingSecret.name": "camunda-credentials",
 		"global.identity.auth.enabled": "true",
 	}
 	
-	// Should generate the identity-console-client-token key
-	result := s.shouldSecretKeyBeGenerated(config, "identity-console-client-token")
-	s.Require().True(result, "identity-console-client-token should be generated when global.identity.auth.console.existingSecret.name points to autogen secret")
+	// Should generate the identity-optimize-client-token key
+	result := s.shouldSecretKeyBeGenerated(config, "identity-optimize-client-token")
+	s.Require().True(result, "identity-optimize-client-token should be generated when global.identity.auth.optimize.existingSecret.name points to autogen secret")
 }
 
 func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithNewStyleSecret() {
