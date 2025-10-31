@@ -106,7 +106,7 @@ camunda:
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
-        {{ if (include "orchestration.authIssuerUrl" .) }}
+        {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
         authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
