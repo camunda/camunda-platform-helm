@@ -59,8 +59,6 @@ camunda:
   {{- if .Values.global.opensearch.enabled }}
     awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
   {{- end }}
-    index:
-      numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
 
   data:
     snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
@@ -79,6 +77,7 @@ camunda:
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+        number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
@@ -89,6 +88,7 @@ camunda:
         username: {{ .Values.global.opensearch.auth.username | quote }}
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+        number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
@@ -272,7 +272,6 @@ zeebe:
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.elasticsearch.prefix | quote }}
-            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
@@ -300,7 +299,6 @@ zeebe:
           {{- end }}
           index:
             prefix: {{ .Values.global.opensearch.prefix | quote }}
-            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
           {{- if .Values.global.opensearch.aws.enabled }}
           aws:
             enabled: true
@@ -327,8 +325,6 @@ zeebe:
             password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
           {{- end }}
             awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-          index:
-            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
         {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
