@@ -72,9 +72,9 @@ spec:
             ) | nindent 12 }}
             {{- end}}
             {{- end }}
-            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
+              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
             {{- end }}
             {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
@@ -112,10 +112,10 @@ spec:
               mountPath: /optimize/config/{{ $key }}
               subPath: {{ $key }}
             {{- end }}
-            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: keystore
-              mountPath: /optimize/certificates/externaldb.jks
-              subPath: externaldb.jks
+              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
+              subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -160,9 +160,9 @@ spec:
             ) | nindent 12 }}
             {{- end}}
             {{- end }}
-            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
+              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
             {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
@@ -295,10 +295,10 @@ spec:
               mountPath: /optimize/config/{{ $key }}
               subPath: {{ $key }}
             {{- end }}
-            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: keystore
-              mountPath: /optimize/certificates/externaldb.jks
-              subPath: externaldb.jks
+              mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
+              subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
             {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
@@ -336,17 +336,16 @@ spec:
           configMap:
             name: {{ include "optimize.fullname" . }}-configuration
             defaultMode: {{ .Values.optimize.configMap.defaultMode }}
-        {{- if .Values.global.elasticsearch.tls.existingSecret }}
-        - name: keystore
-          secret:
-            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
-            optional: false
-        {{- end }}
-        {{- if .Values.global.opensearch.tls.existingSecret }}
-        - name: keystore
-          secret:
-            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
-            optional: false
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true" }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "keystore"
+            "config" .Values.global.elasticsearch.tls
+        ) | nindent 8 }}
+        {{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true" }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "keystore"
+            "config" .Values.global.opensearch.tls
+        ) | nindent 8 }}
         {{- end }}
         {{- if .Values.global.documentStore.type.gcp.enabled }}
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict

@@ -273,7 +273,10 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
   {{- $secretConfigs := list 
     (dict "path" "global.license" "config" .Values.global.license "plaintextKey" "key")
     (dict "path" "global.elasticsearch.auth" "config" .Values.global.elasticsearch.auth)
+    (dict "path" "global.elasticsearch.tls" "config" .Values.global.elasticsearch.tls "isTlsConfig" true)
     (dict "path" "global.opensearch.auth" "config" .Values.global.opensearch.auth)
+    (dict "path" "global.opensearch.tls" "config" .Values.global.opensearch.tls "isTlsConfig" true)
+    (dict "path" "console.tls" "config" .Values.console.tls "isTlsConfig" true)
     (dict "path" "global.identity.auth.admin" "config" .Values.global.identity.auth.admin)
     (dict "path" "global.identity.auth.console" "config" .Values.global.identity.auth.console)
     (dict "path" "connectors.security.authentication.oidc" "config" .Values.connectors.security.authentication.oidc)
@@ -302,6 +305,13 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
       {{- $awsConfig := $.Values.global.documentStore.type.aws -}}
       {{- if and $awsConfig.existingSecret $awsConfig.accessKeyIdKey $awsConfig.secretAccessKeyKey -}}
         {{- $hasLegacyConfig = true -}}
+      {{- end -}}
+    {{- else if .isTlsConfig -}}
+      {{/* Special handling for TLS configs - only check existingSecret (no plaintextKey) */}}
+      {{- if and $config (kindOf $config | eq "map") -}}
+        {{- if and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "" | toString) "") (ne (get $config $legacySecretKey | toString) "") -}}
+          {{- $hasLegacyConfig = true -}}
+        {{- end -}}
       {{- end -}}
     {{- else if and $config (kindOf $config | eq "map") -}}
       {{- if or (and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "" | toString) "") (ne (get $config $legacySecretKey | toString) ""))
