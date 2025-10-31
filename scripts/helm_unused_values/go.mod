@@ -2,7 +2,7 @@ module camunda.com/helmunusedvalues
 
 go 1.22
 
-toolchain go1.25.0
+toolchain go1.25.3
 
 require (
 	github.com/fatih/color v1.18.0
