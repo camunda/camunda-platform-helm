@@ -228,6 +228,7 @@ env:
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
+  FLOW: ${{ inputs.flow }}
 
 jobs:
   ci-setup:

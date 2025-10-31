@@ -13,3 +13,4 @@ yamllint 1.37.1
 yq 4.48.1
 zbctl 8.5.6
 jq 1.8.1
+bats 1.11.0

@@ -132,6 +132,9 @@ runs:
       ## Setting values for the external infra
       echo "ORCHESTRATION_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-orchestration" | tee -a $GITHUB_ENV
       echo "OPTIMIZE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-optimize" | tee -a $GITHUB_ENV
+      echo "OPERATE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-operate" | tee -a $GITHUB_ENV
+      echo "TASKLIST_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-tasklist" | tee -a $GITHUB_ENV
+      echo "FLOW=$FLOW" | tee -a $GITHUB_ENV
       echo "KEYCLOAK_REALM=$GITHUB_WORKFLOW_JOB_ID-realm" | tee -a $GITHUB_ENV
 
   - name: Set workflow vars - Chart version
