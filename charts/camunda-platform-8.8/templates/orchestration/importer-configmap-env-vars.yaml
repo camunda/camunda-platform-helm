@@ -35,6 +35,7 @@ data:
   CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote }}
 {{- if .Values.global.elasticsearch.external }}
   CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_USERNAME: {{ .Values.global.elasticsearch.auth.username | quote }}
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PASSWORD: "${VALUES_ELASTICSEARCH_PASSWORD:}"
 {{- end }}
 {{- end }}
 {{- if .Values.global.opensearch.enabled }}
@@ -46,6 +47,7 @@ data:
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_AWSENABLED: "{{ .Values.global.opensearch.aws.enabled }}"
 {{- if .Values.global.opensearch.external }}
   CAMUNDA_OPERATE_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
+  CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PASSWORD: "${VALUES_OPENSEARCH_PASSWORD:}"
 {{- end }}
 {{- end }}
 
@@ -62,6 +64,7 @@ data:
   CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT: {{ .Values.global.elasticsearch.url.port | quote}}
 {{- if .Values.global.elasticsearch.external }}
   CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_USERNAME: {{ .Values.global.elasticsearch.auth.username | quote }}
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PASSWORD: "${VALUES_ELASTICSEARCH_PASSWORD:}"
 {{- end }}
 {{- end }}
 {{- if .Values.global.opensearch.enabled }}
@@ -73,6 +76,7 @@ data:
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_AWSENABLED: "{{ .Values.global.opensearch.aws.enabled }}"
 {{- if .Values.global.opensearch.external }}
   CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_USERNAME: {{ .Values.global.opensearch.auth.username | quote }}
+  CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD: "${VALUES_OPENSEARCH_PASSWORD:}"
 {{- end }}
 
 # Index replicas
