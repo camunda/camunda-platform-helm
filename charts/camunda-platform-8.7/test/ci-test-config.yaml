@@ -39,7 +39,7 @@ integration:
           exclude: []
           auth: oidc
           flow: install,upgrade-patch
-        - name: keycloak
+        - name: keycloak-original
           enabled: true
           shortname: keyc
           exclude: []
