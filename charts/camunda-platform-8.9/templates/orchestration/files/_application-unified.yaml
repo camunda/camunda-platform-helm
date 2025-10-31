@@ -21,6 +21,11 @@ management:
     base-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
 
 camunda:
+  {{- if .Values.orchestration.exporters.rdbms.enabled }}
+  backup:
+    webapps:
+      enabled: false
+  {{- end }}
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
 
@@ -92,6 +97,13 @@ camunda:
         history:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
+      {{- if .Values.orchestration.exporters.rdbms.enabled }}
+      # RDBMS exporter is configured and enabled automatically when type is rdbms
+      rdbms:
+        url: {{ .Values.rdbms.url | quote }}
+        username: {{ .Values.rdbms.username | quote }}
+        password: {{ .Values.rdbms.password | quote }}
+      {{- end }}
 
   # Security configuration - Separated syntax.
   security:
@@ -110,7 +122,7 @@ camunda:
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
-        {{ if (include "orchestration.authIssuerUrl" .) }}
+        {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
         authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
@@ -252,6 +264,7 @@ zeebe:
     # zeebe.broker.exporters
     exporters:
     {{- if and
+      (not .Values.orchestration.exporters.rdbms.enabled)
       (or
         (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
         (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
@@ -312,7 +325,7 @@ zeebe:
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
       {{- end }}
-    {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled }}
+    {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) }}
       camundaexporter:
         className: "io.camunda.exporter.CamundaExporter"
         args:
