@@ -706,11 +706,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestOptimizeMultiTenancyEnabled",
 			Values: map[string]string{
-				"identity.enabled":              "true",
-				"global.identity.auth.enabled":  "true",
-				"optimize.enabled":              "true",
-				"identity.multitenancy.enabled": "true",
-				"identityPostgresql.enabled":    "true",
+				"identity.enabled":                                          "true",
+				"global.identity.auth.enabled":                              "true",
+				"global.identity.auth.optimize.secret.existingSecret":       "optimize-secret",
+				"global.identity.auth.optimize.secret.existingSecretKey":    "client-secret",
+				"optimize.enabled":                                          "true",
+				"identity.multitenancy.enabled":                             "true",
+				"identityPostgresql.enabled":                                "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
