@@ -103,10 +103,6 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.optimize.existingSecret.name" }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.console.enabled) (not .Values.global.identity.auth.console.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.console.existingSecret.name" }}
-    {{- end }}
-
     {{ if and (.Values.global.identity.auth.enabled) (.Values.zeebe.enabled) (not .Values.global.identity.auth.zeebe.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.zeebe.existingSecret.name" }}
     {{- end }}
@@ -152,7 +148,6 @@ data:
   tasklist-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   keycloak-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
   admin-password: <base64-encoded-secret> # used for keycloak
@@ -188,7 +183,6 @@ data:
   tasklist-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   keycloak-secret: <base64-encoded-secret>
   zeebe-secret: <base64-encoded-secret>
   admin-password: <base64-encoded-secret> # used for keycloak
