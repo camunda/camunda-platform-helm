@@ -146,6 +146,7 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
 Fail with a message if Connectors is using OIDC authentication with external identity provider but the client secret is not configured.
 */}}
 {{- if and .Values.connectors.enabled
+           .Values.global.identity.auth.enabled
            (eq (include "connectors.authMethod" .) "oidc")
            (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.connectors.security.authentication.oidc)) "false")
            (not .Values.identityKeycloak.enabled)
@@ -162,6 +163,7 @@ Fail with a message if Connectors is using OIDC authentication with external ide
 Fail with a message if Orchestration Cluster is using OIDC authentication with external identity provider but the client secret is not configured.
 */}}
 {{- if and .Values.orchestration.enabled
+           .Values.global.identity.auth.enabled
            (eq (include "orchestration.authMethod" .) "oidc")
            (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.security.authentication.oidc)) "false")
            (not .Values.identityKeycloak.enabled)
