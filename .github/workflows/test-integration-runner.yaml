@@ -382,7 +382,9 @@ jobs:
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
+          kubectl get rolebinding/qa-kube-editor-binding -n $TEST_NAMESPACE && echo "exists"
           kubectl describe ns $TEST_NAMESPACE
+          
 
       - name: Cluster Setup - Install docker registry on cluster
         run: |
