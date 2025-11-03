@@ -60,6 +60,8 @@ spec:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
               {{- end }}
+            - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
+              value: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_TASKLIST_SECRET
               {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
