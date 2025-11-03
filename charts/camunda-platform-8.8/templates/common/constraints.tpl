@@ -142,6 +142,54 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
+{{/*
+Fail with a message if Connectors is using OIDC authentication with external identity provider but the client secret is not configured.
+*/}}
+{{- if and .Values.connectors.enabled
+           (eq (include "connectors.authMethod" .) "oidc")
+           (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.connectors.security.authentication.oidc)) "false")
+           (not .Values.identityKeycloak.enabled)
+-}}
+  {{- $errorMessage := printf "[camunda][error] %s %s %s"
+      "Connectors is configured to use OIDC authentication but the client secret is not configured."
+      "When using OIDC authentication with an external identity provider, confidential and M2M clients require secrets to be provided."
+      "Please set connectors.security.authentication.oidc.secret.existingSecret and connectors.security.authentication.oidc.secret.existingSecretKey."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Orchestration Cluster is using OIDC authentication with external identity provider but the client secret is not configured.
+*/}}
+{{- if and .Values.orchestration.enabled
+           (eq (include "orchestration.authMethod" .) "oidc")
+           (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.security.authentication.oidc)) "false")
+           (not .Values.identityKeycloak.enabled)
+-}}
+  {{- $errorMessage := printf "[camunda][error] %s %s %s"
+      "Orchestration Cluster is configured to use OIDC authentication but the client secret is not configured."
+      "When using OIDC authentication with an external identity provider, confidential and M2M clients require secrets to be provided."
+      "Please set orchestration.security.authentication.oidc.secret.existingSecret and orchestration.security.authentication.oidc.secret.existingSecretKey."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+Fail with a message if Optimize is enabled with Identity auth using external identity provider but the client secret is not configured.
+*/}}
+{{- if and .Values.optimize.enabled
+           .Values.global.identity.auth.enabled
+           (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.optimize)) "false")
+           (not .Values.identityKeycloak.enabled)
+-}}
+  {{- $errorMessage := printf "[camunda][error] %s %s %s"
+      "Optimize is enabled with Identity authentication but the client secret is not configured."
+      "When using Identity authentication with an external identity provider, confidential clients require secrets to be provided."
+      "Please set global.identity.auth.optimize.secret.existingSecret and global.identity.auth.optimize.secret.existingSecretKey."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
