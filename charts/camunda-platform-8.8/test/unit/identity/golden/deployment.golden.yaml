@@ -66,11 +66,6 @@ spec:
                 secretKeyRef:
                   name: camunda-credentials
                   key: identity-orchestration-client-token
-            - name: VALUES_KEYCLOAK_INIT_CONSOLE_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-console-client-token
             - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
               valueFrom:
                 secretKeyRef:

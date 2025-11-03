@@ -112,10 +112,6 @@ Fail with a message if zeebeGateway.contextPath and zeebeGateway.ingress.rest.pa
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.optimize.existingSecret.name" }}
     {{- end }}
 
-    {{ if and (.Values.global.identity.auth.enabled) (.Values.console.enabled) (not .Values.global.identity.auth.console.existingSecret) }}
-      {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.console.existingSecret.name" }}
-    {{- end }}
-
     {{ if and (.Values.global.identity.auth.enabled) (.Values.zeebe.enabled) (not .Values.global.identity.auth.zeebe.existingSecret) }}
       {{- $existingSecretsNotConfigured = append $existingSecretsNotConfigured "global.identity.auth.zeebe.existingSecret.name" }}
     {{- end }}
@@ -159,7 +155,6 @@ type: Opaque
 data:
   # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
@@ -198,7 +193,6 @@ type: Opaque
 data:
   # Identity apps auth.
   connectors-secret: <base64-encoded-secret>
-  console-secret: <base64-encoded-secret>
   operate-secret: <base64-encoded-secret>
   optimize-secret: <base64-encoded-secret>
   tasklist-secret: <base64-encoded-secret>
