@@ -137,7 +137,7 @@ runs:
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
-        ./run-integration-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}"
+        ./run-integration-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --platform "${{ inputs.distro-platform }}"
 
     - name: Test - Upload Playwright report
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

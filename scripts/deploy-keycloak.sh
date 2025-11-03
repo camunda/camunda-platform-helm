@@ -15,6 +15,7 @@ VALUES_FILE=""
 
 # ExternalSecret defaults (matches values: auth.existingSecret=infra-credentials)
 EXTERNAL_SECRET_FILE="$REPO_ROOT/.github/config/external-secret/external-secret-infra.yaml"
+EXTERNAL_SECRET_CERT_FILE="$REPO_ROOT/.github/config/external-secret/external-secret-certificates.yaml"
 
 # Helm behavior defaults
 HELM_TIMEOUT="10m0s"
@@ -123,6 +124,7 @@ fi
 
 if [[ "${SKIP_EXTERNAL_SECRET}" == false ]]; then
   kubectl apply -n "$NAMESPACE" -f "$EXTERNAL_SECRET_FILE"
+  kubectl apply -n "$NAMESPACE" -f "$EXTERNAL_SECRET_CERT_FILE"
   echo "ExternalSecret applied."
 fi
 

@@ -135,7 +135,13 @@ runs:
       echo "OPERATE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-operate" | tee -a $GITHUB_ENV
       echo "TASKLIST_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-tasklist" | tee -a $GITHUB_ENV
       echo "FLOW=$FLOW" | tee -a $GITHUB_ENV
-      echo "KEYCLOAK_REALM=$GITHUB_WORKFLOW_JOB_ID-realm" | tee -a $GITHUB_ENV
+      keycloakRealm="${GITHUB_WORKFLOW_JOB_ID}-realm"
+      export KEYCLOAK_REALM=$keycloakRealm
+      echo "KEYCLOAK_REALM=$KEYCLOAK_REALM" | tee -a $GITHUB_ENV
+      echo "KEYCLOAK_TOKEN_URL_INT=https://${TEST_INGRESS_HOST}/auth/realms/camunda-platform/protocol/openid-connect/token" | tee -a $GITHUB_ENV
+      export KEYCLOAK_EXT_URL="https://keycloak-24-9-0.${INGRESS_HOSTNAME_BASE}"
+      echo "KEYCLOAK_EXT_URL=$KEYCLOAK_EXT_URL" | tee -a $GITHUB_ENV
+      echo "KEYCLOAK_TOKEN_URL_EXT=${KEYCLOAK_EXT_URL}/auth/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" | tee -a $GITHUB_ENV
 
   - name: Set workflow vars - Chart version
     shell: bash

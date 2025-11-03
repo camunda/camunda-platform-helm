@@ -5,6 +5,7 @@ source "$(dirname "$0")/base_playwright_script.sh"
 validate_args() {
   local chart_path="$1"
   local namespace="$2"
+  local platform="$3"
 
   log "validate_args: chart_path='${chart_path}' namespace='${namespace}'"
 
@@ -25,6 +26,11 @@ validate_args() {
 
   if ! kubectl get namespace "$namespace" > /dev/null 2>&1; then
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
+    exit 1
+  fi
+
+  if [[ -z "$platform" ]]; then
+    echo "--platform is required (gke, eks, etc.)"
     exit 1
   fi
 }
@@ -50,6 +56,7 @@ setup_env_file() {
   local namespace="$5"
   local test_auth_type="$6"
   local is_ci="$7"
+  local platform="$8"
 
   log "setup_env_file: env_file='${env_file}' test_suite_path='${test_suite_path}' hostname='${hostname}' repo_root='${repo_root}' namespace='${namespace}' test_auth_type='${test_auth_type}' is_ci='${is_ci}'"
 
@@ -61,6 +68,16 @@ setup_env_file() {
   fi
 
   log "Rendering env template: '$test_suite_path/vars/playwright/files/playwright-job-vars.env.template' -> '$env_file'"
+  keycloakUrl=$(kubectl -n "$namespace" get deployment integration-identity -o jsonpath="{.metadata.annotations.keycloak-token-url}")
+  tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
+  if [[ -n "$keycloakUrl" ]]; then
+    # This parses out the host from the keycloakUrl
+    host=$(echo "$keycloakUrl" | awk -F/ '{print $3}')
+    tokenUrl="${host}"
+  fi
+
+  export TEST_KEYCLOAK_HOST="$tokenUrl"
+
   envsubst < "$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template > "$env_file"
 
   # during helm install, we create a secret with the credentials for the services
@@ -68,9 +85,8 @@ setup_env_file() {
   # adding them to the .env file so that we can run the tests from any environment
   # with an authorized kubectl context.
 
-  if [[ "$test_suite_path" == *"8.8"* ]]; then
-    log "Injecting service client tokens for 8.8"
-    if [[ "$PLATFORM" == "gke" ]]; then
+  if [[ "$test_suite_path" == *"8.8"* || "$test_suite_path" == *"8.9"* ]]; then
+    if [[ "${platform,,}" == "gke" ]]; then
       for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         log "Fetching secret for service '$svc' (gke identity token)"
         secret=$(kubectl -n "$namespace" \
@@ -144,6 +160,7 @@ Usage:
 Options:
   --absolute-chart-path ABSOLUTE_CHART_PATH   The absolute path to the chart directory.
   --namespace NAMESPACE                       The namespace c8 is deployed into
+  --platform PLATFORM                         The platform where c8 is deployed (e.g., gke, eks).
   --show-html-report                          Show the HTML report after the tests have run.
   --shard-index SHARD_INDEX                   The shard index to run.
   --shard-total SHARD_TOTAL                   The total number of shards.
@@ -160,6 +177,7 @@ EOF
 
 ABSOLUTE_CHART_PATH=""
 NAMESPACE=""
+PLATFORM=""
 SHOW_HTML_REPORT=false
 VERBOSE=false
 TEST_AUTH_TYPE="${TEST_AUTH_TYPE:-keycloak}"
@@ -177,6 +195,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --namespace)
       NAMESPACE="$2"
+      shift 2
+      ;;
+    --platform)
+      PLATFORM="$2"
       shift 2
       ;;
     --show-html-report)
@@ -221,13 +243,14 @@ log "  IS_CI='${IS_CI}'"
 log "  VERBOSE='${VERBOSE}'"
 
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE"
+validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$PLATFORM"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
 hostname=$(get_ingress_hostname "$NAMESPACE")
 
-setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI"
+setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM"
 
 log "Invoking Playwright tests with:"
 log "  TEST_SUITE_PATH='${TEST_SUITE_PATH}' SHOW_HTML_REPORT='${SHOW_HTML_REPORT}' TEST_EXCLUDE='${TEST_EXCLUDE}'"

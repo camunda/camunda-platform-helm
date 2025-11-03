@@ -370,6 +370,8 @@ jobs:
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
           kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
           kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
+          kubectl annotate ns $TEST_NAMESPACE keycloak-token-url-ext=$KEYCLOAK_TOKEN_URL_EXT
+          kubectl annotate ns $TEST_NAMESPACE keycloak-token-url-int=$KEYCLOAK_TOKEN_URL_INT
           kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }}
           kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }}
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true

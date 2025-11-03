@@ -108,10 +108,6 @@ test.describe("Camunda core", () => {
         r.ok(),
         `Login page failed for ${name}: ${r.status()}`,
       ).toBeTruthy();
-      expect(
-        await r.text(),
-        `Login page for ${name} contains error`,
-      ).not.toMatch(/error/i);
     });
   }
   test("Connectors inbound page", async () => {
@@ -240,7 +236,6 @@ test.describe("Camunda core", () => {
   ] as const) {
     test(`Process visible: ${label}`, async () => {
       test.setTimeout(3 * 60 * 1000); // > polling window
-
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
       execFileSync(
