@@ -84,6 +84,23 @@ func TestGoldenConfigmapWithAuthorizationsEnabled(t *testing.T) {
 	})
 }
 
+
+func TestGoldenConfigmapWithHistoryRetentionEnabled(t *testing.T) {
+	t.Parallel()
+
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	suite.Run(t, &utils.TemplateGoldenTest{
+		ChartPath:      chartPath,
+		Release:        "camunda-platform-test",
+		Namespace:      "camunda-platform-" + strings.ToLower(random.UniqueId()),
+		GoldenFileName: "configmap-retention",
+		Templates:      []string{"templates/orchestration/configmap-unified.yaml"},
+		SetValues:      map[string]string{"orchestration.history.retention.enabled": "true"},
+	})
+}
+
 func (s *ConfigmapLegacyTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
