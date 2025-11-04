@@ -28,8 +28,10 @@ get_latest_docker_tag() {
     local registry_url="https://hub.docker.com"
     
     # Extract namespace and image name
-    local namespace=$(echo "$repo" | cut -d'/' -f1)
-    local image=$(echo "$repo" | cut -d'/' -f2)
+    local namespace
+    local image
+    namespace=$(echo "$repo" | cut -d'/' -f1)
+    image=$(echo "$repo" | cut -d'/' -f2)
     
     # Query Docker Hub API for tags
     local api_url="${registry_url}/v2/repositories/${namespace}/${image}/tags?page_size=100"
@@ -79,10 +81,12 @@ extract_image_tags() {
     
     # Also extract webModeler image which has repository in renovate comment
     # Extract repository from renovate comment and tag from the image section
-    local webmodeler_tag=$(yq eval '.webModeler.image.tag' "$values_file" 2>/dev/null)
+    local webmodeler_tag
+    webmodeler_tag=$(yq eval '.webModeler.image.tag' "$values_file" 2>/dev/null)
     if [[ -n "$webmodeler_tag" ]] && [[ "$webmodeler_tag" != "null" ]] && [[ "$webmodeler_tag" =~ ^[0-9]+\.[0-9]+ ]]; then
         # Extract repository from renovate comment
-        local webmodeler_repo=$(grep -A5 "webModeler:" "$values_file" | grep "depName=" | sed 's/.*depName=\([^ ]*\).*/\1/')
+        local webmodeler_repo
+        webmodeler_repo=$(grep -A5 "webModeler:" "$values_file" | grep "depName=" | sed 's/.*depName=\([^ ]*\).*/\1/')
         if [[ -n "$webmodeler_repo" ]]; then
             echo "${webmodeler_repo}|${webmodeler_tag}"
         fi
@@ -94,7 +98,8 @@ extract_image_tags() {
 validate_chart() {
     local chart_dir="$1"
     local chart_path="${REPO_ROOT}/charts/${chart_dir}"
-    local chart_version=$(echo "$chart_dir" | grep -oP '(?<=camunda-platform-)[0-9]+\.[0-9]+')
+    local chart_version
+    chart_version=$(echo "$chart_dir" | grep -oP '(?<=camunda-platform-)[0-9]+\.[0-9]+')
     
     echo ""
     echo -e "${YELLOW}Validating ${chart_dir}...${NC}"
@@ -121,14 +126,16 @@ validate_chart() {
         fi
         
         # Extract the minor version from the tag (e.g., 8.7 from 8.7.16)
-        local tag_minor_version=$(echo "$tag" | grep -oP '^[0-9]+\.[0-9]+')
+        local tag_minor_version
+        tag_minor_version=$(echo "$tag" | grep -oP '^[0-9]+\.[0-9]+')
         
         # Only check if the tag matches the chart version
         if [[ "$tag_minor_version" == "$chart_version" ]]; then
             echo "  Checking $repo:$tag (chart version: $chart_version)"
             
             # Get the latest tag from Docker Hub
-            local latest_tag=$(get_latest_docker_tag "$repo" "$chart_version" 2>&1)
+            local latest_tag
+            latest_tag=$(get_latest_docker_tag "$repo" "$chart_version" 2>&1)
             
             if [[ -z "$latest_tag" ]]; then
                 echo -e "    ${YELLOW}WARNING: Could not fetch latest tag for $repo${NC}"
