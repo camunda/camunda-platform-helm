@@ -46,17 +46,12 @@ jobs:
 
       - name: Run validation script
         run: |
-          set +e
           if [[ -n "${{ inputs.chart-version }}" ]]; then
             bash scripts/check-values-latest.sh \
               "${{ inputs.chart-version }}"
           else
             bash scripts/check-values-latest.sh
           fi
-          exit_code=$?
-
-          echo "exit_code=${exit_code}" >> $GITHUB_OUTPUT
-          exit ${exit_code}
         id: validation
 
       - name: Comment on PR (if validation failed)

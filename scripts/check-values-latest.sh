@@ -86,7 +86,7 @@ extract_image_tags() {
     if [[ -n "$webmodeler_tag" ]] && [[ "$webmodeler_tag" != "null" ]] && [[ "$webmodeler_tag" =~ ^[0-9]+\.[0-9]+ ]]; then
         # Extract repository from renovate comment
         local webmodeler_repo
-        webmodeler_repo=$(grep -A5 "webModeler:" "$values_file" | grep "depName=" | sed 's/.*depName=\([^ ]*\).*/\1/')
+        webmodeler_repo=$(grep -A5 "webModeler:" "$values_file" | grep "depName=" | sed 's/.*depName=\([^[:space:]]*\).*/\1/')
         if [[ -n "$webmodeler_repo" ]]; then
             # Note: For older versions (8.2-8.5), webModeler uses a private registry
             # (registry.camunda.cloud) which we cannot query. Skip these.
@@ -103,7 +103,7 @@ validate_chart() {
     local chart_dir="$1"
     local chart_path="${REPO_ROOT}/charts/${chart_dir}"
     local chart_version
-    chart_version=$(echo "$chart_dir" | grep -oP '(?<=camunda-platform-)[0-9]+\.[0-9]+')
+    chart_version=$(echo "$chart_dir" | sed 's/camunda-platform-\([0-9]\+\.[0-9]\+\)/\1/')
     
     echo ""
     echo -e "${YELLOW}Validating ${chart_dir}...${NC}"
@@ -131,7 +131,7 @@ validate_chart() {
         
         # Extract the minor version from the tag (e.g., 8.7 from 8.7.16)
         local tag_minor_version
-        tag_minor_version=$(echo "$tag" | grep -oP '^[0-9]+\.[0-9]+')
+        tag_minor_version=$(echo "$tag" | sed 's/^\([0-9]\+\.[0-9]\+\).*/\1/')
         
         # Only check if the tag matches the chart version
         if [[ "$tag_minor_version" == "$chart_version" ]]; then
