@@ -95,3 +95,82 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestOIDCSecretConstraints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestConnectorsOIDCWithoutSecretFails",
+			Values: map[string]string{
+				"identity.enabled":                              "true",
+				"global.identity.auth.enabled":                  "true",
+				"connectors.enabled":                            "true",
+				"connectors.security.authentication.method":     "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Connectors is configured to use OIDC authentication but the client secret is not configured")
+			},
+		},
+		{
+			Name: "TestOrchestrationOIDCWithoutSecretFails",
+			Values: map[string]string{
+				"identity.enabled":                             "true",
+				"global.identity.auth.enabled":                 "true",
+				"orchestration.enabled":                        "true",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Orchestration Cluster is configured to use OIDC authentication but the client secret is not configured")
+			},
+		},
+		{
+			Name: "TestOptimizeOIDCWithoutSecretFails",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+				"optimize.enabled":             "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Optimize is enabled with Identity authentication but the client secret is not configured")
+			},
+		},
+		{
+			Name: "TestOIDCWithInternalKeycloakPasses",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"identityKeycloak.enabled":                  "true",
+				"global.identity.auth.enabled":              "true",
+				"connectors.enabled":                        "true",
+				"connectors.security.authentication.method": "oidc",
+				"orchestration.enabled":                     "true",
+				"orchestration.security.authentication.method": "oidc",
+				"optimize.enabled":                          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "TestOIDCWithSecretsProvidedPasses",
+			Values: map[string]string{
+				"identity.enabled":                                                      "true",
+				"global.identity.auth.enabled":                                          "true",
+				"connectors.enabled":                                                    "true",
+				"connectors.security.authentication.method":                             "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret":         "test-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey":      "client-secret",
+				"orchestration.enabled":                                                 "true",
+				"orchestration.security.authentication.method":                          "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":      "test-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey":   "client-secret",
+				"optimize.enabled":                                                      "true",
+				"global.identity.auth.optimize.secret.existingSecret":                   "test-secret",
+				"global.identity.auth.optimize.secret.existingSecretKey":                "client-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
