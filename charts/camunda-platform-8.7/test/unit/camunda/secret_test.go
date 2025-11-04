@@ -53,14 +53,13 @@ func (s *SecretTest) TestDifferentValuesInputs() {
 	// Define components that need secret tests
 	components := []string{
 		"Connectors",
-		"Console",
 		"Operate",
 		"Optimize",
 		"TaskList",
 		"Zeebe",
 	}
 
-	require.Equal(s.T(), len(components), 6, "Expected 6 components to be tested")
+	require.Equal(s.T(), len(components), 5, "Expected 5 components to be tested")
 
 	// Create test cases for each component
 	testCases := make([]testhelpers.TestCase, 0, len(components)+1)

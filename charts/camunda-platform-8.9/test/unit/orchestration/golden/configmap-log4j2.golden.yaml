@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.8.2"
+    app.kubernetes.io/version: "8.9.0-alpha1-rc1"
 apiVersion: v1
 data:
   startup.sh: |
@@ -58,6 +58,11 @@ data:
         size: "3"
         replication-factor: "3"
         partition-count: "3"
+        # zeebe.broker.cluster
+        initial-contact-points:
+          - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
     
       api:
         grpc:
@@ -168,10 +173,6 @@ data:
     
         # zeebe.broker.cluster
         cluster:
-          initialContactPoints:
-            - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
           clusterName: camunda-platform-test-zeebe
     
         # zeebe.broker.exporters

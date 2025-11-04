@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.1.0
+version: 13.1.1
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -71,22 +71,5 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Data injection during testing"
-    - kind: fixed
-      description: "Consistent naming for migrations and importer"
-    - kind: fixed
-      description: "Changing pod anti-affinity rules for migration jobs and importer"
-    - kind: fixed
-      description: "Allows cpu to be set as either string or number"
-    - kind: fixed
-      description: "Delete the migrator from 8.9"
-    - kind: fixed
-      description: "The oidc scenario was always running the upgrade. Removing here …"
-    - kind: fixed
-      description: "Use joinPath helper to fix double slash issues in console configmap"
-    - kind: fixed
-      description: "Apply dual-region exclusion logic to opensearch exporter as well"
-    - kind: fixed
-      description: "Add back mapping rules in the orchestration cluster"
+  artifacthub.io/changes: ""
+

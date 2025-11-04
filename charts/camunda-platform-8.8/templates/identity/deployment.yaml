@@ -52,10 +52,6 @@ spec:
                 "config"        .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-                "envName"       "VALUES_KEYCLOAK_INIT_CONSOLE_SECRET"
-                "config"        .Values.global.identity.auth.console
-            ) | nindent 12 }}
-            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
             ) | nindent 12 }}

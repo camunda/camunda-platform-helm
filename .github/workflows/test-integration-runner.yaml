@@ -987,7 +987,7 @@ jobs:
       
       - name: Cache - node_modules
         id: cache-node
-        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
           key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -996,7 +996,7 @@ jobs:
   
       - name: Cache - Playwright
         id: cache-playwright
-        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
