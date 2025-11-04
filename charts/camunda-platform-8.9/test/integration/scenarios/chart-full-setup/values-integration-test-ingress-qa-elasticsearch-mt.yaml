@@ -332,5 +332,5 @@ connectors:
       value: username
     - name: password
       value: password
-    - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
+    - name: CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS
       value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
