@@ -42,9 +42,9 @@ spec:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             {{- if .Values.global.identity.auth.enabled }}
-            {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
+              {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
             - name: KEYCLOAK_INIT_OPERATE_SECRET
-              {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
+                {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
                   {{- /*
@@ -54,16 +54,16 @@ spec:
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
                   key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
                   key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
-              {{- end }}
+                {{- end }}
             - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_TASKLIST_SECRET
-              {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
+                {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
                   {{- /*
@@ -73,14 +73,14 @@ spec:
                   */}}
                   name: "{{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}"
                   key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
                   key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
-              {{- end }}
+                {{- end }}
             - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
-              {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
+                {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
                   {{- /*
@@ -90,12 +90,12 @@ spec:
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
                   key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- end }}
+                {{- end }}
             - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_ZEEBE_NAME
@@ -107,7 +107,7 @@ spec:
             - name: KEYCLOAK_CLIENTS_0_ID
               value: connectors
             - name: KEYCLOAK_CLIENTS_0_SECRET
-              {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
+                {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
                   {{- /*
@@ -117,12 +117,12 @@ spec:
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
                   key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
                   key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- end }}
+                {{- end }}
             - name: KEYCLOAK_CLIENTS_0_ROOT_URL
               value: http://placeholder
             - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
@@ -136,7 +136,7 @@ spec:
             - name: KEYCLOAK_CLIENTS_1_ID
               value: "zeebe"
             - name: KEYCLOAK_CLIENTS_1_SECRET
-              {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+                {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
                   {{- /*
@@ -146,12 +146,12 @@ spec:
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
                   key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
                   key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
-              {{- end }}
+                {{- end }}
             - name: KEYCLOAK_CLIENTS_1_TYPE
               value: "M2M"
             - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
@@ -167,19 +167,19 @@ spec:
                 secretKeyRef:
                   name: {{ include "identity.keycloak.authExistingSecret" . }}
                   key: {{ include "identity.keycloak.authExistingSecretKey" . }}
-            {{- if .Values.identity.firstUser.enabled }}
+              {{- if .Values.identity.firstUser.enabled }}
             - name: KEYCLOAK_USERS_0_USERNAME
               value: {{ .Values.identity.firstUser.username | quote }}
-            {{- if .Values.identity.firstUser.existingSecret }}
+                {{- if .Values.identity.firstUser.existingSecret }}
             - name: KEYCLOAK_USERS_0_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.identity.firstUser.existingSecret }}
                   key: {{ .Values.identity.firstUser.existingSecretKey }}
-            {{- else }}
+                {{- else }}
             - name: KEYCLOAK_USERS_0_PASSWORD
               value: {{ .Values.identity.firstUser.password | quote }}
-            {{- end }}
+                {{- end }}
             - name: KEYCLOAK_USERS_0_EMAIL
               value: {{ .Values.identity.firstUser.email | quote }}
             - name: KEYCLOAK_USERS_0_FIRST_NAME
@@ -188,7 +188,7 @@ spec:
               value: {{ .Values.identity.firstUser.lastName | quote }}
             - name: KEYCLOAK_USERS_0_ROLES_0
               value: "Identity"
-            {{- if .Values.global.identity.auth.enabled }}
+                {{- if .Values.global.identity.auth.enabled }}
             - name: KEYCLOAK_USERS_0_ROLES_1
               value: "Operate"
             - name: KEYCLOAK_USERS_0_ROLES_2
@@ -203,24 +203,24 @@ spec:
               value: "Console"
             - name: KEYCLOAK_USERS_0_ROLES_7
               value: "Zeebe"
-            {{- end }}
-            {{- end }}
+                {{- end }}
+              {{- end }}
             {{- else }}
             - name: IDENTITY_INITIAL_CLAIM_NAME
               value: {{ .Values.global.identity.auth.identity.initialClaimName }}
             - name: IDENTITY_INITIAL_CLAIM_VALUE
               value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
-            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+              {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+                {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
               value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
                   key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+                {{- end }}
               {{- end }}
-            {{- end }}
             {{- end }}
             {{- end }}
             {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
