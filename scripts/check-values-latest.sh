@@ -88,7 +88,11 @@ extract_image_tags() {
         local webmodeler_repo
         webmodeler_repo=$(grep -A5 "webModeler:" "$values_file" | grep "depName=" | sed 's/.*depName=\([^ ]*\).*/\1/')
         if [[ -n "$webmodeler_repo" ]]; then
-            echo "${webmodeler_repo}|${webmodeler_tag}"
+            # Note: For older versions (8.2-8.5), webModeler uses a private registry
+            # (registry.camunda.cloud) which we cannot query. Skip these.
+            if [[ "$webmodeler_repo" != *"registry.camunda.cloud"* ]]; then
+                echo "${webmodeler_repo}|${webmodeler_tag}"
+            fi
         fi
     fi
 }
@@ -137,8 +141,10 @@ validate_chart() {
             local latest_tag
             latest_tag=$(get_latest_docker_tag "$repo" "$chart_version" 2>&1)
             
-            if [[ -z "$latest_tag" ]]; then
-                echo -e "    ${YELLOW}WARNING: Could not fetch latest tag for $repo${NC}"
+            # Check if latest_tag contains an error message
+            if [[ "$latest_tag" == ERROR:* ]] || [[ -z "$latest_tag" ]]; then
+                echo -e "    ${YELLOW}WARNING: Could not verify latest tag for $repo (${latest_tag:-no data})${NC}"
+                # Don't fail validation for API errors - these could be temporary
                 continue
             fi
             
