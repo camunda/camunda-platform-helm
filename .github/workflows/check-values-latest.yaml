@@ -21,6 +21,7 @@ name: Check values-latest.yaml
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   check-values-latest:
