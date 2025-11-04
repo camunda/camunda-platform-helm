@@ -182,7 +182,7 @@ spec:
               value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
-              {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
+                {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
                   {{- /*
@@ -192,13 +192,13 @@ spec:
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
                   key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- else }}
+                {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
                   key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
-              {{- end }}
-              {{- end }}
+                {{- end }}
+            {{- end }}
             {{- if .Values.global.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
               value: "true"
