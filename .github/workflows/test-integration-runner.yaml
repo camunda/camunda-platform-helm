@@ -1009,7 +1009,7 @@ jobs:
           ./run-integration-tests.sh --absolute-chart-path ${{env.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{ env.TEST_NAMESPACE }}
 
       - name: Test - Upload Playwright report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
           name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
@@ -1047,7 +1047,7 @@ jobs:
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
@@ -1098,7 +1098,7 @@ jobs:
           npm ci
 
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           path: all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
           pattern: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-*
@@ -1108,7 +1108,7 @@ jobs:
         run: npx playwright merge-reports --reporter html ./all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: html-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}
           path: playwright-report

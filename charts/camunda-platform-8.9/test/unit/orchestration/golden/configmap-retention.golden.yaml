@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.8.2"
+    app.kubernetes.io/version: "8.9.0-alpha1-rc1"
 apiVersion: v1
 data:
   startup.sh: |
@@ -51,7 +51,6 @@ data:
         upgrade:
           enable-version-check: true
     
-    
       cluster:
         # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
         # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
@@ -59,6 +58,11 @@ data:
         size: "3"
         replication-factor: "3"
         partition-count: "3"
+        # zeebe.broker.cluster
+        initial-contact-points:
+          - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
     
       api:
         grpc:
@@ -69,6 +73,12 @@ data:
       database:
         index:
           numberOfReplicas: "1"
+        retention:
+          enabled: true
+          minimumAge: "30d"
+          policyName: "camunda-history-retention-policy"
+          usageMetricsMinimumAge: "730d"
+          usageMetricsPolicyName: "camunda-usage-metrics-retention-policy"
     
       data:
         snapshot-period: "5m"
@@ -97,13 +107,11 @@ data:
         initialization:
           default-roles:
             admin:
-              mappingRules: []
               users:
               - demo
             connectors:
               clients:
               - connectors
-              mappingRules: []
               users:
               - connectors
           users:
@@ -130,6 +138,9 @@ data:
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 30d
     
       #
       # Camunda Tasklist Configuration - Separated syntax.
@@ -142,6 +153,9 @@ data:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
           restAddress: "http://camunda-platform-test-zeebe-gateway:8080"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 30d
     
     #
     # Camunda Zeebe Configuration - Separated syntax.
@@ -169,10 +183,6 @@ data:
     
         # zeebe.broker.cluster
         cluster:
-          initialContactPoints:
-            - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
-            - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
           clusterName: camunda-platform-test-zeebe
     
         # zeebe.broker.exporters
@@ -191,7 +201,11 @@ data:
                 waitPeriodBeforeArchiving: "1h"
                 delayBetweenRuns: 2000
                 maxDelayBetweenRuns: 60000
+                retention:
+                  enabled: true
+                  minimumAge: "30d"
+                  policyName: "camunda-history-retention-policy"
+                  usageMetricsMinimumAge: "730d"
+                  usageMetricsPolicyName: "camunda-usage-metrics-retention-policy"
     
   log4j2.xml: |
-    <xml>
-    </xml>

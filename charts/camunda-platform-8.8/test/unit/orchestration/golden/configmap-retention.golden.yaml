@@ -69,6 +69,12 @@ data:
       database:
         index:
           numberOfReplicas: "1"
+        retention:
+          enabled: true
+          minimumAge: "30d"
+          policyName: "camunda-history-retention-policy"
+          usageMetricsMinimumAge: "730d"
+          usageMetricsPolicyName: "camunda-usage-metrics-retention-policy"
     
       data:
         snapshot-period: "5m"
@@ -130,6 +136,9 @@ data:
         zeebe:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 30d
     
       #
       # Camunda Tasklist Configuration - Separated syntax.
@@ -142,6 +151,9 @@ data:
           # Gateway address
           gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
           restAddress: "http://camunda-platform-test-zeebe-gateway:8080"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 30d
     
     #
     # Camunda Zeebe Configuration - Separated syntax.
@@ -191,7 +203,11 @@ data:
                 waitPeriodBeforeArchiving: "1h"
                 delayBetweenRuns: 2000
                 maxDelayBetweenRuns: 60000
+                retention:
+                  enabled: true
+                  minimumAge: "30d"
+                  policyName: "camunda-history-retention-policy"
+                  usageMetricsMinimumAge: "730d"
+                  usageMetricsPolicyName: "camunda-usage-metrics-retention-policy"
     
   log4j2.xml: |
-    <xml>
-    </xml>
