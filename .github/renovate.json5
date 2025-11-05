@@ -14,8 +14,8 @@
   recreateWhen: 'always',
   rebaseWhen: 'behind-base-branch',
   commitBodyTable: true,
-  separateMajorMinor: false,
-  separateMinorPatch: false,
+  separateMajorMinor: true,
+  separateMinorPatch: true,
   ignoreTests: false,
   prCreation: 'not-pending',
   prBodyNotes: [
