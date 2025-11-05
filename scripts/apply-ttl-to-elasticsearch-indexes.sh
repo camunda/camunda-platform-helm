@@ -17,12 +17,13 @@ debug() { [[ "${DEBUG:-0}" == "1" ]] && echo "[DEBUG] $*"; }
 on_error() {
   local line=$1
   log "❌ Error on or near line ${line}. Enable --debug for more details."
+  [[ -n "${CURL_LAST_CMD:-}" ]] && log "Last curl: ${CURL_LAST_CMD}"
 }
 trap 'on_error $LINENO' ERR
 
 usage() {
-  cat <<EOF
-Usage: $0 --prefix <prefix> --ttl <1h|30m|1d> [--url <url>] [--user <user>] [--pass <pass>] [--dry-run] [--debug]
+  cat << EOF
+Usage: $0 --prefix <prefix> --ttl <1h|30m|1d> [--url <url>] [--user <user>] [--pass <pass>] [--namespace <ns>] [--dry-run] [--debug]
 
 Options:
   --prefix    Index prefix to match (e.g., logs-)
@@ -30,6 +31,7 @@ Options:
   --url       Elasticsearch base URL (default: http://localhost:9200)
   --user      Username for basic auth
   --pass      Password for basic auth
+  --elasticsearch-namespace Kubernetes namespace to fetch password using scripts/get-credientials-from-cluster.sh (used if --pass not given)
   --dry-run   Show what would be deleted, but do not delete
   --debug     Verbose debug logging
   -h, --help  Show this help and exit
@@ -37,12 +39,16 @@ EOF
 }
 
 require_cmd() {
-  command -v "$1" >/dev/null 2>&1 || { log "❌ Required command not found: $1"; exit 127; }
+  command -v "$1" > /dev/null 2>&1 || {
+    log "❌ Required command not found: $1"
+    exit 127
+  }
 }
 
 # Curl wrapper capturing status and body
 REQ_STATUS=""
 REQ_BODY=""
+CURL_LAST_CMD=""
 curl_request() {
   local method=$1
   local url=$2
@@ -50,6 +56,15 @@ curl_request() {
   local tmp
   tmp=$(mktemp)
   local code
+  # Build a redacted representation of the curl command for error/debug logs
+  local CURL_FLAGS="--silent --show-error --connect-timeout 5 --max-time 30 --retry 2 --retry-delay 1 --retry-connrefused"
+  local auth_display=""
+  if [[ ${#auth_args[@]} -gt 0 ]]; then
+    auth_display="-u ${ES_USER}:******"
+  fi
+  local extra_quoted="$(printf "%q " "$@")"
+  CURL_LAST_CMD="curl ${CURL_FLAGS} -X ${method} ${auth_display} \"${url}\" ${extra_quoted}"
+  debug "cmd: ${CURL_LAST_CMD}"
   code=$(curl --silent --show-error --connect-timeout 5 --max-time 30 \
     --retry 2 --retry-delay 1 --retry-connrefused \
     -o "$tmp" -w "%{http_code}" -X "$method" "${auth_args[@]}" "$url" "$@") || true
@@ -69,6 +84,7 @@ TTL=""
 ES_URL="http://localhost:9200"
 ES_USER=""
 ES_PASS=""
+NAMESPACE=""
 DRY_RUN=0
 
 # ---- argument parsing ----
@@ -94,6 +110,10 @@ while [[ $# -gt 0 ]]; do
       ES_PASS="$2"
       shift 2
       ;;
+    --elasticsearch-namespace)
+      ELASTICSEARCH_NAMESPACE="$2"
+      shift 2
+      ;;
     --dry-run)
       DRY_RUN=1
       shift
@@ -102,7 +122,7 @@ while [[ $# -gt 0 ]]; do
       DEBUG=1
       shift
       ;;
-    -h|--help)
+    -h | --help)
       usage
       exit 0
       ;;
@@ -124,6 +144,15 @@ require_cmd curl
 require_cmd jq
 
 # ---- helpers ----
+if [[ -z "$ES_PASS" && -n "$ELASTICSEARCH_NAMESPACE" ]]; then
+  if [[ -x "scripts/get-credientials-from-cluster.sh" ]]; then
+    ES_PASS="$(scripts/get-credientials-from-cluster.sh --namespace "$ELASTICSEARCH_NAMESPACE")"
+  else
+    log "❌ scripts/get-credientials-from-cluster.sh not found or not executable"
+    exit 1
+  fi
+fi
+
 auth_args=()
 [[ -n "$ES_USER" && -n "$ES_PASS" ]] && auth_args=(-u "${ES_USER}:${ES_PASS}")
 
@@ -150,6 +179,7 @@ log "🔍 Checking indexes matching '${PREFIX}*' older than ${TTL}"
 curl_request GET "${ES_URL}/_cat/indices/${PREFIX}*?h=index"
 if ! [[ "$REQ_STATUS" =~ ^2..$ ]]; then
   log "❌ Failed to list indices (HTTP $REQ_STATUS)"
+  [[ -n "$CURL_LAST_CMD" ]] && echo "  curl> $CURL_LAST_CMD"
   [[ -n "$REQ_BODY" ]] && echo "$REQ_BODY" | sed 's/^/  > /'
   exit 1
 fi
@@ -166,23 +196,25 @@ declare -a FAILED=()
 declare -a FOUND=()
 declare -a NOT_FOUND=()
 
-while read -r INDEX; do
-  [[ -z "$INDEX" ]] && continue
-  curl_request GET "${ES_URL}/${INDEX}/_settings"
-  if ! [[ "$REQ_STATUS" =~ ^2..$ ]]; then
-    log "⚠️  Failed to get settings for ${INDEX} (HTTP $REQ_STATUS) — skipping"
-    continue
-  fi
-  CREATED=$(echo "$REQ_BODY" | jq -r ".[\"${INDEX}\"].settings.index.creation_date" 2>/dev/null || echo "null")
-  if [[ "$CREATED" == "null" || -z "$CREATED" || ! "$CREATED" =~ ^[0-9]+$ ]]; then
-    log "⚠️  Could not determine creation_date for ${INDEX} — skipping"
-    continue
-  fi
-  AGE=$(((NOW_MS - CREATED) / 1000))
-  if ((AGE > TTL_SECS)); then
-    EXPIRED+=("$INDEX")
-  fi
-done <<< "$INDICES"
+# Bulk fetch settings for all indices once and compute expired set
+curl_request GET "${ES_URL}/${PREFIX}*/_settings?filter_path=*.settings.index.creation_date"
+if ! [[ "$REQ_STATUS" =~ ^2..$ ]]; then
+  log "❌ Failed to bulk fetch settings (HTTP $REQ_STATUS)"
+  [[ -n "$CURL_LAST_CMD" ]] && echo "  curl> $CURL_LAST_CMD"
+  [[ -n "$REQ_BODY" ]] && echo "$REQ_BODY" | sed 's/^/  > /'
+  exit 1
+fi
+
+THRESHOLD_MS=$((NOW_MS - TTL_SECS * 1000))
+# Build EXPIRED array from the bulk settings payload
+while IFS= read -r idx; do
+  [[ -z "$idx" ]] && continue
+  EXPIRED+=("$idx")
+done < <(echo "$REQ_BODY" | jq -r --argjson TH "$THRESHOLD_MS" '
+  to_entries
+  | map(select((.value.settings.index.creation_date|tonumber) < $TH))
+  | map(.key)
+  | .[]?')
 
 if ((${#EXPIRED[@]} == 0)); then
   log "✅ No expired indexes found."
@@ -197,7 +229,7 @@ if ((DRY_RUN == 1)); then
   for IDX in "${EXPIRED[@]}"; do
     curl_request HEAD "${ES_URL}/${IDX}"
     case "$REQ_STATUS" in
-      200|204)
+      200 | 204)
         log "✅ ${IDX} exists"
         FOUND+=("$IDX")
         ;;
@@ -215,39 +247,37 @@ if ((DRY_RUN == 1)); then
   exit 0
 fi
 
-for IDX in "${EXPIRED[@]}"; do
-  # Check existence before trying to delete to report clearly
-  curl_request HEAD "${ES_URL}/${IDX}"
+# Perform bulk deletions in batches to avoid URL length limits
+FOUND+=("${EXPIRED[@]}")
+BATCH_SIZE=50
+TOTAL_EXPIRED=${#EXPIRED[@]}
+START_INDEX=0
+while (( START_INDEX < TOTAL_EXPIRED )); do
+  END_INDEX=$((START_INDEX + BATCH_SIZE))
+  (( END_INDEX > TOTAL_EXPIRED )) && END_INDEX=$TOTAL_EXPIRED
+  # Build batch
+  batch=("${EXPIRED[@]:START_INDEX:END_INDEX-START_INDEX}")
+  if ((${#batch[@]} == 0)); then
+    break
+  fi
+  csv="$(IFS=,; printf '%s' "${batch[*]}")"
+  log "Deleting ${#batch[@]} indexes in bulk..."
+  curl_request DELETE "${ES_URL}/${csv}"
   case "$REQ_STATUS" in
-    200|204)
-      log "🔎 ${IDX} exists"
-      FOUND+=("$IDX")
+    200 | 202)
+      for b in "${batch[@]}"; do DELETED+=("$b"); done
       ;;
     404)
-      log "ℹ️  ${IDX} not found — skipping delete"
-      NOT_FOUND+=("$IDX")
-      continue
+      for b in "${batch[@]}"; do NOT_FOUND+=("$b"); done
       ;;
     *)
-      log "⚠️  ${IDX} existence check failed (HTTP $REQ_STATUS) — attempting delete anyway"
-      ;;
-  esac
-  log "Deleting ${IDX} ..."
-  curl_request DELETE "${ES_URL}/${IDX}"
-  case "$REQ_STATUS" in
-    200|202)
-      log "✅ Deleted ${IDX}"
-      DELETED+=("$IDX")
-      ;;
-    404)
-      log "ℹ️  Index ${IDX} not found (404) — skipping"
-      ;;
-    *)
-      log "❌ Failed to delete ${IDX} (HTTP $REQ_STATUS)"
+      log "❌ Failed bulk delete (HTTP $REQ_STATUS) for batch starting at $START_INDEX"
+      [[ -n "$CURL_LAST_CMD" ]] && echo "  curl> $CURL_LAST_CMD"
       [[ -n "$REQ_BODY" ]] && echo "$REQ_BODY" | sed 's/^/  > /'
-      FAILED+=("$IDX")
+      for b in "${batch[@]}"; do FAILED+=("$b"); done
       ;;
   esac
+  START_INDEX=$END_INDEX
 done
 
 log "🏁 Cleanup complete."

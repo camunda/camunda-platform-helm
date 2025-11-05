@@ -159,6 +159,10 @@ write_matrix_entry() {
         if [ "$flow_trimmed" = "upgrade-patch" ] && { [ "$scenario_name" = "keycloak-original" ] || [ "$scenario_name" = "keycloak-mt" ]; }; then
           continue
         fi
+        # This needs to be fixed by setting up the client in the ENTRA
+        if [ "$flow_trimmed" = "upgrade-minor" ] && { [ "$scenario_name" = "oidc" ]; }; then
+          continue
+        fi
         # Filter flows according to YAML config rules (fallback to legacy rules if config absent)
         config_file="${REPO_ROOT}/.github/config/permitted-flows.yaml"
         if ! is_flow_permitted "$flow_trimmed" "$camunda_version" "$config_file"; then

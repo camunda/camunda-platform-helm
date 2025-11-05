@@ -22,7 +22,7 @@ trap 'on_error ${LINENO} "${BASH_COMMAND}"' ERR
 
 require_cmd() {
   local bin="$1"
-  command -v "$bin" >/dev/null 2>&1 || die "Required command not found: $bin"
+  command -v "$bin" > /dev/null 2>&1 || die "Required command not found: $bin"
 }
 
 mask_secret() {
@@ -71,14 +71,14 @@ SECRET_NAME="infra-credentials"
 SECRET_KEY="elasticsearch-password"
 
 # Verify namespace exists (gives clearer error than a failing jsonpath)
-if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+if ! kubectl get namespace "$NAMESPACE" > /dev/null 2>&1; then
   die "Namespace not found or inaccessible: $NAMESPACE"
 fi
 
 # Verify secret exists
-if ! kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" >/dev/null 2>&1; then
+if ! kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" > /dev/null 2>&1; then
   # Provide a short hint of available secrets to aid debugging
-  local_list=$(kubectl -n "$NAMESPACE" get secrets -o name 2>/dev/null || true)
+  local_list=$(kubectl -n "$NAMESPACE" get secrets -o name 2> /dev/null || true)
   die "Secret '$SECRET_NAME' not found in namespace '$NAMESPACE'. Available secrets: ${local_list:-<none>}"
 fi
 
@@ -88,18 +88,18 @@ cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
 # Fetch the base64-encoded password field with helpful diagnostics
-if ! kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" -o jsonpath="{.data.$SECRET_KEY}" >"$TMP_DIR/pw.b64" 2>"$TMP_DIR/kubectl.err"; then
+if ! kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" -o jsonpath="{.data.$SECRET_KEY}" > "$TMP_DIR/pw.b64" 2> "$TMP_DIR/kubectl.err"; then
   log "kubectl stderr: $(tr -d '\r' < "$TMP_DIR/kubectl.err")"
   die "Failed to read key '$SECRET_KEY' from secret '$SECRET_NAME' in namespace '$NAMESPACE'"
 fi
 
 if ! [[ -s "$TMP_DIR/pw.b64" ]]; then
   # Show available keys to help the user correct the key name
-  keys=$(kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" -o jsonpath='{.data}' 2>/dev/null || true)
+  keys=$(kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" -o jsonpath='{.data}' 2> /dev/null || true)
   die "Key '$SECRET_KEY' is empty or missing in secret '$SECRET_NAME'. Available data keys: ${keys:-<unknown>}"
 fi
 
-if ! PASSWORD=$(base64 --decode <"$TMP_DIR/pw.b64" 2>"$TMP_DIR/decode.err"); then
+if ! PASSWORD=$(base64 --decode < "$TMP_DIR/pw.b64" 2> "$TMP_DIR/decode.err"); then
   log "base64 stderr: $(tr -d '\r' < "$TMP_DIR/decode.err")"
   die "Failed to base64-decode the password from secret '$SECRET_NAME'"
 fi
@@ -112,9 +112,6 @@ MASKED_PASSWORD=$(mask_secret "$PASSWORD")
 log "Retrieved ELASTIC_PASSWORD (masked): $MASKED_PASSWORD"
 
 if [[ -n "${GITHUB_ENV:-}" ]]; then
-  echo "ELASTIC_PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
-  echo "::add-mask::$PASSWORD"
-else
-  export ELASTIC_PASSWORD="$PASSWORD"
-  echo "Warning: GITHUB_ENV not found; exported ELASTIC_PASSWORD in current shell only."
+  : # Intentionally no-op for CI; callers should capture stdout and write to GITHUB_OUTPUT/ENV
 fi
+printf '%s\n' "$PASSWORD"

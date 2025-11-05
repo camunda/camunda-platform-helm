@@ -33,9 +33,8 @@ global:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
     auth:
       username: elastic
-      secret:
-        existingSecret: infra-credentials
-        existingSecretKey: elasticsearch-password
+      existingSecret: infra-credentials
+      existingSecretKey: elasticsearch-password
     url:
       protocol: https
       host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
