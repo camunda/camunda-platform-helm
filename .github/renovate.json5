@@ -159,15 +159,6 @@
         'elasticsearch-curator-archived',
       ],
     },
-    {
-      description: 'Enable patch updates for Camunda components in previous chart versions.',
-      matchDatasources: ['helmv3', 'helm-values', 'docker', 'regex'],
-      matchFileNames: [
-        'charts/camunda-platform-8.*/values.yaml',
-        'charts/camunda-platform-8.*/values-latest.yaml',
-      ],
-      matchUpdateTypes: ['patch'],
-    },
     // Elasticsearch version constraints per chart version
     {
       description: 'Camunda 8.3: Limit Elasticsearch to 8.13.x',
@@ -289,7 +280,8 @@
         '/.*camunda.*/',
       ],
       matchDatasources: [
-        'helm',
+        'helmv3',
+        'helm-values',
         'docker',
         'regex',
       ],
@@ -327,7 +319,8 @@
         '/.*camunda.*/',
       ],
       matchDatasources: [
-        'helm',
+        'helmv3',
+        'helm-values',
         'docker',
         'regex',
       ],
