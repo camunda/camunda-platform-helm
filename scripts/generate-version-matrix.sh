@@ -88,7 +88,16 @@ generate_version_matrix_index () {
     }"
 
     # merge unreleased version into ALL_CAMUNDA_VERSIONS
-    export ALL_CAMUNDA_VERSIONS="$(jq -r -c --slurp 'flatten | group_by(.app) | map({ app: .[0].app, charts: (map(.charts[]) | unique | sort | reverse) }) | sort_by(.app) | reverse' <(echo "$ALL_CAMUNDA_VERSIONS") <(echo "$UNRELEASED_VERSION"))"
+    merged_versions="$(jq -r -c --slurp 'flatten | group_by(.app) | map({ app: .[0].app, charts: (map(.charts[]) | unique) })' <(echo "$ALL_CAMUNDA_VERSIONS") <(echo "$UNRELEASED_VERSION"))"
+
+    # Sort versions using the Go script to handle semantic versioning properly
+    # Try system go first, then asdf go
+    if [ -x "/usr/bin/go" ]; then
+        GO_BIN="/usr/bin/go"
+    else
+        GO_BIN="$(which go 2>/dev/null)"
+    fi
+    export ALL_CAMUNDA_VERSIONS="$(echo "$merged_versions" | "$GO_BIN" run scripts/sort-version-matrix.go | jq -c '.')"
 
     echo $ALL_CAMUNDA_VERSIONS
 
