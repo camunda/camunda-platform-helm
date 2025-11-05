@@ -95,7 +95,6 @@ generate_version_matrix_index () {
     gomplate \
       --config scripts/templates/version-matrix/.gomplate.yaml \
       --datasource versions=env:///ALL_CAMUNDA_VERSIONS?type=application/array+json \
-      --datasource unreleased_versions=env:///UNRELEASED_VERSION?type=application/json \
       --file scripts/templates/version-matrix/VERSION-MATRIX-INDEX.md.tpl |
         tee "version-matrix/README.md"
 }
