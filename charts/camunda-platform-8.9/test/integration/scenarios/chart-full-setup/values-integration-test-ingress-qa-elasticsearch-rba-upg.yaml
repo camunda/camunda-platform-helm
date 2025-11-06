@@ -15,6 +15,9 @@ orchestration:
         - operate-api
         - tasklist-api
         - zeebe-api
+  env:
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
 identityKeycloak:
   enabled: true
 optimize:
