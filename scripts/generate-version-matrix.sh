@@ -99,7 +99,7 @@ generate_version_matrix_index () {
     fi
     export ALL_CAMUNDA_VERSIONS="$(echo "$merged_versions" | "$GO_BIN" run scripts/sort-version-matrix.go | jq -c '.')"
 
-    echo $ALL_CAMUNDA_VERSIONS
+    echo "$ALL_CAMUNDA_VERSIONS"
 
     gomplate \
       --config scripts/templates/version-matrix/.gomplate.yaml \
