@@ -388,8 +388,9 @@ jobs:
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
-          k get ns $TEST_NAMESPACE -o yaml
-          
+
+          kubectl get ns $TEST_NAMESPACE -o yaml
+  
       - name: Cluster Setup - Install docker registry on cluster
         run: |
           kubectl create secret docker-registry registry-camunda-cloud \
