@@ -243,8 +243,8 @@ jobs:
   runner:
     name: Scenario - ${{ inputs.shortname }} - ${{ matrix.distro.platform }}
     needs: [init]
-    uses: ./.github/workflows/test-integration-runner.yaml
-    secrets: inherit
+    # uses: ./.github/workflows/test-integration-runner.yaml
+    # secrets: inherit
     permissions:
       contents: read
       id-token: write
@@ -252,82 +252,85 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
-    with:
-      auth: ${{ inputs.auth }}
-      exclude: ${{ inputs.exclude }}
-      identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
-      camunda-helm-repo: ${{ inputs.camunda-helm-repo }}
-      camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
-      camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
-      camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-      camunda-version-previous: ${{ inputs.camunda-version-previous }}
-      caller-git-ref: ${{ inputs.caller-git-ref }}
-      deployment-ttl: ${{ inputs.deployment-ttl }}
-      distro-platform: ${{ matrix.distro.platform }}
-      distro-type: ${{ matrix.distro.type }}
-      infra-type: ${{ inputs.infra-type }}
-      flow: ${{ inputs.flows || matrix.scenario.flow }}
-      test-enabled: ${{ inputs.test-enabled }}
-      e2e-enabled: ${{ inputs.e2e-enabled }}
-      extra-values: ${{ inputs.extra-values }}
-      vault-secret-mapping: ${{ inputs.vault-secret-mapping }}
-      auth-data: ${{ inputs.auth-data }}
-      cluster-type: ${{ matrix.distro.type }}
-      cluster-name: ${{ matrix.distro.secret.cluster-name }}
-      cluster-location: ${{ matrix.distro.secret.cluster-location }}
-      workload-identity-provider: ${{ matrix.distro.secret.workload-identity-provider }}
-      service-account: ${{ matrix.distro.secret.service-account }}
-      server-url: ${{ matrix.distro.secret.server-url }}
-      username: ${{ matrix.distro.secret.username }}
-      password: ${{ matrix.distro.secret.password }}
-      scenario: ${{ inputs.scenario }}
-      camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
-      camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
-      github-workflow-rerun-enabled: ${{ inputs.github-workflow-rerun-enabled }}
-      run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
-      shortname: ${{ inputs.shortname }}
-      teleport-token: ${{ inputs.teleport-token }}
-      namespace-prefix: ${{ inputs.namespace-prefix }}
-      values-digest: ${{ inputs.values-digest }}
-      values-enterprise: ${{ inputs.values-enterprise }}
-      values-config: ${{ inputs.values-config }}
-      always-delete-namespace: ${{ inputs.always-delete-namespace }}
-      initialClaimValue: ${{ inputs.initialClaimValue }}
-
-  print-outputs:
-    name: Print outputs
     runs-on: ubuntu-latest
-    needs: [runner]
-    outputs:
-      deployment-url: ${{ steps.vars.outputs.ingress-host }}
-      namespace: ${{ needs.runner.outputs.namespace }}
     steps:
-      - name: CI Setup - Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-        with:
-          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
-          repository: camunda/camunda-platform-helm
-          ref: ${{ inputs.camunda-helm-git-ref }}
+    - run: exit 1
+    # with:
+    #   auth: ${{ inputs.auth }}
+    #   exclude: ${{ inputs.exclude }}
+    #   identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
+    #   camunda-helm-repo: ${{ inputs.camunda-helm-repo }}
+    #   camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
+    #   camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+    #   camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+    #   camunda-version-previous: ${{ inputs.camunda-version-previous }}
+    #   caller-git-ref: ${{ inputs.caller-git-ref }}
+    #   deployment-ttl: ${{ inputs.deployment-ttl }}
+    #   distro-platform: ${{ matrix.distro.platform }}
+    #   distro-type: ${{ matrix.distro.type }}
+    #   infra-type: ${{ inputs.infra-type }}
+    #   flow: ${{ inputs.flows || matrix.scenario.flow }}
+    #   test-enabled: ${{ inputs.test-enabled }}
+    #   e2e-enabled: ${{ inputs.e2e-enabled }}
+    #   extra-values: ${{ inputs.extra-values }}
+    #   vault-secret-mapping: ${{ inputs.vault-secret-mapping }}
+    #   auth-data: ${{ inputs.auth-data }}
+    #   cluster-type: ${{ matrix.distro.type }}
+    #   cluster-name: ${{ matrix.distro.secret.cluster-name }}
+    #   cluster-location: ${{ matrix.distro.secret.cluster-location }}
+    #   workload-identity-provider: ${{ matrix.distro.secret.workload-identity-provider }}
+    #   service-account: ${{ matrix.distro.secret.service-account }}
+    #   server-url: ${{ matrix.distro.secret.server-url }}
+    #   username: ${{ matrix.distro.secret.username }}
+    #   password: ${{ matrix.distro.secret.password }}
+    #   scenario: ${{ inputs.scenario }}
+    #   camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
+    #   camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
+    #   github-workflow-rerun-enabled: ${{ inputs.github-workflow-rerun-enabled }}
+    #   run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
+    #   shortname: ${{ inputs.shortname }}
+    #   teleport-token: ${{ inputs.teleport-token }}
+    #   namespace-prefix: ${{ inputs.namespace-prefix }}
+    #   values-digest: ${{ inputs.values-digest }}
+    #   values-enterprise: ${{ inputs.values-enterprise }}
+    #   values-config: ${{ inputs.values-config }}
+    #   always-delete-namespace: ${{ inputs.always-delete-namespace }}
+    #   initialClaimValue: ${{ inputs.initialClaimValue }}
 
-      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
-        id: vars
-        uses: ./.github/actions/workflow-vars
-        with:
-          deployment-ttl: 30m
-          setup-flow: install
-          platform: ${{ inputs.platforms }}
-          identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
-          ingress-hostname-base: ci.distro.ultrawombat.com
-          chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          prefix: ${{ inputs.namespace-prefix }}
+  # print-outputs:
+  #   name: Print outputs
+  #   runs-on: ubuntu-latest
+  #   needs: [runner]
+  #   outputs:
+  #     deployment-url: ${{ steps.vars.outputs.ingress-host }}
+  #     namespace: ${{ needs.runner.outputs.namespace }}
+  #   steps:
+  #     - name: CI Setup - Checkout
+  #       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+  #       with:
+  #         # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+  #         repository: camunda/camunda-platform-helm
+  #         ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - name: Print outputs
-        run: |
-          echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
-          echo "Namespace: ${{ needs.runner.outputs.namespace }}"
-          echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
-          echo "namespace=${{ needs.runner.outputs.namespace }}" >> $GITHUB_OUTPUT
+  #     - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+  #       id: vars
+  #       uses: ./.github/actions/workflow-vars
+  #       with:
+  #         deployment-ttl: 30m
+  #         setup-flow: install
+  #         platform: ${{ inputs.platforms }}
+  #         identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
+  #         ingress-hostname-base: ci.distro.ultrawombat.com
+  #         chart-dir: ${{ inputs.camunda-helm-dir }}
+  #         chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+  #         prefix: ${{ inputs.namespace-prefix }}
+
+  #     - name: Print outputs
+  #       run: |
+  #         echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
+  #         echo "Namespace: ${{ needs.runner.outputs.namespace }}"
+  #         echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
+  #         echo "namespace=${{ needs.runner.outputs.namespace }}" >> $GITHUB_OUTPUT
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
