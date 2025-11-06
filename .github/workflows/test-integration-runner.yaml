@@ -366,7 +366,13 @@ jobs:
       - name: Cluster Setup - Configure the namespace
         run: |
           echo $TEST_NAMESPACE
-          kubectl get namespace  $TEST_NAMESPACE 2>&1 && echo "exists" || echo "does not exist"
+          if kubectl get ns "$TEST_NAMESPACE" >/dev/null 2>&1; then
+            echo "Namespace $TEST_NAMESPACE already exists. Deleting..."
+            kubectl delete ns "$TEST_NAMESPACE" --wait=true
+            echo "Namespace $TEST_NAMESPACE deleted successfully."
+          else
+            echo "Namespace $TEST_NAMESPACE does not exist. Proceeding to create it."
+          fi
           kubectl create ns $TEST_NAMESPACE
           kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
           kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
