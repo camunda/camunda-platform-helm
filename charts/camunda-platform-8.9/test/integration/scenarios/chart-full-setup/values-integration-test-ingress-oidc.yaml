@@ -164,6 +164,9 @@ orchestration:
         groupsClaim: ""
     authorizations:
       enabled: true
+  env:
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
 
 elasticsearch:
   maxUnavailable: 0
