@@ -366,7 +366,7 @@ jobs:
       - name: Cluster Setup - Configure the namespace
         run: |
           echo $TEST_NAMESPACE
-          kubectl delete ns --ignore-not-found=true $TEST_NAMESPACE
+          kubectl get namespace  $TEST_NAMESPACE 2>&1 && echo "exists" || echo "does not exist"
           kubectl create ns $TEST_NAMESPACE
           kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
           kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
@@ -382,7 +382,6 @@ jobs:
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
-          kubectl get rolebinding/qa-kube-editor-binding -n $TEST_NAMESPACE && echo "exists"
           kubectl describe ns $TEST_NAMESPACE
           
 
