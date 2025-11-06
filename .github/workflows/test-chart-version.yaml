@@ -93,6 +93,11 @@ on:
         default: true
         type: boolean
         required: false
+      skip-github-workflow-rerun:
+        description: Flag to skip retries for failed runs
+        default: false
+        type: boolean
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.run_id }}
@@ -189,3 +194,23 @@ jobs:
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
+      github-workflow-rerun-enabled: false
+
+  rerun-failed-jobs:
+    name: Rerun failed jobs
+    needs: [integration-tests]
+    if: failure() && (!inputs.skip-github-workflow-rerun) && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrigger job
+        uses: camunda/infra-global-github-actions/rerun-failed-run@main
+        with:
+          error-messages: |
+            lost communication with the server.
+            The runner has received a shutdown signal.
+            Process completed with exit code 1.
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
