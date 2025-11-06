@@ -71,8 +71,6 @@ data:
     
       # Database configuration - Separated syntax.
       database:
-        index:
-          numberOfReplicas: "1"
         retention:
           enabled: true
           minimumAge: "30d"
@@ -96,6 +94,7 @@ data:
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: ""
+            number-of-replicas: "1"
     
       # Security configuration - Separated syntax.
       security:

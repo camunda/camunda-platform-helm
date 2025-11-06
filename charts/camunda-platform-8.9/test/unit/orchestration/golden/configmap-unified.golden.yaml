@@ -90,6 +90,7 @@ data:
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: ""
+            number-of-replicas: "1"
     
       # Security configuration - Separated syntax.
       security:
