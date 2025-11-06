@@ -136,14 +136,15 @@ func (s *ConstraintTemplateTest) TestOIDCSecretConstraints() {
 		{
 			Name: "TestOIDCWithInternalKeycloakPasses",
 			Values: map[string]string{
-				"identity.enabled":                          "true",
-				"identityKeycloak.enabled":                  "true",
-				"global.identity.auth.enabled":              "true",
-				"connectors.enabled":                        "true",
-				"connectors.security.authentication.method": "oidc",
-				"orchestration.enabled":                     "true",
-				"orchestration.security.authentication.method": "oidc",
-				"optimize.enabled":                          "true",
+				"identity.enabled":                                  "true",
+				"identityKeycloak.enabled":                          "true",
+				"global.identity.auth.enabled":                      "true",
+				"connectors.enabled":                                "true",
+				"connectors.security.authentication.method":         "oidc",
+				"orchestration.enabled":                             "true",
+				"orchestration.security.authentication.method":      "oidc",
+				"orchestration.migration.identity.enabled":          "true",
+				"optimize.enabled":                                  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
@@ -162,12 +163,26 @@ func (s *ConstraintTemplateTest) TestOIDCSecretConstraints() {
 				"orchestration.security.authentication.method":                          "oidc",
 				"orchestration.security.authentication.oidc.secret.existingSecret":      "test-secret",
 				"orchestration.security.authentication.oidc.secret.existingSecretKey":   "client-secret",
+				"orchestration.migration.identity.enabled":                              "true",
+				"orchestration.migration.identity.secret.existingSecret":                "test-secret",
+				"orchestration.migration.identity.secret.existingSecretKey":             "migration-secret",
 				"optimize.enabled":                                                      "true",
 				"global.identity.auth.optimize.secret.existingSecret":                   "test-secret",
 				"global.identity.auth.optimize.secret.existingSecretKey":                "client-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().NoError(err)
+			},
+		},
+		{
+			Name: "TestOrchestrationIdentityMigrationWithoutSecretFails",
+			Values: map[string]string{
+				"identity.enabled":                              "true",
+				"global.identity.auth.enabled":                  "true",
+				"orchestration.migration.identity.enabled":      "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Orchestration identity migration is enabled but the client secret is not configured")
 			},
 		},
 	}

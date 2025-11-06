@@ -192,6 +192,21 @@ Fail with a message if Optimize is enabled with Identity auth using external ide
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
 {{- end }}
 
+{{/*
+Fail with a message if Orchestration identity migration is enabled with external identity provider but the client secret is not configured.
+*/}}
+{{- if and .Values.orchestration.migration.identity.enabled
+           (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.migration.identity)) "false")
+           (not .Values.identityKeycloak.enabled)
+-}}
+  {{- $errorMessage := printf "[camunda][error] %s %s %s"
+      "Orchestration identity migration is enabled but the client secret is not configured."
+      "When using identity migration with an external identity provider, the migration client requires a secret to be provided."
+      "Please set orchestration.migration.identity.secret.existingSecret and orchestration.migration.identity.secret.existingSecretKey."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
 {{- define "camunda.constraints.warnings" }}
   {{- if .Values.global.testDeprecationFlags.existingSecretsMustBeSet }}
     {{/* TODO: Check if there are more existingSecrets to check */}}
