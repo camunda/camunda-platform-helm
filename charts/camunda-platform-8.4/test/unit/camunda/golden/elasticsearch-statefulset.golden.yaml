@@ -73,11 +73,60 @@ spec:
           securityContext:
             privileged: true
             runAsUser: 0
+        - name: copy-default-plugins
+          image: docker.io/bitnamilegacy/elasticsearch:8.9.2
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsGroup: 0
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              cpu: 2
+              memory: 2Gi
+            requests:
+              cpu: 1
+              memory: 2Gi
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              #!/bin/bash
+
+              . /opt/bitnami/scripts/libfs.sh
+              . /opt/bitnami/scripts/elasticsearch-env.sh
+
+              if ! is_dir_empty "$DB_DEFAULT_PLUGINS_DIR"; then
+                  cp -nr / "$DB_DEFAULT_PLUGINS_DIR"/* /plugins
+              fi
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: empty-dir
+              mountPath: /plugins
+              subPath: app-plugins-dir
       containers:
         - name: elasticsearch
           image: docker.io/bitnamilegacy/elasticsearch:8.9.2
           imagePullPolicy: "IfNotPresent"
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsGroup: 0
             runAsNonRoot: true
             runAsUser: 1001
             seccompProfile:
@@ -144,6 +193,21 @@ spec:
               cpu: 1
               memory: 2Gi
           volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/config
+              subPath: app-conf-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/tmp
+              subPath: app-tmp-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/logs
+              subPath: app-logs-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/plugins
+              subPath: app-plugins-dir
             - name: data
               mountPath: /bitnami/elasticsearch/data
             - mountPath: /tmp
@@ -153,6 +217,8 @@ spec:
             - mountPath: /usr/share/elasticsearch/config
               name: config-dir
       volumes:
+        - name: empty-dir
+          emptyDir: {}
         - emptyDir: {}
           name: tmp
         - emptyDir: {}
