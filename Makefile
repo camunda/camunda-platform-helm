@@ -242,7 +242,7 @@ release.verify-components-version:
 .PHONY: release.generate-version-matrix-index
 release.generate-version-matrix-index:
 	@bash scripts/generate-version-matrix.sh --init
-	@bash scripts/generate-version-matrix.sh --index
+	@CHART_DIR=$(chartPath) bash scripts/generate-version-matrix.sh --index
 
 .PHONY: release.generate-version-matrix-released
 release.generate-version-matrix-released:
@@ -252,7 +252,7 @@ release.generate-version-matrix-released:
 .PHONY: release.generate-version-matrix-unreleased
 release.generate-version-matrix-unreleased:
 	@bash scripts/generate-version-matrix.sh --init
-	@bash scripts/generate-version-matrix.sh --unreleased
+	@CHART_DIR=$(chartPath) bash scripts/generate-version-matrix.sh --unreleased
 
 .PHONY: release.set-prs-version-label
 release.set-prs-version-label:
