@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-websockets
-          image: "camunda/web-modeler-websockets:8.7.11"
+          image: "camunda/web-modeler-websockets:8.7.12"
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
