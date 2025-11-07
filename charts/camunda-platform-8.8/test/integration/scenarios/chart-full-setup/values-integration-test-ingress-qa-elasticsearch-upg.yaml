@@ -51,6 +51,8 @@ orchestration:
   env:
     - name: JAVA_TOOL_OPTIONS
       value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
   importer:
     enabled: true
   migration:
