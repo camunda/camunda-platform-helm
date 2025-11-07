@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 RELEASE_NAME="elasticsearch"
 CHART_VERSION="21.6.3"
-NAMESPACE="elasticsearch-21-6-3"
+NAMESPACE="distribution-elasticsearch-21-6-3"
 EXTERNAL_SECRET_FILE="$REPO_ROOT/.github/config/external-secret/external-secret-infra.yaml"
 
 HELM_TIMEOUT="10m0s"

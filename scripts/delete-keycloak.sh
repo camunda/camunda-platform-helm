@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 RELEASE_NAME="keycloak"
 CHART_VERSION="24.9.0"
-NAMESPACE="keycloak-24-9-0"
+NAMESPACE="distribution-keycloak-24-9-0"
 EXTERNAL_SECRET_FILE="$REPO_ROOT/.github/config/external-secret/external-secret-infra.yaml"
 
 HELM_TIMEOUT="10m0s"

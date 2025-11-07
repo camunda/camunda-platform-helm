@@ -86,7 +86,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Derive namespace and default values file from chart version
-NAMESPACE="keycloak-$(echo "$CHART_VERSION" | tr '.' '-')"
+NAMESPACE="distribution-keycloak-$(echo "$CHART_VERSION" | tr '.' '-')"
 if [[ -z "$VALUES_FILE" ]]; then
   VALUES_FILE="$REPO_ROOT/infra/keycloak/${CHART_VERSION}/values.yaml"
 fi

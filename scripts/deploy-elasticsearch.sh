@@ -113,7 +113,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Derive namespace and default values file from chart version
-NAMESPACE="elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
+NAMESPACE="distribution-elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
 if [[ -z "$VALUES_FILE" ]]; then
   VALUES_FILE="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}/values.yaml"
 fi

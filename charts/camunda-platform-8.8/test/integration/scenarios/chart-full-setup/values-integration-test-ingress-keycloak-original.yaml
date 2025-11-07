@@ -31,9 +31,9 @@ global:
   identity:
     keycloak:
       url:
-        protocol: http
-        host: keycloak-headless.keycloak-24-9-0.svc.cluster.local
-        port: 8080
+        protocol: https
+        host: keycloak-24-9-0.ci.distro.ultrawombat.com
+        port: 443
       realm: "/realms/$KEYCLOAK_REALM"
       auth:
         adminUser: "admin"
