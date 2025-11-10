@@ -2,7 +2,7 @@
 
 #
 # List git commits for each Docker image used in the chart.
-# Extracts revision information from Docker image labels.
+# Extracts revision information from Docker image labels using skopeo (no pull required).
 #
 
 set -euo pipefail
@@ -15,10 +15,11 @@ get_image_commit() {
     
     image_name=$(echo "$image" | cut -d':' -f1 | awk -F'/' '{print $NF}')
     
+    # Use skopeo to inspect image without pulling it
     # Try to get the org.opencontainers.image.revision label
-    commit=$(docker inspect "$image" 2>/dev/null | jq -r '.[0].Config.Labels["org.opencontainers.image.revision"] // ""' || echo "")
+    commit=$(skopeo inspect "docker://${image}" 2>/dev/null | jq -r '.Labels["org.opencontainers.image.revision"] // ""' || echo "")
     
-    # If commit is empty or null, try alternative label
+    # If commit is empty or null, mark as N/A
     if [[ -z "$commit" || "$commit" == "null" ]]; then
         commit="N/A"
     fi
@@ -49,7 +50,7 @@ format_as_table() {
 # Main execution
 main() {
     # Check if required tools are available
-    for tool in docker jq kubectl; do
+    for tool in skopeo jq kubectl; do
         if ! command -v "$tool" &> /dev/null; then
             echo "Warning: $tool is not installed. Skipping image commit extraction." >&2
             exit 0
@@ -81,17 +82,7 @@ main() {
         
         echo "Processing: $image" >&2
         
-        # Pull the image if not already available
-        if ! docker inspect "$image" &>/dev/null; then
-            echo "  Pulling image..." >&2
-            if ! docker pull "$image" &>/dev/null; then
-                echo "  Warning: Failed to pull image $image" >&2
-                echo "$image_base|N/A"
-                continue
-            fi
-        fi
-        
-        # Extract commit information
+        # Extract commit information using skopeo (no pull needed)
         get_image_commit "$image"
     done | format_as_table
 }
