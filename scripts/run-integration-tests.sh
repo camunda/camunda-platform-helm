@@ -69,28 +69,21 @@ setup_env_file() {
 
   log "Rendering env template: '$test_suite_path/vars/playwright/files/playwright-job-vars.env.template' -> '$env_file'"
   keycloakUrl=$(kubectl -n "$namespace" get deployment integration-identity -o jsonpath="{.metadata.annotations.keycloak-token-url}")
-  tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
+  host=""
+  echo "::group::Keycloak URL parsing"
   if [[ -n "$keycloakUrl" ]]; then
     # This parses out the host from the keycloakUrl
-    echo "::group::Keycloak URL parsing"
-    echo "keycloakUrl (from annotation): $keycloakUrl"
-    host=$(echo "$keycloakUrl" | awk -F/ '{print $3}')
-    echo "Extracted host: $host"
-    tokenUrl="${host}"
+    tokenUrl="${keycloakUrl}"
     echo "Resolved tokenUrl: $tokenUrl"
-    echo "::endgroup::"
   else
     # This parses out the host from the keycloakUrl
-    echo "::group::Keycloak URL parsing"
-    echo "keycloakUrl (from annotation): $keycloakUrl"
-    host=$(echo "$tokenUrl" | awk -F/ '{print $3}')
-    echo "Extracted host: $host"
-    tokenUrl="${host}"
+    tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
     echo "Resolved tokenUrl: $tokenUrl"
-    echo "::endgroup::"
   fi
+  echo "::endgroup::"
 
-  export TEST_KEYCLOAK_HOST="$tokenUrl"
+  export TEST_KEYCLOAK_TOKEN_URL="$tokenUrl"
+  export TEST_KEYCLOAK_HOST="$hostname"
   echo "TEST_KEYCLOAK_HOST=${TEST_KEYCLOAK_HOST}"
 
   envsubst < "$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template > "$env_file"
