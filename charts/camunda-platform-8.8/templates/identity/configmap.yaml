@@ -251,6 +251,29 @@ data:
             - resource-server-id: camunda-identity-resource-server
               definition: read
       {{- end }}
+      {{- if .Values.global.identity.auth.admin.enabled }}
+        - id: {{ .Values.global.identity.auth.admin.clientId }}
+          name: {{ .Values.global.identity.auth.admin.clientId | title }}
+          secret: ${VALUES_CAMUNDA_ADMIN_CLIENT_SECRET:}
+          redirect-uris: /dummy
+          root-url: http://dummy
+          type: confidential
+          permissions:
+            - resourceServerId: camunda-identity-resource-server
+              definition: read
+            - resourceServerId: camunda-identity-resource-server
+              definition: write
+            - resourceServerId: orchestration-api
+              definition: read:*
+            - resourceServerId: orchestration-api
+              definition: write:*
+            - resourceServerId: optimize-api
+              definition: write:*
+            - resourceServerId: web-modeler-api
+              definition: write:*
+            - resourceServerId: console-api
+              definition: write:*
+      {{- end }}
       {{- if .Values.identity.clients }}
         {{- range $index, $client := .Values.identity.clients }}
         - id: {{ $client.id }}
