@@ -256,7 +256,7 @@ data:
         - id: {{ $client.id }}
           name: {{ $client.name }}
           {{- if ne $client.type "public" }}
-          secret: ${VALUES_CLIENT_{{ $client.id | upper}}_SECRET:}
+          secret: ${VALUES_{{ $client.id | upper}}_CLIENT_SECRET:}
           {{- end }}
           redirectUris: {{ $client.redirectUris }}
           rootUrl: {{ $client.rootUrl }}
