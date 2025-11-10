@@ -288,7 +288,8 @@ To run the validation script locally:
 The integration test workflows automatically display git commit information for each Docker image used in the deployment. This information appears in the GitHub Actions job summary after the Helm install or upgrade completes.
 
 The feature:
-- Extracts the `org.opencontainers.image.revision` label from each Docker image
+- Extracts the `org.opencontainers.image.revision` label from each Docker image using `skopeo`
+- Uses remote image inspection without pulling full images (fast and efficient)
 - Displays the git commit hash in a markdown table format
 - Makes it easy to trace a CI job to specific application commits
 - Eliminates the need to manually pull and inspect Docker images
