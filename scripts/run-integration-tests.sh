@@ -114,7 +114,7 @@ setup_env_file() {
   fi
 
   if [[ "$test_suite_path" == *"8.7"* || "$test_suite_path" == *"8.6"* ]]; then
-    for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do  
+    for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
       if [[ "$PLATFORM" == "gke" ]]; then
         log "Fetching secret for service '$svc' (gke identity password)"
         secret=$(kubectl -n "$namespace" \
@@ -125,7 +125,7 @@ setup_env_file() {
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
-      fi    
+      fi
       echo "::add-mask::$secret"
       echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
     done
@@ -248,7 +248,6 @@ log "  TEST_EXCLUDE='${TEST_EXCLUDE}'"
 log "  IS_CI='${IS_CI}'"
 log "  VERBOSE='${VERBOSE}'"
 
-validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE"
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$PLATFORM"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
