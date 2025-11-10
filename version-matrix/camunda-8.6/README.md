@@ -1,3 +1,14 @@
+<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
+🔙 [Back to version matrix index](../)
+
+# Camunda 8.6 Helm Chart Version Matrix
+
+## ToC
+
+- [Helm chart 11.10.3](#helm-chart-11103)
+
+## Helm chart 11.10.3
+
 Supported versions:
 
 - Camunda applications: [8.6](https://github.com/camunda/camunda/releases?q=tag%3A8.6&expanded=true)
