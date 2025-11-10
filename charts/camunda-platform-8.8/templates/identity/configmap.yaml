@@ -240,7 +240,7 @@ data:
         {{- end }}
       # Clients are passed as environment variables.
       clients:
-        {{- if .Values.orchestration.migration.identity.enabled }}
+      {{- if .Values.orchestration.migration.identity.enabled }}
         - id: migration
           name: Migration
           secret: ${VALUES_MIGRATION_CLIENT_SECRET:}
@@ -250,10 +250,23 @@ data:
           permissions:
             - resource-server-id: camunda-identity-resource-server
               definition: read
+      {{- end }}
+      {{- if .Values.identity.clients }}
+        {{- range $index, $client := .Values.identity.clients }}
+        - id: {{ $client.id }}
+          name: {{ $client.name }}
+          {{- if ne $client.type "public" }}
+          secret: ${VALUES_CLIENT_{{ $client.id | upper}}_SECRET:}
+          {{- end }}
+          redirectUris: {{ $client.redirectUris }}
+          rootUrl: {{ $client.rootUrl }}
+          type: {{ $client.type }}
+          permissions:
+            {{- with $client.permissions }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
         {{- end }}
-        {{- if .Values.identity.clients }}
-          {{- .Values.identity.clients | toYaml | nindent 8 }}
-        {{- end }}
+      {{- end }}
       users:
         {{- if .Values.identity.firstUser.enabled }}
         - username: {{ .Values.identity.firstUser.username | quote }}

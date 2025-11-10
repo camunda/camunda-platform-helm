@@ -123,6 +123,13 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- range $index, $client := .Values.identity.clients }}
+            - name: VALUES_CLIENT_{{ $client.id | upper}}_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $client.existingSecret }}
+                  key: {{ $client.existingSecretKey }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars

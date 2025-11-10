@@ -594,7 +594,8 @@ identity:
   # Example:
   # - id: test
   #   name: Test
-  #   secret: plaintext-secret
+  #   existingSecret: testSecret
+  #   existingSecretKey: testSecretKey
   #   redirectUris: /dummy
   #   rootUrl: http://dummy
   #   type: confidential
