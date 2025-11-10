@@ -40,7 +40,7 @@ global:
   identity:
     keycloak:
       url:
-        protocol: $KEYCLOAK_EXT_PROTOCOl_24_9_0
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
         host: $KEYCLOAK_EXT_HOST_24_9_0
         port: 443
       realm: "/realms/$KEYCLOAK_REALM"
