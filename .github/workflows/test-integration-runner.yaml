@@ -740,7 +740,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
       options: --ipc=host
     timeout-minutes: 5
-    if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
+    if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
       id-token: write
