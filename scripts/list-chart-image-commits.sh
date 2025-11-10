@@ -10,8 +10,10 @@ set -euo pipefail
 # Function to extract git commit from Docker image labels
 get_image_commit() {
     local image=$1
-    local image_name=$(echo "$image" | cut -d':' -f1 | awk -F'/' '{print $NF}')
-    local commit=""
+    local image_name
+    local commit
+    
+    image_name=$(echo "$image" | cut -d':' -f1 | awk -F'/' '{print $NF}')
     
     # Try to get the org.opencontainers.image.revision label
     commit=$(docker inspect "$image" 2>/dev/null | jq -r '.[0].Config.Labels["org.opencontainers.image.revision"] // ""' || echo "")
@@ -47,7 +49,7 @@ format_as_table() {
 # Main execution
 main() {
     # Check if required tools are available
-    for tool in docker jq kubectl helm; do
+    for tool in docker jq kubectl; do
         if ! command -v "$tool" &> /dev/null; then
             echo "Warning: $tool is not installed. Skipping image commit extraction." >&2
             exit 0
