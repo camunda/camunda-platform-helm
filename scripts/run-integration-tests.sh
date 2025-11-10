@@ -79,6 +79,15 @@ setup_env_file() {
     tokenUrl="${host}"
     echo "Resolved tokenUrl: $tokenUrl"
     echo "::endgroup::"
+  else
+    # This parses out the host from the keycloakUrl
+    echo "::group::Keycloak URL parsing"
+    echo "keycloakUrl (from annotation): $keycloakUrl"
+    host=$(echo "$tokenUrl" | awk -F/ '{print $3}')
+    echo "Extracted host: $host"
+    tokenUrl="${host}"
+    echo "Resolved tokenUrl: $tokenUrl"
+    echo "::endgroup::"
   fi
 
   export TEST_KEYCLOAK_HOST="$tokenUrl"
