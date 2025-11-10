@@ -457,40 +457,12 @@ jobs:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
         run: |
-          # paths
-          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
-          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
-      
-          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
-          
-          if [[ -z "$VALS_CONFIG" || "$VALS_CONFIG" == "{}" ]]; then
-            tmp="$(mktemp)"
-            envsubst < "$values_file" > "$tmp"
-            mv "$tmp" "$values_file"
-            exit 0
-          fi
-          # write + parse JSON config to env vars (stringified)
-          cfg="$(mktemp)"
-          printf '%s' "$VALS_CONFIG" > "$cfg"
-          while IFS='=' read -r k v; do
-            # export as strings; tolerate empty values
-            export "$k"="$v"
-          done < <(jq -r 'to_entries[] | "\(.key)=\(.value|tostring)"' "$cfg")
-          rm -f "$cfg"
-      
-          # template substitution
-          tmp="$(mktemp)"
-          envsubst < "$values_file" > "$tmp"
-          mv "$tmp" "$values_file"
-      
-          # optional license key
-          if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
-            echo "::add-mask::${E2E_TESTS_LICENSE_KEY}"
-            yq -i '.global.license.key = env(E2E_TESTS_LICENSE_KEY)' "$values_file"
-          fi
-      
-          echo "Prepared values file: $values_file"
-          cat "$values_file"
+          ./scripts/prepare-helm-values.sh \
+            --chart-path "${{ env.CHART_PATH }}" \
+            --scenario "${{ inputs.scenario }}" \
+            --values-config '${{ inputs.values-config }}' \
+            --license-key "${E2E_TESTS_LICENSE_KEY}" \
+            --verbose
 
       - name: Helm - Load keycloak realm json into the namespace
         shell: bash
@@ -718,40 +690,12 @@ jobs:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
         run: |
-          # paths
-          scenarios_dir="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup"
-          values_file="$scenarios_dir/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
-      
-          [[ -f "$values_file" ]] || { echo "Values file not found: $values_file"; exit 1; }
-          
-          if [[ -z "$VALS_CONFIG" || "$VALS_CONFIG" == "{}" ]]; then
-            tmp="$(mktemp)"
-            envsubst < "$values_file" > "$tmp"
-            mv "$tmp" "$values_file"
-            exit 0
-          fi
-          # write + parse JSON config to env vars (stringified)
-          cfg="$(mktemp)"
-          printf '%s' "$VALS_CONFIG" > "$cfg"
-          while IFS='=' read -r k v; do
-            # export as strings; tolerate empty values
-            export "$k"="$v"
-          done < <(jq -r 'to_entries[] | "\(.key)=\(.value|tostring)"' "$cfg")
-          rm -f "$cfg"
-      
-          # template substitution
-          tmp="$(mktemp)"
-          envsubst < "$values_file" > "$tmp"
-          mv "$tmp" "$values_file"
-      
-          # optional license key
-          if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
-            echo "::add-mask::${E2E_TESTS_LICENSE_KEY}"
-            yq -i '.global.license.key = env(E2E_TESTS_LICENSE_KEY)' "$values_file"
-          fi
-      
-          echo "Prepared values file: $values_file"
-          cat "$values_file"
+          ./scripts/prepare-helm-values.sh \
+            --chart-path "${{ env.CHART_PATH }}" \
+            --scenario "${{ inputs.scenario }}" \
+            --values-config '${{ inputs.values-config }}' \
+            --license-key "${E2E_TESTS_LICENSE_KEY}" \
+            --verbose
 
       - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets
