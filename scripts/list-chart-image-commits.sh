@@ -13,7 +13,13 @@ get_image_commit() {
     local image_name
     local commit
     
-    image_name=$(echo "$image" | cut -d':' -f1 | awk -F'/' '{print $NF}')
+    # Extract image name, removing @sha256 digest if present
+    image_name=$(echo "$image" | sed 's/@sha256:.*//' | cut -d':' -f1 | awk -F'/' '{print $NF}')
+    
+    # Rename camunda/camunda to orchestration for internal naming
+    if [[ "$image_name" == "camunda" ]]; then
+        image_name="orchestration"
+    fi
     
     # Use skopeo to inspect image without pulling it
     # Try to get the org.opencontainers.image.revision label
@@ -74,7 +80,14 @@ main() {
     declare -A processed_images
     for image in $images; do
         # Skip if already processed (same image with different tags)
-        image_base=$(echo "$image" | cut -d':' -f1 | awk -F'/' '{print $NF}')
+        # Remove @sha256 digest before extracting base name
+        image_base=$(echo "$image" | sed 's/@sha256:.*//' | cut -d':' -f1 | awk -F'/' '{print $NF}')
+        
+        # Apply orchestration naming for deduplication too
+        if [[ "$image_base" == "camunda" ]]; then
+            image_base="orchestration"
+        fi
+        
         if [[ -n "${processed_images[$image_base]:-}" ]]; then
             continue
         fi
