@@ -72,11 +72,17 @@ setup_env_file() {
   tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
   if [[ -n "$keycloakUrl" ]]; then
     # This parses out the host from the keycloakUrl
+    echo "::group::Keycloak URL parsing"
+    echo "keycloakUrl (from annotation): $keycloakUrl"
     host=$(echo "$keycloakUrl" | awk -F/ '{print $3}')
+    echo "Extracted host: $host"
     tokenUrl="${host}"
+    echo "Resolved tokenUrl: $tokenUrl"
+    echo "::endgroup::"
   fi
 
   export TEST_KEYCLOAK_HOST="$tokenUrl"
+  echo "TEST_KEYCLOAK_HOST=${TEST_KEYCLOAK_HOST}"
 
   envsubst < "$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template > "$env_file"
 

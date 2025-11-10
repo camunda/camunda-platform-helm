@@ -1,6 +1,6 @@
 global:
   annotations:
-    keycloak-token-url: "$KEYCLOAK_EXT_URL/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
   multitenancy:
     enabled: true
   # for bitnami images
@@ -42,8 +42,8 @@ global:
   identity:
     keycloak:
       url:
-        protocol: https
-        host: keycloak-24-9-0.ci.distro.ultrawombat.com
+        protocol: $KEYCLOAK_EXT_PROTOCOl_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
         port: 443
       realm: "/realms/$KEYCLOAK_REALM"
       auth:
@@ -51,7 +51,8 @@ global:
         existingSecret: "infra-credentials"
         existingSecretKey: "keycloak-admin-password"
     auth:
-      publicIssuerUrl: "$KEYCLOAK_EXT_URL/auth/realms/$KEYCLOAK_REALM"
+      enabled: true
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
       admin:
         existingSecret:
           name: "integration-test-credentials"
