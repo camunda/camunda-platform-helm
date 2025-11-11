@@ -6,7 +6,7 @@
 
 > [!CAUTION]
 >
-> This GitHub repository is mainly for development, don't use it directly to deploy Camunda. End users should use the [official documentation](https://docs.camunda.io/docs/self-managed/about-self-managed/) for [installation](https://docs.camunda.io/docs/next/self-managed/deployment/helm/install/), [upgrade](https://docs.camunda.io/docs/next/self-managed/deployment/helm/upgrade/), etc.
+> This GitHub repository is mainly for development, don't use it directly to deploy Camunda. End users should use the [official documentation](https://docs.camunda.io/docs/self-managed/about-self-managed/) for [installation](https://docs.camunda.io/docs/self-managed/deployment/helm/install/), [upgrade](https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/), etc.
 
 - [Overview](#overview)
 - [Documentation](#documentation)
