@@ -71,4 +71,18 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "`optmimize.persistence.enabled` crashes optimize"
+    - kind: fixed
+      description: "Remove console secret since console is a public OIDC client"
+    - kind: fixed
+      description: "Configmap for orchestration renders as valid yaml and not giant blob"
+    - kind: fixed
+      description: "Include exported password in importer deployment"
+    - kind: fixed
+      description: "Correct retention configuration in orchestration configMap"
+    - kind: fixed
+      description: "Zbctl 8.5.6 was deleted, long live 8.6.0"
+    - kind: fixed
+      description: "Disable version check restrict on qa upgrades"
