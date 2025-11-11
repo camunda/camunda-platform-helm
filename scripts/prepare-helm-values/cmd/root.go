@@ -17,6 +17,7 @@ func Execute() {
 		valuesConfig string
 		licenseKey   string
 		output       string
+		outputDir    string
 		verbose      bool
 		noColor      bool
 	)
@@ -31,6 +32,7 @@ func Execute() {
     --scenario keycloak-original \
     --values-config '{}' \
     --license-key "$E2E_TESTS_LICENSE_KEY" \
+    --output-dir /tmp/prepared-values \
     --verbose`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -40,6 +42,10 @@ func Execute() {
 			if chartPath == "" || scenario == "" {
 				log.Errorf("Required flags missing: --chart-path and --scenario must be set")
 				return fmt.Errorf("missing required flags")
+			}
+			if output != "" && outputDir != "" {
+				log.Errorf("Cannot specify both --output and --output-dir")
+				return fmt.Errorf("conflicting output flags")
 			}
 			log.Debugf("Flags OK: chart-path=%s scenario=%s", chartPath, scenario)
 			return nil
@@ -53,9 +59,10 @@ func Execute() {
 				ValuesConfig: valuesConfig,
 				LicenseKey:   licenseKey,
 				Output:       output,
+				OutputDir:    outputDir,
 			}
 
-			valuesFile, err := values.ResolveValuesFile(opts)
+			valuesFile, err := values.ResolveValuesFile(opts, log)
 			if err != nil {
 				log.Errorf("Values file not found or inaccessible: %v", err)
 				return err
@@ -63,9 +70,9 @@ func Execute() {
 
 			log.Infof("Using chart path: %s", chartPath)
 			log.Infof("Scenario: %s", scenario)
-			log.Debugf("Values file: %s", valuesFile)
+			log.Debugf("Source values file: %s", valuesFile)
 
-			content, err := values.Process(valuesFile, opts, verbose)
+			outputPath, content, err := values.Process(valuesFile, opts, log)
 			if err != nil {
 				if missing, names := values.IsMissingEnv(err); missing {
 					log.Errorf("Missing required environment variables for substitution:")
@@ -78,8 +85,11 @@ func Execute() {
 				return err
 			}
 
-			log.Okf("Prepared values file: %s", valuesFile)
-			fmt.Print(content)
+			log.Okf("Prepared values file: %s", outputPath)
+			if outputDir == "" {
+				// Only print to stdout if not writing to output-dir
+				fmt.Print(content)
+			}
 			return nil
 		},
 	}
@@ -89,6 +99,7 @@ func Execute() {
 	root.Flags().StringVar(&valuesConfig, "values-config", "", "JSON config string for env injection; \"{}\" or empty = skip")
 	root.Flags().StringVar(&licenseKey, "license-key", os.Getenv("E2E_TESTS_LICENSE_KEY"), "License key to inject; defaults to $E2E_TESTS_LICENSE_KEY")
 	root.Flags().StringVar(&output, "output", "", "Output file path (defaults to scenario values file in-place)")
+	root.Flags().StringVar(&outputDir, "output-dir", "", "Output directory path (writes with scenario-based filename)")
 	root.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose logging")
 	root.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	_ = root.MarkFlagRequired("chart-path")
