@@ -125,11 +125,6 @@ on:
         required: false
         default: auto-generated
         type: string
-      github-workflow-rerun-enabled:
-        description: Flag to enable or disable retries for failed runs
-        required: false
-        default: true
-        type: boolean
       teleport-token:
         description: The Teleport token to use for authentication.
         required: false
@@ -283,7 +278,6 @@ jobs:
       scenario: ${{ inputs.scenario }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
-      github-workflow-rerun-enabled: ${{ inputs.github-workflow-rerun-enabled }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
       shortname: ${{ inputs.shortname }}
       teleport-token: ${{ inputs.teleport-token }}
@@ -328,24 +322,3 @@ jobs:
           echo "Namespace: ${{ needs.runner.outputs.namespace }}"
           echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
           echo "namespace=${{ needs.runner.outputs.namespace }}" >> $GITHUB_OUTPUT
-
-  # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
-  rerun-failed-jobs:
-    name: Rerun failed jobs
-    needs: [runner]
-    if: failure() && inputs.github-workflow-rerun-enabled == true && fromJSON(github.run_attempt) < 3
-    runs-on: ubuntu-latest
-    steps:
-      - name: Retrigger job
-        uses: camunda/infra-global-github-actions/rerun-failed-run@main
-        with:
-          error-messages: |
-            lost communication with the server.
-            The runner has received a shutdown signal.
-            Process completed with exit code 1.
-          run-id: ${{ github.run_id }}
-          repository: ${{ github.repository }}
-          vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
