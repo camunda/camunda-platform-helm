@@ -37,13 +37,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 
 ## Architecture
 
-<p align="center">
-  <img
-    alt="Camunda 8 Self-Managed Helm charts architecture diagram."
-    src="../../imgs/camunda-platform-8-self-managed-architecture-diagram-combined-ingress.png"
-    width="80%"
-  />
-</p>
+See [Camunda 8 reference architectures](https://docs.camunda.io/docs/self-managed/reference-architecture/)
 
 ## Requirements
 
