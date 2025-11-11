@@ -60,6 +60,10 @@ data:
       client:
         enabled: false
     {{- end }}
+    logging:
+{{- with .Values.connectors.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
   {{- end }}
 
 {{- range $key, $val := .Values.connectors.extraConfiguration }}
