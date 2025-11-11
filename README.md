@@ -6,7 +6,7 @@
 
 > [!CAUTION]
 >
-> This GitHub repository is mainly for development, don't use it directly to deploy Camunda. End users should use the [official documentation](https://docs.camunda.io/docs/self-managed/about-self-managed/) for [installation](https://docs.camunda.io/docs/self-managed/setup/install/), [upgrade](https://docs.camunda.io/docs/self-managed/setup/upgrade/), etc.
+> This GitHub repository is mainly for development, don't use it directly to deploy Camunda. End users should use the [official documentation](https://docs.camunda.io/docs/self-managed/about-self-managed/) for [installation](https://docs.camunda.io/docs/next/self-managed/deployment/helm/install/), [upgrade](https://docs.camunda.io/docs/next/self-managed/deployment/helm/upgrade/), etc.
 
 - [Overview](#overview)
 - [Documentation](#documentation)
@@ -23,16 +23,6 @@
 Camunda 8 Self-Managed Helm charts repo. Camunda 8 Helm chart is an umbrella chart
 for different components. Some are internal components, and some are external (third-party).
 The dependency management is fully automated and managed by Helm itself.
-
-<p align="center">
-  <img
-    alt="Camunda 8 Self-Managed Helm charts architecture diagram."
-    src="imgs/camunda-platform-8-self-managed-architecture-diagram-combined-ingress.png"
-    width="60%"
-  />
-  <br/>
-  Camunda 8 architecture
-</p>
 
 ## Documentation
 
