@@ -123,12 +123,14 @@ spec:
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
+          {{- if .Values.identity.clients}}
           {{- range $index, $client := .Values.identity.clients }}
             - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ $client.existingSecret }}
                   key: {{ $client.existingSecretKey }}
+          {{- end }}
           {{- end }}
           envFrom:
             - configMapRef:
