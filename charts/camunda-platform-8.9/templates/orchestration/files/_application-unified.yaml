@@ -61,6 +61,14 @@ camunda:
   {{- end }}
     index:
       numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
+    {{- if .Values.orchestration.history.retention.enabled }}
+    retention:
+      enabled: true
+      minimumAge: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+      policyName: {{ .Values.orchestration.history.retention.policyName | quote }}
+      usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
+      usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
+    {{- end }}
 
   data:
     snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
@@ -79,8 +87,6 @@ camunda:
         username: {{ .Values.global.elasticsearch.auth.username | quote }}
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
-        history:
-          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
@@ -89,8 +95,6 @@ camunda:
         username: {{ .Values.global.opensearch.auth.username | quote }}
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
-        history:
-          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
 
   # Security configuration - Separated syntax.
@@ -110,7 +114,7 @@ camunda:
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
           - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
-        {{ if (include "orchestration.authIssuerUrl" .) }}
+        {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
         authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
@@ -327,14 +331,6 @@ zeebe:
             password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
           {{- end }}
             awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-          index:
-            numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
-        {{- if .Values.orchestration.retention.enabled }}
-          retention:
-            enabled: true
-            minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
-            policyName: {{ .Values.orchestration.retention.policyName | quote }}
-        {{- end }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
             rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}

@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.7.8"
+    app.kubernetes.io/version: "8.7.9"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: identity
-        app.kubernetes.io/version: "8.7.8"
+        app.kubernetes.io/version: "8.7.9"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,7 +44,7 @@ spec:
         []
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.7.8
+          image: camunda/identity:8.7.9
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -65,11 +65,8 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-operate-identity-secret
                   key: operate-secret
-            - name: KEYCLOAK_INIT_CONSOLE_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-console-identity-secret
-                  key: console-secret
+            - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
+              value: "http://localhost:8080"
             - name: KEYCLOAK_INIT_TASKLIST_SECRET
               valueFrom:
                 secretKeyRef:

@@ -76,7 +76,31 @@ get_helm_cli_version () {
 
 # Generate version matrix index for all Camunda versions with corresponding charts.
 generate_version_matrix_index () {
-    ALL_CAMUNDA_VERSIONS="$(get_versions_formatted)" \
+    export ALL_CAMUNDA_VERSIONS="$(get_versions_formatted)" \
+
+    export CHART_SOURCE="${CHART_DIR}"
+    export CHART_REF_NAME="$(git branch --show-current)"
+    export UNRELEASED_VERSION="{
+      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "${CHART_SOURCE}/Chart.yaml")\",
+      \"charts\": [
+        \"$(yq '.version' "${CHART_SOURCE}/Chart.yaml")\"
+      ]
+    }"
+
+    # merge unreleased version into ALL_CAMUNDA_VERSIONS
+    merged_versions="$(jq -r -c --slurp 'flatten | group_by(.app) | map({ app: .[0].app, charts: (map(.charts[]) | unique) })' <(echo "$ALL_CAMUNDA_VERSIONS") <(echo "$UNRELEASED_VERSION"))"
+
+    # Sort versions using the Go script to handle semantic versioning properly
+    # Try system go first, then asdf go
+    if [ -x "/usr/bin/go" ]; then
+        GO_BIN="/usr/bin/go"
+    else
+        GO_BIN="$(which go 2>/dev/null)"
+    fi
+    export ALL_CAMUNDA_VERSIONS="$(echo "$merged_versions" | "$GO_BIN" run scripts/sort-version-matrix.go | jq -c '.')"
+
+    echo "$ALL_CAMUNDA_VERSIONS"
+
     gomplate \
       --config scripts/templates/version-matrix/.gomplate.yaml \
       --datasource versions=env:///ALL_CAMUNDA_VERSIONS?type=application/array+json \
@@ -116,7 +140,8 @@ generate_version_matrix_unreleased () {
         \"$(yq '.version' "${CHART_SOURCE}/Chart.yaml")\"
       ]
     }"
-    generate_version_matrix_single "${CHART_VERSION_LOCAL}"
+    generate_version_matrix_single "${CHART_VERSION_LOCAL}" | tee \
+      "version-matrix/camunda-$(echo ${CHART_VERSION_LOCAL} | jq -r '.app')/README.md"
 }
 
 # Print help message.

@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.8.2"
+    app.kubernetes.io/version: "8.8.3"
 apiVersion: v1
 data:
   startup.sh: |
@@ -86,8 +86,6 @@ data:
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: ""
-            history:
-              policy-name: "camunda-history-retention-policy"
     
       # Security configuration - Separated syntax.
       security:
@@ -186,8 +184,6 @@ data:
                 type: "elasticsearch"
                 url: "http://camunda-platform-test-elasticsearch:9200"
                 awsEnabled: false
-              index:
-                numberOfReplicas: "1"
               history:
                 elsRolloverDateFormat: "date"
                 rolloverInterval: "1d"

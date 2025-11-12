@@ -14,8 +14,8 @@
   recreateWhen: 'always',
   rebaseWhen: 'behind-base-branch',
   commitBodyTable: true,
-  separateMajorMinor: false,
-  separateMinorPatch: false,
+  separateMajorMinor: true,
+  separateMinorPatch: true,
   ignoreTests: false,
   prCreation: 'not-pending',
   prBodyNotes: [
@@ -147,6 +147,7 @@
       matchFileNames: [
         'charts/camunda-platform-8.*/values.yaml',
         'charts/camunda-platform-8.*/values-latest.yaml',
+        'charts/camunda-platform-8.*/values-digest.yaml',
       ],
       matchUpdateTypes: ['minor'],
     },
@@ -157,15 +158,6 @@
         'bitnamilegacy/elasticsearch-curator-archived',
         'elasticsearch-curator-archived',
       ],
-    },
-    {
-      description: 'Enable patch updates for Camunda components in previous chart versions.',
-      matchDatasources: ['helmv3', 'helm-values', 'docker', 'regex'],
-      matchFileNames: [
-        'charts/camunda-platform-8.*/values.yaml',
-        'charts/camunda-platform-8.*/values-latest.yaml',
-      ],
-      matchUpdateTypes: ['patch'],
     },
     // Elasticsearch version constraints per chart version
     {
@@ -288,7 +280,8 @@
         '/.*camunda.*/',
       ],
       matchDatasources: [
-        'helm',
+        'helmv3',
+        'helm-values',
         'docker',
         'regex',
       ],
@@ -311,6 +304,9 @@
         'charts/camunda-platform-8.7/Chart.yaml',
         'charts/camunda-platform-8.7/values.yaml',
         'charts/camunda-platform-8.7/values-latest.yaml',
+        'charts/camunda-platform-8.8/Chart.yaml',
+        'charts/camunda-platform-8.8/values.yaml',
+        'charts/camunda-platform-8.8/values-latest.yaml',
       ],
       matchUpdateTypes: ['patch', 'pin'],
       schedule: ['at any time'],
@@ -323,14 +319,12 @@
         '/.*camunda.*/',
       ],
       matchDatasources: [
-        'helm',
+        'helmv3',
+        'helm-values',
         'docker',
         'regex',
       ],
       matchFileNames: [
-        'charts/camunda-platform-8.8/Chart.yaml',
-        'charts/camunda-platform-8.8/values.yaml',
-        'charts/camunda-platform-8.8/values-latest.yaml',
         'charts/camunda-platform-8.9/Chart.yaml',
         'charts/camunda-platform-8.9/values.yaml',
         'charts/camunda-platform-8.9/values-latest.yaml',

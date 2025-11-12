@@ -392,18 +392,6 @@ global:
         audience: console-api
         ## @param global.identity.auth.console.wellKnown defines the uri for the well known config which is used by Console (optional).
         wellKnown: https://well-known-uri
-        ## @param global.identity.auth.console.existingSecret [string,object] (DEPRECATED - use global.identity.auth.console.secret instead) A string literal secret can be provided. If not set, a random secret is generated. Recommended: reference an existing Kubernetes Secret using global.identity.auth.console.existingSecret.name.
-        existingSecret: ""
-        ## @param global.identity.auth.console.existingSecretKey (DEPRECATED - use global.identity.auth.console.secret instead) defines the key within the existing secret object.
-        existingSecretKey: identity-console-client-token
-        ## @extra global.identity.auth.console.secret configuration to provide the console client secret.
-        secret:
-          ## @param global.identity.auth.console.secret.inlineSecret can be used to provide the client secret as a plain-text value for non-production usage.
-          inlineSecret: ""
-          ## @param global.identity.auth.console.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
-          existingSecret: ""
-          ## @param global.identity.auth.console.secret.existingSecretKey defines the key within the existing secret object.
-          existingSecretKey: ""
         ## @param global.identity.auth.console.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
         # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8080.
         # Can be overwritten if ingress is in use and an external IP is available.
@@ -1383,7 +1371,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.0-alpha1-rc1
+    tag: 8.9.0-alpha1-rc3
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
