@@ -1,5 +1,12 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
+## [camunda-platform-14.0.0-alpha1](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-14.0.0-alpha1) (2025-11-12)
+
+### Fixes
+
+- Chart version should be 14.0.0-alpha1
+
+
 ## [camunda-platform-8.6-11.10.3](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.6-11.10.3) (2025-11-10)
 
 ### Fixes
@@ -35,7 +42,7 @@ Supported versions:
 
 - Camunda applications: [8.9](https://github.com/camunda/camunda/releases?q=tag%3A8.9&expanded=true)
 - Camunda version matrix: [8.9](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.9)
-- Helm values: [14.1.0-alpha0](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.1.0-alpha0#parameters)
+- Helm values: [14.0.0-alpha1](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.0.0-alpha1#parameters)
 - Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
 
 Camunda images:
@@ -62,10 +69,10 @@ Non-Camunda images:
 For quick verification of the Helm chart integrity using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-14.1.0-alpha0.tgz \
-  --bundle "camunda-platform-14.1.0-alpha0-cosign-bundle.json" \
+cosign verify-blob camunda-platform-14.0.0-alpha1.tgz \
+  --bundle "camunda-platform-14.0.0-alpha1-cosign-bundle.json" \
   --certificate-identity-regex "https://github.com/camunda/camunda-platform-helm" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
-For detailed verification instructions, check the steps in the `camunda-platform-14.1.0-alpha0-cosign-verify.sh` file.
+For detailed verification instructions, check the steps in the `camunda-platform-14.0.0-alpha1-cosign-verify.sh` file.
