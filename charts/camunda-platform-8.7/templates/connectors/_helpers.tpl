@@ -17,7 +17,7 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{- define "connectors.zeebeRestEndpoint" -}}
-  http://{{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- .Values.zeebeGateway.service.restPort -}}
+  http://{{- include "zeebe.names.gateway" . | replace "\"" "" -}}:{{- .Values.zeebeGateway.service.restPort -}}{{- .Values.zeebeGateway.contextPath -}}
 {{- end -}}
 
 {{- define "connectors.fullname" -}}
