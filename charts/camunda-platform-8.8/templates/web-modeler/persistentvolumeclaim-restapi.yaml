@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "camundaPlatform.fullname" . }}-webmodeler-data
+  name: {{ include "camundaPlatform.fullname" . }}-webModeler-data
   labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
   {{- with .Values.webModeler.persistence.annotations }}
   annotations: {{- toYaml . | nindent 4 }}
