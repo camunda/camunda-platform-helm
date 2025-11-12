@@ -135,13 +135,35 @@ generate_version_matrix_unreleased () {
     export CHART_SOURCE="${CHART_DIR}"
     export CHART_REF_NAME="$(git branch --show-current)"
     CHART_VERSION_LOCAL="{
-      \"app\": \"$(yq '.appVersion | sub("\..$", "")' "${CHART_SOURCE}/Chart.yaml")\",
+      \"app\": \"$(echo $(yq '.appVersion | sub("\..$", "")' "${CHART_SOURCE}/Chart.yaml"))\",
       \"charts\": [
         \"$(yq '.version' "${CHART_SOURCE}/Chart.yaml")\"
       ]
     }"
-    generate_version_matrix_single "${CHART_VERSION_LOCAL}" | tee \
-      "version-matrix/camunda-$(echo ${CHART_VERSION_LOCAL} | jq -r '.app')/README.md"
+
+    export CHART_SOURCE="camunda/camunda-platform"
+    SUPPORTED_CAMUNDA_VERSION="$(
+    get_versions_filtered | jq -c '.[]' | while read SUPPORTED_CAMUNDA_VERSION_DATA; do
+      if [[ "$(jq -r -c --slurp '.[0].app == .[1].app' <(echo "$SUPPORTED_CAMUNDA_VERSION_DATA") <(echo "$CHART_VERSION_LOCAL") )" == "true" ]]; then
+        echo "$SUPPORTED_CAMUNDA_VERSION_DATA"
+      fi
+    done | tail -n1)"
+
+    # merge unreleased version into SUPPORTED_CAMUNDA_VERSION
+    merged_versions="$(jq -r -c --slurp 'flatten | group_by(.app) | map({ app: .[0].app, charts: (map(.charts[]) | unique) })' <(echo "$SUPPORTED_CAMUNDA_VERSION") <(echo "$CHART_VERSION_LOCAL"))"
+
+    # Sort versions using the Go script to handle semantic versioning properly
+    # Try system go first, then asdf go
+    if [ -x "/usr/bin/go" ]; then
+        GO_BIN="/usr/bin/go"
+    else
+        GO_BIN="$(which go 2>/dev/null)"
+    fi
+    export ALL_CAMUNDA_VERSIONS="$(echo "$merged_versions" | "$GO_BIN" run scripts/sort-version-matrix.go | jq -c '.')"
+    SINGLE_VERSION="$(echo ${ALL_CAMUNDA_VERSIONS} | jq -c '.[0]')"
+
+    generate_version_matrix_single "${SINGLE_VERSION}" | tee \
+      "version-matrix/camunda-$(echo ${SINGLE_VERSION} | jq -r '.app')/README.md"
 }
 
 # Print help message.
