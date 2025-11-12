@@ -76,6 +76,8 @@ annotations:
     - kind: fixed
       description: "Chart version should be 14.0.0-alpha1"
     - kind: fixed
+      description: "Adjust RELEASE-NOTES.md"
+    - kind: fixed
       description: "Remove console secret since console is a public OIDC client"
     - kind: fixed
       description: "Configmap for orchestration renders as valid yaml and not giant blob"

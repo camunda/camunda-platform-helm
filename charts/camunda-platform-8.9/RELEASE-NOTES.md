@@ -5,6 +5,7 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 ### Fixes
 
 - Chart version should be 14.0.0-alpha1
+- Adjust RELEASE-NOTES.md
 
 
 ## [camunda-platform-8.6-11.10.3](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.6-11.10.3) (2025-11-10)
@@ -71,11 +72,7 @@ For quick verification of the Helm chart integrity using [Cosign](https://docs.s
 ```shell
 cosign verify-blob camunda-platform-14.0.0-alpha1.tgz \
   --bundle "camunda-platform-14.0.0-alpha1-cosign-bundle.json" \
-<<<<<<< HEAD
   --certificate-identity-regex "https://github.com/camunda/camunda-platform-helm" \
-=======
-  --certificate-identity-regex "https://github.com/" \
->>>>>>> df6081219 (fix: adjust RELEASE-NOTES.md)
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
