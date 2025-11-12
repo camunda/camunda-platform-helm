@@ -299,7 +299,7 @@ spec:
           requests:
             storage: {{ .Values.orchestration.pvcSize | quote }}
       {{- if .Values.orchestration.extraVolumeClaimTemplates }}
-      {{- toYaml .Values.orchestration.extraVolumeClaimTemplates | nindent 8 }}
+      {{- toYaml .Values.orchestration.extraVolumeClaimTemplates | nindent 4 }}
       {{- end }}
   {{- end }}
 {{- end }}
