@@ -71,7 +71,11 @@ For quick verification of the Helm chart integrity using [Cosign](https://docs.s
 ```shell
 cosign verify-blob camunda-platform-14.0.0-alpha1.tgz \
   --bundle "camunda-platform-14.0.0-alpha1-cosign-bundle.json" \
+<<<<<<< HEAD
   --certificate-identity-regex "https://github.com/camunda/camunda-platform-helm" \
+=======
+  --certificate-identity-regex "https://github.com/" \
+>>>>>>> df6081219 (fix: adjust RELEASE-NOTES.md)
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
