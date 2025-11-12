@@ -318,7 +318,7 @@ spec:
             claimName: {{ .Values.optimize.persistence.existingClaim }}
           {{- else if .Values.optimize.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data
+            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data-tmp
           {{- else }}
           emptyDir: {}
           {{- end }}
@@ -328,7 +328,7 @@ spec:
             claimName: {{ .Values.optimize.persistence.existingClaim }}
           {{- else if .Values.optimize.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data
+            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data-camunda
           {{- else }}
           emptyDir: {}
           {{- end }}

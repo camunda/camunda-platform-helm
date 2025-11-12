@@ -6,6 +6,8 @@ validate_args() {
   local chart_path="$1"
   local namespace="$2"
 
+  log "validate_args: chart_path='${chart_path}' namespace='${namespace}'"
+
   if [[ -z "$chart_path" ]]; then
     echo "--absolute-chart-path is required"
     exit 1
@@ -21,15 +23,22 @@ validate_args() {
     exit 1
   fi
 
-  if ! kubectl get namespace "$namespace" >/dev/null 2>&1; then
+  if ! kubectl get namespace "$namespace" > /dev/null 2>&1; then
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
     exit 1
   fi
 }
 
+# ANSI colors for logging
+C_RESET=$'\033[0m'
+C_CYAN=$'\033[36m'
+C_GREEN=$'\033[32m'
+C_YELLOW=$'\033[33m'
+C_RED=$'\033[31m'
+
 log() {
   if $VERBOSE; then
-    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*"
+    printf "%b\n" "${C_CYAN}[$(date +'%Y-%m-%dT%H:%M:%S%z')]${C_RESET} ${C_GREEN}$*${C_RESET}"
   fi
 }
 
@@ -42,14 +51,17 @@ setup_env_file() {
   local test_auth_type="$6"
   local is_ci="$7"
 
+  log "setup_env_file: env_file='${env_file}' test_suite_path='${test_suite_path}' hostname='${hostname}' repo_root='${repo_root}' namespace='${namespace}' test_auth_type='${test_auth_type}' is_ci='${is_ci}'"
+
   export TEST_INGRESS_HOST="$hostname"
-  
+
   # Only export TEST_AUTH_TYPE for 8.8+ where the template uses it
   if [[ "$test_suite_path" == *"8.8"* ]]; then
     export TEST_AUTH_TYPE="$test_auth_type"
   fi
-  
-  envsubst <"$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template >"$env_file"
+
+  log "Rendering env template: '$test_suite_path/vars/playwright/files/playwright-job-vars.env.template' -> '$env_file'"
+  envsubst < "$test_suite_path"/vars/playwright/files/playwright-job-vars.env.template > "$env_file"
 
   # during helm install, we create a secret with the credentials for the services
   # that are used to test the platform. This is grabbing those credentials and
@@ -57,50 +69,52 @@ setup_env_file() {
   # with an authorized kubectl context.
 
   if [[ "$test_suite_path" == *"8.8"* ]]; then
+    log "Injecting service client tokens for 8.8"
     if [[ "$PLATFORM" == "gke" ]]; then
       for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
+        log "Fetching secret for service '$svc' (gke identity token)"
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
         echo "::add-mask::$secret"
-        echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
+        echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
       done
     else
       for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
+        log "Fetching secret for service '$svc' (identity token)"
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
         echo "::add-mask::$secret"
-        echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
+        echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
       done
     fi
   fi
 
-  if [[ "$test_suite_path" == *"8.7"* ]]; then
-    if [[ "$PLATFORM" == "gke" ]]; then
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
+  if [[ "$test_suite_path" == *"8.7"* || "$test_suite_path" == *"8.6"* ]]; then
+    for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do  
+      if [[ "$PLATFORM" == "gke" ]]; then
+        log "Fetching secret for service '$svc' (gke identity password)"
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
-        echo "::add-mask::$secret"
-        echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
-      done
-    else
-      for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
+      else
+        log "Fetching secret for service '$svc' (legacy secret key)"
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
-        echo "::add-mask::$secret"
-        echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >>"$env_file"
-      done
-    fi
+      fi    
+      echo "::add-mask::$secret"
+      echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
+    done
   fi
 
+  log "Fetching admin client password"
   secret=$(kubectl -n "$namespace" \
     get secret integration-test-credentials \
     -o jsonpath="{.data.identity-admin-client-password}" | base64 -d)
   echo "::add-mask::$secret"
-  echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${secret}" >>"$env_file"
+  echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${secret}" >> "$env_file"
 
   # fixtures are the *.bpmn files that are used to test the platform. This is likely to change
   # to be more flexible in what we are testing.
@@ -110,8 +124,10 @@ setup_env_file() {
     echo "FIXTURES_DIR=${repo_root%/}/test/integration/testsuites/playwright.core/files"
     echo "TEST_BASE_PATH=${repo_root%/}/test/integration/testsuites/playwright.core/files"
     echo "CI=${is_ci}"
-  } >>"$env_file"
+    echo "VERBOSE=${VERBOSE}"
+  } >> "$env_file"
 
+  log ".env written to '$env_file' ($(wc -c < "$env_file") bytes)"
   log "Contents of .env file:"
   if $VERBOSE; then
     cat "$env_file"
@@ -119,7 +135,7 @@ setup_env_file() {
 }
 
 usage() {
-  cat <<EOF
+  cat << EOF
 This script runs the integration tests for the Camunda Platform Helm chart.
 
 Usage:
@@ -155,45 +171,54 @@ check_required_cmds
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-  --absolute-chart-path)
-    ABSOLUTE_CHART_PATH="$2"
-    shift 2
-    ;;
-  --namespace)
-    NAMESPACE="$2"
-    shift 2
-    ;;
-  --show-html-report)
-    SHOW_HTML_REPORT=true
-    shift
-    ;;
-  --test-auth-type)
-    TEST_AUTH_TYPE="$2"
-    shift 2
-    ;;
-  --test-exclude)
-    TEST_EXCLUDE="$2"
-    shift 2
-    ;;
-  --not-ci)
-    IS_CI=false
-    shift
-    ;;
-  -v | --verbose)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  *)
-    echo "Unknown option: $key"
-    usage
-    exit 1
-    ;;
+    --absolute-chart-path)
+      ABSOLUTE_CHART_PATH="$2"
+      shift 2
+      ;;
+    --namespace)
+      NAMESPACE="$2"
+      shift 2
+      ;;
+    --show-html-report)
+      SHOW_HTML_REPORT=true
+      shift
+      ;;
+    --test-auth-type)
+      TEST_AUTH_TYPE="$2"
+      shift 2
+      ;;
+    --test-exclude)
+      TEST_EXCLUDE="$2"
+      shift 2
+      ;;
+    --not-ci)
+      IS_CI=false
+      shift
+      ;;
+    -v | --verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $key"
+      usage
+      exit 1
+      ;;
   esac
 done
+
+log "Args parsed:"
+log "  ABSOLUTE_CHART_PATH='${ABSOLUTE_CHART_PATH}'"
+log "  NAMESPACE='${NAMESPACE}'"
+log "  SHOW_HTML_REPORT='${SHOW_HTML_REPORT}'"
+log "  TEST_AUTH_TYPE='${TEST_AUTH_TYPE}'"
+log "  TEST_EXCLUDE='${TEST_EXCLUDE}'"
+log "  IS_CI='${IS_CI}'"
+log "  VERBOSE='${VERBOSE}'"
 
 validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE"
 
@@ -204,4 +229,6 @@ hostname=$(get_ingress_hostname "$NAMESPACE")
 
 setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI"
 
+log "Invoking Playwright tests with:"
+log "  TEST_SUITE_PATH='${TEST_SUITE_PATH}' SHOW_HTML_REPORT='${SHOW_HTML_REPORT}' TEST_EXCLUDE='${TEST_EXCLUDE}'"
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "1" "1" "html" "$TEST_EXCLUDE" false

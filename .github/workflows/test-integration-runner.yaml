@@ -776,125 +776,6 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
-  venom-test:
-    name: Venom ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.4') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.5') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.6')) }}
-    needs: [ci-setup]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      id-token: write
-      deployments: write 
-    steps:
-      - name: CI Setup - Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-        with:
-          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
-          repository: camunda/camunda-platform-helm
-          ref: ${{ inputs.camunda-helm-git-ref }}
-
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
-
-      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
-        id: vars
-        uses: ./.github/actions/workflow-vars
-        with:
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          setup-flow: ${{ inputs.flow }}
-          platform: ${{ inputs.distro-platform }}
-          identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-          chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          prefix: ${{ inputs.namespace-prefix }}
-    
-      - name: CI Setup - Set test type vars
-        id: test-type-vars
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
-          flow: "${{ inputs.flow }}"
-
-      - name: CI Setup - Authenticate to cluster
-        id: cluster-auth
-        uses: ./.github/actions/cluster-auth
-        with:
-          platform: ${{ inputs.distro-platform }}
-          auth-data: ${{ inputs.auth-data }}
-        env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
-          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
-          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
-          GKE_SA:           ${{ secrets[inputs.service-account] }}
-          ROSA_URL:         ${{ secrets[inputs.server-url] }}
-          ROSA_USER:        ${{ secrets[inputs.username] }}
-          ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-      - name: Test - ⭐️ Run Venom Env Setup ⭐️
-        timeout-minutes: 1
-        env:
-          CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
-          TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
-          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
-          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
-          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
-          EXTRA_VALUES: ${{ inputs.extra-values }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
-        continue-on-error: false
-        run: |
-          # Configure OpenSearch environment if using "opensearch" scenario
-          if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
-            # Apply environment variable substitution to values file
-            values_file="charts/${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
-            envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
-          fi
-          
-          echo "Extra values from workflow:"
-          echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.venom.env
-
-      - name: Test - ⭐️ Run Venom Preflight TestSuite ⭐️
-        env:
-          CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
-          TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
-          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
-          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
-          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
-        continue-on-error: true
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.preflight
-
-      - name: Test - ⭐️ Run Venom Core TestSuite ⭐️
-        env:
-          CI_TASKS_BASE_DIR: ${{ env.CI_TASKS_BASE_DIR }}
-          TEST_CHART_DIR: ${{ env.TEST_CHART_DIR }}
-          TEST_VALUES_BASE_DIR: ${{ env.TEST_VALUES_BASE_DIR }}
-          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
-          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
-        id: core-testsuite
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup test.core
-
-      - name: 🚨 Get failed Pods info 🚨
-        if: failure()
-        uses: ./.github/actions/failed-pods-info
-
   playwright-integration-tests:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [ci-setup, upgrade]
@@ -903,7 +784,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
       options: --ipc=host
     timeout-minutes: 5
-    if: ${{ inputs.test-enabled && (contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') || contains(inputs.camunda-helm-dir, 'camunda-platform-8.8')) && inputs.shortname != 'esoi' }}
+    if: ${{ inputs.test-enabled && !contains(inputs.camunda-helm-dir, 'camunda-platform-8.9') && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
       id-token: write
@@ -1009,7 +890,7 @@ jobs:
           ./run-integration-tests.sh --absolute-chart-path ${{env.ABSOLUTE_TEST_CHART_DIR}} --namespace ${{ env.TEST_NAMESPACE }}
 
       - name: Test - Upload Playwright report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
           name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
@@ -1047,7 +928,7 @@ jobs:
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
@@ -1098,7 +979,7 @@ jobs:
           npm ci
 
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           path: all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
           pattern: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-*
@@ -1108,7 +989,7 @@ jobs:
         run: npx playwright merge-reports --reporter html ./all-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: html-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}
           path: playwright-report
@@ -1116,7 +997,7 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [playwright-e2e-tests, playwright-integration-tests, venom-test]
+    needs: [playwright-e2e-tests, playwright-integration-tests]
     if: ${{ always() && contains(needs.*.result, 'success') }}
     runs-on: ubuntu-latest
     permissions:

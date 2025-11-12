@@ -37,13 +37,7 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 
 ## Architecture
 
-<p align="center">
-  <img
-    alt="Camunda 8 Self-Managed Helm charts architecture diagram."
-    src="../../imgs/camunda-platform-8-self-managed-architecture-diagram-combined-ingress.png"
-    width="80%"
-  />
-</p>
+See [Camunda 8 reference architectures](https://docs.camunda.io/docs/next/self-managed/reference-architecture/)
 
 ## Requirements
 
@@ -853,7 +847,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.nameOverride`                   | can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)                                                   | `""`               |
 | `webModeler.image`                          | configuration of the WebModeler Docker images                                                                                                                              |                    |
 | `webModeler.image.registry`                 | can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)                                                                        | `""`               |
-| `webModeler.image.tag`                      | can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)                                                                            | `8.9.0-alpha1-rc1` |
+| `webModeler.image.tag`                      | can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)                                                                            | `8.9.0-alpha1-rc3` |
 | `webModeler.image.pullSecrets`              | can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                               | `[]`               |
 | `webModeler.contextPath`                    | can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain.                              | `""`               |
 | `webModeler.security.authentication`        |                                                                                                                                                                            |                    |
