@@ -97,9 +97,6 @@ jobs:
       - name: Git pull
         run: git pull --rebase --autostash .
       - name: Generate version matrix
-        env:
-          # For Makefile.
-          chartPath: "${{ env.CHART_DIR }}"
         run: |
           make helm.repos-add
           make release.generate-version-matrix-index
@@ -112,7 +109,9 @@ jobs:
       # https://github.com/googleapis/release-please/issues/2007
       - name: Clean up release-please changelog files
         run: |
-          rm -f "${{ env.CHART_DIR }}/CHANGELOG.md"
+          for chartPath in "${CHANGED_CHARTS}"; do
+            rm -f "$chartPath/CHANGELOG.md"
+          done
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "distro-ci[bot]"
