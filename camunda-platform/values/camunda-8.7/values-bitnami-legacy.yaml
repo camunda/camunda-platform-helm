@@ -28,7 +28,7 @@ identityKeycloak:
       repository: bitnamilegacy/keycloak-config-cli
 
 # WebModeler PostgreSQL configuration
-webModelerPostgresql:
+postgresql:
   image:
     repository: bitnamilegacy/postgresql
 
