@@ -5,7 +5,7 @@ vars:
   TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   INFRA_TYPE_SUFFIX: '{{ eq (env "PLATFORM") "eks" | ternary ("eks") "" }}-{{ .INFRA_TYPE }}'
-
+  TEST_CHART_FLOW: '{{ env "TEST_CHART_FLOW" }}'
 tasks:
   pre:
     env:
@@ -62,15 +62,24 @@ tasks:
         sed -i "s/KEYCLOAK_CLIENTS_[0-9]*/$VENOM_KEYCLOAK_CLIENT_NUMBER/" {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
       fi
 
-      helm upgrade integration {{ .TEST_CHART_NAME }} \
+      MERGED_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}-merged.yaml
+      USE_SCENARIO_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
+      {{ if (ne .TEST_CHART_FLOW "upgrade-patch") -}}
+      yq ea '. as $item ireduce ({}; . *+ $item)' \
+        "$USE_SCENARIO_FILE" \
+        {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
+        > "$MERGED_FILE"
+      USE_SCENARIO_FILE="$MERGED_FILE"
+      {{ end -}}
+      {{ end -}}
+
+      helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-        {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
-        {{ end -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
+        --values "$USE_SCENARIO_FILE" \
         {{ if eq .PLATFORM "eks" -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
         {{ end -}}
