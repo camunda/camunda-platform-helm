@@ -111,11 +111,6 @@ on:
         required: false
         default: auto-generated
         type: string
-      github-workflow-rerun-enabled:
-        description: Flag to enable or disable retries for failed runs
-        required: false
-        default: true
-        type: boolean
       cluster-name:
         required: false
         type: string
