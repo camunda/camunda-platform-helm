@@ -109,7 +109,7 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
 				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "should use PVC when persistence is enabled")
 				s.Require().Nil(tmpVolume.EmptyDir, "should not use emptyDir when persistence is enabled")
-				s.Require().Equal("camunda-platform-test-webModeler-data", tmpVolume.PersistentVolumeClaim.ClaimName)
+				s.Require().Equal("camunda-platform-test-webmodeler-data", tmpVolume.PersistentVolumeClaim.ClaimName)
 			},
 		},
 		{
