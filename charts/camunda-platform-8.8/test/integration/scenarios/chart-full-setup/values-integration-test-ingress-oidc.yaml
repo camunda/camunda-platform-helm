@@ -86,22 +86,6 @@ optimize:
 identity:
   enabled: true
   contextPath: "/identity"
-  env:
-    - name: KEYCLOAK_CLIENTS_0_ID
-      value: migration
-    - name: KEYCLOAK_CLIENTS_0_NAME
-      value: Migration
-    - name: KEYCLOAK_CLIENTS_0_SECRET
-      valueFrom:
-        secretKeyRef:
-          name: integration-test-credentials
-          key: identity-migration-client-secret
-    - name: KEYCLOAK_CLIENTS_0_TYPE
-      value: M2M
-    - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
-      value: camunda-identity-resource-server
-    - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
-      value: read
 
 identityPostgresql:
   enabled: true
