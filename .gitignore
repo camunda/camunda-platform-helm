@@ -16,6 +16,8 @@ node_modules/
 test-results/
 **/test-results/
 
+test/test_helper
+
 playwright-report/
 **/playwright-report/
 

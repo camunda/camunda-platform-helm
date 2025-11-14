@@ -121,7 +121,12 @@ test.describe("orchestration-grpc", () => {
     });
   }
   // Parameterized BPMN deploy tests
-
+  function getBasePath(url: string): string {
+    const u = new URL(url);
+    const firstPath = u.pathname.split("/").filter(Boolean)[0];
+    const pathPart = firstPath ? `/${firstPath}` : "";
+    return `${u.protocol}//${u.hostname}${pathPart}`;
+  }
   for (const [bpmnId, label, file] of [
     ["it-test-process", "Basic", "test-process.bpmn"],
     ["test-inbound-process", "Inbound", "test-inbound-process.bpmn"],
@@ -194,7 +199,7 @@ test.describe("orchestration-grpc", () => {
     });
   }
 
-  test.afterAll(async ({}, testInfo) => {
+  test.afterAll(async ({ }, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {
@@ -202,7 +207,7 @@ test.describe("orchestration-grpc", () => {
       // If this becomes a concern, mask the values here before logging.
       console.error(
         "\n===== CONFIG DUMP (test failed) =====\n" +
-          JSON.stringify(config, null, 2),
+        JSON.stringify(config, null, 2),
       );
     }
   });

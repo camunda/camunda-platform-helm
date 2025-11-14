@@ -43,6 +43,24 @@ jobs:
         echo "unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}"
         echo "unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}"
 
+  unitScripts:
+    name: UnitTest Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            bats
+      - name: Install bats-assert
+        run: |
+          git clone https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
+          git clone https://github.com/bats-core/bats-support.git test/test_helper/bats-support
+      - name: Run bats
+        run: |
+          bats test/scripts/*.bats
+
   unit:
     name: Unit - ${{ matrix.test.name }}
     if: ${{ needs.init.outputs.unitTestEnabled == 'true' && needs.init.outputs.unitTestMatrix != '' }}

@@ -1,4 +1,6 @@
 global:
+  annotations:
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
   multitenancy:
     enabled: true
   secrets:
@@ -15,10 +17,33 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
+  elasticsearch:
+    enabled: true
+    external: true
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    auth:
+      username: elastic
+      secret:
+        existingSecret: infra-credentials
+        existingSecretKey: elasticsearch-password
+    url:
+      protocol: https
+      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+      port: 443
   identity:
+    keycloak:
+      url:
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
+        port: 443
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
     auth:
       enabled: true
-      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
       admin:
         enabled: true
         existingSecret:
@@ -48,25 +73,95 @@ global:
 identity:
   enabled: true
   contextPath: "/identity"
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
+    json:
+      enabled: true
+      configMapName: realm-json
+      mountPath: /config
+      fileName: realm.json
   firstUser:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"
+  env:
+    - name: KEYCLOAK_CLIENTS_2_ID
+      value: venom
+    - name: KEYCLOAK_CLIENTS_2_NAME
+      value: Venom
+    - name: KEYCLOAK_CLIENTS_2_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: identity-admin-client-password
+    - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
+      value: /dummy
+    - name: KEYCLOAK_CLIENTS_2_ROOT_URL
+      value: http://dummy
+    - name: KEYCLOAK_CLIENTS_2_TYPE
+      value: CONFIDENTIAL
+    # Identity access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION
+      value: read
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_DEFINITION
+      value: write
+    # # Orchestration access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
+      value: orchestration-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
+      value: orchestration-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
+      value: "write:*"
+    # # Tasklist access.
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
+    #   value: tasklist-api
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
+    #   value: "read:*"
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
+    #   value: tasklist-api
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
+    #   value: "write:*"
+    # Optimize access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
+      value: optimize-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
+      value: "write:*"
+    # # Zeebe access.
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_RESOURCE_SERVER_ID
+    #   value: zeebe-api
+    # - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_DEFINITION
+    #   value: "write:*"
+    # WebModeler access.
+    # NOTE: This actually should be only in the chart-with-web-modeler scenarios,
+    # but since Helm doesn't support merge lists it's added here.
+    # It could be removed later when the env vars could be configured via ConfigMap.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
+      value: web-modeler-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
+      value: "write:*"
+    # Console access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_RESOURCE_SERVER_ID
+      value: console-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
+      value: "write:*"
 
 identityKeycloak:
-  enabled: true
-  postgresql:
-    auth:
-      existingSecret: "integration-test-credentials"
-      secretKeys:
-        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
-        userPasswordKey: "identity-keycloak-postgresql-user-password"
-  auth:
-    existingSecret: "integration-test-credentials"
-    passwordSecretKey: "identity-keycloak-admin-password"
+  enabled: false
 
 optimize:
   enabled: true
   contextPath: "/optimize"
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 connectors:
   contextPath: "/connectors"
@@ -99,6 +194,8 @@ webModelerPostgresql:
 
 orchestration:
   contextPath: "/orchestration"
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW 
   ingress:
     grpc:
       enabled: true
@@ -144,6 +241,8 @@ console:
     pullSecrets:
       - name: index-docker-io
       - name: registry-camunda-cloud
+  keycloak:
+    realm: $KEYCLOAK_REALM
 
 identityPostgresql:
   enabled: true
@@ -154,7 +253,7 @@ identityPostgresql:
       userPasswordKey: identity-keycloak-postgresql-user-password
 
 elasticsearch:
-  maxUnavailable: 0
+  enabled: false
 
 prometheusServiceMonitor:
   enabled: true
