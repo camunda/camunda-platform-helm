@@ -57,6 +57,8 @@ runs:
           sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
           kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
         fi
+        kubectl apply -n "$TEST_NAMESPACE" \
+          -f .github/config/external-secret/external-secret-infra.yaml
 
         echo "✅ TLS Certificates/Secrets configuration completed."
 

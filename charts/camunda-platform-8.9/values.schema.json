@@ -1074,7 +1074,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "SNAPSHOT"
+                            "default": "8.9.0-alpha1"
                         },
                         "digest": {
                             "type": "string",
@@ -2260,7 +2260,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.9-SNAPSHOT"
+                            "default": "8.9.0-alpha1"
                         },
                         "digest": {
                             "type": "string",
@@ -2757,7 +2757,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.9.0-alpha1-rc3"
+                            "default": "8.9.0-alpha1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4521,7 +4521,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "SNAPSHOT"
+                            "default": "8.9.0-alpha1"
                         },
                         "digest": {
                             "type": "string",
@@ -5246,7 +5246,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.0-alpha1-rc1"
+                            "default": "8.9.0-alpha1"
                         },
                         "digest": {
                             "type": "string",
@@ -6155,7 +6155,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.9.0-alpha1-rc1"
+                            "default": "8.9.0-alpha1.1"
                         },
                         "digest": {
                             "type": "string",
