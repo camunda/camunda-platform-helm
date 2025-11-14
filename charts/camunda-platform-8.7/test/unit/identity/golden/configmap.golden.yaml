@@ -203,6 +203,14 @@ data:
                 - audience: "zeebe-api"
                   definition: write:*
     keycloak:
+      clients:
+        - name: Zeebe
+          id: zeebe
+          secret: ${KEYCLOAK_INIT_ZEEBE_SECRET:${ZEEBE_CLIENT_SECRET}}
+          type: M2M
+          permissions:
+            - resource-server-id: "zeebe-api"
+              definition: write:*
       environment:
         clients:
           - name: Identity

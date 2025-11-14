@@ -215,6 +215,30 @@ data:
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
     keycloak:
+      clients:
+        - name: Zeebe
+          id: zeebe
+          secret: ${KEYCLOAK_INIT_ZEEBE_SECRET:${ZEEBE_CLIENT_SECRET}}
+          type: M2M
+          permissions:
+            - resource-server-id: {{ include "zeebe.authAudience" . | quote }}
+              definition: write:*
+        {{- if .Values.identity.clients }}
+        {{- range $index, $client := .Values.identity.clients }}
+        - id: {{ $client.id }}
+          name: {{ $client.name }}
+          {{- if ne $client.type "public" }}
+          secret: ${VALUES_{{ $client.id | upper}}_CLIENT_SECRET:}
+          {{- end }}
+          redirectUris: {{ $client.redirectUris }}
+          rootUrl: {{ $client.rootUrl }}
+          type: {{ $client.type }}
+          permissions:
+            {{- with $client.permissions }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
       {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
       realm: {{ .Values.identity.realm.id | quote }}
       {{- if and (hasKey .Values.identity.realm "json") .Values.identity.realm.json.enabled }}
