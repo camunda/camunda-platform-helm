@@ -288,18 +288,17 @@ When Camunda 8 Identity component is enabled by default, and it depends on
 [Bitnami Keycloak chart](https://github.com/bitnami/charts/tree/main/bitnami/keycloak).
 Since Keycloak is a dependency for Identity, all variables related to Keycloak can be found in
 [bitnami/keycloak/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/keycloak/values.yaml)
-and can be set under `identity.keycloak`.
+and can be set under `identityKeycloak`.
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
-| `identity.keycloak`| `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Helm chart | `true` |
+| `identityKeycloak`| `enabled` | If true, enables Keycloak chart deployment as part of the Camunda Helm chart | `true` |
 
 **Example:**
 
 ```yaml
-identity:
-  keycloak:
-    enabled: true
+identityKeycloak:
+  enabled: true
 ```
 
 #### Keycloak Theme

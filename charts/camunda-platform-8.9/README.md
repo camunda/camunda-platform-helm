@@ -251,9 +251,8 @@ and can be set under `identityKeycloak`.
 **Example:**
 
 ```yaml
-identity:
-  keycloak:
-    enabled: true
+identityKeycloak:
+  enabled: true
 ```
 
 #### Keycloak Theme
