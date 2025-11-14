@@ -6,9 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ConfigMapTemplateTest struct {
@@ -48,7 +51,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestConnectorsOIDCTokenScope",
 			Values: map[string]string{
-				"connectors.enabled": "true",
+				"connectors.enabled":                                               "true",
 				"connectors.security.authentication.method":                        "oidc",
 				"connectors.security.authentication.oidc.clientId":                 "test-client-id",
 				"connectors.security.authentication.oidc.tokenScope":               "test-client-id/.default",
@@ -64,7 +67,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestConnectorsOIDCWithoutTokenScope",
 			Values: map[string]string{
-				"connectors.enabled": "true",
+				"connectors.enabled":                                               "true",
 				"connectors.security.authentication.method":                        "oidc",
 				"connectors.security.authentication.oidc.clientId":                 "test-client-id",
 				"connectors.security.authentication.oidc.secret.existingSecret":    "test-secret",
@@ -76,7 +79,50 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"configmapApplication.camunda.client.auth.scope":     "",
 			},
 		},
+		{
+			Name: "TestContainerSetAuthMethodGlobally",
+			Values: map[string]string{
+				"connectors.enabled":                    "true",
+				"connectors.contextPath":                "/connectors",
+				"global.security.authentication.method": "oidc",
+				"global.identity.auth.tokenUrl":         "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication ConnectorsConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			},
+		},
+		{
+			Name: "TestContainerSetAuthMethodConnectors",
+			Values: map[string]string{
+				"connectors.enabled":                        "true",
+				"connectors.contextPath":                    "/connectors",
+				"connectors.security.authentication.method": "oidc",
+				"global.identity.auth.tokenUrl":             "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication ConnectorsConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

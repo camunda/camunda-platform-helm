@@ -24,6 +24,7 @@ type CamundaYAML struct {
 	Connector ConnectorYAML `yaml:"connector"`
 	Operate   OperateYAML   `yaml:"operate"`
 	Identity  IdentityYAML  `yaml:"identity"`
+	Client CamundaClientYAML `yaml:"client"`
 }
 
 type ConnectorYAML struct {
@@ -41,6 +42,14 @@ type WebHookYAML struct {
 
 type OperateYAML struct {
 	Client ClientYAML `yaml:"client"`
+}
+
+type CamundaClientYAML struct {
+	Auth AuthYAML `yaml:"auth"`
+}
+
+type AuthYAML struct {
+	TokenUrl string `yaml:"token-url"`
 }
 
 type ClientYAML struct {
