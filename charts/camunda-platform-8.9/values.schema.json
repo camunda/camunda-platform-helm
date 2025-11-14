@@ -5987,6 +5987,16 @@
                                 }
                             }
                         },
+                        "rdbms": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the new RDBMS exporter.",
+                                    "default": false
+                                }
+                            }
+                        },
                         "zeebe": {
                             "type": "object",
                             "properties": {
