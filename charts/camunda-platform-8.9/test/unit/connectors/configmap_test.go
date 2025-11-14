@@ -6,9 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ConfigMapTemplateTest struct {
@@ -48,7 +51,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestConnectorsOIDCTokenScope",
 			Values: map[string]string{
-				"connectors.enabled": "true",
+				"connectors.enabled":                                               "true",
 				"connectors.security.authentication.method":                        "oidc",
 				"connectors.security.authentication.oidc.clientId":                 "test-client-id",
 				"connectors.security.authentication.oidc.tokenScope":               "test-client-id/.default",
@@ -64,7 +67,7 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestConnectorsOIDCWithoutTokenScope",
 			Values: map[string]string{
-				"connectors.enabled": "true",
+				"connectors.enabled":                                               "true",
 				"connectors.security.authentication.method":                        "oidc",
 				"connectors.security.authentication.oidc.clientId":                 "test-client-id",
 				"connectors.security.authentication.oidc.secret.existingSecret":    "test-secret",
