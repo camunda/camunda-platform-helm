@@ -96,8 +96,24 @@ jobs:
             make release.generate-notes-footer
       - name: Git pull
         run: git pull --rebase --autostash .
+      - name: Generate version matrix
+        run: |
+          make helm.repos-add
+          make release.generate-version-matrix-index
+          make release.generate-version-matrix-released
+          for chartPath in "${CHANGED_CHARTS}"; do
+            chartPath=$chartPath make -e release.generate-version-matrix-unreleased
+          done
+      # We use git-chglog to generate the release notes and release-please
+      # doesn't have an option to disable the generation of CHANGELOG.md files.
+      # https://github.com/googleapis/release-please/issues/2007
+      - name: Clean up release-please changelog files
+        run: |
+          for chartPath in "${CHANGED_CHARTS}"; do
+            rm -f "$chartPath/CHANGELOG.md"
+          done
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
-          message: "chore(release): update chart files"
+          message: "chore(release): update chart files + version matrix"

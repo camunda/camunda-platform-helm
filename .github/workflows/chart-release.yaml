@@ -300,23 +300,3 @@ jobs:
           chartPath: "${{ env.CHART_DIR }}"
         run: |
           make release.set-prs-version-label
-      - name: Generate version matrix
-        env:
-          # For Makefile.
-          chartPath: "${{ env.CHART_DIR }}"
-        run: |
-          make helm.repos-add
-          make release.generate-version-matrix-index
-          make release.generate-version-matrix-released
-          make release.generate-version-matrix-unreleased
-      # We use git-chglog to generate the release notes and release-please
-      # doesn't have an option to disable the generation of CHANGELOG.md files.
-      # https://github.com/googleapis/release-please/issues/2007
-      - name: Clean up release-please changelog files
-        run: |
-          rm -f "${{ env.CHART_DIR }}/CHANGELOG.md"
-      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
-        with:
-          author_name: "renovate[bot]"
-          author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore: Generate version matrix [skip ci]"
