@@ -1,22 +1,3 @@
-identity:
-  env:
-    - name: KEYCLOAK_CLIENTS_3_ID
-      value: migration
-    - name: KEYCLOAK_CLIENTS_3_NAME
-      value: Migration
-    - name: KEYCLOAK_CLIENTS_3_SECRET
-      valueFrom:
-        secretKeyRef:
-          name: integration-test-credentials
-          key: identity-migration-client-secret
-    - name: KEYCLOAK_CLIENTS_3_TYPE
-      value: M2M
-    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_RESOURCE_SERVER_ID
-      value: camunda-identity-resource-server
-    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_DEFINITION
-      value: read
-
-
 orchestration:
   importer:
     enabled: true

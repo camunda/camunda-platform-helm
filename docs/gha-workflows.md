@@ -234,3 +234,51 @@ If you have long-running workflows with multiple jobs, you can set `deployment-t
 #### Non-ephemeral infrastracture
 
 By default, all of our CI workloads are working on preemptable nodes, meaning the workflows should be fault-tolerant and have a retry mechanism. If your team needs a stable, non-ephemeral infrastracture, please contact the Distribution team for institutions.
+
+## Check values-latest.yaml
+
+The [check-values-latest.yaml](../.github/workflows/check-values-latest.yaml) workflow validates that all `values-latest.yaml` files contain the latest Docker image versions for Camunda components.
+
+### Purpose
+
+We provide `values-latest.yaml` files as a method to install the latest app versions even before the next Helm chart is released. These files are automatically updated by Renovate, but this workflow validates that the auto-update process is working correctly.
+
+### When it runs
+
+- **Daily**: Scheduled to run at 6 AM UTC every day
+- **On Pull Requests**: When changes are made to:
+  - `charts/camunda-platform-*/values-latest.yaml`
+  - `scripts/check-values-latest.sh`
+  - `.github/workflows/check-values-latest.yaml`
+- **Manually**: Via workflow_dispatch with an optional chart version parameter
+
+### What it checks
+
+The workflow validates that image tags in `values-latest.yaml` files match the latest available tags in Docker Hub for:
+- Camunda components (console, connectors, operate, optimize, tasklist, zeebe, identity, webModeler)
+- All supported chart versions (8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9)
+
+### Behavior
+
+- **SNAPSHOT/alpha tags**: Automatically skipped as they always represent the latest development versions
+- **Non-Camunda images**: Currently skipped (bitnami images, etc.)
+- **Validation failures**: The workflow will fail and comment on PRs if any image versions are outdated
+
+### Manual usage
+
+To check a specific chart version:
+
+```yaml
+# Via GitHub UI: Actions > Check values-latest.yaml > Run workflow
+# Specify chart version (e.g., 8.7) or leave empty to check all versions
+```
+
+To run the validation script locally:
+
+```bash
+# Check all chart versions
+./scripts/check-values-latest.sh
+
+# Check specific version
+./scripts/check-values-latest.sh 8.7
+```

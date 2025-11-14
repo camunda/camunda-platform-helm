@@ -1028,6 +1028,12 @@
                     "default": [],
                     "items": {}
                 },
+                "clients": {
+                    "type": "array",
+                    "description": "configuration to configure properties of the Management Idnetity custom clients.",
+                    "default": [],
+                    "items": {}
+                },
                 "image": {
                     "type": "object",
                     "properties": {

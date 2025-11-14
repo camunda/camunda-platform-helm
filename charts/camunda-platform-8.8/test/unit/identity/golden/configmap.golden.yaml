@@ -53,7 +53,7 @@ data:
                   description: "Write permission"
           roles:
             - name: "ManagementIdentity"
-              description: "Provides full access to Identity"
+              description: "Provides full access to Management Identity"
               permissions:
                 - audience: "camunda-identity-resource-server"
                   definition: read
@@ -65,6 +65,9 @@ data:
               id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
               secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
+              permissions:
+                - audience: "orchestration-api"
+                  definition: write:*
               root-url: "http://localhost:8080"
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
@@ -90,6 +93,8 @@ data:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
+        connectors:
+          secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
       # Clients are passed as environment variables.
@@ -112,17 +117,6 @@ data:
             root-url: "http://localhost:8084"
             redirect-uris:
               - "/auth/login-callback"
-      # The presets key should be removed when 8.6.0 of the applications are released
-      presets:
-        orchestration:
-          clients:
-            - name: Orchestration
-              id: orchestration
-              type: confidential
-              secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-              root-url: "http://localhost:8080"
-              redirect-uris:
-                - "/identity-callback"
     server:
       port: 8084
 
