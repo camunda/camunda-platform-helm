@@ -81,38 +81,7 @@ spec:
               value: "http://localhost:8084"
             - name: KEYCLOAK_INIT_ZEEBE_NAME
               value: "Zeebe"
-            - name: KEYCLOAK_CLIENTS_0_NAME
-              value: Connectors
-            - name: KEYCLOAK_CLIENTS_0_ID
-              value: connectors
-            - name: KEYCLOAK_CLIENTS_0_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-connectors-identity-secret
-                  key: connectors-secret
-            - name: KEYCLOAK_CLIENTS_0_ROOT_URL
-              value: http://placeholder
-            - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
-              value: /
-            - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: "operate-api"
-            - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
-              value: "read:*"
-            - name: KEYCLOAK_CLIENTS_1_NAME
-              value: "Zeebe"
-            - name: KEYCLOAK_CLIENTS_1_ID
-              value: "zeebe"
-            - name: KEYCLOAK_CLIENTS_1_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-platform-test-zeebe-identity-secret
-                  key: zeebe-secret
-            - name: KEYCLOAK_CLIENTS_1_TYPE
-              value: "M2M"
-            - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: "zeebe-api"
-            - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
-              value: "write:*"
+            - name: KEYCLOAK_INIT_ZEEBE_SECRET
             - name: KEYCLOAK_URL
               value: "http://camunda-platform-test-keycloak:80/auth"
             - name: KEYCLOAK_SETUP_USER
