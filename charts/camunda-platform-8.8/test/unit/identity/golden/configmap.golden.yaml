@@ -97,7 +97,6 @@ data:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-      # Clients are passed as environment variables.
       clients:
       users:
         - username: "demo"
