@@ -244,8 +244,8 @@ else
   # Else, only rebuild the affected charts
   else
     for camunda_version in ${ACTIVE_VERSIONS}; do
-      chart_dir="${CHARTS_DIR}/camunda-platform-${camunda_version}"
-      if [[ $(echo ${ALL_MODIFIED_FILES} | grep "${chart_dir}") ]]; then
+      if [[ $(echo ${ALL_MODIFIED_FILES} | grep "charts/camunda-platform-${camunda_version}") ]]; then
+        chart_dir="${CHARTS_DIR}/camunda-platform-${camunda_version}"
         write_matrix_entry "$camunda_version" "$chart_dir"
       fi
     done
