@@ -71,8 +71,6 @@ data:
     
       # Database configuration - Separated syntax.
       database:
-        index:
-          numberOfReplicas: "1"
     
       data:
         snapshot-period: "5m"
@@ -90,6 +88,7 @@ data:
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: ""
+            number-of-replicas: "1"
     
       # Security configuration - Separated syntax.
       security:
