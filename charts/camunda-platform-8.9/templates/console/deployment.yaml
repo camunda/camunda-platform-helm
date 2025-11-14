@@ -166,11 +166,10 @@ spec:
         - name: console-configuration
           configMap:
             name: {{ include "console.fullname" . }}-configuration
-      {{- if .Values.console.tls.enabled }}
-        - name: console-certificates
-          secret:
-            secretName: {{ .Values.console.tls.existingSecret }}
-      {{- end }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "console-certificates"
+            "config" .Values.console.tls
+        ) | nindent 8 }}
         {{- if .Values.global.documentStore.type.gcp.enabled }}
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"

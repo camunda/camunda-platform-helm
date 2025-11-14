@@ -239,13 +239,28 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "enable tls for external elasticsearch",
+                                    "description": "if true, enable tls for external elasticsearch",
                                     "default": false
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "provide an already existing tls secret for connecting to external elasticsearch",
+                                    "description": "(DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch",
                                     "default": ""
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "can be used to provide the key within the secret containing the certificate",
+                                            "default": "externaldb.jks"
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -354,13 +369,28 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "enable tls for external opensearch",
+                                    "description": "if true, enable tls for external opensearch",
                                     "default": false
                                 },
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "provide an already existing tls secret for connecting to external opensearch",
+                                    "description": "(DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch",
                                     "default": ""
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "can be used to provide the key within the secret containing the certificate",
+                                            "default": "externaldb.jks"
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -2261,18 +2291,28 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "Enable TLS traffic for console",
+                            "description": "if true, enable TLS traffic for console",
                             "default": false
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "The name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.",
+                            "description": "(DEPRECATED - use console.tls.secret instead) can be used to provide the name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.",
                             "default": ""
                         },
                         "certKeyFilename": {
                             "type": "string",
-                            "description": "Certificate Key filename",
+                            "description": "defines certificate Key filename",
                             "default": ""
+                        },
+                        "secret": {
+                            "type": "object",
+                            "properties": {
+                                "existingSecret": {
+                                    "type": "string",
+                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificates",
+                                    "default": ""
+                                }
+                            }
                         }
                     }
                 },
