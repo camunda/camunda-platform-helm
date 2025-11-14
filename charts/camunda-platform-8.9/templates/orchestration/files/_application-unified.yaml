@@ -86,8 +86,6 @@ camunda:
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
-        history:
-          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
@@ -97,8 +95,6 @@ camunda:
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
-        history:
-          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
       {{- end }}
 
   # Security configuration - Separated syntax.
