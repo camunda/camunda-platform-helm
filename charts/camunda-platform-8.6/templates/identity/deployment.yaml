@@ -100,42 +100,7 @@ spec:
               value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
             - name: KEYCLOAK_INIT_ZEEBE_NAME
               value: "Zeebe"
-            {{- /* TODO: Use ".Values.identity.connectors.inbound.mode=oauth" as a condition when we migrate
-                 to flat chart structure. Also then remove the optional flag from the secret. */}}
-            - name: KEYCLOAK_CLIENTS_0_NAME
-              value: Connectors
-            - name: KEYCLOAK_CLIENTS_0_ID
-              value: connectors
-            - name: KEYCLOAK_CLIENTS_0_SECRET
-              {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
-              valueFrom:
-                secretKeyRef:
-                  {{- /*
-                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
-                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
-                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
-                  */}}
-                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
-                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
-                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
-              {{- end }}
-            - name: KEYCLOAK_CLIENTS_0_ROOT_URL
-              value: http://placeholder
-            - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
-              value: /
-            - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: {{ include "operate.authAudience" . | quote }}
-            - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
-              value: "read:*"
-            - name: KEYCLOAK_CLIENTS_1_NAME
-              value: "Zeebe"
-            - name: KEYCLOAK_CLIENTS_1_ID
-              value: "zeebe"
-            - name: KEYCLOAK_CLIENTS_1_SECRET
+            - name: KEYCLOAK_INIT_ZEEBE_SECRET
               {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
               valueFrom:
                 secretKeyRef:
@@ -146,18 +111,7 @@ spec:
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
                   key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
-                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
-            - name: KEYCLOAK_CLIENTS_1_TYPE
-              value: "M2M"
-            - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
-              value: {{ include "zeebe.authAudience" . | quote }}
-            - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
-              value: "write:*"
             - name: KEYCLOAK_URL
               value: {{ include "identity.keycloak.url" . | quote }}
             - name: KEYCLOAK_SETUP_USER
@@ -228,6 +182,15 @@ spec:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
             {{- end }}
+          {{- if .Values.identity.clients}}
+          {{- range $index, $client := .Values.identity.clients }}
+            - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $client.existingSecret }}
+                  key: {{ $client.existingSecretKey }}
+          {{- end }}
+          {{- end }}
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
