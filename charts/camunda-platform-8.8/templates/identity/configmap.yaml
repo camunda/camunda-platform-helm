@@ -238,7 +238,6 @@ data:
         webmodeler:
           root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
         {{- end }}
-      # Clients are passed as environment variables.
       clients:
       {{- if .Values.orchestration.migration.identity.enabled }}
         - id: migration

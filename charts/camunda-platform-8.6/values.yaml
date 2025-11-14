@@ -2312,7 +2312,19 @@ identity:
     existingSecret: ""
     ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
     existingSecretKey: "identity-firstuser-password"
-
+  ## @param identity.clients configuration to configure properties of the Management Idnetity custom clients.
+  # Example:
+  # - id: test
+  #   name: Test
+  #   existingSecret: test-secret
+  #   existingSecretKey: test-secret-key
+  #   redirectUris: /dummy
+  #   rootUrl: http://dummy
+  #   type: confidential
+  #   permissions:
+  #     - resourceServerId: camunda-identity-resource-server
+  #       definition: read
+  clients: []
   ## @extra identity.image configuration to configure the identity image specifics
   image:
     ## @param identity.image.registry can be used to set container image registry.
