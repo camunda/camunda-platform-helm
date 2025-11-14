@@ -71,8 +71,6 @@ data:
     
       # Database configuration - Separated syntax.
       database:
-        index:
-          numberOfReplicas: "1"
     
       data:
         snapshot-period: "5m"
