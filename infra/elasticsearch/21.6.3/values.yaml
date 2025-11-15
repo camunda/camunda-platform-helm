@@ -92,7 +92,7 @@ global:
 kibana:
   image:
     repository: bitnamilegacy/kibana
-    tag: 8.17.4
+    tag: 8.18.0
   resources:
     requests: { cpu: "500m", memory: "2Gi" }
     limits: { cpu: "2000m", memory: "3Gi" }
