@@ -12,6 +12,13 @@ releaseName = camunda-platform-test
 #
 # Tests.
 
+#
+# Binaries.
+#
+.PHONY: build.deployer
+build.deployer:
+	cd scripts/camunda-deployer && go build .
+
 define go_test_run
 	find $(chartPath) -name "go.mod" -exec dirname {} \; |\
 	while read chart_dir; do\

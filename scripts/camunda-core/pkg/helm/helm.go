@@ -8,12 +8,10 @@ import (
 	"strings"
 )
 
-// Run executes arbitrary helm commands - thin wrapper around helm CLI
 func Run(ctx context.Context, args []string, workDir string) error {
 	return executil.RunCommand(ctx, "helm", args, nil, workDir)
 }
 
-// DependencyUpdate runs helm dependency update with cleanup of temporary files
 func DependencyUpdate(ctx context.Context, chartPath string) error {
 	// Clean up any temporary chart directories before dependency update
 	// This is needed because if you are not logged into docker, helm will leave these junk tmpcharts and tgz files in the chart path.
@@ -32,7 +30,6 @@ func DependencyUpdate(ctx context.Context, chartPath string) error {
 	return nil
 }
 
-// cleanTempCharts removes temporary chart directories and tgz files
 func cleanTempCharts(ctx context.Context, chartPath string) error {
 	tmpChartDirArgs := []string{".", "-maxdepth", "1", "-type", "d", "-name", "tmpcharts-*", "-exec", "rm", "-rf", "{}", "+"}
 	if err := executil.RunCommand(ctx, "find", tmpChartDirArgs, nil, chartPath); err != nil {
