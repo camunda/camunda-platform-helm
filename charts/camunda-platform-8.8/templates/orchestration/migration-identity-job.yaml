@@ -24,7 +24,7 @@ spec:
           {{- if .Values.orchestration.containerSecurityContext }}
           securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration.migration.identity) }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration.migration.identity.waitContainer) }}
           command:
             - sh
             - -c

@@ -54,9 +54,9 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestContainerSetInitContainerImageCustomTag",
 			Values: map[string]string{
-				"orchestration.migration.identity.enabled":             "true",
-				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
-				"orchestration.migration.identity.image.tag":           "9.16.0",
+				"orchestration.migration.identity.enabled":                 "true",
+				"orchestration.migration.identity.secret.inlineSecret":     "very-secret-thus-plaintext",
+				"orchestration.migration.identity.waitContainer.image.tag": "9.16.0",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var job batchv1.Job
@@ -70,10 +70,10 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetInitContainerImageCustomRepository",
 			Values: map[string]string{
-				"orchestration.migration.identity.enabled":             "true",
-				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
-				"orchestration.migration.identity.image.repository":    "mycustom/curl",
-				"orchestration.migration.identity.image.tag":           "latest",
+				"orchestration.migration.identity.enabled":                        "true",
+				"orchestration.migration.identity.secret.inlineSecret":            "very-secret-thus-plaintext",
+				"orchestration.migration.identity.waitContainer.image.repository": "mycustom/curl",
+				"orchestration.migration.identity.waitContainer.image.tag":        "latest",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var job batchv1.Job
@@ -87,11 +87,11 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetInitContainerImageCustomRegistry",
 			Values: map[string]string{
-				"orchestration.migration.identity.enabled":             "true",
-				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
-				"orchestration.migration.identity.image.registry":      "my.custom.registry.io",
-				"orchestration.migration.identity.image.repository":    "curlimages/curl",
-				"orchestration.migration.identity.image.tag":           "8.15.0",
+				"orchestration.migration.identity.enabled":                        "true",
+				"orchestration.migration.identity.secret.inlineSecret":            "very-secret-thus-plaintext",
+				"orchestration.migration.identity.waitContainer.image.registry":   "my.custom.registry.io",
+				"orchestration.migration.identity.waitContainer.image.repository": "curlimages/curl",
+				"orchestration.migration.identity.waitContainer.image.tag":        "8.15.0",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var job batchv1.Job
@@ -105,9 +105,9 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetInitContainerImageWithDigest",
 			Values: map[string]string{
-				"orchestration.migration.identity.enabled":             "true",
-				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
-				"orchestration.migration.identity.image.digest":        "sha256:abcd1234efgh5678",
+				"orchestration.migration.identity.enabled":                    "true",
+				"orchestration.migration.identity.secret.inlineSecret":        "very-secret-thus-plaintext",
+				"orchestration.migration.identity.waitContainer.image.digest": "sha256:abcd1234efgh5678",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var job batchv1.Job
@@ -137,10 +137,10 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerInitContainerImageOverrideGlobalRegistry",
 			Values: map[string]string{
-				"orchestration.migration.identity.enabled":             "true",
-				"orchestration.migration.identity.secret.inlineSecret": "very-secret-thus-plaintext",
-				"global.image.registry":                                "global.registry.io",
-				"orchestration.migration.identity.image.registry":      "override.registry.io",
+				"orchestration.migration.identity.enabled":                      "true",
+				"orchestration.migration.identity.secret.inlineSecret":          "very-secret-thus-plaintext",
+				"global.image.registry":                                         "global.registry.io",
+				"orchestration.migration.identity.waitContainer.image.registry": "override.registry.io",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var job batchv1.Job
