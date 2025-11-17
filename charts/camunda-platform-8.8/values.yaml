@@ -2584,8 +2584,6 @@ orchestration:
           tag: 8.15.0
           ## @param orchestration.migration.identity.waitContainer.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
           digest: ""
-          ## @param orchestration.migration.identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-          pullSecrets: []
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
       ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
