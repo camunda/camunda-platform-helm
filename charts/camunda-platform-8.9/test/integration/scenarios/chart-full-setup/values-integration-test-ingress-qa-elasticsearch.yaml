@@ -121,7 +121,7 @@ identity:
     - id: test
       name: Test
       existingSecret: integration-test-credentials
-      existingSecretKey: identity-user-password
+      existingSecretKey: client-secret
       redirectUris: /dummy
       rootUrl: http://dummy
       type: confidential
