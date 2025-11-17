@@ -2572,6 +2572,18 @@ orchestration:
     identity:
       ## @param orchestration.migration.identity.enabled if true, the migration of Management Identity data to the orchestration clusters Identity occurs
       enabled: false
+
+      waitContainer:
+        ## @extra orchestration.migration.identity.waitContainer.image configuration to configure the image specifics
+        image:
+          ## @param orchestration.migration.identity.waitContainer.image.registry can be used to set container image registry.
+          registry: ""
+          ## @param orchestration.migration.identity.waitContainer.image.repository defines which image repository to use
+          repository: curlimages/curl
+          ## @param orchestration.migration.identity.waitContainer.image.tag can be set to overwrite the global tag, which should be used in that chart
+          tag: 8.15.0
+          ## @param orchestration.migration.identity.waitContainer.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+          digest: ""
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
       backoffLimit: 6
       ## @param orchestration.migration.identity.resourceAuthorizationsEnabled if true, the migration of Management Identity data to the orchestration cluster will not create wildcard resource access for roles, this is required to be true if Resource Based Access was used with 8.7
