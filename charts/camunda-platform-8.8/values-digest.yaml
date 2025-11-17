@@ -7,14 +7,14 @@ console:
   image:
     repository: camunda/console
     tag: latest
-    digest: "sha256:322e3bb298e677d609a677565f62841322e96deb50f9ffdf3a38ee11bdf6bac2"
+    digest: "sha256:e8b658be4c5fe2093363b99ea0237ad39daf4e04eb19945e24dae2838438571e"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
     tag: 8.8-SNAPSHOT
-    digest: "sha256:cd311330a6a60501ca0277641f444d551f8a21508c7199c9072b3bbdec1d4230"
+    digest: "sha256:3bdeee6c06a043d7cd09fe301d3d3ea32ce298c7d08d903bd24551a167e95984"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -33,21 +33,21 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:fe2e394a4265091fbeb8ed0b775bbe351be81eb2c4df15f0cbd512973edd8e61"
+      digest: "sha256:98951bd24482471eb8d37da31fa8f32051e3a0a67ba67efa15d2f7f19b1b3c72"
 
   # https://hub.docker.com/r/camunda/web-modeler-webapp/tags
   webapp:
     image:
       repository: camunda/web-modeler-webapp
       tag: SNAPSHOT
-      digest: "sha256:174659dbae2a1a249914a121a4d3a2681b49b7236f7423e0c62915c6c24afd78"
+      digest: "sha256:eb6d8443fb2adabd6ec33009b9764d66316343bb1122c9ca27e971563013ca68"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
     image:
       repository: camunda/web-modeler-websockets
       tag: SNAPSHOT
-      digest: "sha256:354ae37723c097a2f25850e6952ce309729c40502dda35df1094a5e00e731661"
+      digest: "sha256:d17482036f48a178dc2b68c09a26841546b804e81be3ccb626eb9d538ed06d12"
 
 #
 # Orchestration Cluster
@@ -58,7 +58,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: 8.8-SNAPSHOT
-    digest: "sha256:405d0c9f7e5e94398bb254d5d8404b4f053ea4e555d23487d814c8ae6aa14a6f"
+    digest: "sha256:00a02a09cc7bfc3c1326d99640502470ca279a714664d39746692d0351ebaf17"
 
 #
 # Identity
@@ -69,4 +69,4 @@ identity:
   image:
     repository: camunda/identity
     tag: 8.8-SNAPSHOT
-    digest: "sha256:12931539bb2680f6dc7785a3d8654ff2987d87728d8aec5d5942712062b93650"
+    digest: "sha256:ba94dccbf59d9d635ffa5f34aa3d53ef6e53e657135f85e8c0342199b79e28fc"
