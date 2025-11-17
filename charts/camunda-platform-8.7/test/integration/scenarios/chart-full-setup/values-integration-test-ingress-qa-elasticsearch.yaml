@@ -57,6 +57,63 @@ identity:
     user: demo
     existingSecret: integration-test-credentials
     existingSecretKey: identity-user-password
+  clients:
+    - id: venom
+      name: Venom
+      existingSecret: integration-test-credentials
+      existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+    - id: test
+      name: Test
+      existingSecret: integration-test-credentials
+      existingSecretKey: identity-user-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
   # Keycloak client seed which is used to query Camunda APIs. 
   env:
     # TODO: Remove the KEYCLOAK_USERS env vars in favor of relying on the default configmap values
