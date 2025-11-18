@@ -116,6 +116,8 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
+          {{- if .Values.identity.users}}
+          {{- range $index, $user := .Values.identity.users }}
           {{- if $user.secret.inlineSecret }}
             - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
               value: {{ $user.secret.inlineSecret | quote }}
