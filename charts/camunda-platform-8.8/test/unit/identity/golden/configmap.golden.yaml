@@ -71,6 +71,7 @@ data:
               root-url: "http://localhost:8080"
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
+                - "/sso-callback"
           apis:
             - name: "Orchestration API"
               audience: "orchestration-api"
