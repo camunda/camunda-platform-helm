@@ -834,9 +834,9 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestCustomUserInlineSecret",
 			Values: map[string]string{
-				"identity.enabled":               "true",
-				"identity.users[0].inlineSecret": "secretjeff",
-				"identity.users[0].username":     "jeff",
+				"identity.enabled":                      "true",
+				"identity.users[0].secret.inlineSecret": "secretjeff",
+				"identity.users[0].username":            "jeff",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -853,10 +853,10 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestCustomUserExistingSecret",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"identity.users[0].existingSecret":    "jeff-k8s-secret",
-				"identity.users[0].existingSecretKey": "password",
-				"identity.users[0].username":          "jeff",
+				"identity.enabled":                           "true",
+				"identity.users[0].secret.existingSecret":    "jeff-k8s-secret",
+				"identity.users[0].secret.existingSecretKey": "password",
+				"identity.users[0].username":                 "jeff",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
