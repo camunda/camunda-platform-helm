@@ -831,6 +831,50 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 
 				require.Equal(t, expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
+		}, {
+			Name: "TestCustomUserInlineSecret",
+			Values: map[string]string{
+				"identity.enabled":               "true",
+				"identity.users[0].inlineSecret": "secretjeff",
+				"identity.users[0].username":     "jeff",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "VALUES_JEFF_USER_PASSWORD",
+						Value: "secretjeff",
+					})
+			},
+		}, {
+			Name: "TestCustomUserExistingSecret",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"identity.users[0].existingSecret":    "jeff-k8s-secret",
+				"identity.users[0].existingSecretKey": "password",
+				"identity.users[0].username":          "jeff",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_JEFF_USER_PASSWORD",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "jeff-k8s-secret"},
+								Key:                  "password",
+							},
+						},
+					})
+			},
 		},
 	}
 
