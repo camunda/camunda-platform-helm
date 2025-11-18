@@ -116,31 +116,22 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
-            {{- if .Values.identity.users}}
-            {{- range $index, $user := .Values.identity.users }}
-            {{- if $user.secret.inlineSecret }}
-            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
-              value: {{ $user.secret.inlineSecret | quote }}
-            {{- else }}
-            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $user.secret.existingSecret }}
-                  key: {{ $user.secret.existingSecretKey }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-            {{- if .Values.identity.clients}}
+          {{- with .Values.identity.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          {{- if .Values.identity.clients}}
             {{- range $index, $client := .Values.identity.clients }}
+            {{- if $client.secret.inlineSecret }}
+            - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
+              value: {{ $client.secret.inlineSecret | quote }}
+            {{- else }}
             - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ $client.existingSecret }}
-                  key: {{ $client.existingSecretKey }}
+                  name: {{ $client.secret.existingSecret }}
+                  key: {{ $client.secret.existingSecretKey }}
             {{- end }}
             {{- end }}
-          {{- with .Values.identity.env }}
-            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           envFrom:
             - configMapRef:
