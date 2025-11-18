@@ -819,7 +819,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env,
 					corev1.EnvVar{
-						Name: "KEYCLOAK_USERS_0_PASSWORD",
+						Name: "VALUES_IDENTITY_FIRSTUSER_PASSWORD",
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "identityFirstUserSecret"},
@@ -950,28 +950,45 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
-			Name: "TestClientSecretRefWhenAuthTypeMicrosoft",
+			Name: "TestCustomUserInlineSecret",
 			Values: map[string]string{
-				"global.identity.auth.type":                         "MICROSOFT",
-				"global.identity.auth.issuerBackendUrl":             "https://my.idp.org",
-				"global.identity.auth.issuer":                       "https://my.idp.org",
-				"global.identity.auth.identity.audience":            "identity-client",
-				"global.identity.auth.identity.clientId":            "identity-client",
-				"global.identity.auth.identity.existingSecret.name": "super-secret",
+				"identity.enabled":                      "true",
+				"identity.users[0].secret.inlineSecret": "secretjeff",
+				"identity.users[0].username":            "jeff",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env,
 					corev1.EnvVar{
-						Name: "CAMUNDA_IDENTITY_CLIENT_SECRET",
+						Name:  "VALUES_JEFF_USER_PASSWORD",
+						Value: "secretjeff",
+					})
+			},
+		}, {
+			Name: "TestCustomUserExistingSecret",
+			Values: map[string]string{
+				"identity.enabled":                           "true",
+				"identity.users[0].secret.existingSecret":    "jeff-k8s-secret",
+				"identity.users[0].secret.existingSecretKey": "password",
+				"identity.users[0].username":                 "jeff",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_JEFF_USER_PASSWORD",
 						ValueFrom: &corev1.EnvVarSource{
 							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "super-secret"},
-								Key:                  "identity-secret",
+								LocalObjectReference: corev1.LocalObjectReference{Name: "jeff-k8s-secret"},
+								Key:                  "password",
 							},
 						},
 					})

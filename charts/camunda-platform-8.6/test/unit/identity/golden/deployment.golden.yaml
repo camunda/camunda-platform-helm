@@ -96,30 +96,8 @@ spec:
                 secretKeyRef:
                   name: camunda-platform-test-keycloak
                   key: admin-password
-            - name: KEYCLOAK_USERS_0_USERNAME
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
               value: "demo"
-            - name: KEYCLOAK_USERS_0_PASSWORD
-              value: "demo"
-            - name: KEYCLOAK_USERS_0_EMAIL
-              value: "demo@example.org"
-            - name: KEYCLOAK_USERS_0_FIRST_NAME
-              value: "Demo"
-            - name: KEYCLOAK_USERS_0_LAST_NAME
-              value: "User"
-            - name: KEYCLOAK_USERS_0_ROLES_0
-              value: "Identity"
-            - name: KEYCLOAK_USERS_0_ROLES_1
-              value: "Operate"
-            - name: KEYCLOAK_USERS_0_ROLES_2
-              value: "Tasklist"
-            - name: KEYCLOAK_USERS_0_ROLES_3
-              value: "Optimize"
-            - name: KEYCLOAK_USERS_0_ROLES_4
-              value: "Web Modeler"
-            - name: KEYCLOAK_USERS_0_ROLES_5
-              value: "Web Modeler Admin"
-            - name: KEYCLOAK_USERS_0_ROLES_6
-              value: "Console"
           resources:
             limits:
               cpu: 2000m

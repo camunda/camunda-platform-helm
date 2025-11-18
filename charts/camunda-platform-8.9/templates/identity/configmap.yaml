@@ -284,7 +284,17 @@ data:
           {{- end }}
         {{- end }}
         {{- if .Values.identity.users }}
-          {{- include "common.tplvalues.render" (dict "value" .Values.identity.users "context" $) | nindent 8 }}
+        {{- range $index, $user := .Values.identity.users }}
+        - username: {{ $user.username }}
+          password: ${VALUES_{{ $user.username | upper}}_USER_PASSWORD:}
+          firstName: {{ $user.firstName }}
+          lastName: {{ $user.lastName }}
+          email: {{ $user.email }}
+          roles:
+            {{- with $user.roles }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
         {{- end }}
       environment:
         clients:
