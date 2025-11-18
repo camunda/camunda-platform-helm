@@ -2312,6 +2312,20 @@ identity:
     existingSecret: ""
     ## @param identity.firstUser.existingSecretKey defines the key within the existing secret object.
     existingSecretKey: "identity-firstuser-password"
+  ## @param identity.users configuration to configure properties of the Management Identity users, which can be used to access web applications.
+  # Example:
+  # - username: foo
+  #   secret:
+  #     existingSecret: foo-secret
+  #     existingSecretKey: foo-secret-key
+  #   firstName: Foo
+  #   lastName: Bar
+  #   email: foo.bar@camunda.com
+  #   roles:
+  #     - ManagementIdentity
+  #     - Optimize
+  #     - Console
+  users: []
   ## @param identity.clients configuration to configure properties of the Management Idnetity custom clients.
   # Example:
   # - id: test

@@ -139,39 +139,15 @@ spec:
                   name: {{ include "identity.keycloak.authExistingSecret" . }}
                   key: {{ include "identity.keycloak.authExistingSecretKey" . }}
             {{- if .Values.identity.firstUser.enabled }}
-            - name: KEYCLOAK_USERS_0_USERNAME
-              value: {{ .Values.identity.firstUser.username | quote }}
             {{- if .Values.identity.firstUser.existingSecret }}
-            - name: KEYCLOAK_USERS_0_PASSWORD
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.identity.firstUser.existingSecret }}
                   key: {{ .Values.identity.firstUser.existingSecretKey }}
             {{- else }}
-            - name: KEYCLOAK_USERS_0_PASSWORD
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
               value: {{ .Values.identity.firstUser.password | quote }}
-            {{- end }}
-            - name: KEYCLOAK_USERS_0_EMAIL
-              value: {{ .Values.identity.firstUser.email | quote }}
-            - name: KEYCLOAK_USERS_0_FIRST_NAME
-              value: {{ .Values.identity.firstUser.firstName | quote }}
-            - name: KEYCLOAK_USERS_0_LAST_NAME
-              value: {{ .Values.identity.firstUser.lastName | quote }}
-            - name: KEYCLOAK_USERS_0_ROLES_0
-              value: "Identity"
-            {{- if .Values.global.identity.auth.enabled }}
-            - name: KEYCLOAK_USERS_0_ROLES_1
-              value: "Operate"
-            - name: KEYCLOAK_USERS_0_ROLES_2
-              value: "Tasklist"
-            - name: KEYCLOAK_USERS_0_ROLES_3
-              value: "Optimize"
-            - name: KEYCLOAK_USERS_0_ROLES_4
-              value: "Web Modeler"
-            - name: KEYCLOAK_USERS_0_ROLES_5
-              value: "Web Modeler Admin"
-            - name: KEYCLOAK_USERS_0_ROLES_6
-              value: "Console"
             {{- end }}
             {{- end }}
             {{- else }}
@@ -198,6 +174,20 @@ spec:
                 secretKeyRef:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
+            {{- end }}
+            {{- if .Values.identity.users}}
+            {{- range $index, $user := .Values.identity.users }}
+            {{- if $user.secret.inlineSecret }}
+            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
+              value: {{ $user.secret.inlineSecret | quote }}
+            {{- else }}
+            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $user.secret.existingSecret }}
+                  key: {{ $user.secret.existingSecretKey }}
+            {{- end }}
+            {{- end }}
             {{- end }}
           {{- if .Values.identity.clients}}
           {{- range $index, $client := .Values.identity.clients }}

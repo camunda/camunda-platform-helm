@@ -239,6 +239,38 @@ data:
             {{- end }}
         {{- end }}
         {{- end }}
+      users:
+        {{- if .Values.identity.firstUser.enabled }}
+        - username: {{ .Values.identity.firstUser.username | quote }}
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: {{ .Values.identity.firstUser.firstName | quote }}
+          lastName: {{ .Values.identity.firstUser.lastName | quote }}
+          email: {{ .Values.identity.firstUser.email | quote }}
+          {{- if .Values.global.identity.auth.enabled }}
+          roles:
+            - Identity
+            - Operate
+            - Tasklist
+            - Optimize
+            - Web Modeler
+            - Web Modeler Admin
+            - Console
+            - Zeebe
+          {{- end }}
+        {{- end }}
+        {{- if .Values.identity.users }}
+        {{- range $index, $user := .Values.identity.users }}
+        - username: {{ $user.username }}
+          password: ${VALUES_{{ $user.username | upper}}_USER_PASSWORD:}
+          firstName: {{ $user.firstName }}
+          lastName: {{ $user.lastName }}
+          email: {{ $user.email }}
+          roles:
+            {{- with $user.roles }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
       {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
       realm: {{ .Values.identity.realm.id | quote }}
       {{- if and (hasKey .Values.identity.realm "json") .Values.identity.realm.json.enabled }}
