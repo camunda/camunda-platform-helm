@@ -122,11 +122,16 @@ spec:
             {{- end }}
           {{- if .Values.identity.users}}
           {{- range $index, $user := .Values.identity.users }}
+          {{- if $user.secret.inlineSecret }}
+            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
+              value: {{ $user.secret.inlineSecret | quote }}
+          {{- else }}
             - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $user.secret.existingSecret }}
                   key: {{ $user.secret.existingSecretKey }}
+          {{- end }}
           {{- end }}
           {{- end }}
           {{- if .Values.identity.clients}}
