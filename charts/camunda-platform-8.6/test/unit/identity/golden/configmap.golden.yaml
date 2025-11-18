@@ -211,6 +211,21 @@ data:
           permissions:
             - resource-server-id: "zeebe-api"
               definition: write:*
+      users:
+        - username: "demo"
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: "Demo"
+          lastName: "User"
+          email: "demo@example.org"
+          roles:
+            - Identity
+            - Operate
+            - Tasklist
+            - Optimize
+            - Web Modeler
+            - Web Modeler Admin
+            - Console
+            - Zeebe
       environment:
         clients:
           - name: Identity
