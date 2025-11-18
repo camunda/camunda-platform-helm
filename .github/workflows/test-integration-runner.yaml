@@ -287,6 +287,14 @@ jobs:
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
 
+      - name: Generate Secret manifest from Vault mapping
+        if: inputs.vault-secret-mapping != ''
+        env:
+          VSM: ${{ inputs.vault-secret-mapping }}
+        run: |
+          (cd ./scripts/vault-secret-mapper && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
+
+
       - name: Import Vault secrets
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -379,6 +387,11 @@ jobs:
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
           kubectl describe ns $TEST_NAMESPACE
+
+      - name: Apply Vault mapped Secret
+        if: inputs.vault-secret-mapping != ''
+        run: |
+          kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
 
       - name: Cluster Setup - Install docker registry on cluster
         run: |
@@ -585,6 +598,13 @@ jobs:
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
 
+      - name: Generate Secret manifest from Vault mapping
+        if: inputs.vault-secret-mapping != ''
+        env:
+          VSM: ${{ inputs.vault-secret-mapping }}
+        run: |
+          (cd ./scripts/vault-secret-mapper && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
+
       - name: Import Vault secrets
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -704,6 +724,11 @@ jobs:
           chart-path: ${{ env.CHART_PATH }}
           namespace: ${{ env.TEST_NAMESPACE }}
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
+
+      - name: Apply Vault mapped Secret
+        if: inputs.vault-secret-mapping != ''
+        run: |
+          kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
 
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
         env:

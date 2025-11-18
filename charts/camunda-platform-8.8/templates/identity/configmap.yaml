@@ -145,6 +145,7 @@ data:
               root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
+                - "/sso-callback"
           apis:
             - name: "Orchestration API"
               audience: {{ include "orchestration.authAudience" . | quote }}
