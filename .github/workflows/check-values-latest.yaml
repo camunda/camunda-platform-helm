@@ -71,7 +71,7 @@ jobs:
             })
 
       - name: 🚨 Notify the team via Slack 🚨
-        if: failure()
+        if: failure() && !(contains(github.event.*.labels.*.name, 'skip-slack-notify')
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           webhook: ${{ secrets.SLACK_DISTRO_TEAM_WEBHOOK }}
