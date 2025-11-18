@@ -601,6 +601,17 @@ identity:
       existingSecretKey: ""
 
   ## @param identity.users configuration to configure properties of the Management Identity users, which can be used to access web applications.
+  # Example:
+  # - username: foo
+  #   existingSecret: foo-secret
+  #   existingSecretKey: foo-secret-key
+  #   firstName: Foo
+  #   lastName: Bar
+  #   email: foo.bar@camunda.com
+  #   roles:
+  #     - ManagementIdentity
+  #     - Optimize
+  #     - Console
   users: []
   ## @param identity.clients configuration to configure properties of the Management Idnetity custom clients.
   # Example:

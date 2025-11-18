@@ -120,6 +120,7 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
+          {{- if .Values.identity.users}}
           {{- range $index, $user := .Values.identity.users }}
             - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
               valueFrom:
@@ -127,8 +128,6 @@ spec:
                   name: {{ $user.existingSecret }}
                   key: {{ $user.existingSecretKey }}
           {{- end }}
-          {{- with .Values.identity.env }}
-            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           {{- if .Values.identity.clients}}
           {{- range $index, $client := .Values.identity.clients }}
@@ -138,6 +137,9 @@ spec:
                   name: {{ $client.existingSecret }}
                   key: {{ $client.existingSecretKey }}
           {{- end }}
+          {{- end }}
+          {{- with .Values.identity.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           envFrom:
             - configMapRef:
