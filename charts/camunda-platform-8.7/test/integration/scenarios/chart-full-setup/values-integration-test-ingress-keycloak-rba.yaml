@@ -83,8 +83,9 @@ identity:
   clients:
     - id: venom
       name: Venom
-      existingSecret: integration-test-credentials
-      existingSecretKey: identity-admin-client-password
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
       redirectUris: /dummy
       rootUrl: http://dummy
       type: confidential
@@ -111,8 +112,9 @@ identity:
           definition: write:*
     - id: test
       name: Test
-      existingSecret: integration-test-credentials
-      existingSecretKey: identity-admin-client-password
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
       redirectUris: /dummy
       rootUrl: http://dummy
       type: confidential
