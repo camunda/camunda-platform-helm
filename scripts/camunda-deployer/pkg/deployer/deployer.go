@@ -3,6 +3,7 @@ package deployer
 import (
 	"context"
 	"fmt"
+	"os"
 	"scripts/camunda-core/pkg/docker"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
@@ -57,6 +58,16 @@ func Deploy(ctx context.Context, o types.Options) error {
 	if o.ApplyIntegrationCreds {
 		if err := applyIntegrationTestCredentials(ctx, kubeClient, o.Namespace); err != nil {
 			return err
+		}
+	}
+
+	if o.VaultSecretPath != "" {
+		data, err := os.ReadFile(o.VaultSecretPath)
+		if err != nil {
+			return fmt.Errorf("failed to read vault secret file: %w", err)
+		}
+		if err := kubeClient.ApplyManifest(ctx, o.Namespace, data); err != nil {
+			return fmt.Errorf("failed to apply vault secret: %w", err)
 		}
 	}
 

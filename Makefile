@@ -39,17 +39,27 @@ install.prepare-helm-values:
 install.deploy-camunda:
 	cd scripts/deploy-camunda && go install .
 
+.PHONY: build.vault-secret-mapper
+build.vault-secret-mapper:
+	cd scripts/vault-secret-mapper && go build .
+
+.PHONY: install.vault-secret-mapper
+install.vault-secret-mapper:
+	cd scripts/vault-secret-mapper && go install .
+
 .PHONY: build.dx-tooling
 build.dx-tooling:
 	make build.deployer
 	make build.prepare-helm-values
 	make build.deploy-camunda
+	make build.vault-secret-mapper
 
 .PHONY: install.dx-tooling
 install.dx-tooling:
 	make install.deployer
 	make install.prepare-helm-values
 	make install.deploy-camunda
+	make install.vault-secret-mapper
 	@if command -v asdf >/dev/null 2>&1; then \
 		echo "asdf detected, reshimming..."; \
 		asdf reshim golang; \
