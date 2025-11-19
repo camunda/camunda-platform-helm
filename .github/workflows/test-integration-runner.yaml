@@ -1060,7 +1060,7 @@ jobs:
           if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" == "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
-            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "elasticsearch-21-6-3" --debug
+            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
@@ -1068,6 +1068,6 @@ jobs:
             else
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
-              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "elasticsearch-21-6-3" --debug
+              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug
             fi
           fi

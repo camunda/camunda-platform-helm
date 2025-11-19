@@ -206,13 +206,18 @@ spec:
               value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
             {{- end }}
           {{- if .Values.identity.clients}}
-          {{- range $index, $client := .Values.identity.clients }}
+            {{- range $index, $client := .Values.identity.clients }}
+            {{- if $client.secret.inlineSecret }}
+            - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
+              value: {{ $client.secret.inlineSecret | quote }}
+            {{- else }}
             - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ $client.existingSecret }}
-                  key: {{ $client.existingSecretKey }}
-          {{- end }}
+                  name: {{ $client.secret.existingSecret }}
+                  key: {{ $client.secret.existingSecretKey }}
+            {{- end }}
+            {{- end }}
           {{- end }}
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
