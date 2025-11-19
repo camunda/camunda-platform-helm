@@ -171,20 +171,6 @@ identity:
         - Web Modeler Admin
         - Console
         - Orchestration
-    - username: lisa
-      secret:
-        existingSecret: vault-mapped-secrets
-        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
-      firstName: Lisa
-      lastName: Doe
-      email: cawemodev+lisa@gmail.com
-      roles:
-        - ManagementIdentity
-        - Optimize
-        - Web Modeler
-        - Web Modeler Admin
-        - Console
-        - Orchestration
     - username: bart
       secret:
         existingSecret: vault-mapped-secrets
