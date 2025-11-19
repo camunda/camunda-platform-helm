@@ -109,7 +109,7 @@ camunda:
       {{- if .Values.orchestration.exporters.rdbms.enabled }}
       # RDBMS exporter is configured and enabled automatically when type is rdbms
       rdbms:
-        {{- with .Values.orchestration.data.secondary-storage.rdbms }}
+        {{- with index .Values.orchestration.data "secondary-storage" "rdbms" }}
         url: {{ .url | quote }}
         username: {{ .username | quote }}
         password: "${VALUES_RDBMS_PASSWORD:}"
