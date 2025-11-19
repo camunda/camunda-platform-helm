@@ -2722,12 +2722,6 @@ orchestration:
         url: ""
         ## @param orchestration.data.secondary-storage.rdbms.username defines the username for authenticating with the RDBMS database
         username: ""
-        ## @param orchestration.data.secondary-storage.rdbms.password (DEPRECATED - use orchestration.data.secondary-storage.rdbms.secret instead) defines the password for authenticating with the RDBMS database
-        password: ""
-        ## @param orchestration.data.secondary-storage.rdbms.existingSecret (DEPRECATED - use orchestration.data.secondary-storage.rdbms.secret instead) can be used to reference an existing Kubernetes Secret containing the database password
-        existingSecret: ""
-        ## @param orchestration.data.secondary-storage.rdbms.existingSecretKey (DEPRECATED - use orchestration.data.secondary-storage.rdbms.secret instead) defines the key within the existing secret object
-        existingSecretKey: "rdbms-password"
         ## @extra orchestration.data.secondary-storage.rdbms.secret configuration to provide the RDBMS password secret
         secret:
           ## @param orchestration.data.secondary-storage.rdbms.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage
@@ -2767,7 +2761,7 @@ orchestration:
           ## @param orchestration.data.secondary-storage.rdbms.history.historyCleanupBatchSize defines the batch size for historical data cleanup operations
           historyCleanupBatchSize: ""
           ## @param orchestration.data.secondary-storage.rdbms.history.usageMetricsCleanup if true, enables cleanup of usage metrics data
-          usageMetricsCleanup: false
+          usageMetricsCleanup: ""
           ## @extra orchestration.data.secondary-storage.rdbms.history.processCache configuration for the process cache used in historical data operations
           processCache:
             ## @param orchestration.data.secondary-storage.rdbms.history.processCache.maxSize defines the maximum size of the process cache
