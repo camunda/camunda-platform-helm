@@ -44,6 +44,7 @@ var (
 	ttl                    string
 	loadKeycloakRealm      bool
 	keycloakRealmName      string
+	flow                   string
 )
 
 var rootCmd = &cobra.Command{
@@ -109,7 +110,7 @@ Examples:
 			LoadKeycloakRealm:      loadKeycloakRealm,
 			KeycloakRealmName:      keycloakRealmName,
 			CIMetadata: types.CIMetadata{
-				Flow: "deploy",
+				Flow: flow,
 			},
 		}
 		return deployer.Deploy(ctx, opts)
@@ -167,6 +168,9 @@ func init() {
 	// Keycloak configuration
 	rootCmd.Flags().BoolVar(&loadKeycloakRealm, "load-keycloak-realm", false, "load Keycloak realm ConfigMap from chart's realm.json")
 	rootCmd.Flags().StringVar(&keycloakRealmName, "keycloak-realm-name", "", "Keycloak realm name to use (required if --load-keycloak-realm is set)")
+
+	// CI Metadata flags
+	rootCmd.Flags().StringVar(&flow, "flow", "install", "deployment flow type (install, upgrade, etc.)")
 }
 
 func Execute() {

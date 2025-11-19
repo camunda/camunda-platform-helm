@@ -187,6 +187,10 @@ while [[ $# -gt 0 ]]; do
       REPO_ROOT="$2"
       shift 2
       ;;
+    --flow)
+      FLOW="$2"
+      shift 2
+      ;;
     --help)
       print_usage
       exit 0
@@ -198,6 +202,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Default flow to install if not provided
+FLOW="${FLOW:-install}"
 
 # --- Validate inputs ---
 if [[ -z "$CHART_PATH" ]]; then
@@ -254,13 +261,17 @@ info "Created temporary values directory: $TEMP_VALUES_DIR"
 export KEYCLOAK_REALM="$REALM_NAME"
 export OPTIMIZE_INDEX_PREFIX="$OPTIMIZE_PREFIX"
 export ORCHESTRATION_INDEX_PREFIX="$ORCHESTRATION_PREFIX"
+export FLOW="$FLOW"
 
 # Only export Keycloak host if provided (required for some platforms)
 if [[ -n "$KEYCLOAK_EXT_HOST" ]]; then
-  # Extract version from chart path for the env var name
-  CHART_VERSION=$(basename "$CHART_PATH" | sed 's/camunda-platform-//' | tr '.' '_')
-  KEYCLOAK_HOST_VAR="KEYCLOAK_EXT_HOST_${CHART_VERSION}"
-  KEYCLOAK_PROTOCOL_VAR="KEYCLOAK_EXT_PROTOCOL_${CHART_VERSION}"
+  # Default Keycloak version
+  KEYCLOAK_VERSION="24.9.0"
+  
+  # Sanitize version for env var (e.g. 24.9.0 -> 24_9_0)
+  KEYCLOAK_VERSION_SAFE=$(echo "$KEYCLOAK_VERSION" | tr '.' '_')
+  KEYCLOAK_HOST_VAR="KEYCLOAK_EXT_HOST_${KEYCLOAK_VERSION_SAFE}"
+  KEYCLOAK_PROTOCOL_VAR="KEYCLOAK_EXT_PROTOCOL_${KEYCLOAK_VERSION_SAFE}"
 
   export "${KEYCLOAK_HOST_VAR}=${KEYCLOAK_EXT_HOST}"
   export "${KEYCLOAK_PROTOCOL_VAR}=${KEYCLOAK_EXT_PROTOCOL}"
@@ -269,7 +280,6 @@ if [[ -n "$KEYCLOAK_EXT_HOST" ]]; then
   info "  ${KEYCLOAK_HOST_VAR}=${KEYCLOAK_EXT_HOST}"
   info "  ${KEYCLOAK_PROTOCOL_VAR}=${KEYCLOAK_EXT_PROTOCOL}"
 fi
-
 # --- Step 1: Prepare Helm values ---
 info "Step 1/2: Preparing Helm values with prepare-helm-values..."
 
@@ -278,12 +288,13 @@ PREPARE_ARGS=(
   --chart-path "$CHART_PATH"
   --scenario "$SCENARIO"
   --output-dir "$TEMP_VALUES_DIR"
+  --log-level "$LOG_LEVEL"
 )
 
 # Add auth scenario if it's different from the main scenario
 if [[ -n "$AUTH" && "$AUTH" != "$SCENARIO" ]]; then
   info "  Preparing auth scenario: $AUTH"
-  
+
   # Prepare auth values first
   "$PREPARE_HELM_VALUES" \
     --chart-path "$CHART_PATH" \
@@ -314,6 +325,7 @@ DEPLOYER_ARGS=(
   --log-level "$LOG_LEVEL"
   --load-keycloak-realm
   --keycloak-realm-name "$REALM_NAME"
+  --flow "$FLOW"
 )
 
 # Add boolean flags

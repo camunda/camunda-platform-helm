@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"scripts/prepare-helm-values/internal/logging"
+	"scripts/camunda-core/pkg/logging"
 	"scripts/prepare-helm-values/internal/values"
 )
 
@@ -18,7 +18,7 @@ func Execute() {
 		licenseKey   string
 		output       string
 		outputDir    string
-		verbose      bool
+		logLevel     string
 		noColor      bool
 	)
 
@@ -33,26 +33,32 @@ func Execute() {
     --values-config '{}' \
     --license-key "$E2E_TESTS_LICENSE_KEY" \
     --output-dir /tmp/prepared-values \
-    --verbose`,
+    --log-level info`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := logging.Setup(logging.Options{
+				UseJSON:      false,
+				LevelString:  logLevel,
+				ColorEnabled: !noColor && logging.IsTerminal(os.Stdout.Fd()),
+			}); err != nil {
+				return err
+			}
+			return nil
+		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Cobra will enforce required flags via MarkFlagRequired, this is just for nicer logs
-			log := logging.Logger{Verbose: verbose, Color: !noColor}
 			if chartPath == "" || scenario == "" {
-				log.Errorf("Required flags missing: --chart-path and --scenario must be set")
+				logging.Logger.Error().Msg("Required flags missing: --chart-path and --scenario must be set")
 				return fmt.Errorf("missing required flags")
 			}
 			if output != "" && outputDir != "" {
-				log.Errorf("Cannot specify both --output and --output-dir")
+				logging.Logger.Error().Msg("Cannot specify both --output and --output-dir")
 				return fmt.Errorf("conflicting output flags")
 			}
-			log.Debugf("Flags OK: chart-path=%s scenario=%s", chartPath, scenario)
+			logging.Logger.Debug().Str("chart-path", chartPath).Str("scenario", scenario).Msg("Flags OK")
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log := logging.Logger{Verbose: verbose, Color: !noColor}
-
 			opts := values.Options{
 				ChartPath:    chartPath,
 				Scenario:     scenario,
@@ -62,30 +68,30 @@ func Execute() {
 				OutputDir:    outputDir,
 			}
 
-			valuesFile, err := values.ResolveValuesFile(opts, log)
+			valuesFile, err := values.ResolveValuesFile(opts)
 			if err != nil {
-				log.Errorf("Values file not found or inaccessible: %v", err)
+				logging.Logger.Error().Err(err).Msg("Values file not found or inaccessible")
 				return err
 			}
 
-			log.Infof("Using chart path: %s", chartPath)
-			log.Infof("Scenario: %s", scenario)
-			log.Debugf("Source values file: %s", valuesFile)
+			logging.Logger.Info().Str("chart-path", chartPath).Msg("Using chart path")
+			logging.Logger.Info().Str("scenario", scenario).Msg("Scenario")
+			logging.Logger.Debug().Str("values-file", valuesFile).Msg("Source values file")
 
-			outputPath, content, err := values.Process(valuesFile, opts, log)
+			outputPath, content, err := values.Process(valuesFile, opts)
 			if err != nil {
 				if missing, names := values.IsMissingEnv(err); missing {
-					log.Errorf("Missing required environment variables for substitution:")
+					logging.Logger.Error().Msg("Missing required environment variables for substitution:")
 					for _, v := range names {
-						fmt.Printf("%s   - %s\n", log.Tag("[ERR ]"), v)
+						fmt.Printf("   - %s\n", v)
 					}
 					os.Exit(3)
 				}
-				log.Errorf("Processing failed: %v", err)
+				logging.Logger.Error().Err(err).Msg("Processing failed")
 				return err
 			}
 
-			log.Okf("Prepared values file: %s", outputPath)
+			logging.Logger.Info().Str("output", outputPath).Msg("Prepared values file")
 			if outputDir == "" {
 				// Only print to stdout if not writing to output-dir
 				fmt.Print(content)
@@ -100,7 +106,7 @@ func Execute() {
 	root.Flags().StringVar(&licenseKey, "license-key", os.Getenv("E2E_TESTS_LICENSE_KEY"), "License key to inject; defaults to $E2E_TESTS_LICENSE_KEY")
 	root.Flags().StringVar(&output, "output", "", "Output file path (defaults to scenario values file in-place)")
 	root.Flags().StringVar(&outputDir, "output-dir", "", "Output directory path (writes with scenario-based filename)")
-	root.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose logging")
+	root.Flags().StringVar(&logLevel, "log-level", "info", "Log level: trace, debug, info, warn, error")
 	root.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	_ = root.MarkFlagRequired("chart-path")
 	_ = root.MarkFlagRequired("scenario")
