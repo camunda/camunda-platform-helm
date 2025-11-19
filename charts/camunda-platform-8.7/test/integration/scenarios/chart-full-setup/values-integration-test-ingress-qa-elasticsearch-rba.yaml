@@ -168,6 +168,9 @@ identity:
         - Web Modeler Admin
         - Console
         - Orchestration
+  env:
+    - name: RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
 connectors:
   image:
     tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
