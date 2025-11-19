@@ -86,7 +86,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Derive namespace from chart version
-NAMESPACE="keycloak-$(echo "$CHART_VERSION" | tr '.' '-')"
+NAMESPACE="distribution-keycloak-$(echo "$CHART_VERSION" | tr '.' '-')"
 
 echo "[keycloak] Namespace: ${NAMESPACE}"
 echo "[keycloak] Release:    ${RELEASE_NAME}"

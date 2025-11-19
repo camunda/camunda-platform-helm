@@ -86,7 +86,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Derive namespace from chart version
-NAMESPACE="elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
+NAMESPACE="distribution-elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
 
 echo "[elasticsearch] Namespace: ${NAMESPACE}"
 echo "[elasticsearch] Release:    ${RELEASE_NAME}"
