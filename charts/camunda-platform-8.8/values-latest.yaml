@@ -12,13 +12,13 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.8.37
+    tag: 8.8.42
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.8.2
+    tag: 8.8.3
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -40,7 +40,7 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.8.3
+    tag: 8.8.4
 
 #
 # Identity
