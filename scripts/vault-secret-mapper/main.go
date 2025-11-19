@@ -5,7 +5,23 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
+
+// Secret represents a Kubernetes Secret
+type Secret struct {
+	APIVersion string            `yaml:"apiVersion"`
+	Kind       string            `yaml:"kind"`
+	Metadata   Metadata          `yaml:"metadata"`
+	Type       string            `yaml:"type"`
+	StringData map[string]string `yaml:"stringData"`
+}
+
+type Metadata struct {
+	Name   string            `yaml:"name"`
+	Labels map[string]string `yaml:"labels"`
+}
 
 func main() {
 	mapping := flag.String("mapping", "", "Vault secret mapping content (multi-line, semicolon-terminated entries)")
@@ -25,7 +41,7 @@ func main() {
 	envVarNames = dedupePreserveOrder(envVarNames)
 
 	// Collect non-empty env vars from environment
-	stringData := make([][2]string, 0, len(envVarNames))
+	stringData := make(map[string]string)
 	for _, name := range envVarNames {
 		if name == "" {
 			continue
@@ -35,14 +51,36 @@ func main() {
 			// Skip empty values to avoid creating empty keys
 			continue
 		}
-		stringData = append(stringData, [2]string{name, val})
+		stringData[name] = val
 	}
 
-	// Build YAML
-	yaml := buildSecretYAML(*secretName, stringData)
+	// Build Labels
+	labels := map[string]string{
+		"managed-by": "test-integration-runner",
+	}
+	if jobID := os.Getenv("GITHUB_WORKFLOW_JOB_ID"); jobID != "" {
+		labels["github-id"] = jobID
+	}
+
+	secret := Secret{
+		APIVersion: "v1",
+		Kind:       "Secret",
+		Metadata: Metadata{
+			Name:   *secretName,
+			Labels: labels,
+		},
+		Type:       "Opaque",
+		StringData: stringData,
+	}
+
+	// Marshal to YAML
+	yamlBytes, err := yaml.Marshal(&secret)
+	if err != nil {
+		exitWithError("marshal YAML: %v", err)
+	}
 
 	// Write to file
-	if err := os.WriteFile(*outputPath, []byte(yaml), 0o600); err != nil {
+	if err := os.WriteFile(*outputPath, yamlBytes, 0o600); err != nil {
 		exitWithError("write output: %v", err)
 	}
 }
@@ -68,9 +106,8 @@ func parseMapping(mapping string) []string {
 			continue
 		}
 		// Remove trailing semicolon
-		if strings.HasSuffix(line, ";") {
-			line = strings.TrimSuffix(line, ";")
-		}
+		line = strings.TrimSuffix(line, ";")
+
 		// Skip comments
 		if strings.HasPrefix(strings.TrimSpace(line), "#") {
 			continue
@@ -146,59 +183,3 @@ func dedupePreserveOrder(in []string) []string {
 	}
 	return out
 }
-
-func yamlQuote(s string) string {
-	// Use single-quoted YAML string; escape single quotes by doubling them
-	s = strings.ReplaceAll(s, "'", "''")
-	return "'" + s + "'"
-}
-
-func buildSecretYAML(secretName string, data [][2]string) string {
-	var b strings.Builder
-	b.WriteString("apiVersion: v1\n")
-	b.WriteString("kind: Secret\n")
-	b.WriteString("metadata:\n")
-	b.WriteString("  name: " + escapeYAMLKey(secretName) + "\n")
-
-	// Optional labels
-	jobID := os.Getenv("GITHUB_WORKFLOW_JOB_ID")
-	b.WriteString("  labels:\n")
-	b.WriteString("    managed-by: test-integration-runner\n")
-	if jobID != "" {
-		b.WriteString("    github-id: " + escapeYAMLKey(jobID) + "\n")
-	}
-
-	b.WriteString("type: Opaque\n")
-	b.WriteString("stringData:\n")
-	if len(data) == 0 {
-		// Create an empty key to ensure valid YAML (Kubernetes allows empty stringData map)
-		// but we still keep it empty for clarity.
-	}
-	for _, kv := range data {
-		key := kv[0]
-		val := kv[1]
-		b.WriteString("  " + escapeYAMLKey(key) + ": " + yamlQuote(val) + "\n")
-	}
-	return b.String()
-}
-
-// escapeYAMLKey ensures the key is a valid simple YAML key; if it contains unsafe chars, quote it.
-func escapeYAMLKey(s string) string {
-	if s == "" {
-		return "''"
-	}
-	// Simple heuristic: if only [A-Za-z0-9_.-], keep as-is; else single-quote
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if (c >= 'A' && c <= 'Z') ||
-			(c >= 'a' && c <= 'z') ||
-			(c >= '0' && c <= '9') ||
-			c == '_' || c == '.' || c == '-' {
-			continue
-		}
-		return yamlQuote(s)
-	}
-	return s
-}
-
-
