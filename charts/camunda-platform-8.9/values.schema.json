@@ -5691,6 +5691,176 @@
                                     }
                                 }
                             }
+                        },
+                        "secondary-storage": {
+                            "type": "object",
+                            "properties": {
+                                "rdbms": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "description": "defines the JDBC connection URL for the RDBMS database",
+                                            "default": ""
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "description": "defines the username for authenticating with the RDBMS database",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the password as a plain-text value for non-production usage",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
+                                        "flushInterval": {
+                                            "type": "string",
+                                            "description": "defines the interval at which data is flushed to the RDBMS database",
+                                            "default": ""
+                                        },
+                                        "queueSize": {
+                                            "type": "string",
+                                            "description": "defines the size of the queue used for buffering data before flushing to the RDBMS database",
+                                            "default": ""
+                                        },
+                                        "autoDDL": {
+                                            "type": "boolean",
+                                            "description": "if true, enables automatic DDL (Data Definition Language) operations for creating and updating database schema",
+                                            "default": false
+                                        },
+                                        "prefix": {
+                                            "type": "string",
+                                            "description": "defines a prefix to be used for database table names",
+                                            "default": ""
+                                        },
+                                        "maxQueueSize": {
+                                            "type": "string",
+                                            "description": "defines the maximum size of the queue used for buffering data",
+                                            "default": ""
+                                        },
+                                        "history": {
+                                            "type": "object",
+                                            "properties": {
+                                                "defaultHistoryTTL": {
+                                                    "type": "string",
+                                                    "description": "defines the default time-to-live (TTL) for historical data records",
+                                                    "default": ""
+                                                },
+                                                "defaultBatchOperationHistoryTTL": {
+                                                    "type": "string",
+                                                    "description": "defines the default TTL for batch operation historical data records",
+                                                    "default": ""
+                                                },
+                                                "batchOperationCancelProcessInstanceHistoryTTL": {
+                                                    "type": "string",
+                                                    "description": "defines the TTL for cancel process instance batch operation historical data records",
+                                                    "default": ""
+                                                },
+                                                "batchOperationMigrateProcessInstanceHistoryTTL": {
+                                                    "type": "string",
+                                                    "description": "defines the TTL for migrate process instance batch operation historical data records",
+                                                    "default": ""
+                                                },
+                                                "batchOperationModifyProcessInstanceHistoryTTL": {
+                                                    "type": "string",
+                                                    "description": "defines the TTL for modify process instance batch operation historical data records",
+                                                    "default": ""
+                                                },
+                                                "batchOperationResolveIncidentHistoryTTL": {
+                                                    "type": "string",
+                                                    "description": "defines the TTL for resolve incident batch operation historical data records",
+                                                    "default": ""
+                                                },
+                                                "minHistoryCleanupInterval": {
+                                                    "type": "string",
+                                                    "description": "defines the minimum interval between historical data cleanup operations",
+                                                    "default": ""
+                                                },
+                                                "maxHistoryCleanupInterval": {
+                                                    "type": "string",
+                                                    "description": "defines the maximum interval between historical data cleanup operations",
+                                                    "default": ""
+                                                },
+                                                "historyCleanupBatchSize": {
+                                                    "type": "string",
+                                                    "description": "defines the batch size for historical data cleanup operations",
+                                                    "default": ""
+                                                },
+                                                "usageMetricsCleanup": {
+                                                    "type": "string",
+                                                    "description": "if true, enables cleanup of usage metrics data",
+                                                    "default": ""
+                                                },
+                                                "processCache": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "maxSize": {
+                                                            "type": "string",
+                                                            "description": "defines the maximum size of the process cache",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                },
+                                                "batchOperationCache": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "maxSize": {
+                                                            "type": "string",
+                                                            "description": "defines the maximum size of the batch operation cache",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                },
+                                                "connectionPool": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "maximumPoolSize": {
+                                                            "type": "string",
+                                                            "description": "defines the maximum number of connections in the pool",
+                                                            "default": ""
+                                                        },
+                                                        "minimumIdle": {
+                                                            "type": "string",
+                                                            "description": "defines the minimum number of idle connections to maintain in the pool",
+                                                            "default": ""
+                                                        },
+                                                        "idleTimeout": {
+                                                            "type": "string",
+                                                            "description": "defines the maximum time that a connection can sit idle in the pool",
+                                                            "default": ""
+                                                        },
+                                                        "maxLifetime": {
+                                                            "type": "string",
+                                                            "description": "defines the maximum lifetime of a connection in the pool",
+                                                            "default": ""
+                                                        },
+                                                        "connectionTimeout": {
+                                                            "type": "string",
+                                                            "description": "defines the maximum time to wait for a connection from the pool",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
