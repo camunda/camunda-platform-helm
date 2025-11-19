@@ -23,10 +23,37 @@ build.deployer:
 build.prepare-helm-values:
 	cd scripts/prepare-helm-values && go build .
 
+.PHONY: build.deploy-camunda
+build.deploy-camunda:
+	cd scripts/deploy-camunda && go build .
+
+.PHONY: install.deployer
+install.deployer:
+	cd scripts/camunda-deployer && go install .
+
+.PHONY: install.prepare-helm-values
+install.prepare-helm-values:
+	cd scripts/prepare-helm-values && go install .
+
+.PHONY: install.deploy-camunda
+install.deploy-camunda:
+	cd scripts/deploy-camunda && go install .
+
 .PHONY: build.dx-tooling
 build.dx-tooling:
 	make build.deployer
 	make build.prepare-helm-values
+	make build.deploy-camunda
+
+.PHONY: install.dx-tooling
+install.dx-tooling:
+	make install.deployer
+	make install.prepare-helm-values
+	make install.deploy-camunda
+	@if command -v asdf >/dev/null 2>&1; then \
+		echo "asdf detected, reshimming..."; \
+		asdf reshim golang; \
+	fi
 
 define go_test_run
 	find $(chartPath) -name "go.mod" -exec dirname {} \; |\

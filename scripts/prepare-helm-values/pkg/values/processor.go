@@ -12,7 +12,9 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"scripts/camunda-core/pkg/logging"
-	"scripts/prepare-helm-values/internal/placeholders"
+	"scripts/camunda-core/pkg/scenarios"
+	"scripts/prepare-helm-values/pkg/env"
+	"scripts/prepare-helm-values/pkg/placeholders"
 )
 
 type Options struct {
@@ -22,6 +24,8 @@ type Options struct {
 	LicenseKey   string
 	Output       string
 	OutputDir    string
+	Interactive  bool
+	EnvFile      string
 }
 
 type MissingEnvError struct {
@@ -57,13 +61,10 @@ func ensureMap(m map[string]interface{}, k string) map[string]interface{} {
 
 // ResolveValuesFile determines the source values file from options.
 func ResolveValuesFile(opts Options) (string, error) {
-	scenariosDir := filepath.Join(opts.ChartPath, "test", "integration", "scenarios", "chart-full-setup")
-	sourceValuesFile := filepath.Join(scenariosDir, fmt.Sprintf("values-integration-test-ingress-%s.yaml", opts.Scenario))
+	logging.Logger.Debug().Str("chart-path", opts.ChartPath).Str("scenario", opts.Scenario).Msg("Resolving scenario path")
 	
-	logging.Logger.Debug().Str("scenarios-dir", scenariosDir).Msg("Resolving values file from scenarios dir")
-	logging.Logger.Debug().Str("values-file", sourceValuesFile).Msg("Looking for values file")
-	
-	if _, err := os.Stat(sourceValuesFile); err != nil {
+	sourceValuesFile, err := scenarios.ResolvePath(opts.ChartPath, opts.Scenario)
+	if err != nil {
 		logging.Logger.Debug().Err(err).Msg("Values file not found")
 		return "", err
 	}
@@ -152,8 +153,32 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 		}
 	}
 
+	// Check for missing variables and prompt if interactive
 	for _, p := range ph {
 		if _, ok := getVal(p); !ok {
+			if opts.Interactive {
+				// Try to guess a default or just empty
+				defVal := ""
+				val, err := env.Prompt(p, defVal)
+				if err != nil {
+					logging.Logger.Error().Err(err).Msg("Failed to read input")
+					missing = append(missing, p)
+					continue
+				}
+				if val != "" {
+					// Set in current environment so subsequent lookups find it
+					os.Setenv(p, val)
+					// Also persist to .env file if configured
+					if opts.EnvFile != "" {
+						if err := env.Append(opts.EnvFile, p, val); err != nil {
+							logging.Logger.Warn().Err(err).Msg("Failed to append to .env file")
+						} else {
+							logging.Logger.Info().Msg("Saved to .env file")
+						}
+					}
+					continue
+				}
+			}
 			missing = append(missing, p)
 		}
 	}

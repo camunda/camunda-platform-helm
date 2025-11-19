@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"scripts/camunda-core/pkg/completion"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/camunda-deployer/pkg/types"
@@ -138,7 +139,9 @@ func init() {
 
 	// Scenario flags
 	rootCmd.Flags().StringVar(&scenarioCSV, "scenario", "", "scenario name or comma-separated list (e.g., qa-license,opensearch)")
+	completion.RegisterScenarioCompletion(rootCmd, "scenario", "chart")
 	rootCmd.Flags().StringVar(&auth, "auth", "", "auth scenario to layer before main scenarios (e.g., keycloak)")
+	completion.RegisterScenarioCompletion(rootCmd, "auth", "chart")
 
 	// Deployment behavior flags (with defaults shown)
 	rootCmd.Flags().BoolVar(&wait, "wait", true, "wait for resources to be ready")
