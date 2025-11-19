@@ -19,6 +19,15 @@ releaseName = camunda-platform-test
 build.deployer:
 	cd scripts/camunda-deployer && go build .
 
+.PHONY: build.prepare-helm-values
+build.prepare-helm-values:
+	cd scripts/prepare-helm-values && go build .
+
+.PHONY: build.dx-tooling
+build.dx-tooling:
+	make build.deployer
+	make build.prepare-helm-values
+
 define go_test_run
 	find $(chartPath) -name "go.mod" -exec dirname {} \; |\
 	while read chart_dir; do\
