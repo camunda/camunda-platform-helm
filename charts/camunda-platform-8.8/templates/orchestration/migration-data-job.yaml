@@ -45,6 +45,10 @@ spec:
                 "config" .Values.global.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
+            {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -64,6 +68,11 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /usr/local/camunda/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYamlPretty . | nindent 8 }}
@@ -81,4 +90,16 @@ spec:
           configMap:
             name: {{ include "orchestration.fullname" . }}-configuration-unified
             defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
 {{- end }}
