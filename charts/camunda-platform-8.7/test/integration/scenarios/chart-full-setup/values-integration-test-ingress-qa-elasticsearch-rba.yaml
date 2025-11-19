@@ -99,7 +99,7 @@ identity:
     - id: test
       name: Test
       secret:
-        existingsecret: vault-mapped-secrets
+        existingSecret: vault-mapped-secrets
         existingSecretKey: DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
       redirectUris: /dummy
       rootUrl: http://dummy

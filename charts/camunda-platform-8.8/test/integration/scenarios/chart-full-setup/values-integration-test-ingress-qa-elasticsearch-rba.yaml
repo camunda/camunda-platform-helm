@@ -107,7 +107,7 @@ identity:
     - id: venom
       name: Venom
       secret:
-        existingsecret: integration-test-credentials
+        existingSecret: integration-test-credentials
         existingSecretKey: identity-admin-client-password
       redirectUris: /dummy
       rootUrl: http://dummy
