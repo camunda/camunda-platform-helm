@@ -53,7 +53,7 @@ tasks:
       {{ end -}}
       {{ end -}}
 
-      helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
+      helm upgrade --server-side=false integration $ABSOLUTE_TEST_CHART_DIR \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
