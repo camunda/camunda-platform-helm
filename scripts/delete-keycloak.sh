@@ -86,7 +86,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Derive namespace from chart version
-NAMESPACE="keycloak-$(echo "$CHART_VERSION" | tr '.' '-')"
+NAMESPACE="distribution-keycloak-$(echo "$CHART_VERSION" | tr '.' '-')"
 
 echo "[keycloak] Namespace: ${NAMESPACE}"
 echo "[keycloak] Release:    ${RELEASE_NAME}"
@@ -100,9 +100,17 @@ echo "[cleanup] purge-pvcs=${PURGE_PVCS} delete-namespace=${DELETE_NAMESPACE}"
 check_cmd kubectl
 check_cmd helm
 
+# If deleting the namespace, do this first and exit (supersedes other steps)
+if [[ "${DELETE_NAMESPACE}" == true ]]; then
+  echo "[cleanup] Deleting namespace '${NAMESPACE}' (supersedes other cleanup steps)"
+  kubectl delete namespace "$NAMESPACE" --ignore-not-found --wait=true || true
+  echo "Namespace '${NAMESPACE}' deleted."
+  exit 0
+fi
+
 if [[ "${SKIP_EXTERNAL_SECRET}" == false ]]; then
   if [[ -f "$EXTERNAL_SECRET_FILE" ]]; then
-    kubectl delete -n "$NAMESPACE" -f "$EXTERNAL_SECRET_FILE" --ignore-not-found
+    kubectl delete -n "$NAMESPACE" -f "$EXTERNAL_SECRET_FILE" --ignore-not-found --wait=true
     echo "ExternalSecret deleted."
   else
     echo "[warn] ExternalSecret file not found: $EXTERNAL_SECRET_FILE" >&2
@@ -117,13 +125,8 @@ else
 fi
 
 if [[ "${PURGE_PVCS}" == true ]]; then
-  kubectl delete pvc -n "$NAMESPACE" -l app.kubernetes.io/instance="$RELEASE_NAME" --ignore-not-found || true
+  kubectl delete pvc -n "$NAMESPACE" -l app.kubernetes.io/instance="$RELEASE_NAME" --ignore-not-found --wait=true || true
   echo "PVCs (if any) deleted."
-fi
-
-if [[ "${DELETE_NAMESPACE}" == true ]]; then
-  kubectl delete namespace "$NAMESPACE" --ignore-not-found || true
-  echo "Namespace '$NAMESPACE' deletion requested."
 fi
 
 echo "Keycloak cleanup complete."
