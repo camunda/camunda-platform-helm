@@ -109,9 +109,81 @@ camunda:
       {{- if .Values.orchestration.exporters.rdbms.enabled }}
       # RDBMS exporter is configured and enabled automatically when type is rdbms
       rdbms:
-        url: {{ .Values.rdbms.url | quote }}
-        username: {{ .Values.rdbms.username | quote }}
-        password: {{ .Values.rdbms.password | quote }}
+        {{- with .Values.orchestration.data.secondary-storage.rdbms }}
+        url: {{ .url | quote }}
+        username: {{ .username | quote }}
+        password: "${VALUES_RDBMS_PASSWORD:}"
+        {{- if .flushInterval }}
+        flushInterval: {{ .flushInterval | quote }}
+        {{- end }}
+        {{- if .queueSize }}
+        queueSize: {{ .queueSize | quote }}
+        {{- end }}
+        {{- if .autoDDL }}
+        auto-ddl: {{ .autoDDL }}
+        {{- end }}
+        {{- if .prefix }}
+        prefix: {{ .prefix | quote }}
+        {{- end }}
+        {{- if .maxQueueSize }}
+        maxQueueSize: {{ .maxQueueSize | quote }}
+        {{- end }}
+        history:
+          {{- if .history.defaultHistoryTTL }}
+          defaultHistoryTTL: {{ .defaultHistoryTTL | quote }}
+          {{- end }}
+          {{- if .history.defaultBatchOperationHistoryTTL }}
+          defaultBatchOperationHistoryTTL: {{ .defaultBatchOperationHistoryTTL | quote }}
+          {{- end }}
+          {{- if .history.batchOperationCancelProcessInstanceHistoryTTL }}
+          batchOperationCancelProcessInstanceHistoryTTL: {{ .batchOperationCancelProcessInstanceHistoryTTL | quote }}
+          {{- end }}
+          {{- if .history.batchOperationMigrateProcessInstanceHistoryTTL }}
+          batchOperationMigrateProcessInstanceHistoryTTL: {{ .batchOperationMigrateProcessInstanceHistoryTTL | quote }}
+          {{- end }}
+          {{- if .history.batchOperationModifyProcessInstanceHistoryTTL }}
+          batchOperationModifyProcessInstanceHistoryTTL: {{ .batchOperationModifyProcessInstanceHistoryTTL | quote }}
+          {{- end }}
+          {{- if .history.batchOperationResolveIncidentHistoryTTL }}
+          batchOperationResolveIncidentHistoryTTL: {{ .batchOperationResolveIncidentHistoryTTL | quote }}
+          {{- end }}
+          {{- if .history.minHistoryCleanupInterval }}
+          minHistoryCleanupInterval: {{ .minHistoryCleanupInterval | quote }}
+          {{- end }}
+          {{- if .history.maxHistoryCleanupInterval }}
+          maxHistoryCleanupInterval: {{ .maxHistoryCleanupInterval | quote }}
+          {{- end }}
+          {{- if .history.historyCleanupBatchSize }}
+          historyCleanupBatchSize: {{ .historyCleanupBatchSize | quote }}
+          {{- end }}
+          {{- if .history.usageMetricsCleanup }}
+          usageMetricsCleanup: {{ .usageMetricsCleanup | quote }}
+          {{- end }}
+          {{- if .history.processCache.maxSize }}
+          processCache:
+            maxSize: {{ .history.processCache.maxSize | quote }}
+          {{- end }}
+          {{- if .history.batchOperationCache.maxSize }}
+          batchOperationCache:
+            maxSize: {{ .history.batchOperationCache.maxSize | quote }}
+          {{- end }}
+          connection-pool:
+            {{- if .history.connectionPool.maximumPoolSize }}
+            maximumPoolSize: {{ .history.connectionPool.maximumPoolSize | quote }}
+            {{- end }}
+            {{- if .history.connectionPool.minimumIdle }}
+            minimumIdle: {{ .history.connectionPool.minimumIdle | quote }}
+            {{- end }}
+            {{- if .history.connectionPool.idleTimeout }}
+            idleTimeout: {{ .history.connectionPool.idleTimeout | quote }}
+            {{- end }}
+            {{- if .history.connectionPool.maxLifetime }}
+            maxLifetime: {{ .history.connectionPool.maxLifetime | quote }}
+            {{- end }}
+            {{- if .history.connectionPool.connectionTimeout }}
+            connectionTimeout: {{ .history.connectionPool.connectionTimeout | quote }}
+            {{- end }}
+        {{- end }}
       {{- end }}
 
   # Security configuration - Separated syntax.
