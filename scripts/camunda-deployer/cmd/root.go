@@ -46,6 +46,7 @@ var (
 	loadKeycloakRealm      bool
 	keycloakRealmName      string
 	flow                   string
+	vaultSecretPath        string
 )
 
 var rootCmd = &cobra.Command{
@@ -113,6 +114,7 @@ Examples:
 			CIMetadata: types.CIMetadata{
 				Flow: flow,
 			},
+			VaultSecretPath: vaultSecretPath,
 		}
 		return deployer.Deploy(ctx, opts)
 	},
@@ -171,6 +173,9 @@ func init() {
 	// Keycloak configuration
 	rootCmd.Flags().BoolVar(&loadKeycloakRealm, "load-keycloak-realm", false, "load Keycloak realm ConfigMap from chart's realm.json")
 	rootCmd.Flags().StringVar(&keycloakRealmName, "keycloak-realm-name", "", "Keycloak realm name to use (required if --load-keycloak-realm is set)")
+
+	// Vault configuration
+	rootCmd.Flags().StringVar(&vaultSecretPath, "vault-secret-path", "", "Path to a Kubernetes Secret YAML file to apply")
 
 	// CI Metadata flags
 	rootCmd.Flags().StringVar(&flow, "flow", "install", "deployment flow type (install, upgrade, etc.)")

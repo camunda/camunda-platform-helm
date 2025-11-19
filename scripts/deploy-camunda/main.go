@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -16,6 +17,7 @@ import (
 	"scripts/camunda-deployer/pkg/types"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
+	"vault-secret-mapper/pkg/mapper"
 )
 
 var (
@@ -34,6 +36,7 @@ var (
 	flow                 string
 	envFile              string
 	interactive          bool
+	vaultSecretMapping   string
 )
 
 func main() {
@@ -69,6 +72,7 @@ func main() {
 	flags.StringVar(&flow, "flow", "install", "Flow type")
 	flags.StringVar(&envFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
 	flags.BoolVar(&interactive, "interactive", true, "Enable interactive prompts for missing variables")
+	flags.StringVar(&vaultSecretMapping, "vault-secret-mapping", "", "Vault secret mapping content")
 
 	_ = rootCmd.MarkFlagRequired("chart-path")
 	_ = rootCmd.MarkFlagRequired("namespace")
@@ -168,6 +172,17 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Generate Vault Secrets
+	var vaultSecretPath string
+	if vaultSecretMapping != "" {
+		vaultSecretPath = filepath.Join(tempDir, "vault-mapped-secrets.yaml")
+		logging.Logger.Info().Msg("Generating vault secrets")
+
+		if err := mapper.Generate(vaultSecretMapping, "vault-mapped-secrets", vaultSecretPath); err != nil {
+			return fmt.Errorf("failed to generate vault secrets: %w", err)
+		}
+	}
+
 	// Deploy
 	vals, err := deployer.BuildValuesList(tempDir, []string{scenario}, auth, false, false, nil)
 	if err != nil {
@@ -188,13 +203,14 @@ func run(cmd *cobra.Command, args []string) error {
 		Platform:               platform,
 		RepoRoot:               repoRoot,
 		Identifier:             fmt.Sprintf("%s-%s", release, time.Now().Format("20060102150405")),
-		TTL:                    "1h",
+		TTL:                    "30m",
 		LoadKeycloakRealm:      true,
 		KeycloakRealmName:      realmName,
 		CIMetadata: types.CIMetadata{
 			Flow: flow,
 		},
 		ApplyIntegrationCreds: true,
+		VaultSecretPath:       vaultSecretPath,
 	}
 
 	return deployer.Deploy(context.Background(), deployOpts)

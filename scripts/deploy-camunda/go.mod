@@ -7,6 +7,7 @@ require (
 	scripts/camunda-core v0.0.0
 	scripts/camunda-deployer v0.0.0
 	scripts/prepare-helm-values v0.0.0
+	vault-secret-mapper v0.0.0
 )
 
 require (
@@ -54,7 +55,7 @@ require (
 	k8s.io/client-go v0.31.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
-	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
+    k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
@@ -65,3 +66,5 @@ replace scripts/camunda-core => ../camunda-core
 replace scripts/camunda-deployer => ../camunda-deployer
 
 replace scripts/prepare-helm-values => ../prepare-helm-values
+
+replace vault-secret-mapper => ../vault-secret-mapper
