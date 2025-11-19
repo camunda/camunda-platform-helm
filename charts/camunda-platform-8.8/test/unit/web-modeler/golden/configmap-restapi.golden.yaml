@@ -44,7 +44,7 @@ data:
         clusters:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"
-            version: "8.8.3"
+            version: "8.8.4"
             authentication: "BASIC"
             authorizations:
               enabled: true
