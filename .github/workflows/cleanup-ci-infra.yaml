@@ -27,6 +27,7 @@ jobs:
     with:
       distro-platform: ${{ matrix.distro-platform }}
       chart-version: ${{ matrix.version }}
+    secrets: inherit
 
   deploy-elasticsearch:
     name: Deploy CI Elasticsearch - ${{ matrix.version }} on ${{ matrix.distro-platform }}
@@ -41,6 +42,7 @@ jobs:
     with:
       distro-platform: ${{ matrix.distro-platform }}
       chart-version: ${{ matrix.version }}
+    secrets: inherit
 
   delete-keycloak:
     name: Cleanup CI Keycloak - ${{ matrix.version }} on ${{ matrix.distro-platform }}
@@ -54,6 +56,7 @@ jobs:
     with:
       distro-platform: ${{ matrix.distro-platform }}
       chart-version: ${{ matrix.version }}
+    secrets: inherit
 
   deploy-keycloak:
     name: Deploy CI Keycloak - ${{ matrix.version }} on ${{ matrix.distro-platform }}
@@ -65,3 +68,4 @@ jobs:
         version:
           - 24.9.0
     uses: ./.github/workflows/deploy-keycloak.yaml
+    secrets: inherit

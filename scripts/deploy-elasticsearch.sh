@@ -171,10 +171,10 @@ if [[ "${ATOMIC}" == true ]]; then
 fi
 
 CMD=(helm upgrade --install "$RELEASE_NAME" "$CHART" "${HELM_FLAGS[@]}")
-if (( ${#HELM_SET_ARGS[@]:-0} > 0 )); then
+if (( ${#HELM_SET_ARGS[@]} > 0 )); then
   CMD+=("${HELM_SET_ARGS[@]}")
 fi
-if (( ${#HELM_SET_STRING_ARGS[@]:-0} > 0 )); then
+if (( ${#HELM_SET_STRING_ARGS[@]} > 0 )); then
   CMD+=("${HELM_SET_STRING_ARGS[@]}")
 fi
 
