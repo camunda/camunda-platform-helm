@@ -130,34 +130,34 @@ camunda:
         {{- end }}
         history:
           {{- if .history.defaultHistoryTTL }}
-          defaultHistoryTTL: {{ .defaultHistoryTTL | quote }}
+          defaultHistoryTTL: {{ .history.defaultHistoryTTL | quote }}
           {{- end }}
           {{- if .history.defaultBatchOperationHistoryTTL }}
-          defaultBatchOperationHistoryTTL: {{ .defaultBatchOperationHistoryTTL | quote }}
+          defaultBatchOperationHistoryTTL: {{ .history.defaultBatchOperationHistoryTTL | quote }}
           {{- end }}
           {{- if .history.batchOperationCancelProcessInstanceHistoryTTL }}
-          batchOperationCancelProcessInstanceHistoryTTL: {{ .batchOperationCancelProcessInstanceHistoryTTL | quote }}
+          batchOperationCancelProcessInstanceHistoryTTL: {{ .history.batchOperationCancelProcessInstanceHistoryTTL | quote }}
           {{- end }}
           {{- if .history.batchOperationMigrateProcessInstanceHistoryTTL }}
-          batchOperationMigrateProcessInstanceHistoryTTL: {{ .batchOperationMigrateProcessInstanceHistoryTTL | quote }}
+          batchOperationMigrateProcessInstanceHistoryTTL: {{ .history.batchOperationMigrateProcessInstanceHistoryTTL | quote }}
           {{- end }}
           {{- if .history.batchOperationModifyProcessInstanceHistoryTTL }}
-          batchOperationModifyProcessInstanceHistoryTTL: {{ .batchOperationModifyProcessInstanceHistoryTTL | quote }}
+          batchOperationModifyProcessInstanceHistoryTTL: {{ .history.batchOperationModifyProcessInstanceHistoryTTL | quote }}
           {{- end }}
           {{- if .history.batchOperationResolveIncidentHistoryTTL }}
-          batchOperationResolveIncidentHistoryTTL: {{ .batchOperationResolveIncidentHistoryTTL | quote }}
+          batchOperationResolveIncidentHistoryTTL: {{ .history.batchOperationResolveIncidentHistoryTTL | quote }}
           {{- end }}
           {{- if .history.minHistoryCleanupInterval }}
-          minHistoryCleanupInterval: {{ .minHistoryCleanupInterval | quote }}
+          minHistoryCleanupInterval: {{ .history.minHistoryCleanupInterval | quote }}
           {{- end }}
           {{- if .history.maxHistoryCleanupInterval }}
-          maxHistoryCleanupInterval: {{ .maxHistoryCleanupInterval | quote }}
+          maxHistoryCleanupInterval: {{ .history.maxHistoryCleanupInterval | quote }}
           {{- end }}
           {{- if .history.historyCleanupBatchSize }}
-          historyCleanupBatchSize: {{ .historyCleanupBatchSize | quote }}
+          historyCleanupBatchSize: {{ .history.historyCleanupBatchSize | quote }}
           {{- end }}
           {{- if .history.usageMetricsCleanup }}
-          usageMetricsCleanup: {{ .usageMetricsCleanup | quote }}
+          usageMetricsCleanup: {{ .history.usageMetricsCleanup | quote }}
           {{- end }}
           {{- if .history.processCache.maxSize }}
           processCache:
