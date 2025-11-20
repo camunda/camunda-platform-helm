@@ -47,7 +47,10 @@ get_chart_images () {
     test -d "${CHART_DIR}" || CHART_DIR="$(ls -d1 charts/camunda-platform-8* | tail -n1)"
     test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
 
-    if ! $(helm search repo "${CHART_SOURCE}" --versions --output json | jq "any(.version == \"${chart_version}\")"); then
+    if [ -z "${RELEASED_CHARTS}" ]; then
+      export RELEASED_CHARTS="$(helm search repo "${CHART_SOURCE}" --versions --output json)"
+    fi
+    if ! $(echo ${RELEASED_CHARTS} | jq "any(.version == \"${chart_version}\")"); then
       export CHART_SOURCE="charts/camunda-platform-${major_minor}"
     fi
 
