@@ -2714,73 +2714,73 @@ orchestration:
         processing: "2GB"
         ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         replication: "1GB"
-    ## @extra orchestration.data.secondary-storage configuration for secondary storage backend used by the orchestration cluster
-    secondary-storage:
-      ## @extra orchestration.data.secondary-storage.rdbms configuration for RDBMS (Relational Database Management System) as secondary storage
+    ## @extra orchestration.data.secondaryStorage configuration for secondary storage backend used by the orchestration cluster
+    secondaryStorage:
+      ## @extra orchestration.data.secondaryStorage.rdbms configuration for RDBMS (Relational Database Management System) as secondary storage
       rdbms:
-        ## @param orchestration.data.secondary-storage.rdbms.url defines the JDBC connection URL for the RDBMS database
+        ## @param orchestration.data.secondaryStorage.rdbms.url defines the JDBC connection URL for the RDBMS database
         url: ""
-        ## @param orchestration.data.secondary-storage.rdbms.username defines the username for authenticating with the RDBMS database
+        ## @param orchestration.data.secondaryStorage.rdbms.username defines the username for authenticating with the RDBMS database
         username: ""
-        ## @extra orchestration.data.secondary-storage.rdbms.secret configuration to provide the RDBMS password secret
+        ## @extra orchestration.data.secondaryStorage.rdbms.secret configuration to provide the RDBMS password secret
         secret:
-          ## @param orchestration.data.secondary-storage.rdbms.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage
           inlineSecret: ""
-          ## @param orchestration.data.secondary-storage.rdbms.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
           existingSecret: ""
-          ## @param orchestration.data.secondary-storage.rdbms.secret.existingSecretKey defines the key within the existing secret object
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.existingSecretKey defines the key within the existing secret object
           existingSecretKey: ""
-        ## @param orchestration.data.secondary-storage.rdbms.flushInterval defines the interval at which data is flushed to the RDBMS database
+        ## @param orchestration.data.secondaryStorage.rdbms.flushInterval defines the interval at which data is flushed to the RDBMS database
         flushInterval: ""
-        ## @param orchestration.data.secondary-storage.rdbms.queueSize defines the size of the queue used for buffering data before flushing to the RDBMS database
+        ## @param orchestration.data.secondaryStorage.rdbms.queueSize defines the size of the queue used for buffering data before flushing to the RDBMS database
         queueSize: ""
-        ## @param orchestration.data.secondary-storage.rdbms.autoDDL if true, enables automatic DDL (Data Definition Language) operations for creating and updating database schema
+        ## @param orchestration.data.secondaryStorage.rdbms.autoDDL if true, enables automatic DDL (Data Definition Language) operations for creating and updating database schema
         autoDDL: false
-        ## @param orchestration.data.secondary-storage.rdbms.prefix defines a prefix to be used for database table names
+        ## @param orchestration.data.secondaryStorage.rdbms.prefix defines a prefix to be used for database table names
         prefix: ""
-        ## @param orchestration.data.secondary-storage.rdbms.maxQueueSize defines the maximum size of the queue used for buffering data
+        ## @param orchestration.data.secondaryStorage.rdbms.maxQueueSize defines the maximum size of the queue used for buffering data
         maxQueueSize: ""
-        ## @extra orchestration.data.secondary-storage.rdbms.history configuration for managing historical data retention in the RDBMS database
+        ## @extra orchestration.data.secondaryStorage.rdbms.history configuration for managing historical data retention in the RDBMS database
         history:
-          ## @param orchestration.data.secondary-storage.rdbms.history.defaultHistoryTTL defines the default time-to-live (TTL) for historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultHistoryTTL defines the default time-to-live (TTL) for historical data records
           defaultHistoryTTL: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL defines the default TTL for batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultBatchOperationHistoryTTL defines the default TTL for batch operation historical data records
           defaultBatchOperationHistoryTTL: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL defines the TTL for cancel process instance batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL defines the TTL for cancel process instance batch operation historical data records
           batchOperationCancelProcessInstanceHistoryTTL: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL defines the TTL for migrate process instance batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL defines the TTL for migrate process instance batch operation historical data records
           batchOperationMigrateProcessInstanceHistoryTTL: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL defines the TTL for modify process instance batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL defines the TTL for modify process instance batch operation historical data records
           batchOperationModifyProcessInstanceHistoryTTL: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.batchOperationResolveIncidentHistoryTTL defines the TTL for resolve incident batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationResolveIncidentHistoryTTL defines the TTL for resolve incident batch operation historical data records
           batchOperationResolveIncidentHistoryTTL: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.minHistoryCleanupInterval defines the minimum interval between historical data cleanup operations
+          ## @param orchestration.data.secondaryStorage.rdbms.history.minHistoryCleanupInterval defines the minimum interval between historical data cleanup operations
           minHistoryCleanupInterval: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.maxHistoryCleanupInterval defines the maximum interval between historical data cleanup operations
+          ## @param orchestration.data.secondaryStorage.rdbms.history.maxHistoryCleanupInterval defines the maximum interval between historical data cleanup operations
           maxHistoryCleanupInterval: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.historyCleanupBatchSize defines the batch size for historical data cleanup operations
+          ## @param orchestration.data.secondaryStorage.rdbms.history.historyCleanupBatchSize defines the batch size for historical data cleanup operations
           historyCleanupBatchSize: ""
-          ## @param orchestration.data.secondary-storage.rdbms.history.usageMetricsCleanup if true, enables cleanup of usage metrics data
+          ## @param orchestration.data.secondaryStorage.rdbms.history.usageMetricsCleanup if true, enables cleanup of usage metrics data
           usageMetricsCleanup: ""
-          ## @extra orchestration.data.secondary-storage.rdbms.history.processCache configuration for the process cache used in historical data operations
+          ## @extra orchestration.data.secondaryStorage.rdbms.history.processCache configuration for the process cache used in historical data operations
           processCache:
-            ## @param orchestration.data.secondary-storage.rdbms.history.processCache.maxSize defines the maximum size of the process cache
+            ## @param orchestration.data.secondaryStorage.rdbms.history.processCache.maxSize defines the maximum size of the process cache
             maxSize: ""
-          ## @extra orchestration.data.secondary-storage.rdbms.history.batchOperationCache configuration for the batch operation cache used in historical data operations
+          ## @extra orchestration.data.secondaryStorage.rdbms.history.batchOperationCache configuration for the batch operation cache used in historical data operations
           batchOperationCache:
-            ## @param orchestration.data.secondary-storage.rdbms.history.batchOperationCache.maxSize defines the maximum size of the batch operation cache
+            ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCache.maxSize defines the maximum size of the batch operation cache
             maxSize: ""
-          ## @extra orchestration.data.secondary-storage.rdbms.history.connectionPool configuration for the connection pool used in historical data operations
+          ## @extra orchestration.data.secondaryStorage.rdbms.history.connectionPool configuration for the connection pool used in historical data operations
           connectionPool:
-            ## @param orchestration.data.secondary-storage.rdbms.history.connectionPool.maximumPoolSize defines the maximum number of connections in the pool
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.maximumPoolSize defines the maximum number of connections in the pool
             maximumPoolSize: ""
-            ## @param orchestration.data.secondary-storage.rdbms.history.connectionPool.minimumIdle defines the minimum number of idle connections to maintain in the pool
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.minimumIdle defines the minimum number of idle connections to maintain in the pool
             minimumIdle: ""
-            ## @param orchestration.data.secondary-storage.rdbms.history.connectionPool.idleTimeout defines the maximum time that a connection can sit idle in the pool
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.idleTimeout defines the maximum time that a connection can sit idle in the pool
             idleTimeout: ""
-            ## @param orchestration.data.secondary-storage.rdbms.history.connectionPool.maxLifetime defines the maximum lifetime of a connection in the pool
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.maxLifetime defines the maximum lifetime of a connection in the pool
             maxLifetime: ""
-            ## @param orchestration.data.secondary-storage.rdbms.history.connectionPool.connectionTimeout defines the maximum time to wait for a connection from the pool
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.connectionTimeout defines the maximum time to wait for a connection from the pool
             connectionTimeout: ""
   ## @param orchestration.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
