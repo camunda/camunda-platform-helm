@@ -223,6 +223,7 @@ jobs:
           export INPUTS_FLOWS_INSTALL=${{ contains(inputs.flows, 'install') }}
           export INPUTS_FLOWS_UPGRADE_PATCH=${{ contains(inputs.flows, 'upgrade-patch') }}
           export INPUTS_FLOWS_UPGRADE_MINOR=${{ contains(inputs.flows, 'upgrade-minor') }}
+          export INPUTS_FLOWS_MODULAR_UPGRADE_MINOR=${{ contains(inputs.flows, 'modular-upgrade-minor') }}
           cat ${CI_MATRIX_FILE} | envsubst | tee /tmp/matrix.yaml
           # Read matrix YAML file.
           matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
