@@ -76,3 +76,5 @@ annotations:
       description: "Use joinPath helper to fix double slash issues in console configmap"
     - kind: fixed
       description: "Remove console secret since console is a public OIDC client"
+
+
