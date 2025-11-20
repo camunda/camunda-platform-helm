@@ -5692,7 +5692,7 @@
                                 }
                             }
                         },
-                        "secondary-storage": {
+                        "secondaryStorage": {
                             "type": "object",
                             "properties": {
                                 "rdbms": {
