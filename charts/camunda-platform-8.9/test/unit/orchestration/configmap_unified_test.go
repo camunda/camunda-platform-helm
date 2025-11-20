@@ -278,23 +278,23 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSBasicConfig",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":               "true",
-				"orchestration.data.secondary-storage.rdbms.url":      "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username": "camunda",
+				"orchestration.exporters.rdbms.enabled":              "true",
+				"orchestration.data.secondaryStorage.rdbms.url":      "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username": "camunda",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.url":      "jdbc:postgresql://localhost:5432/camunda",
 				"configmapApplication.camunda.data.secondary-storage.rdbms.username": "camunda",
-				"configmapApplication.camunda.data.secondary-storage.rdbms.password": "${VALUES_RDBMS_PASSWORD:}",
+				"configmapApplication.camunda.data.secondary-storage.rdbms.password": "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}",
 			},
 		},
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSFlushInterval",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                    "true",
-				"orchestration.data.secondary-storage.rdbms.url":           "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":      "camunda",
-				"orchestration.data.secondary-storage.rdbms.flushInterval": "10s",
+				"orchestration.exporters.rdbms.enabled":                   "true",
+				"orchestration.data.secondaryStorage.rdbms.url":           "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":      "camunda",
+				"orchestration.data.secondaryStorage.rdbms.flushInterval": "10s",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.flushInterval": "10s",
@@ -303,10 +303,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSQueueSize",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                "true",
-				"orchestration.data.secondary-storage.rdbms.url":       "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":  "camunda",
-				"orchestration.data.secondary-storage.rdbms.queueSize": "1000",
+				"orchestration.exporters.rdbms.enabled":               "true",
+				"orchestration.data.secondaryStorage.rdbms.url":       "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":  "camunda",
+				"orchestration.data.secondaryStorage.rdbms.queueSize": "1000",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.queueSize": "1000",
@@ -315,10 +315,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSAutoDDL",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":               "true",
-				"orchestration.data.secondary-storage.rdbms.url":      "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username": "camunda",
-				"orchestration.data.secondary-storage.rdbms.autoDDL":  "true",
+				"orchestration.exporters.rdbms.enabled":              "true",
+				"orchestration.data.secondaryStorage.rdbms.url":      "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username": "camunda",
+				"orchestration.data.secondaryStorage.rdbms.autoDDL":  "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.auto-ddl": "true",
@@ -327,10 +327,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSPrefix",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":               "true",
-				"orchestration.data.secondary-storage.rdbms.url":      "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username": "camunda",
-				"orchestration.data.secondary-storage.rdbms.prefix":   "cam_",
+				"orchestration.exporters.rdbms.enabled":              "true",
+				"orchestration.data.secondaryStorage.rdbms.url":      "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username": "camunda",
+				"orchestration.data.secondaryStorage.rdbms.prefix":   "cam_",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.prefix": "cam_",
@@ -339,10 +339,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSMaxQueueSize",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                   "true",
-				"orchestration.data.secondary-storage.rdbms.url":          "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":     "camunda",
-				"orchestration.data.secondary-storage.rdbms.maxQueueSize": "5000",
+				"orchestration.exporters.rdbms.enabled":                  "true",
+				"orchestration.data.secondaryStorage.rdbms.url":          "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":     "camunda",
+				"orchestration.data.secondaryStorage.rdbms.maxQueueSize": "5000",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.maxQueueSize": "5000",
@@ -351,10 +351,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryDefaultTTL",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                "true",
-				"orchestration.data.secondary-storage.rdbms.url":                       "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                  "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.defaultHistoryTTL": "P30D",
+				"orchestration.exporters.rdbms.enabled":                               "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                       "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                  "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.defaultHistoryTTL": "P30D",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.defaultHistoryTTL": "P30D",
@@ -363,10 +363,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryDefaultBatchOperationTTL",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                              "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                     "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                                "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL": "P7D",
+				"orchestration.exporters.rdbms.enabled":                                             "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                     "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.defaultBatchOperationHistoryTTL": "P7D",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL": "P7D",
@@ -375,10 +375,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryCancelProcessInstanceTTL",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                                            "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                                   "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                                              "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL": "P14D",
+				"orchestration.exporters.rdbms.enabled":                                                           "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                                   "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                              "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL": "P14D",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL": "P14D",
@@ -387,10 +387,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryMigrateProcessInstanceTTL",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                                             "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                                    "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                                               "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL": "P21D",
+				"orchestration.exporters.rdbms.enabled":                                                            "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                                    "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                               "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL": "P21D",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL": "P21D",
@@ -399,10 +399,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryModifyProcessInstanceTTL",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                                            "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                                   "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                                              "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL": "P10D",
+				"orchestration.exporters.rdbms.enabled":                                                           "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                                   "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                              "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL": "P10D",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL": "P10D",
@@ -411,10 +411,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryResolveIncidentTTL",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                                      "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                             "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                                        "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationResolveIncidentHistoryTTL": "P5D",
+				"orchestration.exporters.rdbms.enabled":                                                     "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                             "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                        "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationResolveIncidentHistoryTTL": "P5D",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.batchOperationResolveIncidentHistoryTTL": "P5D",
@@ -423,10 +423,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryMinCleanupInterval",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                        "true",
-				"orchestration.data.secondary-storage.rdbms.url":                               "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                          "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.minHistoryCleanupInterval": "PT1H",
+				"orchestration.exporters.rdbms.enabled":                                       "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                               "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                          "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.minHistoryCleanupInterval": "PT1H",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.minHistoryCleanupInterval": "PT1H",
@@ -435,10 +435,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryMaxCleanupInterval",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                        "true",
-				"orchestration.data.secondary-storage.rdbms.url":                               "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                          "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.maxHistoryCleanupInterval": "PT24H",
+				"orchestration.exporters.rdbms.enabled":                                       "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                               "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                          "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.maxHistoryCleanupInterval": "PT24H",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.maxHistoryCleanupInterval": "PT24H",
@@ -447,10 +447,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryCleanupBatchSize",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                      "true",
-				"orchestration.data.secondary-storage.rdbms.url":                             "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                        "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.historyCleanupBatchSize": "500",
+				"orchestration.exporters.rdbms.enabled":                                     "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                             "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                        "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.historyCleanupBatchSize": "500",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize": "500",
@@ -459,10 +459,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryUsageMetricsCleanup",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                  "true",
-				"orchestration.data.secondary-storage.rdbms.url":                         "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                    "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.usageMetricsCleanup": "true",
+				"orchestration.exporters.rdbms.enabled":                                 "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                         "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                    "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.usageMetricsCleanup": "true",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.usageMetricsCleanup": "true",
@@ -471,10 +471,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryProcessCacheMaxSize",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                   "true",
-				"orchestration.data.secondary-storage.rdbms.url":                          "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                     "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.processCache.maxSize": "1000",
+				"orchestration.exporters.rdbms.enabled":                                  "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                          "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                     "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.processCache.maxSize": "1000",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.processCache.maxSize": "1000",
@@ -483,10 +483,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryBatchOperationCacheMaxSize",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                          "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                 "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                            "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationCache.maxSize": "500",
+				"orchestration.exporters.rdbms.enabled":                                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationCache.maxSize": "500",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.batchOperationCache.maxSize": "500",
@@ -495,10 +495,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryConnectionPoolMaximumSize",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                             "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                    "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                               "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.maximumPoolSize": "20",
+				"orchestration.exporters.rdbms.enabled":                                            "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                    "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                               "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.maximumPoolSize": "20",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.connection-pool.maximumPoolSize": "20",
@@ -507,10 +507,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryConnectionPoolMinimumIdle",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                         "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                           "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.minimumIdle": "5",
+				"orchestration.exporters.rdbms.enabled":                                        "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                           "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.minimumIdle": "5",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.connection-pool.minimumIdle": "5",
@@ -519,10 +519,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryConnectionPoolIdleTimeout",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                         "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                           "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.idleTimeout": "600000",
+				"orchestration.exporters.rdbms.enabled":                                        "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                           "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.idleTimeout": "600000",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.connection-pool.idleTimeout": "600000",
@@ -531,10 +531,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryConnectionPoolMaxLifetime",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                         "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                           "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.maxLifetime": "1800000",
+				"orchestration.exporters.rdbms.enabled":                                        "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                           "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.maxLifetime": "1800000",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.connection-pool.maxLifetime": "1800000",
@@ -543,10 +543,10 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryConnectionPoolConnectionTimeout",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                               "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                      "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                                 "camunda",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.connectionTimeout": "30000",
+				"orchestration.exporters.rdbms.enabled":                                              "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                      "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                 "camunda",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.connectionTimeout": "30000",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.connection-pool.connectionTimeout": "30000",
@@ -555,36 +555,36 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSAllOptions",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                                                             "true",
-				"orchestration.data.secondary-storage.rdbms.url":                                                    "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondary-storage.rdbms.username":                                               "camunda",
-				"orchestration.data.secondary-storage.rdbms.flushInterval":                                          "10s",
-				"orchestration.data.secondary-storage.rdbms.queueSize":                                              "1000",
-				"orchestration.data.secondary-storage.rdbms.autoDDL":                                                "true",
-				"orchestration.data.secondary-storage.rdbms.prefix":                                                 "cam_",
-				"orchestration.data.secondary-storage.rdbms.maxQueueSize":                                           "5000",
-				"orchestration.data.secondary-storage.rdbms.history.defaultHistoryTTL":                              "P30D",
-				"orchestration.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL":                "P7D",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL":  "P14D",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL": "P21D",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL":  "P10D",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationResolveIncidentHistoryTTL":        "P5D",
-				"orchestration.data.secondary-storage.rdbms.history.minHistoryCleanupInterval":                      "PT1H",
-				"orchestration.data.secondary-storage.rdbms.history.maxHistoryCleanupInterval":                      "PT24H",
-				"orchestration.data.secondary-storage.rdbms.history.historyCleanupBatchSize":                        "500",
-				"orchestration.data.secondary-storage.rdbms.history.usageMetricsCleanup":                            "true",
-				"orchestration.data.secondary-storage.rdbms.history.processCache.maxSize":                           "1000",
-				"orchestration.data.secondary-storage.rdbms.history.batchOperationCache.maxSize":                    "500",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.maximumPoolSize":                 "20",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.minimumIdle":                     "5",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.idleTimeout":                     "600000",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.maxLifetime":                     "1800000",
-				"orchestration.data.secondary-storage.rdbms.history.connectionPool.connectionTimeout":               "30000",
+				"orchestration.exporters.rdbms.enabled":                                                            "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                                                    "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                               "camunda",
+				"orchestration.data.secondaryStorage.rdbms.flushInterval":                                          "10s",
+				"orchestration.data.secondaryStorage.rdbms.queueSize":                                              "1000",
+				"orchestration.data.secondaryStorage.rdbms.autoDDL":                                                "true",
+				"orchestration.data.secondaryStorage.rdbms.prefix":                                                 "cam_",
+				"orchestration.data.secondaryStorage.rdbms.maxQueueSize":                                           "5000",
+				"orchestration.data.secondaryStorage.rdbms.history.defaultHistoryTTL":                              "P30D",
+				"orchestration.data.secondaryStorage.rdbms.history.defaultBatchOperationHistoryTTL":                "P7D",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL":  "P14D",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL": "P21D",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL":  "P10D",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationResolveIncidentHistoryTTL":        "P5D",
+				"orchestration.data.secondaryStorage.rdbms.history.minHistoryCleanupInterval":                      "PT1H",
+				"orchestration.data.secondaryStorage.rdbms.history.maxHistoryCleanupInterval":                      "PT24H",
+				"orchestration.data.secondaryStorage.rdbms.history.historyCleanupBatchSize":                        "500",
+				"orchestration.data.secondaryStorage.rdbms.history.usageMetricsCleanup":                            "true",
+				"orchestration.data.secondaryStorage.rdbms.history.processCache.maxSize":                           "1000",
+				"orchestration.data.secondaryStorage.rdbms.history.batchOperationCache.maxSize":                    "500",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.maximumPoolSize":                 "20",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.minimumIdle":                     "5",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.idleTimeout":                     "600000",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.maxLifetime":                     "1800000",
+				"orchestration.data.secondaryStorage.rdbms.history.connectionPool.connectionTimeout":               "30000",
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.rdbms.url":                                                    "jdbc:postgresql://localhost:5432/camunda",
 				"configmapApplication.camunda.data.secondary-storage.rdbms.username":                                               "camunda",
-				"configmapApplication.camunda.data.secondary-storage.rdbms.password":                                               "${VALUES_RDBMS_PASSWORD:}",
+				"configmapApplication.camunda.data.secondary-storage.rdbms.password":                                               "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}",
 				"configmapApplication.camunda.data.secondary-storage.rdbms.flushInterval":                                          "10s",
 				"configmapApplication.camunda.data.secondary-storage.rdbms.queueSize":                                              "1000",
 				"configmapApplication.camunda.data.secondary-storage.rdbms.auto-ddl":                                               "true",
