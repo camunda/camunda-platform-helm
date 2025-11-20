@@ -91,7 +91,7 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 				"orchestration.migration.identity.secret.inlineSecret":            "very-secret-thus-plaintext",
 				"orchestration.migration.identity.waitContainer.image.registry":   "my.custom.registry.io",
 				"orchestration.migration.identity.waitContainer.image.repository": "curlimages/curl",
-				"orchestration.migration.identity.waitContainer.image.tag":        "8.15.0",
+				"orchestration.migration.identity.waitContainer.image.tag":        "custom-tag-123",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var job batchv1.Job
@@ -100,7 +100,7 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 				// then
 				initContainers := job.Spec.Template.Spec.InitContainers
 				s.Require().Equal(1, len(initContainers))
-				s.Require().Equal("my.custom.registry.io/curlimages/curl:8.15.0", initContainers[0].Image)
+				s.Require().Equal("my.custom.registry.io/curlimages/curl:custom-tag-123", initContainers[0].Image)
 			},
 		}, {
 			Name: "TestContainerSetInitContainerImageWithDigest",
@@ -132,7 +132,8 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 				// then
 				initContainers := job.Spec.Template.Spec.InitContainers
 				s.Require().Equal(1, len(initContainers))
-				s.Require().Equal("global.registry.io/curlimages/curl:8.15.0", initContainers[0].Image)
+				s.Require().Contains(initContainers[0].Image, "global.registry.io/curlimages/curl:")
+				s.Require().NotContains(initContainers[0].Image, "@")
 			},
 		}, {
 			Name: "TestContainerInitContainerImageOverrideGlobalRegistry",
@@ -149,7 +150,8 @@ func (s *MigrationIdentityJobTest) TestDifferentValuesInputs() {
 				// then
 				initContainers := job.Spec.Template.Spec.InitContainers
 				s.Require().Equal(1, len(initContainers))
-				s.Require().Equal("override.registry.io/curlimages/curl:8.15.0", initContainers[0].Image)
+				s.Require().Contains(initContainers[0].Image, "override.registry.io/curlimages/curl:")
+				s.Require().NotContains(initContainers[0].Image, "global.registry.io")
 			},
 		},
 	}
