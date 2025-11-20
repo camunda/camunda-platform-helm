@@ -272,7 +272,6 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
     (dict "path" "global.opensearch.tls" "config" .Values.global.opensearch.tls "isTlsConfig" true)
     (dict "path" "console.tls" "config" .Values.console.tls "isTlsConfig" true)
     (dict "path" "global.identity.auth.admin" "config" .Values.global.identity.auth.admin)
-    (dict "path" "global.identity.auth.console" "config" .Values.global.identity.auth.console)
     (dict "path" "connectors.security.authentication.oidc" "config" .Values.connectors.security.authentication.oidc)
     (dict "path" "global.identity.auth.core" "config" .Values.global.identity.auth.core)
     (dict "path" "global.identity.auth.identity" "config" .Values.global.identity.auth.identity)
