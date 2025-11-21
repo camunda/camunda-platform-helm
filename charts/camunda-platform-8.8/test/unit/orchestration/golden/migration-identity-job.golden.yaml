@@ -46,7 +46,7 @@ spec:
             runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
-          image: curlimages/curl:8.15.0
+          image: curlimages/curl:8.17.0
           command:
             - sh
             - -c
