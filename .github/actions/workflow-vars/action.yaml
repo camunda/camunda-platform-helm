@@ -88,7 +88,7 @@ runs:
       fi
 
       if [[ "${{ inputs.setup-flow }}" == 'modular-upgrade-minor' ]]; then
-        # this flow depends on the namespace give during installation so we don't adjust it here to make it unique
+        : # no-op; this flow depends on the namespace given during installation so we don't adjust it here
       fi
 
       echo "TEST_NAMESPACE=$(printf '%s' "$TEST_NAMESPACE" | head -c 63 | sed 's/-$//')" | tee -a "$GITHUB_ENV"
