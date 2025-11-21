@@ -55,11 +55,12 @@ spec:
                 configMapKeyRef:
                   name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-key
-            - name: PUSHER_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
-                  key: pusher-app-secret
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "PUSHER_SECRET"
+                "config" .Values.webModeler.restapi.pusher
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
+            ) | nindent 12 }}
             - name: CLIENT_PUSHER_KEY
               valueFrom:
                 configMapKeyRef:
