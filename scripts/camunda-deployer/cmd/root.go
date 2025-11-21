@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"scripts/camunda-core/pkg/completion"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/camunda-deployer/pkg/types"
@@ -44,6 +45,8 @@ var (
 	ttl                    string
 	loadKeycloakRealm      bool
 	keycloakRealmName      string
+	flow                   string
+	vaultSecretPath        string
 )
 
 var rootCmd = &cobra.Command{
@@ -109,8 +112,9 @@ Examples:
 			LoadKeycloakRealm:      loadKeycloakRealm,
 			KeycloakRealmName:      keycloakRealmName,
 			CIMetadata: types.CIMetadata{
-				Flow: "deploy",
+				Flow: flow,
 			},
+			VaultSecretPath: vaultSecretPath,
 		}
 		return deployer.Deploy(ctx, opts)
 	},
@@ -137,7 +141,9 @@ func init() {
 
 	// Scenario flags
 	rootCmd.Flags().StringVar(&scenarioCSV, "scenario", "", "scenario name or comma-separated list (e.g., qa-license,opensearch)")
+	completion.RegisterScenarioCompletion(rootCmd, "scenario", "chart")
 	rootCmd.Flags().StringVar(&auth, "auth", "", "auth scenario to layer before main scenarios (e.g., keycloak)")
+	completion.RegisterScenarioCompletion(rootCmd, "auth", "chart")
 
 	// Deployment behavior flags (with defaults shown)
 	rootCmd.Flags().BoolVar(&wait, "wait", true, "wait for resources to be ready")
@@ -167,6 +173,12 @@ func init() {
 	// Keycloak configuration
 	rootCmd.Flags().BoolVar(&loadKeycloakRealm, "load-keycloak-realm", false, "load Keycloak realm ConfigMap from chart's realm.json")
 	rootCmd.Flags().StringVar(&keycloakRealmName, "keycloak-realm-name", "", "Keycloak realm name to use (required if --load-keycloak-realm is set)")
+
+	// Vault configuration
+	rootCmd.Flags().StringVar(&vaultSecretPath, "vault-secret-path", "", "Path to a Kubernetes Secret YAML file to apply")
+
+	// CI Metadata flags
+	rootCmd.Flags().StringVar(&flow, "flow", "install", "deployment flow type (install, upgrade, etc.)")
 }
 
 func Execute() {
