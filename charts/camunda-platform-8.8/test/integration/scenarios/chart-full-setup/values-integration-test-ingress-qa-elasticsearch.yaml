@@ -92,9 +92,10 @@ identity:
   image:
     tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
-    existingSecret: null
     user: demo
-    password: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+    secret:
+      existingSecret: vault-mapped-secrets
+      existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
   # Keycloak client seed which is used to query Camunda APIs. 
   clients:
     - id: venom
@@ -144,20 +145,6 @@ identity:
         - resourceServerId: console-api
           definition: write:*
   users:
-    - username: demo
-      secret:
-        existingSecret: vault-mapped-secrets
-        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
-      firstName: Demo
-      lastName: User
-      email: demo@example.com
-      roles:
-        - ManagementIdentity
-        - Optimize
-        - Web Modeler
-        - Web Modeler Admin
-        - Console
-        - Orchestration
     - username: lisa
       secret:
         existingSecret: vault-mapped-secrets
