@@ -72,17 +72,31 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Define custom clients for management identity"
+    - kind: added
+      description: "Backport custom client creation to 8.6 and 8.9"
+    - kind: added
+      description: "Define custom users through values.yaml"
     - kind: fixed
-      description: "`optmimize.persistence.enabled` crashes optimize"
+      description: "Typo in webModeler pvc"
     - kind: fixed
-      description: "Remove console secret since console is a public OIDC client"
+      description: "Connectors prefix should not be present if connectors is disabled"
     - kind: fixed
-      description: "Configmap for orchestration renders as valid yaml and not giant blob"
+      description: "Incorrect example for keycloak in readme.md"
     - kind: fixed
-      description: "Include exported password in importer deployment"
+      description: "Orchestration migration configurable init container image"
     - kind: fixed
-      description: "Correct retention configuration in orchestration configMap"
+      description: "ExtraVolumeClaimTemplateTemplate indent for orchestration cluster"
     - kind: fixed
-      description: "Zbctl 8.5.6 was deleted, long live 8.6.0"
+      description: "Remove client env vars from qa scenario files"
     - kind: fixed
-      description: "Disable version check restrict on qa upgrades"
+      description: "Typo lower case values"
+    - kind: fixed
+      description: "Allow for custom jks in migration-data job"
+    - kind: fixed
+      description: "Remove leftover console secret constraints"
+    - kind: fixed
+      description: "8.8 values-latest.yaml no longer references SNAPSHOT images"
+    - kind: fixed
+      description: "Setting zeebe image tag shouldnt disable broker profile"
