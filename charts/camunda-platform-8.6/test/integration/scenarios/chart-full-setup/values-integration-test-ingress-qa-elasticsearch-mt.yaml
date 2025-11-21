@@ -108,12 +108,14 @@ identity:
       lastName: Doe
       email: cawemodev+lisa@gmail.com
       roles:
-        - ManagementIdentity
+        - Identity
+        - Operate
+        - Tasklist
         - Optimize
         - Web Modeler
         - Web Modeler Admin
         - Console
-        - Orchestration
+        - Zeebe
     - username: bart
       secret:
         existingSecret: vault-mapped-secrets
@@ -122,12 +124,14 @@ identity:
       lastName: Foo
       email: cawemodev+bart@gmail.com
       roles:
-        - ManagementIdentity
+        - Identity
+        - Operate
+        - Tasklist
         - Optimize
         - Web Modeler
         - Web Modeler Admin
         - Console
-        - Orchestration
+        - Zeebe
   env:
     - name: IDENTITY_TENANTS_0_NAME
       value: Default
