@@ -1,6 +1,6 @@
 module scripts/prepare-helm-values
 
-go 1.21
+go 1.25.0
 
 require (
 	github.com/jwalton/gchalk v1.3.0
