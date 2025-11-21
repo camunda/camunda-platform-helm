@@ -501,6 +501,15 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
+      - name: Display Docker Image Git Commits
+        id: display-image-commits
+        if: always()
+        continue-on-error: true
+        run: |
+          OUTPUT=$($GITHUB_WORKSPACE/scripts/list-chart-image-commits.sh)
+          echo "$OUTPUT"
+          echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
+
       ##########################################################################################################
       # Misc
       ##########################################################################################################
@@ -748,6 +757,15 @@ jobs:
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+
+      - name: Display Docker Image Git Commits (Upgrade)
+        id: display-image-commits-upgrade
+        if: always()
+        continue-on-error: true
+        run: |
+          OUTPUT=$($GITHUB_WORKSPACE/scripts/list-chart-image-commits.sh)
+          echo "$OUTPUT"
+          echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
 
       ##########################################################################################################
       # Misc
