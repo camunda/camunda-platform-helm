@@ -972,7 +972,7 @@ jobs:
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [playwright-e2e-tests, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
-    if: ${{ always() && contains(needs.*.result, 'success') }}
+    if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
