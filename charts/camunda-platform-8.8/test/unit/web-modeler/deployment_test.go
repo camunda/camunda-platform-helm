@@ -635,6 +635,40 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Contains(testVolumeMount.MountPath, "config/testFile")
 				s.EqualValues("testFile", testVolumeMount.SubPath)
 			},
+		}, {
+			Name: "TestPusherSecretRefIsUsed",
+			Values: map[string]string{
+				"identity.enabled":                                   "true",
+				"webModeler.enabled":                                 "true",
+				"webModeler.restapi.mail.fromAddress":                "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":    "web-modeler-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey": "custom-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+
+				expectedEnvNames := map[string]string{
+					"websockets": "PUSHER_APP_SECRET",
+					"webapp":     "PUSHER_SECRET",
+					"restapi":    "RESTAPI_PUSHER_SECRET",
+				}
+
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: expectedEnvNames[s.component],
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "web-modeler-custom-secret"},
+								Key:                  "custom-password",
+							},
+						},
+					},
+				)
+			},
 		},
 	}
 
