@@ -5449,7 +5449,7 @@
                                                 "tag": {
                                                     "type": "string",
                                                     "description": "can be set to overwrite the global tag, which should be used in that chart",
-                                                    "default": "8.15.0"
+                                                    "default": "8.17.0"
                                                 },
                                                 "digest": {
                                                     "type": "string",
