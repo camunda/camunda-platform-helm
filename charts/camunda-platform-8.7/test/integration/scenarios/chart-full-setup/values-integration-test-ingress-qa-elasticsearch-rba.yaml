@@ -61,10 +61,9 @@ identity:
   postgresql:
     enabled: true
   firstUser:
-    existingSecret: null
     user: demo
-    existingSecret: integration-test-credentials
-    existingSecretKey: identity-user-password
+    existingSecret: vault-mapped-secrets
+    existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
   # Keycloak client seed which is used to query Camunda APIs. 
   clients:
     - id: venom
@@ -126,20 +125,6 @@ identity:
         - resourceServerId: console-api
           definition: write:*
   users:
-    - username: demo
-      secret:
-        existingSecret: vault-mapped-secrets
-        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
-      firstName: Demo
-      lastName: User
-      email: demo@example.com
-      roles:
-        - ManagementIdentity
-        - Optimize
-        - Web Modeler
-        - Web Modeler Admin
-        - Console
-        - Orchestration
     - username: lisa
       secret:
         existingSecret: vault-mapped-secrets
