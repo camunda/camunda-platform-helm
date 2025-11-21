@@ -1,6 +1,6 @@
 module scripts/camunda-core
 
-go 1.22.0
+go 1.25.0
 
 require (
 	github.com/jwalton/gchalk v1.3.0
