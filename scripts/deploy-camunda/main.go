@@ -119,7 +119,7 @@ func main() {
 	flags.BoolVar(&deleteNamespaceFirst, "delete-namespace", false, "Delete the namespace first, then deploy")
 	flags.StringVar(&dockerUsername, "docker-username", "", "Docker registry username")
 	flags.StringVar(&dockerPassword, "docker-password", "", "Docker registry password")
-	flags.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", true, "Ensure Docker registry secret is created")
+	flags.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", false, "Ensure Docker registry secret is created")
 
 	_ = rootCmd.MarkFlagRequired("namespace")
 	_ = rootCmd.MarkFlagRequired("release")
