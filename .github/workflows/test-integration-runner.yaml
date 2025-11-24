@@ -493,6 +493,7 @@ jobs:
           VALUES_CONFIG: ${{ inputs.values-config }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           make install.dx-tooling
           # Dynamically determine the git root
