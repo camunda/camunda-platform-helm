@@ -14,15 +14,15 @@ import (
 
 // loadKeycloakRealmConfigMap creates a Keycloak realm ConfigMap from a realm.json file.
 // This is Camunda-specific test infrastructure.
-func loadKeycloakRealmConfigMap(ctx context.Context, kubeClient *kube.Client, chartPath, realmName, namespace string) error {
+func loadKeycloakRealmConfigMap(ctx context.Context, kubeClient *kube.Client, realmPath, realmName, namespace string) error {
 	logging.Logger.Debug().
-		Str("chartPath", chartPath).
+		Str("realmPath", realmPath).
 		Str("realmName", realmName).
 		Str("namespace", namespace).
 		Msg("loading Keycloak realm ConfigMap")
 
 	// Locate the realm.json file
-	realmJSONPath := filepath.Join(chartPath, "test", "integration", "realm.json")
+	realmJSONPath := filepath.Join(realmPath, "realm.json")
 	if _, err := os.Stat(realmJSONPath); err != nil {
 		logging.Logger.Debug().Str("path", realmJSONPath).Msg("realm.json not found")
 		return fmt.Errorf("realm.json not found at %s: %w", realmJSONPath, err)
@@ -142,4 +142,3 @@ func applyIntegrationTestCredentials(ctx context.Context, kubeClient *kube.Clien
 	// Use generic method to apply manifest
 	return kubeClient.ApplyManifest(ctx, namespace, decoded)
 }
-

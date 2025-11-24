@@ -9,7 +9,9 @@ type ValuesInput struct {
 }
 
 type Options struct {
+	Chart       string
 	ChartPath   string
+	RealmPath   string
 	ReleaseName string
 	Namespace   string
 	Kubeconfig  string
@@ -62,4 +64,3 @@ type CIMetadata struct {
 	WorkflowURL string
 	Flow        string
 }
-
