@@ -500,7 +500,7 @@ jobs:
           GIT_ROOT="$(git rev-parse --show-toplevel)"
           deploy-camunda \
             --chart camunda/camunda-platform \
-            --scenario qa-elasticsearch \
+            --scenario keycloak-original \
             --namespace "${TEST_NAMESPACE}" \
             --release integration \
             --repo-root "${GIT_ROOT}" \
