@@ -42,6 +42,9 @@ var (
 	vaultSecretMapping   string
 	autoGenerateSecrets  bool
 	deleteNamespaceFirst bool
+	dockerUsername       string
+	dockerPassword       string
+	ensureDockerRegistry bool
 )
 
 func main() {
@@ -114,6 +117,9 @@ func main() {
 	flags.StringVar(&vaultSecretMapping, "vault-secret-mapping", "", "Vault secret mapping content")
 	flags.BoolVar(&autoGenerateSecrets, "auto-generate-secrets", false, "Auto-generate certain secrets for testing purposes")
 	flags.BoolVar(&deleteNamespaceFirst, "delete-namespace", false, "Delete the namespace first, then deploy")
+	flags.StringVar(&dockerUsername, "docker-username", "", "Docker registry username")
+	flags.StringVar(&dockerPassword, "docker-password", "", "Docker registry password")
+	flags.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", true, "Ensure Docker registry secret is created")
 
 	_ = rootCmd.MarkFlagRequired("namespace")
 	_ = rootCmd.MarkFlagRequired("release")
@@ -280,9 +286,11 @@ func run(cmd *cobra.Command, args []string) error {
 		Atomic:                 true,
 		Timeout:                15 * time.Minute,
 		ValuesFiles:            vals,
-		EnsureDockerRegistry:   true,
+		EnsureDockerRegistry:   ensureDockerRegistry,
 		SkipDependencyUpdate:   skipDependencyUpdate,
 		ExternalSecretsEnabled: externalSecrets,
+		DockerRegistryUsername: dockerUsername,
+		DockerRegistryPassword: dockerPassword,
 		Platform:               platform,
 		RepoRoot:               repoRoot,
 		Identifier:             fmt.Sprintf("%s-%s", release, time.Now().Format("20060102150405")),
