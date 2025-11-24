@@ -204,7 +204,7 @@ Authentication.
 */}}
 {{- define "camundaPlatform.authIssuerUrlWithFallback" -}}
   {{- if .Values.global.identity.auth.issuer -}}
-    {{- .Values.global.identity.auth.issuer -}}
+    {{- tpl .Values.global.identity.auth.issuer . -}}
   {{- else -}}
     {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
   {{- end -}}
@@ -214,7 +214,7 @@ Authentication.
 [camunda-platform] Auth issuer public URL which used externally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerUrl" -}}
-  {{- .Values.global.identity.auth.issuer -}}
+  {{- tpl .Values.global.identity.auth.issuer . -}}
 {{- end -}}
 
 {{/*
