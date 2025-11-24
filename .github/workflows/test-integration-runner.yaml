@@ -410,13 +410,13 @@ jobs:
       # Install
       ##########################################################################################################
 
-      - name: Cluster Setup - Configure TLS Certificates/Secrets
-        uses: ./.github/actions/cluster-setup-secrets
-        with:
-          distro-platform: ${{ inputs.distro-platform }}
-          chart-path: ${{ env.CHART_PATH }}
-          namespace: ${{ env.TEST_NAMESPACE }}
-          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
+      #- name: Cluster Setup - Configure TLS Certificates/Secrets
+        #uses: ./.github/actions/cluster-setup-secrets
+        #with:
+          #distro-platform: ${{ inputs.distro-platform }}
+          #chart-path: ${{ env.CHART_PATH }}
+          #namespace: ${{ env.TEST_NAMESPACE }}
+          #namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Install - Configure Helm with Entra Values
         if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc') && inputs.values-config == '{}'
