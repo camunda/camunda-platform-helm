@@ -21,7 +21,7 @@ validate_args() {
     exit 1
   fi
 
-  if ! kubectl get namespace "$namespace" >/dev/null 2>&1; then
+  if ! kubectl get namespace "$namespace" > /dev/null 2>&1; then
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
     exit 1
   fi
@@ -38,7 +38,7 @@ setup_env_file() {
   local is_mt="$8"
 
   export TEST_INGRESS_HOST="$hostname"
-  envsubst <"$test_suite_path"/.env.template >"$env_file"
+  envsubst < "$test_suite_path"/.env.template > "$env_file"
 
   # during helm install, we create a secret with the credentials for the services
   # that are used to test the platform. This is grabbing those credentials and
@@ -56,7 +56,7 @@ setup_env_file() {
   {
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
     echo "CLUSTER_VERSION=8"
-    echo "MINOR_VERSION=SM-8.7"
+    echo "MINOR_VERSION=SM-8.8"
     echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_USERS_0_PASSWORD)"
     echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD"
     echo "CI=${is_ci}"
@@ -64,7 +64,7 @@ setup_env_file() {
     echo "IS_OPENSEARCH=${is_opensearch}"
     echo "IS_RBA=${is_rba}"
     echo "IS_MT=${is_mt}"
-  } >>"$env_file"
+  } >> "$env_file"
 
   if $VERBOSE; then
     log "Contents of .env file:"
@@ -73,7 +73,7 @@ setup_env_file() {
 }
 
 usage() {
-  cat <<EOF
+  cat << EOF
 This script runs the integration tests for the Camunda Platform Helm chart.
 
 Usage:
@@ -118,63 +118,63 @@ check_required_cmds
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-  --absolute-chart-path)
-    ABSOLUTE_CHART_PATH="$2"
-    shift 2
-    ;;
-  --namespace)
-    NAMESPACE="$2"
-    shift 2
-    ;;
-  --show-html-report)
-    SHOW_HTML_REPORT=true
-    shift
-    ;;
-  --shard-index)
-    SHARD_INDEX="$2"
-    shift 2
-    ;;
-  --shard-total)
-    SHARD_TOTAL="$2"
-    shift 2
-    ;;
-  --test-exclude)
-    TEST_EXCLUDE="$2"
-    shift 2
-    ;;
-  --not-ci)
-    IS_CI=false
-    shift
-    ;;
-  --run-smoke-tests)
-    RUN_SMOKE_TESTS=true
-    shift
-    ;;
-  --opensearch)
-    IS_OPENSEARCH=true
-    shift
-    ;;
-  --rba)
-    IS_RBA=true
-    shift
-    ;;
-  --mt)
-    IS_MT=true
-    shift
-    ;;
-  -v | --verbose)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  *)
-    echo "Unknown option: $key"
-    usage
-    exit 1
-    ;;
+    --absolute-chart-path)
+      ABSOLUTE_CHART_PATH="$2"
+      shift 2
+      ;;
+    --namespace)
+      NAMESPACE="$2"
+      shift 2
+      ;;
+    --show-html-report)
+      SHOW_HTML_REPORT=true
+      shift
+      ;;
+    --shard-index)
+      SHARD_INDEX="$2"
+      shift 2
+      ;;
+    --shard-total)
+      SHARD_TOTAL="$2"
+      shift 2
+      ;;
+    --test-exclude)
+      TEST_EXCLUDE="$2"
+      shift 2
+      ;;
+    --not-ci)
+      IS_CI=false
+      shift
+      ;;
+    --run-smoke-tests)
+      RUN_SMOKE_TESTS=true
+      shift
+      ;;
+    --opensearch)
+      IS_OPENSEARCH=true
+      shift
+      ;;
+    --rba)
+      IS_RBA=true
+      shift
+      ;;
+    --mt)
+      IS_MT=true
+      shift
+      ;;
+    -v | --verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $key"
+      usage
+      exit 1
+      ;;
   esac
 done
 

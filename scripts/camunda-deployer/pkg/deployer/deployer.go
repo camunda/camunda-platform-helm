@@ -38,7 +38,7 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if o.LoadKeycloakRealm && strings.TrimSpace(o.KeycloakRealmName) != "" {
-		if err := loadKeycloakRealmConfigMap(ctx, kubeClient, o.ChartPath, o.KeycloakRealmName, o.Namespace); err != nil {
+		if err := loadKeycloakRealmConfigMap(ctx, kubeClient, o.RealmPath, o.KeycloakRealmName, o.Namespace); err != nil {
 			return fmt.Errorf("failed to load Keycloak realm: %w", err)
 		}
 	}
@@ -48,7 +48,7 @@ func Deploy(ctx context.Context, o types.Options) error {
 			return err
 		}
 	}
-	
+
 	if o.ExternalSecretsEnabled {
 		if err := kube.ApplyExternalSecretsAndCerts(ctx, o.Kubeconfig, o.KubeContext, o.Platform, o.RepoRoot, o.ChartPath, o.Namespace, o.NamespacePrefix); err != nil {
 			return err

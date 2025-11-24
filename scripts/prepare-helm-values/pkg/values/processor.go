@@ -6,20 +6,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
-
-	"gopkg.in/yaml.v3"
-
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/placeholders"
+	"sort"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Options struct {
 	ChartPath    string
 	Scenario     string
+	ScenarioDir  string
 	ValuesConfig string
 	LicenseKey   string
 	Output       string
@@ -48,27 +48,25 @@ func writeFile(path, content string) error {
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 
-func ensureMap(m map[string]interface{}, k string) map[string]interface{} {
+func ensureMap(m map[string]any, k string) map[string]any {
 	if v, ok := m[k]; ok {
-		if mm, ok := v.(map[string]interface{}); ok {
+		if mm, ok := v.(map[string]any); ok {
 			return mm
 		}
 	}
-	mm := map[string]interface{}{}
+	mm := map[string]any{}
 	m[k] = mm
 	return mm
 }
 
 // ResolveValuesFile determines the source values file from options.
 func ResolveValuesFile(opts Options) (string, error) {
-	logging.Logger.Debug().Str("chart-path", opts.ChartPath).Str("scenario", opts.Scenario).Msg("Resolving scenario path")
-	
-	sourceValuesFile, err := scenarios.ResolvePath(opts.ChartPath, opts.Scenario)
+	sourceValuesFile, err := scenarios.ResolvePath(opts.ScenarioDir, opts.Scenario)
 	if err != nil {
 		logging.Logger.Debug().Err(err).Msg("Values file not found")
 		return "", err
 	}
-	
+
 	logging.Logger.Debug().Str("values-file", sourceValuesFile).Msg("Found values file")
 	return sourceValuesFile, nil
 }
@@ -100,12 +98,12 @@ func computeOutputPath(sourceValuesFile string, opts Options) (string, error) {
 // returning the output path and final content as a string.
 func Process(valuesFile string, opts Options) (string, string, error) {
 	logging.Logger.Debug().Str("values-file", valuesFile).Msg("Starting values processing for")
-	
+
 	// Build overlay env from JSON config (stringified)
 	configEnv := map[string]string{}
 	if opts.ValuesConfig != "" && opts.ValuesConfig != "{}" {
 		logging.Logger.Debug().Msg("Parsing values-config JSON")
-		var m map[string]interface{}
+		var m map[string]any
 		if err := json.Unmarshal([]byte(opts.ValuesConfig), &m); err != nil {
 			logging.Logger.Debug().Err(err).Msg("Failed to parse values-config")
 			return "", "", err
@@ -128,7 +126,7 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 	logging.Logger.Debug().Msg("Scanning for placeholders in values file")
 	ph := placeholders.Find(content)
 	logging.Logger.Debug().Int("count", len(ph)).Msg("Found unique placeholders to substitute")
-	
+
 	var missing []string
 	getVal := func(name string) (string, bool) {
 		if v, ok := configEnv[name]; ok {
@@ -203,7 +201,7 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 	// Optional license injection performed in-memory on substituted content
 	if opts.LicenseKey != "" {
 		logging.Logger.Debug().Msg("Injecting license key into global.license.key")
-		var doc map[string]interface{}
+		var doc map[string]any
 		if err := yaml.Unmarshal([]byte(content), &doc); err != nil {
 			logging.Logger.Debug().Err(err).Msg("Failed to unmarshal YAML for license injection")
 			return "", "", err
@@ -248,5 +246,3 @@ func IsMissingEnv(err error) (bool, []string) {
 	}
 	return false, nil
 }
-
-

@@ -11,12 +11,22 @@ import (
 
 // upgradeInstall builds and executes helm upgrade --install with deployer's opinionated policies
 func upgradeInstall(ctx context.Context, o types.Options) error {
-	args := []string{
+	var args []string
+	if o.Chart != "" {
+	args = []string{
+		"upgrade", "--install",
+		o.ReleaseName,
+		o.Chart,
+		"-n", o.Namespace,
+	}
+	} else {
+	args = []string{
 		"upgrade", "--install",
 		o.ReleaseName,
 		filepath.Clean(o.ChartPath),
 		"-n", o.Namespace,
 	}
+}
 
 	// Deployer policy: always create namespace
 	args = append(args, "--create-namespace")
