@@ -393,18 +393,18 @@ jobs:
         #run: |
           #kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
 
-      - name: Cluster Setup - Install docker registry on cluster
-        run: |
-          kubectl create secret docker-registry registry-camunda-cloud \
-          --namespace $TEST_NAMESPACE \
-          --docker-server "registry.camunda.cloud" \
-          --docker-username $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD \
-          --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
-
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
-        env:
-          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
-          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
+      #- name: Cluster Setup - Install docker registry on cluster
+        #run: |
+          #kubectl create secret docker-registry registry-camunda-cloud \
+          #--namespace $TEST_NAMESPACE \
+          #--docker-server "registry.camunda.cloud" \
+          #--docker-username $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD \
+          #--docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
+#
+          #task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
+        #env:
+          #TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
+          #TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
 
       ##########################################################################################################
       # Install
@@ -505,6 +505,9 @@ jobs:
             --repo-root "${GIT_ROOT}" \
             --log-level debug \
             --auto-generate-secrets \
+            --ensure-docker-registry \
+            --docker-username ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }} \
+            --docker-password ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }} \
             --delete-namespace \
             --scenario-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup" \
             --realm-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration"

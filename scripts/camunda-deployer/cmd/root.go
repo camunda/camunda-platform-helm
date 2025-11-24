@@ -26,6 +26,8 @@ var (
 	release                string
 	namespace              string
 	scenarioDir            string
+	dockerUsername         string
+	dockerPassword         string
 	ingressHost            string
 	wait                   bool
 	atomic                 bool
@@ -104,6 +106,8 @@ Examples:
 			SkipDependencyUpdate:   skipDependencyUpdate,
 			ApplyIntegrationCreds:  applyIntegrationCreds,
 			ExternalSecretsEnabled: externalSecretsEnabled,
+			DockerRegistryUsername: dockerUsername,
+			DockerRegistryPassword: dockerPassword,
 			Platform:               platform,
 			NamespacePrefix:        namespacePrefix,
 			RepoRoot:               repoRoot,
@@ -167,6 +171,8 @@ func init() {
 	rootCmd.Flags().BoolVar(&skipDockerLogin, "skip-docker-login", false, "skip Docker login (useful when already authenticated)")
 	rootCmd.Flags().BoolVar(&skipDependencyUpdate, "skip-dependency-update", true, "skip Helm dependency update (useful when deps already updated)")
 	rootCmd.Flags().BoolVar(&applyIntegrationCreds, "apply-integration-creds", true, "apply integration test credentials if present")
+	rootCmd.Flags().StringVar(&dockerUsername, "docker-username", "", "Docker registry username (defaults to TEST_DOCKER_USERNAME_CAMUNDA_CLOUD or NEXUS_USERNAME)")
+	rootCmd.Flags().StringVar(&dockerPassword, "docker-password", "", "Docker registry password (defaults to TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD or NEXUS_PASSWORD)")
 	rootCmd.Flags().BoolVar(&externalSecretsEnabled, "external-secrets-enabled", true, "enable external secrets configuration")
 	rootCmd.Flags().StringVar(&ttl, "ttl", "1h", "time-to-live label for namespace cleanup (e.g., 1h, 12h, 24h)")
 

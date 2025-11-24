@@ -7,6 +7,7 @@ import (
 	"scripts/camunda-core/pkg/docker"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
+	"scripts/camunda-core/pkg/utils"
 	"scripts/camunda-deployer/pkg/types"
 	"strings"
 )
@@ -44,7 +45,16 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if o.EnsureDockerRegistry {
-		if err := kubeClient.EnsureDockerRegistrySecret(ctx, o.Namespace, o.DockerRegistryUsername, o.DockerRegistryPassword); err != nil {
+		// Resolve registry credentials from flags or environment fallbacks
+		username := o.DockerRegistryUsername
+		password := o.DockerRegistryPassword
+		if username == "" {
+			username = utils.FirstNonEmpty(os.Getenv("TEST_DOCKER_USERNAME_CAMUNDA_CLOUD"), os.Getenv("NEXUS_USERNAME"))
+		}
+		if password == "" {
+			password = utils.FirstNonEmpty(os.Getenv("TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"), os.Getenv("NEXUS_PASSWORD"))
+		}
+		if err := kubeClient.EnsureDockerRegistrySecret(ctx, o.Namespace, username, password); err != nil {
 			return err
 		}
 	}
