@@ -485,6 +485,8 @@ jobs:
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
           TEST_CASE: "${{ inputs.test-case }}"
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
@@ -507,11 +509,21 @@ jobs:
             --log-level debug \
             --auto-generate-secrets \
             --ensure-docker-registry \
-            --docker-username ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }} \
-            --docker-password ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }} \
+            --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+            --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" \
             --delete-namespace \
             --scenario-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup" \
             --realm-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration"
+
+
+        #run: |
+          #kubectl create secret docker-registry registry-camunda-cloud \
+          #--namespace $TEST_NAMESPACE \
+          #--docker-server "registry.camunda.cloud" \
+          #--docker-username $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD \
+          #--docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
+#
+          #task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
           #task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
       - name: Helm - Execute after install lifecycle tasks
