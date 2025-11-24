@@ -367,31 +367,31 @@ jobs:
           env: ${{ steps.vars.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
-      - name: Cluster Setup - Configure the namespace
-        run: |
-          echo $TEST_NAMESPACE
-          kubectl delete ns --ignore-not-found=true $TEST_NAMESPACE
-          kubectl create ns $TEST_NAMESPACE
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
-          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
-          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-          kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
-          kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }}
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }}
-          kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
-          kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
-            echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
-            kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
-          fi
-          kubectl describe ns $TEST_NAMESPACE
+      #- name: Cluster Setup - Configure the namespace
+        #run: |
+          #echo $TEST_NAMESPACE
+          #kubectl delete ns --ignore-not-found=true $TEST_NAMESPACE
+          #kubectl create ns $TEST_NAMESPACE
+          #kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
+          #kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
+          #kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+          #kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+          #kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
+          #kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
+          #kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }}
+          #kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }}
+          #kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
+          #kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          #if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
+            #echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
+            #kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
+          #fi
+          #kubectl describe ns $TEST_NAMESPACE
 
-      - name: Apply Vault mapped Secret
-        if: inputs.vault-secret-mapping != ''
-        run: |
-          kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
+      #- name: Apply Vault mapped Secret
+        #if: inputs.vault-secret-mapping != ''
+        #run: |
+          #kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
 
       - name: Cluster Setup - Install docker registry on cluster
         run: |
@@ -464,24 +464,23 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
-      - name: Helm – prepare values from values-config
-        shell: bash
-        env:
-          VALS_CONFIG: ${{ inputs.values-config }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-        run: |
-          ./scripts/prepare-helm-values.sh \
-            --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
-            --scenario "${{ inputs.scenario }}" \
-            --values-config '${{ inputs.values-config }}' \
-            --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --log-level debug \
-            --interactive false
+      #- name: Helm – prepare values from values-config
+        #shell: bash
+        #env:
+          #VALS_CONFIG: ${{ inputs.values-config }}
+          #TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+        #run: |
+          #./scripts/prepare-helm-values.sh \
+            #--chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
+            #--scenario "${{ inputs.scenario }}" \
+            #--values-config '${{ inputs.values-config }}' \
+            #--license-key "${E2E_TESTS_LICENSE_KEY}" \
+            #--verbose
 
-      - name: Helm - Load keycloak realm json into the namespace
-        shell: bash
-        run: |
-          ./scripts/load-keycloak-configmap.sh "${{ env.CHART_PATH }}" "${{ env.KEYCLOAK_REALM }}" "${{ env.TEST_NAMESPACE }}"
+      #- name: Helm - Load keycloak realm json into the namespace
+        #shell: bash
+        #run: |
+          #./scripts/load-keycloak-configmap.sh "${{ env.CHART_PATH }}" "${{ env.KEYCLOAK_REALM }}" "${{ env.TEST_NAMESPACE }}"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -495,7 +494,21 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
         run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
+          make install.dx-tooling
+          # Dynamically determine the git root
+          GIT_ROOT="$(git rev-parse --show-toplevel)"
+          deploy-camunda \
+            --chart camunda/camunda-platform \
+            --scenario qa-elasticsearch \
+            --namespace "${TEST_NAMESPACE}" \
+            --release integration \
+            --repo-root "${GIT_ROOT}" \
+            --log-level debug \
+            --auto-generate-secrets \
+            --delete-namespace \
+            --scenario-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup" \
+            --realm-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration"
+          #task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
       - name: Helm - Execute after install lifecycle tasks
         timeout-minutes: 5
