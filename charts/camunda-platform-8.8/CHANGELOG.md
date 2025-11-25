@@ -1,5 +1,17 @@
 # Changelog
 
+## [13.2.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.2.0...camunda-platform-8.8-13.2.1) (2025-11-25)
+
+
+### Bug Fixes
+
+* remove conditional rendering from management identity configmap ([#4771](https://github.com/camunda/camunda-platform-helm/issues/4771)) ([0dff2df](https://github.com/camunda/camunda-platform-helm/commit/0dff2df28c565b7d75722cd87c18a1dd82433a01))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#4777](https://github.com/camunda/camunda-platform-helm/issues/4777)) ([18de26f](https://github.com/camunda/camunda-platform-helm/commit/18de26fe264049929c2edddb8e9aa04f3c213b94))
+
 ## [13.2.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.1.2...camunda-platform-8.8-13.2.0) (2025-11-21)
 
 
