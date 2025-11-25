@@ -219,11 +219,6 @@ spec:
               mountPath: /app/config/{{ $key }}
               subPath: {{ $key }}
           {{- end }}
-          {{- if and .Values.identity.realm (hasKey .Values.identity.realm "json") (and .Values.identity.realm.enabled .Values.identity.realm.json.enabled) }}
-            - name: keycloak-realm-json
-              mountPath: {{ .Values.identity.realm.json.mountPath }}
-              readOnly: true
-          {{- end }}
           {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
@@ -250,11 +245,6 @@ spec:
         - name: config
           configMap:
             name: {{ include "identity.fullname" . }}-configuration
-        {{- if and .Values.identity.realm (hasKey .Values.identity.realm "json") (and .Values.identity.realm.enabled .Values.identity.realm.json.enabled) }}
-        - name: keycloak-realm-json
-          configMap:
-            name: {{ .Values.identity.realm.json.configMapName }}
-        {{- end }}
         {{- if .Values.global.documentStore.type.gcp.enabled }}
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"
