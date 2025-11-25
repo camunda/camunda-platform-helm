@@ -221,6 +221,88 @@ func (s *WebappDeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
+		}, {
+			Name: "TestPusherSecretUsesDefaultSecret",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// Find the PUSHER_SECRET environment variable
+				var pusherSecretEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "PUSHER_SECRET" {
+						pusherSecretEnv = &env
+						break
+					}
+				}
+
+				// Verify the secret reference
+				s.Require().NotNil(pusherSecretEnv, "PUSHER_SECRET env var should exist")
+				s.Require().NotNil(pusherSecretEnv.ValueFrom, "PUSHER_SECRET should use valueFrom")
+				s.Require().NotNil(pusherSecretEnv.ValueFrom.SecretKeyRef, "PUSHER_SECRET should use secretKeyRef")
+				s.Require().Equal("camunda-platform-test-web-modeler", pusherSecretEnv.ValueFrom.SecretKeyRef.Name)
+				s.Require().Equal("pusher-app-secret", pusherSecretEnv.ValueFrom.SecretKeyRef.Key)
+			},
+		}, {
+			Name: "TestPusherSecretUsesExistingSecret",
+			Values: map[string]string{
+				"identity.enabled":                                    "true",
+				"webModeler.enabled":                                  "true",
+				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":     "my-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":  "my-pusher-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// Find the PUSHER_SECRET environment variable
+				var pusherSecretEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "PUSHER_SECRET" {
+						pusherSecretEnv = &env
+						break
+					}
+				}
+
+				// Verify the custom secret reference
+				s.Require().NotNil(pusherSecretEnv, "PUSHER_SECRET env var should exist")
+				s.Require().NotNil(pusherSecretEnv.ValueFrom, "PUSHER_SECRET should use valueFrom")
+				s.Require().NotNil(pusherSecretEnv.ValueFrom.SecretKeyRef, "PUSHER_SECRET should use secretKeyRef")
+				s.Require().Equal("my-custom-secret", pusherSecretEnv.ValueFrom.SecretKeyRef.Name)
+				s.Require().Equal("my-pusher-key", pusherSecretEnv.ValueFrom.SecretKeyRef.Key)
+			},
+		}, {
+			Name: "TestPusherSecretUsesInlineSecret",
+			Values: map[string]string{
+				"identity.enabled":                               "true",
+				"webModeler.enabled":                             "true",
+				"webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"webModeler.restapi.pusher.secret.inlineSecret":  "my-inline-secret-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// Find the PUSHER_SECRET environment variable
+				var pusherSecretEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "PUSHER_SECRET" {
+						pusherSecretEnv = &env
+						break
+					}
+				}
+
+				// Verify the inline value
+				s.Require().NotNil(pusherSecretEnv, "PUSHER_SECRET env var should exist")
+				s.Require().Equal("my-inline-secret-value", pusherSecretEnv.Value)
+				s.Require().Nil(pusherSecretEnv.ValueFrom, "PUSHER_SECRET should not use valueFrom for inline values")
+			},
 		},
 	}
 

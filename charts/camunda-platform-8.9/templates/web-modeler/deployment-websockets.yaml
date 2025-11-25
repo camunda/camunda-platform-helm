@@ -51,11 +51,12 @@ spec:
                 configMapKeyRef:
                   name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-key
-            - name: PUSHER_APP_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "webModeler.fullname" . }}
-                  key: pusher-app-secret
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "PUSHER_APP_SECRET"
+                "config" .Values.webModeler.restapi.pusher
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
+            ) | nindent 12 }}
             {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
             - name: PUSHER_APP_PATH
               value: {{ include "webModeler.websocketContextPath" . | quote }}
