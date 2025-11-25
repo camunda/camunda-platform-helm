@@ -14,10 +14,13 @@ import (
 	"scripts/camunda-deployer/pkg/types"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
+	"strings"
 	"time"
 	"vault-secret-mapper/pkg/mapper"
 
+	"github.com/jwalton/gchalk"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -161,37 +164,53 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Log flags for easier debugging (sensitive values are masked)
-	vaultMappingStatus := "not-provided"
-	if vaultSecretMapping != "" {
-		vaultMappingStatus = "provided"
+	// Log flags as a colored, multi-line list (sensitive values are masked).
+	// Iterate over the Cobra flag set to avoid duplication and keep logs in sync with flags.
+	styleKey := func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
+	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
+	stylePwd := func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
+	styleBool := func(s string) string {
+		if strings.EqualFold(s, "true") || s == "1" {
+			return logging.Emphasize("true", gchalk.Green)
+		}
+		return logging.Emphasize("false", gchalk.Red)
 	}
-	logging.Logger.Info().
-		Str("chartPath", chartPath).
-		Str("chart", chart).
-		Str("namespace", namespace).
-		Str("release", release).
-		Str("scenario", scenario).
-		Str("scenarioPath", scenarioPath).
-		Str("realmPath", realmPath).
-		Str("auth", auth).
-		Str("platform", platform).
-		Str("logLevel", logLevel).
-		Bool("skipDependencyUpdate", skipDependencyUpdate).
-		Bool("externalSecrets", externalSecrets).
-		Str("keycloakHost", keycloakHost).
-		Str("keycloakProtocol", keycloakProtocol).
-		Str("repoRoot", repoRoot).
-		Str("flow", flow).
-		Str("envFile", envFile).
-		Bool("interactive", interactive).
-		Bool("autoGenerateSecrets", autoGenerateSecrets).
-		Bool("deleteNamespaceFirst", deleteNamespaceFirst).
-		Bool("ensureDockerRegistry", ensureDockerRegistry).
-		Str("dockerUsername", dockerUsername).
-		Str("dockerPassword", maskIfSet(dockerPassword)).
-		Str("vaultSecretMapping", vaultMappingStatus).
-		Msg("Starting deployment with flags")
+	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+
+	var b strings.Builder
+	b.WriteString(styleHead("Starting deployment with flags:"))
+	b.WriteString("\n")
+
+	printFlag := func(f *pflag.Flag) {
+		name := f.Name // actual CLI flag name
+		val := f.Value.String()
+		typ := f.Value.Type()
+
+		// Sensitive handling
+		switch name {
+		case "docker-password":
+			val = stylePwd(maskIfSet(val))
+		case "vault-secret-mapping":
+			if strings.TrimSpace(val) != "" {
+				val = styleVal("provided")
+			} else {
+				val = styleVal("not-provided")
+			}
+		default:
+			if typ == "bool" {
+				val = styleBool(val)
+			} else {
+				val = styleVal(val)
+			}
+		}
+		fmt.Fprintf(&b, "  - %s: %s\n", styleKey(name), val)
+	}
+
+	// Visit all flags on the current command (sorted and without duplication)
+	if cmd != nil && cmd.Flags() != nil {
+		cmd.Flags().VisitAll(printFlag)
+	}
+	logging.Logger.Info().Msg(b.String())
 
 	// Identifiers
 	suffix := generateRandomSuffix()
