@@ -103,6 +103,107 @@ entries:
     version: 14.0.0-alpha1
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "Define custom clients for management identity"
+        - kind: added
+          description: "Backport custom client creation to 8.6 and 8.9"
+        - kind: added
+          description: "Define custom users through values.yaml"
+        - kind: fixed
+          description: "Typo in webModeler pvc"
+        - kind: fixed
+          description: "Connectors prefix should not be present if connectors is disabled"
+        - kind: fixed
+          description: "Incorrect example for keycloak in readme.md"
+        - kind: fixed
+          description: "Orchestration migration configurable init container image"
+        - kind: fixed
+          description: "ExtraVolumeClaimTemplateTemplate indent for orchestration cluster"
+        - kind: fixed
+          description: "Remove client env vars from qa scenario files"
+        - kind: fixed
+          description: "Typo lower case values"
+        - kind: fixed
+          description: "Allow for custom jks in migration-data job"
+        - kind: fixed
+          description: "Remove leftover console secret constraints"
+        - kind: fixed
+          description: "8.8 values-latest.yaml no longer references SNAPSHOT images"
+        - kind: fixed
+          description: "Setting zeebe image tag shouldnt disable broker profile"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.19.2
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2025-11-25T12:51:45.649421096Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 2b05700b86421c7467a4752430630a4a227a3026e50017f4341759a4d21e3318
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.2.0/camunda-platform-13.2.0.tgz
+    version: 13.2.0
+  - annotations:
+      artifacthub.io/changes: |
         - kind: fixed
           description: "`optmimize.persistence.enabled` crashes optimize"
         - kind: fixed
@@ -22882,4 +22983,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-11-20T21:20:21.149095786Z"
+generated: "2025-11-25T12:51:45.650121485Z"
