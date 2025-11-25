@@ -38,6 +38,21 @@ func Setup(opts Options) error {
 		level = zerolog.InfoLevel
 	}
 	ColorEnabled = opts.ColorEnabled && !opts.UseJSON
+	// Respect standard color env vars and CI environments (e.g., GitHub Actions supports ANSI colors).
+	if !opts.UseJSON {
+		// Highest precedence: NO_COLOR disables color
+		if _, ok := os.LookupEnv("NO_COLOR"); ok {
+			ColorEnabled = false
+		}
+		// FORCE_COLOR enables color even when stdout is not a TTY
+		if v, ok := os.LookupEnv("FORCE_COLOR"); ok && strings.TrimSpace(strings.ToLower(v)) != "0" && strings.TrimSpace(strings.ToLower(v)) != "false" {
+			ColorEnabled = true
+		}
+		// Common CI envs that support ANSI colors (GitHub Actions, generic CI)
+		if os.Getenv("GITHUB_ACTIONS") == "true" || os.Getenv("CI") == "true" {
+			ColorEnabled = true
+		}
+	}
 
 	var w io.Writer = os.Stdout
 	if opts.UseJSON {
