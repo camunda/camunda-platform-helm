@@ -43,7 +43,6 @@ data:
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
       {{- end }}
       component-presets:
-      {{- if .Values.connectors.enabled }}
         connectors:
           applications:
             - name: Connectors
@@ -53,8 +52,6 @@ data:
               permissions:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: read:*
-        {{- end }} 
-        {{- if .Values.console.enabled }}
         console:
           applications:
             - name: "Console"
@@ -75,7 +72,6 @@ data:
               permissions:
                 - audience: {{ include "console.authAudience" . | quote }}
                   definition: write:*
-        {{- end }}
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -95,7 +91,6 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if .Values.optimize.enabled }}
         optimize:
           applications:
             - name: Optimize
@@ -119,7 +114,6 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
-        {{- end }}
         orchestration:
           applications:
             - name: Orchestration
@@ -149,7 +143,6 @@ data:
                   definition: read:*
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
-        {{- if .Values.webModeler.enabled }}
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -194,7 +187,6 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
-        {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -206,20 +198,14 @@ data:
       init:
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
-        {{- if .Values.console.enabled }}
         console:
           root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
-        {{- end }}
-        {{- if .Values.optimize.enabled }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
-        {{- end }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-        {{- if .Values.webModeler.enabled }}
         webmodeler:
           root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-        {{- end }}
       clients:
       {{- if .Values.global.identity.auth.admin.enabled }}
         - id: {{ .Values.global.identity.auth.admin.clientId }}
