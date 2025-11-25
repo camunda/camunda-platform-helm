@@ -143,6 +143,15 @@ func generateRandomSuffix() string {
 	return string(result)
 }
 
+// maskIfSet returns a masked placeholder when a sensitive value is set.
+// This prevents leaking secrets while still indicating that a value exists.
+func maskIfSet(val string) string {
+	if val == "" {
+		return ""
+	}
+	return "***"
+}
+
 func run(cmd *cobra.Command, args []string) error {
 	// Setup logging
 	if err := logging.Setup(logging.Options{
@@ -151,6 +160,38 @@ func run(cmd *cobra.Command, args []string) error {
 	}); err != nil {
 		return err
 	}
+
+	// Log flags for easier debugging (sensitive values are masked)
+	vaultMappingStatus := "not-provided"
+	if vaultSecretMapping != "" {
+		vaultMappingStatus = "provided"
+	}
+	logging.Logger.Info().
+		Str("chartPath", chartPath).
+		Str("chart", chart).
+		Str("namespace", namespace).
+		Str("release", release).
+		Str("scenario", scenario).
+		Str("scenarioPath", scenarioPath).
+		Str("realmPath", realmPath).
+		Str("auth", auth).
+		Str("platform", platform).
+		Str("logLevel", logLevel).
+		Bool("skipDependencyUpdate", skipDependencyUpdate).
+		Bool("externalSecrets", externalSecrets).
+		Str("keycloakHost", keycloakHost).
+		Str("keycloakProtocol", keycloakProtocol).
+		Str("repoRoot", repoRoot).
+		Str("flow", flow).
+		Str("envFile", envFile).
+		Bool("interactive", interactive).
+		Bool("autoGenerateSecrets", autoGenerateSecrets).
+		Bool("deleteNamespaceFirst", deleteNamespaceFirst).
+		Bool("ensureDockerRegistry", ensureDockerRegistry).
+		Str("dockerUsername", dockerUsername).
+		Str("dockerPassword", maskIfSet(dockerPassword)).
+		Str("vaultSecretMapping", vaultMappingStatus).
+		Msg("Starting deployment with flags")
 
 	// Identifiers
 	suffix := generateRandomSuffix()
