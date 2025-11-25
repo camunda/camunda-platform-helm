@@ -508,7 +508,6 @@ jobs:
             --repo-root "${GIT_ROOT}" \
             --log-level debug \
             --auto-generate-secrets \
-            #--ensure-docker-registry \
             --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
             --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" \
             --delete-namespace \
