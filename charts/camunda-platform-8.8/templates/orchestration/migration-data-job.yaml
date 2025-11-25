@@ -73,6 +73,9 @@ spec:
               mountPath: /usr/local/camunda/certificates/externaldb.jks
               subPath: externaldb.jks
             {{- end }}
+            {{- if .Values.orchestration.migration.data.extraVolumeMounts }}
+            {{ .Values.orchestration.migration.data.extraVolumeMounts | toYaml | nindent 8 }}
+            {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYamlPretty . | nindent 8 }}
@@ -101,5 +104,8 @@ spec:
           secret:
             secretName: {{ .Values.global.opensearch.tls.existingSecret }}
             optional: false
+        {{- end }}
+        {{- if .Values.orchestration.migration.data.extraVolumes }}
+        {{ .Values.orchestration.migration.data.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
 {{- end }}
