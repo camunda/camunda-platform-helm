@@ -13,6 +13,11 @@ import (
 )
 
 func Deploy(ctx context.Context, o types.Options) error {
+	// Render-only mode: do not touch the cluster or docker; just render templates
+	if o.RenderTemplates {
+		return renderTemplates(ctx, o)
+	}
+
 	if !o.SkipDockerLogin && o.EnsureDockerRegistry {
 		if err := docker.EnsureDockerLogin(ctx, o.DockerRegistryUsername, o.DockerRegistryPassword); err != nil {
 			return fmt.Errorf("failed to ensure docker login: %w", err)

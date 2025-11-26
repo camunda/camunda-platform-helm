@@ -54,6 +54,11 @@ type Options struct {
 	LoadKeycloakRealm bool
 	KeycloakRealmName string
 	VaultSecretPath   string
+
+	// Template rendering (no cluster changes)
+	RenderTemplates bool
+	RenderOutputDir string
+	IncludeCRDs     bool
 }
 
 type CIMetadata struct {

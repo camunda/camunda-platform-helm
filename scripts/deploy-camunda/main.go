@@ -48,6 +48,9 @@ var (
 	dockerUsername       string
 	dockerPassword       string
 	ensureDockerRegistry bool
+	renderTemplates      bool
+	renderOutputDir      string
+	extraValues          []string
 )
 
 func main() {
@@ -123,6 +126,9 @@ func main() {
 	flags.StringVar(&dockerUsername, "docker-username", "", "Docker registry username")
 	flags.StringVar(&dockerPassword, "docker-password", "", "Docker registry password")
 	flags.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", false, "Ensure Docker registry secret is created")
+	flags.BoolVar(&renderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
+	flags.StringVar(&renderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
+	flags.StringSliceVar(&extraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
 
 	_ = rootCmd.MarkFlagRequired("namespace")
 	_ = rootCmd.MarkFlagRequired("release")
@@ -330,7 +336,7 @@ func run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to delete namespace %q: %w", namespace, err)
 		}
 	}
-	vals, err := deployer.BuildValuesList(tempDir, []string{scenario}, auth, false, false, nil)
+	vals, err := deployer.BuildValuesList(tempDir, []string{scenario}, auth, false, false, extraValues)
 	if err != nil {
 		return err
 	}
@@ -357,6 +363,9 @@ func run(cmd *cobra.Command, args []string) error {
 		TTL:                    "30m",
 		LoadKeycloakRealm:      true,
 		KeycloakRealmName:      realmName,
+		RenderTemplates:        renderTemplates,
+		RenderOutputDir:        renderOutputDir,
+		IncludeCRDs:            true,
 		CIMetadata: types.CIMetadata{
 			Flow: flow,
 		},

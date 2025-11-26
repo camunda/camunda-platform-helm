@@ -26,6 +26,9 @@ var (
 	release                string
 	namespace              string
 	scenarioDir            string
+	renderTemplates        bool
+	renderOutputDir        string
+	noIncludeCRDs          bool
 	dockerUsername         string
 	dockerPassword         string
 	ingressHost            string
@@ -96,6 +99,9 @@ Examples:
 			Namespace:              namespace,
 			Kubeconfig:             kubeconfig,
 			KubeContext:            kubeContext,
+			RenderTemplates:        renderTemplates,
+			RenderOutputDir:        renderOutputDir,
+			IncludeCRDs:            !noIncludeCRDs,
 			Wait:                   wait,
 			Atomic:                 atomic,
 			Timeout:                timeout,
@@ -153,6 +159,11 @@ func init() {
 	rootCmd.Flags().BoolVar(&wait, "wait", true, "wait for resources to be ready")
 	rootCmd.Flags().BoolVar(&atomic, "atomic", true, "rollback on failure")
 	rootCmd.Flags().DurationVar(&timeout, "timeout", 15*time.Minute, "Helm operation timeout")
+
+	// Render-only behavior
+	rootCmd.Flags().BoolVar(&renderTemplates, "render-templates", false, "render manifests to a directory instead of installing")
+	rootCmd.Flags().StringVar(&renderOutputDir, "render-output-dir", "", "output directory for rendered manifests (defaults to ./rendered/<release>)")
+	rootCmd.Flags().BoolVar(&noIncludeCRDs, "no-include-crds", false, "do not include CRDs in rendered output (by default CRDs are included)")
 
 	// Platform-specific flags
 	rootCmd.Flags().StringVar(&platform, "platform", "", "target platform for external secrets: gke, rosa, or eks")
