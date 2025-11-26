@@ -475,7 +475,8 @@ jobs:
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --verbose
+            --log-level debug \
+            --interactive false
 
       - name: Helm - Load keycloak realm json into the namespace
         shell: bash
@@ -715,7 +716,8 @@ jobs:
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --verbose
+            --log-level debug \
+            --interactive false
 
       - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets

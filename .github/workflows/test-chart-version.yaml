@@ -11,6 +11,7 @@ on:
       - ".github/workflows/test-chart-version-template.yaml"
       - ".github/workflows/test-chart-version.yaml"
       - ".github/config/external-secret/**"
+      - "scripts/**"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
   workflow_dispatch:
