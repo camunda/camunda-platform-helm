@@ -876,6 +876,100 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		},
+		// Hybrid Auth Tests - verify OIDC client secrets are only included for components using OIDC auth
+		{
+			Name:                 "TestBasicAuthExcludesOidcSecrets",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                       "true",
+				"global.identity.auth.enabled":           "true",
+				"global.security.authentication.method":  "basic",
+				"connectors.enabled":                     "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then - verify both OIDC secrets are NOT present when using global basic auth
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				for _, envVar := range env {
+					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET", envVar.Name,
+						"VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET should not be present when using basic auth")
+					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET", envVar.Name,
+						"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should not be present when using basic auth")
+				}
+			},
+		}, {
+			Name:                 "TestGlobalOidcAuthIncludesBothOidcSecrets",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"connectors.enabled":                                             "true",
+				"connectors.security.authentication.oidc.existingSecret.name":    "connectors-oidc-secret",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then - verify both OIDC secrets ARE present when using global OIDC auth
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "connectors-oidc-secret"},
+								Key:                  "identity-connectors-client-token",
+							},
+						},
+					})
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "orchestration-oidc-secret"},
+								Key:                  "identity-orchestration-client-token",
+							},
+						},
+					})
+			},
+		}, {
+			Name:                 "TestHybridAuthConnectorsBasicOrchestrationOidc",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"connectors.security.authentication.method":                      "basic",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+				"connectors.enabled":                                             "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then - verify only orchestration OIDC secret is present, not connectors
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				for _, envVar := range env {
+					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET", envVar.Name,
+						"VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET should not be present when connectors use basic auth")
+				}
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "orchestration-oidc-secret"},
+								Key:                  "identity-orchestration-client-token",
+							},
+						},
+					})
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
