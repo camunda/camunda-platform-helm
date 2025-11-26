@@ -54,6 +54,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                              "true",
 				"global.identity.auth.enabled":                                  "true",
+				"global.security.authentication.method":                         "oidc",
 				"connectors.security.authentication.oidc.existingSecret.name":           "foo",
 				"orchestration.security.authentication.oidc.existingSecret":     "",
 				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
@@ -68,6 +69,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                                   "true",
 				"global.identity.auth.enabled":                                       "true",
+				"global.security.authentication.method":                              "oidc",
 				"orchestration.security.authentication.oidc.existingSecret.name":    "bar",
 				"global.identity.auth.issuerBackendUrl":                              "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet":               "error",
@@ -81,6 +83,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
 			Values: map[string]string{
 				"identity.enabled":                                                "true",
+				"global.security.authentication.method":                           "oidc",
 				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
 				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
 				"global.identity.auth.issuerBackendUrl":                           "http://keycloak:80/auth/realms/camunda-platform",
