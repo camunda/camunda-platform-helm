@@ -46,8 +46,7 @@ spec:
             ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
+            {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "orchestration" ) | nindent 12 }}
             {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
