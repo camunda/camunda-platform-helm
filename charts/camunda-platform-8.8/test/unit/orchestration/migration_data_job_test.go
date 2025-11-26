@@ -69,8 +69,10 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 				for _, env := range containers[0].Env {
 					if env.Name == "JAVA_TOOL_OPTIONS" {
 						found = true
-						s.Require().Equal("-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks", env.Value)
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+						s.Require().NotContains(env.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 					}
+					s.Require().NotEqual("TRUSTSTORE_PASSWORD", env.Name, "TRUSTSTORE_PASSWORD should not be set when JKS is not configured")
 				}
 				s.Require().True(found, "JAVA_TOOL_OPTIONS env var should be set")
 
@@ -118,8 +120,10 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 				for _, env := range containers[0].Env {
 					if env.Name == "JAVA_TOOL_OPTIONS" {
 						found = true
-						s.Require().Equal("-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks", env.Value)
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+						s.Require().NotContains(env.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 					}
+					s.Require().NotEqual("TRUSTSTORE_PASSWORD", env.Name, "TRUSTSTORE_PASSWORD should not be set when JKS is not configured")
 				}
 				s.Require().True(found, "JAVA_TOOL_OPTIONS env var should be set")
 
@@ -147,6 +151,138 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 					}
 				}
 				s.Require().True(found, "keystore volume should exist")
+			},
+		},
+		{
+			Name: "TestElasticsearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":             "true",
+				"global.elasticsearch.tls.existingSecret":          "elasticsearch-tls-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				var javaToolOptionsFound bool
+				var truststorePasswordFound bool
+				for _, env := range containers[0].Env {
+					if env.Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptionsFound = true
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+					}
+					if env.Name == "TRUSTSTORE_PASSWORD" {
+						truststorePasswordFound = true
+						s.Require().NotNil(env.ValueFrom)
+						s.Require().NotNil(env.ValueFrom.SecretKeyRef)
+						s.Require().Equal("truststore-secret", env.ValueFrom.SecretKeyRef.Name)
+						s.Require().Equal("truststore-password", env.ValueFrom.SecretKeyRef.Key)
+					}
+				}
+				s.Require().True(javaToolOptionsFound, "JAVA_TOOL_OPTIONS should be set")
+				s.Require().True(truststorePasswordFound, "TRUSTSTORE_PASSWORD should be set from secret")
+			},
+		},
+		{
+			Name: "TestElasticsearchTLSWithJKSInlineEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":         "true",
+				"global.elasticsearch.tls.existingSecret":      "elasticsearch-tls-secret",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				var javaToolOptionsFound bool
+				var truststorePasswordFound bool
+				for _, env := range containers[0].Env {
+					if env.Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptionsFound = true
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+					}
+					if env.Name == "TRUSTSTORE_PASSWORD" {
+						truststorePasswordFound = true
+						s.Require().Equal("changeit", env.Value)
+					}
+				}
+				s.Require().True(javaToolOptionsFound, "JAVA_TOOL_OPTIONS should be set")
+				s.Require().True(truststorePasswordFound, "TRUSTSTORE_PASSWORD should be set with inline value")
+			},
+		},
+		{
+			Name: "TestOpenSearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":        "true",
+				"global.opensearch.tls.existingSecret":        "opensearch-tls-secret",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				var javaToolOptionsFound bool
+				var truststorePasswordFound bool
+				for _, env := range containers[0].Env {
+					if env.Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptionsFound = true
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+					}
+					if env.Name == "TRUSTSTORE_PASSWORD" {
+						truststorePasswordFound = true
+						s.Require().NotNil(env.ValueFrom)
+						s.Require().NotNil(env.ValueFrom.SecretKeyRef)
+						s.Require().Equal("truststore-secret", env.ValueFrom.SecretKeyRef.Name)
+						s.Require().Equal("truststore-password", env.ValueFrom.SecretKeyRef.Key)
+					}
+				}
+				s.Require().True(javaToolOptionsFound, "JAVA_TOOL_OPTIONS should be set")
+				s.Require().True(truststorePasswordFound, "TRUSTSTORE_PASSWORD should be set from secret")
+			},
+		},
+		{
+			Name: "TestOpenSearchTLSWithJKSInlineEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled":    "true",
+				"global.opensearch.tls.existingSecret":    "opensearch-tls-secret",
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				var javaToolOptionsFound bool
+				var truststorePasswordFound bool
+				for _, env := range containers[0].Env {
+					if env.Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptionsFound = true
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+						s.Require().Contains(env.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+					}
+					if env.Name == "TRUSTSTORE_PASSWORD" {
+						truststorePasswordFound = true
+						s.Require().Equal("changeit", env.Value)
+					}
+				}
+				s.Require().True(javaToolOptionsFound, "JAVA_TOOL_OPTIONS should be set")
+				s.Require().True(truststorePasswordFound, "TRUSTSTORE_PASSWORD should be set with inline value")
 			},
 		},
 		{
