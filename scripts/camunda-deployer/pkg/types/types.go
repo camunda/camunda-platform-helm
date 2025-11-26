@@ -51,6 +51,7 @@ type Options struct {
 
 	LoadKeycloakRealm bool
 	KeycloakRealmName string
+	VaultSecretPath   string
 }
 
 type CIMetadata struct {
