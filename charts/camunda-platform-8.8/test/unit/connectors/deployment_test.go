@@ -585,7 +585,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                                 "true",
 				"identityKeycloak.enabled":                                         "true",
 				"global.identity.auth.enabled":                                     "true",
-				"orchestration.security.authentication.method":                     "oidc",
+				"connectors.security.authentication.method":                        "oidc",
 				"connectors.security.authentication.oidc.secret.existingSecret":    "camunda-platform-test-connectors-identity-secret",
 				"connectors.security.authentication.oidc.secret.existingSecretKey": "identity-connectors-client-token",
 			},
@@ -611,6 +611,60 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 							},
 						},
 					})
+			},
+		}, {
+			// Test hybrid auth: connectors use basic auth, so no OIDC secret needed even if orchestration uses OIDC
+			Name: "TestHybridAuthConnectorsBasicNoOidcSecret",
+			Values: map[string]string{
+				"connectors.enabled":                            "true",
+				"identity.enabled":                              "true",
+				"identityKeycloak.enabled":                      "true",
+				"global.identity.auth.enabled":                  "true",
+				"orchestration.security.authentication.method":  "oidc",
+				"connectors.security.authentication.method":     "basic",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET should NOT be present
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				for _, envvar := range env {
+					s.Require().NotEqual("VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET", envvar.Name,
+						"Connectors should not have OIDC secret when using basic auth")
+				}
+			},
+		}, {
+			// Test that connectors OIDC secret is controlled by connectors.authMethod, not orchestration.authMethod
+			Name: "TestHybridAuthConnectorsOidcRequiresOwnAuthMethod",
+			Values: map[string]string{
+				"connectors.enabled":                                               "true",
+				"identity.enabled":                                                 "true",
+				"identityKeycloak.enabled":                                         "true",
+				"global.identity.auth.enabled":                                     "true",
+				"orchestration.security.authentication.method":                     "basic",
+				"connectors.security.authentication.method":                        "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "connectors-oidc-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET should be present
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(
+					env,
+					corev1.EnvVar{
+						Name: "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "connectors-oidc-secret"},
+								Key:                  "client-secret",
+							},
+						},
+					},
+					"Connectors should have OIDC secret when connectors.authMethod=oidc, regardless of orchestration.authMethod")
 			},
 		}, {
 			Name: "TestContainerSetSidecar",
