@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.7.0
+version: 12.7.1
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.19.0"
+  camunda.io/helmCLIVersion: "3.19.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -72,17 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Define custom clients for management identity"
-    - kind: added
-      description: "Backport custom client creation to 8.6 and 8.9"
-    - kind: added
-      description: "Define custom users through values.yaml"
     - kind: fixed
-      description: "Zeebe gateway has a context path"
-    - kind: fixed
-      description: "Incorrect example for keycloak in readme.md"
-    - kind: fixed
-      description: "Remove client env vars from qa scenario files"
-    - kind: fixed
-      description: "Typo lower case values"
+      description: "Add connectors logging to application.yaml"
