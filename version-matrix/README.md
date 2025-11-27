@@ -62,6 +62,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.6](./camunda-8.6)
 
+### [Helm chart 11.11.0](./camunda-8.6/#helm-chart-11110)
 ### [Helm chart 11.10.3](./camunda-8.6/#helm-chart-11103)
 ### [Helm chart 11.10.2](./camunda-8.6/#helm-chart-11102)
 ### [Helm chart 11.10.1](./camunda-8.6/#helm-chart-11101)
@@ -274,7 +275,3 @@ For the best experience, please remember:
 ### [Helm chart 0.0.30](./camunda-1.3/#helm-chart-0030)
 ### [Helm chart 0.0.29](./camunda-1.3/#helm-chart-0029)
 ### [Helm chart 0.0.28](./camunda-1.3/#helm-chart-0028)
-
-## [Camunda ](./camunda-)
-
-### [Helm chart ](./camunda-/#helm-chart-)
