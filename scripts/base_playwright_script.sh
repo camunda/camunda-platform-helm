@@ -115,3 +115,39 @@ run_playwright_tests() {
     exit $playwright_rc # propagate the failure to CI
   fi
 }
+
+# Run playwright tests for hybrid auth - runs specific test files with a specific auth type
+# This function does NOT exit so multiple phases can run sequentially
+run_playwright_tests_hybrid() {
+  local test_suite_path="$1"
+  local show_html_report="$2"
+  local auth_type="$3"
+  local test_files="$4"
+  local test_exclude="$5"
+  local reporter="html"
+
+  log "Running hybrid tests: auth_type='$auth_type' test_files='$test_files'"
+
+  cd "$test_suite_path" || exit
+
+  npm i --no-audit --no-fund --silent
+
+  if [[ $show_html_report == "true" ]]; then
+    reporter="html"
+  fi
+
+  mkdir -p "$test_suite_path/test-results"
+
+  # Run specific test files with the auth type set as environment variable
+  # This overrides any TEST_AUTH_TYPE in .env file
+  # shellcheck disable=SC2086
+  TEST_AUTH_TYPE="$auth_type" npx playwright test $test_files --project=full-suite --reporter="$reporter" --grep-invert="$test_exclude"
+  playwright_rc=$?
+
+  if [[ $playwright_rc -ne 0 ]]; then
+    log "❌  Hybrid Playwright tests ($auth_type) failed with code $playwright_rc"
+    exit $playwright_rc
+  fi
+
+  log "✅  Hybrid Playwright tests ($auth_type) passed"
+}

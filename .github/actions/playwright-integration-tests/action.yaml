@@ -137,7 +137,7 @@ runs:
         ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
-        ./run-integration-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --platform "${{ inputs.distro-platform }}"
+        ./run-integration-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --platform "${{ inputs.distro-platform }}" --test-auth-type "${{ inputs.auth }}" --test-exclude "${{ inputs.exclude }}"
 
     - name: Test - Upload Playwright report
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5

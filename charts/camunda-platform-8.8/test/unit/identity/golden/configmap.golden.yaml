@@ -31,15 +31,6 @@ data:
         backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
 
       component-presets:
-        connectors:
-          applications:
-            - name: Connectors
-              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
-              type: m2m
-              secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
-              permissions:
-                - audience: "orchestration-api"
-                  definition: read:*
         console:
           applications:
             - name: "Console"
@@ -102,35 +93,6 @@ data:
                   definition: write:*
                 - audience: "camunda-identity-resource-server"
                   definition: read:users
-        orchestration:
-          applications:
-            - name: Orchestration
-              id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
-              type: confidential
-              secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
-              permissions:
-                - audience: "orchestration-api"
-                  definition: write:*
-              root-url: "http://localhost:8080"
-              redirect-uris:
-                - "/login/oauth2/code/orchestration"
-                - "/sso-callback"
-          apis:
-            - name: "Orchestration API"
-              audience: "orchestration-api"
-              permissions:
-                - definition: read:*
-                  description: "Read permission"
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Orchestration"
-              description: "Grants full access to Orchestration"
-              permissions:
-                - audience: "orchestration-api"
-                  definition: read:*
-                - audience: "orchestration-api"
-                  definition: write:*
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -181,14 +143,10 @@ data:
         user: "admin"
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
-        connectors:
-          secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         console:
           root-url: "http://localhost:8087"
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
-        orchestration:
-          secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         webmodeler:
           root-url: "http://localhost:8070"
       clients:
@@ -200,7 +158,6 @@ data:
           email: "demo@example.org"
           roles:
             - ManagementIdentity
-            - Orchestration
       environment:
         clients:
           - name: Identity

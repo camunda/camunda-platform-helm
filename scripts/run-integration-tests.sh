@@ -261,4 +261,15 @@ setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO
 
 log "Invoking Playwright tests with:"
 log "  TEST_SUITE_PATH='${TEST_SUITE_PATH}' SHOW_HTML_REPORT='${SHOW_HTML_REPORT}' TEST_EXCLUDE='${TEST_EXCLUDE}'"
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "1" "1" "html" "$TEST_EXCLUDE" false
+
+if [[ "$TEST_AUTH_TYPE" == "hybrid" ]]; then
+  log "Running hybrid auth tests - splitting by component auth type"
+  # Run OIDC-based tests (Identity, Console) with keycloak auth
+  log "Phase 1: Running OIDC components (identity, console) with keycloak auth"
+  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "keycloak" "identity.spec.ts console.spec.ts" "$TEST_EXCLUDE"
+  # Run basic auth tests (Connectors, Orchestration REST/gRPC)
+  log "Phase 2: Running basic auth components (connectors, core-rest, core-grpc) with basic auth"
+  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "basic" "connectors.spec.ts core-rest.spec.ts core-grpc.spec.ts" "$TEST_EXCLUDE"
+else
+  run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "1" "1" "html" "$TEST_EXCLUDE" false
+fi

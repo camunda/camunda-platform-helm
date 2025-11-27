@@ -203,6 +203,118 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		},
+		// Hybrid Auth Tests - verify OIDC client config is only included for components using OIDC auth
+		{
+			Name:                 "TestBasicAuthExcludesOidcConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                       "true",
+				"global.identity.auth.enabled":           "true",
+				"global.security.authentication.method":  "basic",
+				"connectors.enabled":                     "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// then - verify neither connectors nor orchestration OIDC config is present when using global basic auth
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET",
+					"Connectors OIDC secret should not be present when using basic auth")
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+					"Orchestration OIDC secret should not be present when using basic auth")
+			},
+		}, {
+			Name:                 "TestGlobalOidcAuthIncludesBothOidcConfigs",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                       "true",
+				"global.identity.auth.enabled":           "true",
+				"global.security.authentication.method":  "oidc",
+				"connectors.enabled":                     "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// then - verify both connectors and orchestration OIDC config IS present when using global OIDC auth
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET",
+					"Connectors OIDC secret should be present when using OIDC auth")
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+					"Orchestration OIDC secret should be present when using OIDC auth")
+			},
+		}, {
+			Name:                 "TestHybridAuthConnectorsBasicOrchestrationOidc",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                             "true",
+				"global.identity.auth.enabled":                 "true",
+				"global.security.authentication.method":        "oidc",
+				"connectors.security.authentication.method":    "basic",
+				"connectors.enabled":                           "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// then - verify only orchestration OIDC config is present, not connectors
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET",
+					"Connectors OIDC secret should not be present when connectors use basic auth")
+				s.Require().Contains(applicationYaml, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
+					"Orchestration OIDC secret should be present when orchestration uses OIDC auth")
+			},
+		}, {
+			// Test that firstUser gets Orchestration role only when orchestration uses OIDC
+			Name:                 "TestFirstUserRolesExcludeOrchestrationWhenBasicAuth",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                              "true",
+				"identity.firstUser.enabled":                    "true",
+				"global.identity.auth.enabled":                  "true",
+				"orchestration.security.authentication.method":  "basic",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// then - firstUser should have ManagementIdentity but NOT Orchestration role
+				s.Require().Contains(applicationYaml, "- ManagementIdentity",
+					"FirstUser should have ManagementIdentity role")
+				// The Orchestration role should NOT appear in the keycloak.init.users section
+				// We check that no user has Orchestration in their roles list
+				s.Require().NotContains(applicationYaml, "- Orchestration",
+					"FirstUser should NOT have Orchestration role when orchestration uses basic auth")
+			},
+		}, {
+			// Test that firstUser gets Orchestration role when orchestration uses OIDC
+			Name:                 "TestFirstUserRolesIncludeOrchestrationWhenOidcAuth",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                              "true",
+				"identity.firstUser.enabled":                    "true",
+				"global.identity.auth.enabled":                  "true",
+				"orchestration.security.authentication.method":  "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// then - firstUser should have both ManagementIdentity and Orchestration roles
+				s.Require().Contains(applicationYaml, "- ManagementIdentity",
+					"FirstUser should have ManagementIdentity role")
+				s.Require().Contains(applicationYaml, "- Orchestration",
+					"FirstUser should have Orchestration role when orchestration uses OIDC auth")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
