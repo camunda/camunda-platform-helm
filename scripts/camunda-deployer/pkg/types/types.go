@@ -11,6 +11,7 @@ type ValuesInput struct {
 type Options struct {
 	Chart       string
 	ChartPath   string
+	Version     string
 	RealmPath   string
 	ReleaseName string
 	Namespace   string

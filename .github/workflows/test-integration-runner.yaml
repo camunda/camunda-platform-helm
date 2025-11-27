@@ -483,6 +483,7 @@ jobs:
           #./scripts/load-keycloak-configmap.sh "${{ env.CHART_PATH }}" "${{ env.KEYCLOAK_REALM }}" "${{ env.TEST_NAMESPACE }}"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
+        if: inputs.flow == 'install'
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
@@ -498,22 +499,49 @@ jobs:
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           make install.dx-tooling
-          # Dynamically determine the git root
-          GIT_ROOT="$(git rev-parse --show-toplevel)"
           deploy-camunda \
-            --chart camunda/camunda-platform \
-            --scenario keycloak-original \
+            --chart ${{ env.CHART_PATH }} \
+            --scenario ${TEST_VALUES_SCENARIO} \
             --namespace "${TEST_NAMESPACE}" \
             --release integration \
-            --repo-root "${GIT_ROOT}" \
+            --repo-root "${{ env.CHART_PATH }}/../.." \
             --log-level debug \
             --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
             --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" \
             --delete-namespace \
-            --scenario-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup" \
-            --realm-path "${GIT_ROOT}/charts/camunda-platform-8.8/test/integration"
+            --scenario-path "${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup" \
+            --realm-path "${{ env.CHART_PATH }}/test/integration"
 
-
+      - name: Helm - Install - 🌟 Install Camunda chart from chart repo 🌟
+        if: inputs.flow == 'upgrade-patch' || inputs.flow == 'upgrade-minor'
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: "${{ inputs.test-case }}"
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
+          TEST_HELM_EXTRA_ARGS: >-
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+        run: |
+          make install.dx-tooling
+          deploy-camunda \
+            --chart camunda/camunda-platform \
+            --version ${{ inputs.camunda-helm-upgrade-version }}
+            --scenario ${TEST_VALUES_SCENARIO} \
+            --namespace "${TEST_NAMESPACE}" \
+            --release integration \
+            --repo-root "${{ env.CHART_PATH }}/../.." \
+            --log-level debug \
+            --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+            --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" \
+            --delete-namespace \
+            --scenario-path "${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup" \
+            --realm-path "${{ env.CHART_PATH }}/test/integration"
         #run: |
           #kubectl create secret docker-registry registry-camunda-cloud \
           #--namespace $TEST_NAMESPACE \
@@ -626,12 +654,12 @@ jobs:
           secrets: ${{ inputs.vault-secret-mapping }}
           exportEnv: true
 
-      - name: Generate Secret manifest from Vault mapping
-        if: inputs.vault-secret-mapping != ''
-        env:
-          VSM: ${{ inputs.vault-secret-mapping }}
-        run: |
-          (cd ./scripts/vault-secret-mapper && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
+#      - name: Generate Secret manifest from Vault mapping
+#        if: inputs.vault-secret-mapping != ''
+#        env:
+#          VSM: ${{ inputs.vault-secret-mapping }}
+#        run: |
+#          (cd ./scripts/vault-secret-mapper && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
 
       - name: Import Vault secrets
         id: test-credentials-secret
@@ -732,32 +760,32 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
-      - name: Helm – prepare values from values-config
-        shell: bash
-        env:
-          VALS_CONFIG: ${{ inputs.values-config }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-        run: |
-          ./scripts/prepare-helm-values.sh \
-            --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
-            --scenario "${{ inputs.scenario }}" \
-            --values-config '${{ inputs.values-config }}' \
-            --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --log-level debug \
-            --interactive false
+#      - name: Helm – prepare values from values-config
+#        shell: bash
+#        env:
+#          VALS_CONFIG: ${{ inputs.values-config }}
+#          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+#        run: |
+#          ./scripts/prepare-helm-values.sh \
+#            --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
+#            --scenario "${{ inputs.scenario }}" \
+#            --values-config '${{ inputs.values-config }}' \
+#            --license-key "${E2E_TESTS_LICENSE_KEY}" \
+#            --log-level debug \
+#            --interactive false
 
-      - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
-        uses: ./.github/actions/cluster-setup-secrets
-        with:
-          distro-platform: ${{ inputs.distro-platform }}
-          chart-path: ${{ env.CHART_PATH }}
-          namespace: ${{ env.TEST_NAMESPACE }}
-          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
+#      - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
+#        uses: ./.github/actions/cluster-setup-secrets
+#        with:
+#          distro-platform: ${{ inputs.distro-platform }}
+#          chart-path: ${{ env.CHART_PATH }}
+#          namespace: ${{ env.TEST_NAMESPACE }}
+#          namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
-      - name: Apply Vault mapped Secret
-        if: inputs.vault-secret-mapping != ''
-        run: |
-          kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
+#      - name: Apply Vault mapped Secret
+#        if: inputs.vault-secret-mapping != ''
+#        run: |
+#          kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
 
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
         env:
@@ -767,16 +795,33 @@ jobs:
 
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
           TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          TEST_CASE: "${{ inputs.test-case }}"
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
-          TEST_CHART_FLOW: ${{ inputs.flow }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+          make install.dx-tooling
+          # Dynamically determine the git root
+          GIT_ROOT="$(git rev-parse --show-toplevel)"
+          deploy-camunda \
+            --chart-path ${{ env.CHART_PATH }} \
+            --scenario ${TEST_VALUES_SCENARIO} \
+            --namespace "${TEST_NAMESPACE}" \
+            --release integration \
+            --repo-root "${{ env.CHART_PATH }}/../.." \
+            --log-level debug \
+            --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+            --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" \
+            --scenario-path "${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup" \
+            --realm-path "${{ env.CHART_PATH }}/test/integration"
 
       ##########################################################################################################
       # Misc
