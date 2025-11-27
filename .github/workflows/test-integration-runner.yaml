@@ -45,6 +45,11 @@ on:
         required: false
         default: ""
         type: string
+      camunda-version:
+        description: The Camunda version to test.
+        required: false
+        default: "8.8"
+        type: string
       caller-git-ref:
         required: false
         default: main
@@ -513,7 +518,7 @@ jobs:
             --realm-path "${{ env.CHART_PATH }}/test/integration"
 
       - name: Helm - Install - 🌟 Install Camunda chart from chart repo 🌟
-        if: inputs.flow == 'upgrade-patch' || inputs.flow == 'upgrade-minor'
+        if: inputs.flow == 'upgrade-patch'
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
@@ -531,7 +536,7 @@ jobs:
           make install.dx-tooling
           deploy-camunda \
             --chart camunda/camunda-platform \
-            --version ${{ inputs.camunda-helm-upgrade-version }}
+            --version ${{ inputs.camunda-version }}
             --scenario ${TEST_VALUES_SCENARIO} \
             --namespace "${TEST_NAMESPACE}" \
             --release integration \
@@ -542,6 +547,39 @@ jobs:
             --delete-namespace \
             --scenario-path "${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup" \
             --realm-path "${{ env.CHART_PATH }}/test/integration"
+
+
+      - name: Helm - Install - 🌟 Install Camunda chart from chart repo 🌟
+        if: inputs.flow == 'upgrade-minor'
+        env:
+          TEST_CHART_FLOW: ${{ inputs.flow }}
+          TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
+          TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
+          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
+          TEST_CASE: "${{ inputs.test-case }}"
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
+          TEST_HELM_EXTRA_ARGS: >-
+            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+        run: |
+          make install.dx-tooling
+          deploy-camunda \
+            --chart camunda/camunda-platform \
+            --version ${{ inputs.camunda-version-previous }}
+            --scenario ${TEST_VALUES_SCENARIO} \
+            --namespace "${TEST_NAMESPACE}" \
+            --release integration \
+            --repo-root "${{ env.CHART_PATH }}/../.." \
+            --log-level debug \
+            --docker-username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+            --docker-password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}" \
+            --delete-namespace \
+            --scenario-path "${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup" \
+            --realm-path "${{ env.CHART_PATH }}/test/integration"
+            
         #run: |
           #kubectl create secret docker-registry registry-camunda-cloud \
           #--namespace $TEST_NAMESPACE \

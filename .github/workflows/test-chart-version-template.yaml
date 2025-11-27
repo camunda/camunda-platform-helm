@@ -123,6 +123,7 @@ jobs:
       run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
       values-digest: "true"
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
+      camunda-version: "${{ inputs.camunda-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
       always-delete-namespace: "${{ inputs.always-delete-namespace }}"
       vault-secret-mapping: |
