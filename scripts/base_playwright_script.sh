@@ -138,12 +138,10 @@ run_playwright_tests_hybrid() {
 
   mkdir -p "$test_suite_path/test-results"
 
-  # Update .env file with the auth type for this phase
-  sed -i.bak "s/^TEST_AUTH_TYPE=.*/TEST_AUTH_TYPE=${auth_type}/" "$test_suite_path/.env"
-
-  # Run specific test files
+  # Run specific test files with the auth type set as environment variable
+  # This overrides any TEST_AUTH_TYPE in .env file
   # shellcheck disable=SC2086
-  npx playwright test $test_files --project=full-suite --reporter="$reporter" --grep-invert="$test_exclude"
+  TEST_AUTH_TYPE="$auth_type" npx playwright test $test_files --project=full-suite --reporter="$reporter" --grep-invert="$test_exclude"
   playwright_rc=$?
 
   if [[ $playwright_rc -ne 0 ]]; then
