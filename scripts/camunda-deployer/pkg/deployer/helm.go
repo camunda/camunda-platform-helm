@@ -28,6 +28,11 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 	}
 }
 
+	// When using a repository chart name, allow pinning the chart version
+	if o.Chart != "" && strings.TrimSpace(o.Version) != "" {
+		args = append(args, "--version", o.Version)
+	}
+
 	// Deployer policy: always create namespace
 	args = append(args, "--create-namespace")
 

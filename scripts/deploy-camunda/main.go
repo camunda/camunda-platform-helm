@@ -26,6 +26,7 @@ import (
 var (
 	chartPath            string
 	chart                string
+	chartVersion         string
 	namespace            string
 	release              string
 	scenario             string
@@ -73,6 +74,13 @@ func main() {
 			if chartPath == "" && chart == "" {
 				return fmt.Errorf("either --chart-path or --chart must be provided")
 			}
+			// Validate --version compatibility
+			if strings.TrimSpace(chartVersion) != "" && strings.TrimSpace(chartPath) != "" {
+				return fmt.Errorf("--version can only be used with --chart, not with --chart-path")
+			}
+			if strings.TrimSpace(chartVersion) != "" && strings.TrimSpace(chart) == "" {
+				return fmt.Errorf("--version requires --chart to be set")
+			}
 			return nil
 		},
 		RunE: run,
@@ -104,6 +112,7 @@ func main() {
 	flags := rootCmd.Flags()
 	flags.StringVar(&chartPath, "chart-path", "", "Path to the Camunda chart directory")
 	flags.StringVar(&chart, "chart", "", "Chart name")
+	flags.StringVar(&chartVersion, "version", "", "Chart version (only valid with --chart; not allowed with --chart-path)")
 	flags.StringVar(&namespace, "namespace", "", "Kubernetes namespace")
 	flags.StringVar(&release, "release", "", "Helm release name")
 	flags.StringVar(&scenario, "scenario", "", "The name of the scneario to deploy")
@@ -344,6 +353,7 @@ func run(cmd *cobra.Command, args []string) error {
 	deployOpts := types.Options{
 		ChartPath: chartPath,
 		Chart:     chart,
+		Version:   chartVersion,
 		RealmPath: realmPath,
 
 		ReleaseName:            release,
