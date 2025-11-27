@@ -61,6 +61,12 @@ integration:
           shortname: keyc
           auth: keycloak
           flow: upgrade-minor
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          shortname: eshy
+          auth: hybrid
+          flow: install
     nightly:
       scenario:
         - name: elasticsearch
