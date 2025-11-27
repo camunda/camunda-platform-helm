@@ -267,9 +267,9 @@ if [[ "$TEST_AUTH_TYPE" == "hybrid" ]]; then
   # Run OIDC-based tests (Identity, Console) with keycloak auth
   log "Phase 1: Running OIDC components (identity, console) with keycloak auth"
   run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "keycloak" "identity.spec.ts console.spec.ts" "$TEST_EXCLUDE"
-  # Run basic auth tests (Orchestration, Connectors)
-  log "Phase 2: Running basic auth components (orchestration, connectors) with basic auth"
-  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "basic" "connectors.spec.ts core-grpc.spec.ts core-rest.spec.ts" "$TEST_EXCLUDE"
+  # Run basic auth tests (Connectors, Orchestration REST/gRPC)
+  log "Phase 2: Running basic auth components (connectors, core-rest, core-grpc) with basic auth"
+  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "basic" "connectors.spec.ts core-rest.spec.ts core-grpc.spec.ts" "$TEST_EXCLUDE"
 else
   run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "1" "1" "html" "$TEST_EXCLUDE" false
 fi

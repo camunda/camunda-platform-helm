@@ -63,7 +63,7 @@ integration:
           flow: upgrade-minor
         - name: elasticsearch
           enabled: true
-          exclude: []
+          exclude: [orchestration-grpc]
           shortname: eshy
           auth: hybrid
           flow: install
