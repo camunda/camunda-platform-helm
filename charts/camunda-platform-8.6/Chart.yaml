@@ -71,12 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Backport custom client creation to 8.6 and 8.9"
-    - kind: added
-      description: "Define custom users through values.yaml"
-    - kind: fixed
-      description: "Incorrect example for keycloak in readme.md"
-    - kind: fixed
-      description: "Remove client env vars from qa scenario files"
+  artifacthub.io/changes: ""
