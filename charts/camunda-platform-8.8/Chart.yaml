@@ -73,4 +73,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Remove conditional rendering from management identity configmap"
+      description: "Let helm chart support hybrid auth"

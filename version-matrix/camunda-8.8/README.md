@@ -5,6 +5,7 @@
 
 ## ToC
 
+- [Helm chart 13.2.2](#helm-chart-1322)
 - [Helm chart 13.2.1](#helm-chart-1321)
 - [Helm chart 13.2.0](#helm-chart-1320)
 - [Helm chart 13.1.2](#helm-chart-1312)
@@ -20,6 +21,35 @@
 - [Helm chart 13.0.0-alpha4](#helm-chart-1300-alpha4)
 - [Helm chart 13.0.0-alpha3](#helm-chart-1300-alpha3)
 - [Helm chart 13.0.0-alpha2](#helm-chart-1300-alpha2)
+
+## Helm chart 13.2.2
+
+Supported versions:
+
+- Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
+- Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
+- Helm values: [13.2.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.2.2#parameters)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
+
+Camunda images:
+
+- docker.io/camunda/camunda:8.8.5
+- docker.io/camunda/connectors-bundle:8.8.3
+- docker.io/camunda/console:8.8.52
+- docker.io/camunda/identity:8.8.2
+- docker.io/camunda/keycloak:26.3.3
+- docker.io/camunda/optimize:8.8.1
+- docker.io/camunda/web-modeler-restapi:8.8.3
+- docker.io/camunda/web-modeler-webapp:8.8.3
+- docker.io/camunda/web-modeler-websockets:8.8.3
+
+Non-Camunda images:
+
+- docker.io/bitnamilegacy/elasticsearch:8.18.0
+- docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+- docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+- docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+
 
 ## Helm chart 13.2.1
 
@@ -86,7 +116,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.1.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.2#parameters)
-- Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -115,7 +145,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.1.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.1#parameters)
-- Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -144,7 +174,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.1.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.1.0#parameters)
-- Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -173,7 +203,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0#parameters)
-- Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -202,7 +232,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha8](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha8#parameters)
-- Helm CLI: [3.18.6](https://github.com/helm/helm/releases/tag/v3.18.6)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -230,7 +260,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha7](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha7#parameters)
-- Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -259,7 +289,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha6](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha6#parameters)
-- Helm CLI: [3.18.3](https://github.com/helm/helm/releases/tag/v3.18.3)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -288,7 +318,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha5](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha5#parameters)
-- Helm CLI: [3.18.2](https://github.com/helm/helm/releases/tag/v3.18.2)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -308,7 +338,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha4.2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.2#parameters)
-- Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -328,7 +358,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha4.1](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4.1#parameters)
-- Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -348,7 +378,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha4](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha4#parameters)
-- Helm CLI: [3.17.3](https://github.com/helm/helm/releases/tag/v3.17.3)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -368,7 +398,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha3](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha3#parameters)
-- Helm CLI: [3.17.2](https://github.com/helm/helm/releases/tag/v3.17.2)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
@@ -388,7 +418,7 @@ Supported versions:
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
 - Helm values: [13.0.0-alpha2](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.0.0-alpha2#parameters)
-- Helm CLI: [3.17.1](https://github.com/helm/helm/releases/tag/v3.17.1)
+- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
 
 Camunda images:
 
