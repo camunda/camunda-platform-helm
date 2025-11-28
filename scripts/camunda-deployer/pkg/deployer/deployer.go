@@ -9,7 +9,6 @@ import (
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/utils"
 	"scripts/camunda-deployer/pkg/types"
-	"strings"
 )
 
 func Deploy(ctx context.Context, o types.Options) error {
@@ -41,12 +40,6 @@ func Deploy(ctx context.Context, o types.Options) error {
 
 	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
 		return err
-	}
-
-	if o.LoadKeycloakRealm && strings.TrimSpace(o.KeycloakRealmName) != "" {
-		if err := loadKeycloakRealmConfigMap(ctx, kubeClient, o.RealmPath, o.KeycloakRealmName, o.Namespace); err != nil {
-			return fmt.Errorf("failed to load Keycloak realm: %w", err)
-		}
 	}
 
 	if o.EnsureDockerRegistry {

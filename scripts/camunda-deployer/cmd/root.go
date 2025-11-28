@@ -188,7 +188,6 @@ func init() {
 	rootCmd.Flags().StringVar(&ttl, "ttl", "1h", "time-to-live label for namespace cleanup (e.g., 1h, 12h, 24h)")
 
 	// Keycloak configuration
-	rootCmd.Flags().BoolVar(&loadKeycloakRealm, "load-keycloak-realm", false, "load Keycloak realm ConfigMap from chart's realm.json")
 	rootCmd.Flags().StringVar(&keycloakRealmName, "keycloak-realm-name", "", "Keycloak realm name to use (required if --load-keycloak-realm is set)")
 
 	// Vault configuration
