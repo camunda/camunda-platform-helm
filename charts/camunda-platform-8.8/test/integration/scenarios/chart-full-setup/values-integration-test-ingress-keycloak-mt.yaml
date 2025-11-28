@@ -76,11 +76,6 @@ identity:
   realm:
     enabled: true
     id: $KEYCLOAK_REALM
-    json:
-      enabled: true
-      configMapName: realm-json
-      mountPath: /config
-      fileName: realm.json
   firstUser:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"

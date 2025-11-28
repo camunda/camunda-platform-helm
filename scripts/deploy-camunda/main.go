@@ -31,7 +31,6 @@ var (
 	release              string
 	scenario             string
 	scenarioPath         string
-	realmPath            string
 	auth                 string
 	platform             string
 	logLevel             string
@@ -66,9 +65,13 @@ func main() {
 				// Try default locations if not specified
 				_ = env.Load(".env")
 			}
-			// Skip chart requirement for completion command
-			if cmd != nil && cmd.Name() == "completion" {
-				return nil
+			// Skip validations for shell completion invocations
+			if cmd != nil {
+				if cmd.Name() == "completion" ||
+					cmd.Name() == cobra.ShellCompRequestCmd ||
+					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
+					return nil
+				}
 			}
 			// Ensure at least one of chart-path or chart is provided
 			if chartPath == "" && chart == "" {
@@ -117,7 +120,6 @@ func main() {
 	flags.StringVar(&release, "release", "", "Helm release name")
 	flags.StringVar(&scenario, "scenario", "", "The name of the scneario to deploy")
 	flags.StringVar(&scenarioPath, "scenario-path", "", "Path to scenario files")
-	flags.StringVar(&realmPath, "realm-path", "", "Path to the keycloak realm file")
 	flags.StringVar(&auth, "auth", "keycloak", "Auth scenario")
 	flags.StringVar(&platform, "platform", "gke", "Target platform: gke, rosa, eks")
 	flags.StringVar(&logLevel, "log-level", "info", "Log level")
@@ -354,8 +356,6 @@ func run(cmd *cobra.Command, args []string) error {
 		ChartPath: chartPath,
 		Chart:     chart,
 		Version:   chartVersion,
-		RealmPath: realmPath,
-
 		ReleaseName:            release,
 		Namespace:              namespace,
 		Wait:                   true,
