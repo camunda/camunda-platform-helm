@@ -14,6 +14,9 @@ on:
       - "scripts/**"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
+      - "!charts/camunda-platform-8*/*.md"
+      - "!charts/camunda-platform-8*/*.MD"
+      - "!charts/camunda-platform-8*/*.txt"
   workflow_dispatch:
     inputs:
       manual-trigger:
