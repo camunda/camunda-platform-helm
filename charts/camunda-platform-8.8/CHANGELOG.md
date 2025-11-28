@@ -1,5 +1,19 @@
 # Changelog
 
+## [13.2.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.2.1...camunda-platform-8.8-13.2.2) (2025-11-28)
+
+
+### Bug Fixes
+
+* let helm chart support hybrid auth ([#4785](https://github.com/camunda/camunda-platform-helm/issues/4785)) ([cb06ece](https://github.com/camunda/camunda-platform-helm/commit/cb06ece477535c069b03ab5eff3729d9baf93d0a))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#4792](https://github.com/camunda/camunda-platform-helm/issues/4792)) ([fd7294c](https://github.com/camunda/camunda-platform-helm/commit/fd7294c95d621b4d7d1c1d290b703d6209e61b44))
+* update camunda/console docker tag to v8.8.52 ([#4803](https://github.com/camunda/camunda-platform-helm/issues/4803)) ([f499bc8](https://github.com/camunda/camunda-platform-helm/commit/f499bc812711b0f1cf425350637c175ed9c51609))
+* update patch-updates ([#4761](https://github.com/camunda/camunda-platform-helm/issues/4761)) ([89f5551](https://github.com/camunda/camunda-platform-helm/commit/89f55518ddeaeec8fb0423afd173cd39e631ea95))
+
 ## [13.2.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.2.0...camunda-platform-8.8-13.2.1) (2025-11-25)
 
 
