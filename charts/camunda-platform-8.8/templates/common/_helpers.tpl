@@ -1044,6 +1044,12 @@ evaluation time. This allows for dynamic values to be injected at runtime.
 {{- else if .Values.global.opensearch.tls.existingSecret -}}
 {{-   $jks = (.Values.global.opensearch.tls.jks | default dict) -}}
 {{- end -}}
+{{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+{{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+    "envName" "TRUSTSTORE_PASSWORD"
+    "config" $jks
+ ) | nindent 0 }}
+{{- end }}
 - name: JAVA_TOOL_OPTIONS
   value: >-
     {{- if $javaOpts -}}
@@ -1059,11 +1065,42 @@ evaluation time. This allows for dynamic values to be injected at runtime.
     {{- printf "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks" | nindent 4 }}
     {{- end -}}
     {{- end -}}
+{{- end }}
+{{- end }}
+
+{{- define "optimize.java_tool_options_tls_env" -}}
+{{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+{{- $vals := .Values -}}
+{{- $comp := required "common.java_tool_options_tls_env: parameter 'component' is required" .component -}}
+{{- $compVals := (get $vals $comp) | default dict -}}
+{{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
+{{- /* Choose JKS for the engine whose TLS secret is actually configured */ -}}
+{{- $jks := dict -}}
+{{- if .Values.global.elasticsearch.tls.existingSecret -}}
+{{-   $jks = (.Values.global.elasticsearch.tls.jks | default dict) -}}
+{{- else if .Values.global.opensearch.tls.existingSecret -}}
+{{-   $jks = (.Values.global.opensearch.tls.jks | default dict) -}}
+{{- end -}}
 {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
 {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
     "envName" "TRUSTSTORE_PASSWORD"
     "config" $jks
  ) | nindent 0 }}
 {{- end }}
+- name: JAVA_TOOL_OPTIONS
+  value: >-
+    {{- if $javaOpts -}}
+    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $javaOpts | nindent 4 }}
+    {{- else -}}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks" $javaOpts | nindent 4 }}
+    {{- end -}}
+    {{- else -}}
+    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+    {{- printf "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" | nindent 4 }}
+    {{- else -}}
+    {{- printf "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks" | nindent 4 }}
+    {{- end -}}
+    {{- end -}}
 {{- end }}
 {{- end }}

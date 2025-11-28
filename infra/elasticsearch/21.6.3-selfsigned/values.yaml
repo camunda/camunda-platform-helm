@@ -87,48 +87,7 @@ livenessProbe:
 global:
   security:
     allowInsecureImages: true
-  kibanaEnabled: true
-
-kibana:
-  image:
-    repository: bitnamilegacy/kibana
-    tag: 8.18.0
-  resources:
-    requests: { cpu: "500m", memory: "2Gi" }
-    limits: { cpu: "2000m", memory: "3Gi" }
-  extraEnvVars:
-    - name: NODE_OPTIONS
-      value: "--max-old-space-size=3072"
-  extraConfig:
-    xpack.reporting.enabled: false
-    xpack.fleet.enabled: true
-  elasticsearch:
-    security:
-      auth:
-        enabled: true
-        existingSecret: infra-credentials
-        elasticsearchPasswordSecret: infra-credentials
-        createSystemUser: true
-      tls:
-        enabled: true
-        existingSecret: elasticsearch-coordinating-crt
-        usePemCerts: true
-  ingress:
-    enabled: true
-    ingressClassName: nginx
-    hostname: kibana-es-21-6-3.ci.distro.ultrawombat.com
-    path: /
-    tls: true
-    annotations:
-      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-      nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
-      nginx.ingress.kubernetes.io/proxy-body-size: "20m"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    extraTls:
-      - hosts:
-          - kibana-es-21-6-3.ci.distro.ultrawombat.com
-        secretName: camunda-platform
+  kibanaEnabled: false
 
 security:
   enabled: true
@@ -180,9 +139,10 @@ updateStrategy:
 ingress:
   enabled: true
   ingressClassName: nginx
-  hostname: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+  hostname: elasticsearch-21-6-3-selfsigned.ci.distro.ultrawombat.com
   path: /
   tls: true
+  selfSigned: true
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
@@ -192,7 +152,3 @@ ingress:
   service:
     name: elasticsearch-coordinating
     port: 9200
-  extraTls:
-    - hosts:
-        - elasticsearch-21-6-3.ci.distro.ultrawombat.com
-      secretName: camunda-platform

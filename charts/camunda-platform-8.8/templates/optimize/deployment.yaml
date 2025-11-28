@@ -73,7 +73,7 @@ spec:
             {{- end}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" ) | nindent 12 }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
@@ -160,7 +160,7 @@ spec:
             {{- end}}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" ) | nindent 12 }}
+            {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" ) | nindent 12 }}
             {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
