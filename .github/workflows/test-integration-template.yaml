@@ -22,6 +22,11 @@ on:
         required: false
         default: camunda-platform-8.8
         type: string
+      camunda-version:
+        description: The Camunda version to test.
+        required: false
+        default: "8.8"
+        type: string
       camunda-helm-git-ref:
         required: false
         default: main
@@ -164,7 +169,7 @@ permissions:
   deployments: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -275,6 +280,7 @@ jobs:
       camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
       camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
       camunda-version-previous: ${{ inputs.camunda-version-previous }}
+      camunda-version: ${{ inputs.camunda-version }}
       caller-git-ref: ${{ inputs.caller-git-ref }}
       deployment-ttl: ${{ inputs.deployment-ttl }}
       distro-platform: ${{ matrix.distro.platform }}

@@ -73,7 +73,7 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -123,6 +123,7 @@ jobs:
       run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
       values-digest: "true"
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
+      camunda-version: "${{ inputs.camunda-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
       always-delete-namespace: "${{ inputs.always-delete-namespace }}"
       vault-secret-mapping: |
