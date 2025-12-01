@@ -969,6 +969,44 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						},
 					})
 			},
+		}, {
+			Name:                 "TestConnectorsDisabledExcludesOidcSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.security.authentication.method":    "oidc",
+				"connectors.enabled":                       "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				for _, envVar := range env {
+					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET", envVar.Name,
+						"VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET should not be present when connectors is disabled")
+				}
+			},
+		}, {
+			Name:                 "TestOrchestrationDisabledExcludesOidcSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.security.authentication.method":    "oidc",
+				"orchestration.enabled":                    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				for _, envVar := range env {
+					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET", envVar.Name,
+						"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should not be present when orchestration is disabled")
+				}
+			},
 		},
 	}
 
