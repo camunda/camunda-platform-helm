@@ -266,6 +266,27 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("example-claim", configmapApplication.OAuth2.Token.UsernameClaim)
 			},
+		}, {
+			Name: "TestContainerShouldSetPusherHost",
+			Values: map[string]string{
+				"identity.enabled":                                         "true",
+				"webModeler.enabled":                                       "true",
+				"webModeler.restapi.mail.fromAddress":                      "example@example.com",
+				"webModeler.websockets.publicHost":                         "example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerWebAppTOML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := toml.Unmarshal([]byte(configmap.Data["application.toml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal("example.com", configmapApplication.Client.Pusher.Host)
+			},
 		},
 	}
 
