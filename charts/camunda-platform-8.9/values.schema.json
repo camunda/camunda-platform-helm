@@ -5734,15 +5734,15 @@
                                             "default": ""
                                         },
                                         "queueSize": {
-                                            "type": "object",
+                                            "type": "number",
                                             "description": "the maximum number of records to batch before flushing to the RDBMS database",
-                                            "default": null,
+                                            "default": 1000,
                                             "nullable": true
                                         },
                                         "queueMemoryLimit": {
-                                            "type": "object",
+                                            "type": "number",
                                             "description": "Maximum memory (in MB) to use for batching inserts/updates to the RDBMS database",
-                                            "default": null,
+                                            "default": 20,
                                             "nullable": true
                                         },
                                         "autoDDL": {
@@ -5804,9 +5804,9 @@
                                                     "default": ""
                                                 },
                                                 "historyCleanupBatchSize": {
-                                                    "type": "object",
+                                                    "type": "number",
                                                     "description": "the maximum number of historical records to delete in one batch",
-                                                    "default": null,
+                                                    "default": 1000,
                                                     "nullable": true
                                                 },
                                                 "usageMetricsCleanup": {
@@ -5828,9 +5828,9 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "maxSize": {
-                                                            "type": "object",
+                                                            "type": "number",
                                                             "description": "maximum number of batch operations to keep in cache",
-                                                            "default": null,
+                                                            "default": 10000,
                                                             "nullable": true
                                                         }
                                                     }
