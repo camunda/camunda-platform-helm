@@ -2718,22 +2718,24 @@ orchestration:
     secondaryStorage:
       ## @extra orchestration.data.secondaryStorage.rdbms configuration for RDBMS (Relational Database Management System) as secondary storage
       rdbms:
-        ## @param orchestration.data.secondaryStorage.rdbms.url defines the JDBC connection URL for the RDBMS database
+        ## @param orchestration.data.secondaryStorage.rdbms.url the JDBC connection URL for the RDBMS database
         url: ""
-        ## @param orchestration.data.secondaryStorage.rdbms.username defines the username for authenticating with the RDBMS database
+        ## @param orchestration.data.secondaryStorage.rdbms.username the JDBMC username for authenticating with the RDBMS database
         username: ""
         ## @extra orchestration.data.secondaryStorage.rdbms.secret configuration to provide the RDBMS password secret
         secret:
-          ## @param orchestration.data.secondaryStorage.rdbms.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.inlineSecret can be used to provide the JDBC password as a plain-text value for non-production usage
           inlineSecret: ""
           ## @param orchestration.data.secondaryStorage.rdbms.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
           existingSecret: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.secret.existingSecretKey defines the key within the existing secret object
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.existingSecretKey defines the key within the existing Kubernetes Secret
           existingSecretKey: ""
-        ## @param orchestration.data.secondaryStorage.rdbms.flushInterval defines the interval at which data is flushed to the RDBMS database
+        ## @param orchestration.data.secondaryStorage.rdbms.flushInterval the interval for batching inserts/updates to the RDBMS database (ISO8601 Duration)
         flushInterval: ""
-        ## @param orchestration.data.secondaryStorage.rdbms.queueSize defines the size of the queue used for buffering data before flushing to the RDBMS database
-        queueSize: ""
+        ## @param orchestration.data.secondaryStorage.rdbms.queueSize [nullable] the maximum number of records to batch before flushing to the RDBMS database
+        queueSize:
+        ## @param orchestration.data.secondaryStorage.rdbms.queueMemoryLimit [nullable] Maximum memory (in MB) to use for batching inserts/updates to the RDBMS database
+        queueMemoryLimit:
         ## @param orchestration.data.secondaryStorage.rdbms.autoDDL if true, enables automatic DDL (Data Definition Language) operations for creating and updating database schema
         autoDDL: false
         ## @param orchestration.data.secondaryStorage.rdbms.prefix defines a prefix to be used for database table names
@@ -2742,24 +2744,24 @@ orchestration:
         maxQueueSize: ""
         ## @extra orchestration.data.secondaryStorage.rdbms.history configuration for managing historical data retention in the RDBMS database
         history:
-          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultHistoryTTL defines the default time-to-live (TTL) for historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultHistoryTTL default time-to-live (TTL) for various entities (ISO8601 Duration)
           defaultHistoryTTL: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultBatchOperationHistoryTTL defines the default TTL for batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultBatchOperationHistoryTTL the default TTL for batch operation (ISO8601 Duration)
           defaultBatchOperationHistoryTTL: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL defines the TTL for cancel process instance batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL the TTL for CANCEL process instance batch operation historical data records (ISO8601 Duration)
           batchOperationCancelProcessInstanceHistoryTTL: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL defines the TTL for migrate process instance batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL defines the TTL for MIGRATE process instance batch operation historical data records (ISO8601 Duration)
           batchOperationMigrateProcessInstanceHistoryTTL: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL defines the TTL for modify process instance batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL defines the TTL for MODIFY process instance batch operation historical data records
           batchOperationModifyProcessInstanceHistoryTTL: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationResolveIncidentHistoryTTL defines the TTL for resolve incident batch operation historical data records
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationResolveIncidentHistoryTTL defines the TTL for RESOLVE_INCIDENT batch operation historical data records (ISO8601 Duration)
           batchOperationResolveIncidentHistoryTTL: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.minHistoryCleanupInterval defines the minimum interval between historical data cleanup operations
+          ## @param orchestration.data.secondaryStorage.rdbms.history.minHistoryCleanupInterval the minimum interval between history cleanup operations (ISO8601 Duration)
           minHistoryCleanupInterval: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.maxHistoryCleanupInterval defines the maximum interval between historical data cleanup operations
+          ## @param orchestration.data.secondaryStorage.rdbms.history.maxHistoryCleanupInterval the maximum interval between history cleanup operations (ISO8601 Duration)
           maxHistoryCleanupInterval: ""
-          ## @param orchestration.data.secondaryStorage.rdbms.history.historyCleanupBatchSize defines the batch size for historical data cleanup operations
-          historyCleanupBatchSize: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.historyCleanupBatchSize [nullable] the maximum number of historical records to delete in one batch
+          historyCleanupBatchSize:
           ## @param orchestration.data.secondaryStorage.rdbms.history.usageMetricsCleanup if true, enables cleanup of usage metrics data
           usageMetricsCleanup: ""
           ## @extra orchestration.data.secondaryStorage.rdbms.history.processCache configuration for the process cache used in historical data operations
@@ -2768,8 +2770,8 @@ orchestration:
             maxSize: ""
           ## @extra orchestration.data.secondaryStorage.rdbms.history.batchOperationCache configuration for the batch operation cache used in historical data operations
           batchOperationCache:
-            ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCache.maxSize defines the maximum size of the batch operation cache
-            maxSize: ""
+            ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCache.maxSize [nullable] maximum number of batch operations to keep in cache
+            maxSize:
           ## @extra orchestration.data.secondaryStorage.rdbms.history.connectionPool configuration for the connection pool used in historical data operations
           connectionPool:
             ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.maximumPoolSize defines the maximum number of connections in the pool

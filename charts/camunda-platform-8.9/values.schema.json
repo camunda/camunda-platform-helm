@@ -5700,12 +5700,12 @@
                                     "properties": {
                                         "url": {
                                             "type": "string",
-                                            "description": "defines the JDBC connection URL for the RDBMS database",
+                                            "description": "the JDBC connection URL for the RDBMS database",
                                             "default": ""
                                         },
                                         "username": {
                                             "type": "string",
-                                            "description": "defines the username for authenticating with the RDBMS database",
+                                            "description": "the JDBMC username for authenticating with the RDBMS database",
                                             "default": ""
                                         },
                                         "secret": {
@@ -5713,7 +5713,7 @@
                                             "properties": {
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the password as a plain-text value for non-production usage",
+                                                    "description": "can be used to provide the JDBC password as a plain-text value for non-production usage",
                                                     "default": ""
                                                 },
                                                 "existingSecret": {
@@ -5723,20 +5723,27 @@
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "defines the key within the existing secret object",
+                                                    "description": "defines the key within the existing Kubernetes Secret",
                                                     "default": ""
                                                 }
                                             }
                                         },
                                         "flushInterval": {
                                             "type": "string",
-                                            "description": "defines the interval at which data is flushed to the RDBMS database",
+                                            "description": "the interval for batching inserts/updates to the RDBMS database (ISO8601 Duration)",
                                             "default": ""
                                         },
                                         "queueSize": {
-                                            "type": "string",
-                                            "description": "defines the size of the queue used for buffering data before flushing to the RDBMS database",
-                                            "default": ""
+                                            "type": "object",
+                                            "description": "the maximum number of records to batch before flushing to the RDBMS database",
+                                            "default": null,
+                                            "nullable": true
+                                        },
+                                        "queueMemoryLimit": {
+                                            "type": "object",
+                                            "description": "Maximum memory (in MB) to use for batching inserts/updates to the RDBMS database",
+                                            "default": null,
+                                            "nullable": true
                                         },
                                         "autoDDL": {
                                             "type": "boolean",
@@ -5758,48 +5765,49 @@
                                             "properties": {
                                                 "defaultHistoryTTL": {
                                                     "type": "string",
-                                                    "description": "defines the default time-to-live (TTL) for historical data records",
+                                                    "description": "default time-to-live (TTL) for various entities (ISO8601 Duration)",
                                                     "default": ""
                                                 },
                                                 "defaultBatchOperationHistoryTTL": {
                                                     "type": "string",
-                                                    "description": "defines the default TTL for batch operation historical data records",
+                                                    "description": "the default TTL for batch operation (ISO8601 Duration)",
                                                     "default": ""
                                                 },
                                                 "batchOperationCancelProcessInstanceHistoryTTL": {
                                                     "type": "string",
-                                                    "description": "defines the TTL for cancel process instance batch operation historical data records",
+                                                    "description": "the TTL for CANCEL process instance batch operation historical data records (ISO8601 Duration)",
                                                     "default": ""
                                                 },
                                                 "batchOperationMigrateProcessInstanceHistoryTTL": {
                                                     "type": "string",
-                                                    "description": "defines the TTL for migrate process instance batch operation historical data records",
+                                                    "description": "defines the TTL for MIGRATE process instance batch operation historical data records (ISO8601 Duration)",
                                                     "default": ""
                                                 },
                                                 "batchOperationModifyProcessInstanceHistoryTTL": {
                                                     "type": "string",
-                                                    "description": "defines the TTL for modify process instance batch operation historical data records",
+                                                    "description": "defines the TTL for MODIFY process instance batch operation historical data records",
                                                     "default": ""
                                                 },
                                                 "batchOperationResolveIncidentHistoryTTL": {
                                                     "type": "string",
-                                                    "description": "defines the TTL for resolve incident batch operation historical data records",
+                                                    "description": "defines the TTL for RESOLVE_INCIDENT batch operation historical data records (ISO8601 Duration)",
                                                     "default": ""
                                                 },
                                                 "minHistoryCleanupInterval": {
                                                     "type": "string",
-                                                    "description": "defines the minimum interval between historical data cleanup operations",
+                                                    "description": "the minimum interval between history cleanup operations (ISO8601 Duration)",
                                                     "default": ""
                                                 },
                                                 "maxHistoryCleanupInterval": {
                                                     "type": "string",
-                                                    "description": "defines the maximum interval between historical data cleanup operations",
+                                                    "description": "the maximum interval between history cleanup operations (ISO8601 Duration)",
                                                     "default": ""
                                                 },
                                                 "historyCleanupBatchSize": {
-                                                    "type": "string",
-                                                    "description": "defines the batch size for historical data cleanup operations",
-                                                    "default": ""
+                                                    "type": "object",
+                                                    "description": "the maximum number of historical records to delete in one batch",
+                                                    "default": null,
+                                                    "nullable": true
                                                 },
                                                 "usageMetricsCleanup": {
                                                     "type": "string",
@@ -5820,9 +5828,10 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "maxSize": {
-                                                            "type": "string",
-                                                            "description": "defines the maximum size of the batch operation cache",
-                                                            "default": ""
+                                                            "type": "object",
+                                                            "description": "maximum number of batch operations to keep in cache",
+                                                            "default": null,
+                                                            "nullable": true
                                                         }
                                                     }
                                                 },

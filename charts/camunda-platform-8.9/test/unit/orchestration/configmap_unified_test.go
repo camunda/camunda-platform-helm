@@ -349,6 +349,18 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldContainRDBMSMaxQueueSizeMemoryLimit",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                  "true",
+				"orchestration.data.secondaryStorage.rdbms.url":          "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":     "camunda",
+				"orchestration.data.secondaryStorage.rdbms.queueMemoryLimit": "5000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.rdbms.queueMemoryLimit": "5000",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainRDBMSHistoryDefaultTTL",
 			Values: map[string]string{
 				"orchestration.exporters.rdbms.enabled":                               "true",

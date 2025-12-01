@@ -119,6 +119,9 @@ camunda:
         {{- if .queueSize }}
         queueSize: {{ .queueSize | quote }}
         {{- end }}
+        {{- if .queueMemoryLimit }}
+        queueMemoryLimit: {{ .queueMemoryLimit | quote }}
+        {{- end }}
         {{- if .autoDDL }}
         auto-ddl: {{ .autoDDL }}
         {{- end }}
