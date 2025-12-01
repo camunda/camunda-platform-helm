@@ -2614,6 +2614,8 @@ orchestration:
         existingSecret: ""
         ## @param orchestration.migration.identity.secret.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: ""
+      ## @param orchestration.migration.identity.env can be used to set extra environment variables in the identity migration job container
+      env: []
     ## @extra orchestration.migration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
     # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
     # It uses a hard requirement for scheduling and works based on the pod labels
