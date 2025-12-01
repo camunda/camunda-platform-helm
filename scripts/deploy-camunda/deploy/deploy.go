@@ -63,9 +63,16 @@ func Execute(ctx context.Context, flags *config.RuntimeFlags) error {
 	logging.Logger.Info().Str("dir", tempDir).Msg("Created temporary values directory")
 
 	// Set environment variables for prepare-helm-values
-	os.Setenv("KEYCLOAK_REALM", realmName)
-	os.Setenv("OPTIMIZE_INDEX_PREFIX", optimizePrefix)
-	os.Setenv("ORCHESTRATION_INDEX_PREFIX", orchestrationPrefix)
+	if os.Getenv("KEYCLOAK_REALM") == "" {
+		os.Setenv("KEYCLOAK_REALM", realmName)
+	}
+	if os.Getenv("OPTIMIZE_INDEX_PREFIX") == "" {
+		os.Setenv("OPTIMIZE_INDEX_PREFIX", optimizePrefix)
+	}
+	if os.Getenv("ORCHESTRATION_INDEX_PREFIX") == "" {
+		os.Setenv("ORCHESTRATION_INDEX_PREFIX", orchestrationPrefix)
+	}
+
 	os.Setenv("FLOW", flags.Flow)
 
 	// Set Keycloak environment variables
