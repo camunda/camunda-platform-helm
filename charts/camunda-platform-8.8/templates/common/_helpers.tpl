@@ -1031,19 +1031,26 @@ Note: java resolves JAVA_TOOL_OPTIONS env var expansion at deployment time, not 
 evaluation time. This allows for dynamic values to be injected at runtime.
 */}}
 
-{{- define "common.java_tool_options_tls_env" -}}
+{{- /* Internal: resolve the correct TLS JKS config for the currently enabled engine */ -}}
+{{- define "camundaPlatform._resolve_tls_jks_config" -}}
+{{- $cfg := dict -}}
+{{- if .Values.global.elasticsearch.tls.existingSecret -}}
+{{-   $cfg = (.Values.global.elasticsearch.tls.jks | default dict) -}}
+{{- else if .Values.global.opensearch.tls.existingSecret -}}
+{{-   $cfg = (.Values.global.opensearch.tls.jks | default dict) -}}
+{{- end -}}
+{{- toYaml $cfg -}}
+{{- end -}}
+
+{{- /* Internal: unified JAVA_TOOL_OPTIONS + TRUSTSTORE_PASSWORD emitter */ -}}
+{{- define "camundaPlatform._java_tool_options_tls_env" -}}
 {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
 {{- $vals := .Values -}}
 {{- $comp := required "common.java_tool_options_tls_env: parameter 'component' is required" .component -}}
 {{- $compVals := (get $vals $comp) | default dict -}}
 {{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
-{{- /* Choose JKS for the engine whose TLS secret is actually configured */ -}}
-{{- $jks := dict -}}
-{{- if .Values.global.elasticsearch.tls.existingSecret -}}
-{{-   $jks = (.Values.global.elasticsearch.tls.jks | default dict) -}}
-{{- else if .Values.global.opensearch.tls.existingSecret -}}
-{{-   $jks = (.Values.global.opensearch.tls.jks | default dict) -}}
-{{- end -}}
+{{- $truststorePath := required "camundaPlatform._java_tool_options_tls_env: parameter 'truststorePath' is required" .truststorePath -}}
+{{- $jks := ((include "camundaPlatform._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
 {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
 {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
     "envName" "TRUSTSTORE_PASSWORD"
@@ -1054,53 +1061,38 @@ evaluation time. This allows for dynamic values to be injected at runtime.
   value: >-
     {{- if $javaOpts -}}
     {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-    {{- printf "%s\n-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $javaOpts | nindent 4 }}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $javaOpts $truststorePath | nindent 4 }}
     {{- else -}}
-    {{- printf "%s\n-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks" $javaOpts | nindent 4 }}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s" $javaOpts $truststorePath | nindent 4 }}
     {{- end -}}
     {{- else -}}
     {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-    {{- printf "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" | nindent 4 }}
+    {{- printf "-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $truststorePath | nindent 4 }}
     {{- else -}}
-    {{- printf "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks" | nindent 4 }}
+    {{- printf "-Djavax.net.ssl.trustStore=%s" $truststorePath | nindent 4 }}
     {{- end -}}
     {{- end -}}
 {{- end }}
 {{- end }}
 
+{{- define "common.java_tool_options_tls_env" -}}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "truststorePath" "/usr/local/camunda/certificates/externaldb.jks"
+) }}
+{{- end }}
+
+{{/* optimize.java_tool_options_tls_env
+Delegates to camundaPlatform._java_tool_options_tls_env.
+See common.java_tool_options_tls_env for full documentation.
+*/}}
 {{- define "optimize.java_tool_options_tls_env" -}}
-{{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-{{- $vals := .Values -}}
-{{- $comp := required "common.java_tool_options_tls_env: parameter 'component' is required" .component -}}
-{{- $compVals := (get $vals $comp) | default dict -}}
-{{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
-{{- /* Choose JKS for the engine whose TLS secret is actually configured */ -}}
-{{- $jks := dict -}}
-{{- if .Values.global.elasticsearch.tls.existingSecret -}}
-{{-   $jks = (.Values.global.elasticsearch.tls.jks | default dict) -}}
-{{- else if .Values.global.opensearch.tls.existingSecret -}}
-{{-   $jks = (.Values.global.opensearch.tls.jks | default dict) -}}
-{{- end -}}
-{{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-{{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-    "envName" "TRUSTSTORE_PASSWORD"
-    "config" $jks
- ) | nindent 0 }}
-{{- end }}
-- name: JAVA_TOOL_OPTIONS
-  value: >-
-    {{- if $javaOpts -}}
-    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-    {{- printf "%s\n-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $javaOpts | nindent 4 }}
-    {{- else -}}
-    {{- printf "%s\n-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks" $javaOpts | nindent 4 }}
-    {{- end -}}
-    {{- else -}}
-    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
-    {{- printf "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" | nindent 4 }}
-    {{- else -}}
-    {{- printf "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks" | nindent 4 }}
-    {{- end -}}
-    {{- end -}}
-{{- end }}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "truststorePath" "/optimize/certificates/externaldb.jks"
+) }}
 {{- end }}
