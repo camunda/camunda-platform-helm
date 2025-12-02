@@ -31,7 +31,7 @@ main () {
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
     git-cliff ${latest_chart_tag_hash}..            \
-        --tag-pattern="camunda-platform-${app_version}"'.*'
+        --tag-pattern="camunda-platform-${app_version}"'.*' \
         --config "${cliff_config_file}"             \
         --output "${chart_dir}/RELEASE-NOTES.md"    \
         --include-path "${chart_dir}/**"            \
