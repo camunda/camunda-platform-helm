@@ -2737,7 +2737,7 @@ orchestration:
         ## @param orchestration.data.secondaryStorage.rdbms.queueMemoryLimit [nullable] Maximum memory (in MB) to use for batching inserts/updates to the RDBMS database
         queueMemoryLimit: 20
         ## @param orchestration.data.secondaryStorage.rdbms.autoDDL if true, enables automatic DDL (Data Definition Language) operations for creating and updating database schema
-        autoDDL: false
+        autoDDL: true
         ## @param orchestration.data.secondaryStorage.rdbms.prefix defines a prefix to be used for database table names
         prefix: ""
         ## @param orchestration.data.secondaryStorage.rdbms.maxQueueSize defines the maximum size of the queue used for buffering data

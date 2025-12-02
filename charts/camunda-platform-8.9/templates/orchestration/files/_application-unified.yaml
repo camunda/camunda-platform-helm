@@ -122,9 +122,7 @@ camunda:
         {{- if .queueMemoryLimit }}
         queueMemoryLimit: {{ .queueMemoryLimit | quote }}
         {{- end }}
-        {{- if .autoDDL }}
         auto-ddl: {{ .autoDDL }}
-        {{- end }}
         {{- if .prefix }}
         prefix: {{ .prefix | quote }}
         {{- end }}
