@@ -1,4 +1,6 @@
 global:
+  elasticsearch:
+    enabled: true
   multitenancy:
     checksEnabled: true
     apiEnabled: true
@@ -32,3 +34,6 @@ identityPostgresql:
   enabled: true
   auth:
     existingSecret: "integration-test-credentials"
+
+elasticsearch:
+  enabled: true

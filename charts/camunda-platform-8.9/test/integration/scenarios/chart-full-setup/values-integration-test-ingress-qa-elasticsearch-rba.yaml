@@ -1,9 +1,13 @@
 global:
+  elasticsearch:
+    enabled: true
   image:
     pullPolicy: Always
   identity:
     auth:
       enabled: true
+elasticsearch:
+  enabled: true
 orchestration:
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"

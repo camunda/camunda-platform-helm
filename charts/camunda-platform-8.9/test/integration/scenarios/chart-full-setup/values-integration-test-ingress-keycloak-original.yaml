@@ -162,9 +162,6 @@ console:
   keycloak:
     realm: $KEYCLOAK_REALM
 
-elasticsearch:
-  enabled: false
-
 prometheusServiceMonitor:
   enabled: true
   labels:

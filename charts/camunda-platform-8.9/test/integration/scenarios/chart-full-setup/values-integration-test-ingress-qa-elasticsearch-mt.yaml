@@ -1,4 +1,6 @@
 global:
+  elasticsearch:
+    enabled: true
   image:
     pullPolicy: Always
   identity:
@@ -220,3 +222,5 @@ connectors:
       value: password
     - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
       value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
+elasticsearch:
+  enabled: true
