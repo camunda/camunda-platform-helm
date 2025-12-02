@@ -273,9 +273,6 @@ data:
         {{- end }}
       {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
       realm: {{ .Values.identity.realm.id | quote }}
-      {{- if and (hasKey .Values.identity.realm "json") .Values.identity.realm.json.enabled }}
-      realmJson: file:{{ .Values.identity.realm.json.mountPath }}/{{ .Values.identity.realm.json.fileName }}
-      {{- end }}
       {{- end }}
       environment:
         clients:

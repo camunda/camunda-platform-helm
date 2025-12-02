@@ -19,7 +19,7 @@ global:
     enabled: true
     className: nginx
     # The Ingress host will be added via CLI.
-    host: "camunda.example.com"
+    host: "$CAMUNDA_HOSTNAME"
     tls:
       enabled: true
       # A wildcard certificate will be used.
@@ -93,11 +93,6 @@ identity:
   realm:
     enabled: true
     id: $KEYCLOAK_REALM
-    json:
-      enabled: true
-      configMapName: realm-json
-      mountPath: /config
-      fileName: realm.json
   firstUser:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"

@@ -27,3 +27,6 @@ playwright-report/
 
 scripts/camunda-deployer/camunda-deployer
 scripts/prepare-helm-values/prepare-helm-values
+
+scripts/deploy-camunda/deploy-camunda
+scripts/deploy-camunda/.env

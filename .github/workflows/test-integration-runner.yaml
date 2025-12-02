@@ -190,7 +190,7 @@ permissions:
   deployments: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ github.ref_name || github.ref }}-runner
   cancel-in-progress: true
 
 env:
@@ -469,6 +469,7 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
@@ -477,11 +478,6 @@ jobs:
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
             --interactive false
-
-      - name: Helm - Load keycloak realm json into the namespace
-        shell: bash
-        run: |
-          ./scripts/load-keycloak-configmap.sh "${{ env.CHART_PATH }}" "${{ env.KEYCLOAK_REALM }}" "${{ env.TEST_NAMESPACE }}"
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -710,6 +706,7 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \

@@ -68,7 +68,7 @@ setup_env_file() {
   fi
 
   log "Rendering env template: '$test_suite_path/vars/playwright/files/playwright-job-vars.env.template' -> '$env_file'"
-  keycloakUrl=$(kubectl -n "$namespace" get deployment integration-identity -o jsonpath="{.metadata.annotations.keycloak-token-url}")
+  keycloakUrl=$(kubectl -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
   host=""
   echo "::group::Keycloak URL parsing"
   if [[ -n "$keycloakUrl" ]]; then
