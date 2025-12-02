@@ -1,6 +1,6 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-8.7-12.7.1](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.7-12.7.1) (2025-11-27)
+## [camunda-platform-13.2.2](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.2.2) (2025-12-02)
 
 ### Fixes
 
