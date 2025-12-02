@@ -55,12 +55,14 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"console.enabled":                      "true",
-			"identity.enabled":                     "true",
-			"console.resources.requests.cpu":       "200m",
-			"console.resources.limits.cpu":         "1.5",
-			"console.resources.requests.memory":    "256Mi",
-			"console.resources.limits.memory":      "512Mi",
+			"console.enabled":                   "true",
+			"identity.enabled":                  "true",
+			"elasticsearch.enabled":             "true",
+			"global.elasticsearch.enabled":      "true",
+			"console.resources.requests.cpu":    "200m",
+			"console.resources.limits.cpu":      "1.5",
+			"console.resources.requests.memory": "256Mi",
+			"console.resources.limits.memory":   "512Mi",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}
@@ -72,19 +74,19 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	expectedRequest := resource.MustParse("200m")
 	expectedLimit := resource.MustParse("1.5")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 200m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 1.5, got %s", cpuLimit.String())
 }
 
@@ -95,6 +97,8 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 		SetValues: map[string]string{
 			"console.enabled":                   "true",
 			"identity.enabled":                  "true",
+			"elasticsearch.enabled":             "true",
+			"global.elasticsearch.enabled":      "true",
 			"console.resources.requests.cpu":    "600m",
 			"console.resources.limits.cpu":      "2000m",
 			"console.resources.requests.memory": "400Mi",
@@ -110,19 +114,19 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	// Verify the values match what we set
 	expectedRequest := resource.MustParse("600m")
 	expectedLimit := resource.MustParse("2000m")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 600m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 2000m, got %s", cpuLimit.String())
 }

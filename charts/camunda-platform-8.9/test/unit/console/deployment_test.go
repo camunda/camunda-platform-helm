@@ -230,8 +230,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// finding out the length of volumes array before addition of new volume
 				beforeOptions := &helm.Options{
 					SetValues: map[string]string{
-						"identity.enabled": "true",
-						"console.enabled":  "true",
+						"identity.enabled":             "true",
+						"console.enabled":              "true",
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 					ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -266,8 +268,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				beforeOptions := &helm.Options{
 					SetValues: map[string]string{
-						"console.enabled":  "true",
-						"identity.enabled": "true",
+						"console.enabled":              "true",
+						"identity.enabled":             "true",
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 					ExtraArgs:      map[string][]string{"install": {"--debug"}},
@@ -305,8 +309,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// finding out the length of volumes, volumemounts array before addition of new volume
 				beforeOptions := &helm.Options{
 					SetValues: map[string]string{
-						"console.enabled":  "true",
-						"identity.enabled": "true",
+						"console.enabled":              "true",
+						"identity.enabled":             "true",
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 					ExtraArgs:      map[string][]string{"install": {"--debug"}},

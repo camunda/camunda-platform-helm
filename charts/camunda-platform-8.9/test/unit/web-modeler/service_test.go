@@ -63,6 +63,8 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.annotations.foo":              "bar",
+				"global.elasticsearch.enabled": "true",
+				"elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
@@ -78,6 +80,8 @@ func (s *ServiceTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                                     "true",
 				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
 				"webModeler." + s.component + ".service.annotations.foo": "bar",
+				"global.elasticsearch.enabled": "true",
+				"elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var service coreV1.Service
