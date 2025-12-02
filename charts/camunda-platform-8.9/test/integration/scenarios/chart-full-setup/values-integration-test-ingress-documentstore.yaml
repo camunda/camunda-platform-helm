@@ -1,4 +1,6 @@
 global:
+  elasticsearch:
+    enabled: true
   documentStore:
     activeStoreId: "aws"
     type:
@@ -12,3 +14,6 @@ global:
         existingSecret: "s3-bucket-credentials"
         accessKeyIdKey: "access-key-id"
         secretAccessKeyKey: "secret-access-key"
+
+elasticsearch:
+  enabled: true

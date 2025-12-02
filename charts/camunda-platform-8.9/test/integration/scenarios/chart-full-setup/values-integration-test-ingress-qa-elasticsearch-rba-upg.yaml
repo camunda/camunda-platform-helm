@@ -1,4 +1,6 @@
 global:
+  elasticsearch:
+    enabled: true
   image:
     pullPolicy: Always
   identity:
@@ -104,4 +106,5 @@ operate:
   env:
     - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
       value: 'true'
-
+elasticsearch:
+  enabled: true
