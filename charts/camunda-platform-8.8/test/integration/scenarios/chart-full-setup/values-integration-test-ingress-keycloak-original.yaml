@@ -172,6 +172,10 @@ orchestration:
             - venom
     authentication:
       method: oidc
+      backwardsCompatibleAudiences:
+        - operate-api
+        - tasklist-api
+        - zeebe-api
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
