@@ -7,34 +7,40 @@ import (
 
 // RuntimeFlags holds all CLI flag values that can be merged with config.
 type RuntimeFlags struct {
-	ChartPath            string
-	Chart                string
-	ChartVersion         string
-	Namespace            string
-	Release              string
-	Scenario             string
-	ScenarioPath         string
-	Auth                 string
-	Platform             string
-	LogLevel             string
-	SkipDependencyUpdate bool
-	ExternalSecrets      bool
-	KeycloakHost         string
-	KeycloakProtocol     string
-	RepoRoot             string
-	Flow                 string
-	EnvFile              string
-	Interactive          bool
-	VaultSecretMapping   string
-	AutoGenerateSecrets  bool
-	DeleteNamespaceFirst bool
-	DockerUsername       string
-	DockerPassword       string
-	EnsureDockerRegistry bool
-	RenderTemplates      bool
-	RenderOutputDir      string
-	ExtraValues          []string
-	ValuesPreset         string
+	ChartPath                string
+	Chart                    string
+	ChartVersion             string
+	Namespace                string
+	Release                  string
+	Scenario                 string
+	ScenarioPath             string
+	Auth                     string
+	Platform                 string
+	LogLevel                 string
+	SkipDependencyUpdate     bool
+	ExternalSecrets          bool
+	KeycloakHost             string
+	KeycloakProtocol         string
+	KeycloakRealm            string
+	OptimizeIndexPrefix      string
+	OrchestrationIndexPrefix string
+	TasklistIndexPrefix      string
+	OperateIndexPrefix       string
+	IngressHost              string
+	RepoRoot                 string
+	Flow                     string
+	EnvFile                  string
+	Interactive              bool
+	VaultSecretMapping       string
+	AutoGenerateSecrets      bool
+	DeleteNamespaceFirst     bool
+	DockerUsername           string
+	DockerPassword           string
+	EnsureDockerRegistry     bool
+	RenderTemplates          bool
+	RenderOutputDir          string
+	ExtraValues              []string
+	ValuesPreset             string
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -77,6 +83,11 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.RenderOutputDir, dep.RenderOutputDir, rc.RenderOutputDir)
 	MergeStringField(&flags.RepoRoot, dep.RepoRoot, rc.RepoRoot)
 	MergeStringField(&flags.ValuesPreset, dep.ValuesPreset, rc.ValuesPreset)
+	MergeStringField(&flags.KeycloakRealm, dep.KeycloakRealm, rc.KeycloakRealm)
+	MergeStringField(&flags.OptimizeIndexPrefix, dep.OptimizeIndexPrefix, rc.OptimizeIndexPrefix)
+	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix)
+	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix)
+	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix)
 
 	// ScenarioPath special handling
 	if strings.TrimSpace(flags.ScenarioPath) == "" {
@@ -126,6 +137,11 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.RenderOutputDir, "", rc.RenderOutputDir)
 	MergeStringField(&flags.RepoRoot, "", rc.RepoRoot)
 	MergeStringField(&flags.ValuesPreset, "", rc.ValuesPreset)
+	MergeStringField(&flags.KeycloakRealm, "", rc.KeycloakRealm)
+	MergeStringField(&flags.OptimizeIndexPrefix, "", rc.OptimizeIndexPrefix)
+	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix)
+	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix)
+	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix)
 
 	if rc.ExternalSecrets {
 		flags.ExternalSecrets = true

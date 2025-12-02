@@ -18,69 +18,81 @@ type KeycloakConfig struct {
 
 // DeploymentConfig represents a single deployment profile.
 type DeploymentConfig struct {
-	Name                 string   `mapstructure:"-" yaml:"-"` // filled at runtime from map key
-	Chart                string   `mapstructure:"chart" yaml:"chart,omitempty"`
-	Version              string   `mapstructure:"version" yaml:"version,omitempty"`
-	Scenario             string   `mapstructure:"scenario" yaml:"scenario,omitempty"`
-	ChartPath            string   `mapstructure:"chartPath" yaml:"chartPath,omitempty"`
-	Namespace            string   `mapstructure:"namespace" yaml:"namespace,omitempty"`
-	Release              string   `mapstructure:"release" yaml:"release,omitempty"`
-	ScenarioPath         string   `mapstructure:"scenarioPath" yaml:"scenarioPath,omitempty"`
-	Auth                 string   `mapstructure:"auth" yaml:"auth,omitempty"`
-	Platform             string   `mapstructure:"platform" yaml:"platform,omitempty"`
-	LogLevel             string   `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
-	ExternalSecrets      *bool    `mapstructure:"externalSecrets" yaml:"externalSecrets,omitempty"`
-	SkipDependencyUpdate *bool    `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
-	Flow                 string   `mapstructure:"flow" yaml:"flow,omitempty"`
-	EnvFile              string   `mapstructure:"envFile" yaml:"envFile,omitempty"`
-	Interactive          *bool    `mapstructure:"interactive" yaml:"interactive,omitempty"`
-	VaultSecretMapping   string   `mapstructure:"vaultSecretMapping" yaml:"vaultSecretMapping,omitempty"`
-	AutoGenerateSecrets  *bool    `mapstructure:"autoGenerateSecrets" yaml:"autoGenerateSecrets,omitempty"`
-	DeleteNamespace      *bool    `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
-	DockerUsername       string   `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
-	DockerPassword       string   `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
-	EnsureDockerRegistry *bool    `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
-	RenderTemplates      *bool    `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
-	RenderOutputDir      string   `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
-	ExtraValues          []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
-	RepoRoot             string   `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
-	ScenarioRoot         string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
-	ValuesPreset         string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
+	Name                     string   `mapstructure:"-" yaml:"-"` // filled at runtime from map key
+	Chart                    string   `mapstructure:"chart" yaml:"chart,omitempty"`
+	Version                  string   `mapstructure:"version" yaml:"version,omitempty"`
+	Scenario                 string   `mapstructure:"scenario" yaml:"scenario,omitempty"`
+	ChartPath                string   `mapstructure:"chartPath" yaml:"chartPath,omitempty"`
+	Namespace                string   `mapstructure:"namespace" yaml:"namespace,omitempty"`
+	Release                  string   `mapstructure:"release" yaml:"release,omitempty"`
+	ScenarioPath             string   `mapstructure:"scenarioPath" yaml:"scenarioPath,omitempty"`
+	Auth                     string   `mapstructure:"auth" yaml:"auth,omitempty"`
+	Platform                 string   `mapstructure:"platform" yaml:"platform,omitempty"`
+	LogLevel                 string   `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
+	ExternalSecrets          *bool    `mapstructure:"externalSecrets" yaml:"externalSecrets,omitempty"`
+	SkipDependencyUpdate     *bool    `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
+	KeycloakRealm            string   `mapstructure:"keycloakRealm" yaml:"keycloakRealm,omitempty"`
+	OptimizeIndexPrefix      string   `mapstructure:"optimizeIndexPrefix" yaml:"optimizeIndexPrefix,omitempty"`
+	OrchestrationIndexPrefix string   `mapstructure:"orchestrationIndexPrefix" yaml:"orchestrationIndexPrefix,omitempty"`
+	TasklistIndexPrefix      string   `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
+	OperateIndexPrefix       string   `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
+	IngressHost              string   `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	Flow                     string   `mapstructure:"flow" yaml:"flow,omitempty"`
+	EnvFile                  string   `mapstructure:"envFile" yaml:"envFile,omitempty"`
+	Interactive              *bool    `mapstructure:"interactive" yaml:"interactive,omitempty"`
+	VaultSecretMapping       string   `mapstructure:"vaultSecretMapping" yaml:"vaultSecretMapping,omitempty"`
+	AutoGenerateSecrets      *bool    `mapstructure:"autoGenerateSecrets" yaml:"autoGenerateSecrets,omitempty"`
+	DeleteNamespace          *bool    `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
+	DockerUsername           string   `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
+	DockerPassword           string   `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
+	EnsureDockerRegistry     *bool    `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	RenderTemplates          *bool    `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
+	RenderOutputDir          string   `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
+	ExtraValues              []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
+	RepoRoot                 string   `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
+	ScenarioRoot             string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
+	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
 }
 
 // RootConfig represents the entire configuration file.
 type RootConfig struct {
-	Current              string                      `mapstructure:"current" yaml:"current,omitempty"`
-	RepoRoot             string                      `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
-	ScenarioRoot         string                      `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
-	ValuesPreset         string                      `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
-	ChartPath            string                      `mapstructure:"chartPath" yaml:"chartPath,omitempty"`
-	Chart                string                      `mapstructure:"chart" yaml:"chart,omitempty"`
-	Version              string                      `mapstructure:"version" yaml:"version,omitempty"`
-	Namespace            string                      `mapstructure:"namespace" yaml:"namespace,omitempty"`
-	Release              string                      `mapstructure:"release" yaml:"release,omitempty"`
-	Scenario             string                      `mapstructure:"scenario" yaml:"scenario,omitempty"`
-	ScenarioPath         string                      `mapstructure:"scenarioPath" yaml:"scenarioPath,omitempty"`
-	Auth                 string                      `mapstructure:"auth" yaml:"auth,omitempty"`
-	Platform             string                      `mapstructure:"platform" yaml:"platform,omitempty"`
-	LogLevel             string                      `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
-	ExternalSecrets      bool                        `mapstructure:"externalSecrets" yaml:"externalSecrets,omitempty"`
-	SkipDependencyUpdate bool                        `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
-	Flow                 string                      `mapstructure:"flow" yaml:"flow,omitempty"`
-	EnvFile              string                      `mapstructure:"envFile" yaml:"envFile,omitempty"`
-	Interactive          *bool                       `mapstructure:"interactive" yaml:"interactive,omitempty"`
-	VaultSecretMapping   string                      `mapstructure:"vaultSecretMapping" yaml:"vaultSecretMapping,omitempty"`
-	AutoGenerateSecrets  *bool                       `mapstructure:"autoGenerateSecrets" yaml:"autoGenerateSecrets,omitempty"`
-	DeleteNamespaceFirst *bool                       `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
-	DockerUsername       string                      `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
-	DockerPassword       string                      `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
-	EnsureDockerRegistry *bool                       `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
-	RenderTemplates      *bool                       `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
-	RenderOutputDir      string                      `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
-	ExtraValues          []string                    `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
-	Keycloak             KeycloakConfig              `mapstructure:"keycloak" yaml:"keycloak,omitempty"`
-	Deployments          map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
-	FilePath             string                      `mapstructure:"-" yaml:"-"`
+	Current                  string                      `mapstructure:"current" yaml:"current,omitempty"`
+	RepoRoot                 string                      `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
+	ScenarioRoot             string                      `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
+	ValuesPreset             string                      `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
+	ChartPath                string                      `mapstructure:"chartPath" yaml:"chartPath,omitempty"`
+	Chart                    string                      `mapstructure:"chart" yaml:"chart,omitempty"`
+	Version                  string                      `mapstructure:"version" yaml:"version,omitempty"`
+	Namespace                string                      `mapstructure:"namespace" yaml:"namespace,omitempty"`
+	Release                  string                      `mapstructure:"release" yaml:"release,omitempty"`
+	Scenario                 string                      `mapstructure:"scenario" yaml:"scenario,omitempty"`
+	ScenarioPath             string                      `mapstructure:"scenarioPath" yaml:"scenarioPath,omitempty"`
+	Auth                     string                      `mapstructure:"auth" yaml:"auth,omitempty"`
+	Platform                 string                      `mapstructure:"platform" yaml:"platform,omitempty"`
+	LogLevel                 string                      `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
+	ExternalSecrets          bool                        `mapstructure:"externalSecrets" yaml:"externalSecrets,omitempty"`
+	SkipDependencyUpdate     bool                        `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
+	KeycloakRealm            string                      `mapstructure:"keycloakRealm" yaml:"keycloakRealm,omitempty"`
+	OptimizeIndexPrefix      string                      `mapstructure:"optimizeIndexPrefix" yaml:"optimizeIndexPrefix,omitempty"`
+	OrchestrationIndexPrefix string                      `mapstructure:"orchestrationIndexPrefix" yaml:"orchestrationIndexPrefix,omitempty"`
+	TasklistIndexPrefix      string                      `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
+	OperateIndexPrefix       string                      `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
+	IngressHost              string                      `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	Flow                     string                      `mapstructure:"flow" yaml:"flow,omitempty"`
+	EnvFile                  string                      `mapstructure:"envFile" yaml:"envFile,omitempty"`
+	Interactive              *bool                       `mapstructure:"interactive" yaml:"interactive,omitempty"`
+	VaultSecretMapping       string                      `mapstructure:"vaultSecretMapping" yaml:"vaultSecretMapping,omitempty"`
+	AutoGenerateSecrets      *bool                       `mapstructure:"autoGenerateSecrets" yaml:"autoGenerateSecrets,omitempty"`
+	DeleteNamespaceFirst     *bool                       `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
+	DockerUsername           string                      `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
+	DockerPassword           string                      `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
+	EnsureDockerRegistry     *bool                       `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	RenderTemplates          *bool                       `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
+	RenderOutputDir          string                      `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
+	ExtraValues              []string                    `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
+	Keycloak                 KeycloakConfig              `mapstructure:"keycloak" yaml:"keycloak,omitempty"`
+	Deployments              map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
+	FilePath                 string                      `mapstructure:"-" yaml:"-"`
 }
 
 // ResolvePath determines the config file path to use.
@@ -197,6 +209,24 @@ func applyEnvOverrides(rc *RootConfig) {
 	}
 	if v := get("CAMUNDA_KEYCLOAK_PROTOCOL"); v != "" {
 		rc.Keycloak.Protocol = v
+	}
+	if v := get("CAMUNDA_KEYCLOAK_REALM"); v != "" {
+		rc.KeycloakRealm = v
+	}
+	if v := get("CAMUNDA_OPTIMIZE_INDEX_PREFIX"); v != "" {
+		rc.OptimizeIndexPrefix = v
+	}
+	if v := get("CAMUNDA_ORCHESTRATION_INDEX_PREFIX"); v != "" {
+		rc.OrchestrationIndexPrefix = v
+	}
+	if v := get("CAMUNDA_TASKLIST_INDEX_PREFIX"); v != "" {
+		rc.TasklistIndexPrefix = v
+	}
+	if v := get("CAMUNDA_OPERATE_INDEX_PREFIX"); v != "" {
+		rc.OperateIndexPrefix = v
+	}
+	if v := get("CAMUNDA_HOSTNAME"); v != "" {
+		rc.IngressHost = v
 	}
 }
 

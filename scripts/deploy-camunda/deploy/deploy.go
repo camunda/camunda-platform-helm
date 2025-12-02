@@ -14,9 +14,9 @@ import (
 	"scripts/deploy-camunda/config"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
+	"scripts/vault-secret-mapper/pkg/mapper"
 	"strings"
 	"time"
-	"vault-secret-mapper/pkg/mapper"
 
 	"github.com/jwalton/gchalk"
 )
@@ -42,17 +42,35 @@ func maskIfSet(val string) string {
 
 // Execute performs the actual Camunda deployment based on the provided flags.
 func Execute(ctx context.Context, flags *config.RuntimeFlags) error {
-	// Generate identifiers
-	suffix := generateRandomSuffix()
-	realmName := fmt.Sprintf("%s-%s", flags.Namespace, suffix)
-	optimizePrefix := fmt.Sprintf("opt-%s", suffix)
-	orchestrationPrefix := fmt.Sprintf("orch-%s", suffix)
+	// Generate identifiers only if not provided via flags
+	var realmName, optimizePrefix, orchestrationPrefix string
 
-	logging.Logger.Info().
-		Str("realm", realmName).
-		Str("optimize", optimizePrefix).
-		Str("orchestration", orchestrationPrefix).
-		Msg("Generated identifiers")
+	if flags.KeycloakRealm != "" {
+		realmName = flags.KeycloakRealm
+		logging.Logger.Info().Str("realm", realmName).Msg("Using provided Keycloak realm")
+	} else {
+		suffix := generateRandomSuffix()
+		realmName = fmt.Sprintf("%s-%s", flags.Namespace, suffix)
+		logging.Logger.Info().Str("realm", realmName).Msg("Generated Keycloak realm")
+	}
+
+	if flags.OptimizeIndexPrefix != "" {
+		optimizePrefix = flags.OptimizeIndexPrefix
+		logging.Logger.Info().Str("optimize", optimizePrefix).Msg("Using provided Optimize index prefix")
+	} else {
+		suffix := generateRandomSuffix()
+		optimizePrefix = fmt.Sprintf("opt-%s", suffix)
+		logging.Logger.Info().Str("optimize", optimizePrefix).Msg("Generated Optimize index prefix")
+	}
+
+	if flags.OrchestrationIndexPrefix != "" {
+		orchestrationPrefix = flags.OrchestrationIndexPrefix
+		logging.Logger.Info().Str("orchestration", orchestrationPrefix).Msg("Using provided Orchestration index prefix")
+	} else {
+		suffix := generateRandomSuffix()
+		orchestrationPrefix = fmt.Sprintf("orch-%s", suffix)
+		logging.Logger.Info().Str("orchestration", orchestrationPrefix).Msg("Generated Orchestration index prefix")
+	}
 
 	// Create temp directory for values
 	tempDir, err := os.MkdirTemp("", "camunda-values-*")
@@ -73,6 +91,9 @@ func Execute(ctx context.Context, flags *config.RuntimeFlags) error {
 		os.Setenv("ORCHESTRATION_INDEX_PREFIX", orchestrationPrefix)
 	}
 
+	if os.Getenv("CAMUNDA_HOSTNAME") == "" && flags.IngressHost != "" {
+		os.Setenv("CAMUNDA_HOSTNAME", flags.IngressHost)
+	}
 	os.Setenv("FLOW", flags.Flow)
 
 	// Set Keycloak environment variables

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"scripts/camunda-core/pkg/logging"
-	"vault-secret-mapper/pkg/mapper"
+	"scripts/vault-secret-mapper/pkg/mapper"
 )
 
 func main() {
