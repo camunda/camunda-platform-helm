@@ -55,9 +55,10 @@ func (s *ElasticsearchResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"elasticsearch.enabled":                      "true",
-			"elasticsearch.master.resources.requests.cpu": "500m",
-			"elasticsearch.master.resources.limits.cpu":   "1.5",
+			"global.elasticsearch.enabled":                   "true",
+			"elasticsearch.enabled":                          "true",
+			"elasticsearch.master.resources.requests.cpu":    "500m",
+			"elasticsearch.master.resources.limits.cpu":      "1.5",
 			"elasticsearch.master.resources.requests.memory": "1Gi",
 			"elasticsearch.master.resources.limits.memory":   "2Gi",
 		},
@@ -71,20 +72,20 @@ func (s *ElasticsearchResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 
 	// then
 	container := statefulset.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	// Verify the values match what we set
 	expectedRequest := resource.MustParse("500m")
 	expectedLimit := resource.MustParse("1.5")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 500m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 1.5, got %s", cpuLimit.String())
 }
 
@@ -93,9 +94,10 @@ func (s *ElasticsearchResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatib
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"elasticsearch.enabled":                      "true",
-			"elasticsearch.master.resources.requests.cpu": "1000m",
-			"elasticsearch.master.resources.limits.cpu":   "2000m",
+			"global.elasticsearch.enabled":                   "true",
+			"elasticsearch.enabled":                          "true",
+			"elasticsearch.master.resources.requests.cpu":    "1000m",
+			"elasticsearch.master.resources.limits.cpu":      "2000m",
 			"elasticsearch.master.resources.requests.memory": "2Gi",
 			"elasticsearch.master.resources.limits.memory":   "2Gi",
 		},
@@ -109,19 +111,19 @@ func (s *ElasticsearchResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatib
 
 	// then
 	container := statefulset.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	// Verify the values match what we set
 	expectedRequest := resource.MustParse("1000m")
 	expectedLimit := resource.MustParse("2000m")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 1000m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 2000m, got %s", cpuLimit.String())
 }

@@ -59,6 +59,8 @@ func (s *secretTest) TestSecretExternalDatabaseEnabledWithDefinedPassword() {
 			"identityPostgresql.enabled":         "false",
 			"identity.externalDatabase.enabled":  "true",
 			"identity.externalDatabase.password": "super-secure-ext",
+			"elasticsearch.enabled":              "true",
+			"global.elasticsearch.enabled":       "true",
 		},
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 	}

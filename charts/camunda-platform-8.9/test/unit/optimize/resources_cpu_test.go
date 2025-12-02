@@ -57,6 +57,8 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 		SetValues: map[string]string{
 			"optimize.enabled":                   "true",
 			"identity.enabled":                   "true",
+			"elasticsearch.enabled":              "true",
+			"global.elasticsearch.enabled":       "true",
 			"optimize.resources.requests.cpu":    "500m",
 			"optimize.resources.limits.cpu":      "1.5",
 			"optimize.resources.requests.memory": "512Mi",
@@ -72,20 +74,20 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	// Verify the values match what we set
 	expectedRequest := resource.MustParse("500m")
 	expectedLimit := resource.MustParse("1.5")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 500m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 1.5, got %s", cpuLimit.String())
 }
 
@@ -96,6 +98,8 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
 		SetValues: map[string]string{
 			"optimize.enabled":                   "true",
 			"identity.enabled":                   "true",
+			"elasticsearch.enabled":              "true",
+			"global.elasticsearch.enabled":       "true",
 			"optimize.resources.requests.cpu":    "600m",
 			"optimize.resources.limits.cpu":      "2000m",
 			"optimize.resources.requests.memory": "1Gi",
@@ -111,19 +115,19 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility() {
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	// Verify the values match what we set
 	expectedRequest := resource.MustParse("600m")
 	expectedLimit := resource.MustParse("2000m")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 600m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 2000m, got %s", cpuLimit.String())
 }

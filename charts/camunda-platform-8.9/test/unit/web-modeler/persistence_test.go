@@ -59,6 +59,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Name: "TestPersistenceDisabledUsesEmptyDir",
 			Values: map[string]string{
 				"identity.enabled":                    "true",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				// persistence.enabled defaults to false
@@ -86,6 +88,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Name: "TestPersistenceEnabledCreatesVolume",
 			Values: map[string]string{
 				"identity.enabled":                      "true",
+				"global.elasticsearch.enabled":          "true",
+				"elasticsearch.enabled":                 "true",
 				"webModeler.enabled":                    "true",
 				"webModeler.restapi.mail.fromAddress":   "example@example.com",
 				"webModeler.persistence.enabled":        "true",
@@ -116,6 +120,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Name: "TestPersistenceWithExistingClaimCreatesVolume",
 			Values: map[string]string{
 				"identity.enabled":                     "true",
+				"global.elasticsearch.enabled":         "true",
+				"elasticsearch.enabled":                "true",
 				"webModeler.enabled":                   "true",
 				"webModeler.restapi.mail.fromAddress":  "example@example.com",
 				"webModeler.persistence.enabled":       "true",
@@ -144,6 +150,8 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			Name: "TestPersistenceDisabledWhenComponentDisabled",
 			Values: map[string]string{
 				"identity.enabled":                    "true",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 				"webModeler.enabled":                  "false",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.persistence.enabled":      "true",
