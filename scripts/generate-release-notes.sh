@@ -88,11 +88,39 @@ main () {
     rm "${artifacthub_changes_tmp}"
 }
 
+# Generate a version matrix for a certain Camunda version.
+# Copying this file from generate-version-matrix because this notes script should be isolated from a single version.
+# Also because bash scripts calling other makefile targets is messy.
+generate_version_matrix_single () {
+    SUPPORTED_CAMUNDA_VERSION_DATA="${1}" \
+    gomplate \
+      --config scripts/templates/version-matrix/.gomplate.yaml \
+      --datasource release=env:///SUPPORTED_CAMUNDA_VERSION_DATA?type=application/json \
+      --file scripts/templates/version-matrix/VERSION-MATRIX-RELEASE.md.tpl
+}
+
+# Copying this file from generate-version-matrix because this notes script should be isolated from a single version.
+# Also because bash scripts calling other makefile targets is messy.
+generate_version_matrix_unreleased () {
+    export CHART_SOURCE="${CHART_DIR}"
+    export CHART_REF_NAME="$(git branch --show-current)"
+    CHART_VERSION_LOCAL="{
+      \"app\": \"$(echo $(yq '.appVersion | sub("\..$", "")' "${CHART_SOURCE}/Chart.yaml"))\",
+      \"charts\": [
+        \"$(yq '.version' "${CHART_SOURCE}/Chart.yaml")\"
+      ]
+    }"
+
+    SUPPORTED_CAMUNDA_VERSION_DATA="$(echo ${CHART_VERSION_LOCAL} | jq -c '.[0]')"
+
+    generate_version_matrix_single "${SUPPORTED_CAMUNDA_VERSION_DATA}"
+}
+
 release_notes_footer () {
     chart_dir="${1}"
     export CHART_RELEASE_NAME="$(yq '[.name, .version] | join("-")' "${chart_dir}/Chart.yaml")"
     export VERSION_MATRIX_RELEASE_HEADER="false"
-    export VERSION_MATRIX_RELEASE_INFO="$(CHART_DIR=${chart_dir} make release.generate-version-matrix-unreleased)"
+    export VERSION_MATRIX_RELEASE_INFO="$(CHART_DIR=${chart_dir} generate_version_matrix_unreleased)"
     echo "\nChart dir: $${chart_dir}";\
     gomplate --file scripts/templates/release-notes/RELEASE-NOTES-FOOTER.md.tpl |
         tee --append "${chart_dir}/RELEASE-NOTES.md"
