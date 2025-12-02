@@ -15,6 +15,7 @@ main () {
     chart_file="${chart_dir}/Chart.yaml"
     chart_name="$(yq '.name' ${chart_file})"
     chart_version="$(yq '.version' ${chart_file})"
+    app_version="$(yq '.appVersion' ${chart_file} | cut -d"." -f1-2)"
     chart_tag="${chart_name}-${chart_version}"
 
     #
@@ -30,6 +31,7 @@ main () {
     #
     # Generate RELEASE-NOTES.md file (used for Github release notes and ArtifactHub "changes" annotation).
     git-cliff ${latest_chart_tag_hash}..            \
+        --tag-pattern="camunda-platform-${app_version}"'.*'
         --config "${cliff_config_file}"             \
         --output "${chart_dir}/RELEASE-NOTES.md"    \
         --include-path "${chart_dir}/**"            \
@@ -103,7 +105,6 @@ generate_version_matrix_single () {
 # Also because bash scripts calling other makefile targets is messy.
 generate_version_matrix_unreleased () {
     export CHART_SOURCE="${CHART_DIR}"
-    export CHART_REF_NAME="$(git branch --show-current)"
     CHART_VERSION_LOCAL="{
       \"app\": \"$(echo $(yq '.appVersion | sub("\..$", "")' "${CHART_SOURCE}/Chart.yaml"))\",
       \"charts\": [
