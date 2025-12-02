@@ -5748,7 +5748,7 @@
                                         "autoDDL": {
                                             "type": "boolean",
                                             "description": "if true, enables automatic DDL (Data Definition Language) operations for creating and updating database schema",
-                                            "default": false
+                                            "default": true
                                         },
                                         "prefix": {
                                             "type": "string",
