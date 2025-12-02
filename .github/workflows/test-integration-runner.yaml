@@ -469,6 +469,7 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
@@ -705,6 +706,7 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
