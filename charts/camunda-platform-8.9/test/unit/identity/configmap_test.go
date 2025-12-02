@@ -314,6 +314,63 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(applicationYaml, "- Orchestration",
 					"FirstUser should have Orchestration role when orchestration uses OIDC auth")
 			},
+		}, {
+			Name:                 "TestConnectorsDisabledExcludesOidcConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.security.authentication.method":    "oidc",
+				"connectors.enabled":                       "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "connectors:",
+					"Connectors OIDC config should not be present when connectors is disabled")
+			},
+		}, {
+			Name:                 "TestOrchestrationDisabledExcludesOidcConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.security.authentication.method":    "oidc",
+				"orchestration.enabled":                    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "orchestration:",
+					"Orchestration OIDC config should not be present when orchestration is disabled")
+			},
+		}, {
+			Name:                 "TestBothDisabledExcludesOidcConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"global.identity.auth.enabled":             "true",
+				"global.security.authentication.method":    "oidc",
+				"connectors.enabled":                       "false",
+				"orchestration.enabled":                    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				s.Require().NotContains(applicationYaml, "connectors:",
+					"Connectors OIDC config should not be present when connectors is disabled")
+				s.Require().NotContains(applicationYaml, "orchestration:",
+					"Orchestration OIDC config should not be present when orchestration is disabled")
+			},
 		},
 	}
 
