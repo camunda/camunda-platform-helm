@@ -112,7 +112,7 @@ generate_version_matrix_unreleased () {
       ]
     }"
 
-    SUPPORTED_CAMUNDA_VERSION_DATA="$(echo ${CHART_VERSION_LOCAL} | jq -c '.[0]')"
+    SUPPORTED_CAMUNDA_VERSION_DATA="${CHART_VERSION_LOCAL}"
 
     generate_version_matrix_single "${SUPPORTED_CAMUNDA_VERSION_DATA}"
 }
