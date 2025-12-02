@@ -70,7 +70,7 @@ runs:
       # NOTE: We should use the matrix job id var once it's available.
       # https://github.com/orgs/community/discussions/40291
       # NOTE we are using a hash here rather than a random value so that the namepsace is deterministic
-      GITHUB_WORKFLOW_JOB_ID=$(echo -n "$TEST_NAMESPACE-${{ github.run_id }}" | sha256sum | head -c 6)
+      GITHUB_WORKFLOW_JOB_ID=$(echo -n "$TEST_NAMESPACE-${{ github.run_id }}-${{ github.run_attempt }}" | sha256sum | head -c 6)
       # Workflow.
       echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
       echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
