@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.2.1
+version: 13.2.2
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -72,5 +72,9 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Add support for extra environment variables in identity migration job"
     - kind: fixed
-      description: "Remove conditional rendering from management identity configmap"
+      description: "Let helm chart support hybrid auth"
+    - kind: fixed
+      description: "Return none for authMethod when component is disabled"
