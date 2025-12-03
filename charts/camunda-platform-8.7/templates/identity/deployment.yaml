@@ -128,6 +128,11 @@ spec:
                   */}}
                   name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
                   key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
               {{- end }}
             - name: KEYCLOAK_URL
               value: {{ include "identity.keycloak.url" . | quote }}
