@@ -73,8 +73,10 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Add support for extra environment variables in identity migration job"
+      description: "Support password field for jks"
     - kind: fixed
-      description: "Let helm chart support hybrid auth"
+      description: "Correct extraVolumeMounts binding in importer deployment"
     - kind: fixed
-      description: "Return none for authMethod when component is disabled"
+      description: "Modeler webapp to websockets connection not using override option"
+    - kind: fixed
+      description: "Replace SNAPSHOT tags with stable versions in 8.8 values-digest.yaml"
