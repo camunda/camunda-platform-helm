@@ -57,6 +57,8 @@ Every issue should have a meaningful name and a description that either describe
 <!-- Only select `Unknown` if it's really difficult to tell without spending a non-negligible amount of time (e.g. >1h) to -->
 <!-- figure it out. -->
 
+### Starting on an issue
+
 The `main` branch contains the current in-development state of the project. To work on an issue, follow these steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
@@ -86,3 +88,48 @@ The `main` branch contains the current in-development state of the project. To w
    ```
 
 6. If you think you finished the issue, please prepare the branch for review. Please consider our [pull requests and code reviews](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews) guide, before requesting a review. In general, the commits should be squashed into meaningful commits with a helpful message. This means cleanup/fix etc. commits should be squashed into the related commit. If you made refactorings it would be best if they are split up into another commit. Think about how a reviewer can best understand your changes. Please follow the [commit message guidelines](#commit-message-guidelines).
+
+## Commit message guidelines
+
+Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format.
+
+```
+<header>
+<BLANK LINE> (optional - mandatory with body)
+<body> (optional)
+<BLANK LINE> (optional - mandatory with footer)
+<footer> (optional)
+```
+
+Camunda uses a GitHub Actions workflow to check your commit messages when a pull request is submitted. Please make sure to address any hints from the bot, otherwise the PR cannot be merged.
+
+**Exception:** In some situations it is not possible to avoid having commits that violate above guidelines, e.g. when merging another PR into the branch of your PR via merge commit or when merging back a release branch. Only in those cases you should explain the motivation and add the `ci:ignore-commitlint` label to your PR to disable the commit message checks.
+
+### Commit message header
+
+Examples:
+
+- `docs: add guide for external Elasticsearch`
+- `perf: increase memory limit of Orchestration Cluster`
+- `feat: add sidecar for Optimize`
+
+The commit header should match the following pattern:
+
+```
+%{type}: %{description}
+```
+
+The commit header should be kept short, preferably under 72 chars but we allow a max of 120 chars.
+
+- `type` should be one of:
+  - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
+  - `ci`: Changes to our CI configuration files and scripts (e.g. GitHub Actions, etc)
+  - `deps`: A change to the external dependencies (was already used by Dependabot)
+  - `docs`: A change to the documentation
+  - `feat`: A new feature (both internal or user-facing)
+  - `fix`: A bug fix (both internal or user-facing)
+  - `perf`: A code change that improves performance
+  - `refactor`: A code change that does not change the behavior
+  - `style`: A change to align the code with our style guide
+  - `test`: Adding missing tests or correcting existing tests
+- `description`: short description of the change in present tense
