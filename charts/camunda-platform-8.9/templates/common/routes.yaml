@@ -4,19 +4,19 @@ metadata:
   name: orchestration
 spec:
   parentRefs:
-  - name: camunda-gateway
+  - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: http
   hostnames:
-  - "local.distro.ultrawombat.com"
+  - {{ .Values.global.gateway.hostname | quote }}
   rules:
   - matches:
     - path:
         type: PathPrefix
-        value: /orchestration
+        value: {{ .Values.orchestration.contextPath }}
     backendRefs:
-    - name: cpt-zeebe-gateway
-      namespace: default
-      port: 8080
+    - name: {{ include "orchestration.serviceName" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.orchestration.service.httpPort }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -24,19 +24,19 @@ metadata:
   name: keycloak
 spec:
   parentRefs:
-  - name: camunda-gateway
+  - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: http
   hostnames:
-  - "local.distro.ultrawombat.com"
+  - {{ .Values.global.gateway.hostname | quote }}
   rules:
   - matches:
     - path:
         type: PathPrefix
-        value: /auth
+        value: {{ include "identity.keycloak.contextPath" . | trimSuffix "/" }}/
     backendRefs:
-    - name: cpt-keycloak
-      namespace: default
-      port: 80
+    - name: {{ include "identity.keycloak.service" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ include "identity.keycloak.port" . }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -44,19 +44,19 @@ metadata:
   name: identity
 spec:
   parentRefs:
-  - name: camunda-gateway
+  - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: http
   hostnames:
-  - "local.distro.ultrawombat.com"
+  - {{ .Values.global.gateway.hostname | quote }}
   rules:
   - matches:
     - path:
         type: PathPrefix
-        value: /identity
+        value: {{ .Values.identity.contextPath }}
     backendRefs:
-    - name: cpt-identity
-      namespace: default
-      port: 80
+    - name: {{ template "identity.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.identity.service.port }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -64,19 +64,19 @@ metadata:
   name: optimize
 spec:
   parentRefs:
-  - name: camunda-gateway
+  - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: http
   hostnames:
-  - "local.distro.ultrawombat.com"
+  - {{ .Values.global.gateway.hostname | quote }}
   rules:
   - matches:
     - path:
         type: PathPrefix
-        value: /optimize
+        value: {{ .Values.optimize.contextPath }}
     backendRefs:
-    - name: cpt-optimize
-      namespace: default
-      port: 80
+    - name: {{ template "optimize.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.optimize.service.port }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -84,19 +84,19 @@ metadata:
   name: modeler
 spec:
   parentRefs:
-  - name: camunda-gateway
+  - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: http
   hostnames:
-  - "local.distro.ultrawombat.com"
+  - {{ .Values.global.gateway.hostname | quote }}
   rules:
   - matches:
     - path:
         type: PathPrefix
-        value: /modeler
+        value: {{ .Values.webModeler.contextPath }}
     backendRefs:
-    - name: cpt-web-modeler-webapp
-      namespace: default
-      port: 80
+    - name: {{ template "webModeler.webapp.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.webModeler.webapp.service.port }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -104,19 +104,19 @@ metadata:
   name: connectors
 spec:
   parentRefs:
-  - name: camunda-gateway
+  - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: http
   hostnames:
-  - "local.distro.ultrawombat.com"
+  - {{ .Values.global.gateway.hostname | quote }}
   rules:
   - matches:
     - path:
         type: PathPrefix
-        value: /connectors
+        value: {{ .Values.connectors.contextPath }}
     backendRefs:
-    - name: cpt-connectors
-      namespace: default
-      port: 8080
+    - name: {{ template "connectors.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.connectors.service.serverPort }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -124,24 +124,24 @@ metadata:
   name: console
 spec:
   parentRefs:
-  - name: camunda-gateway
+  - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: http
   hostnames:
-  - "local.distro.ultrawombat.com"
+  - {{ .Values.global.gateway.hostname | quote }}
   rules:
   - matches:
     - path:
         type: PathPrefix
-        value: /console
+        value: {{ .Values.console.contextPath }}
     backendRefs:
-    - name: cpt-console
-      namespace: default
-      port: 80
+    - name: {{ template "console.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.console.service.port }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GRPCRoute
 metadata:
-  name: grpc-zeebe
+  name: {{ include "camundaPlatform.fullname" . }}-grpc
 spec:
   hostnames:
-  - "zeebe.local.distro.ultrawombat.com"
+  - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
