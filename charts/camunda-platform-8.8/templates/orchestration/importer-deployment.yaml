@@ -78,8 +78,7 @@ spec:
             ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.orchestration.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
+            {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "orchestration" ) | nindent 12 }}
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.orchestration.javaOpts | quote }}
@@ -202,7 +201,7 @@ spec:
               readOnly: true
             {{- end }}
             {{- if .Values.orchestration.importer.extraVolumeMounts }}
-            {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
+            {{ .Values.orchestration.importer.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
       volumes:
         {{- if .Values.global.elasticsearch.tls.existingSecret }}

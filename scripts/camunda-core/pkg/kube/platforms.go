@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,6 +150,10 @@ func copySecretBetweenNamespaces(ctx context.Context, client *Client, srcNamespa
 		defaultApplyOptions(),
 	)
 	if err != nil {
+		// Check if error is due to namespace termination
+		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+			return fmt.Errorf("failed to apply copied secret %q to namespace %q: namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, destNamespace, err)
+		}
 		return fmt.Errorf("failed to apply copied secret %q to namespace %q: %w", secretName, destNamespace, err)
 	}
 

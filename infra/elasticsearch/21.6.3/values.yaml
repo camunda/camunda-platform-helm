@@ -22,7 +22,7 @@ master:
       value: "false"
 
 data:
-  replicaCount: 5
+  replicaCount: 6
   heapSize: 1536m
   resources:
     requests: { cpu: "2000m", memory: "3Gi" }
@@ -37,7 +37,7 @@ data:
     size: 20Gi
   pdb:
     create: true
-    minAvailable: 1
+    minAvailable: 2
 
 coordinating:
   replicaCount: 2
@@ -156,7 +156,7 @@ extraConfig:
 
 esConfig:
   elasticsearch.yml: |
-    cluster.max_shards_per_node: 2000
+    cluster.max_shards_per_node: 3500
     cluster.routing.allocation.disk.threshold_enabled: true
     cluster.routing.allocation.disk.watermark.low: 70%
     cluster.routing.allocation.disk.watermark.high: 85%
@@ -166,6 +166,12 @@ esConfig:
     cluster.routing.allocation.enable: all
     action.destructive_requires_name: false
     cluster.routing.rebalance.enable: all
+    # Shard optimization for high shard count environments
+    cluster.routing.allocation.same_shard.host: true
+    indices.recovery.max_bytes_per_sec: 100mb
+    # Index defaults to reduce shard proliferation
+    index.number_of_shards: 1
+    index.number_of_replicas: 0
   jvm.options: |
     -Xms1.5g
     -Xmx1.5g

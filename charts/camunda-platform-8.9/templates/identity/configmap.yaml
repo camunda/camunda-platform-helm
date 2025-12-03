@@ -196,6 +196,9 @@ data:
     {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
     keycloak:
       url: {{ include "identity.keycloak.url" . | quote }}
+      {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
+      realm: {{ .Values.identity.realm.id | quote }}
+      {{- end }}
       setup:
         user: {{ include "identity.keycloak.authAdminUser" . | quote }}
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}

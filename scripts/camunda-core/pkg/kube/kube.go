@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"scripts/camunda-core/pkg/logging"
 	"strings"
@@ -19,12 +20,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/yaml"
 )
 
 const fieldManagerName = "camunda-platform-helm"
@@ -94,6 +95,11 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 		return errors.New("namespace must not be empty")
 	}
 
+	// Check if namespace exists and is terminating
+	if err := c.waitForNamespaceNotTerminating(ctx, namespace, 5*time.Minute); err != nil {
+		return err
+	}
+
 	logging.Logger.Debug().Str("namespace", namespace).Msg("applying namespace")
 
 	nsApply := corev1apply.Namespace(namespace)
@@ -105,6 +111,53 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 
 	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace applied successfully")
 	return nil
+}
+
+// waitForNamespaceNotTerminating checks if a namespace is terminating and waits for deletion to complete
+func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace string, timeout time.Duration) error {
+	ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// Namespace doesn't exist, we can proceed
+			return nil
+		}
+		return fmt.Errorf("failed to check namespace status: %w", err)
+	}
+
+	// Check if namespace is terminating
+	if ns.Status.Phase != corev1.NamespaceTerminating {
+		// Namespace exists and is not terminating
+		return nil
+	}
+
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Msg("Namespace is currently being deleted, waiting for deletion to complete...")
+
+	// Wait for namespace to be fully deleted
+	startTime := time.Now()
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+		_, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			logging.Logger.Info().
+				Str("namespace", namespace).
+				Str("duration", time.Since(startTime).String()).
+				Msg("Namespace deletion completed")
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+
+		elapsed := time.Since(startTime)
+		if int(elapsed.Seconds())%10 == 0 {
+			logging.Logger.Debug().
+				Str("namespace", namespace).
+				Str("elapsed", elapsed.String()).
+				Msg("Still waiting for namespace deletion...")
+		}
+		return false, nil
+	})
 }
 
 func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, username, password string) error {
@@ -145,6 +198,10 @@ func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, user
 		defaultApplyOptions(),
 	)
 	if err != nil {
+		// Check if error is due to namespace termination
+		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+			return fmt.Errorf("failed to apply docker registry secret in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", namespace, c.kubeContext, err)
+		}
 		return fmt.Errorf("failed to apply docker registry secret in namespace %q (context=%q): %w", namespace, c.kubeContext, err)
 	}
 
@@ -231,6 +288,10 @@ func (c *Client) ApplyConfigMap(ctx context.Context, namespace, name string, dat
 		defaultApplyOptions(),
 	)
 	if err != nil {
+		// Check if error is due to namespace termination
+		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+			return fmt.Errorf("failed to apply ConfigMap %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", name, namespace, c.kubeContext, err)
+		}
 		return fmt.Errorf("failed to apply ConfigMap %q in namespace %q (context=%q): %w", name, namespace, c.kubeContext, err)
 	}
 
@@ -252,6 +313,10 @@ func (c *Client) SetLabelsAndAnnotations(ctx context.Context, namespace string, 
 
 	_, err := c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
 	if err != nil {
+		// Check if error is due to namespace termination
+		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+			return fmt.Errorf("failed to apply namespace %q labels/annotations (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", namespace, c.kubeContext, err)
+		}
 		return fmt.Errorf("failed to apply namespace %q labels/annotations (context=%q): %w", namespace, c.kubeContext, err)
 	}
 
@@ -335,16 +400,47 @@ func applyManifestFile(ctx context.Context, client *Client, namespace, filePath 
 }
 
 func applyManifestData(ctx context.Context, client *Client, namespace string, data []byte) error {
-	var obj map[string]any
-	if err := yaml.Unmarshal(data, &obj); err != nil {
-		return fmt.Errorf("failed to parse manifest (YAML/JSON): %w", err)
+	// Use utilyaml.NewYAMLOrJSONDecoder to properly handle multi-document YAML files
+	// This is the standard Kubernetes approach for parsing manifests (used by kubectl, etc.)
+	appliedCount := 0
+	decoder := utilyaml.NewYAMLOrJSONDecoder(strings.NewReader(string(data)), 4096)
+
+	for docNum := 1; ; docNum++ {
+		var obj map[string]any
+		err := decoder.Decode(&obj)
+
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return fmt.Errorf("failed to decode document %d: %w", docNum, err)
+		}
+
+		// Skip empty documents
+		if len(obj) == 0 {
+			continue
+		}
+
+		if err := applySingleManifestObject(ctx, client, namespace, obj, docNum); err != nil {
+			return err
+		}
+		appliedCount++
 	}
 
+	logging.Logger.Debug().
+		Int("documentsApplied", appliedCount).
+		Str("namespace", namespace).
+		Msg("successfully applied all manifest documents")
+
+	return nil
+}
+
+func applySingleManifestObject(ctx context.Context, client *Client, namespace string, obj map[string]any, docNum int) error {
 	unstructuredObj := &unstructured.Unstructured{Object: obj}
 	gvk := unstructuredObj.GroupVersionKind()
 
 	if unstructuredObj.GetAPIVersion() == "" || unstructuredObj.GetKind() == "" {
-		return fmt.Errorf("manifest missing apiVersion or kind")
+		return fmt.Errorf("document %d missing apiVersion or kind", docNum)
 	}
 
 	if unstructuredObj.GetNamespace() == "" {
@@ -359,11 +455,12 @@ func applyManifestData(ctx context.Context, client *Client, namespace string, da
 		Str("kind", gvk.Kind).
 		Str("resource", gvr.Resource).
 		Str("namespace", namespace).
+		Int("documentNumber", docNum).
 		Msg("applying resource")
 
 	data, err := json.Marshal(unstructuredObj.Object)
 	if err != nil {
-		return fmt.Errorf("failed to marshal resource for apply: %w", err)
+		return fmt.Errorf("failed to marshal resource for apply (document %d): %w", docNum, err)
 	}
 
 	_, err = client.dynamicClient.Resource(gvr).Namespace(namespace).Patch(
@@ -374,7 +471,11 @@ func applyManifestData(ctx context.Context, client *Client, namespace string, da
 		defaultPatchOptions(),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to apply %s %q in namespace %q: %w", gvk.Kind, unstructuredObj.GetName(), namespace, err)
+		// Check if error is due to namespace termination
+		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, err)
+		}
+		return fmt.Errorf("failed to apply %s %q in namespace %q (document %d): %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, err)
 	}
 
 	return nil

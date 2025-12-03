@@ -12,6 +12,7 @@ RELEASE_NAME="elasticsearch"
 CHART="bitnami/elasticsearch"
 CHART_VERSION="21.6.3"
 VALUES_FILE=""
+NAMESPACE=""
 
 # ExternalSecret defaults
 EXTERNAL_SECRET_FILE="$REPO_ROOT/.github/config/external-secret/external-secret-infra.yaml"
@@ -36,6 +37,7 @@ Options:
   --chart CHART                    Helm chart (default: ${CHART})
   --version CHART_VERSION          Helm chart version (default: ${CHART_VERSION})
   --values PATH                    Values file (default: infra/elasticsearch/${CHART_VERSION}/values.yaml)
+  --namespace NAMESPACE            Kubernetes namespace to deploy into (default derived from --version)
   --external-secret-file PATH      Path to ExternalSecret YAML to apply (default: ${EXTERNAL_SECRET_FILE})
   --skip-external-secret           Do not apply ExternalSecret
   --timeout DURATION               Helm wait timeout (default: ${HELM_TIMEOUT})
@@ -46,6 +48,7 @@ Options:
 
 Examples:
   $0 --release es --version 21.6.3 \
+     --namespace my-elasticsearch \
      --external-secret-file .github/config/external-secret/external-secret-credentials.yaml \
      --set security.existingSecret=integration-test-credentials
 EOF
@@ -70,6 +73,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   --values)
     VALUES_FILE="$2"
+    shift 2
+    ;;
+  --namespace)
+    NAMESPACE="$2"
     shift 2
     ;;
   --external-secret-file)
@@ -112,8 +119,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Derive namespace and default values file from chart version
-NAMESPACE="distribution-elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
+# Derive namespace and default values file from chart version if not provided
+if [[ -z "${NAMESPACE}" ]]; then
+  NAMESPACE="distribution-elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
+fi
 if [[ -z "$VALUES_FILE" ]]; then
   VALUES_FILE="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}/values.yaml"
 fi

@@ -80,6 +80,7 @@ run_playwright_tests() {
   local reporter="$5"
   local test_exclude="$6"
   local run_smoke_tests="$7"
+  local enable_debug="$8"
 
   log "Changing directory to $test_suite_path"
   log "Smoke tests: $run_smoke_tests"
@@ -87,19 +88,33 @@ run_playwright_tests() {
 
   cd "$test_suite_path" || exit
 
-  npm i --no-audit --no-fund --silent
+  npm install --no-audit --no-fund --prefer-online --package-lock=false
+  # Ensure Playwright browsers are available (fresh install or version update)
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    npx playwright install --with-deps || exit 1
+  else
+    npx playwright install || exit 1
+  fi
 
   if [[ $show_html_report == "true" ]]; then
     reporter="html"
   fi
 
+  # Enable Playwright debug and traces if requested
+  TRACE_FLAG=""
+  if [[ "$enable_debug" == "true" ]]; then
+    export DEBUG="${DEBUG:-pw:api,pw:browser*}"
+    TRACE_FLAG="--trace=retain-on-failure"
+    log "Playwright DEBUG enabled: $DEBUG"
+  fi
+
   mkdir -p "$test_suite_path/test-results"
   if [[ $run_smoke_tests == true ]]; then
     log "Running smoke tests"
-    npx playwright test --project=smoke-tests --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude"
+    npx playwright test --project=smoke-tests --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $TRACE_FLAG
   else
     log "Running full suite"
-    npx playwright test --project=full-suite --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude"
+    npx playwright test --project=full-suite --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $TRACE_FLAG
   fi
   playwright_rc=$? # <-- capture the exit status BEFORE doing anything else
 
