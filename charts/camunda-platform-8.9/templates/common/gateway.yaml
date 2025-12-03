@@ -1,11 +1,13 @@
+{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: camunda-gateway
+  name: {{ include "camundaPlatform.fullname" . }}
 spec:
-  gatewayClassName: nginx
+  gatewayClassName: {{ .Values.global.gateway.className }}
   listeners:
   - name: http
-    port: 8023
+    port: {{ if .Values.global.gateway.tls.enabled }}443{{ else }}80{{ end }}
     protocol: HTTP
-    hostname: "local.distro.ultrawombat.com"
+    hostname: {{ .Values.global.gateway.hostname }}
+{{- end }}

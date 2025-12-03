@@ -1,13 +1,13 @@
 kind: ReferenceGrant
 apiVersion: gateway.networking.k8s.io/v1beta1
 metadata:
-  name: camunda-grant
-  namespace: default
+  name: {{ include "camundaPlatform.fullname" . }}
+  namespace: {{ .Release.Namespace }}
 spec:
   from:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
-    namespace: nginx-gateway
+    namespace: {{ .Values.global.gateway.controllerNamespace | default .Release.Namespace }}
   to:
   - group: ""
     kind: Service
