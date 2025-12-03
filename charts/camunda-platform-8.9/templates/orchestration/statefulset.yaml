@@ -68,7 +68,7 @@ spec:
                 "config" .Values.global.license
                 "plaintextKey" "key"
             ) | nindent 12 }}
-            {{- if eq (include "orchestration.authEnabled" .) "true" }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
                 "config" .Values.orchestration.security.authentication.oidc
@@ -117,6 +117,12 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_OPENSEARCH_PASSWORD"
                 "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"
+                "config" .Values.orchestration.data.secondaryStorage.rdbms
             ) | nindent 12 }}
             {{- end }}
           envFrom:

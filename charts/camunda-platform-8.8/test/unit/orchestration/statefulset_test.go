@@ -737,6 +737,56 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 
 				require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
+		}, {
+			// Test hybrid auth: orchestration uses basic auth, so no OIDC secret needed
+			Name: "TestHybridAuthOrchestrationBasicNoOidcSecret",
+			Values: map[string]string{
+				"identity.enabled":                              "true",
+				"identityKeycloak.enabled":                      "true",
+				"global.identity.auth.enabled":                  "true",
+				"orchestration.security.authentication.method":  "basic",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then - VALUES_ORCHESTRATION_CLIENT_SECRET should NOT be present
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				for _, envvar := range env {
+					s.Require().NotEqual("VALUES_ORCHESTRATION_CLIENT_SECRET", envvar.Name,
+						"Orchestration should not have OIDC secret when using basic auth")
+				}
+			},
+		}, {
+			// Test that orchestration OIDC secret is only included when orchestration.authMethod=oidc
+			Name: "TestOrchestrationOidcSecretOnlyWithOidcAuth",
+			Values: map[string]string{
+				"identity.enabled":                                                    "true",
+				"identityKeycloak.enabled":                                            "true",
+				"global.identity.auth.enabled":                                        "true",
+				"orchestration.security.authentication.method":                        "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then - VALUES_ORCHESTRATION_CLIENT_SECRET should be present
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(
+					env,
+					corev1.EnvVar{
+						Name: "VALUES_ORCHESTRATION_CLIENT_SECRET",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "orchestration-oidc-secret"},
+								Key:                  "client-secret",
+							},
+						},
+					},
+					"Orchestration should have OIDC secret when orchestration.authMethod=oidc")
+			},
 		},
 	}
 

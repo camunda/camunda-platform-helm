@@ -80,6 +80,7 @@ run_playwright_tests() {
   local reporter="$5"
   local test_exclude="$6"
   local run_smoke_tests="$7"
+  local enable_debug="$8"
 
   log "Changing directory to $test_suite_path"
   log "Smoke tests: $run_smoke_tests"
@@ -87,19 +88,33 @@ run_playwright_tests() {
 
   cd "$test_suite_path" || exit
 
-  npm i --no-audit --no-fund --silent
+  npm install --no-audit --no-fund --prefer-online --package-lock=false
+  # Ensure Playwright browsers are available (fresh install or version update)
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    npx playwright install --with-deps || exit 1
+  else
+    npx playwright install || exit 1
+  fi
 
   if [[ $show_html_report == "true" ]]; then
     reporter="html"
   fi
 
+  # Enable Playwright debug and traces if requested
+  TRACE_FLAG=""
+  if [[ "$enable_debug" == "true" ]]; then
+    export DEBUG="${DEBUG:-pw:api,pw:browser*}"
+    TRACE_FLAG="--trace=retain-on-failure"
+    log "Playwright DEBUG enabled: $DEBUG"
+  fi
+
   mkdir -p "$test_suite_path/test-results"
   if [[ $run_smoke_tests == true ]]; then
     log "Running smoke tests"
-    npx playwright test --project=smoke-tests --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude"
+    npx playwright test --project=smoke-tests --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $TRACE_FLAG
   else
     log "Running full suite"
-    npx playwright test --project=full-suite --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude"
+    npx playwright test --project=full-suite --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $TRACE_FLAG
   fi
   playwright_rc=$? # <-- capture the exit status BEFORE doing anything else
 
@@ -114,4 +129,40 @@ run_playwright_tests() {
     log "❌  Playwright tests failed with code $playwright_rc"
     exit $playwright_rc # propagate the failure to CI
   fi
+}
+
+# Run playwright tests for hybrid auth - runs specific test files with a specific auth type
+# This function does NOT exit so multiple phases can run sequentially
+run_playwright_tests_hybrid() {
+  local test_suite_path="$1"
+  local show_html_report="$2"
+  local auth_type="$3"
+  local test_files="$4"
+  local test_exclude="$5"
+  local reporter="html"
+
+  log "Running hybrid tests: auth_type='$auth_type' test_files='$test_files'"
+
+  cd "$test_suite_path" || exit
+
+  npm i --no-audit --no-fund --silent
+
+  if [[ $show_html_report == "true" ]]; then
+    reporter="html"
+  fi
+
+  mkdir -p "$test_suite_path/test-results"
+
+  # Run specific test files with the auth type set as environment variable
+  # This overrides any TEST_AUTH_TYPE in .env file
+  # shellcheck disable=SC2086
+  TEST_AUTH_TYPE="$auth_type" npx playwright test $test_files --project=full-suite --reporter="$reporter" --grep-invert="$test_exclude"
+  playwright_rc=$?
+
+  if [[ $playwright_rc -ne 0 ]]; then
+    log "❌  Hybrid Playwright tests ($auth_type) failed with code $playwright_rc"
+    exit $playwright_rc
+  fi
+
+  log "✅  Hybrid Playwright tests ($auth_type) passed"
 }

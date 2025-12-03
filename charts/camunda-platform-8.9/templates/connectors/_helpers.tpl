@@ -82,9 +82,13 @@ Authentication.
 */}}
 
 {{- define "connectors.authMethod" -}}
-    {{- .Values.connectors.security.authentication.method | default (
-        .Values.global.security.authentication.method | default "none"
-    ) -}}
+    {{- if not .Values.connectors.enabled -}}
+        none
+    {{- else -}}
+        {{- .Values.connectors.security.authentication.method | default (
+            .Values.global.security.authentication.method | default "none"
+        ) -}}
+    {{- end -}}
 {{- end -}}
 
 {{/*

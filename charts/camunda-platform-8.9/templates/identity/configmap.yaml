@@ -43,6 +43,7 @@ data:
       initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
       {{- end }}
       component-presets:
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
         connectors:
           applications:
             - name: Connectors
@@ -52,6 +53,7 @@ data:
               permissions:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: read:*
+        {{- end }}
         console:
           applications:
             - name: "Console"
@@ -114,6 +116,7 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
         orchestration:
           applications:
             - name: Orchestration
@@ -143,6 +146,7 @@ data:
                   definition: read:*
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
+        {{- end }}
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -192,18 +196,25 @@ data:
     {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
     keycloak:
       url: {{ include "identity.keycloak.url" . | quote }}
+      {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
+      realm: {{ .Values.identity.realm.id | quote }}
+      {{- end }}
       setup:
         user: {{ include "identity.keycloak.authAdminUser" . | quote }}
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
+        {{- end }}
         console:
           root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
+        {{- end }}
         webmodeler:
           root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
       clients:
@@ -219,10 +230,12 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             - resourceServerId: orchestration-api
               definition: read:*
             - resourceServerId: orchestration-api
               definition: write:*
+            {{- end }}
             - resourceServerId: optimize-api
               definition: write:*
             - resourceServerId: web-modeler-api
@@ -266,7 +279,9 @@ data:
             {{- if .Values.console.enabled }}
             - Console
             {{- end }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             - Orchestration
+            {{- end }}
           {{- end }}
         {{- end }}
         {{- if .Values.identity.users }}

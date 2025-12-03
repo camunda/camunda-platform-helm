@@ -87,6 +87,10 @@ spec:
             - name: KEYCLOAK_INIT_ZEEBE_NAME
               value: "Zeebe"
             - name: KEYCLOAK_INIT_ZEEBE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-zeebe-identity-secret
+                  key: zeebe-secret
             - name: KEYCLOAK_URL
               value: "http://camunda-platform-test-keycloak:80/auth"
             - name: KEYCLOAK_SETUP_USER

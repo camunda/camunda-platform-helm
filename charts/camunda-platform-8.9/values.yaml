@@ -1394,7 +1394,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.0-alpha1-rc3
+    tag: 8.9.0-alpha2-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -2714,6 +2714,76 @@ orchestration:
         processing: "2GB"
         ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         replication: "1GB"
+    ## @extra orchestration.data.secondaryStorage configuration for secondary storage backend used by the orchestration cluster
+    secondaryStorage:
+      ## @extra orchestration.data.secondaryStorage.rdbms configuration for RDBMS (Relational Database Management System) as secondary storage
+      rdbms:
+        ## @param orchestration.data.secondaryStorage.rdbms.url the JDBC connection URL for the RDBMS database
+        url: ""
+        ## @param orchestration.data.secondaryStorage.rdbms.username the JDBMC username for authenticating with the RDBMS database
+        username: ""
+        ## @extra orchestration.data.secondaryStorage.rdbms.secret configuration to provide the RDBMS password secret
+        secret:
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.inlineSecret can be used to provide the JDBC password as a plain-text value for non-production usage
+          inlineSecret: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          existingSecret: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+          existingSecretKey: ""
+        ## @param orchestration.data.secondaryStorage.rdbms.flushInterval the interval for batching inserts/updates to the RDBMS database (ISO8601 Duration)
+        flushInterval: ""
+        ## @param orchestration.data.secondaryStorage.rdbms.queueSize [nullable] the maximum number of records to batch before flushing to the RDBMS database
+        queueSize: 1000
+        ## @param orchestration.data.secondaryStorage.rdbms.queueMemoryLimit [nullable] Maximum memory (in MB) to use for batching inserts/updates to the RDBMS database
+        queueMemoryLimit: 20
+        ## @param orchestration.data.secondaryStorage.rdbms.autoDDL if true, enables automatic DDL (Data Definition Language) operations for creating and updating database schema
+        autoDDL: true
+        ## @param orchestration.data.secondaryStorage.rdbms.prefix defines a prefix to be used for database table names
+        prefix: ""
+        ## @param orchestration.data.secondaryStorage.rdbms.maxQueueSize defines the maximum size of the queue used for buffering data
+        maxQueueSize: ""
+        ## @extra orchestration.data.secondaryStorage.rdbms.history configuration for managing historical data retention in the RDBMS database
+        history:
+          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultHistoryTTL default time-to-live (TTL) for various entities (ISO8601 Duration)
+          defaultHistoryTTL: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.defaultBatchOperationHistoryTTL the default TTL for batch operation (ISO8601 Duration)
+          defaultBatchOperationHistoryTTL: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL the TTL for CANCEL process instance batch operation historical data records (ISO8601 Duration)
+          batchOperationCancelProcessInstanceHistoryTTL: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL defines the TTL for MIGRATE process instance batch operation historical data records (ISO8601 Duration)
+          batchOperationMigrateProcessInstanceHistoryTTL: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL defines the TTL for MODIFY process instance batch operation historical data records
+          batchOperationModifyProcessInstanceHistoryTTL: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationResolveIncidentHistoryTTL defines the TTL for RESOLVE_INCIDENT batch operation historical data records (ISO8601 Duration)
+          batchOperationResolveIncidentHistoryTTL: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.minHistoryCleanupInterval the minimum interval between history cleanup operations (ISO8601 Duration)
+          minHistoryCleanupInterval: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.maxHistoryCleanupInterval the maximum interval between history cleanup operations (ISO8601 Duration)
+          maxHistoryCleanupInterval: ""
+          ## @param orchestration.data.secondaryStorage.rdbms.history.historyCleanupBatchSize [nullable] the maximum number of historical records to delete in one batch
+          historyCleanupBatchSize: 1000
+          ## @param orchestration.data.secondaryStorage.rdbms.history.usageMetricsCleanup if true, enables cleanup of usage metrics data
+          usageMetricsCleanup: ""
+          ## @extra orchestration.data.secondaryStorage.rdbms.history.processCache configuration for the process cache used in historical data operations
+          processCache:
+            ## @param orchestration.data.secondaryStorage.rdbms.history.processCache.maxSize defines the maximum size of the process cache
+            maxSize: ""
+          ## @extra orchestration.data.secondaryStorage.rdbms.history.batchOperationCache configuration for the batch operation cache used in historical data operations
+          batchOperationCache:
+            ## @param orchestration.data.secondaryStorage.rdbms.history.batchOperationCache.maxSize [nullable] maximum number of batch operations to keep in cache
+            maxSize: 10000
+          ## @extra orchestration.data.secondaryStorage.rdbms.history.connectionPool configuration for the connection pool used in historical data operations
+          connectionPool:
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.maximumPoolSize defines the maximum number of connections in the pool
+            maximumPoolSize: ""
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.minimumIdle defines the minimum number of idle connections to maintain in the pool
+            minimumIdle: ""
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.idleTimeout defines the maximum time that a connection can sit idle in the pool
+            idleTimeout: ""
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.maxLifetime defines the maximum lifetime of a connection in the pool
+            maxLifetime: ""
+            ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.connectionTimeout defines the maximum time to wait for a connection from the pool
+            connectionTimeout: ""
   ## @param orchestration.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
   ## @param orchestration.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
@@ -2859,6 +2929,9 @@ orchestration:
     ## @param orchestration.exporters.camunda.enabled if true, enables the new Camunda exporter.
     camunda:
       enabled: true
+    ## @param orchestration.exporters.rdbms.enabled if true, enables the new RDBMS exporter.
+    rdbms:
+      enabled: false
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false

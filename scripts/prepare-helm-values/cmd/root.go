@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -73,6 +74,7 @@ func Execute() {
 			opts := values.Options{
 				ChartPath:    chartPath,
 				Scenario:     scenario,
+				ScenarioDir:  filepath.Join(chartPath, "test", "integration", "scenarios", "chart-full-setup"),
 				ValuesConfig: valuesConfig,
 				LicenseKey:   licenseKey,
 				Output:       output,
@@ -135,5 +137,3 @@ func Execute() {
 		os.Exit(1)
 	}
 }
-
-

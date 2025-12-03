@@ -100,7 +100,8 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithNewStyleS
 	// Test case: component has new style secret.existingSecret pointing to autogen secret
 	config := map[string]string{
 		"connectors.security.authentication.oidc.secret.existingSecret": "camunda-credentials",
-		"global.identity.auth.enabled": "true",
+		"global.identity.auth.enabled":                                  "true",
+		"global.security.authentication.method":                         "oidc",
 	}
 	
 	// Should generate the identity-connectors-client-token key (since connectors auth still uses identity)

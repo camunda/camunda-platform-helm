@@ -7,7 +7,7 @@ global:
     enabled: true
     className: nginx
     # The Ingress host will be added via CLI.
-    host: "camunda.example.com"
+    host: $CAMUNDA_HOSTNAME
     tls:
       enabled: true
       # A wildcard certificate will be used.
@@ -74,11 +74,6 @@ identity:
   realm:
     enabled: true
     id: $KEYCLOAK_REALM
-    json:
-      enabled: true
-      configMapName: realm-json
-      mountPath: /config
-      fileName: realm.json
   firstUser:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"
@@ -96,17 +91,7 @@ identity:
           definition: read
         - resourceServerId: camunda-identity-resource-server
           definition: write
-        - resourceServerId: operate-api
-          definition: read:*
-        - resourceServerId: operate-api
-          definition: write:*
-        - resourceServerId: tasklist-api
-          definition: read:*
-        - resourceServerId: tasklist-api
-          definition: write:*
         - resourceServerId: optimize-api
-          definition: write:*
-        - resourceServerId: zeebe-api
           definition: write:*
         - resourceServerId: web-modeler-api
           definition: write:*
@@ -129,6 +114,7 @@ connectors:
   contextPath: "/connectors"
   security:
     authentication:
+      method: oidc
       oidc:
         existingSecret:
           name: "integration-test-credentials"
@@ -186,15 +172,15 @@ orchestration:
             - venom
     authentication:
       method: oidc
+      backwardsCompatibleAudiences:
+        - operate-api
+        - tasklist-api
+        - zeebe-api
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
         existingSecret:
           name: "integration-test-credentials"
-        backwardsCompatibleAudiences:
-          - operate-api
-          - tasklist-api
-          - zeebe-api
 
 console:
   enabled: true
