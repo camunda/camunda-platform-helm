@@ -201,7 +201,7 @@ spec:
               readOnly: true
             {{- end }}
             {{- if .Values.orchestration.importer.extraVolumeMounts }}
-            {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
+            {{ .Values.orchestration.importer.extraVolumeMounts | toYaml | nindent 12 }}
             {{- end }}
       volumes:
         {{- if .Values.global.elasticsearch.tls.existingSecret }}
