@@ -6,8 +6,20 @@ metadata:
 spec:
   gatewayClassName: {{ .Values.global.gateway.className }}
   listeners:
+  {{- if .Values.global.gateway.tls.enabled }}
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: {{ .Values.global.gateway.hostname }}
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: {{ .Values.global.gateway.tls.secretName }}
+  {{- else }}
   - name: http
     port: {{ if .Values.global.gateway.tls.enabled }}443{{ else }}80{{ end }}
     protocol: HTTP
     hostname: {{ .Values.global.gateway.hostname }}
+  {{- end }}
 {{- end }}
