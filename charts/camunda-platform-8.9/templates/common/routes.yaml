@@ -5,7 +5,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: http
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ .Values.global.gateway.hostname | quote }}
   rules:
@@ -25,7 +25,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: http
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ .Values.global.gateway.hostname | quote }}
   rules:
@@ -45,7 +45,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: http
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ .Values.global.gateway.hostname | quote }}
   rules:
@@ -65,7 +65,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: http
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ .Values.global.gateway.hostname | quote }}
   rules:
@@ -85,7 +85,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: http
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ .Values.global.gateway.hostname | quote }}
   rules:
@@ -105,7 +105,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: http
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ .Values.global.gateway.hostname | quote }}
   rules:
@@ -125,7 +125,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
-    sectionName: http
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
   - {{ .Values.global.gateway.hostname | quote }}
   rules:
