@@ -857,7 +857,7 @@ es:
 					}
 				}
 				require.NotNil(s.T(), javaToolOptions)
-				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
 				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 				require.NotNil(s.T(), truststorePassword)
 				require.NotNil(s.T(), truststorePassword.ValueFrom)
@@ -889,7 +889,7 @@ es:
 					}
 				}
 				require.NotNil(s.T(), javaToolOptions)
-				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
 				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 				require.NotNil(s.T(), truststorePassword)
 				require.Equal(s.T(), "changeit", truststorePassword.Value)
@@ -898,8 +898,8 @@ es:
 		{
 			Name: "TestOptimizeOpenSearchTLSWithoutJKSDoesNotEmitPassword",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"optimize.enabled":                    "true",
+				"identity.enabled":                     "true",
+				"optimize.enabled":                     "true",
 				"global.opensearch.tls.existingSecret": "os-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -917,7 +917,7 @@ es:
 					}
 				}
 				require.NotNil(s.T(), javaToolOptions)
-				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
 				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 				require.False(s.T(), truststoreFound)
 			},
@@ -946,7 +946,7 @@ es:
 					}
 				}
 				require.NotNil(s.T(), javaToolOptions)
-				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
 				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 				require.NotNil(s.T(), truststorePassword)
 				require.NotNil(s.T(), truststorePassword.ValueFrom)
@@ -958,8 +958,8 @@ es:
 		{
 			Name: "TestOptimizeElasticsearchTLSWithoutJKSDoesNotEmitPassword",
 			Values: map[string]string{
-				"identity.enabled":                     "true",
-				"optimize.enabled":                     "true",
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
 				"global.elasticsearch.tls.existingSecret": "es-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -977,7 +977,7 @@ es:
 					}
 				}
 				require.NotNil(s.T(), javaToolOptions)
-				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
 				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 				require.False(s.T(), truststoreFound)
 			},
@@ -985,9 +985,9 @@ es:
 		{
 			Name: "TestOptimizeOpenSearchTLSRespectsJavaOptsWithAndWithoutJKS",
 			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"optimize.enabled":                    "true",
-				"optimize.javaOpts":                   "-Xmx512m -Xms256m",
+				"identity.enabled":                     "true",
+				"optimize.enabled":                     "true",
+				"optimize.javaOpts":                    "-Xmx512m -Xms256m",
 				"global.opensearch.tls.existingSecret": "os-tls-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1002,7 +1002,7 @@ es:
 				}
 				require.NotNil(s.T(), javaToolOptions)
 				require.Contains(s.T(), javaToolOptions.Value, "-Xmx512m -Xms256m")
-				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
 				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
 			},
 		},
