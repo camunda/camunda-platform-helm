@@ -17,7 +17,7 @@ How severe is the issue? Her are the options:
 Low, Medium, High, Critical, Unknown
 -->
 
-Severity:
+Likelihood:
 
 <!--
 How likely is the issue to occur:
