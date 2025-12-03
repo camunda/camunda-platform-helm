@@ -102,7 +102,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVarP(&flags.ChartVersion, "version", "v", "", "Chart version (only valid with --chart; not allowed with --chart-path)")
 	f.StringVarP(&flags.Namespace, "namespace", "n", "", "Kubernetes namespace")
 	f.StringVarP(&flags.Release, "release", "r", "", "Helm release name")
-	f.StringVarP(&flags.Scenario, "scenario", "s", "", "The name of the scenario to deploy")
+	f.StringVarP(&flags.Scenario, "scenario", "s", "", "The name of the scenario to deploy (comma-separated for parallel deployment)")
 	f.StringVar(&flags.ScenarioPath, "scenario-path", "", "Path to scenario files")
 	f.StringVar(&flags.Auth, "auth", "keycloak", "Auth scenario")
 	f.StringVar(&flags.Platform, "platform", "gke", "Target platform: gke, rosa, eks")
@@ -131,6 +131,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
 	f.StringVar(&flags.ValuesPreset, "values-preset", "", "Shortcut to append values-<preset>.yaml from chartPath if present (e.g. latest, enterprise)")
 	f.StringVar(&flags.IngressHost, "ingress-host", "", "Ingress host to set in values")
+	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
 
 	// Register completions
 	completion.RegisterScenarioCompletion(rootCmd, "scenario", "chart-path")
