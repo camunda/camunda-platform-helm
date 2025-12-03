@@ -1,6 +1,6 @@
 ---
 name: Issue report
-about: "Create a issue report"
+about: "Create an issue report"
 title: "[ISSUE] <issue title>"
 labels: kind/issue
 ---
