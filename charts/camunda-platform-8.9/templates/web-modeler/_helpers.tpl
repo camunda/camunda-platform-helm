@@ -243,7 +243,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
     {{- .Values.global.ingress.host }}
   {{- else -}}
-    localhost
+    {{- .Values.webModeler.websockets.publicHost }}
   {{- end }}
 {{- end -}}
 
