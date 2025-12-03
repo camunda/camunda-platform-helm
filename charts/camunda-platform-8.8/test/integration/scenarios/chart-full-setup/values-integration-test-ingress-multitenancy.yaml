@@ -10,7 +10,19 @@ global:
   security:
     authorization:
       enabled: true
-      
+
+identity:
+  enabled: true
+  firstUser:
+    existingSecret: "integration-test-credentials"
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+
+orchestration:
+  security:
     initialization:
       mappings:
         - mappingID: "admin-mapping"
@@ -22,13 +34,3 @@ global:
         - mappingID: "tenant-b-mapping"
           claimName: "tenant"
           claimValue: "tenant-b"
-
-identity:
-  enabled: true
-  firstUser:
-    existingSecret: "integration-test-credentials"
-
-identityPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
