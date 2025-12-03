@@ -1,5 +1,18 @@
 # Changelog
 
+## [11.11.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.1...camunda-platform-8.6-11.11.2) (2025-12-03)
+
+
+### Bug Fixes
+
+* add back zeebe secret referenced as string ([#4822](https://github.com/camunda/camunda-platform-helm/issues/4822)) ([9eaf035](https://github.com/camunda/camunda-platform-helm/commit/9eaf035cc70b918a6dad54452438ef230efa8b37))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#4830](https://github.com/camunda/camunda-platform-helm/issues/4830)) ([02793c0](https://github.com/camunda/camunda-platform-helm/commit/02793c0cea5cd70ae1e327510a00230fdbaa3ef1))
+* update patch-updates (patch) ([#4831](https://github.com/camunda/camunda-platform-helm/issues/4831)) ([c77bbe5](https://github.com/camunda/camunda-platform-helm/commit/c77bbe52c428f1a22597a76c19c0b26a40d6a8b7))
+
 ## [11.11.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.0...camunda-platform-8.6-11.11.1) (2025-11-28)
 
 
