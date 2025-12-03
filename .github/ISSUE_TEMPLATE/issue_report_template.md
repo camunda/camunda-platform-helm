@@ -1,7 +1,7 @@
 ---
 name: Issue report
-about: Create a issue report
-title: [ISSUE] <issue title>
+about: "Create a issue report"
+title: "[ISSUE] <issue title>"
 labels: kind/issue
 ---
 
