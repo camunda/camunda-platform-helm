@@ -8,6 +8,7 @@ For community-maintained Camunda projects, please visit the [Camunda Community H
 
 ## Prerequisites
 
+<!-- TODO: uncomment this section when we have a CLA in place -->
 <!-- ### Contributor License Agreement -->
 <!---->
 <!-- You will be asked to sign our [Contributor License Agreement](https://cla-assistant.io/camunda-community-hub/community) when you open a Pull Request. We are not asking you to assign copyright to us but to give us the right to distribute your code without restriction. We ask this of all contributors to assure our users of the origin and continuing existence of the code. -->
