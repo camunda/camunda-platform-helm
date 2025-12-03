@@ -184,7 +184,7 @@ global:
   ## @extra global.elasticsearch.tls.jks configuration to provide the jks secret.
   ## @param global.elasticsearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
   ## @param global.elasticsearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
-  ## @extra global.elasticsearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
+  ## @param global.elasticsearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
   elasticsearch:
     enabled: true
     external: false
@@ -238,7 +238,7 @@ global:
   ## @extra global.opensearch.tls.jks configuration to provide the jks secret.
   ## @param global.opensearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
   ## @param global.opensearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
-  ## @extra global.opensearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
+  ## @param global.opensearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
   opensearch:
     enabled: false
     aws:
