@@ -36,27 +36,29 @@ Every issue should have a meaningful name and a description that either describe
 - A problem, how we can reproduce it, and what the expected behavior would be
 - A change and the intention of how this would improve the system
 
-<!-- ### Severity and Likelihood (bugs): -->
-<!---->
-<!-- To help us prioritize, please also determine the severity and likelihood of the bug. To help you with this, here are the definitions for the options: -->
-<!---->
-<!-- Severity: -->
-<!-- - *Low:* Having little to no noticeable impact on usage for the user (e.g. log noise) -->
-<!-- - *Mid:* Having a noticeable impact on production usage, which does not lead to data loss, or for which there is a known configuration workaround. -->
-<!-- - *High:* Having a noticeable impact on production usage, which does not lead to data loss, but for which there is no known workaround, or the workaround is very complex. Examples include issues which lead to regular crashes and break the availability SLA. -->
-<!-- - *Critical:* Stop-the-world issue with a high impact that can lead to data loss (e.g. corruption, deletion, inconsistency, etc.), unauthorized privileged actions (e.g. remote code execution, data exposure, etc.), and for which there is no existing configuration workaround. -->
-<!-- - *Unknown:* If it's not possible to determine the severity of a bug without in-depth investigation, you can select unknown. This should be treated as high until we have enough information to triage it properly. -->
-<!---->
-<!-- Likelihood: -->
-<!-- - *Low:* rarely observed issue/ rather unlikely edge-case -->
-<!-- - *Mid:* occasionally observed -->
-<!-- - *High:* recurring issue -->
+### Severity and Likelihood (bugs)
 
-<!-- #### Determining the severity of an issue -->
-<!---->
-<!-- Whenever possible, please try to determine the severity of an issue to the best of your knowledge. -->
-<!-- Only select `Unknown` if it's really difficult to tell without spending a non-negligible amount of time (e.g. >1h) to -->
-<!-- figure it out. -->
+To help us prioritize, please also determine the severity and likelihood of the bug. To help you with this, here are the definitions for the options:
+
+Severity:
+
+- _Low:_ Having little to no noticeable impact on usage for the user (e.g. log noise)
+- _Mid:_ Having a noticeable impact on production usage, which does not lead to data loss, or for which there is a known configuration workaround.
+- _High:_ Having a noticeable impact on production usage, which does not lead to data loss, but for which there is no known workaround, or the workaround is very complex. Examples include issues which lead to regular crashes and break the availability SLA.
+- _Critical:_ Stop-the-world issue with a high impact that can lead to data loss (e.g. corruption, deletion, inconsistency, etc.), unauthorized privileged actions (e.g. remote code execution, data exposure, etc.), and for which there is no existing configuration workaround.
+- _Unknown:_ If it's not possible to determine the severity of a bug without in-depth investigation, you can select unknown. This should be treated as high until we have enough information to triage it properly.
+
+Likelihood:
+
+- _Low:_ rarely observed issue/ rather unlikely edge-case
+- _Mid:_ occasionally observed
+- _High:_ recurring issue
+
+#### Determining the severity of an issue
+
+Whenever possible, please try to determine the severity of an issue to the best of your knowledge.
+Only select `Unknown` if it's really difficult to tell without spending a non-negligible amount of time (e.g. >1h) to
+figure it out.
 
 ### Starting on an issue
 
