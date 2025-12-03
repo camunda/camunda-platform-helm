@@ -1,15 +1,15 @@
 ---
 name: Issue report
 about: Create a issue report
-title: "[ISSUE] <issue title>"
-labels: "kind/issue"
+title: [ISSUE] <issue title>
+labels: kind/issue
 ---
 
 **Describe the issue:**
 
 <!-- A clear and concise description of what the issue is. -->
 
-Severity:
+**Severity:**
 
 <!--
 How severe is the issue? Her are the options:
@@ -17,7 +17,7 @@ How severe is the issue? Her are the options:
 Low, Medium, High, Critical, Unknown
 -->
 
-Likelihood:
+**Likelihood:**
 
 <!--
 How likely is the issue to occur:
