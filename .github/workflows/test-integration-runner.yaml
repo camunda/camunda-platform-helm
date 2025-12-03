@@ -190,7 +190,7 @@ permissions:
   deployments: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ github.ref_name || github.ref }}-runner
   cancel-in-progress: true
 
 env:
@@ -255,7 +255,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -469,18 +469,15 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --verbose
-
-      - name: Helm - Load keycloak realm json into the namespace
-        shell: bash
-        run: |
-          ./scripts/load-keycloak-configmap.sh "${{ env.CHART_PATH }}" "${{ env.KEYCLOAK_REALM }}" "${{ env.TEST_NAMESPACE }}"
+            --log-level debug \
+            --interactive false
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -575,7 +572,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -718,13 +715,15 @@ jobs:
         env:
           VALS_CONFIG: ${{ inputs.values-config }}
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --verbose
+            --log-level debug \
+            --interactive false
 
       - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets
@@ -780,7 +779,7 @@ jobs:
     needs: [install]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
@@ -799,7 +798,7 @@ jobs:
       PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -837,7 +836,7 @@ jobs:
     needs: [upgrade]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
@@ -856,7 +855,7 @@ jobs:
       PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -912,7 +911,7 @@ jobs:
         deployments: write 
     steps:
       - name: CI Setup - Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -933,7 +932,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -990,7 +989,7 @@ jobs:
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [playwright-e2e-tests, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
-    if: ${{ always() && contains(needs.*.result, 'success') }}
+    if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1002,7 +1001,7 @@ jobs:
         uses: ./.github/actions/failed-pods-info
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm

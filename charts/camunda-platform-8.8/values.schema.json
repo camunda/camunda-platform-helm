@@ -246,6 +246,31 @@
                                     "type": "string",
                                     "description": "provide an already existing tls secret for connecting to external elasticsearch",
                                     "default": ""
+                                },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -361,6 +386,31 @@
                                     "type": "string",
                                     "description": "provide an already existing tls secret for connecting to external opensearch",
                                     "default": ""
+                                },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -1050,7 +1100,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.1"
+                            "default": "8.8.2"
                         },
                         "digest": {
                             "type": "string",
@@ -2236,7 +2286,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.37"
+                            "default": "8.8.52"
                         },
                         "digest": {
                             "type": "string",
@@ -2723,7 +2773,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.2"
+                            "default": "8.8.3"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4487,7 +4537,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.2"
+                            "default": "8.8.3"
                         },
                         "digest": {
                             "type": "string",
@@ -5224,7 +5274,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.3"
+                            "default": "8.8.5"
                         },
                         "digest": {
                             "type": "string",
@@ -5449,7 +5499,7 @@
                                                 "tag": {
                                                     "type": "string",
                                                     "description": "can be set to overwrite the global tag, which should be used in that chart",
-                                                    "default": "8.15.0"
+                                                    "default": "8.17.0"
                                                 },
                                                 "digest": {
                                                     "type": "string",
@@ -5504,6 +5554,12 @@
                                             "default": ""
                                         }
                                     }
+                                },
+                                "env": {
+                                    "type": "array",
+                                    "description": "can be used to set extra environment variables in the identity migration job container",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         }

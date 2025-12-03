@@ -101,9 +101,10 @@ identity:
   image:
     tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
-    existingSecret: null
     user: demo
-    password: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+    secret:
+      existingSecret: vault-mapped-secrets
+      existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
   # Keycloak client seed which is used to query Camunda APIs. 
   clients:
     - id: venom
@@ -152,74 +153,36 @@ identity:
           definition: write:*
         - resourceServerId: console-api
           definition: write:*
+  users:
+    - username: lisa
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+      firstName: Lisa
+      lastName: Doe
+      email: cawemodev+lisa@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
+    - username: bart
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+      firstName: Bart
+      lastName: Foo
+      email: cawemodev+bart@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
   env:
-    # TODO: Remove the KEYCLOAK_USERS env vars in favor of relying on the default configmap values
-    - name: KEYCLOAK_USERS_0_USERNAME
-      value: 'demo'
-    - name: KEYCLOAK_USERS_0_EMAIL
-      value: 'demo@example.com'
-    - name: KEYCLOAK_USERS_0_FIRSTNAME
-      value: 'Demo'
-    - name: KEYCLOAK_USERS_0_LASTNAME
-      value: 'User'
-    - name: KEYCLOAK_USERS_0_PASSWORD
-      value: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
-    - name: KEYCLOAK_USERS_0_ROLES_0
-      value: ManagementIdentity
-    - name: KEYCLOAK_USERS_0_ROLES_1
-      value: Optimize
-    - name: KEYCLOAK_USERS_0_ROLES_2
-      value: Web Modeler
-    - name: KEYCLOAK_USERS_0_ROLES_3
-      value: Web Modeler Admin
-    - name: KEYCLOAK_USERS_0_ROLES_4
-      value: Console
-    - name: KEYCLOAK_USERS_0_ROLES_5
-      value: Orchestration
-    - name: KEYCLOAK_USERS_1_FIRST_NAME
-      value: Lisa
-    - name: KEYCLOAK_USERS_1_LAST_NAME
-      value: Doe
-    - name: KEYCLOAK_USERS_1_EMAIL
-      value: cawemodev+lisa@gmail.com
-    - name: KEYCLOAK_USERS_1_USERNAME
-      value: lisa
-    - name: KEYCLOAK_USERS_1_PASSWORD
-      value: $DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
-    - name: KEYCLOAK_USERS_1_ROLES_0
-      value: ManagementIdentity
-    - name: KEYCLOAK_USERS_1_ROLES_1
-      value: Optimize
-    - name: KEYCLOAK_USERS_1_ROLES_2
-      value: Web Modeler
-    - name: KEYCLOAK_USERS_1_ROLES_3
-      value: Web Modeler Admin
-    - name: KEYCLOAK_USERS_1_ROLES_4
-      value: Console
-    - name: KEYCLOAK_USERS_1_ROLES_5
-      value: Orchestration
-    - name: KEYCLOAK_USERS_2_FIRST_NAME
-      value: Bart
-    - name: KEYCLOAK_USERS_2_LAST_NAME
-      value: Foo
-    - name: KEYCLOAK_USERS_2_EMAIL
-      value: cawemodev+bart@gmail.com
-    - name: KEYCLOAK_USERS_2_USERNAME
-      value: bart
-    - name: KEYCLOAK_USERS_2_PASSWORD
-      value: $DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
-    - name: KEYCLOAK_USERS_2_ROLES_0
-      value: ManagementIdentity
-    - name: KEYCLOAK_USERS_2_ROLES_1
-      value: Optimize
-    - name: KEYCLOAK_USERS_2_ROLES_2
-      value: Web Modeler
-    - name: KEYCLOAK_USERS_2_ROLES_3
-      value: Web Modeler Admin
-    - name: KEYCLOAK_USERS_2_ROLES_4
-      value: Console
-    - name: KEYCLOAK_USERS_2_ROLES_5
-      value: Orchestration
     - name: IDENTITY_TENANTS_0_NAME
       value: Default
     - name: IDENTITY_TENANTS_0_TENANTID

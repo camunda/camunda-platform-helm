@@ -68,15 +68,14 @@ spec:
                 "config" .Values.global.license
                 "plaintextKey" "key"
             ) | nindent 12 }}
-            {{- if eq (include "orchestration.authEnabled" .) "true" }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
                 "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.orchestration.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
+            {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "orchestration" ) | nindent 12 }}
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.orchestration.javaOpts | quote }}

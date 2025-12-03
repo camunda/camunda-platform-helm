@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: orchestration-importer
-    app.kubernetes.io/version: "8.8.3"
+    app.kubernetes.io/version: "8.8.5"
   annotations:
 spec:
   replicas: 1
@@ -34,7 +34,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: orchestration-importer
-        app.kubernetes.io/version: "8.8.3"
+        app.kubernetes.io/version: "8.8.5"
       annotations:
     spec:
       imagePullSecrets:
@@ -43,7 +43,7 @@ spec:
         []
       containers:
         - name: orchestration-migration-importer
-          image: camunda/camunda:8.8.3
+          image: camunda/camunda:8.8.5
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -75,11 +75,6 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.name
             
-            - name: VALUES_ORCHESTRATION_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-orchestration-client-token
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError"
             - name: K8S_POD_NAME

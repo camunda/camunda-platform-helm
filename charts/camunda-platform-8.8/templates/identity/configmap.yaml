@@ -56,7 +56,7 @@ data:
       {{- end }}
 
       component-presets:
-        {{- if .Values.connectors.enabled }}
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
         connectors:
           applications:
             - name: Connectors
@@ -67,7 +67,6 @@ data:
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: read:*
         {{- end }}
-        {{- if .Values.console.enabled }}
         console:
           applications:
             - name: "Console"
@@ -88,7 +87,6 @@ data:
               permissions:
                 - audience: {{ include "console.authAudience" . | quote }}
                   definition: write:*
-        {{- end }}
         identity:
           apis:
             - name: "Camunda Identity Resource Server"
@@ -108,7 +106,6 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
-        {{- if .Values.optimize.enabled }}
         optimize:
           applications:
             - name: Optimize
@@ -132,7 +129,7 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
-        {{- end }}
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
         orchestration:
           applications:
             - name: Orchestration
@@ -162,7 +159,7 @@ data:
                   definition: read:*
                 - audience: {{ include "orchestration.authAudience" . | quote }}
                   definition: write:*
-        {{- if .Values.webModeler.enabled }}
+        {{- end }}
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -207,7 +204,6 @@ data:
                   definition: write:*
                 - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
                   definition: admin:*
-        {{- end }}
 
     {{- if .Values.global.identity.auth.enabled }}
     {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -215,30 +211,25 @@ data:
       url: {{ include "identity.keycloak.url" . | quote }}
       {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
       realm: {{ .Values.identity.realm.id | quote }}
-      {{- if and (hasKey .Values.identity.realm "json") .Values.identity.realm.json.enabled }}
-      realmJson: file:{{ .Values.identity.realm.json.mountPath }}/{{ .Values.identity.realm.json.fileName }}
-      {{- end }}
       {{- end }}
       setup:
         user: {{ include "identity.keycloak.authAdminUser" . | quote }}
         password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
       init:
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
         connectors:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
-        {{- if .Values.console.enabled }}
+        {{- end }}
         console:
           root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
-        {{- end }}
-        {{- if .Values.optimize.enabled }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
-        {{- end }}
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
-        {{- if .Values.webModeler.enabled }}
+        {{- end }}
         webmodeler:
           root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
-        {{- end }}
       clients:
       {{- if .Values.orchestration.migration.identity.enabled }}
         - id: migration
@@ -263,10 +254,12 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             - resourceServerId: orchestration-api
               definition: read:*
             - resourceServerId: orchestration-api
               definition: write:*
+            {{- end }}
             - resourceServerId: optimize-api
               definition: write:*
             - resourceServerId: web-modeler-api
@@ -310,7 +303,9 @@ data:
             {{- if .Values.console.enabled }}
             - Console
             {{- end }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
             - Orchestration
+            {{- end }}
           {{- end }}
       {{- end }}
       {{- if .Values.identity.users }}

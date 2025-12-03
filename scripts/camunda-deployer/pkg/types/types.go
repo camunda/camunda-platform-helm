@@ -9,7 +9,10 @@ type ValuesInput struct {
 }
 
 type Options struct {
+	Chart       string
 	ChartPath   string
+	Version     string
+	RealmPath   string
 	ReleaseName string
 	Namespace   string
 	Kubeconfig  string
@@ -51,6 +54,12 @@ type Options struct {
 
 	LoadKeycloakRealm bool
 	KeycloakRealmName string
+	VaultSecretPath   string
+
+	// Template rendering (no cluster changes)
+	RenderTemplates bool
+	RenderOutputDir string
+	IncludeCRDs     bool
 }
 
 type CIMetadata struct {
@@ -61,4 +70,3 @@ type CIMetadata struct {
 	WorkflowURL string
 	Flow        string
 }
-

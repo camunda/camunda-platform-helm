@@ -29,3 +29,5 @@ orchestration:
     # Allow to upgrade from alpha or snapshot versions.
     - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
       value: "false"
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"

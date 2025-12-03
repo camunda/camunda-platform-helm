@@ -204,7 +204,7 @@ Authentication.
 */}}
 {{- define "camundaPlatform.authIssuerUrlWithFallback" -}}
   {{- if .Values.global.identity.auth.issuer -}}
-    {{- .Values.global.identity.auth.issuer -}}
+    {{- tpl .Values.global.identity.auth.issuer . -}}
   {{- else -}}
     {{- tpl .Values.global.identity.auth.publicIssuerUrl . -}}
   {{- end -}}
@@ -214,7 +214,7 @@ Authentication.
 [camunda-platform] Auth issuer public URL which used externally for Camunda apps.
 */}}
 {{- define "camundaPlatform.authIssuerUrl" -}}
-  {{- .Values.global.identity.auth.issuer -}}
+  {{- tpl .Values.global.identity.auth.issuer . -}}
 {{- end -}}
 
 {{/*
@@ -972,3 +972,127 @@ Release highlights.
 - Please refer to the official docs for more details.
 https://docs.camunda.io/docs/next/self-managed/installation-methods/helm/upgrade/upgrade-hc-870-880/
 {{- end -}}
+
+{{/*
+********************************************************************************
+JKS store setup
+********************************************************************************  
+*/}}
+
+{{/*
+common.java_tool_options_tls_env
+
+Emits JAVA_TOOL_OPTIONS with truststore flags and emits TRUSTSTORE_PASSWORD using the normalized secret helper.
+
+Usage in a Deployment/StatefulSet env: block:
+  {{ include "common.java_tool_options_tls_env" (dict
+    "Values" .Values
+    "component" "orchestration"            # REQUIRED: values key to read javaOpts from (e.g., orchestration, optimize)
+  ) | nindent 12 }}
+
+Prerequisites when TLS is enabled for Elasticsearch/OpenSearch:
+- If either global.elasticsearch.tls.existingSecret or global.opensearch.tls.existingSecret is set,
+  you MUST also provide the corresponding truststore password configuration block:
+
+Example (existing secret, recommended):
+  global:
+    elasticsearch:
+      tls:
+        enabled: true
+        existingSecret: my-es-tls
+        jks:
+          secret:
+            existingSecret: my-truststore-secret
+            existingSecretKey: truststore-password
+
+Example (inline plaintext, testing only):
+  global:
+    opensearch:
+      tls:
+        enabled: true
+        existingSecret: my-os-tls
+        jks:
+          secret:
+            inlineSecret: "changeit"
+
+Behavior:
+- Requires "component" parameter; fails if omitted.
+- When TLS secret is configured, fails if the matching global.<engine>.tls.jks block is missing.
+- Renders JAVA_TOOL_OPTIONS composed of:
+  <component>.javaOpts (or provided "javaOpts") plus:
+    -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks
+    -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)
+- Emits TRUSTSTORE_PASSWORD via "camundaPlatform.emitEnvVarFromSecretConfig" using:
+  - global.elasticsearch.tls.jks (preferred when ES TLS secret is set), or
+  - global.opensearch.tls.jks (preferred when OS TLS secret is set),
+  supporting both existingSecret/existingSecretKey and inlineSecret.
+
+Note: java resolves JAVA_TOOL_OPTIONS env var expansion at deployment time, not at template 
+evaluation time. This allows for dynamic values to be injected at runtime.
+*/}}
+
+{{- /* Internal: resolve the correct TLS JKS config for the currently enabled engine */ -}}
+{{- define "camundaPlatform._resolve_tls_jks_config" -}}
+{{- $cfg := dict -}}
+{{- if .Values.global.elasticsearch.tls.existingSecret -}}
+{{-   $cfg = (.Values.global.elasticsearch.tls.jks | default dict) -}}
+{{- else if .Values.global.opensearch.tls.existingSecret -}}
+{{-   $cfg = (.Values.global.opensearch.tls.jks | default dict) -}}
+{{- end -}}
+{{- toYaml $cfg -}}
+{{- end -}}
+
+{{- /* Internal: unified JAVA_TOOL_OPTIONS + TRUSTSTORE_PASSWORD emitter */ -}}
+{{- define "camundaPlatform._java_tool_options_tls_env" -}}
+{{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+{{- $vals := .Values -}}
+{{- $comp := required "common.java_tool_options_tls_env: parameter 'component' is required" .component -}}
+{{- $compVals := (get $vals $comp) | default dict -}}
+{{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
+{{- $truststorePath := required "camundaPlatform._java_tool_options_tls_env: parameter 'truststorePath' is required" .truststorePath -}}
+{{- $jks := ((include "camundaPlatform._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
+{{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+{{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+    "envName" "TRUSTSTORE_PASSWORD"
+    "config" $jks
+ ) | nindent 0 }}
+{{- end }}
+- name: JAVA_TOOL_OPTIONS
+  value: >-
+    {{- if $javaOpts -}}
+    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $javaOpts $truststorePath | nindent 4 }}
+    {{- else -}}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s" $javaOpts $truststorePath | nindent 4 }}
+    {{- end -}}
+    {{- else -}}
+    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+    {{- printf "-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $truststorePath | nindent 4 }}
+    {{- else -}}
+    {{- printf "-Djavax.net.ssl.trustStore=%s" $truststorePath | nindent 4 }}
+    {{- end -}}
+    {{- end -}}
+{{- end }}
+{{- end }}
+
+{{- define "common.java_tool_options_tls_env" -}}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "truststorePath" "/usr/local/camunda/certificates/externaldb.jks"
+) }}
+{{- end }}
+
+{{/* optimize.java_tool_options_tls_env
+Delegates to camundaPlatform._java_tool_options_tls_env.
+See common.java_tool_options_tls_env for full documentation.
+*/}}
+{{- define "optimize.java_tool_options_tls_env" -}}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "truststorePath" "/optimize/certificates/externaldb.jks"
+) }}
+{{- end }}

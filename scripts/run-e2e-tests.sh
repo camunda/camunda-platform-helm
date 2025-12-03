@@ -2,6 +2,81 @@
 
 source "$(dirname "$0")/base_playwright_script.sh"
 
+resolve_minor_version_from_identity() {
+  local namespace="$1"
+  local version_label=""
+  local major=""
+  local minor=""
+
+  # Prefer Zeebe component, then Orchestration component
+  version_label="$(kubectl -n "$namespace" get sts -l app.kubernetes.io/component=zeebe-broker -o jsonpath='{.items[0].metadata.labels.app\.kubernetes\.io/version}' 2>/dev/null || true)"
+  if [[ -z "$version_label" ]]; then
+    version_label="$(kubectl -n "$namespace" get sts -l app.kubernetes.io/component=orchestration -o jsonpath='{.items[0].metadata.labels.app\.kubernetes\.io/version}' 2>/dev/null || true)"
+  fi
+  if [[ -n "$version_label" ]]; then
+    IFS='.' read -r major minor _ <<< "$version_label"
+    if [[ -n "$major" && -n "$minor" ]]; then
+      printf "SM-%s.%s" "$major" "$minor"
+      return 0
+    fi
+  fi
+
+  return 12
+}
+
+resolve_keycloak_setup_password() {
+  local namespace="$1"
+  local password=""
+  local secret_name=""
+  local secret_key=""
+
+  # Try KEYCLOAK_SETUP_PASSWORD (value)
+  password="$(kubectl -n "$namespace" get deploy -l app.kubernetes.io/component=identity -o jsonpath='{.items[0].spec.template.spec.containers[*].env[?(@.name=="KEYCLOAK_SETUP_PASSWORD")].value}' 2>/dev/null || true)"
+  if [[ -n "$password" ]]; then
+    printf "%s" "$password"
+    return 0
+  fi
+
+  # Try KEYCLOAK_SETUP_PASSWORD (valueFrom.secretKeyRef)
+  secret_name="$(kubectl -n "$namespace" get deploy -l app.kubernetes.io/component=identity -o jsonpath='{.items[0].spec.template.spec.containers[*].env[?(@.name=="KEYCLOAK_SETUP_PASSWORD")].valueFrom.secretKeyRef.name}' 2>/dev/null || true)"
+  secret_key="$(kubectl -n "$namespace" get deploy -l app.kubernetes.io/component=identity -o jsonpath='{.items[0].spec.template.spec.containers[*].env[?(@.name=="KEYCLOAK_SETUP_PASSWORD")].valueFrom.secretKeyRef.key}' 2>/dev/null || true)"
+  if [[ -n "$secret_name" && -n "$secret_key" ]]; then
+    password="$(kubectl -n "$namespace" get secret "$secret_name" -o jsonpath="{.data['$secret_key']}" 2>/dev/null | base64 -d || true)"
+  fi
+  if [[ -n "$password" ]]; then
+    printf "%s" "$password"
+    return 0
+  fi
+
+  # Try VALUES_KEYCLOAK_SETUP_PASSWORD (value)
+  password="$(kubectl -n "$namespace" get deploy -l app.kubernetes.io/component=identity -o jsonpath='{.items[0].spec.template.spec.containers[*].env[?(@.name=="VALUES_KEYCLOAK_SETUP_PASSWORD")].value}' 2>/dev/null || true)"
+  if [[ -n "$password" ]]; then
+    printf "%s" "$password"
+    return 0
+  fi
+
+  # Try VALUES_KEYCLOAK_SETUP_PASSWORD (valueFrom.secretKeyRef)
+  secret_name="$(kubectl -n "$namespace" get deploy -l app.kubernetes.io/component=identity -o jsonpath='{.items[0].spec.template.spec.containers[*].env[?(@.name=="VALUES_KEYCLOAK_SETUP_PASSWORD")].valueFrom.secretKeyRef.name}' 2>/dev/null || true)"
+  secret_key="$(kubectl -n "$namespace" get deploy -l app.kubernetes.io/component=identity -o jsonpath='{.items[0].spec.template.spec.containers[*].env[?(@.name=="VALUES_KEYCLOAK_SETUP_PASSWORD")].valueFrom.secretKeyRef.key}' 2>/dev/null || true)"
+  if [[ -n "$secret_name" && -n "$secret_key" ]]; then
+    password="$(kubectl -n "$namespace" get secret "$secret_name" -o jsonpath="{.data['$secret_key']}" 2>/dev/null | base64 -d || true)"
+  fi
+  if [[ -n "$password" ]]; then
+    printf "%s" "$password"
+    return 0
+  fi
+
+  # Fallback to legacy secret
+  password="$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET}' 2>/dev/null | base64 -d || true)"
+  if [[ -n "$password" ]]; then
+    printf "%s" "$password"
+    return 0
+  fi
+
+  echo "Error: Could not determine Keycloak setup password from Identity deployment or legacy secret." >&2
+  return 1
+}
+
 validate_args() {
   local chart_path="$1"
   local namespace="$2"
@@ -21,7 +96,7 @@ validate_args() {
     exit 1
   fi
 
-  if ! kubectl get namespace "$namespace" >/dev/null 2>&1; then
+  if ! kubectl get namespace "$namespace" > /dev/null 2>&1; then
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
     exit 1
   fi
@@ -38,33 +113,43 @@ setup_env_file() {
   local is_mt="$8"
 
   export TEST_INGRESS_HOST="$hostname"
-  envsubst <"$test_suite_path"/.env.template >"$env_file"
+  envsubst < "$test_suite_path"/.env.template > "$env_file"
 
   # during helm install, we create a secret with the credentials for the services
   # that are used to test the platform. This is grabbing those credentials and
   # adding them to the .env file so that we can run the tests from any environment
   # with an authorized kubectl context.
-  identity_pod_name=$(kubectl -n "$namespace" get pods --no-headers -o custom-columns=':metadata.name' | grep identity | head -n 1)
-  DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_SETUP_PASSWORD)
+  # Keycloak password resolution (all-in-one)
+  KEYCLOAK_SETUP_PASSWORD="$(resolve_keycloak_setup_password "$namespace")" || exit 1
+  echo "::add-mask::$KEYCLOAK_SETUP_PASSWORD"
+  DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' | base64 -d)
+  echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
+  DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD}' | base64 -d)
+  echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
+  DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD}' | base64 -d)
+  echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
 
-  if [[ -z "$DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD" ]]; then
-    DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv VALUES_KEYCLOAK_SETUP_PASSWORD)
+  # Resolve minor version and fail loudly if unavailable
+  local minor_version_value=""
+  if ! minor_version_value="$(resolve_minor_version_from_identity "$namespace")"; then
+    echo "Error: Could not determine minor version from Zeebe or Orchestration deployments." >&2
+    exit 12
   fi
-
-  echo "::add-mask::$DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD"
 
   {
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
     echo "CLUSTER_VERSION=8"
-    echo "MINOR_VERSION=SM-8.7"
-    echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" exec "$identity_pod_name" -- printenv KEYCLOAK_USERS_0_PASSWORD)"
-    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD"
+    echo "MINOR_VERSION=$minor_version_value"
+    echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
+    echo "DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
+    echo "DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
+    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$KEYCLOAK_SETUP_PASSWORD"
     echo "CI=${is_ci}"
     echo "CLUSTER_NAME=integration"
     echo "IS_OPENSEARCH=${is_opensearch}"
     echo "IS_RBA=${is_rba}"
     echo "IS_MT=${is_mt}"
-  } >>"$env_file"
+  } >> "$env_file"
 
   if $VERBOSE; then
     log "Contents of .env file:"
@@ -73,7 +158,7 @@ setup_env_file() {
 }
 
 usage() {
-  cat <<EOF
+  cat << EOF
 This script runs the integration tests for the Camunda Platform Helm chart.
 
 Usage:
@@ -91,6 +176,7 @@ Options:
   --opensearch                                Run the opensearch tests
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
+  --playwright-debug                          Enable Playwright API debug logs and traces
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -112,69 +198,74 @@ RUN_SMOKE_TESTS=false
 IS_OPENSEARCH=false
 IS_RBA=false
 IS_MT=false
+PLAYWRIGHT_DEBUG=false
 
 check_required_cmds
 
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-  --absolute-chart-path)
-    ABSOLUTE_CHART_PATH="$2"
-    shift 2
-    ;;
-  --namespace)
-    NAMESPACE="$2"
-    shift 2
-    ;;
-  --show-html-report)
-    SHOW_HTML_REPORT=true
-    shift
-    ;;
-  --shard-index)
-    SHARD_INDEX="$2"
-    shift 2
-    ;;
-  --shard-total)
-    SHARD_TOTAL="$2"
-    shift 2
-    ;;
-  --test-exclude)
-    TEST_EXCLUDE="$2"
-    shift 2
-    ;;
-  --not-ci)
-    IS_CI=false
-    shift
-    ;;
-  --run-smoke-tests)
-    RUN_SMOKE_TESTS=true
-    shift
-    ;;
-  --opensearch)
-    IS_OPENSEARCH=true
-    shift
-    ;;
-  --rba)
-    IS_RBA=true
-    shift
-    ;;
-  --mt)
-    IS_MT=true
-    shift
-    ;;
-  -v | --verbose)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  *)
-    echo "Unknown option: $key"
-    usage
-    exit 1
-    ;;
+    --absolute-chart-path)
+      ABSOLUTE_CHART_PATH="$2"
+      shift 2
+      ;;
+    --namespace)
+      NAMESPACE="$2"
+      shift 2
+      ;;
+    --show-html-report)
+      SHOW_HTML_REPORT=true
+      shift
+      ;;
+    --shard-index)
+      SHARD_INDEX="$2"
+      shift 2
+      ;;
+    --shard-total)
+      SHARD_TOTAL="$2"
+      shift 2
+      ;;
+    --test-exclude)
+      TEST_EXCLUDE="$2"
+      shift 2
+      ;;
+    --not-ci)
+      IS_CI=false
+      shift
+      ;;
+    --run-smoke-tests)
+      RUN_SMOKE_TESTS=true
+      shift
+      ;;
+    --opensearch)
+      IS_OPENSEARCH=true
+      shift
+      ;;
+    --rba)
+      IS_RBA=true
+      shift
+      ;;
+    --mt)
+      IS_MT=true
+      shift
+      ;;
+    --playwright-debug)
+      PLAYWRIGHT_DEBUG=true
+      shift
+      ;;
+    -v | --verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $key"
+      usage
+      exit 1
+      ;;
   esac
 done
 
@@ -196,4 +287,4 @@ setup_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPAC
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS"
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG"

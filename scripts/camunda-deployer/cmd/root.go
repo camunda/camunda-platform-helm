@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"scripts/camunda-core/pkg/completion"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/camunda-deployer/pkg/types"
@@ -25,6 +26,11 @@ var (
 	release                string
 	namespace              string
 	scenarioDir            string
+	renderTemplates        bool
+	renderOutputDir        string
+	noIncludeCRDs          bool
+	dockerUsername         string
+	dockerPassword         string
 	ingressHost            string
 	wait                   bool
 	atomic                 bool
@@ -44,6 +50,8 @@ var (
 	ttl                    string
 	loadKeycloakRealm      bool
 	keycloakRealmName      string
+	flow                   string
+	vaultSecretPath        string
 )
 
 var rootCmd = &cobra.Command{
@@ -91,6 +99,9 @@ Examples:
 			Namespace:              namespace,
 			Kubeconfig:             kubeconfig,
 			KubeContext:            kubeContext,
+			RenderTemplates:        renderTemplates,
+			RenderOutputDir:        renderOutputDir,
+			IncludeCRDs:            !noIncludeCRDs,
 			Wait:                   wait,
 			Atomic:                 atomic,
 			Timeout:                timeout,
@@ -101,6 +112,8 @@ Examples:
 			SkipDependencyUpdate:   skipDependencyUpdate,
 			ApplyIntegrationCreds:  applyIntegrationCreds,
 			ExternalSecretsEnabled: externalSecretsEnabled,
+			DockerRegistryUsername: dockerUsername,
+			DockerRegistryPassword: dockerPassword,
 			Platform:               platform,
 			NamespacePrefix:        namespacePrefix,
 			RepoRoot:               repoRoot,
@@ -109,8 +122,9 @@ Examples:
 			LoadKeycloakRealm:      loadKeycloakRealm,
 			KeycloakRealmName:      keycloakRealmName,
 			CIMetadata: types.CIMetadata{
-				Flow: "deploy",
+				Flow: flow,
 			},
+			VaultSecretPath: vaultSecretPath,
 		}
 		return deployer.Deploy(ctx, opts)
 	},
@@ -137,12 +151,19 @@ func init() {
 
 	// Scenario flags
 	rootCmd.Flags().StringVar(&scenarioCSV, "scenario", "", "scenario name or comma-separated list (e.g., qa-license,opensearch)")
+	completion.RegisterScenarioCompletion(rootCmd, "scenario", "chart")
 	rootCmd.Flags().StringVar(&auth, "auth", "", "auth scenario to layer before main scenarios (e.g., keycloak)")
+	completion.RegisterScenarioCompletion(rootCmd, "auth", "chart")
 
 	// Deployment behavior flags (with defaults shown)
 	rootCmd.Flags().BoolVar(&wait, "wait", true, "wait for resources to be ready")
 	rootCmd.Flags().BoolVar(&atomic, "atomic", true, "rollback on failure")
 	rootCmd.Flags().DurationVar(&timeout, "timeout", 15*time.Minute, "Helm operation timeout")
+
+	// Render-only behavior
+	rootCmd.Flags().BoolVar(&renderTemplates, "render-templates", false, "render manifests to a directory instead of installing")
+	rootCmd.Flags().StringVar(&renderOutputDir, "render-output-dir", "", "output directory for rendered manifests (defaults to ./rendered/<release>)")
+	rootCmd.Flags().BoolVar(&noIncludeCRDs, "no-include-crds", false, "do not include CRDs in rendered output (by default CRDs are included)")
 
 	// Platform-specific flags
 	rootCmd.Flags().StringVar(&platform, "platform", "", "target platform for external secrets: gke, rosa, or eks")
@@ -161,12 +182,19 @@ func init() {
 	rootCmd.Flags().BoolVar(&skipDockerLogin, "skip-docker-login", false, "skip Docker login (useful when already authenticated)")
 	rootCmd.Flags().BoolVar(&skipDependencyUpdate, "skip-dependency-update", true, "skip Helm dependency update (useful when deps already updated)")
 	rootCmd.Flags().BoolVar(&applyIntegrationCreds, "apply-integration-creds", true, "apply integration test credentials if present")
+	rootCmd.Flags().StringVar(&dockerUsername, "docker-username", "", "Docker registry username (defaults to TEST_DOCKER_USERNAME_CAMUNDA_CLOUD or NEXUS_USERNAME)")
+	rootCmd.Flags().StringVar(&dockerPassword, "docker-password", "", "Docker registry password (defaults to TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD or NEXUS_PASSWORD)")
 	rootCmd.Flags().BoolVar(&externalSecretsEnabled, "external-secrets-enabled", true, "enable external secrets configuration")
 	rootCmd.Flags().StringVar(&ttl, "ttl", "1h", "time-to-live label for namespace cleanup (e.g., 1h, 12h, 24h)")
 
 	// Keycloak configuration
-	rootCmd.Flags().BoolVar(&loadKeycloakRealm, "load-keycloak-realm", false, "load Keycloak realm ConfigMap from chart's realm.json")
 	rootCmd.Flags().StringVar(&keycloakRealmName, "keycloak-realm-name", "", "Keycloak realm name to use (required if --load-keycloak-realm is set)")
+
+	// Vault configuration
+	rootCmd.Flags().StringVar(&vaultSecretPath, "vault-secret-path", "", "Path to a Kubernetes Secret YAML file to apply")
+
+	// CI Metadata flags
+	rootCmd.Flags().StringVar(&flow, "flow", "install", "deployment flow type (install, upgrade, etc.)")
 }
 
 func Execute() {

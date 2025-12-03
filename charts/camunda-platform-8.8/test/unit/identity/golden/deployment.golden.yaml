@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.8.1"
+    app.kubernetes.io/version: "8.8.2"
   annotations:
     {}
 spec:
@@ -35,7 +35,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: identity
-        app.kubernetes.io/version: "8.8.1"
+        app.kubernetes.io/version: "8.8.2"
       annotations:
     spec:
       imagePullSecrets:
@@ -44,7 +44,7 @@ spec:
         []
       containers:
         - name: camunda-platform
-          image: camunda/identity:8.8.1
+          image: camunda/identity:8.8.2
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -56,21 +56,11 @@ spec:
               type: RuntimeDefault
           env:
             
-            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-connectors-client-token
             - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
               valueFrom:
                 secretKeyRef:
                   name: camunda-credentials
                   key: identity-optimize-client-token
-            - name: VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-orchestration-client-token
             - name: VALUES_KEYCLOAK_SETUP_PASSWORD
               valueFrom:
                 secretKeyRef:
