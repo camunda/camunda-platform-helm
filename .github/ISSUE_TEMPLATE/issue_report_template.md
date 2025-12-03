@@ -3,39 +3,27 @@ name: Issue report
 about: Create a issue report
 title: "[ISSUE] <issue title>"
 labels: "kind/issue"
-body:
-  - type: dropdown
-    id: severity
-    attributes:
-      label: <!-- Severity -->
-      description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#severity-and-likelihood-bugs"> What is the severity of the issue?
-      options:
-        - <!-- Low- -->
-        - <!-- Medium- -->
-        - <!-- High- -->
-        - <!-- Critical- -->
-        - <!-- Unknown- -->
-      default: null
-    validations:
-      required: true
-  - type: dropdown
-    id: likelihood
-    attributes:
-      label: <!-- Likelihood -->
-      description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#severity-and-likelihood-bugs"> How likely is it to occur?
-      options:
-        - <!-- Unknown_ -->
-        - <!-- Low_ -->
-        - <!-- Medium_ -->
-        - <!-- High_ -->
-      default: null
-    validations:
-      required: true
 ---
 
 **Describe the issue:**
 
 <!-- A clear and concise description of what the issue is. -->
+
+Severity:
+
+<!--
+How severe is the issue? Her are the options:
+
+Low, Medium, High, Critical, Unknown
+-->
+
+Severity:
+
+<!--
+How likely is the issue to occur:
+
+Low, Medium, High
+-->
 
 **Actual behavior:**
 
