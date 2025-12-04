@@ -1,3 +1,4 @@
+{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -201,3 +202,4 @@ metadata:
 spec:
   hostnames:
   - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
+{{- end }}
