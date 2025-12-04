@@ -290,7 +290,7 @@ Get the external url for keycloak
     {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
   {{ else if .Values.identityKeycloak.enabled -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto (.Values.gateway.hostname | default .Values.global.ingress.host | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+    {{- printf "%s://%s%s" $proto (.Values.global.gateway.hostname | default .Values.global.ingress.host | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
 {{- end -}}
 
