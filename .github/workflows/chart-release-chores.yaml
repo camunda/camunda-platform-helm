@@ -99,9 +99,9 @@ jobs:
       - name: Generate version matrix
         run: |
           make helm.repos-add
-          make release.generate-version-matrix-index
           make release.generate-version-matrix-released
           for chartPath in "${CHANGED_CHARTS}"; do
+            chartPath=$chartPath make -e release.generate-version-matrix-index
             chartPath=$chartPath make -e release.generate-version-matrix-unreleased
           done
       # We use git-chglog to generate the release notes and release-please
