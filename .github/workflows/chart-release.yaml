@@ -81,7 +81,7 @@ jobs:
           done
 
           # Generate JSON matrix and set it as a GH output.
-          matrix_versions="$(jq --slurp --compact-output '.' ${matrix_file})"
+          matrix_versions="[{"dirID":"8.6","version":"11.11.2","appVersion":"8.6","prerelease":false}]"
           echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
 
   release:
