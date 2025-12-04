@@ -12,7 +12,8 @@ type RuntimeFlags struct {
 	ChartVersion             string
 	Namespace                string
 	Release                  string
-	Scenario                 string
+	Scenario                 string   // Single scenario or comma-separated list
+	Scenarios                []string // Parsed list of scenarios (populated by Validate)
 	ScenarioPath             string
 	Auth                     string
 	Platform                 string
@@ -41,6 +42,7 @@ type RuntimeFlags struct {
 	RenderOutputDir          string
 	ExtraValues              []string
 	ValuesPreset             string
+	Timeout                  int // Timeout in minutes for Helm deployment
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -195,5 +197,23 @@ func Validate(flags *RuntimeFlags) error {
 		return fmt.Errorf("scenario not set; provide -s/--scenario or set 'scenario' in the active deployment/root config")
 	}
 
+	// Parse scenarios from comma-separated string
+	flags.Scenarios = parseScenarios(flags.Scenario)
+	if len(flags.Scenarios) == 0 {
+		return fmt.Errorf("no valid scenarios found in %q", flags.Scenario)
+	}
+
 	return nil
+}
+
+// parseScenarios splits a comma-separated scenario string into a slice.
+func parseScenarios(scenario string) []string {
+	var scenarios []string
+	for _, s := range strings.Split(scenario, ",") {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			scenarios = append(scenarios, s)
+		}
+	}
+	return scenarios
 }
