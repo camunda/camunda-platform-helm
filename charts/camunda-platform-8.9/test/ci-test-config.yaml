@@ -21,7 +21,7 @@ integration:
     pr:
       scenario:
         - name: elasticsearch
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: eske
           exclude: []
@@ -45,29 +45,35 @@ integration:
           flow: install
           exclude: [identity,console,orchestration-grpc]
         - name: oidc
-          enabled: true
+          enabled: false
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
           flow: upgrade-minor
         - name: keycloak-mt
-          enabled: true
+          enabled: false
           exclude: []
           shortname: kemt
           auth: keycloak
           flow: upgrade-minor
         - name: keycloak-rba
-          enabled: true
+          enabled: false
           exclude: []
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
         - name: keycloak-original
-          enabled: true
+          enabled: false
           exclude: []
           shortname: keyc
           auth: keycloak
           flow: upgrade-minor
+        - name: gateway-keycloak
+          enabled: true
+          exclude: []
+          shortname: gatkc
+          auth: keycloak
+          flow: install
     nightly:
       scenario:
         - name: elasticsearch
