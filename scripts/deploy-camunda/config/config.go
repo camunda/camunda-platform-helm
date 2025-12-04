@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"scripts/deploy-camunda/internal/util"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -230,20 +231,10 @@ func applyEnvOverrides(rc *RootConfig) {
 	}
 }
 
-// firstNonEmpty returns the first non-empty string.
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
-}
-
 // MergeStringField applies deployment/root value to target if target is empty.
 func MergeStringField(target *string, depVal, rootVal string) {
-	if strings.TrimSpace(*target) == "" {
-		*target = firstNonEmpty(depVal, rootVal)
+	if util.IsEmpty(*target) {
+		*target = util.FirstNonEmpty(depVal, rootVal)
 	}
 }
 

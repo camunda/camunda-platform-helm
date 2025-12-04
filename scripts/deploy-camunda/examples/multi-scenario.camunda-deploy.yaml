@@ -1,0 +1,38 @@
+# Multi-scenario deployment configuration example
+# Demonstrates parallel deployment of multiple scenarios
+
+repoRoot: /path/to/camunda-platform-helm
+platform: gke
+logLevel: info
+valuesPreset: latest
+
+keycloak:
+  host: keycloak-24-9-0.ci.distro.ultrawombat.com
+  protocol: https
+
+deployments:
+  # Deploy multiple scenarios in parallel
+  parallel-test:
+    chartPath: /path/to/camunda-platform-helm/charts/camunda-platform-8.8
+    namespace: integration-test
+    release: integration
+    # Comma-separated list deploys in parallel, each to its own namespace
+    scenario: keycloak,keycloak-mt,saas
+    auth: keycloak
+    externalSecrets: true
+    autoGenerateSecrets: true
+    deleteNamespace: true
+    ingressHost: ci.distro.ultrawombat.com
+    timeout: 10
+
+  # Single scenario deployment
+  single-test:
+    chartPath: /path/to/camunda-platform-helm/charts/camunda-platform-8.8
+    namespace: single-test
+    release: integration
+    scenario: keycloak
+    auth: keycloak
+    externalSecrets: true
+
+current: parallel-test
+

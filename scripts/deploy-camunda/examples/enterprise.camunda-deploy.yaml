@@ -1,0 +1,64 @@
+# Enterprise deployment configuration example
+# For production-like environments with full authentication
+
+repoRoot: /path/to/camunda-platform-helm
+platform: eks  # or rosa, gke
+logLevel: info
+externalSecrets: true
+skipDependencyUpdate: false
+
+keycloak:
+  host: keycloak.your-domain.com
+  protocol: https
+
+deployments:
+  # Staging environment
+  staging:
+    chart: camunda-platform
+    version: "8.8"
+    namespace: camunda-staging
+    release: camunda
+    scenario: keycloak
+    auth: keycloak
+    valuesPreset: enterprise
+    ingressHost: staging.your-domain.com
+    ensureDockerRegistry: true
+    # Vault secret mapping for sensitive data
+    vaultSecretMapping: |
+      secret/camunda/staging IDENTITY_FIRSTUSER_PASSWORD
+      secret/camunda/staging KEYCLOAK_CLIENTS_SECRET
+    # Custom Elasticsearch index prefixes for isolation
+    optimizeIndexPrefix: staging-optimize
+    orchestrationIndexPrefix: staging-orch
+    tasklistIndexPrefix: staging-tasklist
+    operateIndexPrefix: staging-operate
+    keycloakRealm: camunda-staging
+    extraValues:
+      - values-staging.yaml
+    timeout: 20
+
+  # Production environment
+  production:
+    chart: camunda-platform
+    version: "8.8"
+    namespace: camunda-production
+    release: camunda
+    scenario: keycloak
+    auth: keycloak
+    valuesPreset: enterprise
+    ingressHost: camunda.your-domain.com
+    ensureDockerRegistry: true
+    vaultSecretMapping: |
+      secret/camunda/production IDENTITY_FIRSTUSER_PASSWORD
+      secret/camunda/production KEYCLOAK_CLIENTS_SECRET
+    optimizeIndexPrefix: prod-optimize
+    orchestrationIndexPrefix: prod-orch
+    tasklistIndexPrefix: prod-tasklist
+    operateIndexPrefix: prod-operate
+    keycloakRealm: camunda-production
+    extraValues:
+      - values-production.yaml
+    timeout: 30
+
+current: staging
+

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"scripts/deploy-camunda/internal/util"
 	"strings"
 )
 
@@ -42,7 +43,8 @@ type RuntimeFlags struct {
 	RenderOutputDir          string
 	ExtraValues              []string
 	ValuesPreset             string
-	Timeout                  int // Timeout in minutes for Helm deployment
+	Timeout                  int  // Timeout in minutes for Helm deployment
+	DryRun                   bool // Preview deployment without executing
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -67,50 +69,58 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 		return fmt.Errorf("active deployment %q not found in config", active)
 	}
 
-	// Apply deployment-specific values
-	MergeStringField(&flags.ChartPath, dep.ChartPath, rc.ChartPath)
-	MergeStringField(&flags.Chart, dep.Chart, rc.Chart)
-	MergeStringField(&flags.ChartVersion, dep.Version, rc.Version)
-	MergeStringField(&flags.Namespace, dep.Namespace, rc.Namespace)
-	MergeStringField(&flags.Release, dep.Release, rc.Release)
-	MergeStringField(&flags.Scenario, dep.Scenario, rc.Scenario)
-	MergeStringField(&flags.Auth, dep.Auth, rc.Auth)
-	MergeStringField(&flags.Platform, dep.Platform, rc.Platform)
-	MergeStringField(&flags.LogLevel, dep.LogLevel, rc.LogLevel)
-	MergeStringField(&flags.Flow, dep.Flow, rc.Flow)
-	MergeStringField(&flags.EnvFile, dep.EnvFile, rc.EnvFile)
-	MergeStringField(&flags.VaultSecretMapping, dep.VaultSecretMapping, rc.VaultSecretMapping)
-	MergeStringField(&flags.DockerUsername, dep.DockerUsername, rc.DockerUsername)
-	MergeStringField(&flags.DockerPassword, dep.DockerPassword, rc.DockerPassword)
-	MergeStringField(&flags.RenderOutputDir, dep.RenderOutputDir, rc.RenderOutputDir)
-	MergeStringField(&flags.RepoRoot, dep.RepoRoot, rc.RepoRoot)
-	MergeStringField(&flags.ValuesPreset, dep.ValuesPreset, rc.ValuesPreset)
-	MergeStringField(&flags.KeycloakRealm, dep.KeycloakRealm, rc.KeycloakRealm)
-	MergeStringField(&flags.OptimizeIndexPrefix, dep.OptimizeIndexPrefix, rc.OptimizeIndexPrefix)
-	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix)
-	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix)
-	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix)
+	// Use fluent merger for cleaner code
+	NewFieldMerger(flags).
+		MergeStrings(
+			// Chart identification
+			S(&flags.ChartPath, dep.ChartPath, rc.ChartPath),
+			S(&flags.Chart, dep.Chart, rc.Chart),
+			S(&flags.ChartVersion, dep.Version, rc.Version),
+			// Deployment identifiers
+			S(&flags.Namespace, dep.Namespace, rc.Namespace),
+			S(&flags.Release, dep.Release, rc.Release),
+			S(&flags.Scenario, dep.Scenario, rc.Scenario),
+			S(&flags.Auth, dep.Auth, rc.Auth),
+			// Environment settings
+			S(&flags.Platform, dep.Platform, rc.Platform),
+			S(&flags.LogLevel, dep.LogLevel, rc.LogLevel),
+			S(&flags.Flow, dep.Flow, rc.Flow),
+			S(&flags.EnvFile, dep.EnvFile, rc.EnvFile),
+			// Secrets and Docker
+			S(&flags.VaultSecretMapping, dep.VaultSecretMapping, rc.VaultSecretMapping),
+			S(&flags.DockerUsername, dep.DockerUsername, rc.DockerUsername),
+			S(&flags.DockerPassword, dep.DockerPassword, rc.DockerPassword),
+			// Output and paths
+			S(&flags.RenderOutputDir, dep.RenderOutputDir, rc.RenderOutputDir),
+			S(&flags.RepoRoot, dep.RepoRoot, rc.RepoRoot),
+			S(&flags.ValuesPreset, dep.ValuesPreset, rc.ValuesPreset),
+			// Elasticsearch index prefixes
+			S(&flags.KeycloakRealm, dep.KeycloakRealm, rc.KeycloakRealm),
+			S(&flags.OptimizeIndexPrefix, dep.OptimizeIndexPrefix, rc.OptimizeIndexPrefix),
+			S(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix),
+			S(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix),
+			S(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix),
+			// Keycloak
+			S(&flags.KeycloakHost, "", rc.Keycloak.Host),
+			S(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol),
+		).
+		MergeBools(
+			B(&flags.ExternalSecrets, dep.ExternalSecrets, boolPtr(rc.ExternalSecrets)),
+			B(&flags.SkipDependencyUpdate, dep.SkipDependencyUpdate, boolPtr(rc.SkipDependencyUpdate)),
+			B(&flags.Interactive, dep.Interactive, rc.Interactive),
+			B(&flags.AutoGenerateSecrets, dep.AutoGenerateSecrets, rc.AutoGenerateSecrets),
+			B(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst),
+			B(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry),
+			B(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates),
+		).
+		MergeSlices(
+			Sl(&flags.ExtraValues, dep.ExtraValues, rc.ExtraValues),
+		)
 
-	// ScenarioPath special handling
-	if strings.TrimSpace(flags.ScenarioPath) == "" {
-		flags.ScenarioPath = firstNonEmpty(dep.ScenarioPath, dep.ScenarioRoot, rc.ScenarioPath, rc.ScenarioRoot)
+	// ScenarioPath special handling (4-way merge)
+	if util.IsEmpty(flags.ScenarioPath) {
+		flags.ScenarioPath = util.FirstNonEmpty(dep.ScenarioPath, dep.ScenarioRoot, rc.ScenarioPath, rc.ScenarioRoot)
 	}
-
-	// Boolean fields - apply if flag wasn't explicitly set
-	MergeBoolField(&flags.ExternalSecrets, dep.ExternalSecrets, boolPtr(rc.ExternalSecrets))
-	MergeBoolField(&flags.SkipDependencyUpdate, dep.SkipDependencyUpdate, boolPtr(rc.SkipDependencyUpdate))
-	MergeBoolField(&flags.Interactive, dep.Interactive, rc.Interactive)
-	MergeBoolField(&flags.AutoGenerateSecrets, dep.AutoGenerateSecrets, rc.AutoGenerateSecrets)
-	MergeBoolField(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst)
-	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry)
-	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates)
-
-	// Slice fields
-	MergeStringSliceField(&flags.ExtraValues, dep.ExtraValues, rc.ExtraValues)
-
-	// Keycloak
-	MergeStringField(&flags.KeycloakHost, "", rc.Keycloak.Host)
-	MergeStringField(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol)
 
 	return nil
 }
@@ -121,47 +131,60 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 		return nil
 	}
 
-	MergeStringField(&flags.ChartPath, "", rc.ChartPath)
-	MergeStringField(&flags.Chart, "", rc.Chart)
-	MergeStringField(&flags.ChartVersion, "", rc.Version)
-	MergeStringField(&flags.Namespace, "", rc.Namespace)
-	MergeStringField(&flags.Release, "", rc.Release)
-	MergeStringField(&flags.Scenario, "", rc.Scenario)
-	MergeStringField(&flags.ScenarioPath, "", firstNonEmpty(rc.ScenarioPath, rc.ScenarioRoot))
-	MergeStringField(&flags.Auth, "", rc.Auth)
-	MergeStringField(&flags.Platform, "", rc.Platform)
-	MergeStringField(&flags.LogLevel, "", rc.LogLevel)
-	MergeStringField(&flags.Flow, "", rc.Flow)
-	MergeStringField(&flags.EnvFile, "", rc.EnvFile)
-	MergeStringField(&flags.VaultSecretMapping, "", rc.VaultSecretMapping)
-	MergeStringField(&flags.DockerUsername, "", rc.DockerUsername)
-	MergeStringField(&flags.DockerPassword, "", rc.DockerPassword)
-	MergeStringField(&flags.RenderOutputDir, "", rc.RenderOutputDir)
-	MergeStringField(&flags.RepoRoot, "", rc.RepoRoot)
-	MergeStringField(&flags.ValuesPreset, "", rc.ValuesPreset)
-	MergeStringField(&flags.KeycloakRealm, "", rc.KeycloakRealm)
-	MergeStringField(&flags.OptimizeIndexPrefix, "", rc.OptimizeIndexPrefix)
-	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix)
-	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix)
-	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix)
+	// Use fluent merger for cleaner code
+	NewFieldMerger(flags).
+		MergeStrings(
+			// Chart identification
+			S(&flags.ChartPath, "", rc.ChartPath),
+			S(&flags.Chart, "", rc.Chart),
+			S(&flags.ChartVersion, "", rc.Version),
+			// Deployment identifiers
+			S(&flags.Namespace, "", rc.Namespace),
+			S(&flags.Release, "", rc.Release),
+			S(&flags.Scenario, "", rc.Scenario),
+			S(&flags.ScenarioPath, "", util.FirstNonEmpty(rc.ScenarioPath, rc.ScenarioRoot)),
+			S(&flags.Auth, "", rc.Auth),
+			// Environment settings
+			S(&flags.Platform, "", rc.Platform),
+			S(&flags.LogLevel, "", rc.LogLevel),
+			S(&flags.Flow, "", rc.Flow),
+			S(&flags.EnvFile, "", rc.EnvFile),
+			// Secrets and Docker
+			S(&flags.VaultSecretMapping, "", rc.VaultSecretMapping),
+			S(&flags.DockerUsername, "", rc.DockerUsername),
+			S(&flags.DockerPassword, "", rc.DockerPassword),
+			// Output and paths
+			S(&flags.RenderOutputDir, "", rc.RenderOutputDir),
+			S(&flags.RepoRoot, "", rc.RepoRoot),
+			S(&flags.ValuesPreset, "", rc.ValuesPreset),
+			// Elasticsearch index prefixes
+			S(&flags.KeycloakRealm, "", rc.KeycloakRealm),
+			S(&flags.OptimizeIndexPrefix, "", rc.OptimizeIndexPrefix),
+			S(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix),
+			S(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix),
+			S(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix),
+			// Keycloak
+			S(&flags.KeycloakHost, "", rc.Keycloak.Host),
+			S(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol),
+		).
+		MergeBools(
+			B(&flags.Interactive, nil, rc.Interactive),
+			B(&flags.AutoGenerateSecrets, nil, rc.AutoGenerateSecrets),
+			B(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst),
+			B(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry),
+			B(&flags.RenderTemplates, nil, rc.RenderTemplates),
+		).
+		MergeSlices(
+			Sl(&flags.ExtraValues, nil, rc.ExtraValues),
+		)
 
+	// Direct boolean assignments from root config
 	if rc.ExternalSecrets {
 		flags.ExternalSecrets = true
 	}
 	if rc.SkipDependencyUpdate {
 		flags.SkipDependencyUpdate = true
 	}
-
-	MergeBoolField(&flags.Interactive, nil, rc.Interactive)
-	MergeBoolField(&flags.AutoGenerateSecrets, nil, rc.AutoGenerateSecrets)
-	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst)
-	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry)
-	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates)
-
-	MergeStringSliceField(&flags.ExtraValues, nil, rc.ExtraValues)
-
-	MergeStringField(&flags.KeycloakHost, "", rc.Keycloak.Host)
-	MergeStringField(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol)
 
 	return nil
 }

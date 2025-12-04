@@ -1,0 +1,65 @@
+# CI/CD Pipeline deployment configuration
+#
+# This example is optimized for automated CI/CD pipelines.
+# All interactive features are disabled and secrets are auto-generated.
+#
+# Usage in CI:
+#   export CAMUNDA_CURRENT=e2e-tests
+#   deploy-camunda
+
+current: e2e-tests
+
+# Repository root - typically set via CAMUNDA_REPO_ROOT env var in CI
+# repoRoot: /workspace/camunda-platform-helm
+
+platform: gke
+logLevel: info
+externalSecrets: true
+skipDependencyUpdate: true
+
+keycloak:
+  host: keycloak-24-9-0.ci.distro.ultrawombat.com
+  protocol: https
+
+deployments:
+  # E2E test deployment
+  e2e-tests:
+    chart: camunda-platform-8.8
+    namespace: e2e-${CI_PIPELINE_ID:-tests}
+    release: integration
+    scenario: keycloak
+    auth: keycloak
+    
+    # Disable interactive mode for CI
+    interactive: false
+    
+    # Auto-generate test credentials
+    autoGenerateSecrets: true
+    
+    # Clean slate for each run
+    deleteNamespace: true
+    
+    # Docker registry for enterprise images
+    ensureDockerRegistry: true
+    
+    flow: install
+
+  # Integration tests with multiple scenarios
+  integration-matrix:
+    chart: camunda-platform-8.8
+    namespace: integration-${CI_PIPELINE_ID:-tests}
+    release: integration
+    scenario: keycloak,keycloak-mt,oidc
+    interactive: false
+    autoGenerateSecrets: true
+    deleteNamespace: true
+
+  # Upgrade testing
+  upgrade-test:
+    chart: camunda-platform-8.8
+    namespace: upgrade-${CI_PIPELINE_ID:-tests}
+    release: camunda
+    scenario: keycloak
+    flow: upgrade
+    interactive: false
+    autoGenerateSecrets: true

@@ -5,6 +5,7 @@ import (
 	"os"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/internal/util"
 	"strings"
 
 	"github.com/jwalton/gchalk"
@@ -70,12 +71,12 @@ func maskIfSet(val string) string {
 
 // PrintDeploymentConfig displays a deployment configuration.
 func PrintDeploymentConfig(name string, dep config.DeploymentConfig, root config.RootConfig) error {
-	chartStr := firstNonEmpty(dep.Chart, "")
-	versionStr := firstNonEmpty(dep.Version, "")
-	scenarioStr := firstNonEmpty(dep.Scenario, "")
-	repoRootStr := firstNonEmpty(dep.RepoRoot, root.RepoRoot)
-	scenarioRootStr := firstNonEmpty(dep.ScenarioRoot, root.ScenarioRoot)
-	valuesPresetStr := firstNonEmpty(dep.ValuesPreset, root.ValuesPreset)
+	chartStr := util.FirstNonEmpty(dep.Chart, "")
+	versionStr := util.FirstNonEmpty(dep.Version, "")
+	scenarioStr := util.FirstNonEmpty(dep.Scenario, "")
+	repoRootStr := util.FirstNonEmpty(dep.RepoRoot, root.RepoRoot)
+	scenarioRootStr := util.FirstNonEmpty(dep.ScenarioRoot, root.ScenarioRoot)
+	valuesPresetStr := util.FirstNonEmpty(dep.ValuesPreset, root.ValuesPreset)
 	platformStr := root.Platform
 	logLevelStr := root.LogLevel
 
@@ -134,12 +135,3 @@ func PrintDeploymentConfig(name string, dep config.DeploymentConfig, root config
 	return nil
 }
 
-// firstNonEmpty returns the first non-empty string.
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
-}

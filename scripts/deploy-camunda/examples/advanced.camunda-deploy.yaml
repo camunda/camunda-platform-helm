@@ -1,0 +1,83 @@
+# Advanced deployment configuration with all available options
+#
+# This example shows all configurable options for reference.
+# Most deployments won't need all of these - see basic.camunda-deploy.yaml for simpler setups.
+
+current: integration-test
+
+# Global defaults (inherited by all deployments)
+repoRoot: /path/to/camunda-platform-helm
+scenarioRoot: /path/to/camunda-platform-helm/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup
+valuesPreset: latest
+platform: gke
+logLevel: info
+externalSecrets: true
+skipDependencyUpdate: true
+
+# Keycloak connection settings (shared across deployments)
+keycloak:
+  host: keycloak-24-9-0.ci.distro.ultrawombat.com
+  protocol: https
+
+deployments:
+  # Integration test deployment with full configuration
+  integration-test:
+    chart: camunda-platform-8.8
+    namespace: integration-tests
+    release: integration
+    scenario: keycloak
+    auth: keycloak
+    
+    # Index prefixes for Elasticsearch isolation
+    keycloakRealm: my-test-realm
+    optimizeIndexPrefix: opt-test
+    orchestrationIndexPrefix: orch-test
+    tasklistIndexPrefix: task-test
+    operateIndexPrefix: op-test
+    
+    # Ingress configuration
+    ingressHost: camunda.example.com
+    
+    # Docker registry credentials (for private images)
+    ensureDockerRegistry: true
+    dockerUsername: myuser
+    # dockerPassword: set via CAMUNDA_DOCKER_PASSWORD env var or --docker-password flag
+    
+    # Additional values files to merge
+    extraValues:
+      - ./custom-values.yaml
+      - ./secrets-values.yaml
+    
+    # Deployment behavior
+    flow: install
+    interactive: false
+    autoGenerateSecrets: true
+    deleteNamespace: false
+
+  # Local development with chart path
+  local-dev:
+    chartPath: /path/to/camunda-platform-helm/charts/camunda-platform-8.8
+    namespace: camunda-local
+    release: camunda
+    scenario: keycloak
+    skipDependencyUpdate: false
+    interactive: true
+
+  # Parallel multi-scenario deployment
+  multi-scenario:
+    chart: camunda-platform-8.8
+    namespace: multi-test
+    release: integration
+    # Deploy multiple scenarios in parallel (creates separate namespaces)
+    scenario: keycloak,keycloak-mt,oidc
+    autoGenerateSecrets: true
+
+  # Template rendering (no actual deployment)
+  render-only:
+    chart: camunda-platform-8.8
+    namespace: rendered
+    release: camunda
+    scenario: keycloak
+    renderTemplates: true
+    renderOutputDir: ./rendered-manifests
+

@@ -26,8 +26,49 @@ func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "deploy-camunda",
 		Short: "Deploy Camunda Platform with prepared Helm values",
+		Long: `Deploy Camunda Platform to Kubernetes with automated Helm values preparation.
+
+This tool automates the deployment of Camunda Platform by:
+  - Loading configuration from .camunda-deploy.yaml or ~/.config/camunda/deploy.yaml
+  - Preparing scenario-specific Helm values files
+  - Managing Keycloak realms and Elasticsearch index prefixes
+  - Supporting parallel deployment of multiple scenarios
+
+CONFIGURATION:
+  Configuration can be provided via:
+    1. CLI flags (highest priority)
+    2. Environment variables (CAMUNDA_*)
+    3. Config file deployments (selected via 'config use <name>')
+    4. Config file root-level defaults
+
+EXAMPLES:
+  # Deploy using active config profile
+  deploy-camunda
+
+  # Deploy a specific scenario
+  deploy-camunda --scenario keycloak --namespace my-ns --release integration
+
+  # Deploy multiple scenarios in parallel
+  deploy-camunda --scenario keycloak,keycloak-mt,saas --namespace integration
+
+  # Preview deployment without executing
+  deploy-camunda --dry-run
+
+  # Use a specific config file
+  deploy-camunda -F /path/to/config.yaml
+
+  # Validate configuration
+  deploy-camunda validate`,
+		Example: `  # Basic deployment
+  deploy-camunda -n camunda -r integration -s keycloak --chart-path ./charts/camunda-platform-8.8
+
+  # Deploy with external secrets and auto-generated test credentials
+  deploy-camunda -n test -r integration -s keycloak --auto-generate-secrets --external-secrets
+
+  # Render manifests without deploying
+  deploy-camunda -n test -r integration -s keycloak --render-templates --render-output-dir ./output`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// Skip for config and completion subcommands
+			// Skip for config, completion, and validate subcommands
 			if cmd != nil {
 				if cmd.Name() == "config" || (cmd.Parent() != nil && cmd.Parent().Name() == "config") {
 					return nil
@@ -35,6 +76,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
+					return nil
+				}
+				if cmd.Name() == "validate" {
 					return nil
 				}
 			}
@@ -92,46 +136,104 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
-	// Persistent flags
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "F", "", "Path to config file (.camunda-deploy.yaml or ~/.config/camunda/deploy.yaml)")
+	// Persistent flags (available to all subcommands)
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "F", "",
+		"Path to config file. Searches .camunda-deploy.yaml in current dir, then ~/.config/camunda/deploy.yaml")
 
 	// Deployment flags
 	f := rootCmd.Flags()
-	f.StringVar(&flags.ChartPath, "chart-path", "", "Path to the Camunda chart directory")
-	f.StringVarP(&flags.Chart, "chart", "c", "", "Chart name")
-	f.StringVarP(&flags.ChartVersion, "version", "v", "", "Chart version (only valid with --chart; not allowed with --chart-path)")
-	f.StringVarP(&flags.Namespace, "namespace", "n", "", "Kubernetes namespace")
-	f.StringVarP(&flags.Release, "release", "r", "", "Helm release name")
-	f.StringVarP(&flags.Scenario, "scenario", "s", "", "The name of the scenario to deploy (comma-separated for parallel deployment)")
-	f.StringVar(&flags.ScenarioPath, "scenario-path", "", "Path to scenario files")
-	f.StringVar(&flags.Auth, "auth", "keycloak", "Auth scenario")
-	f.StringVar(&flags.Platform, "platform", "gke", "Target platform: gke, rosa, eks")
-	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
-	f.BoolVar(&flags.SkipDependencyUpdate, "skip-dependency-update", true, "Skip Helm dependency update")
-	f.BoolVar(&flags.ExternalSecrets, "external-secrets", true, "Enable external secrets")
-	f.StringVar(&flags.KeycloakHost, "keycloak-host", "keycloak-24-9-0.ci.distro.ultrawombat.com", "Keycloak external host")
-	f.StringVar(&flags.KeycloakProtocol, "keycloak-protocol", "https", "Keycloak protocol")
-	f.StringVar(&flags.KeycloakRealm, "keycloak-realm", "", "Keycloak realm name (auto-generated if not specified)")
-	f.StringVar(&flags.OptimizeIndexPrefix, "optimize-index-prefix", "", "Optimize Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.OrchestrationIndexPrefix, "orchestration-index-prefix", "", "Orchestration Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.TasklistIndexPrefix, "tasklist-index-prefix", "", "Tasklist Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.OperateIndexPrefix, "operate-index-prefix", "", "Operate Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.RepoRoot, "repo-root", "", "Repository root path")
-	f.StringVar(&flags.Flow, "flow", "install", "Flow type")
-	f.StringVar(&flags.EnvFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
-	f.BoolVar(&flags.Interactive, "interactive", true, "Enable interactive prompts for missing variables")
-	f.StringVar(&flags.VaultSecretMapping, "vault-secret-mapping", "", "Vault secret mapping content")
-	f.BoolVar(&flags.AutoGenerateSecrets, "auto-generate-secrets", false, "Auto-generate certain secrets for testing purposes")
-	f.BoolVar(&flags.DeleteNamespaceFirst, "delete-namespace", false, "Delete the namespace first, then deploy")
-	f.StringVar(&flags.DockerUsername, "docker-username", "", "Docker registry username")
-	f.StringVar(&flags.DockerPassword, "docker-password", "", "Docker registry password")
-	f.BoolVar(&flags.EnsureDockerRegistry, "ensure-docker-registry", false, "Ensure Docker registry secret is created")
-	f.BoolVar(&flags.RenderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
-	f.StringVar(&flags.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
-	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
-	f.StringVar(&flags.ValuesPreset, "values-preset", "", "Shortcut to append values-<preset>.yaml from chartPath if present (e.g. latest, enterprise)")
-	f.StringVar(&flags.IngressHost, "ingress-host", "", "Ingress host to set in values")
-	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
+
+	// Chart source flags (mutually exclusive approaches)
+	f.StringVar(&flags.ChartPath, "chart-path", "",
+		"Local path to the Camunda chart directory (e.g., ./charts/camunda-platform-8.8)")
+	f.StringVarP(&flags.Chart, "chart", "c", "",
+		"Chart name for remote chart (e.g., camunda-platform). Use with --version")
+	f.StringVarP(&flags.ChartVersion, "version", "v", "",
+		"Chart version when using --chart for remote charts (not valid with --chart-path)")
+
+	// Core deployment identifiers
+	f.StringVarP(&flags.Namespace, "namespace", "n", "",
+		"Kubernetes namespace for deployment. Created if it doesn't exist")
+	f.StringVarP(&flags.Release, "release", "r", "",
+		"Helm release name (e.g., integration, camunda)")
+	f.StringVarP(&flags.Scenario, "scenario", "s", "",
+		"Scenario name(s) to deploy. Use comma-separated values for parallel deployment (e.g., keycloak,keycloak-mt)")
+
+	// Scenario configuration
+	f.StringVar(&flags.ScenarioPath, "scenario-path", "",
+		"Custom path to scenario values files. Default: <chart-path>/test/integration/scenarios/chart-full-setup")
+	f.StringVar(&flags.Auth, "auth", "keycloak",
+		"Authentication scenario to apply (e.g., keycloak, saas)")
+
+	// Platform and environment
+	f.StringVar(&flags.Platform, "platform", "gke",
+		"Target Kubernetes platform. Affects platform-specific configurations (gke, rosa, eks)")
+	f.StringVarP(&flags.LogLevel, "log-level", "l", "info",
+		"Logging verbosity level (debug, info, warn, error)")
+	f.StringVar(&flags.EnvFile, "env-file", "",
+		"Path to .env file for environment variables. Default: .env in current directory")
+
+	// Keycloak configuration
+	f.StringVar(&flags.KeycloakHost, "keycloak-host", "keycloak-24-9-0.ci.distro.ultrawombat.com",
+		"External Keycloak hostname for authentication")
+	f.StringVar(&flags.KeycloakProtocol, "keycloak-protocol", "https",
+		"Protocol for Keycloak connection (http, https)")
+	f.StringVar(&flags.KeycloakRealm, "keycloak-realm", "",
+		"Keycloak realm name. Auto-generated from scenario if not specified (max 36 chars)")
+
+	// Elasticsearch index prefixes (for multi-tenancy isolation)
+	f.StringVar(&flags.OptimizeIndexPrefix, "optimize-index-prefix", "",
+		"Optimize Elasticsearch index prefix. Auto-generated if not specified")
+	f.StringVar(&flags.OrchestrationIndexPrefix, "orchestration-index-prefix", "",
+		"Orchestration Elasticsearch index prefix. Auto-generated if not specified")
+	f.StringVar(&flags.TasklistIndexPrefix, "tasklist-index-prefix", "",
+		"Tasklist Elasticsearch index prefix. Auto-generated if not specified")
+	f.StringVar(&flags.OperateIndexPrefix, "operate-index-prefix", "",
+		"Operate Elasticsearch index prefix. Auto-generated if not specified")
+
+	// Repository and values configuration
+	f.StringVar(&flags.RepoRoot, "repo-root", "",
+		"Root path of the camunda-platform-helm repository")
+	f.StringVar(&flags.ValuesPreset, "values-preset", "",
+		"Append values-<preset>.yaml from chart path (e.g., latest, enterprise, local)")
+	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil,
+		"Additional Helm values files applied last. Comma-separated or use multiple times")
+	f.StringVar(&flags.IngressHost, "ingress-host", "",
+		"Base ingress hostname for deployed services")
+
+	// Deployment behavior
+	f.StringVar(&flags.Flow, "flow", "install",
+		"Deployment flow type (install, upgrade)")
+	f.IntVar(&flags.Timeout, "timeout", 5,
+		"Helm deployment timeout in minutes")
+	f.BoolVar(&flags.SkipDependencyUpdate, "skip-dependency-update", true,
+		"Skip 'helm dependency update' before deployment")
+	f.BoolVar(&flags.DeleteNamespaceFirst, "delete-namespace", false,
+		"Delete and recreate namespace before deployment (destructive)")
+	f.BoolVar(&flags.Interactive, "interactive", true,
+		"Enable interactive prompts for missing configuration values")
+
+	// Secrets and authentication
+	f.BoolVar(&flags.ExternalSecrets, "external-secrets", true,
+		"Enable External Secrets Operator integration for secret management")
+	f.StringVar(&flags.VaultSecretMapping, "vault-secret-mapping", "",
+		"Vault secret mapping specification for External Secrets")
+	f.BoolVar(&flags.AutoGenerateSecrets, "auto-generate-secrets", false,
+		"Generate random test secrets (IDENTITY passwords, Keycloak secrets)")
+	f.StringVar(&flags.DockerUsername, "docker-username", "",
+		"Docker registry username for private image pulls")
+	f.StringVar(&flags.DockerPassword, "docker-password", "",
+		"Docker registry password (consider using env var for security)")
+	f.BoolVar(&flags.EnsureDockerRegistry, "ensure-docker-registry", false,
+		"Create Docker registry secret in namespace if credentials provided")
+
+	// Output modes
+	f.BoolVar(&flags.RenderTemplates, "render-templates", false,
+		"Render Helm templates to files instead of deploying. Use for manifest review/GitOps")
+	f.StringVar(&flags.RenderOutputDir, "render-output-dir", "",
+		"Output directory for rendered manifests. Default: ./rendered/<release>")
+	f.BoolVar(&flags.DryRun, "dry-run", false,
+		"Preview deployment configuration and helm commands without executing")
 
 	// Register completions
 	completion.RegisterScenarioCompletion(rootCmd, "scenario", "chart-path")
@@ -145,5 +247,7 @@ func Execute() error {
 	rootCmd := NewRootCommand()
 	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 	rootCmd.AddCommand(newConfigCommand())
+	rootCmd.AddCommand(newValidateCommand())
+	rootCmd.AddCommand(newInitCommand())
 	return rootCmd.Execute()
 }

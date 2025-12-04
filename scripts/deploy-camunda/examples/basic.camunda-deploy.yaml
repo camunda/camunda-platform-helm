@@ -1,0 +1,29 @@
+# Basic deployment configuration
+# Copy this file to .camunda-deploy.yaml in your project root or ~/.config/camunda/deploy.yaml
+#
+# Usage:
+#   deploy-camunda                    # Uses the 'current' deployment
+#   deploy-camunda config use dev     # Switch to 'dev' deployment
+#   deploy-camunda config list        # List all configured deployments
+
+# The currently active deployment profile
+current: dev
+
+# Global defaults (apply to all deployments unless overridden)
+repoRoot: /path/to/camunda-platform-helm
+platform: gke
+logLevel: info
+
+deployments:
+  dev:
+    chart: camunda-platform-8.8
+    namespace: camunda-dev
+    release: camunda
+    scenario: keycloak
+
+  staging:
+    chart: camunda-platform-8.8
+    namespace: camunda-staging
+    release: camunda
+    scenario: keycloak
+    valuesPreset: enterprise
