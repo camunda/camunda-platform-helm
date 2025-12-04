@@ -176,6 +176,51 @@
                         }
                     }
                 },
+                "gateway": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, a gateway resource is deployed. Only useful if a gateway controller is available, like Ingress-NGINX or Gateway API.",
+                            "default": false
+                        },
+                        "external": {
+                            "type": "boolean",
+                            "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
+                            "default": false
+                        },
+                        "className": {
+                            "type": "string",
+                            "description": "Gateway.className defines the class or configuration of gateway which should be used by the controller",
+                            "default": "nginx"
+                        },
+                        "hostname": {
+                            "type": "string",
+                            "description": "can be used to define the hostname of the gateway resource",
+                            "default": ""
+                        },
+                        "tls": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then tls is configured on the gateway resource. If enabled the Ingress.host need to be defined.",
+                                    "default": false
+                                },
+                                "secretName": {
+                                    "type": "string",
+                                    "description": "defines the secret name which contains the TLS private key and certificate",
+                                    "default": "camunda-platform"
+                                }
+                            }
+                        },
+                        "controllerNamespace": {
+                            "type": "string",
+                            "description": "defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.",
+                            "default": ""
+                        }
+                    }
+                },
                 "ingress": {
                     "type": "object",
                     "properties": {
