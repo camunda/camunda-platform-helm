@@ -28,6 +28,10 @@ data:
     spring:
       profiles:
         active: "broker,identity,operate,tasklist,consolidated-auth"
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
     
     server:
       address: 0.0.0.0

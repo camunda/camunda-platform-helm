@@ -5,6 +5,10 @@ It is included (imported) in the ConfigMap.
 spring:
   profiles:
     active: {{ include "orchestration.enabledProfilesWithIdentity" . | quote }}
+  servlet:
+    multipart:
+      max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+      max-request-size: {{ .Values.global.config.requestBodySize | quote }}
 
 server:
   address: 0.0.0.0
