@@ -1,3 +1,4 @@
+{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
 kind: ReferenceGrant
 apiVersion: gateway.networking.k8s.io/v1beta1
 metadata:
@@ -11,3 +12,4 @@ spec:
   to:
   - group: ""
     kind: Service
+{{- end }}
