@@ -39,9 +39,34 @@
 # Any failure will terminate the script with a non-zero exit code so that CI
 # systems mark the job as failed.
 # ============================================================================
+
+# Color definitions
+COLOR_RESET='\033[0m'
+COLOR_RED='\033[0;31m'
+COLOR_GREEN='\033[0;32m'
+COLOR_YELLOW='\033[0;33m'
+COLOR_BLUE='\033[0;34m'
+COLOR_MAGENTA='\033[0;35m'
+COLOR_CYAN='\033[0;36m'
+COLOR_GRAY='\033[0;90m'
+
 log() {
   if $VERBOSE; then
-    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*"
+    local message="$*"
+    local color="$COLOR_RESET"
+    
+    # Color based on message type
+    if [[ "$message" == *"ERROR"* ]] || [[ "$message" == *"Error"* ]] || [[ "$message" == "❌"* ]]; then
+      color="$COLOR_RED"
+    elif [[ "$message" == "✅"* ]]; then
+      color="$COLOR_GREEN"
+    elif [[ "$message" == "DEBUG:"* ]]; then
+      color="$COLOR_GRAY"
+    elif [[ "$message" == *"WARNING"* ]] || [[ "$message" == *"Warning"* ]]; then
+      color="$COLOR_YELLOW"
+    fi
+    
+    echo -e "${color}[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $message${COLOR_RESET}" >&2
   fi
 }
 
