@@ -17,7 +17,7 @@
     {{- else -}}
         {{- if .Values.global.ingress.enabled -}}
             {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-            {{- $host := .Values.global.ingress.host -}}
+            {{- $host := (.Values.global.gateway.hostname | default .Values.global.ingress.host) -}}
             {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
         {{- else -}}
