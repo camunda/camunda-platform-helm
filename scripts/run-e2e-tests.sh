@@ -105,10 +105,13 @@ resolve_identity_passwords() {
   
   log "DEBUG: Resolving identity user passwords"
   
-  # Check for vault-mapped-secrets first
-  if kubectl -n "$namespace" get secret vault-mapped-secrets >/dev/null 2>&1; then
+  # Check if vault-mapped-secrets has the identity password key
+  local vault_firstuser_pw
+  vault_firstuser_pw=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
+  
+  if [[ -n "$vault_firstuser_pw" ]]; then
     log "DEBUG: Using vault-mapped-secrets"
-    DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
+    DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD="$vault_firstuser_pw"
     DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
     DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
   else
