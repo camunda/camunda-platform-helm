@@ -894,7 +894,7 @@ jobs:
   playwright-e2e-tests:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: ubuntu-latest
     if: ${{ inputs.test-enabled && inputs.e2e-enabled }}
     timeout-minutes: 20
     env:
