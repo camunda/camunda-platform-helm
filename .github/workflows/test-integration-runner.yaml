@@ -919,6 +919,24 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
+      - name: CI Setup - Authenticate to cluster
+        id: cluster-auth
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
+          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
+          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
+          GKE_SA:           ${{ secrets[inputs.service-account] }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
         uses: ./.github/actions/workflow-vars
