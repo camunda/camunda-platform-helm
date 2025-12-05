@@ -27,7 +27,8 @@ type RuntimeFlags struct {
 	OrchestrationIndexPrefix string
 	TasklistIndexPrefix      string
 	OperateIndexPrefix       string
-	IngressHost              string
+	IngressSubdomain         string
+	IngressHostname          string
 	RepoRoot                 string
 	Flow                     string
 	EnvFile                  string
@@ -216,4 +217,17 @@ func parseScenarios(scenario string) []string {
 		}
 	}
 	return scenarios
+}
+
+// ResolveIngressHostname returns the resolved ingress hostname.
+// If IngressHostname is set, it takes precedence (full override).
+// Otherwise, IngressSubdomain is appended to DefaultIngressBaseDomain.
+func (f *RuntimeFlags) ResolveIngressHostname() string {
+	if f.IngressHostname != "" {
+		return f.IngressHostname
+	}
+	if f.IngressSubdomain != "" {
+		return f.IngressSubdomain + "." + DefaultIngressBaseDomain
+	}
+	return ""
 }
