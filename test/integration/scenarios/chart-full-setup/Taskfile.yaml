@@ -186,7 +186,7 @@ tasks:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
-      helm install --server-side=false integration {{ .TEST_CHART_NAME }} \
+      helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
         {{ (and (eq .TEST_CHART_VERSION "13.0.0-alpha7") (eq .TEST_AUTH_TYPE "keycloak")) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
