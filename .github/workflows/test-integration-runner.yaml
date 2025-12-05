@@ -895,8 +895,7 @@ jobs:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
     runs-on: gcp-core-32-longrunning-big-ssd
-    if: false # The scripts are out dated. This will likely by replaced as calling the QA repo is a better approach.
-    #if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled }}
     timeout-minutes: 20
     env:
       TEST_EXCLUDE: ${{ inputs.exclude }}
@@ -927,6 +926,15 @@ jobs:
           name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
           retention-days: 1
+
+      - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
+        shell: bash
+        env:
+          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+          ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+        run: |
+          cd "$GITHUB_WORKSPACE/scripts"
+          ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --platform "${{ inputs.distro-platform }}"
 
   merge-reports:
     name: Merge reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
