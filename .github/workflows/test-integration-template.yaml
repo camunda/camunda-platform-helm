@@ -62,7 +62,7 @@ on:
         type: boolean
       e2e-enabled:
         required: false
-        default: true
+        default: false
         type: boolean
       extra-values:
         description: Pass extra values to the Helm chart.
