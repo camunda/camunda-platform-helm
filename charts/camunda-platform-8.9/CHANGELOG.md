@@ -1,6 +1,6 @@
 # Changelog
 
-## [14.1.0-alpha1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.0.0-alpha1...camunda-platform-8.9-14.1.0-alpha1) (2025-12-05)
+## [14.0.0-alpha2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.0.0-alpha1...camunda-platform-8.9-14.0.0-alpha2) (2025-12-05)
 
 
 ### Features
