@@ -303,6 +303,89 @@ entries:
     version: 14.0.0-alpha1
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "Support password field for jks"
+        - kind: fixed
+          description: "Correct extraVolumeMounts binding in importer deployment"
+        - kind: fixed
+          description: "Modeler webapp to websockets connection not using override option"
+        - kind: fixed
+          description: "Replace SNAPSHOT tags with stable versions in 8.8 values-digest.yaml"
+        - kind: fixed
+          description: "Add requestBodySize to orchestration multipart config"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/helmCLIVersion: 3.19.2
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2025-12-05T14:40:27.150693992Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: a49976374694afdb16f7bafa2f46f0971b8ffa1ecf0ff467a9f61a7476c93c92
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.3.0/camunda-platform-13.3.0.tgz
+    version: 13.3.0
+  - annotations:
+      artifacthub.io/changes: |
         - kind: fixed
           description: "Let helm chart support hybrid auth"
       artifacthub.io/containsSecurityUpdates: "false"
@@ -23785,4 +23868,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2025-12-04T16:33:09.175695097Z"
+generated: "2025-12-05T14:40:27.151530161Z"
