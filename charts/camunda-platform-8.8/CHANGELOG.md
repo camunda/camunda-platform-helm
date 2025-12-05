@@ -1,5 +1,27 @@
 # Changelog
 
+## [13.3.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.2.2...camunda-platform-8.8-13.3.0) (2025-12-03)
+
+
+### Features
+
+* support password field for jks ([#4782](https://github.com/camunda/camunda-platform-helm/issues/4782)) ([1877932](https://github.com/camunda/camunda-platform-helm/commit/187793214ca68d989142120a9a018dbe38809deb))
+
+
+### Bug Fixes
+
+* correct extraVolumeMounts binding in importer deployment ([#4829](https://github.com/camunda/camunda-platform-helm/issues/4829)) ([beb6db3](https://github.com/camunda/camunda-platform-helm/commit/beb6db3115649cb6d8617ee60637ebe6f315b9a7))
+* modeler webapp to websockets connection not using override option ([#4812](https://github.com/camunda/camunda-platform-helm/issues/4812)) ([339da02](https://github.com/camunda/camunda-platform-helm/commit/339da02a87add81852177530d2d3b0d5937dd73e))
+* replace SNAPSHOT tags with stable versions in 8.8 values-digest.yaml ([#4826](https://github.com/camunda/camunda-platform-helm/issues/4826)) ([9b43fff](https://github.com/camunda/camunda-platform-helm/commit/9b43fff499e399072d9d08cb0365ac2886b0b654))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#4818](https://github.com/camunda/camunda-platform-helm/issues/4818)) ([965345c](https://github.com/camunda/camunda-platform-helm/commit/965345c6f3f5fbbff806e15c0781baf55710af9f))
+* update camunda-platform-digests ([#4828](https://github.com/camunda/camunda-platform-helm/issues/4828)) ([5b459cb](https://github.com/camunda/camunda-platform-helm/commit/5b459cbb7442c04f1f39e6b6d7b76c45dbd854a0))
+* update camunda-platform-images (patch) ([#4830](https://github.com/camunda/camunda-platform-helm/issues/4830)) ([02793c0](https://github.com/camunda/camunda-platform-helm/commit/02793c0cea5cd70ae1e327510a00230fdbaa3ef1))
+* update patch-updates (patch) ([#4831](https://github.com/camunda/camunda-platform-helm/issues/4831)) ([c77bbe5](https://github.com/camunda/camunda-platform-helm/commit/c77bbe52c428f1a22597a76c19c0b26a40d6a8b7))
+
 ## [13.2.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.2.1...camunda-platform-8.8-13.2.2) (2025-11-28)
 
 
