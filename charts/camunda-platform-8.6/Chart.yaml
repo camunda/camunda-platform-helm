@@ -74,3 +74,4 @@ annotations:
   artifacthub.io/changes: |
     - kind: fixed
       description: "Add back zeebe secret referenced as string"
+

@@ -122,9 +122,6 @@ zeebe:
       elasticsearch:
         index:
           prefix: "$ORCHESTRATION_INDEX_PREFIX-$FLOW"
-  env:
-  - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
-    value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 tasklist:
   contextPath: "/tasklist"
