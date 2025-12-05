@@ -78,3 +78,4 @@ annotations:
       description: "Let helm chart support hybrid auth"
     - kind: fixed
       description: "Return none for authMethod when component is disabled"
+
