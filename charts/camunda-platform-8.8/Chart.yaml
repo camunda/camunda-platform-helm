@@ -80,3 +80,5 @@ annotations:
       description: "Modeler webapp to websockets connection not using override option"
     - kind: fixed
       description: "Replace SNAPSHOT tags with stable versions in 8.8 values-digest.yaml"
+    - kind: fixed
+      description: "Add requestBodySize to orchestration multipart config"
