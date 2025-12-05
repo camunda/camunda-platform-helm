@@ -16,13 +16,15 @@ logLevel: info
 
 deployments:
   dev:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: camunda-dev
     release: camunda
     scenario: keycloak
 
   staging:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: camunda-staging
     release: camunda
     scenario: keycloak

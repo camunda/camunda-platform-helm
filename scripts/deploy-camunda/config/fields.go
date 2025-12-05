@@ -36,7 +36,8 @@ type CommonFields struct {
 	OperateIndexPrefix       string
 
 	// Networking
-	IngressHost string
+	IngressSubdomain string
+	IngressHostname  string
 
 	// Docker registry
 	DockerUsername string

@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+// OutputFormat represents the output format for CLI commands.
+type OutputFormat string
+
+const (
+	OutputFormatText OutputFormat = "text"
+	OutputFormatJSON OutputFormat = "json"
+)
+
 // RuntimeFlags holds all CLI flag values that can be merged with config.
 type RuntimeFlags struct {
 	ChartPath                string
@@ -28,7 +36,8 @@ type RuntimeFlags struct {
 	OrchestrationIndexPrefix string
 	TasklistIndexPrefix      string
 	OperateIndexPrefix       string
-	IngressHost              string
+	IngressSubdomain         string
+	IngressHostname          string
 	RepoRoot                 string
 	Flow                     string
 	EnvFile                  string
@@ -43,8 +52,9 @@ type RuntimeFlags struct {
 	RenderOutputDir          string
 	ExtraValues              []string
 	ValuesPreset             string
-	Timeout                  int  // Timeout in minutes for Helm deployment
-	DryRun                   bool // Preview deployment without executing
+	Timeout                  int          // Timeout in minutes for Helm deployment
+	DryRun                   bool         // Preview deployment without executing
+	OutputFormat             OutputFormat // Output format (text, json)
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -103,6 +113,9 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 			// Keycloak
 			S(&flags.KeycloakHost, "", rc.Keycloak.Host),
 			S(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol),
+			// Ingress
+			S(&flags.IngressSubdomain, dep.IngressSubdomain, rc.IngressSubdomain),
+			S(&flags.IngressHostname, dep.IngressHostname, rc.IngressHostname),
 		).
 		MergeBools(
 			B(&flags.ExternalSecrets, dep.ExternalSecrets, boolPtr(rc.ExternalSecrets)),
@@ -166,6 +179,9 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 			// Keycloak
 			S(&flags.KeycloakHost, "", rc.Keycloak.Host),
 			S(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol),
+			// Ingress
+			S(&flags.IngressSubdomain, "", rc.IngressSubdomain),
+			S(&flags.IngressHostname, "", rc.IngressHostname),
 		).
 		MergeBools(
 			B(&flags.Interactive, nil, rc.Interactive),

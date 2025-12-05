@@ -28,8 +28,8 @@ func printDryRunSummary(scenarioCtx *ScenarioContext, opts types.Options, values
 	fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Scenario")), styleVal(scenarioCtx.ScenarioName))
 	fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Namespace")), styleVal(scenarioCtx.Namespace))
 	fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Release")), styleVal(scenarioCtx.Release))
-	if scenarioCtx.IngressHost != "" {
-		fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Ingress Host")), styleVal(scenarioCtx.IngressHost))
+	if scenarioCtx.IngressHostname != "" {
+		fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Ingress Hostname")), styleVal(scenarioCtx.IngressHostname))
 	}
 	fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak Realm")), styleVal(scenarioCtx.KeycloakRealm))
 	fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize Index Prefix")), styleVal(scenarioCtx.OptimizeIndexPrefix))
@@ -192,9 +192,9 @@ func printMultiScenarioSummary(results []*ScenarioResult) {
 				fmt.Fprintf(&out, "  realm: %s\n", r.KeycloakRealm)
 				fmt.Fprintf(&out, "  optimizeIndexPrefix: %s\n", r.OptimizeIndexPrefix)
 				fmt.Fprintf(&out, "  orchestrationIndexPrefix: %s\n", r.OrchestrationIndexPrefix)
-				if r.IngressHost != "" {
-					fmt.Fprintf(&out, "  ingressHost: %s\n", r.IngressHost)
-				}
+			if r.IngressHostname != "" {
+				fmt.Fprintf(&out, "  ingressHostname: %s\n", r.IngressHostname)
+			}
 				fmt.Fprintf(&out, "  credentials:\n")
 				fmt.Fprintf(&out, "    firstUserPassword: %s\n", r.FirstUserPassword)
 				fmt.Fprintf(&out, "    secondUserPassword: %s\n", r.SecondUserPassword)
@@ -251,9 +251,9 @@ func printMultiScenarioSummary(results []*ScenarioResult) {
 			out.WriteString("\n")
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Namespace")), styleVal(r.Namespace))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Release")), styleVal(r.Release))
-			if r.IngressHost != "" {
-				fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Ingress Host")), styleVal(r.IngressHost))
-			}
+		if r.IngressHostname != "" {
+			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Ingress Hostname")), styleVal(r.IngressHostname))
+		}
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak Realm")), styleVal(r.KeycloakRealm))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize Index Prefix")), styleVal(r.OptimizeIndexPrefix))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration Index Prefix")), styleVal(r.OrchestrationIndexPrefix))

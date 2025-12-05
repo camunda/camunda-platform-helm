@@ -21,7 +21,7 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 		Scenario:                 scenarioCtx.ScenarioName,
 		Namespace:                scenarioCtx.Namespace,
 		Release:                  scenarioCtx.Release,
-		IngressHost:              scenarioCtx.IngressHost,
+		IngressHostname:          scenarioCtx.IngressHostname,
 		KeycloakRealm:            scenarioCtx.KeycloakRealm,
 		OptimizeIndexPrefix:      scenarioCtx.OptimizeIndexPrefix,
 		OrchestrationIndexPrefix: scenarioCtx.OrchestrationIndexPrefix,
@@ -117,8 +117,8 @@ func prepareValuesFiles(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags
 		if scenarioCtx.OperateIndexPrefix != "" {
 			os.Setenv("OPERATE_INDEX_PREFIX", scenarioCtx.OperateIndexPrefix)
 		}
-		if scenarioCtx.IngressHost != "" {
-			os.Setenv("CAMUNDA_HOSTNAME", scenarioCtx.IngressHost)
+		if scenarioCtx.IngressHostname != "" {
+			os.Setenv("CAMUNDA_HOSTNAME", scenarioCtx.IngressHostname)
 		}
 		os.Setenv("FLOW", flags.Flow)
 

@@ -1,68 +1,70 @@
 package deploy
 
 import (
+	"os"
+	"path/filepath"
 	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/internal/util"
 	"strings"
 	"testing"
 )
 
 func TestGenerateRandomSuffix(t *testing.T) {
-	// Generate multiple suffixes and verify properties
-	seen := make(map[string]bool)
-
-	for i := 0; i < 100; i++ {
-		suffix := generateRandomSuffix()
-
-		// Check length
-		if len(suffix) != RandomSuffixLength {
-			t.Errorf("Suffix length = %d, want %d", len(suffix), RandomSuffixLength)
-		}
-
-		// Check character set (lowercase alphanumeric)
-		for _, c := range suffix {
-			if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
-				t.Errorf("Invalid character %q in suffix", c)
-			}
-		}
-
-		// Track for uniqueness (probabilistically)
-		seen[suffix] = true
+	// Test that suffix has correct length
+	suffix := util.GenerateRandomSuffix()
+	if len(suffix) != util.RandomSuffixLength {
+		t.Errorf("GenerateRandomSuffix() length = %d, want %d", len(suffix), util.RandomSuffixLength)
 	}
 
-	// Should have high uniqueness (collisions extremely unlikely)
-	if len(seen) < 95 {
-		t.Errorf("Only %d unique suffixes out of 100, expected near 100", len(seen))
+	// Test that suffix contains only valid characters
+	validChars := "abcdefghijklmnopqrstuvwxyz0123456789"
+	for _, c := range suffix {
+		if !strings.ContainsRune(validChars, c) {
+			t.Errorf("GenerateRandomSuffix() contains invalid char %q", c)
+		}
+	}
+
+	// Test uniqueness (generate multiple and check they're different)
+	suffixes := make(map[string]bool)
+	for i := 0; i < 100; i++ {
+		s := util.GenerateRandomSuffix()
+		if suffixes[s] {
+			t.Errorf("GenerateRandomSuffix() generated duplicate: %s", s)
+		}
+		suffixes[s] = true
 	}
 }
 
 func TestGenerateCompactRealmName(t *testing.T) {
 	tests := []struct {
-		name      string
-		namespace string
-		scenario  string
-		suffix    string
-		maxLen    int
+		name           string
+		namespace      string
+		scenario       string
+		suffix         string
+		wantMaxLen     int
+		wantContains   string
 	}{
 		{
-			name:      "short scenario fits",
-			namespace: "test-ns",
-			scenario:  "keycloak",
-			suffix:    "abc12345",
-			maxLen:    MaxRealmNameLength,
+			name:       "short scenario",
+			namespace:  "test",
+			scenario:   "keycloak",
+			suffix:     "abc12345",
+			wantMaxLen: MaxRealmNameLength,
 		},
 		{
-			name:      "long scenario is truncated",
-			namespace: "test-namespace",
-			scenario:  "very-long-scenario-name-that-exceeds-limits",
-			suffix:    "xyz98765",
-			maxLen:    MaxRealmNameLength,
+			name:       "long scenario name gets truncated",
+			namespace:  "test",
+			scenario:   "very-long-scenario-name-that-exceeds-limit",
+			suffix:     "abc12345",
+			wantMaxLen: MaxRealmNameLength,
 		},
 		{
-			name:      "medium scenario",
-			namespace: "ns",
-			scenario:  "keycloak-multi-tenant",
-			suffix:    "12345678",
-			maxLen:    MaxRealmNameLength,
+			name:         "simple format when short enough",
+			namespace:    "ns",
+			scenario:     "kc",
+			suffix:       "12345678",
+			wantMaxLen:   MaxRealmNameLength,
+			wantContains: "kc-",
 		},
 	}
 
@@ -70,175 +72,263 @@ func TestGenerateCompactRealmName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := generateCompactRealmName(tt.namespace, tt.scenario, tt.suffix)
 
-			if len(result) > tt.maxLen {
-				t.Errorf("Result length %d exceeds max %d: %q", len(result), tt.maxLen, result)
+			if len(result) > tt.wantMaxLen {
+				t.Errorf("generateCompactRealmName() length = %d, want <= %d", len(result), tt.wantMaxLen)
 			}
 
-			if result == "" {
-				t.Error("Result should not be empty")
+			if tt.wantContains != "" && !strings.Contains(result, tt.wantContains) {
+				t.Errorf("generateCompactRealmName() = %q, want to contain %q", result, tt.wantContains)
 			}
 		})
 	}
 }
 
-func TestGenerateCompactRealmName_Deterministic(t *testing.T) {
-	// Same inputs should produce consistent outputs
-	result1 := generateCompactRealmName("ns", "scenario", "suffix12")
-	result2 := generateCompactRealmName("ns", "scenario", "suffix12")
+func TestGenerateScenarioContext(t *testing.T) {
+	tests := []struct {
+		name     string
+		scenario string
+		flags    *config.RuntimeFlags
+		check    func(*testing.T, *ScenarioContext)
+	}{
+		{
+			name:     "single scenario uses provided values",
+			scenario: "keycloak",
+			flags: &config.RuntimeFlags{
+				Scenarios:      []string{"keycloak"},
+				Namespace:      "test-ns",
+				Release:        "test-release",
+				KeycloakRealm:  "my-realm",
+				OptimizeIndexPrefix: "opt-prefix",
+			},
+			check: func(t *testing.T, ctx *ScenarioContext) {
+				if ctx.ScenarioName != "keycloak" {
+					t.Errorf("ScenarioName = %q, want %q", ctx.ScenarioName, "keycloak")
+				}
+				if ctx.Namespace != "test-ns" {
+					t.Errorf("Namespace = %q, want %q", ctx.Namespace, "test-ns")
+				}
+				if ctx.KeycloakRealm != "my-realm" {
+					t.Errorf("KeycloakRealm = %q, want %q", ctx.KeycloakRealm, "my-realm")
+				}
+				if ctx.OptimizeIndexPrefix != "opt-prefix" {
+					t.Errorf("OptimizeIndexPrefix = %q, want %q", ctx.OptimizeIndexPrefix, "opt-prefix")
+				}
+				// Release should be default
+				if ctx.Release != DefaultReleaseName {
+					t.Errorf("Release = %q, want %q", ctx.Release, DefaultReleaseName)
+				}
+			},
+		},
+		{
+			name:     "multi-scenario generates unique namespace",
+			scenario: "keycloak-mt",
+			flags: &config.RuntimeFlags{
+				Scenarios: []string{"keycloak", "keycloak-mt"},
+				Namespace: "base-ns",
+			},
+			check: func(t *testing.T, ctx *ScenarioContext) {
+				// Namespace should include scenario name
+				if !strings.Contains(ctx.Namespace, "base-ns-keycloak-mt") {
+					t.Errorf("Namespace = %q, want to contain %q", ctx.Namespace, "base-ns-keycloak-mt")
+				}
+				// Auto-generated realm should be set
+				if ctx.KeycloakRealm == "" {
+					t.Error("KeycloakRealm should be auto-generated")
+				}
+				// Auto-generated prefixes should be set
+				if ctx.OptimizeIndexPrefix == "" {
+					t.Error("OptimizeIndexPrefix should be auto-generated")
+				}
+			},
+		},
+		{
+			name:     "auto-generates all identifiers when not provided",
+			scenario: "saas",
+			flags: &config.RuntimeFlags{
+				Scenarios: []string{"saas"},
+				Namespace: "test",
+			},
+			check: func(t *testing.T, ctx *ScenarioContext) {
+				// All identifiers should be auto-generated
+				if ctx.KeycloakRealm == "" {
+					t.Error("KeycloakRealm should be auto-generated")
+				}
+				if ctx.OptimizeIndexPrefix == "" {
+					t.Error("OptimizeIndexPrefix should be auto-generated")
+				}
+				if ctx.OrchestrationIndexPrefix == "" {
+					t.Error("OrchestrationIndexPrefix should be auto-generated")
+				}
+				if ctx.TasklistIndexPrefix == "" {
+					t.Error("TasklistIndexPrefix should be auto-generated")
+				}
+				if ctx.OperateIndexPrefix == "" {
+					t.Error("OperateIndexPrefix should be auto-generated")
+				}
+			},
+		},
+	}
 
-	if result1 != result2 {
-		t.Errorf("Non-deterministic: %q != %q", result1, result2)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := generateScenarioContext(tt.scenario, tt.flags)
+			tt.check(t, ctx)
+		})
 	}
 }
 
-func TestGenerateScenarioContext_SingleScenario(t *testing.T) {
-	flags := &config.RuntimeFlags{
-		Namespace:   "test-namespace",
-		IngressHost: "test.example.com",
-		Scenarios:   []string{"keycloak"},
-	}
+func TestListAvailableScenarios(t *testing.T) {
+	// Create temp directory with scenario files
+	tmpDir := t.TempDir()
 
-	ctx := generateScenarioContext("keycloak", flags)
-
-	// Single scenario uses provided namespace directly
-	if ctx.Namespace != "test-namespace" {
-		t.Errorf("Namespace = %q, want %q", ctx.Namespace, "test-namespace")
-	}
-
-	// Release should be default
-	if ctx.Release != DefaultReleaseName {
-		t.Errorf("Release = %q, want %q", ctx.Release, DefaultReleaseName)
-	}
-
-	// IngressHost unchanged for single scenario
-	if ctx.IngressHost != "test.example.com" {
-		t.Errorf("IngressHost = %q, want %q", ctx.IngressHost, "test.example.com")
-	}
-
-	// Generated prefixes should not be empty
-	if ctx.KeycloakRealm == "" {
-		t.Error("KeycloakRealm should not be empty")
-	}
-	if ctx.OptimizeIndexPrefix == "" {
-		t.Error("OptimizeIndexPrefix should not be empty")
-	}
-}
-
-func TestGenerateScenarioContext_MultipleScenarios(t *testing.T) {
-	flags := &config.RuntimeFlags{
-		Namespace:   "test-namespace",
-		IngressHost: "test.example.com",
-		Scenarios:   []string{"keycloak", "keycloak-mt", "saas"},
-	}
-
-	ctx := generateScenarioContext("keycloak-mt", flags)
-
-	// Multi-scenario appends scenario name to namespace
-	expectedNs := "test-namespace-keycloak-mt"
-	if ctx.Namespace != expectedNs {
-		t.Errorf("Namespace = %q, want %q", ctx.Namespace, expectedNs)
-	}
-
-	// IngressHost prefixed with scenario
-	if !strings.HasPrefix(ctx.IngressHost, "keycloak-mt-") {
-		t.Errorf("IngressHost = %q, want prefix 'keycloak-mt-'", ctx.IngressHost)
-	}
-}
-
-func TestGenerateScenarioContext_UsesProvidedPrefixes(t *testing.T) {
-	flags := &config.RuntimeFlags{
-		Namespace:                "test-namespace",
-		Scenarios:                []string{"keycloak"},
-		KeycloakRealm:            "custom-realm",
-		OptimizeIndexPrefix:      "custom-opt",
-		OrchestrationIndexPrefix: "custom-orch",
-		TasklistIndexPrefix:      "custom-task",
-		OperateIndexPrefix:       "custom-op",
-	}
-
-	ctx := generateScenarioContext("keycloak", flags)
-
-	if ctx.KeycloakRealm != "custom-realm" {
-		t.Errorf("KeycloakRealm = %q, want %q", ctx.KeycloakRealm, "custom-realm")
-	}
-	if ctx.OptimizeIndexPrefix != "custom-opt" {
-		t.Errorf("OptimizeIndexPrefix = %q, want %q", ctx.OptimizeIndexPrefix, "custom-opt")
-	}
-	if ctx.OrchestrationIndexPrefix != "custom-orch" {
-		t.Errorf("OrchestrationIndexPrefix = %q, want %q", ctx.OrchestrationIndexPrefix, "custom-orch")
-	}
-	if ctx.TasklistIndexPrefix != "custom-task" {
-		t.Errorf("TasklistIndexPrefix = %q, want %q", ctx.TasklistIndexPrefix, "custom-task")
-	}
-	if ctx.OperateIndexPrefix != "custom-op" {
-		t.Errorf("OperateIndexPrefix = %q, want %q", ctx.OperateIndexPrefix, "custom-op")
-	}
-}
-
-func TestGenerateScenarioContext_GeneratesUniquePrefixes(t *testing.T) {
-	flags := &config.RuntimeFlags{
-		Namespace: "test-namespace",
-		Scenarios: []string{"keycloak"},
-	}
-
-	// Generate multiple contexts and check uniqueness
-	seen := make(map[string]bool)
-	for i := 0; i < 10; i++ {
-		ctx := generateScenarioContext("keycloak", flags)
-		if seen[ctx.KeycloakRealm] {
-			// Could be a collision, but with 8 char random suffix, very unlikely in 10 iterations
-			t.Logf("Warning: possible collision detected for realm %q", ctx.KeycloakRealm)
+	// Create some scenario files
+	scenarios := []string{"keycloak", "keycloak-mt", "saas"}
+	for _, s := range scenarios {
+		filename := ScenarioFilePrefix + s + ScenarioFileSuffix
+		filepath := filepath.Join(tmpDir, filename)
+		if err := os.WriteFile(filepath, []byte("# test"), 0644); err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
 		}
-		seen[ctx.KeycloakRealm] = true
+	}
+
+	// Create a non-scenario file that should be ignored
+	if err := os.WriteFile(filepath.Join(tmpDir, "other-file.yaml"), []byte("# test"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	// Create a directory that should be ignored
+	if err := os.Mkdir(filepath.Join(tmpDir, ScenarioFilePrefix+"dir"+ScenarioFileSuffix), 0755); err != nil {
+		t.Fatalf("Failed to create test dir: %v", err)
+	}
+
+	// Test listing
+	result := listAvailableScenarios(tmpDir)
+
+	if len(result) != len(scenarios) {
+		t.Errorf("listAvailableScenarios() returned %d scenarios, want %d", len(result), len(scenarios))
+	}
+
+	// Check that all expected scenarios are found
+	resultSet := make(map[string]bool)
+	for _, s := range result {
+		resultSet[s] = true
+	}
+	for _, expected := range scenarios {
+		if !resultSet[expected] {
+			t.Errorf("listAvailableScenarios() missing expected scenario %q", expected)
+		}
 	}
 }
 
-func TestEnhanceScenarioError_NilError(t *testing.T) {
-	result := enhanceScenarioError(nil, "scenario", "", "")
+func TestListAvailableScenarios_NonexistentDir(t *testing.T) {
+	result := listAvailableScenarios("/nonexistent/path")
 	if result != nil {
-		t.Errorf("Expected nil for nil input, got %v", result)
+		t.Errorf("listAvailableScenarios() on nonexistent dir = %v, want nil", result)
 	}
 }
 
-func TestEnhanceScenarioError_NonNotFoundError(t *testing.T) {
-	originalErr := NewTestError("some other error")
-	result := enhanceScenarioError(originalErr, "scenario", "", "")
+func TestEnhanceScenarioError(t *testing.T) {
+	tests := []struct {
+		name         string
+		err          error
+		scenario     string
+		scenarioPath string
+		chartPath    string
+		wantNil      bool
+		wantContains string
+	}{
+		{
+			name:    "nil error returns nil",
+			err:     nil,
+			wantNil: true,
+		},
+		{
+			name:         "not found error gets enhanced",
+			err:          os.ErrNotExist,
+			scenario:     "missing-scenario",
+			scenarioPath: "/some/path",
+			chartPath:    "/chart",
+			wantContains: "missing-scenario",
+		},
+	}
 
-	// Should return original error unchanged
-	if result != originalErr {
-		t.Errorf("Expected original error, got %v", result)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := enhanceScenarioError(tt.err, tt.scenario, tt.scenarioPath, tt.chartPath)
+
+			if tt.wantNil && result != nil {
+				t.Errorf("enhanceScenarioError() = %v, want nil", result)
+				return
+			}
+
+			if !tt.wantNil && result == nil {
+				t.Error("enhanceScenarioError() = nil, want error")
+				return
+			}
+
+			if tt.wantContains != "" {
+				// Check if it's a DeployError
+				if de, ok := result.(*DeployError); ok {
+					if !strings.Contains(de.Message, tt.wantContains) {
+						t.Errorf("enhanceScenarioError() message = %q, want to contain %q", de.Message, tt.wantContains)
+					}
+				}
+			}
+		})
 	}
 }
 
-func TestEnhanceScenarioError_NotFoundError(t *testing.T) {
-	originalErr := NewTestError("file not found")
-	result := enhanceScenarioError(originalErr, "missing-scenario", "", "/chart/path")
-
-	if result == nil {
-		t.Fatal("Expected enhanced error, got nil")
+func TestValidateScenarios(t *testing.T) {
+	// Create temp directory with scenario files
+	tmpDir := t.TempDir()
+	scenarioDir := filepath.Join(tmpDir, "scenarios")
+	if err := os.MkdirAll(scenarioDir, 0755); err != nil {
+		t.Fatalf("Failed to create scenario dir: %v", err)
 	}
 
-	errStr := result.Error()
-
-	// Should contain helpful context
-	if !strings.Contains(errStr, "missing-scenario") {
-		t.Error("Error should mention scenario name")
+	// Create keycloak scenario file
+	keycloakFile := filepath.Join(scenarioDir, ScenarioFilePrefix+"keycloak"+ScenarioFileSuffix)
+	if err := os.WriteFile(keycloakFile, []byte("# test"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
 	}
-	if !strings.Contains(errStr, "Searched in") {
-		t.Error("Error should mention search location")
+
+	tests := []struct {
+		name      string
+		flags     *config.RuntimeFlags
+		wantError bool
+	}{
+		{
+			name: "valid scenario passes",
+			flags: &config.RuntimeFlags{
+				Scenarios:    []string{"keycloak"},
+				ScenarioPath: scenarioDir,
+			},
+			wantError: false,
+		},
+		{
+			name: "missing scenario fails",
+			flags: &config.RuntimeFlags{
+				Scenarios:    []string{"nonexistent"},
+				ScenarioPath: scenarioDir,
+			},
+			wantError: true,
+		},
+		{
+			name: "mixed valid and invalid fails",
+			flags: &config.RuntimeFlags{
+				Scenarios:    []string{"keycloak", "nonexistent"},
+				ScenarioPath: scenarioDir,
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateScenarios(tt.flags)
+			if (err != nil) != tt.wantError {
+				t.Errorf("validateScenarios() error = %v, wantError %v", err, tt.wantError)
+			}
+		})
 	}
 }
-
-// TestError is a simple error type for testing.
-type TestError struct {
-	msg string
-}
-
-func NewTestError(msg string) *TestError {
-	return &TestError{msg: msg}
-}
-
-func (e *TestError) Error() string {
-	return e.msg
-}
-

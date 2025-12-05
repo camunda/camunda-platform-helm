@@ -22,7 +22,8 @@ keycloak:
 deployments:
   # Integration test deployment with full configuration
   integration-test:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: integration-tests
     release: integration
     scenario: keycloak
@@ -36,7 +37,7 @@ deployments:
     operateIndexPrefix: op-test
     
     # Ingress configuration
-    ingressHost: camunda.example.com
+    ingressHostname: camunda.example.com  # Full hostname override
     
     # Docker registry credentials (for private images)
     ensureDockerRegistry: true
@@ -65,7 +66,8 @@ deployments:
 
   # Parallel multi-scenario deployment
   multi-scenario:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: multi-test
     release: integration
     # Deploy multiple scenarios in parallel (creates separate namespaces)
@@ -74,7 +76,8 @@ deployments:
 
   # Template rendering (no actual deployment)
   render-only:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: rendered
     release: camunda
     scenario: keycloak

@@ -55,7 +55,8 @@ Many settings can be overridden via environment variables with the `CAMUNDA_` pr
 | `CAMUNDA_LOG_LEVEL` | `logLevel` |
 | `CAMUNDA_KEYCLOAK_HOST` | `keycloak.host` |
 | `CAMUNDA_KEYCLOAK_PROTOCOL` | `keycloak.protocol` |
-| `CAMUNDA_HOSTNAME` | `ingressHost` |
+| `CAMUNDA_INGRESS_SUBDOMAIN` | `ingressSubdomain` |
+| `CAMUNDA_INGRESS_HOSTNAME` | `ingressHostname` |
 
 ## Commands
 

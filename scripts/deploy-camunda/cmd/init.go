@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/internal/util"
 	"strings"
 
 	"github.com/jwalton/gchalk"
@@ -112,10 +113,11 @@ func createMinimalConfig() *config.RootConfig {
 		LogLevel: "info",
 		Deployments: map[string]config.DeploymentConfig{
 			"default": {
-				Chart:     "camunda-platform-8.8",
-				Namespace: "camunda",
-				Release:   "camunda",
-				Scenario:  "keycloak",
+				Chart:     "camunda/camunda-platform",
+				Version:   "13.7.0",
+				Namespace: "camunda-deployment" + util.GenerateRandomSuffix(),
+				Release:   "integration",
+				Scenario:  "keycloak-original",
 			},
 		},
 	}
@@ -173,8 +175,8 @@ func runInteractiveInit() (*config.RootConfig, error) {
 
 	// Check if we're in a repo with charts
 	chartPath := ""
-	if _, err := os.Stat("charts/camunda-platform-8.8"); err == nil {
-		chartPath = prompt("Chart path (local)", "charts/camunda-platform-8.8")
+	if _, err := os.Stat("charts/camunda-platform"); err == nil {
+		chartPath = prompt("Chart path (local)", "charts/camunda-platform")
 	} else {
 		chartPath = prompt("Chart path (local, or empty for remote)", "")
 	}
@@ -183,16 +185,16 @@ func runInteractiveInit() (*config.RootConfig, error) {
 	version := ""
 	if chartPath == "" {
 		chart = prompt("Chart name (for remote charts)", "camunda-platform")
-		version = prompt("Chart version", "8.8.0")
+		version = prompt("Chart version", "13.7.0")
 	}
 
 	// Deployment identifiers
 	fmt.Println()
 	fmt.Println(logging.Emphasize("Deployment Settings", gchalk.Bold))
 
-	namespace := prompt("Kubernetes namespace", "camunda")
-	release := prompt("Helm release name", "camunda")
-	scenario := prompt("Scenario name", "keycloak")
+	namespace := prompt("Kubernetes namespace", "camunda-" + util.GenerateRandomSuffix())
+	release := prompt("Helm release name", "integration")
+	scenario := prompt("Scenario name", "keycloak-original")
 
 	// Platform
 	fmt.Println()

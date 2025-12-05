@@ -24,7 +24,8 @@ keycloak:
 deployments:
   # E2E test deployment
   e2e-tests:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: e2e-${CI_PIPELINE_ID:-tests}
     release: integration
     scenario: keycloak
@@ -46,7 +47,8 @@ deployments:
 
   # Integration tests with multiple scenarios
   integration-matrix:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: integration-${CI_PIPELINE_ID:-tests}
     release: integration
     scenario: keycloak,keycloak-mt,oidc
@@ -56,7 +58,8 @@ deployments:
 
   # Upgrade testing
   upgrade-test:
-    chart: camunda-platform-8.8
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: upgrade-${CI_PIPELINE_ID:-tests}
     release: camunda
     scenario: keycloak

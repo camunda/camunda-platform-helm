@@ -1,13 +1,13 @@
 package deploy
 
 import (
-	"crypto/rand"
 	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
+	"scripts/deploy-camunda/internal/util"
 	"strings"
 )
 
@@ -16,7 +16,7 @@ type ScenarioContext struct {
 	ScenarioName             string
 	Namespace                string
 	Release                  string
-	IngressHost              string
+	IngressHostname          string
 	KeycloakRealm            string
 	OptimizeIndexPrefix      string
 	OrchestrationIndexPrefix string
@@ -30,7 +30,7 @@ type ScenarioResult struct {
 	Scenario                 string
 	Namespace                string
 	Release                  string
-	IngressHost              string
+	IngressHostname          string
 	KeycloakRealm            string
 	OptimizeIndexPrefix      string
 	OrchestrationIndexPrefix string
@@ -39,17 +39,6 @@ type ScenarioResult struct {
 	ThirdUserPassword        string
 	KeycloakClientsSecret    string
 	Error                    error
-}
-
-// generateRandomSuffix creates a random string of RandomSuffixLength characters.
-func generateRandomSuffix() string {
-	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
-	result := make([]byte, RandomSuffixLength)
-	for i := range result {
-		num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
-		result[i] = chars[num.Int64()]
-	}
-	return string(result)
 }
 
 // generateCompactRealmName creates a realm name that fits within Keycloak's character limit.
@@ -89,13 +78,37 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 	return result
 }
 
+// buildIngressHostname constructs the full ingress hostname based on configuration.
+// Priority: 1) IngressHostname (full override), 2) IngressSubdomain + base domain
+// For multi-scenario deployments, the scenario name is prepended to the subdomain.
+func buildIngressHostname(scenario string, flags *config.RuntimeFlags, isMultiScenario bool) string {
+	// Full hostname override takes highest priority
+	if flags.IngressHostname != "" {
+		return flags.IngressHostname
+	}
+
+	// If no subdomain provided, return empty
+	if flags.IngressSubdomain == "" {
+		return ""
+	}
+
+	// Build hostname from subdomain + base domain
+	subdomain := flags.IngressSubdomain
+	if isMultiScenario {
+		// For multi-scenario, prepend scenario name to subdomain
+		subdomain = fmt.Sprintf("%s-%s", scenario, flags.IngressSubdomain)
+	}
+
+	return fmt.Sprintf("%s.%s", subdomain, DefaultIngressBaseDomain)
+}
+
 // generateScenarioContext creates a scenario-specific deployment context.
 func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *ScenarioContext {
-	suffix := generateRandomSuffix()
+	suffix := util.GenerateRandomSuffix()
 
 	// Generate unique identifiers for this scenario
 	var realmName, optimizePrefix, orchestrationPrefix, tasklistPrefix, operatePrefix string
-	var namespace, release, ingressHost string
+	var namespace, release string
 
 	// Use provided values or generate unique ones
 	if flags.KeycloakRealm != "" && len(flags.Scenarios) == 1 {
@@ -130,19 +143,19 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *Scena
 		operatePrefix = fmt.Sprintf("op-%s-%s", scenario, suffix)
 	}
 
+	// Determine if this is a multi-scenario deployment
+	isMultiScenario := len(flags.Scenarios) > 1
+
 	// Generate unique namespace for multi-scenario, but always use "integration" as release name
 	// since we never have multiple deployments in the same namespace
-	if len(flags.Scenarios) > 1 {
+	if isMultiScenario {
 		namespace = fmt.Sprintf("%s-%s", flags.Namespace, scenario)
-		if flags.IngressHost != "" {
-			ingressHost = fmt.Sprintf("%s-%s", scenario, flags.IngressHost)
-		} else {
-			ingressHost = flags.IngressHost
-		}
 	} else {
 		namespace = flags.Namespace
-		ingressHost = flags.IngressHost
 	}
+
+	// Build the ingress hostname
+	ingressHostname := buildIngressHostname(scenario, flags, isMultiScenario)
 
 	// Always use default release name
 	release = DefaultReleaseName
@@ -151,7 +164,7 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *Scena
 		ScenarioName:             scenario,
 		Namespace:                namespace,
 		Release:                  release,
-		IngressHost:              ingressHost,
+		IngressHostname:          ingressHostname,
 		KeycloakRealm:            realmName,
 		OptimizeIndexPrefix:      optimizePrefix,
 		OrchestrationIndexPrefix: orchestrationPrefix,
@@ -178,47 +191,27 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 		scenarioDir = filepath.Join(chartPath, DefaultScenarioSubdir)
 	}
 
-	var helpMsg strings.Builder
-	fmt.Fprintf(&helpMsg, "Scenario %q not found\n\n", scenario)
-	fmt.Fprintf(&helpMsg, "Searched in: %s\n", scenarioDir)
-	fmt.Fprintf(&helpMsg, "Expected file: %s%s%s\n\n", ScenarioFilePrefix, scenario, ScenarioFileSuffix)
+	availableScenarios := listAvailableScenarios(scenarioDir)
+	return ErrScenarioNotFoundError(scenario, scenarioDir, availableScenarios).WithCause(err)
+}
 
-	// Try to list available scenarios
-	entries, readErr := os.ReadDir(scenarioDir)
-	if readErr != nil {
-		fmt.Fprintf(&helpMsg, "Could not list available scenarios: %v\n\n", readErr)
-		fmt.Fprintf(&helpMsg, "Please check:\n")
-		fmt.Fprintf(&helpMsg, "  1. The scenario directory exists: %s\n", scenarioDir)
-		fmt.Fprintf(&helpMsg, "  2. You have permission to read it\n")
-		fmt.Fprintf(&helpMsg, "  3. The --chart-path or --scenario-path flags are set correctly\n")
-	} else {
-		var availableScenarios []string
-		for _, e := range entries {
-			name := e.Name()
-			if !e.IsDir() && strings.HasPrefix(name, ScenarioFilePrefix) && strings.HasSuffix(name, ScenarioFileSuffix) {
-				// Extract scenario name
-				scenarioName := strings.TrimPrefix(name, ScenarioFilePrefix)
-				scenarioName = strings.TrimSuffix(scenarioName, ScenarioFileSuffix)
-				availableScenarios = append(availableScenarios, scenarioName)
-			}
-		}
-
-		if len(availableScenarios) == 0 {
-			fmt.Fprintf(&helpMsg, "No scenario files found in: %s\n\n", scenarioDir)
-			fmt.Fprintf(&helpMsg, "Expected files matching pattern: %s*%s\n", ScenarioFilePrefix, ScenarioFileSuffix)
-		} else {
-			fmt.Fprintf(&helpMsg, "Available scenarios (%d found):\n", len(availableScenarios))
-			for _, s := range availableScenarios {
-				fmt.Fprintf(&helpMsg, "  - %s\n", s)
-			}
-			fmt.Fprintf(&helpMsg, "\nHint: Use --scenario <name> or --scenario <name1>,<name2> for multiple scenarios\n")
-		}
+// listAvailableScenarios returns a list of scenario names found in the given directory.
+func listAvailableScenarios(scenarioDir string) []string {
+	entries, err := os.ReadDir(scenarioDir)
+	if err != nil {
+		return nil
 	}
 
-	fmt.Fprintf(&helpMsg, "\nDocumentation: Check the chart's test/integration/scenarios/ directory\n")
-	fmt.Fprintf(&helpMsg, "for available scenario configurations.\n")
-
-	return fmt.Errorf("%s\n%s", helpMsg.String(), err)
+	var scenarios []string
+	for _, e := range entries {
+		name := e.Name()
+		if !e.IsDir() && strings.HasPrefix(name, ScenarioFilePrefix) && strings.HasSuffix(name, ScenarioFileSuffix) {
+			scenarioName := strings.TrimPrefix(name, ScenarioFilePrefix)
+			scenarioName = strings.TrimSuffix(scenarioName, ScenarioFileSuffix)
+			scenarios = append(scenarios, scenarioName)
+		}
+	}
+	return scenarios
 }
 
 // validateScenarios checks that all scenario files exist before deployment.

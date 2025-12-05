@@ -26,8 +26,8 @@ const (
 	// DefaultTTL is the default time-to-live for deployed resources.
 	DefaultTTL = "30m"
 
-	// RandomSuffixLength is the length of random suffixes generated for unique identifiers.
-	RandomSuffixLength = 8
+	// DefaultIngressBaseDomain is the base domain for CI ingress hostnames.
+	DefaultIngressBaseDomain = "ci.distro.ultrawombat.com"
 )
 
 // ScenarioFilePrefix is the prefix used for scenario values files.

@@ -14,14 +14,14 @@ keycloak:
 deployments:
   # Staging environment
   staging:
-    chart: camunda-platform
-    version: "8.8"
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: camunda-staging
     release: camunda
     scenario: keycloak
     auth: keycloak
     valuesPreset: enterprise
-    ingressHost: staging.your-domain.com
+    ingressHostname: staging.your-domain.com  # Full hostname override
     ensureDockerRegistry: true
     # Vault secret mapping for sensitive data
     vaultSecretMapping: |
@@ -39,14 +39,14 @@ deployments:
 
   # Production environment
   production:
-    chart: camunda-platform
-    version: "8.8"
+    chart: camunda/camunda-platform
+    version: 13.7.0
     namespace: camunda-production
     release: camunda
     scenario: keycloak
     auth: keycloak
     valuesPreset: enterprise
-    ingressHost: camunda.your-domain.com
+    ingressHostname: camunda.your-domain.com  # Full hostname override
     ensureDockerRegistry: true
     vaultSecretMapping: |
       secret/camunda/production IDENTITY_FIRSTUSER_PASSWORD

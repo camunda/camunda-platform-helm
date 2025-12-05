@@ -22,7 +22,7 @@ deployments:
     externalSecrets: true
     autoGenerateSecrets: true
     deleteNamespace: true
-    ingressHost: ci.distro.ultrawombat.com
+    ingressSubdomain: integration  # Creates integration.ci.distro.ultrawombat.com
     timeout: 10
 
   # Single scenario deployment

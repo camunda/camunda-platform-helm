@@ -37,7 +37,8 @@ type DeploymentConfig struct {
 	OrchestrationIndexPrefix string   `mapstructure:"orchestrationIndexPrefix" yaml:"orchestrationIndexPrefix,omitempty"`
 	TasklistIndexPrefix      string   `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string   `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
-	IngressHost              string   `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressSubdomain         string   `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
+	IngressHostname          string   `mapstructure:"ingressHostname" yaml:"ingressHostname,omitempty"`
 	Flow                     string   `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string   `mapstructure:"envFile" yaml:"envFile,omitempty"`
 	Interactive              *bool    `mapstructure:"interactive" yaml:"interactive,omitempty"`
@@ -78,7 +79,8 @@ type RootConfig struct {
 	OrchestrationIndexPrefix string                      `mapstructure:"orchestrationIndexPrefix" yaml:"orchestrationIndexPrefix,omitempty"`
 	TasklistIndexPrefix      string                      `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string                      `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
-	IngressHost              string                      `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressSubdomain         string                      `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
+	IngressHostname          string                      `mapstructure:"ingressHostname" yaml:"ingressHostname,omitempty"`
 	Flow                     string                      `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string                      `mapstructure:"envFile" yaml:"envFile,omitempty"`
 	Interactive              *bool                       `mapstructure:"interactive" yaml:"interactive,omitempty"`
@@ -226,8 +228,11 @@ func applyEnvOverrides(rc *RootConfig) {
 	if v := get("CAMUNDA_OPERATE_INDEX_PREFIX"); v != "" {
 		rc.OperateIndexPrefix = v
 	}
-	if v := get("CAMUNDA_HOSTNAME"); v != "" {
-		rc.IngressHost = v
+	if v := get("CAMUNDA_INGRESS_SUBDOMAIN"); v != "" {
+		rc.IngressSubdomain = v
+	}
+	if v := get("CAMUNDA_INGRESS_HOSTNAME"); v != "" {
+		rc.IngressHostname = v
 	}
 }
 

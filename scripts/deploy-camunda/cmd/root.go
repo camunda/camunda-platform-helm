@@ -13,12 +13,16 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
 	// Global flags
 	configFile string
 	flags      config.RuntimeFlags
+	explain    bool
+	rootConfig *config.RootConfig
+	flagsSet   map[string]bool
 )
 
 // NewRootCommand creates the root command.
@@ -54,6 +58,9 @@ EXAMPLES:
   # Preview deployment without executing
   deploy-camunda --dry-run
 
+  # Show where each config value came from
+  deploy-camunda --explain
+
   # Use a specific config file
   deploy-camunda -F /path/to/config.yaml
 
@@ -83,6 +90,12 @@ EXAMPLES:
 				}
 			}
 
+			// Track which flags were explicitly set
+			flagsSet = make(map[string]bool)
+			cmd.Flags().Visit(func(f *pflag.Flag) {
+				flagsSet[f.Name] = true
+			})
+
 			// Load .env file
 			if flags.EnvFile != "" {
 				_ = env.Load(flags.EnvFile)
@@ -99,10 +112,23 @@ EXAMPLES:
 			if err != nil {
 				return err
 			}
+			rootConfig = rc
 
 			// Apply active deployment defaults
 			if err := config.ApplyActiveDeployment(rc, rc.Current, &flags); err != nil {
 				return err
+			}
+
+			// For --explain mode, skip validation to show current state
+			if explain {
+				// Still parse scenarios if provided
+				if flags.Scenario != "" {
+					flags.Scenarios = strings.Split(flags.Scenario, ",")
+					for i, s := range flags.Scenarios {
+						flags.Scenarios[i] = strings.TrimSpace(s)
+					}
+				}
+				return nil
 			}
 
 			// Validate merged configuration
@@ -126,6 +152,13 @@ EXAMPLES:
 				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
 			}); err != nil {
 				return err
+			}
+
+			// Handle --explain mode
+			if explain {
+				exp := config.ExplainConfig(rootConfig, &flags, flagsSet)
+				fmt.Println(exp.Format())
+				return nil
 			}
 
 			// Log flags
@@ -198,8 +231,10 @@ EXAMPLES:
 		"Append values-<preset>.yaml from chart path (e.g., latest, enterprise, local)")
 	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil,
 		"Additional Helm values files applied last. Comma-separated or use multiple times")
-	f.StringVar(&flags.IngressHost, "ingress-host", "",
-		"Base ingress hostname for deployed services")
+	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "",
+		"Ingress subdomain prefix (combined with ci.distro.ultrawombat.com base domain)")
+	f.StringVar(&flags.IngressHostname, "ingress-hostname", "",
+		"Full ingress hostname override (bypasses subdomain + base domain construction)")
 
 	// Deployment behavior
 	f.StringVar(&flags.Flow, "flow", "install",
@@ -234,6 +269,22 @@ EXAMPLES:
 		"Output directory for rendered manifests. Default: ./rendered/<release>")
 	f.BoolVar(&flags.DryRun, "dry-run", false,
 		"Preview deployment configuration and helm commands without executing")
+	f.BoolVar(&explain, "explain", false,
+		"Show where each configuration value came from (flag, env, config file, default)")
+
+	var outputFormat string
+	f.StringVarP(&outputFormat, "output", "o", "text",
+		"Output format: text (default) or json for machine-readable output")
+
+	// Custom flag parsing to convert string to OutputFormat
+	rootCmd.PreRun = func(cmd *cobra.Command, args []string) {
+		switch outputFormat {
+		case "json":
+			flags.OutputFormat = config.OutputFormatJSON
+		default:
+			flags.OutputFormat = config.OutputFormatText
+		}
+	}
 
 	// Register completions
 	completion.RegisterScenarioCompletion(rootCmd, "scenario", "chart-path")
@@ -249,5 +300,7 @@ func Execute() error {
 	rootCmd.AddCommand(newConfigCommand())
 	rootCmd.AddCommand(newValidateCommand())
 	rootCmd.AddCommand(newInitCommand())
+	rootCmd.AddCommand(newStatusCommand())
+	rootCmd.AddCommand(newUninstallCommand())
 	return rootCmd.Execute()
 }

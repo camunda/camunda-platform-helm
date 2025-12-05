@@ -102,7 +102,8 @@ Settings can be overridden via environment variables:
 | `CAMUNDA_LOG_LEVEL` | `logLevel` |
 | `CAMUNDA_KEYCLOAK_HOST` | `keycloak.host` |
 | `CAMUNDA_KEYCLOAK_PROTOCOL` | `keycloak.protocol` |
-| `CAMUNDA_HOSTNAME` | `ingressHost` |
+| `CAMUNDA_INGRESS_SUBDOMAIN` | `ingressSubdomain` |
+| `CAMUNDA_INGRESS_HOSTNAME` | `ingressHostname` |
 
 ## Commands
 
@@ -200,6 +201,18 @@ deploy-camunda completion fish > ~/.config/fish/completions/deploy-camunda.fish
 | `--orchestration-index-prefix` | Orchestration ES index prefix |
 | `--tasklist-index-prefix` | Tasklist ES index prefix |
 | `--operate-index-prefix` | Operate ES index prefix |
+
+### Ingress Configuration
+
+| Flag | Description |
+|------|-------------|
+| `--ingress-subdomain` | Subdomain prefix (combined with ci.distro.ultrawombat.com) |
+| `--ingress-hostname` | Full hostname override (bypasses subdomain + base domain) |
+
+**Ingress Hostname Construction:**
+- If `--ingress-hostname` is set, it's used as-is (full override)
+- If `--ingress-subdomain` is set, the hostname is constructed as `{subdomain}.ci.distro.ultrawombat.com`
+- For multi-scenario deployments, the scenario name is prepended: `{scenario}-{subdomain}.ci.distro.ultrawombat.com`
 
 ### Secrets & Authentication
 
