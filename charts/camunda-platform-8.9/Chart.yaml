@@ -111,3 +111,5 @@ annotations:
       description: "Add requestBodySize to orchestration multipart config"
     - kind: fixed
       description: "8.9 version bumps for alpha2"
+    - kind: fixed
+      description: "Correct chart version"
