@@ -891,9 +891,8 @@ jobs:
   playwright-e2e-tests:
     name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
-    runs-on: gcp-core-32-longrunning-big-ssd
-    if: false # The scripts are out dated. This will likely by replaced as calling the QA repo is a better approach.
-    #if: ${{ inputs.test-enabled && inputs.e2e-enabled && contains(inputs.camunda-helm-dir, 'camunda-platform-8.7') }}
+    runs-on: ubuntu-latest
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' }}
     timeout-minutes: 20
     env:
       TEST_EXCLUDE: ${{ inputs.exclude }}
@@ -917,6 +916,67 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
+      - name: CI Setup - Authenticate to cluster
+        id: cluster-auth
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
+          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
+          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
+          GKE_SA:           ${{ secrets[inputs.service-account] }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: CI Setup - Set test type vars
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
+
+      - name: CI Setup - Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            kubectl
+            oc
+            task
+            yq
+            zbctl
+            jq
+
+      - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
+        shell: bash
+        env:
+          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+          ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+        run: |
+          cd "$GITHUB_WORKSPACE/scripts"
+          ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests
+
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
@@ -924,6 +984,7 @@ jobs:
           name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
           retention-days: 1
+
 
   merge-reports:
     name: Merge reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}

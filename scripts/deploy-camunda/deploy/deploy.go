@@ -336,14 +336,15 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *Scena
 
 	// Generate unique namespace for multi-scenario, but always use "integration" as release name
 	// since we never have multiple deployments in the same namespace
+	resolvedHost := flags.ResolveIngressHostname()
 	if len(flags.Scenarios) > 1 {
 		namespace = fmt.Sprintf("%s-%s", flags.Namespace, scenario)
-		if flags.IngressHost != "" {
-			ingressHost = fmt.Sprintf("%s-%s", scenario, flags.IngressHost)
+		if resolvedHost != "" {
+			ingressHost = fmt.Sprintf("%s-%s", scenario, resolvedHost)
 		}
 	} else {
 		namespace = flags.Namespace
-		ingressHost = flags.IngressHost
+		ingressHost = resolvedHost
 	}
 
 	// Always use "integration" as the release name

@@ -10,6 +10,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// DefaultIngressBaseDomain is the base domain for CI ingress hosts.
+	DefaultIngressBaseDomain = "ci.distro.ultrawombat.com"
+)
+
 // KeycloakConfig holds Keycloak connection settings.
 type KeycloakConfig struct {
 	Host     string `mapstructure:"host" yaml:"host,omitempty"`
