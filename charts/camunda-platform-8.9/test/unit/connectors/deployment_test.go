@@ -513,7 +513,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"connectors.enabled":           "true",
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				containerLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers)
 				volumeMountLenBefore := len(deploymentBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
@@ -542,7 +548,13 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
 				var deploymentBefore appsv1.Deployment
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"connectors.enabled":           "true",
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &deploymentBefore)
 				volumeLenBefore := len(deploymentBefore.Spec.Template.Spec.Volumes)
 				// given
@@ -616,12 +628,12 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			// Test hybrid auth: connectors use basic auth, so no OIDC secret needed even if orchestration uses OIDC
 			Name: "TestHybridAuthConnectorsBasicNoOidcSecret",
 			Values: map[string]string{
-				"connectors.enabled":                            "true",
-				"identity.enabled":                              "true",
-				"identityKeycloak.enabled":                      "true",
-				"global.identity.auth.enabled":                  "true",
-				"orchestration.security.authentication.method":  "oidc",
-				"connectors.security.authentication.method":     "basic",
+				"connectors.enabled":                           "true",
+				"identity.enabled":                             "true",
+				"identityKeycloak.enabled":                     "true",
+				"global.identity.auth.enabled":                 "true",
+				"orchestration.security.authentication.method": "oidc",
+				"connectors.security.authentication.method":    "basic",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

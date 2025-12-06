@@ -66,6 +66,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.nameOverride":             "foo",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -81,6 +83,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.fullnameOverride":         "foo",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -96,6 +100,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                           "true",
 				"webModeler.restapi.mail.fromAddress":          "example@example.com",
 				"webModeler." + s.component + ".podLabels.foo": "bar",
+				"global.elasticsearch.enabled":                 "true",
+				"elasticsearch.enabled":                        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -112,6 +118,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress":               "example@example.com",
 				"webModeler." + s.component + ".podAnnotations.foo": "bar",
 				"webModeler." + s.component + ".podAnnotations.foz": "baz",
+				"global.elasticsearch.enabled":                      "true",
+				"elasticsearch.enabled":                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -128,6 +136,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.annotations.foo":              "bar",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -147,6 +157,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.image.registry":                       "subchart.custom.registry.io",
 				"webModeler.image.tag":                            "snapshot",
 				"webModeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
+				"global.elasticsearch.enabled":                    "true",
+				"elasticsearch.enabled":                           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -166,6 +178,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.image.registry":                       "",
 				"webModeler.image.tag":                            "snapshot",
 				"webModeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
+				"global.elasticsearch.enabled":                    "true",
+				"elasticsearch.enabled":                           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -182,6 +196,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.image.pullSecrets[0].name":    "SecretName",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -198,6 +214,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress":  "example@example.com",
 				"global.image.pullSecrets[0].name":     "SecretName",
 				"webModeler.image.pullSecrets[0].name": "SecretNameSubChart",
+				"global.elasticsearch.enabled":         "true",
+				"elasticsearch.enabled":                "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -213,6 +231,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.image.tag":                "a.b.c",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -232,6 +252,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.image.tag":                "",
 				"global.image.tag":                    "a.b.c",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -251,6 +273,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.image.tag":                "a.b.c",
 				"global.image.tag":                    "x.y.z",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -269,6 +293,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                        "true",
 				"webModeler.restapi.mail.fromAddress":       "example@example.com",
 				"webModeler." + s.component + ".command[0]": "printenv",
+				"global.elasticsearch.enabled":              "true",
+				"elasticsearch.enabled":                     "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -289,6 +315,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler." + s.component + ".extraVolumes[0].name":                  "extraVolume",
 				"webModeler." + s.component + ".extraVolumes[0].configMap.name":        "otherConfigMap",
 				"webModeler." + s.component + ".extraVolumes[0].configMap.defaultMode": "744",
+				"global.elasticsearch.enabled":                                         "true",
+				"elasticsearch.enabled":                                                "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of volumes array before addition of new volume
@@ -296,6 +324,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					SetValues: map[string]string{
 						"webModeler.enabled":                  "true",
 						"webModeler.restapi.mail.fromAddress": "example@example.com",
+						"global.elasticsearch.enabled":        "true",
+						"elasticsearch.enabled":               "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
@@ -323,6 +353,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress":                           "example@example.com",
 				"webModeler." + s.component + ".extraVolumeMounts[0].name":      "otherConfigMap",
 				"webModeler." + s.component + ".extraVolumeMounts[0].mountPath": "/usr/local/config",
+				"global.elasticsearch.enabled":                                  "true",
+				"elasticsearch.enabled":                                         "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
@@ -330,6 +362,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					SetValues: map[string]string{
 						"webModeler.enabled":                  "true",
 						"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"global.elasticsearch.enabled": "true",
+				"elasticsearch.enabled":        "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
@@ -358,6 +392,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.serviceAccount.name":      "accName",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -374,6 +410,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler." + s.component + ".podSecurityContext.runAsUser": "1000",
+				"global.elasticsearch.enabled":                                "true",
+				"elasticsearch.enabled":                                       "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -390,6 +428,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler." + s.component + ".containerSecurityContext.privileged": "true",
+				"global.elasticsearch.enabled":                                       "true",
+				"elasticsearch.enabled":                                              "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -408,6 +448,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
 				"webModeler." + s.component + ".nodeSelector.disktype": "ssd",
 				"webModeler." + s.component + ".nodeSelector.cputype":  "arm",
+				"global.elasticsearch.enabled":                         "true",
+				"elasticsearch.enabled":                                "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -450,6 +492,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].key":             "another-node-label-key",
 				"webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].operator":        "In",
 				"webModeler." + s.component + ".affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].preference.matchExpressions[0].values[0]":       "another-node-label-value",
+				"global.elasticsearch.enabled": "true",
+				"elasticsearch.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -492,6 +536,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler." + s.component + ".tolerations[0].operator": "Equal",
 				"webModeler." + s.component + ".tolerations[0].value":    "Value1",
 				"webModeler." + s.component + ".tolerations[0].effect":   "NoSchedule",
+				"global.elasticsearch.enabled":                           "true",
+				"elasticsearch.enabled":                                  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -514,6 +560,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"global.image.pullPolicy":             "Always",
+				"global.elasticsearch.enabled":        "true",
+				"elasticsearch.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -538,6 +586,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler." + s.component + ".startupProbe.successThreshold":    "1",
 				"webModeler." + s.component + ".startupProbe.failureThreshold":    "5",
 				"webModeler." + s.component + ".startupProbe.timeoutSeconds":      "1",
+				"global.elasticsearch.enabled":                                    "true",
+				"elasticsearch.enabled":                                           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -564,6 +614,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler." + s.component + ".readinessProbe.successThreshold":    "1",
 				"webModeler." + s.component + ".readinessProbe.failureThreshold":    "5",
 				"webModeler." + s.component + ".readinessProbe.timeoutSeconds":      "1",
+				"global.elasticsearch.enabled":                                      "true",
+				"elasticsearch.enabled":                                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -590,6 +642,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler." + s.component + ".livenessProbe.successThreshold":    "1",
 				"webModeler." + s.component + ".livenessProbe.failureThreshold":    "5",
 				"webModeler." + s.component + ".livenessProbe.timeoutSeconds":      "1",
+				"global.elasticsearch.enabled":                                     "true",
+				"elasticsearch.enabled":                                            "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -613,6 +667,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.extraConfiguration.testFile":    "this is a test",
 				"webModeler.webapp.extraConfiguration.testFile":     "this is a test",
 				"webModeler.websockets.extraConfiguration.testFile": "this is a test",
+				"global.elasticsearch.enabled":                      "true",
+				"elasticsearch.enabled":                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

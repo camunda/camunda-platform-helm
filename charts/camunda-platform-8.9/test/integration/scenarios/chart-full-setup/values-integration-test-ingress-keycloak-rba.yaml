@@ -1,4 +1,6 @@
 global:
+  elasticsearch:
+    enabled: true
   image:
     pullPolicy: Always
   identity:
@@ -129,3 +131,6 @@ connectors:
       value: username
     - name: password
       value: password
+
+elasticsearch:
+  enabled: true

@@ -60,6 +60,8 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 				"global.identity.auth.enabled":                                   "true",
 				"identity.enabled":                                               "true",
 				"identityKeycloak.enabled":                                       "true",
+				"global.elasticsearch.enabled":                                   "true",
+				"elasticsearch.enabled":                                          "true",
 			},
 			IgnoredLines: []string{
 				`\s+pusher-app-key:\s+.*`,    // Auto-generated and need to be ignored.

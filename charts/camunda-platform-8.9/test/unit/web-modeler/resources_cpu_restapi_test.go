@@ -54,11 +54,13 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                       "true",
-			"identity.enabled":                         "true",
-			"webModeler.restapi.mail.fromAddress":      "test@example.com",
-			"webModeler.restapi.resources.requests.cpu": "300m",
-			"webModeler.restapi.resources.limits.cpu":   "1.5",
+			"webModeler.enabled":                           "true",
+			"identity.enabled":                             "true",
+			"elasticsearch.enabled":                        "true",
+			"global.elasticsearch.enabled":                 "true",
+			"webModeler.restapi.mail.fromAddress":          "test@example.com",
+			"webModeler.restapi.resources.requests.cpu":    "300m",
+			"webModeler.restapi.resources.limits.cpu":      "1.5",
 			"webModeler.restapi.resources.requests.memory": "256Mi",
 			"webModeler.restapi.resources.limits.memory":   "512Mi",
 		},
@@ -72,19 +74,19 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	expectedRequest := resource.MustParse("300m")
 	expectedLimit := resource.MustParse("1.5")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 300m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 1.5, got %s", cpuLimit.String())
 }
 
@@ -92,9 +94,11 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility(
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
-			"webModeler.enabled":                      "true",
-			"identity.enabled":                        "true",
-			"webModeler.restapi.mail.fromAddress":     "test@example.com",
+			"webModeler.enabled":                           "true",
+			"identity.enabled":                             "true",
+			"elasticsearch.enabled":                        "true",
+			"global.elasticsearch.enabled":                 "true",
+			"webModeler.restapi.mail.fromAddress":          "test@example.com",
 			"webModeler.restapi.resources.requests.cpu":    "500m",
 			"webModeler.restapi.resources.limits.cpu":      "1000m",
 			"webModeler.restapi.resources.requests.memory": "1Gi",
@@ -110,18 +114,18 @@ func (s *RestapiResourcesCPUTemplateTest) TestCPUResourcesBackwardCompatibility(
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	expectedRequest := resource.MustParse("500m")
 	expectedLimit := resource.MustParse("1000m")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 500m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 1000m, got %s", cpuLimit.String())
 }

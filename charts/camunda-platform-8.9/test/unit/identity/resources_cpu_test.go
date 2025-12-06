@@ -56,6 +56,8 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"identity.enabled":                   "true",
+			"elasticsearch.enabled":              "true",
+			"global.elasticsearch.enabled":       "true",
 			"identity.resources.requests.cpu":    "200m",
 			"identity.resources.limits.cpu":      "1.5",
 			"identity.resources.requests.memory": "512Mi",
@@ -71,20 +73,20 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsString() {
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	// Verify the values match what we set
 	expectedRequest := resource.MustParse("200m")
 	expectedLimit := resource.MustParse("1.5")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 200m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 1.5, got %s", cpuLimit.String())
 }
 
@@ -94,6 +96,8 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 	options := &helm.Options{
 		SetValues: map[string]string{
 			"identity.enabled":                   "true",
+			"elasticsearch.enabled":              "true",
+			"global.elasticsearch.enabled":       "true",
 			"identity.resources.requests.cpu":    "600m",
 			"identity.resources.limits.cpu":      "2000m",
 			"identity.resources.requests.memory": "400Mi",
@@ -109,19 +113,19 @@ func (s *ResourcesCPUTemplateTest) TestCPUResourcesAsMillicores() {
 
 	// then
 	container := deployment.Spec.Template.Spec.Containers[0]
-	
+
 	cpuRequest := container.Resources.Requests.Cpu()
 	cpuLimit := container.Resources.Limits.Cpu()
-	
+
 	require.NotNil(s.T(), cpuRequest, "CPU request should be set")
 	require.NotNil(s.T(), cpuLimit, "CPU limit should be set")
-	
+
 	// Verify the values match what we set
 	expectedRequest := resource.MustParse("600m")
 	expectedLimit := resource.MustParse("2000m")
-	
-	require.True(s.T(), cpuRequest.Equal(expectedRequest), 
+
+	require.True(s.T(), cpuRequest.Equal(expectedRequest),
 		"CPU request should be 600m, got %s", cpuRequest.String())
-	require.True(s.T(), cpuLimit.Equal(expectedLimit), 
+	require.True(s.T(), cpuLimit.Equal(expectedLimit),
 		"CPU limit should be 2000m, got %s", cpuLimit.String())
 }
