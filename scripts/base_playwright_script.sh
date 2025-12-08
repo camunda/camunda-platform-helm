@@ -113,7 +113,7 @@ run_playwright_tests() {
 
   cd "$test_suite_path" || exit
 
-  npm install --no-audit --no-fund --prefer-online --package-lock=false
+  npm ci --no-audit --no-fund
   # Ensure Playwright browsers are available (fresh install or version update)
   if [[ "$(uname -s)" == "Linux" ]]; then
     npx playwright install --with-deps || exit 1
@@ -170,7 +170,7 @@ run_playwright_tests_hybrid() {
 
   cd "$test_suite_path" || exit
 
-  npm i --no-audit --no-fund --silent
+  npm ci --no-audit --no-fund --silent
 
   if [[ $show_html_report == "true" ]]; then
     reporter="html"
