@@ -891,8 +891,8 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
-  playwright-e2e-tests:
-    name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
+  playwright-e2e-tests-after-install:
+    name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
     runs-on: ubuntu-latest
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' }}
@@ -984,15 +984,109 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.shortname }}-${{ matrix.shardIndex }}
+          name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.shortname }}-after-install-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
           retention-days: 1
 
+  playwright-e2e-tests-after-upgrade:
+    name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
+    needs: [upgrade]
+    runs-on: ubuntu-latest
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' }}
+    timeout-minutes: 20
+    env:
+      TEST_EXCLUDE: ${{ inputs.exclude }}
+      TEST_AUTH_TYPE: ${{ inputs.auth }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1]
+        shardTotal: [1]
+    permissions:
+        contents: read
+        id-token: write
+        deployments: write 
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - Authenticate to cluster
+        id: cluster-auth
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
+          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
+          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
+          GKE_SA:           ${{ secrets[inputs.service-account] }}
+          ROSA_URL:         ${{ secrets[inputs.server-url] }}
+          ROSA_USER:        ${{ secrets[inputs.username] }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
+          setup-flow: ${{ inputs.flow }}
+          platform: ${{ inputs.distro-platform }}
+          identifier-base: ${{ inputs.identifier }}
+          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: CI Setup - Set test type vars
+        id: test-type-vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          infra-type: "${{ inputs.infra-type }}"
+          platform: "${{ inputs.distro-platform }}"
+          flow: "${{ inputs.flow }}"
+
+      - name: CI Setup - Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            kubectl
+            oc
+            task
+            yq
+            zbctl
+            jq
+
+      - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
+        shell: bash
+        env:
+          TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+          ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+        run: |
+          cd "$GITHUB_WORKSPACE/scripts"
+          ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests --verbose
+
+      - name: Upload blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.shortname }}-after-upgrade-${{ matrix.shardIndex }}
+          path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
+          retention-days: 1
 
   merge-reports:
     name: Merge reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    if: false
-    needs: [install, playwright-e2e-tests]
+    if: ${{ !cancelled() && inputs.e2e-enabled }}
+    needs: [install, upgrade, playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
 
     runs-on: ubuntu-latest
     steps:
@@ -1052,7 +1146,7 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [playwright-e2e-tests, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
+    needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     permissions:
