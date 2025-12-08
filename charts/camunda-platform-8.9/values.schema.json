@@ -640,11 +640,6 @@
                                                 }
                                             }
                                         },
-                                        "redirectUrl": {
-                                            "type": "string",
-                                            "description": "defines the redirect URL, which is used by the auth platform to access Management Identity.",
-                                            "default": "http://localhost:8085"
-                                        },
                                         "initialClaimName": {
                                             "type": "string",
                                             "description": "defines the initial claim name, which is used by Management Identity to configure initial mapping rules,",
