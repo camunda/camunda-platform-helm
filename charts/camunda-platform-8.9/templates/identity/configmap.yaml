@@ -50,9 +50,6 @@ data:
               id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
-              permissions:
-                - audience: {{ include "orchestration.authAudience" . | quote }}
-                  definition: read:*
         {{- end }}
         console:
           applications:
@@ -138,14 +135,6 @@ data:
                   description: "Read permission"
                 - definition: write:*
                   description: "Write permission"
-          roles:
-            - name: "Orchestration"
-              description: "Grants full access to Orchestration"
-              permissions:
-                - audience: {{ include "orchestration.authAudience" . | quote }}
-                  definition: read:*
-                - audience: {{ include "orchestration.authAudience" . | quote }}
-                  definition: write:*
         {{- end }}
         webmodeler:
           applications:
