@@ -130,11 +130,6 @@ data:
           apis:
             - name: "Orchestration API"
               audience: {{ include "orchestration.authAudience" . | quote }}
-              permissions:
-                - definition: read:*
-                  description: "Read permission"
-                - definition: write:*
-                  description: "Write permission"
         {{- end }}
         webmodeler:
           applications:
