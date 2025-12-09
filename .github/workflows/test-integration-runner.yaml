@@ -1105,8 +1105,40 @@ jobs:
           pattern: blob-report-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}-*
           merge-multiple: true
 
+      - name: Validate and cleanup blob reports
+        run: |
+          echo "Validating blob report ZIP files..."
+          cd all-blob-reports
+          
+          for zip_file in *.zip; do
+            if [[ -f "$zip_file" ]]; then
+              if ! unzip -t "$zip_file" > /dev/null 2>&1; then
+                echo "⚠️ Removing corrupted/incomplete zip file: $zip_file"
+                rm -f "$zip_file"
+              else
+                echo "✅ Valid: $zip_file"
+              fi
+            fi
+          done
+          
+          remaining_files=$(ls -1 *.zip 2>/dev/null | wc -l || echo "0")
+          echo "Valid blob reports remaining: $remaining_files"
+          
+          if [[ "$remaining_files" -eq 0 ]]; then
+            echo "⚠️ No valid blob reports found to merge"
+            exit 0
+          fi
+
       - name: Merge into HTML Report
         run: |
+          # Check if there are any valid reports to merge
+          if [[ ! -d "all-blob-reports" ]] || [[ -z "$(ls -A all-blob-reports/*.zip 2>/dev/null)" ]]; then
+            echo "No valid blob reports found, skipping merge"
+            mkdir -p playwright-report
+            echo "<html><body><h1>No E2E test reports available</h1><p>All blob reports were corrupted or no tests ran.</p></body></html>" > playwright-report/index.html
+            exit 0
+          fi
+          
           npm install -g playwright
           npx playwright merge-reports --reporter html ./all-blob-reports
 
