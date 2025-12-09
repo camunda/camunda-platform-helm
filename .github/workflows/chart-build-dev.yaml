@@ -239,8 +239,7 @@ jobs:
       #
       # Summary
       #
-      - name: Extract image versions for summary
-        id: image-versions
+      - name: Add build info to workflow summary
         run: |
           # Extract key Camunda component versions from values.yaml
           # Component structure changed in 8.8:
@@ -250,79 +249,46 @@ jobs:
           # Helper function to extract image tag
           get_tag() {
             local component=$1
-            grep -A10 "^${component}:" values.yaml | grep -E '^\s+tag:' | head -1 | awk '{print $2}' || echo ""
+            grep -A10 "^${component}:" values.yaml | grep -E '^\s+tag:' | head -1 | awk '{print $2}' | tr -d '"' || echo "N/A"
           }
 
           # Components that exist in all versions
-          echo "IMAGE_CONSOLE=$(get_tag 'console')" >> $GITHUB_ENV
-          echo "IMAGE_CONNECTORS=$(get_tag 'connectors')" >> $GITHUB_ENV
-          echo "IMAGE_OPTIMIZE=$(get_tag 'optimize')" >> $GITHUB_ENV
-          echo "IMAGE_WEBMODELER=$(get_tag 'webModeler')" >> $GITHUB_ENV
+          IMAGE_CONSOLE=$(get_tag 'console')
+          IMAGE_CONNECTORS=$(get_tag 'connectors')
+          IMAGE_OPTIMIZE=$(get_tag 'optimize')
+          IMAGE_WEBMODELER=$(get_tag 'webModeler')
 
           # Version-specific components
-          CAMUNDA_MINOR=$(echo "${{ env.CAMUNDA_VERSION }}" | cut -d. -f1-2 | sed 's/^8\.//')
+          CAMUNDA_MINOR=$(echo "${{ env.CAMUNDA_VERSION }}" | sed 's/^8\.//')
 
           if [[ ${CAMUNDA_MINOR} -ge 8 ]]; then
-            # 8.8+: Orchestration (camunda image) + Management Identity
-            echo "IMAGE_CAMUNDA=$(get_tag 'orchestration')" >> $GITHUB_ENV
-            echo "IMAGE_MGMT_IDENTITY=$(get_tag 'identity')" >> $GITHUB_ENV
-            echo "CHART_ARCHITECTURE=orchestration" >> $GITHUB_ENV
+            CHART_ARCHITECTURE="orchestration"
+            IMAGE_CAMUNDA=$(get_tag 'orchestration')
+            IMAGE_MGMT_IDENTITY=$(get_tag 'identity')
           else
-            # 8.6, 8.7: Separate component images
-            echo "IMAGE_ZEEBE=$(get_tag 'zeebe')" >> $GITHUB_ENV
-            echo "IMAGE_OPERATE=$(get_tag 'operate')" >> $GITHUB_ENV
-            echo "IMAGE_TASKLIST=$(get_tag 'tasklist')" >> $GITHUB_ENV
-            echo "IMAGE_IDENTITY=$(get_tag 'identity')" >> $GITHUB_ENV
-            echo "CHART_ARCHITECTURE=classic" >> $GITHUB_ENV
+            CHART_ARCHITECTURE="classic"
+            IMAGE_ZEEBE=$(get_tag 'zeebe')
+            IMAGE_OPERATE=$(get_tag 'operate')
+            IMAGE_TASKLIST=$(get_tag 'tasklist')
+            IMAGE_IDENTITY=$(get_tag 'identity')
           fi
 
-      - name: Add build info to workflow summary
-        run: |
           if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
             cat << EOF >> $GITHUB_STEP_SUMMARY
-          ## Chart Build Skipped (Camunda ${{ env.CAMUNDA_VERSION }})
+          ## 📦 Chart Build Skipped (Camunda ${{ env.CAMUNDA_VERSION }})
 
           Dev package already exists for this commit.
 
-            - Version: \`${{ env.CHART_VERSION }}\`
-            - Camunda Version: \`${{ env.CAMUNDA_VERSION }}\`
+          - **Version:** \`${{ env.CHART_VERSION }}\`
+          - **Camunda Version:** \`${{ env.CAMUNDA_VERSION }}\`
 
           EOF
           else
-            # Build image version table based on architecture
-            if [[ "${{ env.CHART_ARCHITECTURE }}" == "orchestration" ]]; then
+            # Build summary based on architecture
+            if [[ "${CHART_ARCHITECTURE}" == "orchestration" ]]; then
               # 8.8+ with orchestration cluster (single camunda image)
-              # Match release train report format
-              IMAGE_TABLE=$(cat << 'ENDTABLE'
-          | Component | Version |
-          |-----------|---------|
-          | Camunda (Zeebe/Operate/Tasklist/Orch. Identity) | `${{ env.IMAGE_CAMUNDA }}` |
-          | Management Identity | `${{ env.IMAGE_MGMT_IDENTITY }}` |
-          | Optimize | `${{ env.IMAGE_OPTIMIZE }}` |
-          | Web Modeler | `${{ env.IMAGE_WEBMODELER }}` |
-          | Connectors | `${{ env.IMAGE_CONNECTORS }}` |
-          | Console | `${{ env.IMAGE_CONSOLE }}` |
-          ENDTABLE
-          )
-            else
-              # 8.6, 8.7 with separate component images
-              IMAGE_TABLE=$(cat << 'ENDTABLE'
-          | Component | Version |
-          |-----------|---------|
-          | Zeebe | `${{ env.IMAGE_ZEEBE }}` |
-          | Operate | `${{ env.IMAGE_OPERATE }}` |
-          | Tasklist | `${{ env.IMAGE_TASKLIST }}` |
-          | Identity | `${{ env.IMAGE_IDENTITY }}` |
-          | Optimize | `${{ env.IMAGE_OPTIMIZE }}` |
-          | Web Modeler | `${{ env.IMAGE_WEBMODELER }}` |
-          | Connectors | `${{ env.IMAGE_CONNECTORS }}` |
-          | Console | `${{ env.IMAGE_CONSOLE }}` |
-          ENDTABLE
-          )
-            fi
-
-            cat << EOF >> $GITHUB_STEP_SUMMARY
-          ## Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
+              cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
 
           ### Package Info
 
@@ -332,12 +298,19 @@ jobs:
           | **Chart** | \`${{ env.CHART_NAME }}\` |
           | **Version** | \`${{ env.CHART_VERSION }}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
-          | **Architecture** | \`${{ env.CHART_ARCHITECTURE }}\` |
+          | **Architecture** | \`${CHART_ARCHITECTURE}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
 
-          ### Image Versions (from values.yaml)
+          ### 🐳 Image Versions (from values.yaml)
 
-          ${IMAGE_TABLE}
+          | Component | Version |
+          |-----------|---------|
+          | Camunda (Zeebe/Operate/Tasklist/Orch. Identity) | \`${IMAGE_CAMUNDA}\` |
+          | Management Identity | \`${IMAGE_MGMT_IDENTITY}\` |
+          | Optimize | \`${IMAGE_OPTIMIZE}\` |
+          | Web Modeler | \`${IMAGE_WEBMODELER}\` |
+          | Connectors | \`${IMAGE_CONNECTORS}\` |
+          | Console | \`${IMAGE_CONSOLE}\` |
 
           > **Note:** Compare these versions with the release train announcement to verify this dev package has the correct versions for release.
 
@@ -349,20 +322,46 @@ jobs:
             --version ${{ env.CHART_VERSION }}
           \`\`\`
 
-          ### Downstream Integration
+          EOF
+            else
+              # 8.6, 8.7 with separate component images
+              cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
 
-          **For QA testing (#4789):**
+          ### Package Info
+
+          | Property | Value |
+          |----------|-------|
+          | **Registry** | \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\` |
+          | **Chart** | \`${{ env.CHART_NAME }}\` |
+          | **Version** | \`${{ env.CHART_VERSION }}\` |
+          | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
+          | **Architecture** | \`${CHART_ARCHITECTURE}\` |
+          | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+
+          ### 🐳 Image Versions (from values.yaml)
+
+          | Component | Version |
+          |-----------|---------|
+          | Zeebe | \`${IMAGE_ZEEBE}\` |
+          | Operate | \`${IMAGE_OPERATE}\` |
+          | Tasklist | \`${IMAGE_TASKLIST}\` |
+          | Identity | \`${IMAGE_IDENTITY}\` |
+          | Optimize | \`${IMAGE_OPTIMIZE}\` |
+          | Web Modeler | \`${IMAGE_WEBMODELER}\` |
+          | Connectors | \`${IMAGE_CONNECTORS}\` |
+          | Console | \`${IMAGE_CONSOLE}\` |
+
+          > **Note:** Compare these versions with the release train announcement to verify this dev package has the correct versions for release.
+
+          ### Install
+
           \`\`\`bash
-          # Install this dev package for testing
-          helm install camunda-qa \\
+          helm install my-camunda-dev \\
             oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
             --version ${{ env.CHART_VERSION }}
           \`\`\`
 
-          **For RC promotion (#4790):**
-          - Dev package: \`${{ env.CHART_VERSION }}\`
-          - Camunda version: \`${{ env.CAMUNDA_VERSION }}\`
-          - This package can be retagged to RC without rebuilding
-
           EOF
+            fi
           fi
