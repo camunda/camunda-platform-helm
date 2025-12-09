@@ -844,7 +844,351 @@ identity:
       existingSecretKey: ""
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
+  configuration: |
+    # NOTE:
+    # It is possible to override the configuration via env vars following the Spring Boot convention.
+    # For example, the "identity.url" config path is presented as the "IDENTITY_URL" environment variable.
+    # However, it's not possilbe to mix between the configuration and environment variable for the same object
+    # like arrays and maps.
+    identity:
+      url: {{ include "identity.externalUrl" . | quote }}
+      flags:
+        multi-tenancy: {{ include "identity.multitenancyEnabled" . | quote }}
+
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+      client-id: {{ include "identity.authClientId" . | quote }}
+      {{- end }}
+      {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+      {{- if $config.plaintext }}
+      client-secret: {{ $config.plaintext | quote }}
+      {{- else if $config.ref }}
+      client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+      {{- end }}
+
+      authProvider:
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+        {{- end }}
+        issuer-url: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+
+      {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+      initial-claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
+      initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
+      {{- end }}
+      component-presets:
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
+        connectors:
+          applications:
+            - name: Connectors
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              type: m2m
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: read:*
+        {{- end }}
+        console:
+          applications:
+            - name: "Console"
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              type: public
+              root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/"
+          apis:
+            - name: Console API
+              audience: {{ include "console.authAudience" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Console"
+              description: "Grants full access to Console"
+              permissions:
+                - audience: {{ include "console.authAudience" . | quote }}
+                  definition: write:*
+        identity:
+          apis:
+            - name: "Camunda Identity Resource Server"
+              audience: {{ include "identity.authAudience" . | quote }}
+              permissions:
+                - definition: read
+                  description: "Read permission"
+                - definition: "read:users"
+                  description: "Read users permission"
+                - definition: write
+                  description: "Write permission"
+          roles:
+            - name: "ManagementIdentity"
+              description: "Provides full access to Management Identity"
+              permissions:
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: write
+        optimize:
+          applications:
+            - name: Optimize
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              type: confidential
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+          apis:
+            - name: Optimize API
+              audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+                - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        orchestration:
+          applications:
+            - name: Orchestration
+              id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
+              type: confidential
+              secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: write:*
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/login/oauth2/code/orchestration"
+                - "/sso-callback"
+          apis:
+            - name: "Orchestration API"
+              audience: {{ include "orchestration.authAudience" . | quote }}
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Orchestration"
+              description: "Grants full access to Orchestration"
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: read:*
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: write:*
+        {{- end }}
+        webmodeler:
+          applications:
+            - name: "Web Modeler"
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              type: public
+              root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/login-callback"
+          apis:
+            - name: Web Modeler Internal API
+              audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+                - definition: admin:*
+                  description: "Admin permission"
+            - name: Web Modeler API
+              audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+              permissions:
+                - definition: create:*
+                  description: "Allows create access for all resources"
+                - definition: read:*
+                  description: "Allows read access to all resources"
+                - definition: update:*
+                  description: "Allows update access to all resources"
+                - definition: delete:*
+                  description: "Allows delete access for all resources"
+          roles:
+            - name: "Web Modeler"
+              description: "Grants full access to Web Modeler"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Web Modeler"
+              permissions:
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:*
+
+    {{- if .Values.global.identity.auth.enabled }}
+    {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+    keycloak:
+      url: {{ include "identity.keycloak.url" . | quote }}
+      {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
+      realm: {{ .Values.identity.realm.id | quote }}
+      {{- end }}
+      setup:
+        user: {{ include "identity.keycloak.authAdminUser" . | quote }}
+        password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      init:
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
+        connectors:
+          secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
+        {{- end }}
+        console:
+          root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+        optimize:
+          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        orchestration:
+          secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
+        {{- end }}
+        webmodeler:
+          root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+      clients:
+      {{- if .Values.global.identity.auth.admin.enabled }}
+        - id: {{ .Values.global.identity.auth.admin.clientId }}
+          name: {{ .Values.global.identity.auth.admin.clientId | title }}
+          secret: ${VALUES_CAMUNDA_ADMIN_CLIENT_SECRET:}
+          redirect-uris: /dummy
+          root-url: http://dummy
+          type: confidential
+          permissions:
+            - resourceServerId: camunda-identity-resource-server
+              definition: read
+            - resourceServerId: camunda-identity-resource-server
+              definition: write
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            - resourceServerId: orchestration-api
+              definition: read:*
+            - resourceServerId: orchestration-api
+              definition: write:*
+            {{- end }}
+            - resourceServerId: optimize-api
+              definition: write:*
+            - resourceServerId: web-modeler-api
+              definition: write:*
+            - resourceServerId: console-api
+              definition: write:*
+      {{- end }}
+      {{- if .Values.identity.clients }}
+        {{- range $index, $client := .Values.identity.clients }}
+        - id: {{ $client.id }}
+          name: {{ $client.name }}
+          {{- if ne $client.type "public" }}
+          secret: ${VALUES_{{ $client.id | upper}}_CLIENT_SECRET:}
+          {{- end }}
+          redirectUris: {{ $client.redirectUris }}
+          rootUrl: {{ $client.rootUrl }}
+          type: {{ $client.type }}
+          permissions:
+            {{- with $client.permissions }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+      {{- end }}
+      users:
+        {{- if .Values.identity.firstUser.enabled }}
+        - username: {{ .Values.identity.firstUser.username | quote }}
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: {{ .Values.identity.firstUser.firstName | quote }}
+          lastName: {{ .Values.identity.firstUser.lastName | quote }}
+          email: {{ .Values.identity.firstUser.email | quote }}
+          {{- if .Values.global.identity.auth.enabled }}
+          roles:
+            - ManagementIdentity
+            {{- if .Values.optimize.enabled }}
+            - Optimize
+            {{- end }}
+            {{- if .Values.webModeler.enabled }}
+            - Web Modeler
+            - Web Modeler Admin
+            {{- end }}
+            {{- if .Values.console.enabled }}
+            - Console
+            {{- end }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            - Orchestration
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.identity.users }}
+        {{- range $index, $user := .Values.identity.users }}
+        - username: {{ $user.username }}
+          password: ${VALUES_{{ $user.username | upper}}_USER_PASSWORD:}
+          firstName: {{ $user.firstName }}
+          lastName: {{ $user.lastName }}
+          email: {{ $user.email }}
+          roles:
+            {{- with $user.roles }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
+      environment:
+        clients:
+          - name: Identity
+            id: {{  printf "%s" (include "identity.authClientId" .) | default "camunda-identity" | quote }}
+            type: CONFIDENTIAL
+            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
+            root-url: {{ include "identity.externalUrl" . | quote }}
+            redirect-uris:
+              - "/auth/login-callback"
+    {{- end }}
+    {{- end }}
+    server:
+      port: 8084
+      {{- if .Values.identity.contextPath }}
+      servlet:
+        context-path: {{ .Values.identity.contextPath | quote }}
+      {{- end }}
+
+    spring:
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+      {{- if .Values.global.identity.auth.enabled }}
+      profiles:
+        active: {{ eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" | ternary "keycloak" "oidc" }}
+      {{- end }}
+
+      {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+      datasource:
+        url: {{ printf "jdbc:postgresql://%s:%s/%s" (include "identity.postgresql.host" .) (include "identity.postgresql.port" .) (include "identity.postgresql.database" .) | quote }}
+        username: {{ include "identity.postgresql.username" . | quote }}
+      {{- end }}
+
+    camunda:
+      identity:
+        audience: {{ include "identity.authAudience" . | quote }}
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+        client-id: {{ include "identity.authClientId" .  | quote }}
+        {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+        {{- if $config.plaintext }}
+        client-secret: {{ $config.plaintext | quote }}
+        {{- else if $config.ref }}
+        client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+        {{- end }}
+        {{- end }}
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
+        baseUrl: {{ include "identity.internalUrl" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        {{- end }}
+    logging:
+    {{- with .Values.identity.logging }}
+    {{ . | toYaml | indent 6 }}
+    {{- end }}
+
+
+
   ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
@@ -1155,7 +1499,21 @@ console:
   enabled: false
 
   ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
-  configuration: ""
+  configuration: |
+    # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
+    camunda:
+      console:
+        oAuth:
+          audience: {{ .Values.global.identity.auth.console.audience | quote }}
+          clientId: {{ .Values.global.identity.auth.console.clientId | quote }}
+          issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+          jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+          type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+          wellKnown: {{ .Values.global.identity.auth.console.wellKnown | quote }}
+        managed:
+          method: plain
+          releases:
+            {{- include "camundaPlatform.releaseInfo" . | nindent 10 }}
   ##@param console.overrideConfiguration When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`
   overrideConfiguration: ""
 
@@ -1661,7 +2019,95 @@ webModeler:
       managementPort: 8091
 
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
-    configuration: ""
+    configuration: |
+
+      camunda:
+        {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+        identity:
+          {{- if .Values.identity.enabled }}
+          base-url: {{ include "camundaPlatform.identityURL" . | quote }}
+          issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+          issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+          {{- end }}
+          type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+        {{- end }}
+
+        modeler:
+          pusher:
+            host: {{ include "webModeler.websockets.fullname" . | quote }}
+            port: {{ .Values.webModeler.websockets.service.port }}
+
+          {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+          security:
+            jwt:
+              issuer:
+                backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+              audience:
+                internal-api: {{ include "webModeler.authClientApiAudience" . | quote }}
+                public-api: {{ include "webModeler.authPublicApiAudience" . | quote }}
+          {{- end }}
+
+          mail:
+            from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" .Values.webModeler.restapi.mail.fromAddress | quote }}
+            from-name: {{ .Values.webModeler.restapi.mail.fromName | quote }}
+
+          server:
+            url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+
+          {{- if or .Values.orchestration.enabled .Values.webModeler.restapi.clusters }}
+          clusters:
+            {{- if .Values.webModeler.restapi.clusters }}
+              {{- .Values.webModeler.restapi.clusters | toYaml | nindent 10 }}
+            {{- else}}
+            - id: "default-cluster"
+              name: {{ tpl .Values.global.zeebeClusterName . | quote }}
+              version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+              authentication: {{ include "webModeler.authConfigValue" . | quote }}
+              authorizations:
+                enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+              url:
+                grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
+                rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+                web-app: {{ include "camundaPlatform.orchestrationExternalURL" . | quote }}
+            {{- end }}
+          {{- end }}
+
+      spring:
+        datasource:
+          url: {{ include "webModeler.restapi.databaseUrl" . | quote }}
+          username: {{ include "webModeler.restapi.databaseUser" . | quote }}
+
+        mail:
+          host: {{ .Values.webModeler.restapi.mail.smtpHost | quote }}
+          port: {{ .Values.webModeler.restapi.mail.smtpPort }}
+          {{- if .Values.webModeler.restapi.mail.smtpUser }}
+          username: {{ .Values.webModeler.restapi.mail.smtpUser | quote }}
+          {{- end }}
+          properties:
+            mail.smtp.auth: {{ include "webModeler.restapi.mail.authEnabled" . }}
+            mail.smtp.starttls.enable: {{ .Values.webModeler.restapi.mail.smtpTlsEnabled }}
+            mail.smtp.starttls.required: {{ .Values.webModeler.restapi.mail.smtpTlsEnabled }}
+
+        security:
+          oauth2:
+            resourceserver:
+              {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+              jwt:
+                issuer-uri: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+                jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+              {{- else }}
+              jwt: null
+              {{- end }}
+
+        servlet:
+          multipart:
+            max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+            max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+
+      logging:
+      {{- with .Values.webModeler.restapi.logging }}
+      {{ . | toYaml | indent 6 }}
+      {{- end }}
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
@@ -1831,7 +2277,46 @@ webModeler:
       managementPort: 8071
 
     ## @param webModeler.webapp.configuration if specified, contents will be used as the application.yaml
-    configuration: ""
+    configuration: |
+      httpWorkers = 2
+
+      [restapi]
+      host = {{ include "webModeler.restapi.fullname" . | quote }}
+      port = {{ .Values.webModeler.restapi.service.port | quote }}
+      managementPort = {{ .Values.webModeler.restapi.service.managementPort | quote }}
+
+      [server]
+      url = {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+      httpsOnly = {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
+
+      [oAuth2]
+      type = {{ include "camundaPlatform.authIssuerType" . | quote }}
+      clientId = {{ include "webModeler.authClientId" . | quote }}
+
+      [oAuth2.token]
+      jwksUrl = {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+      audience = {{ include "webModeler.authClientApiAudience" . | quote }}
+      issuer = {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+      usernameClaim = {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+
+      [pusher]
+      host = {{ include "webModeler.websockets.fullname" . | quote }}
+      port = {{ .Values.webModeler.websockets.service.port | quote }}
+
+      [client.pusher]
+      host = {{ include "webModeler.publicWebsocketHost" . | quote }}
+      port = {{ include "webModeler.publicWebsocketPort" . | quote }}
+      {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+      path = {{ include "webModeler.websocketContextPath" . | quote }}
+      {{- end }}
+      forceTLS = {{ include "webModeler.websocketTlsEnabled" . }}
+
+      {{- if .Values.identity.enabled }}
+
+      [identity]
+      baseUrl = {{ include "camundaPlatform.identityURL" . | quote }}
+      {{- end }}
+
     ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration: {}
     ## @param webModeler.webapp.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
@@ -2341,7 +2826,72 @@ connectors:
   ## @param connectors.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
+  configuration: |
+    {{/*
+    This file name should start with an underscore to avoid rendering it as a template.
+    It is included (imported) in the ConfigMap.
+    */}}
+    server:
+      port: {{ .Values.connectors.service.serverPort }}
+      {{- if .Values.connectors.contextPath }}
+      servlet:
+        context-path: {{ .Values.connectors.contextPath | quote }}
+      {{- end }}
+
+    management:
+      context-path: /actuator
+      endpoints:
+        web:
+          exposure:
+            include: metrics,health,prometheus
+      endpoint:
+        health:
+          show-details: always
+          show-components: always
+          group:
+            readiness:
+              include:
+              - processDefinitionImport
+              - zeebeClient
+
+    camunda:
+      client:
+        rest-address: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . }}
+        grpc-address: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | replace "grpc://" "http://" }}
+        worker:
+          defaults:
+            max-jobs-active: 32
+            stream-enabled: true
+        mode: selfManaged
+        {{- if eq (include "connectors.authMethod" .) "basic" }}
+        auth:
+          {{- $user := first .Values.orchestration.security.initialization.users }}
+          method: basic
+          username: {{ $user.username | quote }}
+          password: {{ $user.password | quote }}
+        {{- else if eq (include "connectors.authMethod" .) "oidc" }}
+        auth:
+          token-url: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . }}
+          client-id: {{ include "connectors.authClientId" . | quote }}
+          client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+          audience: {{ include "connectors.authAudience" . | quote }}
+          {{- if (include "connectors.authTokenScope" .) }}
+          scope: {{ include "connectors.authTokenScope" . | quote }}
+          {{- end }}
+        {{- end }}
+      connector:
+        headless:
+          service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
+        webhook:
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+        polling:
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+        agenticai:
+          enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+
+    logging:
+      {{- include "common.tplvalues.render" ( dict "value" .Values.connectors.logging "context" $ ) | nindent 2 }}
+
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration: {}
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
@@ -2977,7 +3527,445 @@ orchestration:
       usageMetricsPolicyName: camunda-usage-metrics-retention-policy
 
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
-  configuration: ""
+  configuration: |
+    {{/*
+    This file name should start with an underscore to avoid rendering it as a template.
+    It is included (imported) in the ConfigMap.
+    */}}
+    spring:
+      profiles:
+        active: {{ include "orchestration.enabledProfilesWithIdentity" . | quote }}
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+
+    server:
+      address: 0.0.0.0
+      port: {{ .Values.orchestration.service.httpPort }}
+      {{- if .Values.orchestration.contextPath }}
+      servlet:
+        context-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
+      {{- end }}
+
+    management:
+      server:
+        address: 0.0.0.0
+        port: {{ .Values.orchestration.service.managementPort }}
+        base-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
+
+    camunda:
+      {{- if .Values.orchestration.exporters.rdbms.enabled }}
+      backup:
+        webapps:
+          enabled: false
+      {{- end }}
+      license:
+        key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
+
+      system:
+        cpu-thread-count: {{ .Values.orchestration.cpuThreadCount }}
+        io-thread-count: {{ .Values.orchestration.ioThreadCount }}
+        clock-controlled: false
+        validate-restore-config: true
+        upgrade:
+        {{- if .Values.orchestration.upgrade.allowPreReleaseImages }}
+          enable-version-check: false
+        {{- else }}
+          enable-version-check: true
+        {{- end }}
+
+      cluster:
+        # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+        # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+        node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+        size: {{ .Values.orchestration.clusterSize | quote }}
+        replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
+        partition-count: {{ .Values.orchestration.partitionCount | quote }}
+        # zeebe.broker.cluster
+        initial-contact-points:
+        {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+          - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
+        {{- end }}
+
+      api:
+        grpc:
+          address: 0.0.0.0
+          port: {{ .Values.orchestration.service.grpcPort }}
+
+      # Database configuration - Separated syntax.
+      database:
+      {{- if .Values.global.opensearch.enabled }}
+        awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      {{- end }}
+
+      data:
+        snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
+        primary-storage:
+          disk:
+            free-space:
+              processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
+              replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
+        secondary-storage:
+          autoconfigure-camunda-exporter: {{ .Values.orchestration.exporters.camunda.enabled }}
+          type: {{ include "orchestration.secondaryStorage" . | quote -}}
+          {{- if .Values.orchestration.history.retention.enabled }}
+          retention:
+            enabled: true
+            minimum-age: {{ .Values.orchestration.history.retention.minimumAge | quote }}
+          {{- end }}
+          {{- if .Values.global.elasticsearch.enabled }}
+          elasticsearch:
+            url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
+            username: {{ .Values.global.elasticsearch.auth.username | quote }}
+            password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
+            index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+            number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
+            {{- if .Values.orchestration.history.retention.enabled }}
+            history:
+              policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.global.opensearch.enabled }}
+          opensearch:
+            url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+            cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
+            username: {{ .Values.global.opensearch.auth.username | quote }}
+            password: "${VALUES_OPENSEARCH_PASSWORD:}"
+            index-prefix: {{ .Values.orchestration.index.prefix | quote }}
+            number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
+            {{- if .Values.orchestration.history.retention.enabled }}
+            history:
+              policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.orchestration.exporters.rdbms.enabled }}
+          # RDBMS exporter is configured and enabled automatically when type is rdbms
+          rdbms:
+            {{- with .Values.orchestration.data.secondaryStorage.rdbms }}
+            url: {{ .url | quote }}
+            username: {{ .username | quote }}
+            password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
+            {{- if .flushInterval }}
+            flushInterval: {{ .flushInterval | quote }}
+            {{- end }}
+            {{- if .queueSize }}
+            queueSize: {{ .queueSize | quote }}
+            {{- end }}
+            {{- if .queueMemoryLimit }}
+            queueMemoryLimit: {{ .queueMemoryLimit | quote }}
+            {{- end }}
+            auto-ddl: {{ .autoDDL }}
+            {{- if .prefix }}
+            prefix: {{ .prefix | quote }}
+            {{- end }}
+            {{- if .maxQueueSize }}
+            maxQueueSize: {{ .maxQueueSize | quote }}
+            {{- end }}
+            history:
+              {{- if .history.defaultHistoryTTL }}
+              defaultHistoryTTL: {{ .history.defaultHistoryTTL | quote }}
+              {{- end }}
+              {{- if .history.defaultBatchOperationHistoryTTL }}
+              defaultBatchOperationHistoryTTL: {{ .history.defaultBatchOperationHistoryTTL | quote }}
+              {{- end }}
+              {{- if .history.batchOperationCancelProcessInstanceHistoryTTL }}
+              batchOperationCancelProcessInstanceHistoryTTL: {{ .history.batchOperationCancelProcessInstanceHistoryTTL | quote }}
+              {{- end }}
+              {{- if .history.batchOperationMigrateProcessInstanceHistoryTTL }}
+              batchOperationMigrateProcessInstanceHistoryTTL: {{ .history.batchOperationMigrateProcessInstanceHistoryTTL | quote }}
+              {{- end }}
+              {{- if .history.batchOperationModifyProcessInstanceHistoryTTL }}
+              batchOperationModifyProcessInstanceHistoryTTL: {{ .history.batchOperationModifyProcessInstanceHistoryTTL | quote }}
+              {{- end }}
+              {{- if .history.batchOperationResolveIncidentHistoryTTL }}
+              batchOperationResolveIncidentHistoryTTL: {{ .history.batchOperationResolveIncidentHistoryTTL | quote }}
+              {{- end }}
+              {{- if .history.minHistoryCleanupInterval }}
+              minHistoryCleanupInterval: {{ .history.minHistoryCleanupInterval | quote }}
+              {{- end }}
+              {{- if .history.maxHistoryCleanupInterval }}
+              maxHistoryCleanupInterval: {{ .history.maxHistoryCleanupInterval | quote }}
+              {{- end }}
+              {{- if .history.historyCleanupBatchSize }}
+              historyCleanupBatchSize: {{ .history.historyCleanupBatchSize | quote }}
+              {{- end }}
+              {{- if .history.usageMetricsCleanup }}
+              usageMetricsCleanup: {{ .history.usageMetricsCleanup | quote }}
+              {{- end }}
+              {{- if .history.processCache.maxSize }}
+              processCache:
+                maxSize: {{ .history.processCache.maxSize | quote }}
+              {{- end }}
+              {{- if .history.batchOperationCache.maxSize }}
+              batchOperationCache:
+                maxSize: {{ .history.batchOperationCache.maxSize | quote }}
+              {{- end }}
+              connection-pool:
+                {{- if .history.connectionPool.maximumPoolSize }}
+                maximumPoolSize: {{ .history.connectionPool.maximumPoolSize | quote }}
+                {{- end }}
+                {{- if .history.connectionPool.minimumIdle }}
+                minimumIdle: {{ .history.connectionPool.minimumIdle | quote }}
+                {{- end }}
+                {{- if .history.connectionPool.idleTimeout }}
+                idleTimeout: {{ .history.connectionPool.idleTimeout | quote }}
+                {{- end }}
+                {{- if .history.connectionPool.maxLifetime }}
+                maxLifetime: {{ .history.connectionPool.maxLifetime | quote }}
+                {{- end }}
+                {{- if .history.connectionPool.connectionTimeout }}
+                connectionTimeout: {{ .history.connectionPool.connectionTimeout | quote }}
+                {{- end }}
+            {{- end }}
+          {{- end }}
+
+      # Security configuration - Separated syntax.
+      security:
+        authentication:
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+          oidc:
+            username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+            client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
+            groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
+            client-id: {{ include "orchestration.authClientId" . | quote }}
+            client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
+            audiences:
+              {{- range .Values.orchestration.security.authentication.oidc.backwardsCompatibleAudiences }}
+              - {{ . | quote }}
+              {{- end }}
+              - {{ include "orchestration.authClientId" . | quote }}
+              - {{ include "orchestration.authAudience" . | quote }}
+              - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+            {{- if (include "orchestration.authIssuerUrl" .) }}
+            issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
+            {{- else }}
+            authorization-uri: {{ include "orchestration.authIssuerUrlEndpointAuth" . | quote }}
+            jwk-set-uri: {{ include "orchestration.authIssuerBackendUrlEndpointCerts" . | quote }}
+            token-uri: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . | quote }}
+            {{- end }}
+            redirect-uri: {{ printf "%s/sso-callback" (include "orchestration.RedirectURI" .) | quote }}
+            authenticationRefreshInterval: {{ .Values.orchestration.security.authentication.authenticationRefreshInterval | quote }}
+            {{- if .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
+            prefer-username-claim: {{ .Values.orchestration.security.authentication.oidc.preferUsernameClaim }}
+            {{- end }}
+            {{- if .Values.orchestration.security.authentication.oidc.scope }}
+            scope:
+              {{- include "common.tplvalues.render" ( dict "value" .Values.orchestration.security.authentication.oidc.scope "context" $ ) | nindent 10 }}
+            {{- end }}
+          {{- end }}
+          method: {{ include "orchestration.authMethod" . | quote }}
+          unprotectedApi: {{ .Values.orchestration.security.authentication.unprotectedApi }}
+        authorizations:
+          enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+        initialization:
+          default-roles:
+            {{- .Values.orchestration.security.initialization.defaultRoles | toYaml | nindent 8 }}
+          {{- if eq (include "orchestration.authMethod" .) "basic" }}
+          users:
+            {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
+          {{- end }}
+        multiTenancy:
+          checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+          apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
+
+      {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+      identity:
+        clientId: {{ include "orchestration.authClientId" . | quote }}
+        audience: {{ include "orchestration.authAudience" . | quote }}
+      {{- end }}
+
+    {{- if .Values.orchestration.profiles.operate -}}
+      {{- "\n" }}
+      #
+      # Camunda Operate Configuration - Separated syntax.
+      #
+      operate:
+        persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
+        multiTenancy:
+          enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        identity:
+          redirectRootUrl: {{ printf "%s/operate" (include "orchestration.RedirectURI" .) | quote }}
+        {{- end }}
+        {{- if .Values.global.opensearch.enabled }}
+        # OpenSearch
+        opensearch:
+          awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+        zeebeOpensearch:
+          awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          password: "${VALUES_OPENSEARCH_PASSWORD:}"
+        {{- end }}
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
+        {{- if .Values.orchestration.history.retention.enabled }}
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
+        {{- end }}
+    {{- end -}}
+
+    {{- if .Values.orchestration.profiles.tasklist -}}
+      {{- "\n" }}
+      #
+      # Camunda Tasklist Configuration - Separated syntax.
+      #
+      tasklist:
+        multiTenancy:
+          enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        identity:
+          redirectRootUrl: {{ printf "%s/tasklist" (include "orchestration.RedirectURI" .) | quote }}
+        {{- end }}
+        {{- if .Values.global.opensearch.enabled }}
+        # OpenSearch
+        opensearch:
+          awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+        zeebeOpensearch:
+          awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+          username: {{ .Values.global.opensearch.auth.username | quote }}
+          password: "${VALUES_OPENSEARCH_PASSWORD:}"
+        {{- end }}
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: {{ include "orchestration.serviceNameGRPC" . | quote }}
+          restAddress: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+        {{- if .Values.orchestration.history.retention.enabled }}
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: {{ .Values.orchestration.history.retention.minimumAge }}
+        {{- end }}
+    {{- end -}}
+
+    {{- if .Values.orchestration.profiles.broker -}}
+    {{- "\n" }}
+    #
+    # Camunda Zeebe Configuration - Separated syntax.
+    #
+    zeebe:
+      host: 0.0.0.0
+      log:
+        level: {{ .Values.orchestration.logLevel | quote }}
+
+      broker:
+        # zeebe.broker.gateway
+        gateway:
+          enable: true
+          multitenancy:
+            enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
+
+        # zeebe.broker.network
+        network:
+          {{- if gt (int .Values.global.multiregion.regions) 1 }}
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}.${K8S_NAMESPACE}.svc"
+          {{- else }}
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          {{- end }}
+          host: 0.0.0.0
+          commandApi:
+            port: {{ .Values.orchestration.service.commandPort }}
+          internalApi:
+            port: {{ .Values.orchestration.service.internalPort }}
+
+        # zeebe.broker.cluster
+        cluster:
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+
+        # zeebe.broker.exporters
+        exporters:
+        {{- if and
+          (not .Values.orchestration.exporters.rdbms.enabled)
+          (or
+            (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+            (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
+          )
+          (or
+            .Values.orchestration.exporters.zeebe.enabled
+            (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+          )
+        }}
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              {{- if .Values.global.elasticsearch.external }}
+              authentication:
+                username: {{ .Values.global.elasticsearch.auth.username | quote }}
+                password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
+              {{- end }}
+              url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+              index:
+                prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+              {{- if .Values.orchestration.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
+              {{- end }}
+        {{- else if and
+          (or
+            (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+            (and .Values.global.opensearch.enabled .Values.optimize.enabled)
+          )
+          (or
+            .Values.orchestration.exporters.zeebe.enabled
+            (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+          )
+        }}
+          opensearch:
+            className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            args:
+              url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+              {{- if .Values.global.opensearch.auth.username }}
+              authentication:
+                username: {{ .Values.global.opensearch.auth.username | quote }}
+                password: "${VALUES_OPENSEARCH_PASSWORD:}"
+              {{- end }}
+              index:
+                prefix: {{ .Values.global.opensearch.prefix | quote }}
+              {{- if .Values.global.opensearch.aws.enabled }}
+              aws:
+                enabled: true
+              {{- end }}
+              {{- if .Values.orchestration.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
+                policyName: {{ .Values.orchestration.retention.policyName | quote }}
+              {{- end }}
+          {{- end }}
+        {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) }}
+          camundaexporter:
+            className: "io.camunda.exporter.CamundaExporter"
+            args:
+              connect:
+                type: {{ include "orchestration.secondaryStorage" . | quote }}
+                url: {{ .Values.global.elasticsearch.enabled | ternary (include "camundaPlatform.elasticsearchURL" .) (include "camundaPlatform.opensearchURL" .) | quote }}
+                {{- if .Values.orchestration.index.prefix }}
+                indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
+                {{- end }}
+              {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
+                username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
+                password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
+              {{- end }}
+                awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+              history:
+                elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
+                rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}
+                rolloverBatchSize: {{ .Values.orchestration.history.rolloverBatchSize }}
+                waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
+                delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
+                maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
+        {{- else -}}
+          {{ " {}" }}
+        {{- end }}
+    {{ end -}}
+
   ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration: {}
   ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
@@ -3217,7 +4205,82 @@ optimize:
       memory: 2Gi
 
   ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
-  configuration: ""
+  configuration: |
+    {{- if and .Values.optimize.enabled (not .Values.global.noSecondaryStorage) -}}
+    kind: ConfigMap
+    metadata:
+      name: {{ include "optimize.fullname" . }}-configuration
+      labels:
+        {{- include "optimize.labels" . | nindent 4 }}
+    apiVersion: v1
+    data:
+      {{- if .Values.optimize.configuration }}
+      environment-config.yaml: |
+        {{ .Values.optimize.configuration | indent 4 | trim }}
+      {{- else }}
+      environment-config.yaml: |
+        {{- if .Values.optimize.contextPath }}
+        container:
+          contextPath: {{ .Values.optimize.contextPath | quote }}
+        {{- end }}
+
+        zeebe:
+          enabled: true
+          partitionCount: {{ .Values.optimize.partitionCount }}
+          {{- if .Values.global.elasticsearch.enabled }}
+          name: {{ .Values.global.elasticsearch.prefix | quote }}
+          {{- else if .Values.global.opensearch.enabled }}
+          name: {{ .Values.global.opensearch.prefix | quote }}
+          {{- end }}
+
+        {{- if .Values.global.elasticsearch.enabled }}
+        es:
+          connection:
+            nodes:
+              - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+                httpPort: {{ .Values.global.elasticsearch.url.port }}
+          {{- if .Values.global.elasticsearch.external }}
+          security:
+            username: {{ .Values.global.elasticsearch.auth.username | quote }}
+            {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
+            ssl:
+              enabled: "true"
+            {{- end }}
+          {{- end }}
+        {{- end }}
+
+        spring:
+          servlet:
+            multipart:
+              max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+              max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+          profiles:
+            active: "ccsm"
+
+        security:
+          auth:
+            cookie:
+              same-site:
+                enabled: false
+        {{- if .Values.global.identity.auth.enabled }}
+            ccsm:
+              redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+        api:
+          audience: {{ include "optimize.authAudience" . | quote }}
+          jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+        {{- end }}
+      {{- end }}
+
+      {{- if .Values.global.identity.auth.enabled }}
+      application-ccsm.yaml: |
+        camunda:
+          identity:
+            clientId: {{ include "optimize.authClientId" . | quote }}
+            audience: {{ include "optimize.authAudience" . | quote }}
+            issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+            issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+      {{- end }}
+
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
   extraConfiguration: {}
   ## @param optimize.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
