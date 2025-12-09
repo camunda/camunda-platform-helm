@@ -293,13 +293,13 @@ jobs:
           ### Package Info
 
           | Property | Value |
-          |----------|-------|
+          |-------------|-------|
           | **Registry** | \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\` |
           | **Chart** | \`${{ env.CHART_NAME }}\` |
           | **Version** | \`${{ env.CHART_VERSION }}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
-          | **Architecture** | \`${CHART_ARCHITECTURE}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+          | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
 
           ### 🐳 Image Versions (from values.yaml)
 
@@ -336,8 +336,8 @@ jobs:
           | **Chart** | \`${{ env.CHART_NAME }}\` |
           | **Version** | \`${{ env.CHART_VERSION }}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
-          | **Architecture** | \`${CHART_ARCHITECTURE}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+          | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
 
           ### 🐳 Image Versions (from values.yaml)
 
