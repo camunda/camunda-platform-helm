@@ -349,7 +349,6 @@ jobs:
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
           crane auth login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
 
-          # Push creates tag from Chart.yaml version, then retag to safe dev tag
           helm push "${{ env.CHART_NAME }}-${SAFE_TAG}.tgz" "oci://${OCI_REGISTRY}"
           crane copy "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${CHART_VERSION_IN_PACKAGE}" "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${SAFE_TAG}"
           crane delete "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${CHART_VERSION_IN_PACKAGE}" || true
@@ -465,14 +464,14 @@ jobs:
           | **OCI Tag** | \`${{ env.CHART_VERSION }}\` |
           | **Release Version** | \`${RELEASE_VERSION_DISPLAY}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
-          | **Commit** | [\${{ env.SHORT_SHA }}](\${{ github.server_url }}/\${{ github.repository }}/commit/\${{ github.sha }}) |
-          | **Package** | [View in GHCR](https://github.com/\${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F\${{ env.CHART_NAME }}) |
+          | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+          | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
 
           ### 🐳 Image Versions (from values.yaml)
 
           | Component | Version |
           |-----------|---------|
-          | Camunda (Zeebe/Operate/Tasklist/Orch. Identity) |
+          | Camunda (Zeebe/Operate/Tasklist/Orch. Identity) | \`${IMAGE_CAMUNDA}\` |
           | Management Identity | \`${IMAGE_MGMT_IDENTITY}\` |
           | Optimize | \`${IMAGE_OPTIMIZE}\` |
           | Web Modeler | \`${IMAGE_WEBMODELER}\` |
