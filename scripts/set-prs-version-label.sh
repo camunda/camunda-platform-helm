@@ -65,7 +65,7 @@ ct list-changed | while read chart_dir; do
     app_version_label="version/${app_version}"
     # The "version:x.y.z" label format is used by the support team,
     # it must not changed without checking with the support team.
-    chart_version_label="version:${chart_version}"
+    chart_version_label="version:camunda-platform-${app_version}-${chart_version}"
 
     echo -e "\nChart dir: ${chart_dir}"
     echo "Apps version: ${app_version}"
