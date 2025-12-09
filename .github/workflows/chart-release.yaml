@@ -115,6 +115,9 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:

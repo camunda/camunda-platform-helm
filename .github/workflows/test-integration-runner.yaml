@@ -261,6 +261,9 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
         with:

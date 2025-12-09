@@ -39,6 +39,8 @@ jobs:
         with:
           fetch-depth: 1
           ref: "${{ inputs.camunda-helm-git-ref }}"
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
       # Configurtion.
       - name: Configure Git
         run: |

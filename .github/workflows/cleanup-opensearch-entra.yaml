@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           repository: camunda/camunda-platform-helm
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:
