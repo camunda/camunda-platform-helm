@@ -1,0 +1,192 @@
+name: "Chart - Cleanup - Dev Packages"
+
+# Cleans up old development packages to prevent registry bloat.
+# Dev packages are immutable per-commit artifacts that accumulate quickly.
+#
+# Cleanup strategy:
+#   - Scheduled: Weekly cleanup of packages older than 14 days
+#   - On-demand: Manual trigger for immediate cleanup
+#
+# Safety:
+#   - Only deletes `0.0.0-dev-*` versions (never RC or release)
+#   - Keeps minimum number of recent packages per Camunda version
+#   - Promoted packages (retagged to RC) are protected by having non-dev tags
+
+on:
+  schedule:
+    # Run weekly on Sunday at 3:00 AM UTC
+    - cron: "0 3 * * 0"
+
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Dry run (don't actually delete)"
+        type: boolean
+        default: true
+      min-age-days:
+        description: "Minimum age in days before deletion"
+        type: number
+        default: 14
+      min-versions-to-keep:
+        description: "Minimum versions to keep per Camunda version"
+        type: number
+        default: 5
+
+env:
+  PACKAGE_NAME: helm/camunda-platform
+  # Scheduled runs use these defaults
+  DEFAULT_MIN_AGE_DAYS: 14
+  DEFAULT_MIN_VERSIONS_TO_KEEP: 5
+
+jobs:
+  cleanup:
+    name: Cleanup dev packages
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+
+      - name: Set parameters
+        id: params
+        run: |
+          # Use inputs for manual runs, defaults for scheduled runs
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "DRY_RUN=${{ inputs.dry-run }}" >> $GITHUB_ENV
+            echo "MIN_AGE_DAYS=${{ inputs.min-age-days }}" >> $GITHUB_ENV
+            echo "MIN_VERSIONS_TO_KEEP=${{ inputs.min-versions-to-keep }}" >> $GITHUB_ENV
+          else
+            echo "DRY_RUN=false" >> $GITHUB_ENV
+            echo "MIN_AGE_DAYS=${{ env.DEFAULT_MIN_AGE_DAYS }}" >> $GITHUB_ENV
+            echo "MIN_VERSIONS_TO_KEEP=${{ env.DEFAULT_MIN_VERSIONS_TO_KEEP }}" >> $GITHUB_ENV
+          fi
+
+      - name: Get active Camunda versions
+        id: versions
+        uses: ./.github/actions/get-chart-versions
+
+      - name: Cleanup old dev packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "## Dev Package Cleanup" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dry Run | \`${{ env.DRY_RUN }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Min Age (days) | \`${{ env.MIN_AGE_DAYS }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Min Versions to Keep | \`${{ env.MIN_VERSIONS_TO_KEEP }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Calculate cutoff date
+          CUTOFF_DATE=$(date -d "${{ env.MIN_AGE_DAYS }} days ago" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Cutoff date: ${CUTOFF_DATE}"
+          echo "Active versions: ${{ steps.versions.outputs.active }}"
+
+          DELETED_COUNT=0
+          KEPT_COUNT=0
+          SKIPPED_COUNT=0
+
+          # Get all package versions
+          echo "Fetching package versions..."
+          VERSIONS_JSON=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions" \
+            --paginate)
+
+          # Process each active Camunda version
+          for CAMUNDA_VERSION in ${{ steps.versions.outputs.active }}; do
+            echo ""
+            echo "=== Processing Camunda ${CAMUNDA_VERSION} ==="
+
+            # Filter dev packages for this Camunda version
+            # Tag format: 0.0.0-dev-<camunda-version>-<sha>
+            DEV_PATTERN="0.0.0-dev-${CAMUNDA_VERSION}-"
+
+            # Get matching versions, sorted by created_at (oldest first)
+            MATCHING_VERSIONS=$(echo "${VERSIONS_JSON}" | jq -r --arg pattern "${DEV_PATTERN}" '
+              [.[] | select(.metadata.container.tags[] | startswith($pattern))]
+              | sort_by(.created_at)
+              | .[]
+              | [.id, .created_at, (.metadata.container.tags | join(","))]
+              | @tsv
+            ')
+
+            if [[ -z "${MATCHING_VERSIONS}" ]]; then
+              echo "No dev packages found for ${CAMUNDA_VERSION}"
+              continue
+            fi
+
+            # Count total matching versions
+            TOTAL_COUNT=$(echo "${MATCHING_VERSIONS}" | wc -l | tr -d ' ')
+            echo "Found ${TOTAL_COUNT} dev packages for ${CAMUNDA_VERSION}"
+
+            # Calculate how many we can delete (keep minimum)
+            DELETABLE_COUNT=$((TOTAL_COUNT - ${{ env.MIN_VERSIONS_TO_KEEP }}))
+            if [[ ${DELETABLE_COUNT} -lt 0 ]]; then
+              DELETABLE_COUNT=0
+            fi
+            echo "Can delete up to ${DELETABLE_COUNT} (keeping min ${{ env.MIN_VERSIONS_TO_KEEP }})"
+
+            DELETED_FOR_VERSION=0
+
+            # Process each version
+            while IFS=$'\t' read -r VERSION_ID CREATED_AT TAGS; do
+              # Skip if we've deleted enough for this version
+              if [[ ${DELETED_FOR_VERSION} -ge ${DELETABLE_COUNT} ]]; then
+                echo "  Keeping: ${TAGS} (minimum retention)"
+                ((KEPT_COUNT++))
+                continue
+              fi
+
+              # Check if older than cutoff
+              if [[ "${CREATED_AT}" > "${CUTOFF_DATE}" ]]; then
+                echo "  Keeping: ${TAGS} (newer than ${MIN_AGE_DAYS} days)"
+                ((KEPT_COUNT++))
+                continue
+              fi
+
+              # This version can be deleted
+              if [[ "${{ env.DRY_RUN }}" == "true" ]]; then
+                echo "  [DRY RUN] Would delete: ${TAGS} (created: ${CREATED_AT})"
+              else
+                echo "  Deleting: ${TAGS} (created: ${CREATED_AT})"
+                gh api \
+                  --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions/${VERSION_ID}" \
+                  || echo "  Warning: Failed to delete ${VERSION_ID}"
+              fi
+              ((DELETED_COUNT++))
+              ((DELETED_FOR_VERSION++))
+
+            done <<< "${MATCHING_VERSIONS}"
+
+          done
+
+          # Summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ env.DRY_RUN }}" == "true" ]]; then
+            echo "**🔍 Dry run - no packages were actually deleted**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Would delete | ${DELETED_COUNT} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Would keep | ${KEPT_COUNT} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Deleted | ${DELETED_COUNT} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Kept | ${KEPT_COUNT} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo ""
+          echo "=== Cleanup complete ==="
+          echo "Deleted: ${DELETED_COUNT}, Kept: ${KEPT_COUNT}"
