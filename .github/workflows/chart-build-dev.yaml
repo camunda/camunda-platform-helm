@@ -1,0 +1,294 @@
+name: "Chart - Build - Dev"
+
+# Builds immutable dev packages for all active chart versions.
+# These packages are release-ready (transformations applied) and can be
+# promoted to RC and release by retagging only - no rebuild needed.
+#
+# Versioning: 0.0.0-dev-<sha>
+# Registry: oci://ghcr.io/camunda/helm/camunda-platform
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/chart-build-dev.yaml
+      - charts/camunda-platform-*/**
+      - "!charts/camunda-platform-*/test/**"
+
+  workflow_dispatch:
+    inputs:
+      chart-version:
+        description: |
+          Specific chart version to build (e.g., "8.8").
+          Leave empty to build all active versions.
+        required: false
+        type: string
+
+env:
+  REPOSITORY_NAME: "camunda/helm"
+  CHART_NAME: "camunda-platform"
+
+jobs:
+  setup:
+    name: Setup build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      chart-matrix: ${{ steps.matrix.outputs.chart-matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Get chart versions
+        id: chart-versions
+        uses: ./.github/actions/get-chart-versions
+
+      - name: Build chart matrix
+        id: matrix
+        run: |
+          # Use input version if provided, otherwise use all active versions
+          if [[ -n "${{ inputs.chart-version }}" ]]; then
+            versions="${{ inputs.chart-version }}"
+          else
+            versions="${{ steps.chart-versions.outputs.active }}"
+          fi
+
+          # Build matrix JSON
+          matrix="["
+          first=true
+          for version in ${versions}; do
+            if [[ "${first}" != "true" ]]; then
+              matrix+=","
+            fi
+            first=false
+            matrix+=$(cat << EOF
+          {
+            "name": "Helm Chart ${version}",
+            "directory": "charts/camunda-platform-${version}",
+            "version": "${version}"
+          }
+          EOF
+          )
+          done
+          matrix+="]"
+
+          echo "chart-matrix=${matrix}" >> $GITHUB_OUTPUT
+          echo "Building charts: ${versions}"
+
+  build:
+    needs: setup
+    name: Build ${{ matrix.chart.version }}
+    permissions:
+      packages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart: ${{ fromJson(needs.setup.outputs.chart-matrix) }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.chart.directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            yq
+
+      - name: Set version vars
+        id: vars
+        run: |
+          # Immutable version based on commit SHA
+          SHORT_SHA="${GITHUB_SHA::7}"
+          CHART_VERSION="0.0.0-dev-${SHORT_SHA}"
+          echo "CHART_VERSION=${CHART_VERSION}" | tee -a $GITHUB_ENV
+          echo "SHORT_SHA=${SHORT_SHA}" | tee -a $GITHUB_ENV
+
+      - name: Check if artifact already exists
+        id: check-artifact
+        run: |
+          # Dev packages are immutable - skip if already exists
+          helm pull oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \
+            --version ${{ env.CHART_VERSION }} 2> /dev/null && EXIT_CODE=0 || EXIT_CODE=1
+
+          if [[ ${EXIT_CODE} -eq 0 ]]; then
+            echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
+            echo "::notice::Dev package ${{ env.CHART_VERSION }} already exists, skipping build"
+          else
+            echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+          fi
+
+      #
+      # Apply release transformations (makes artifact release-ready)
+      #
+      - name: Remove dev comments
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          target_files=(
+            values*.yaml
+            Chart.yaml
+          )
+          for target_file in "${target_files[@]}"; do
+            if [[ -f "${target_file}" ]]; then
+              sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' "${target_file}"
+            fi
+          done
+          echo "Dev comments removed"
+
+      - name: Remove badges from README
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          # Clean up badges from readme to avoid showing them in Artifact Hub
+          sed -ri '/Badge .+/d' "README.md"
+          echo "Badges removed from README"
+
+      - name: Show transformations
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          echo "Applied release transformations:"
+          git --no-pager diff --stat
+
+      #
+      # Package and publish
+      #
+      - name: Add Helm repos
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          make -C ../.. helm.repos-add
+
+      - name: Helm dependency update
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          make -C ../.. helm.dependency-update \
+            chartPath=${{ matrix.chart.directory }}
+
+      - name: Package Helm chart
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          helm version
+          helm package --version ${{ env.CHART_VERSION }} .
+          echo "Packaged: ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
+
+      - name: Push Helm chart
+        if: env.SKIP_BUILD == 'false'
+        env:
+          HELM_EXPERIMENTAL_OCI: 1
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
+          helm push ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ env.REPOSITORY_NAME }}
+          helm registry logout ghcr.io
+
+      #
+      # Security signature
+      #
+      - name: Install Cosign CLI
+        if: env.SKIP_BUILD == 'false'
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Sign Helm chart with Cosign
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          cosign sign-blob -y ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
+            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle
+
+      - name: Verify signed Helm chart with Cosign
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
+            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-build-dev.yaml@${{ github.ref }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+      - name: Login to GitHub Container Registry
+        if: env.SKIP_BUILD == 'false'
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install ORAS CLI
+        if: env.SKIP_BUILD == 'false'
+        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1
+
+      - name: Upload Helm chart Cosign bundle
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          oras push ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }}.cosign.bundle \
+            ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain
+
+      #
+      # Summary
+      #
+      - name: Extract image versions for summary
+        id: image-versions
+        run: |
+          # Extract key Camunda component versions from values.yaml
+          echo "CAMUNDA_VERSION=$(grep -A2 'orchestration:' values.yaml | grep 'tag:' | head -1 | awk '{print $2}' || echo 'N/A')" >> $GITHUB_ENV
+          echo "CONSOLE_VERSION=$(grep -A5 'console:' values.yaml | grep 'tag:' | head -1 | awk '{print $2}' || echo 'N/A')" >> $GITHUB_ENV
+          echo "CONNECTORS_VERSION=$(grep -A5 'connectors:' values.yaml | grep 'tag:' | head -1 | awk '{print $2}' || echo 'N/A')" >> $GITHUB_ENV
+          echo "OPTIMIZE_VERSION=$(grep -A5 'optimize:' values.yaml | grep 'tag:' | head -1 | awk '{print $2}' || echo 'N/A')" >> $GITHUB_ENV
+          echo "IDENTITY_VERSION=$(grep -A5 '^identity:' values.yaml | grep 'tag:' | head -1 | awk '{print $2}' || echo 'N/A')" >> $GITHUB_ENV
+          echo "WEBMODELER_VERSION=$(grep -A5 'webModeler:' values.yaml | grep 'tag:' | head -1 | awk '{print $2}' || echo 'N/A')" >> $GITHUB_ENV
+
+      - name: Add build info to workflow summary
+        run: |
+          if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
+            cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## Chart Build Skipped
+
+          Dev package already exists for this commit.
+
+            - Version: \`${{ env.CHART_VERSION }}\`
+            - Chart: \`${{ matrix.chart.version }}\`
+
+          EOF
+          else
+            cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## Dev Package Built ✅
+
+            - Repository: \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\`
+            - Name: \`${{ env.CHART_NAME }}\`
+            - Version: \`${{ env.CHART_VERSION }}\`
+            - Chart: \`${{ matrix.chart.version }}\`
+            - Commit: [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+
+          ### Image Versions (from values.yaml)
+
+          | Component | Version |
+          |-----------|---------|
+          | Camunda (orchestration) | \`${{ env.CAMUNDA_VERSION }}\` |
+          | Console | \`${{ env.CONSOLE_VERSION }}\` |
+          | Connectors | \`${{ env.CONNECTORS_VERSION }}\` |
+          | Optimize | \`${{ env.OPTIMIZE_VERSION }}\` |
+          | Identity | \`${{ env.IDENTITY_VERSION }}\` |
+          | Web Modeler | \`${{ env.WEBMODELER_VERSION }}\` |
+
+          > **Note:** Compare these versions with the release train announcement to verify this dev package has the correct versions for release.
+
+          ### Install
+
+          \`\`\`bash
+          helm install my-camunda-dev \\
+            oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
+            --version ${{ env.CHART_VERSION }}
+          \`\`\`
+
+          ### Immutable Pipeline
+
+          This dev package is release-ready. To promote to RC or release:
+          1. Tag the OCI artifact with the new version
+          2. No rebuild required - same artifact, same digest
+
+          EOF
+          fi
