@@ -56,6 +56,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
           token: "${{ steps.generate-github-token.outputs.token }}"
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
       #
       # Dependencies.
       #
