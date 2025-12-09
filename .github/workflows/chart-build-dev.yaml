@@ -163,17 +163,14 @@ jobs:
           RELEASE_PLEASE_MANIFEST: .github/config/release-please/.release-please-manifest.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Run release-please in dry-run mode to compute:
-          # 1. The next version based on conventional commits
-          # 2. The Chart.yaml changes (version + artifacthub.io/changes annotations)
-
           # Get current version from Chart.yaml to check if it's a prerelease
           CURRENT_VERSION=$(yq '.version' Chart.yaml)
           echo "Current version: ${CURRENT_VERSION}"
 
           # Check if current version is a prerelease (alpha, beta, rc)
+          IS_PRERELEASE=false
           if [[ "${CURRENT_VERSION}" =~ -(alpha|beta|rc)([0-9]+)$ ]]; then
-            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+            IS_PRERELEASE=true
             PRERELEASE_TYPE="${BASH_REMATCH[1]}"
             PRERELEASE_NUM="${BASH_REMATCH[2]}"
             BASE_VERSION="${CURRENT_VERSION%%-*}"
@@ -183,14 +180,10 @@ jobs:
             echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
             echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
             echo "::notice::Computed prerelease version: ${RELEASE_VERSION}"
-          else
-            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
           fi
 
-          # Change to repo root for release-please (it needs access to .git and config)
+          # Run release-please dry-run to get changelog annotations
           cd ../..
-
-          # Use --trace to get file diffs in output
           release-please release-pr \
             --token="${GITHUB_TOKEN}" \
             --repo-url="${{ github.repository }}" \
@@ -200,18 +193,14 @@ jobs:
             --manifest-file="${RELEASE_PLEASE_MANIFEST}" \
             --dry-run \
             --trace 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
-
-          # Change back to chart directory
           cd ${{ matrix.chart.directory }}
 
           # For stable releases, extract version from release-please output
           if [[ "${IS_PRERELEASE}" != "true" ]]; then
             RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
-
             if [[ -z "${RELEASE_VERSION}" ]]; then
               RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
             fi
-
             if [[ -z "${RELEASE_VERSION}" ]]; then
               echo "::warning::Could not determine release version from release-please dry-run"
               echo "RELEASE_VERSION_COMPUTED=false" >> $GITHUB_ENV
