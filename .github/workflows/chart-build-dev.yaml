@@ -1,13 +1,22 @@
 name: "Chart - Build - Dev"
 
 # Builds immutable dev packages for all active chart versions.
-# These packages are release-ready (transformations applied) and can be
-# promoted to RC and release by retagging only - no rebuild needed.
+# These packages are release-ready (transformations applied) and stored with
+# safe OCI tags for testing. They can be promoted to release by:
+#   1. QA workflows pull from OCI for testing
+#   2. Promotion fetches from OCI → uploads to GitHub Releases
 #
-# Versioning: 0.0.0-dev-<camunda-version>-<sha>
+# Chart.yaml inside the package contains the RELEASE VERSION (e.g., 11.11.3)
+# computed by release-please dry-run, making the artifact truly release-ready.
+#
+# OCI Tag (safe): 0.0.0-dev-<camunda-version>-<sha>
 #   Example: 0.0.0-dev-8.8-abc1234
 #
+# Chart.yaml version (release): computed by release-please (e.g., 11.11.3)
+#
 # Registry: oci://ghcr.io/camunda/helm/camunda-platform
+#   Note: OCI is for internal storage/testing. Customer releases go to
+#   GitHub Releases → helm.camunda.io → Artifact Hub
 #
 
 on:
@@ -296,16 +305,47 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         run: |
           helm version
-          helm package --version ${{ env.CHART_VERSION }} .
-          echo "Packaged: ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
 
-      - name: Push Helm chart
+          # Package WITHOUT --version flag to preserve Chart.yaml version (release version)
+          # The Chart.yaml already contains the correct release version (e.g., 11.11.3)
+          helm package .
+
+          # The package filename will be based on Chart.yaml version
+          # Find it and rename to use the OCI tag version for pushing
+          PACKAGED_FILE=$(ls ${{ env.CHART_NAME }}-*.tgz)
+          echo "Packaged: ${PACKAGED_FILE}"
+
+          # Rename to OCI tag version for consistent tagging
+          mv "${PACKAGED_FILE}" "${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
+          echo "Renamed to: ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
+
+          # Verify Chart.yaml inside has the release version
+          echo "Verifying packaged Chart.yaml version:"
+          tar -xzf "${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz" -O ${{ env.CHART_NAME }}/Chart.yaml | grep "^version:"
+
+      - name: Install Crane CLI
         if: env.SKIP_BUILD == 'false'
-        env:
-          HELM_EXPERIMENTAL_OCI: 1
+        uses: imjasonh/setup-crane@31b88edd9de4cda3c20f9f3a828161f33e5e4e59 # v0.4
+
+      - name: Push Helm chart to OCI registry
+        if: env.SKIP_BUILD == 'false'
         run: |
+          OCI_REGISTRY="ghcr.io/${{ env.REPOSITORY_NAME }}"
+          SAFE_TAG="${{ env.CHART_VERSION }}"
+
+          # helm push uses Chart.yaml version as OCI tag, not filename
+          CHART_VERSION_IN_PACKAGE=$(tar -xzf "${{ env.CHART_NAME }}-${SAFE_TAG}.tgz" -O ${{ env.CHART_NAME }}/Chart.yaml | yq '.version')
+          echo "Chart.yaml version: ${CHART_VERSION_IN_PACKAGE}"
+          echo "Safe OCI tag: ${SAFE_TAG}"
+
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
-          helm push ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ env.REPOSITORY_NAME }}
+          crane auth login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+
+          # Push creates tag from Chart.yaml version, then retag to safe dev tag
+          helm push "${{ env.CHART_NAME }}-${SAFE_TAG}.tgz" "oci://${OCI_REGISTRY}"
+          crane copy "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${CHART_VERSION_IN_PACKAGE}" "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${SAFE_TAG}"
+          crane delete "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${CHART_VERSION_IN_PACKAGE}" || true
+
           helm registry logout ghcr.io
 
       #
@@ -417,17 +457,14 @@ jobs:
           | **OCI Tag** | \`${{ env.CHART_VERSION }}\` |
           | **Release Version** | \`${RELEASE_VERSION_DISPLAY}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
-          | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
-          | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
-
-          > **Immutable Artifact:** The OCI tag is \`0.0.0-dev-*\` for safety, but Chart.yaml inside contains the release version \`${RELEASE_VERSION_DISPLAY}\`.
-          > This package can be promoted to RC and release by retagging only - no rebuild needed.
+          | **Commit** | [\${{ env.SHORT_SHA }}](\${{ github.server_url }}/\${{ github.repository }}/commit/\${{ github.sha }}) |
+          | **Package** | [View in GHCR](https://github.com/\${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F\${{ env.CHART_NAME }}) |
 
           ### 🐳 Image Versions (from values.yaml)
 
           | Component | Version |
           |-----------|---------|
-          | Camunda (Zeebe/Operate/Tasklist/Orch. Identity) | \`${IMAGE_CAMUNDA}\` |
+          | Camunda (Zeebe/Operate/Tasklist/Orch. Identity) |
           | Management Identity | \`${IMAGE_MGMT_IDENTITY}\` |
           | Optimize | \`${IMAGE_OPTIMIZE}\` |
           | Web Modeler | \`${IMAGE_WEBMODELER}\` |
@@ -461,9 +498,6 @@ jobs:
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
           | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
-
-          > **Immutable Artifact:** The OCI tag is \`0.0.0-dev-*\` for safety, but Chart.yaml inside contains the release version \`${RELEASE_VERSION_DISPLAY}\`.
-          > This package can be promoted to RC and release by retagging only - no rebuild needed.
 
           ### 🐳 Image Versions (from values.yaml)
 
