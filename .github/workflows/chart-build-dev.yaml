@@ -323,10 +323,6 @@ jobs:
           echo "Verifying packaged Chart.yaml version:"
           tar -xzf "${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz" -O ${{ env.CHART_NAME }}/Chart.yaml | grep "^version:"
 
-      - name: Install Crane CLI
-        if: env.SKIP_BUILD == 'false'
-        uses: imjasonh/setup-crane@31b88edd9de4cda3c20f9f3a828161f33e5e4e59 # v0.4
-
       - name: Push Helm chart to OCI registry
         if: env.SKIP_BUILD == 'false'
         run: |
@@ -337,6 +333,8 @@ jobs:
           CHART_VERSION_IN_PACKAGE=$(tar -xzf "${{ env.CHART_NAME }}-${SAFE_TAG}.tgz" -O ${{ env.CHART_NAME }}/Chart.yaml | yq '.version')
           echo "Chart.yaml version: ${CHART_VERSION_IN_PACKAGE}"
           echo "Safe OCI tag: ${SAFE_TAG}"
+
+          go install github.com/google/go-containerregistry/cmd/crane@latest
 
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
           crane auth login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
