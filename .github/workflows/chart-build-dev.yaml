@@ -167,6 +167,26 @@ jobs:
           # 1. The next version based on conventional commits
           # 2. The Chart.yaml changes (version + artifacthub.io/changes annotations)
 
+          # Get current version from Chart.yaml to check if it's a prerelease
+          CURRENT_VERSION=$(yq '.version' Chart.yaml)
+          echo "Current version: ${CURRENT_VERSION}"
+
+          # Check if current version is a prerelease (alpha, beta, rc)
+          if [[ "${CURRENT_VERSION}" =~ -(alpha|beta|rc)([0-9]+)$ ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+            PRERELEASE_TYPE="${BASH_REMATCH[1]}"
+            PRERELEASE_NUM="${BASH_REMATCH[2]}"
+            BASE_VERSION="${CURRENT_VERSION%%-*}"
+            NEXT_PRERELEASE_NUM=$((PRERELEASE_NUM + 1))
+            RELEASE_VERSION="${BASE_VERSION}-${PRERELEASE_TYPE}${NEXT_PRERELEASE_NUM}"
+            echo "Prerelease detected: ${PRERELEASE_TYPE}${PRERELEASE_NUM} -> ${PRERELEASE_TYPE}${NEXT_PRERELEASE_NUM}"
+            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+            echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
+            echo "::notice::Computed prerelease version: ${RELEASE_VERSION}"
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+          fi
+
           # Change to repo root for release-please (it needs access to .git and config)
           cd ../..
 
@@ -184,22 +204,22 @@ jobs:
           # Change back to chart directory
           cd ${{ matrix.chart.directory }}
 
-          # Extract the computed version from the trace output
-          # Look for the version in the Chart.yaml diff
-          RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
+          # For stable releases, extract version from release-please output
+          if [[ "${IS_PRERELEASE}" != "true" ]]; then
+            RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
 
-          if [[ -z "${RELEASE_VERSION}" ]]; then
-            # Fallback: try to extract from manifest update
-            RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
-          fi
+            if [[ -z "${RELEASE_VERSION}" ]]; then
+              RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
+            fi
 
-          if [[ -z "${RELEASE_VERSION}" ]]; then
-            echo "::warning::Could not determine release version from release-please dry-run"
-            echo "RELEASE_VERSION_COMPUTED=false" >> $GITHUB_ENV
-          else
-            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
-            echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
-            echo "::notice::Computed release version: ${RELEASE_VERSION}"
+            if [[ -z "${RELEASE_VERSION}" ]]; then
+              echo "::warning::Could not determine release version from release-please dry-run"
+              echo "RELEASE_VERSION_COMPUTED=false" >> $GITHUB_ENV
+            else
+              echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+              echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
+              echo "::notice::Computed release version: ${RELEASE_VERSION}"
+            fi
           fi
 
       - name: Apply Chart.yaml version and changelog from release-please
@@ -335,6 +355,7 @@ jobs:
           echo "Safe OCI tag: ${SAFE_TAG}"
 
           go install github.com/google/go-containerregistry/cmd/crane@latest
+          export PATH="${PATH}:$(go env GOPATH)/bin"
 
           echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
           crane auth login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
