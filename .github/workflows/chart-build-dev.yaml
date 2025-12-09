@@ -19,7 +19,7 @@ on:
       - charts/camunda-platform-*/**
       - "!charts/camunda-platform-*/test/**"
 
-  # For testing on feature branches - runs on PR to validate workflow
+  # TODO: Remove before merging - for testing workflow on feature branch
   pull_request:
     branches:
       - main
@@ -246,31 +246,31 @@ jobs:
           #   - 8.6, 8.7: zeebe, operate, tasklist, identity (separate images)
           #   - 8.8+: orchestration (single camunda image) + management identity
 
-          # Helper function to extract image tag
+          # Use yq to extract image tags reliably
           get_tag() {
-            local component=$1
-            grep -A10 "^${component}:" values.yaml | grep -E '^\s+tag:' | head -1 | awk '{print $2}' | tr -d '"' || echo "N/A"
+            local path=$1
+            yq -r "${path} // \"N/A\"" values.yaml
           }
 
           # Components that exist in all versions
-          IMAGE_CONSOLE=$(get_tag 'console')
-          IMAGE_CONNECTORS=$(get_tag 'connectors')
-          IMAGE_OPTIMIZE=$(get_tag 'optimize')
-          IMAGE_WEBMODELER=$(get_tag 'webModeler')
+          IMAGE_CONSOLE=$(get_tag '.console.image.tag')
+          IMAGE_CONNECTORS=$(get_tag '.connectors.image.tag')
+          IMAGE_OPTIMIZE=$(get_tag '.optimize.image.tag')
+          IMAGE_WEBMODELER=$(get_tag '.webModeler.image.tag')
 
           # Version-specific components
           CAMUNDA_MINOR=$(echo "${{ env.CAMUNDA_VERSION }}" | sed 's/^8\.//')
 
           if [[ ${CAMUNDA_MINOR} -ge 8 ]]; then
             CHART_ARCHITECTURE="orchestration"
-            IMAGE_CAMUNDA=$(get_tag 'orchestration')
-            IMAGE_MGMT_IDENTITY=$(get_tag 'identity')
+            IMAGE_CAMUNDA=$(get_tag '.orchestration.image.tag')
+            IMAGE_MGMT_IDENTITY=$(get_tag '.identity.image.tag')
           else
             CHART_ARCHITECTURE="classic"
-            IMAGE_ZEEBE=$(get_tag 'zeebe')
-            IMAGE_OPERATE=$(get_tag 'operate')
-            IMAGE_TASKLIST=$(get_tag 'tasklist')
-            IMAGE_IDENTITY=$(get_tag 'identity')
+            IMAGE_ZEEBE=$(get_tag '.zeebe.image.tag')
+            IMAGE_OPERATE=$(get_tag '.operate.image.tag')
+            IMAGE_TASKLIST=$(get_tag '.tasklist.image.tag')
+            IMAGE_IDENTITY=$(get_tag '.identity.image.tag')
           fi
 
           if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
