@@ -9,10 +9,6 @@ name: "Chart - Build - Dev"
 #
 # Registry: oci://ghcr.io/camunda/helm/camunda-platform
 #
-# Integration with downstream workflows:
-#   - #4789 (QA): Use version filter like `0.0.0-dev-8.8-*` to find packages
-#   - #4790 (RC): Input dev package version, retag to RC (e.g., 13.4.0-rc1)
-#   - #4709 (Automated RC): Promote dev package instead of rebuilding
 
 on:
   push:
@@ -24,7 +20,6 @@ on:
       - "!charts/camunda-platform-*/test/**"
 
   # For testing on feature branches - runs on PR to validate workflow
-  # TODO: Consider removing after initial testing is complete
   pull_request:
     branches:
       - main
@@ -70,7 +65,7 @@ jobs:
             versions="${{ steps.chart-versions.outputs.active }}"
           fi
 
-          # Build matrix JSON
+          # Build matrix JSON as single line (required for GITHUB_OUTPUT)
           matrix="["
           first=true
           for version in ${versions}; do
@@ -78,14 +73,7 @@ jobs:
               matrix+=","
             fi
             first=false
-            matrix+=$(cat << EOF
-          {
-            "name": "Helm Chart ${version}",
-            "directory": "charts/camunda-platform-${version}",
-            "version": "${version}"
-          }
-          EOF
-          )
+            matrix+="{\"name\":\"Helm Chart ${version}\",\"directory\":\"charts/camunda-platform-${version}\",\"version\":\"${version}\"}"
           done
           matrix+="]"
 
