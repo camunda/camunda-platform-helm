@@ -244,8 +244,6 @@ jobs:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
     steps:
-      - name: Configure curl and wget
-        uses: ./.github/actions/setup-curl
       - name: Info - ℹ️ Print workflow inputs ℹ️
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
@@ -262,6 +260,9 @@ jobs:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
 
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
