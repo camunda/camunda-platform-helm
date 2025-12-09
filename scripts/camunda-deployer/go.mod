@@ -3,7 +3,7 @@ module scripts/camunda-deployer
 go 1.25.0
 
 require (
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	scripts/camunda-core v0.0.0
 )
 
