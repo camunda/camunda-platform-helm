@@ -138,6 +138,117 @@ jobs:
           fi
 
       #
+      # Compute release version using release-please dry-run
+      # This ensures the packaged Chart.yaml has the correct version and changelog
+      # annotations that release-please would compute at release time.
+      #
+      - name: Install release-please CLI
+        if: env.SKIP_BUILD == 'false'
+        run: npm install -g release-please
+
+      - name: Compute release version (release-please dry-run)
+        if: env.SKIP_BUILD == 'false'
+        id: release-please
+        env:
+          RELEASE_PLEASE_CONFIG: .github/config/release-please/release-please-config.json
+          RELEASE_PLEASE_MANIFEST: .github/config/release-please/.release-please-manifest.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Run release-please in dry-run mode to compute:
+          # 1. The next version based on conventional commits
+          # 2. The Chart.yaml changes (version + artifacthub.io/changes annotations)
+
+          # Change to repo root for release-please (it needs access to .git and config)
+          cd ../..
+
+          # Use --trace to get file diffs in output
+          release-please release-pr \
+            --token="${GITHUB_TOKEN}" \
+            --repo-url="${{ github.repository }}" \
+            --target-branch="main" \
+            --path="${{ matrix.chart.directory }}" \
+            --config-file="${RELEASE_PLEASE_CONFIG}" \
+            --manifest-file="${RELEASE_PLEASE_MANIFEST}" \
+            --dry-run \
+            --trace 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
+
+          # Change back to chart directory
+          cd ${{ matrix.chart.directory }}
+
+          # Extract the computed version from the trace output
+          # Look for the version in the Chart.yaml diff
+          RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
+
+          if [[ -z "${RELEASE_VERSION}" ]]; then
+            # Fallback: try to extract from manifest update
+            RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
+          fi
+
+          if [[ -z "${RELEASE_VERSION}" ]]; then
+            echo "::warning::Could not determine release version from release-please dry-run"
+            echo "RELEASE_VERSION_COMPUTED=false" >> $GITHUB_ENV
+          else
+            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+            echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
+            echo "::notice::Computed release version: ${RELEASE_VERSION}"
+          fi
+
+      - name: Apply Chart.yaml version and changelog from release-please
+        if: env.SKIP_BUILD == 'false' && env.RELEASE_VERSION_COMPUTED == 'true'
+        run: |
+          # Extract the Chart.yaml diff from trace output and apply it
+          # The trace contains unified diff format for each file
+
+          echo "Applying release-please computed changes to Chart.yaml..."
+          echo "Release version: ${RELEASE_VERSION}"
+
+          # Update the version field
+          yq -i ".version = \"${RELEASE_VERSION}\"" Chart.yaml
+
+          # Extract and apply the artifacthub.io/changes annotation from trace
+          # The trace output contains the full YAML block for the annotation
+
+          # Parse the changelog entries from trace output
+          # Look for lines between artifacthub.io/changes and the next annotation or end of annotations
+          CHANGELOG_YAML=$(awk '
+            /^\+.*artifacthub.io\/changes:/ { capture=1; next }
+            capture && /^\+/ { 
+              line=$0
+              sub(/^\+[ ]*/, "", line)
+              print line
+            }
+            capture && !/^\+/ { capture=0 }
+          ' release-please-trace.log)
+
+          if [[ -n "${CHANGELOG_YAML}" ]]; then
+            echo "Extracted changelog annotations:"
+            echo "${CHANGELOG_YAML}"
+
+            # Create a temp file with the changelog YAML
+            echo "${CHANGELOG_YAML}" > /tmp/changelog.yaml
+
+            # Update the annotation in Chart.yaml
+            yq -i '.annotations."artifacthub.io/changes" = load_str("/tmp/changelog.yaml")' Chart.yaml
+            echo "Applied artifacthub.io/changes annotations"
+          else
+            echo "::warning::Could not extract changelog annotations from trace output"
+          fi
+
+          echo "Updated Chart.yaml:"
+          head -50 Chart.yaml
+
+      - name: Show computed version info
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          echo "### Version Information"
+          echo "- OCI Tag (safe): ${CHART_VERSION}"
+          if [[ "${RELEASE_VERSION_COMPUTED}" == "true" ]]; then
+            echo "- Release Version (in Chart.yaml): ${RELEASE_VERSION}"
+          else
+            echo "- Release Version: Not computed (will use current Chart.yaml version)"
+          fi
+
+      #
       # Apply release transformations (makes artifact release-ready)
       #
       - name: Remove dev comments
@@ -279,11 +390,18 @@ jobs:
 
           Dev package already exists for this commit.
 
-          - **Version:** \`${{ env.CHART_VERSION }}\`
+          - **OCI Tag:** \`${{ env.CHART_VERSION }}\`
           - **Camunda Version:** \`${{ env.CAMUNDA_VERSION }}\`
 
           EOF
           else
+            # Prepare release version display
+            if [[ "${{ env.RELEASE_VERSION_COMPUTED }}" == "true" ]]; then
+              RELEASE_VERSION_DISPLAY="${{ env.RELEASE_VERSION }}"
+            else
+              RELEASE_VERSION_DISPLAY="(not computed)"
+            fi
+
             # Build summary based on architecture
             if [[ "${CHART_ARCHITECTURE}" == "orchestration" ]]; then
               # 8.8+ with orchestration cluster (single camunda image)
@@ -293,13 +411,17 @@ jobs:
           ### Package Info
 
           | Property | Value |
-          |-------------|-------|
+          |----------|-------|
           | **Registry** | \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\` |
           | **Chart** | \`${{ env.CHART_NAME }}\` |
-          | **Version** | \`${{ env.CHART_VERSION }}\` |
+          | **OCI Tag** | \`${{ env.CHART_VERSION }}\` |
+          | **Release Version** | \`${RELEASE_VERSION_DISPLAY}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
           | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
+
+          > **Immutable Artifact:** The OCI tag is \`0.0.0-dev-*\` for safety, but Chart.yaml inside contains the release version \`${RELEASE_VERSION_DISPLAY}\`.
+          > This package can be promoted to RC and release by retagging only - no rebuild needed.
 
           ### 🐳 Image Versions (from values.yaml)
 
@@ -334,10 +456,14 @@ jobs:
           |----------|-------|
           | **Registry** | \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\` |
           | **Chart** | \`${{ env.CHART_NAME }}\` |
-          | **Version** | \`${{ env.CHART_VERSION }}\` |
+          | **OCI Tag** | \`${{ env.CHART_VERSION }}\` |
+          | **Release Version** | \`${RELEASE_VERSION_DISPLAY}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
           | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
+
+          > **Immutable Artifact:** The OCI tag is \`0.0.0-dev-*\` for safety, but Chart.yaml inside contains the release version \`${RELEASE_VERSION_DISPLAY}\`.
+          > This package can be promoted to RC and release by retagging only - no rebuild needed.
 
           ### 🐳 Image Versions (from values.yaml)
 
