@@ -984,7 +984,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.shortname }}-after-install-${{ matrix.shardIndex }}
+          name: blob-report-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}-after-install-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
           retention-days: 1
 
@@ -1079,7 +1079,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.shortname }}-after-upgrade-${{ matrix.shardIndex }}
+          name: blob-report-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}-after-upgrade-${{ matrix.shardIndex }}
           path: ${{env.ABSOLUTE_TEST_CHART_DIR}}/test/e2e/blob-report
           retention-days: 1
 
@@ -1102,7 +1102,7 @@ jobs:
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           path: all-blob-reports
-          pattern: blob-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.shortname }}-*
+          pattern: blob-report-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}-*
           merge-multiple: true
 
       - name: Merge into HTML Report
@@ -1113,7 +1113,7 @@ jobs:
       - name: Upload HTML report
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: e2e-html-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.shortname }}
+          name: e2e-html-report-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: playwright-report
           retention-days: 14
 
