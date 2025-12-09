@@ -143,7 +143,8 @@ run_playwright_tests() {
   fi
   playwright_rc=$? # <-- capture the exit status BEFORE doing anything else
 
-  if [[ $show_html_report == "true" ]]; then
+  # Only show HTML report locally, never in CI (it blocks waiting for Ctrl+C)
+  if [[ $show_html_report == "true" && "${CI:-false}" != "true" ]]; then
     npx playwright show-report
   fi
 
