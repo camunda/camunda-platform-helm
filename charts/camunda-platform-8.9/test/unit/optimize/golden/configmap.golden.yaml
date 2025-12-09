@@ -14,7 +14,6 @@ metadata:
 apiVersion: v1
 data:
   environment-config.yaml: |
-
     zeebe:
       enabled: true
       partitionCount: 3
@@ -24,7 +23,7 @@ data:
         nodes:
           - host: "camunda-platform-test-elasticsearch"
             httpPort: 9200
-
+    
     spring:
       servlet:
         multipart:
@@ -32,7 +31,7 @@ data:
           max-request-size: "10MB"
       profiles:
         active: "ccsm"
-
+    
     security:
       auth:
         cookie:

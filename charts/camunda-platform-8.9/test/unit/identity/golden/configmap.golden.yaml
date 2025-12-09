@@ -25,7 +25,7 @@ data:
       url: "http://localhost:8084"
       flags:
         multi-tenancy: "false"
-
+    
       authProvider:
         issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
         backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
@@ -168,7 +168,7 @@ data:
               - "/auth/login-callback"
     server:
       port: 8084
-
+    
     spring:
       servlet:
         multipart:
@@ -176,11 +176,11 @@ data:
           max-request-size: "10MB"
       profiles:
         active: keycloak
-
+    
     camunda:
       identity:
         audience: "camunda-identity-resource-server"
     logging:
-      level:
-        ROOT: INFO
-        io.camunda.identity: INFO
+          level:
+            ROOT: INFO
+            io.camunda.identity: INFO
