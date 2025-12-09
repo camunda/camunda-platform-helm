@@ -20,7 +20,7 @@ data:
 
   {{- if .Values.orchestration.configuration }}
   application.yaml: |
-    {{ .Values.orchestration.configuration | indent 4 | trim }}
+    {{ tpl .Values.orchestration.configuration . | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     {{- (include (print $.Template.BasePath "/orchestration/files/_application-unified.yaml") $) | indent 4 }}

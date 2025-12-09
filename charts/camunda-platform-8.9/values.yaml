@@ -3528,10 +3528,6 @@ orchestration:
 
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: |
-    {{/*
-    This file name should start with an underscore to avoid rendering it as a template.
-    It is included (imported) in the ConfigMap.
-    */}}
     spring:
       profiles:
         active: {{ include "orchestration.enabledProfilesWithIdentity" . | quote }}
