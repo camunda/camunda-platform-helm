@@ -245,7 +245,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrl" -}}
   {{- if .Values.global.identity.auth.issuerBackendUrl -}}
-    {{- .Values.global.identity.auth.issuerBackendUrl -}}
+    {{- tpl .Values.global.identity.auth.issuerBackendUrl . -}}
   {{- else -}}
     {{- if .Values.global.identity.keycloak.url -}}
       {{-

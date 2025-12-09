@@ -119,6 +119,9 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 		caseTemplates = templates
 	}
 	output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
+	if err != nil {
+		t.Logf("Error during rendering: %v", err)
+	}
 	if tc.Verifier != nil {
 		tc.Verifier(t, output, err)
 		return
