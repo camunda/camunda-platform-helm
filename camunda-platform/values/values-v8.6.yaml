@@ -25,19 +25,19 @@ operate:
   # https://hub.docker.com/r/camunda/operate/tags
   image:
     repository: camunda/operate
-    tag: 8.6.32
+    tag: 8.6.34
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.6.21
+    tag: 8.6.22
 
 tasklist:
   # https://hub.docker.com/r/camunda/tasklist/tags
   image:
     repository: camunda/tasklist
-    tag: 8.6.32
+    tag: 8.6.34
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
@@ -49,13 +49,13 @@ zeebe:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.32
+    tag: 8.6.34
 
 zeebeGateway:
   # https://hub.docker.com/r/camunda/zeebe/tags
   image:
     repository: camunda/zeebe
-    tag: 8.6.32
+    tag: 8.6.34
 
 #
 # Identity
