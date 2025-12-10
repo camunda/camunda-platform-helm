@@ -1,5 +1,27 @@
 # Changelog
 
+## [13.3.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.3.0...camunda-platform-8.8-13.3.1) (2025-12-10)
+
+
+### Bug Fixes
+
+* apply tpl to issuerBackendUrl ([#4858](https://github.com/camunda/camunda-platform-helm/issues/4858)) ([22b5cd7](https://github.com/camunda/camunda-platform-helm/commit/22b5cd74e7a3e952b17f752541c8233c5cd0f185))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#4846](https://github.com/camunda/camunda-platform-helm/issues/4846)) ([e89a081](https://github.com/camunda/camunda-platform-helm/commit/e89a081f6c53c7b8676917c88c1761d1c07ddc5c))
+* update camunda-platform-digests ([#4856](https://github.com/camunda/camunda-platform-helm/issues/4856)) ([1994d36](https://github.com/camunda/camunda-platform-helm/commit/1994d369ec157bf0b474c8e83a59a71ddf8e7ba8))
+* update camunda-platform-images (patch) ([#4848](https://github.com/camunda/camunda-platform-helm/issues/4848)) ([bcc02e8](https://github.com/camunda/camunda-platform-helm/commit/bcc02e832939bfcb6fa643befa11ef0701a883f7))
+* update camunda-platform-images (patch) ([#4874](https://github.com/camunda/camunda-platform-helm/issues/4874)) ([3099888](https://github.com/camunda/camunda-platform-helm/commit/30998888f89795451f6e8e861b41e50c41707804))
+* update camunda/optimize docker tag to v8.8.3 ([#4875](https://github.com/camunda/camunda-platform-helm/issues/4875)) ([a76574c](https://github.com/camunda/camunda-platform-helm/commit/a76574c5b23e3f3d5a20df03fb06bb799d2409f6))
+* update patch-updates (patch) ([#4860](https://github.com/camunda/camunda-platform-helm/issues/4860)) ([b059be6](https://github.com/camunda/camunda-platform-helm/commit/b059be61080ee33c8d8ee9cfa5f0f4d2f4cdaf35))
+
+
+### Refactors
+
+* remove unused identity redirect-url ([#4853](https://github.com/camunda/camunda-platform-helm/issues/4853)) ([90c61e6](https://github.com/camunda/camunda-platform-helm/commit/90c61e66d4676b4ccadee71e6a593ab69df7f6d9))
+
 ## [13.3.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.2.2...camunda-platform-8.8-13.3.0) (2025-12-03)
 
 
