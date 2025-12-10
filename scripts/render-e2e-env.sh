@@ -140,23 +140,17 @@ resolve_identity_passwords() {
   # Check if vault-mapped-secrets has the identity password key
   local vault_firstuser_pw
   vault_firstuser_pw=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
-  
-  if [[ -n "$vault_firstuser_pw" ]]; then
-    log "DEBUG: Using vault-mapped-secrets"
-    DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD="$vault_firstuser_pw"
-    DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
-    DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
-  else
-    log "DEBUG: Using identity deployment env vars"
-    DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_FIRSTUSER_PASSWORD")"
-    DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_SECONDUSER_PASSWORD")"
-    DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_THIRDUSER_PASSWORD")"
-  fi
+  log "DEBUG: Using identity deployment env vars"
+  DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_FIRSTUSER_PASSWORD")"
+  DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_SECONDUSER_PASSWORD")"
+  DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_THIRDUSER_PASSWORD")"
+  DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET="$(resolve_env_password "$namespace" "VALUES_TEST_CLIENT_SECRET")"
   
   # Mask sensitive values in CI logs (these should go to stdout for GitHub Actions)
   echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
   echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
   echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
+  echo "::add-mask::$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
 }
 
 render_env_file() {
@@ -215,14 +209,14 @@ render_env_file() {
     echo "KEYCLOAK_URL=$keycloak_protocol://$keycloak_host"
     echo "KEYCLOAK_REALM=${keycloak_realm}"
     echo "PLAYWRIGHT_BASE_URL=https://$hostname"
-    echo "CLUSTER_ENDPOINT=https://$hostname:26501"
+    echo "CLUSTER_ENDPOINT=http://integration-zeebe-gateway:26500"
     echo "CLUSTER_VERSION=8"
     echo "MINOR_VERSION=$minor_version_value"
     echo "DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
     echo "DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
     echo "DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
     echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD=$KEYCLOAK_SETUP_PASSWORD"
-    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=$KEYCLOAK_CLIENTS_PASSWORD"
+    echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
     echo "OAUTH_URL=$tokenUrl"
     echo "CI=${is_ci}"
     echo "CLUSTER_NAME=integration"

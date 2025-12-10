@@ -15,6 +15,7 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
 	"scripts/vault-secret-mapper/pkg/mapper"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -54,6 +55,160 @@ type ScenarioResult struct {
 
 // envMutex protects environment variable access during parallel deployments.
 var envMutex sync.Mutex
+
+// processCommonValues finds and processes common values files from the common/ sibling directory.
+// It processes each file through values.Process() to apply env var substitution and writes to outputDir.
+// Returns the list of processed file paths in the output directory.
+func processCommonValues(scenarioPath, outputDir, envFile string) ([]string, error) {
+	// Common directory is a sibling to the scenario directory
+	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
+
+	logging.Logger.Debug().
+		Str("scenarioPath", scenarioPath).
+		Str("commonDir", commonDir).
+		Str("outputDir", outputDir).
+		Msg("🔍 [processCommonValues] looking for common values directory")
+
+	info, err := os.Stat(commonDir)
+	if err != nil || !info.IsDir() {
+		logging.Logger.Debug().
+			Str("commonDir", commonDir).
+			Msg("🔍 [processCommonValues] common directory not found - skipping")
+		return nil, nil
+	}
+
+	// Collect common values files in order
+	var sourceFiles []string
+
+	// First, add predefined common files in order (if they exist)
+	for _, fileName := range deployer.CommonValuesFiles {
+		p := filepath.Join(commonDir, fileName)
+		if _, err := os.Stat(p); err == nil {
+			logging.Logger.Debug().
+				Str("file", p).
+				Msg("🔍 [processCommonValues] found predefined common values file")
+			sourceFiles = append(sourceFiles, p)
+		}
+	}
+
+	// Then, discover any additional values-*.yaml files not in the predefined list
+	entries, err := os.ReadDir(commonDir)
+	if err != nil {
+		logging.Logger.Debug().
+			Err(err).
+			Str("commonDir", commonDir).
+			Msg("⚠️ [processCommonValues] failed to read common directory")
+		return sourceFiles, nil
+	}
+
+	predefinedSet := make(map[string]bool)
+	for _, f := range deployer.CommonValuesFiles {
+		predefinedSet[f] = true
+	}
+
+	var additionalFiles []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if predefinedSet[name] {
+			continue
+		}
+		if strings.HasPrefix(name, "values-") && strings.HasSuffix(name, ".yaml") {
+			p := filepath.Join(commonDir, name)
+			logging.Logger.Debug().
+				Str("file", p).
+				Msg("🔍 [processCommonValues] found additional common values file")
+			additionalFiles = append(additionalFiles, p)
+		}
+	}
+
+	// Sort additional files for deterministic ordering
+	sort.Strings(additionalFiles)
+	sourceFiles = append(sourceFiles, additionalFiles...)
+
+	if len(sourceFiles) == 0 {
+		logging.Logger.Debug().
+			Str("commonDir", commonDir).
+			Msg("🔍 [processCommonValues] no common values files found")
+		return nil, nil
+	}
+
+	// Process each common file
+	var processedFiles []string
+	for _, srcFile := range sourceFiles {
+		logging.Logger.Debug().
+			Str("source", srcFile).
+			Str("outputDir", outputDir).
+			Msg("⚙️ [processCommonValues] processing common values file")
+
+		opts := values.Options{
+			OutputDir: outputDir,
+			EnvFile:   envFile,
+		}
+		if opts.EnvFile == "" {
+			opts.EnvFile = ".env"
+		}
+
+		outputPath, _, err := values.Process(srcFile, opts)
+		if err != nil {
+			logging.Logger.Debug().
+				Err(err).
+				Str("source", srcFile).
+				Msg("❌ [processCommonValues] failed to process common values file")
+			return nil, fmt.Errorf("failed to process common values file %q: %w", srcFile, err)
+		}
+
+		logging.Logger.Debug().
+			Str("source", srcFile).
+			Str("output", outputPath).
+			Msg("✅ [processCommonValues] processed common values file")
+		processedFiles = append(processedFiles, outputPath)
+	}
+
+	logging.Logger.Debug().
+		Strs("processedFiles", processedFiles).
+		Int("count", len(processedFiles)).
+		Msg("✅ [processCommonValues] all common values files processed")
+
+	return processedFiles, nil
+}
+
+// redactDeployOpts returns a copy of deploy options with sensitive fields redacted for logging.
+func redactDeployOpts(opts types.Options) map[string]interface{} {
+	redacted := "[REDACTED]"
+	return map[string]interface{}{
+		"chart":                  opts.Chart,
+		"chartPath":              opts.ChartPath,
+		"version":                opts.Version,
+		"releaseName":            opts.ReleaseName,
+		"namespace":              opts.Namespace,
+		"timeout":                opts.Timeout.String(),
+		"wait":                   opts.Wait,
+		"atomic":                 opts.Atomic,
+		"ingressHost":            opts.IngressHost,
+		"valuesFiles":            opts.ValuesFiles,
+		"identifier":             opts.Identifier,
+		"ttl":                    opts.TTL,
+		"ensureDockerRegistry":   opts.EnsureDockerRegistry,
+		"dockerRegistryUsername": opts.DockerRegistryUsername,
+		"dockerRegistryPassword": func() string { if opts.DockerRegistryPassword != "" { return redacted }; return "" }(),
+		"skipDockerLogin":        opts.SkipDockerLogin,
+		"skipDependencyUpdate":   opts.SkipDependencyUpdate,
+		"applyIntegrationCreds":  opts.ApplyIntegrationCreds,
+		"externalSecretsEnabled": opts.ExternalSecretsEnabled,
+		"platform":               opts.Platform,
+		"repoRoot":               opts.RepoRoot,
+		"loadKeycloakRealm":      opts.LoadKeycloakRealm,
+		"keycloakRealmName":      opts.KeycloakRealmName,
+		"vaultSecretPath":        opts.VaultSecretPath,
+		"renderTemplates":        opts.RenderTemplates,
+		"renderOutputDir":        opts.RenderOutputDir,
+		"includeCRDs":            opts.IncludeCRDs,
+		"ciMetadata":             opts.CIMetadata,
+	}
+}
 
 // generateRandomSuffix creates an 8-character random string.
 func generateRandomSuffix() string {
@@ -365,6 +520,38 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *Scena
 
 // deployScenario performs deployment for a single scenario.
 func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) *ScenarioResult {
+	startTime := time.Now()
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("namespace", scenarioCtx.Namespace).
+		Str("release", scenarioCtx.Release).
+		Str("ingressHost", scenarioCtx.IngressHost).
+		Str("keycloakRealm", scenarioCtx.KeycloakRealm).
+		Str("optimizeIndexPrefix", scenarioCtx.OptimizeIndexPrefix).
+		Str("orchestrationIndexPrefix", scenarioCtx.OrchestrationIndexPrefix).
+		Str("tasklistIndexPrefix", scenarioCtx.TasklistIndexPrefix).
+		Str("operateIndexPrefix", scenarioCtx.OperateIndexPrefix).
+		Msg("🚀 [deployScenario] ENTRY - received scenario context")
+
+	logging.Logger.Debug().
+		Str("chartPath", flags.ChartPath).
+		Str("chart", flags.Chart).
+		Str("chartVersion", flags.ChartVersion).
+		Str("scenarioPath", flags.ScenarioPath).
+		Str("auth", flags.Auth).
+		Str("flow", flags.Flow).
+		Int("timeout", flags.Timeout).
+		Bool("deleteNamespaceFirst", flags.DeleteNamespaceFirst).
+		Bool("autoGenerateSecrets", flags.AutoGenerateSecrets).
+		Bool("externalSecrets", flags.ExternalSecrets).
+		Bool("renderTemplates", flags.RenderTemplates).
+		Bool("skipDependencyUpdate", flags.SkipDependencyUpdate).
+		Str("keycloakHost", flags.KeycloakHost).
+		Str("keycloakProtocol", flags.KeycloakProtocol).
+		Str("vaultSecretMapping", flags.VaultSecretMapping).
+		Strs("extraValues", flags.ExtraValues).
+		Msg("🔧 [deployScenario] runtime flags configuration")
+
 	result := &ScenarioResult{
 		Scenario:                 scenarioCtx.ScenarioName,
 		Namespace:                scenarioCtx.Namespace,
@@ -374,6 +561,9 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 		OptimizeIndexPrefix:      scenarioCtx.OptimizeIndexPrefix,
 		OrchestrationIndexPrefix: scenarioCtx.OrchestrationIndexPrefix,
 	}
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("📦 [deployScenario] initialized result struct")
 
 	logging.Logger.Info().
 		Str("scenario", scenarioCtx.ScenarioName).
@@ -385,30 +575,55 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 	var realmName, optimizePrefix, orchestrationPrefix string
 
 	realmName = scenarioCtx.KeycloakRealm
+	logging.Logger.Debug().Str("realm", realmName).Str("scenario", scenarioCtx.ScenarioName).Msg("🔑 [deployScenario] resolved Keycloak realm name")
 	logging.Logger.Info().Str("realm", realmName).Str("scenario", scenarioCtx.ScenarioName).Msg("Using Keycloak realm")
 
 	optimizePrefix = scenarioCtx.OptimizeIndexPrefix
+	logging.Logger.Debug().Str("optimizePrefix", optimizePrefix).Str("scenario", scenarioCtx.ScenarioName).Msg("📊 [deployScenario] resolved Optimize index prefix")
 	logging.Logger.Info().Str("optimize", optimizePrefix).Str("scenario", scenarioCtx.ScenarioName).Msg("Using Optimize index prefix")
 
 	orchestrationPrefix = scenarioCtx.OrchestrationIndexPrefix
+	logging.Logger.Debug().Str("orchestrationPrefix", orchestrationPrefix).Str("scenario", scenarioCtx.ScenarioName).Msg("🎭 [deployScenario] resolved Orchestration index prefix")
 	logging.Logger.Info().Str("orchestration", orchestrationPrefix).Str("scenario", scenarioCtx.ScenarioName).Msg("Using Orchestration index prefix")
 
 	// Create temp directory for values
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("pattern", fmt.Sprintf("camunda-values-%s-*", scenarioCtx.ScenarioName)).
+		Msg("📁 [deployScenario] creating temporary directory for values files")
+
 	tempDir, err := os.MkdirTemp("", fmt.Sprintf("camunda-values-%s-*", scenarioCtx.ScenarioName))
 	if err != nil {
+		logging.Logger.Debug().
+			Err(err).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("❌ [deployScenario] FAILED to create temp directory")
 		result.Error = err
 		return result
 	}
 	scenarioCtx.TempDir = tempDir
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		logging.Logger.Debug().
+			Str("dir", tempDir).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("🧹 [deployScenario] cleaning up temporary directory")
+		os.RemoveAll(tempDir)
+	}()
+	logging.Logger.Debug().Str("dir", tempDir).Str("scenario", scenarioCtx.ScenarioName).Msg("✅ [deployScenario] temp directory created successfully")
 	logging.Logger.Info().Str("dir", tempDir).Str("scenario", scenarioCtx.ScenarioName).Msg("Created temporary values directory")
 
 	// Thread-safe environment variable manipulation
 	// Lock for values processing phase only
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("🔒 [deployScenario] acquiring environment mutex for values processing")
 	envMutex.Lock()
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("✅ [deployScenario] environment mutex acquired")
 
 	// Set environment variables for prepare-helm-values
-	originalEnv := captureEnv([]string{
+	envVarsToCapture := []string{
 		"KEYCLOAK_REALM",
 		"OPTIMIZE_INDEX_PREFIX",
 		"ORCHESTRATION_INDEX_PREFIX",
@@ -416,27 +631,59 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 		"OPERATE_INDEX_PREFIX",
 		"CAMUNDA_HOSTNAME",
 		"FLOW",
-	})
+	}
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Strs("envVars", envVarsToCapture).
+		Msg("📸 [deployScenario] capturing original environment variables")
+	originalEnv := captureEnv(envVarsToCapture)
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Int("capturedCount", len(originalEnv)).
+		Msg("✅ [deployScenario] original environment captured")
 
 	// Ensure environment is restored and mutex is unlocked even on error
 	unlocked := false
 	defer func() {
 		if !unlocked {
+			logging.Logger.Debug().
+				Str("scenario", scenarioCtx.ScenarioName).
+				Msg("🔄 [deployScenario] defer: restoring environment and releasing mutex")
 			restoreEnv(originalEnv)
 			envMutex.Unlock()
 		}
 	}()
 
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("KEYCLOAK_REALM", realmName).
+		Str("OPTIMIZE_INDEX_PREFIX", optimizePrefix).
+		Str("ORCHESTRATION_INDEX_PREFIX", orchestrationPrefix).
+		Str("FLOW", flags.Flow).
+		Msg("🌍 [deployScenario] setting core environment variables")
+
 	os.Setenv("KEYCLOAK_REALM", realmName)
 	os.Setenv("OPTIMIZE_INDEX_PREFIX", optimizePrefix)
 	os.Setenv("ORCHESTRATION_INDEX_PREFIX", orchestrationPrefix)
 	if scenarioCtx.TasklistIndexPrefix != "" {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("TASKLIST_INDEX_PREFIX", scenarioCtx.TasklistIndexPrefix).
+			Msg("🌍 [deployScenario] setting TASKLIST_INDEX_PREFIX")
 		os.Setenv("TASKLIST_INDEX_PREFIX", scenarioCtx.TasklistIndexPrefix)
 	}
 	if scenarioCtx.OperateIndexPrefix != "" {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("OPERATE_INDEX_PREFIX", scenarioCtx.OperateIndexPrefix).
+			Msg("🌍 [deployScenario] setting OPERATE_INDEX_PREFIX")
 		os.Setenv("OPERATE_INDEX_PREFIX", scenarioCtx.OperateIndexPrefix)
 	}
 	if scenarioCtx.IngressHost != "" {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("CAMUNDA_HOSTNAME", scenarioCtx.IngressHost).
+			Msg("🌍 [deployScenario] setting CAMUNDA_HOSTNAME")
 		os.Setenv("CAMUNDA_HOSTNAME", scenarioCtx.IngressHost)
 	}
 	os.Setenv("FLOW", flags.Flow)
@@ -446,12 +693,26 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 		kcVersionSafe := "24_9_0"
 		kcHostVar := fmt.Sprintf("KEYCLOAK_EXT_HOST_%s", kcVersionSafe)
 		kcProtoVar := fmt.Sprintf("KEYCLOAK_EXT_PROTOCOL_%s", kcVersionSafe)
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str(kcHostVar, flags.KeycloakHost).
+			Str(kcProtoVar, flags.KeycloakProtocol).
+			Msg("🔐 [deployScenario] setting external Keycloak environment variables")
 		os.Setenv(kcHostVar, flags.KeycloakHost)
 		os.Setenv(kcProtoVar, flags.KeycloakProtocol)
 	}
 
 	// Process values files
 	processValues := func(scen string) error {
+		logging.Logger.Debug().
+			Str("scenario", scen).
+			Str("chartPath", flags.ChartPath).
+			Str("scenarioDir", flags.ScenarioPath).
+			Str("outputDir", tempDir).
+			Bool("interactive", flags.Interactive).
+			Str("envFile", flags.EnvFile).
+			Msg("📝 [deployScenario.processValues] building values options")
+
 		opts := values.Options{
 			ChartPath:   flags.ChartPath,
 			Scenario:    scen,
@@ -462,78 +723,234 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 		}
 		if opts.EnvFile == "" {
 			opts.EnvFile = ".env"
+			logging.Logger.Debug().
+				Str("scenario", scen).
+				Msg("📝 [deployScenario.processValues] using default .env file")
 		}
 
+		logging.Logger.Debug().
+			Str("scenario", scen).
+			Msg("🔍 [deployScenario.processValues] resolving values file")
 		file, err := values.ResolveValuesFile(opts)
 		if err != nil {
+			logging.Logger.Debug().
+				Err(err).
+				Str("scenario", scen).
+				Msg("❌ [deployScenario.processValues] FAILED to resolve values file")
 			// Enhance error with helpful context about available scenarios
 			return enhanceScenarioError(err, scen, flags.ScenarioPath, flags.ChartPath)
 		}
+		logging.Logger.Debug().
+			Str("scenario", scen).
+			Str("resolvedFile", file).
+			Msg("✅ [deployScenario.processValues] values file resolved")
+
+		logging.Logger.Debug().
+			Str("scenario", scen).
+			Str("file", file).
+			Msg("⚙️ [deployScenario.processValues] processing values file")
 		_, _, err = values.Process(file, opts)
 		if err != nil {
+			logging.Logger.Debug().
+				Err(err).
+				Str("scenario", scen).
+				Str("file", file).
+				Msg("❌ [deployScenario.processValues] FAILED to process values file")
 			return fmt.Errorf("failed to process scenario %q: %w", scen, err)
 		}
+		logging.Logger.Debug().
+			Str("scenario", scen).
+			Str("file", file).
+			Msg("✅ [deployScenario.processValues] values file processed successfully")
 		return nil
+	}
+
+	// Process common values files first (base layer)
+	logging.Logger.Debug().
+		Str("scenarioPath", flags.ScenarioPath).
+		Str("tempDir", tempDir).
+		Msg("📋 [deployScenario] processing common values files")
+	processedCommonFiles, err := processCommonValues(flags.ScenarioPath, tempDir, flags.EnvFile)
+	if err != nil {
+		logging.Logger.Debug().
+			Err(err).
+			Msg("❌ [deployScenario] FAILED to process common values files")
+		result.Error = fmt.Errorf("failed to process common values: %w", err)
+		return result
+	}
+	if len(processedCommonFiles) > 0 {
+		logging.Logger.Debug().
+			Strs("processedCommonFiles", processedCommonFiles).
+			Int("count", len(processedCommonFiles)).
+			Msg("✅ [deployScenario] common values files processed")
+	} else {
+		logging.Logger.Debug().
+			Msg("ℹ️ [deployScenario] no common values files found")
 	}
 
 	// Process auth scenario if different from main scenario
 	if flags.Auth != "" && flags.Auth != scenarioCtx.ScenarioName {
+		logging.Logger.Debug().
+			Str("auth", flags.Auth).
+			Str("mainScenario", scenarioCtx.ScenarioName).
+			Msg("🔐 [deployScenario] auth scenario differs from main - processing auth first")
 		logging.Logger.Info().Str("auth", flags.Auth).Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing auth scenario")
 		if err := processValues(flags.Auth); err != nil {
+			logging.Logger.Debug().
+				Err(err).
+				Str("auth", flags.Auth).
+				Msg("❌ [deployScenario] FAILED to prepare auth scenario")
 			result.Error = fmt.Errorf("failed to prepare auth scenario: %w", err)
 			return result
 		}
+		logging.Logger.Debug().
+			Str("auth", flags.Auth).
+			Msg("✅ [deployScenario] auth scenario prepared successfully")
+	} else {
+		logging.Logger.Debug().
+			Str("auth", flags.Auth).
+			Str("mainScenario", scenarioCtx.ScenarioName).
+			Msg("ℹ️ [deployScenario] skipping separate auth processing (empty or same as main)")
 	}
 
 	// Process main scenario
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("📋 [deployScenario] processing main scenario values")
 	logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing main scenario")
 	if err := processValues(scenarioCtx.ScenarioName); err != nil {
+		logging.Logger.Debug().
+			Err(err).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("❌ [deployScenario] FAILED to prepare main scenario")
 		result.Error = fmt.Errorf("failed to prepare main scenario: %w", err)
 		return result
 	}
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("✅ [deployScenario] main scenario prepared successfully")
 
 	// Auto-generate secrets if requested
 	if flags.AutoGenerateSecrets {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("envFile", flags.EnvFile).
+			Msg("🔑 [deployScenario] auto-generating test secrets")
 		if err := generateTestSecrets(flags.EnvFile); err != nil {
+			logging.Logger.Debug().
+				Err(err).
+				Str("scenario", scenarioCtx.ScenarioName).
+				Msg("❌ [deployScenario] FAILED to generate test secrets")
 			result.Error = err
 			return result
 		}
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("✅ [deployScenario] test secrets generated successfully")
+	} else {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("ℹ️ [deployScenario] skipping auto-generate secrets (not requested)")
 	}
 
 	// Generate vault secrets if mapping is provided
 	var vaultSecretPath string
-	if flags.VaultSecretMapping != "" || flags.AutoGenerateSecrets {
+	if flags.AutoGenerateSecrets {
 		vaultSecretPath = filepath.Join(tempDir, "vault-mapped-secrets.yaml")
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("vaultSecretPath", vaultSecretPath).
+			Msg("🗄️ [deployScenario] preparing vault secrets generation")
 		logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Generating vault secrets")
 		mapping := flags.VaultSecretMapping
 		// If auto-generating secrets, use a default mapping if none provided
 		if mapping == "" {
 			mapping = os.Getenv("vault_secret_mapping")
+			logging.Logger.Debug().
+				Str("scenario", scenarioCtx.ScenarioName).
+				Str("mapping", mapping).
+				Msg("🗄️ [deployScenario] using vault_secret_mapping from environment")
+		} else {
+			logging.Logger.Debug().
+				Str("scenario", scenarioCtx.ScenarioName).
+				Str("mapping", mapping).
+				Msg("🗄️ [deployScenario] using vault_secret_mapping from flags")
 		}
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("mapping", mapping).
+			Str("outputPath", vaultSecretPath).
+			Msg("⚙️ [deployScenario] calling mapper.Generate")
 		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath); err != nil {
+			logging.Logger.Debug().
+				Err(err).
+				Str("scenario", scenarioCtx.ScenarioName).
+				Str("mapping", mapping).
+				Msg("❌ [deployScenario] FAILED to generate vault secrets")
 			result.Error = fmt.Errorf("failed to generate vault secrets: %w", err)
 			return result
 		}
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("vaultSecretPath", vaultSecretPath).
+			Msg("✅ [deployScenario] vault secrets generated successfully")
 	}
 
 	// Build values files list
-	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues)
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("tempDir", tempDir).
+		Str("auth", flags.Auth).
+		Strs("extraValues", flags.ExtraValues).
+		Strs("processedCommonFiles", processedCommonFiles).
+		Msg("📋 [deployScenario] building values files list")
+	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
 	if err != nil {
+		logging.Logger.Debug().
+			Err(err).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("❌ [deployScenario] FAILED to build values list")
 		result.Error = err
 		return result
 	}
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Strs("valuesFiles", vals).
+		Int("count", len(vals)).
+		Msg("✅ [deployScenario] values files list built successfully")
 
 	// Restore environment and unlock mutex before deployment
 	// This allows other scenarios to proceed with their env setup
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("🔓 [deployScenario] restoring environment and releasing mutex before deployment")
 	restoreEnv(originalEnv)
 	envMutex.Unlock()
 	unlocked = true // Mark as unlocked to prevent defer from unlocking again
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("✅ [deployScenario] environment restored and mutex released")
 
 	// Determine timeout duration from flags (default to 5 minutes if not set)
 	timeoutMinutes := flags.Timeout
 	if timeoutMinutes <= 0 {
 		timeoutMinutes = 5
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Int("defaultTimeout", timeoutMinutes).
+			Msg("⏱️ [deployScenario] using default timeout (5 minutes)")
+	} else {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Int("timeout", timeoutMinutes).
+			Msg("⏱️ [deployScenario] using configured timeout")
 	}
+
+	identifier := fmt.Sprintf("%s-%s-%s", scenarioCtx.Release, scenarioCtx.ScenarioName, time.Now().Format("20060102150405"))
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("identifier", identifier).
+		Msg("🏷️ [deployScenario] generated deployment identifier")
 
 	// Perform deployment
 	deployOpts := types.Options{
@@ -553,7 +970,7 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 		DockerRegistryPassword: flags.DockerPassword,
 		Platform:               flags.Platform,
 		RepoRoot:               flags.RepoRoot,
-		Identifier:             fmt.Sprintf("%s-%s-%s", scenarioCtx.Release, scenarioCtx.ScenarioName, time.Now().Format("20060102150405")),
+		Identifier:             identifier,
 		TTL:                    "30m",
 		LoadKeycloakRealm:      true,
 		KeycloakRealmName:      realmName,
@@ -567,26 +984,94 @@ func deployScenario(ctx context.Context, scenarioCtx *ScenarioContext, flags *co
 		VaultSecretPath:       vaultSecretPath,
 	}
 
+	// Log deployment options (redact sensitive fields)
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Interface("deployOpts", redactDeployOpts(deployOpts)).
+		Msg("🚀 [deployScenario] deployment options configured")
+
 	// Delete namespace first if requested
 	if flags.DeleteNamespaceFirst {
+		logging.Logger.Debug().
+			Str("namespace", scenarioCtx.Namespace).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("🗑️ [deployScenario] namespace deletion requested - initiating cleanup")
 		logging.Logger.Info().Str("namespace", scenarioCtx.Namespace).Str("scenario", scenarioCtx.ScenarioName).Msg("Deleting namespace prior to deployment as requested")
 		if err := deleteNamespace(ctx, scenarioCtx.Namespace); err != nil {
+			logging.Logger.Debug().
+				Err(err).
+				Str("namespace", scenarioCtx.Namespace).
+				Str("scenario", scenarioCtx.ScenarioName).
+				Msg("❌ [deployScenario] FAILED to delete namespace")
 			result.Error = fmt.Errorf("failed to delete namespace %q: %w", scenarioCtx.Namespace, err)
 			return result
 		}
+		logging.Logger.Debug().
+			Str("namespace", scenarioCtx.Namespace).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("✅ [deployScenario] namespace deleted successfully")
+	} else {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("ℹ️ [deployScenario] skipping namespace deletion (not requested)")
 	}
 
 	// Execute deployment
+	deployStartTime := time.Now()
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("namespace", scenarioCtx.Namespace).
+		Str("release", scenarioCtx.Release).
+		Time("startTime", deployStartTime).
+		Msg("🚀 [deployScenario] initiating helm deployment")
+
 	if err := deployer.Deploy(ctx, deployOpts); err != nil {
+		deployDuration := time.Since(deployStartTime)
+		logging.Logger.Debug().
+			Err(err).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("namespace", scenarioCtx.Namespace).
+			Dur("deployDuration", deployDuration).
+			Msg("❌ [deployScenario] DEPLOYMENT FAILED")
 		result.Error = err
 		return result
 	}
 
+	deployDuration := time.Since(deployStartTime)
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("namespace", scenarioCtx.Namespace).
+		Dur("deployDuration", deployDuration).
+		Msg("✅ [deployScenario] helm deployment completed successfully")
+
 	// Capture credentials from environment
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Msg("🔑 [deployScenario] capturing credentials from environment")
+
 	result.FirstUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")
 	result.SecondUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")
 	result.ThirdUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
 	result.KeycloakClientsSecret = os.Getenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET")
+
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Bool("hasFirstUserPassword", result.FirstUserPassword != "").
+		Bool("hasSecondUserPassword", result.SecondUserPassword != "").
+		Bool("hasThirdUserPassword", result.ThirdUserPassword != "").
+		Bool("hasKeycloakClientsSecret", result.KeycloakClientsSecret != "").
+		Msg("🔑 [deployScenario] credentials captured")
+
+	totalDuration := time.Since(startTime)
+	logging.Logger.Debug().
+		Str("scenario", scenarioCtx.ScenarioName).
+		Str("namespace", scenarioCtx.Namespace).
+		Str("release", scenarioCtx.Release).
+		Str("ingressHost", scenarioCtx.IngressHost).
+		Str("keycloakRealm", result.KeycloakRealm).
+		Dur("totalDuration", totalDuration).
+		Dur("deployDuration", deployDuration).
+		Msg("🎉 [deployScenario] EXIT - scenario deployment completed successfully")
 
 	logging.Logger.Info().
 		Str("scenario", scenarioCtx.ScenarioName).

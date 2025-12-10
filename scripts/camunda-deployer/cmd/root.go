@@ -88,7 +88,8 @@ Examples:
 			ctx = context.Background()
 		}
 		
-		values, err := deployer.BuildValuesList(scenarioDir, splitCSV(scenarioCSV), auth, false, false, nil)
+		// Pass nil for commonFiles to let BuildValuesList discover common files from ../common/
+		values, err := deployer.BuildValuesList(scenarioDir, splitCSV(scenarioCSV), auth, false, false, nil, nil)
 		if err != nil {
 			return err
 		}

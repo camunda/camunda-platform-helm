@@ -1,9 +1,2 @@
 elasticsearch:
   maxUnavailable: 0
-
-connectors:
-  env:
-    - name: username
-      value: username
-    - name: password
-      value: password
