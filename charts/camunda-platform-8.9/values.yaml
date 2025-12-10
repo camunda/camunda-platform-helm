@@ -259,13 +259,13 @@ global:
         ## @param global.opensearch.auth.secret.existingSecretKey defines the key within the existing secret object.
         existingSecretKey: ""
     ## @extra global.opensearch.url Configuration to configure opensearch url
-    ## @param global.opensearch.url.protocol defines the external opensearch access protocol
-    ## @param global.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
-    ## @param global.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
+    ## @param global.opensearch.url.protocol defines the opensearch access protocol.
+    ## @param global.opensearch.url.host OpenSearch.host defines the opensearch host, ideally the service name inside the namespace
+    ## @param global.opensearch.url.port OpenSearch.port defines the opensearch port, under which opensearch can be accessed
     url:
-      protocol: https
-      host: ""
-      port: 443
+      protocol: http
+      host: "{{ .Release.Name }}-opensearch"
+      port: 9200
     ## @param global.opensearch.clusterName defines the name of the OpenSearch cluster.
     clusterName: "opensearch"
     ## @param global.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
@@ -3340,6 +3340,66 @@ elasticsearch:
     image:
       ## @param elasticsearch.copyTlsCerts.image.repository
       repository: bitnamilegacy/os-shell
+
+###########################################################################
+#######
+#     # #####  ###### #    #  ####  ######   ##   #####   ####  #    #
+#     # #    # #      ##   # #      #       #  #  #    # #    # #    #
+#     # #####  #####  # #  #  ####  #####  #    # #    # #      ######
+#     # #      #      #  # #      # #      ###### #####  #      #    #
+#     # #      #      #   ## #    # #      #    # #   #  #    # #    #
+####### #      ###### #    #  ####  ###### #    # #    #  ####  #    #
+###########################################################################
+
+## @section OpenSearch Parameters
+
+## @extra opensearch
+opensearch:
+  ## @param opensearch.enabled
+  enabled: false
+  ## @param nameOverride String to partially override common.names.fullname
+  nameOverride: ""
+  ## @param fullnameOverride String to fully override common.names.fullname
+  fullnameOverride: ""
+  image:
+    ## @param opensearch.image.repository
+    repository: bitnamilegacy/opensearch
+    ## @param opensearch.image.tag
+    ## https://hub.docker.com/r/bitnamilegacy/opensearch/tags
+    tag: 2.17.0
+    ## @param opensearch.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+    digest: ""
+  master:
+    ## @param opensearch.master.podAntiAffinityPreset defines Pod anti-affinity preset. Ignored if master.affinity is set
+    podAntiAffinityPreset: hard
+    containerSecurityContext:
+      ## @param opensearch.master.containerSecurityContext.readOnlyRootFilesystem
+      readOnlyRootFilesystem: true
+    ## By default, deploys 2 x master nodes, 2 x data nodes, 2 x ingest nodes and 2 x coordinating nodes for a total of 8 nodes
+    ## Override by setting `masterOnly: False` and setting `extraRoles` as necessary (available roles are `data`, `ingest`, `coordinating`, `remote_cluster_client`)
+    ## @param opensearch.master.masterOnly
+    masterOnly: true
+    extraRoles: []
+    ## @param opensearch.master.heapSize
+    heapSize: 1024m
+    persistence:
+      ## @param opensearch.master.persistence.size
+      size: 64Gi
+    ## @param master.resources Set container requests and limits for different resources like CPU or memory
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+  volumePermissions:
+    image:
+      ## @param opensearch.volumePermissions.image.repository
+      repository: bitnamilegacy/os-shell
+  sysctlImage:
+    ## @param opensearch.sysctlImage.repository
+    repository: bitnamilegacy/os-shell
 
 #####################################################################
 ######
