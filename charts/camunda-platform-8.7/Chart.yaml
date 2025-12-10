@@ -72,5 +72,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: changed
+      description: "Remove unused identity redirect-url"
     - kind: fixed
-      description: "Add back zeebe secret referenced as string"
+      description: "Apply tpl to issuerBackendUrl"
