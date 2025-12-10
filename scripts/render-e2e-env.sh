@@ -51,6 +51,13 @@ resolve_minor_version_from_identity() {
   fi
   
   if [[ -n "$version_label" ]]; then
+    # Handle SNAPSHOT version format
+    if [[ "$version_label" == "SNAPSHOT" ]]; then
+      log "DEBUG: Resolved minor version: SM-8.9 (from SNAPSHOT)"
+      printf "SM-8.9"
+      return 0
+    fi
+    
     local major minor
     IFS='.' read -r major minor _ <<< "$version_label"
     if [[ -n "$major" && -n "$minor" ]]; then
