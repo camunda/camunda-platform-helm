@@ -113,7 +113,7 @@ run_playwright_tests() {
 
   cd "$test_suite_path" || exit
 
-  npm ci --no-audit --no-fund
+  rm -rf node_modules package-lock.json && npm i --no-audit --no-fund # Force fresh install to always get the latest dependencies
   # Ensure Playwright browsers are available (fresh install or version update)
   if [[ "$(uname -s)" == "Linux" ]]; then
     npx playwright install --with-deps || exit 1
@@ -171,7 +171,7 @@ run_playwright_tests_hybrid() {
 
   cd "$test_suite_path" || exit
 
-  npm ci --no-audit --no-fund --silent
+  rm -rf node_modules package-lock.json && npm i --no-audit --no-fund --silent # Force fresh install to always get the latest dependencies
 
   if [[ $show_html_report == "true" ]]; then
     reporter="html"
