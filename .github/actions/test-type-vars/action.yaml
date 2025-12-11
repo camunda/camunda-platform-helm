@@ -91,3 +91,9 @@ runs:
           test_helm_digest_values="${chart_path_relative}/values-digest.yaml"
           echo "TEST_HELM_DIGEST_VALUES=${test_helm_digest_values}" | tee -a $GITHUB_ENV
         fi
+
+        # DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET is used in the E2E tests
+        if [[ -z "${{ env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}" ]]; then
+          echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=dummyValueNotUsed"
+        fi
+        echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=${{ env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}" | tee -a $GITHUB_ENV

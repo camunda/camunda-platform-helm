@@ -55,9 +55,9 @@ runs:
       env:
         ASDF_DIR: ${{ env.ASDF_DIR }}
       run: |
-        set -euo pipefail
+        set -uo pipefail  # Note: no -e so we can capture exit codes
         MAX_RETRIES=3
-        RETRY_DELAY=10
+        FAILED_TOOLS=()
 
         echo "⚠️ Initial asdf install failed, retrying individual tools with backoff..."
 
@@ -69,14 +69,16 @@ runs:
           tool=$(echo "$line" | awk '{print $1}')
           version=$(echo "$line" | awk '{print $2}')
 
-          echo "::group::Installing $tool $version"
+          echo "::group::🔧 $tool $version"
 
           # Check if already installed
-          if asdf list "$tool" 2>/dev/null | grep -q "$version"; then
-            echo "✅ $tool $version already installed"
+          if asdf list "$tool" 2>/dev/null | grep -qF "$version"; then
+            echo "✅ $tool $version already installed, skipping"
             echo "::endgroup::"
             continue
           fi
+
+          echo "📦 $tool $version not found, will install..."
 
           # Add plugin if not present
           if ! asdf plugin list 2>/dev/null | grep -q "^${tool}$"; then
@@ -85,24 +87,46 @@ runs:
           fi
 
           # Retry loop for installation
+          RETRY_DELAY=10
+          installed=false
           for attempt in $(seq 1 $MAX_RETRIES); do
-            echo "Attempt $attempt/$MAX_RETRIES for $tool $version..."
-            if asdf install "$tool" "$version"; then
+            echo "🔄 Attempt $attempt/$MAX_RETRIES for $tool $version..."
+            
+            # Capture exit code without exiting on failure
+            set +e
+            asdf install "$tool" "$version"
+            exit_code=$?
+            set -e
+            
+            if [ $exit_code -eq 0 ]; then
               echo "✅ $tool $version installed successfully"
+              installed=true
               break
             else
+              echo "⚠️ Attempt $attempt failed (exit code: $exit_code)"
               if [ $attempt -lt $MAX_RETRIES ]; then
-                echo "⚠️ Attempt $attempt failed, waiting ${RETRY_DELAY}s before retry..."
+                echo "⏳ Waiting ${RETRY_DELAY}s before retry..."
                 sleep $RETRY_DELAY
                 RETRY_DELAY=$((RETRY_DELAY * 2))
-              else
-                echo "❌ Failed to install $tool $version after $MAX_RETRIES attempts"
-                exit 1
               fi
             fi
           done
+          
+          if [ "$installed" = false ]; then
+            echo "❌ Failed to install $tool $version after $MAX_RETRIES attempts"
+            FAILED_TOOLS+=("$tool@$version")
+          fi
           echo "::endgroup::"
         done < .tool-versions
+
+        # Report results
+        if [ ${#FAILED_TOOLS[@]} -gt 0 ]; then
+          echo ""
+          echo "❌ The following tools failed to install after retries:"
+          printf '  - %s\n' "${FAILED_TOOLS[@]}"
+          exit 1
+        fi
+        echo "✅ All tools installed successfully"
 
     - name: Print asdf build logs
       if: always()
