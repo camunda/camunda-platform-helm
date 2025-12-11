@@ -64,6 +64,17 @@ runs:
         elif command -v apk &> /dev/null; then
           apk add --no-cache gettext
         fi
+        
+    - name: Install if required common software tooling
+      uses: camunda/infra-global-github-actions/common-tooling@main
+      with:
+        overwrite: "false"
+        build-essential-enabled: "true"
+        node-enabled: "true"
+        yarn-enabled: "false"
+        buildx-enabled: "false"
+        java-enabled: "false"
+        python-enabled: "false"
 
     - name: Install tools
       uses: ./.github/actions/install-tool-versions
