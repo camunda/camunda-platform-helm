@@ -25,6 +25,7 @@ For the best experience, please remember:
 
 ## [Camunda 8.8](./camunda-8.8)
 
+### [Helm chart 13.3.2](./camunda-8.8/#helm-chart-1332)
 ### [Helm chart 13.3.1](./camunda-8.8/#helm-chart-1331)
 ### [Helm chart 13.3.0](./camunda-8.8/#helm-chart-1330)
 ### [Helm chart 13.2.2](./camunda-8.8/#helm-chart-1322)
