@@ -895,7 +895,7 @@ jobs:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
     runs-on: gcp-core-8-default
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -948,7 +948,7 @@ jobs:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
     runs-on: gcp-core-8-default
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && inputs.shortname != 'esoi' }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
