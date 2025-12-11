@@ -1,6 +1,6 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-13.3.1](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.3.1) (2025-12-10)
+## [camunda-platform-13.3.1](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.3.1) (2025-12-11)
 
 ### Refactor
 
