@@ -1,5 +1,23 @@
 # Changelog
 
+## [11.11.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.2...camunda-platform-8.6-11.11.3) (2025-12-11)
+
+
+### Bug Fixes
+
+* apply tpl to issuerBackendUrl ([#4858](https://github.com/camunda/camunda-platform-helm/issues/4858)) ([22b5cd7](https://github.com/camunda/camunda-platform-helm/commit/22b5cd74e7a3e952b17f752541c8233c5cd0f185))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#4874](https://github.com/camunda/camunda-platform-helm/issues/4874)) ([3099888](https://github.com/camunda/camunda-platform-helm/commit/30998888f89795451f6e8e861b41e50c41707804))
+* update patch-updates (patch) ([#4860](https://github.com/camunda/camunda-platform-helm/issues/4860)) ([b059be6](https://github.com/camunda/camunda-platform-helm/commit/b059be61080ee33c8d8ee9cfa5f0f4d2f4cdaf35))
+
+
+### Refactors
+
+* remove unused identity redirect-url ([#4853](https://github.com/camunda/camunda-platform-helm/issues/4853)) ([90c61e6](https://github.com/camunda/camunda-platform-helm/commit/90c61e66d4676b4ccadee71e6a593ab69df7f6d9))
+
 ## [11.11.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.1...camunda-platform-8.6-11.11.2) (2025-12-03)
 
 
