@@ -178,7 +178,7 @@ _check_all_pods_ready() {
   fi
   
   local not_ready
-  not_ready=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || echo "0")
+  not_ready=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || true)
   
   if [[ "$not_ready" -eq 0 ]]; then
     return 0
