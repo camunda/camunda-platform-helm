@@ -55,6 +55,16 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        # Install gettext for envsubst command used by render-e2e-env.sh
+        if command -v apt-get &> /dev/null; then
+          sudo apt-get update && sudo apt-get install -y gettext-base
+        elif command -v apk &> /dev/null; then
+          apk add --no-cache gettext
+        fi
+
     - name: Install tools
       uses: ./.github/actions/install-tool-versions
       with:
