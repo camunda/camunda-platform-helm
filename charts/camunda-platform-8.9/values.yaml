@@ -2712,7 +2712,7 @@ orchestration:
         replication: "1GB"
     ## @extra orchestration.data.secondaryStorage configuration for secondary storage backend used by the orchestration cluster
     secondaryStorage:
-      ## @extra orchestration.data.secondaryStorage.type the type of secondary storage (rdbms, elasticsearch, opensearch)
+      ## @param orchestration.data.secondaryStorage.type the type of secondary storage (rdbms, elasticsearch, opensearch)
       type: ""
       ## @extra orchestration.data.secondaryStorage.rdbms configuration for RDBMS (Relational Database Management System) as secondary storage
       rdbms:
