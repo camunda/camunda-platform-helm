@@ -55,6 +55,18 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Install tools
+      uses: ./.github/actions/install-tool-versions
+      with:
+        tools: |
+          helm
+          kubectl
+          oc
+          task
+          yq
+          zbctl
+          jq
+
     - name: Authenticate to cluster
       id: cluster-auth
       uses: ./.github/actions/cluster-auth
@@ -94,18 +106,6 @@ runs:
         infra-type: ${{ inputs.infra-type }}
         platform: ${{ inputs.distro-platform }}
         flow: ${{ inputs.flow }}
-
-    - name: Install tools
-      uses: ./.github/actions/install-tool-versions
-      with:
-        tools: |
-          helm
-          kubectl
-          oc
-          task
-          yq
-          zbctl
-          jq
 
     - name: Run Playwright E2E Tests
       shell: bash
