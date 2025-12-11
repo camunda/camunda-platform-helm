@@ -1085,7 +1085,8 @@ jobs:
 
   merge-e2e-reports:
     name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    if: ${{ !cancelled() && inputs.e2e-enabled }}
+    # Only run if e2e is enabled AND at least one test job actually ran (not skipped)
+    if: ${{ !cancelled() && inputs.e2e-enabled && !(needs.playwright-e2e-tests-after-install.result == 'skipped' && needs.playwright-e2e-tests-after-upgrade.result == 'skipped') }}
     needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
     runs-on: ubuntu-latest
     steps:
