@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.3.0
+version: 13.3.1
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.19.2"
+  camunda.io/helmCLIVersion: "3.19.3"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -72,13 +72,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Support password field for jks"
+    - kind: changed
+      description: "Remove unused identity redirect-url"
     - kind: fixed
-      description: "Correct extraVolumeMounts binding in importer deployment"
-    - kind: fixed
-      description: "Modeler webapp to websockets connection not using override option"
-    - kind: fixed
-      description: "Replace SNAPSHOT tags with stable versions in 8.8 values-digest.yaml"
-    - kind: fixed
-      description: "Add requestBodySize to orchestration multipart config"
+      description: "Apply tpl to issuerBackendUrl"
