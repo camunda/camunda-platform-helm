@@ -56,7 +56,7 @@ runs:
         ASDF_DIR: ${{ env.ASDF_DIR }}
       run: |
         set -uo pipefail  # Note: no -e so we can capture exit codes
-        MAX_RETRIES=3
+        MAX_RETRIES=5
         FAILED_TOOLS=()
 
         echo "⚠️ Initial asdf install failed, retrying individual tools with backoff..."
