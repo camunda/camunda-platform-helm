@@ -564,6 +564,18 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 				"configmapApplication.camunda.data.secondary-storage.rdbms.history.connection-pool.connectionTimeout": "\"30000\"",
 			},
 		},
+		{
+			Name: "TestApplicationYamlShouldContainRDBMSType",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                                              "true",
+				"orchestration.data.secondaryStorage.type":                                           "custom-type",
+				"orchestration.data.secondaryStorage.rdbms.url":                                      "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":                                 "camunda",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.type": "custom-type",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
