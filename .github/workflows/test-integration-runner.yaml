@@ -947,7 +947,7 @@ jobs:
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-default
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' }}
     timeout-minutes: 20
     strategy:
@@ -999,8 +999,8 @@ jobs:
 
   merge-e2e-reports:
     name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    # Only run if e2e is enabled AND at least one test job succeeded
-    if: ${{ !cancelled() && inputs.e2e-enabled && (needs.playwright-e2e-tests-after-install.result == 'success' || needs.playwright-e2e-tests-after-upgrade.result == 'success') }}
+    # Run if e2e is enabled AND at least one test job completed (success or failure, not skipped/cancelled)
+    if: ${{ !cancelled() && inputs.e2e-enabled && (needs.playwright-e2e-tests-after-install.result == 'success' || needs.playwright-e2e-tests-after-install.result == 'failure' || needs.playwright-e2e-tests-after-upgrade.result == 'success' || needs.playwright-e2e-tests-after-upgrade.result == 'failure') }}
     needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
     runs-on: ubuntu-latest
     steps:
@@ -1014,6 +1014,8 @@ jobs:
           node-version: lts/*
 
       - name: Download blob reports from GitHub Actions Artifacts
+        id: download-reports
+        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           path: all-blob-reports
@@ -1023,6 +1025,14 @@ jobs:
       - name: Validate and cleanup blob reports
         run: |
           echo "Validating blob report ZIP files..."
+          
+          # Check if download succeeded and directory exists with files
+          if [[ "${{ steps.download-reports.outcome }}" != "success" ]] || [[ ! -d "all-blob-reports" ]]; then
+            echo "⚠️ No blob reports were downloaded (download outcome: ${{ steps.download-reports.outcome }})"
+            mkdir -p all-blob-reports
+            exit 0
+          fi
+          
           cd all-blob-reports
           
           for zip_file in *.zip; do
