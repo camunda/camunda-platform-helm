@@ -97,6 +97,75 @@ check_required_cmds() {
   done
 }
 
+# ==============================================================================
+# Playwright Helper Functions
+# ==============================================================================
+
+# Setup playwright environment: change directory, install dependencies, create test-results dir
+# Args: test_suite_path, [silent=false]
+_setup_playwright_environment() {
+  local test_suite_path="$1"
+  local silent="${2:-false}"
+
+  log "Changing directory to $test_suite_path"
+  cd "$test_suite_path" || exit
+
+  local npm_flags="--no-audit --no-fund"
+  if [[ "$silent" == "true" ]]; then
+    npm_flags="$npm_flags --silent"
+  fi
+
+  # Force fresh install to always get the latest dependencies
+  # shellcheck disable=SC2086
+  rm -rf node_modules package-lock.json && npm i $npm_flags
+
+  mkdir -p "$test_suite_path/test-results"
+}
+
+# Install Playwright browsers (with deps on Linux)
+_install_playwright_browsers() {
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    npx playwright install --with-deps || exit 1
+  else
+    npx playwright install || exit 1
+  fi
+}
+
+# Handle playwright test result and exit appropriately
+# Args: playwright_rc, test_description, [should_exit=true]
+_handle_playwright_result() {
+  local playwright_rc="$1"
+  local test_description="$2"
+  local should_exit="${3:-true}"
+
+  if [[ $playwright_rc -eq 0 ]]; then
+    log "✅  $test_description passed"
+    if [[ "$should_exit" == "true" ]]; then
+      exit 0
+    fi
+  else
+    log "❌  $test_description failed with code $playwright_rc"
+    exit $playwright_rc
+  fi
+}
+
+# Determine reporter based on show_html_report flag
+# Args: current_reporter, show_html_report
+_get_reporter() {
+  local reporter="$1"
+  local show_html_report="$2"
+
+  if [[ "$show_html_report" == "true" ]]; then
+    echo "html"
+  else
+    echo "$reporter"
+  fi
+}
+
+# ==============================================================================
+# Main Playwright Test Functions
+# ==============================================================================
+
 run_playwright_tests() {
   local test_suite_path="$1"
   local show_html_report="$2"
@@ -107,88 +176,63 @@ run_playwright_tests() {
   local run_smoke_tests="$7"
   local enable_debug="$8"
 
-  log "Changing directory to $test_suite_path"
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
 
-  cd "$test_suite_path" || exit
+  _setup_playwright_environment "$test_suite_path" "false"
+  _install_playwright_browsers
 
-  rm -rf node_modules package-lock.json && npm i --no-audit --no-fund # Force fresh install to always get the latest dependencies
-  # Ensure Playwright browsers are available (fresh install or version update)
-  if [[ "$(uname -s)" == "Linux" ]]; then
-    npx playwright install --with-deps || exit 1
-  else
-    npx playwright install || exit 1
-  fi
-
-  if [[ $show_html_report == "true" ]]; then
-    reporter="html"
-  fi
+  reporter=$(_get_reporter "$reporter" "$show_html_report")
 
   # Enable Playwright debug and traces if requested
-  TRACE_FLAG=""
+  local trace_flag=""
   if [[ "$enable_debug" == "true" ]]; then
     export DEBUG="${DEBUG:-pw:api,pw:browser*}"
-    TRACE_FLAG="--trace=retain-on-failure"
+    trace_flag="--trace=retain-on-failure"
     log "Playwright DEBUG enabled: $DEBUG"
   fi
 
-  mkdir -p "$test_suite_path/test-results"
-  if [[ $run_smoke_tests == true ]]; then
+  local project="full-suite"
+  if [[ "$run_smoke_tests" == "true" ]]; then
+    project="smoke-tests"
     log "Running smoke tests"
-    npx playwright test --project=smoke-tests --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $TRACE_FLAG
   else
     log "Running full suite"
-    npx playwright test --project=full-suite --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $TRACE_FLAG
   fi
-  playwright_rc=$? # <-- capture the exit status BEFORE doing anything else
+
+  # shellcheck disable=SC2086
+  npx playwright test --project="$project" --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $trace_flag
+  local playwright_rc=$?
 
   # Only show HTML report locally, never in CI (it blocks waiting for Ctrl+C)
-  if [[ $show_html_report == "true" && "${CI:-false}" != "true" ]]; then
+  if [[ "$show_html_report" == "true" && "${CI:-false}" != "true" ]]; then
     npx playwright show-report
   fi
 
-  if [[ $playwright_rc -eq 0 ]]; then
-    log "✅  All Playwright tests passed"
-    exit 0 # success exit for the script itself
-  else
-    log "❌  Playwright tests failed with code $playwright_rc"
-    exit $playwright_rc # propagate the failure to CI
-  fi
+  _handle_playwright_result "$playwright_rc" "All Playwright tests" "true"
 }
 
 # Run playwright tests for hybrid auth - runs specific test files with a specific auth type
-# This function does NOT exit so multiple phases can run sequentially
+# This function does NOT exit on success so multiple phases can run sequentially
 run_playwright_tests_hybrid() {
   local test_suite_path="$1"
   local show_html_report="$2"
   local auth_type="$3"
   local test_files="$4"
   local test_exclude="$5"
-  local reporter="html"
 
   log "Running hybrid tests: auth_type='$auth_type' test_files='$test_files'"
 
-  cd "$test_suite_path" || exit
+  _setup_playwright_environment "$test_suite_path" "true"
 
-  rm -rf node_modules package-lock.json && npm i --no-audit --no-fund --silent # Force fresh install to always get the latest dependencies
-
-  if [[ $show_html_report == "true" ]]; then
-    reporter="html"
-  fi
-
-  mkdir -p "$test_suite_path/test-results"
+  local reporter
+  reporter=$(_get_reporter "html" "$show_html_report")
 
   # Run specific test files with the auth type set as environment variable
   # This overrides any TEST_AUTH_TYPE in .env file
   # shellcheck disable=SC2086
   TEST_AUTH_TYPE="$auth_type" npx playwright test $test_files --project=full-suite --reporter="$reporter" --grep-invert="$test_exclude"
-  playwright_rc=$?
+  local playwright_rc=$?
 
-  if [[ $playwright_rc -ne 0 ]]; then
-    log "❌  Hybrid Playwright tests ($auth_type) failed with code $playwright_rc"
-    exit $playwright_rc
-  fi
-
-  log "✅  Hybrid Playwright tests ($auth_type) passed"
+  _handle_playwright_result "$playwright_rc" "Hybrid Playwright tests ($auth_type)" "false"
 }
