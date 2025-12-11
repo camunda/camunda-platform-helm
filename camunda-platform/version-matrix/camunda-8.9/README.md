@@ -44,7 +44,7 @@ Supported versions:
 - Camunda applications: [8.9](https://github.com/camunda/camunda/releases?q=tag%3A8.9&expanded=true)
 - Camunda version matrix: [8.9](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.9)
 - Helm values: [14.0.0-alpha1](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.0.0-alpha1#parameters)
-- Helm CLI: [3.19.2](https://github.com/helm/helm/releases/tag/v3.19.2)
+- Helm CLI: [3.19.0](https://github.com/helm/helm/releases/tag/v3.19.0)
 
 Camunda images:
 
