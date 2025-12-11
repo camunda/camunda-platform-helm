@@ -116,6 +116,8 @@ runs:
         TEST_AUTH_TYPE: ${{ inputs.auth }}
       run: |
         cd "$GITHUB_WORKSPACE/scripts"
+        # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
+        unset KEYCLOAK_REALM
         ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests --verbose
 
     - name: Upload blob report to GitHub Actions Artifacts

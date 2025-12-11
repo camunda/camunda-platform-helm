@@ -894,7 +894,7 @@ jobs:
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-default
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' }}
     timeout-minutes: 20
     strategy:
