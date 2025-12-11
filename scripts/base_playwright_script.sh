@@ -163,6 +163,130 @@ _get_reporter() {
 }
 
 # ==============================================================================
+# Pod Health Check Functions (for spot instance resilience)
+# ==============================================================================
+
+# Check if all pods in namespace are Ready
+# Returns 0 if all pods ready, 1 otherwise
+# Args: namespace
+_check_all_pods_ready() {
+  local namespace="$1"
+  
+  if [[ -z "$namespace" ]]; then
+    log "WARNING: No namespace provided for pod check, skipping"
+    return 0
+  fi
+  
+  local not_ready
+  not_ready=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || echo "0")
+  
+  if [[ "$not_ready" -eq 0 ]]; then
+    return 0
+  else
+    log "WARNING: $not_ready pod(s) not in Running/Completed state in namespace $namespace"
+    return 1
+  fi
+}
+
+# Wait for all pods in namespace to be Ready
+# Args: namespace, [timeout_seconds=300]
+_wait_for_pods_ready() {
+  local namespace="$1"
+  local timeout="${2:-300}"
+  
+  if [[ -z "$namespace" ]]; then
+    log "WARNING: No namespace provided for pod wait, skipping"
+    return 0
+  fi
+  
+  log "Waiting up to ${timeout}s for all pods in namespace $namespace to be Ready..."
+  
+  if kubectl wait --for=condition=Ready pods --all -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
+    log "All pods in namespace $namespace are Ready"
+    return 0
+  else
+    log "ERROR: Timeout waiting for pods to be Ready in namespace $namespace"
+    return 1
+  fi
+}
+
+# Configuration for pod failure retry logic
+_POD_RETRY_MAX_ATTEMPTS=2
+_POD_RETRY_TIMEOUT=300  # 5 minutes
+
+# Run a playwright command with retry logic for pod failures (spot instance preemption)
+# This function will retry the test if pods go down during execution
+# Args: namespace, playwright_command...
+# Returns: playwright exit code (0 = success, non-zero = failure)
+_run_playwright_with_retry() {
+  local namespace="$1"
+  shift
+  local playwright_cmd=("$@")
+  
+  local attempt=0
+  local playwright_rc=0
+  
+  while [[ $attempt -le $_POD_RETRY_MAX_ATTEMPTS ]]; do
+    attempt=$((attempt + 1))
+    
+    # Check pods are ready before running
+    if [[ -n "$namespace" ]]; then
+      if ! _check_all_pods_ready "$namespace"; then
+        log "WARNING: Pods not ready before test attempt $attempt, waiting for recovery..."
+        if ! _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT"; then
+          log "ERROR: Pods did not recover before test attempt $attempt"
+          return 1
+        fi
+      fi
+    fi
+    
+    if [[ $attempt -gt 1 ]]; then
+      log "Retry attempt $attempt/$_POD_RETRY_MAX_ATTEMPTS after pod recovery..."
+    fi
+    
+    # Run the playwright command
+    "${playwright_cmd[@]}"
+    playwright_rc=$?
+    
+    # If tests passed, we're done
+    if [[ $playwright_rc -eq 0 ]]; then
+      return 0
+    fi
+    
+    # Tests failed - check if it's due to pod failure
+    if [[ -n "$namespace" ]]; then
+      if ! _check_all_pods_ready "$namespace"; then
+        # Pods are not ready - this was likely a spot instance preemption
+        log "WARNING: Test failed and pods are not ready (possible spot instance preemption)"
+        
+        if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
+          log "Waiting for pods to recover before retry..."
+          if _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT"; then
+            log "Pods recovered, will retry tests..."
+            continue
+          else
+            log "ERROR: Pods did not recover within timeout"
+            return $playwright_rc
+          fi
+        else
+          log "ERROR: Max retry attempts reached, pods still not ready"
+          return $playwright_rc
+        fi
+      else
+        # Pods are ready - this is a legitimate test failure
+        log "Pods are healthy, test failure is not due to pod issues"
+        return $playwright_rc
+      fi
+    else
+      # No namespace provided, can't check pods - return the failure
+      return $playwright_rc
+    fi
+  done
+  
+  return $playwright_rc
+}
+
+# ==============================================================================
 # Main Playwright Test Functions
 # ==============================================================================
 
@@ -175,9 +299,11 @@ run_playwright_tests() {
   local test_exclude="$6"
   local run_smoke_tests="$7"
   local enable_debug="$8"
+  local namespace="${9:-}"  # Optional: namespace for pod health checks
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
+  [[ -n "$namespace" ]] && log "Namespace for pod checks: $namespace"
 
   _setup_playwright_environment "$test_suite_path" "false"
   _install_playwright_browsers
@@ -200,8 +326,13 @@ run_playwright_tests() {
     log "Running full suite"
   fi
 
-  # shellcheck disable=SC2086
-  npx playwright test --project="$project" --shard="${shard_index}/${shard_total}" --reporter="$reporter" --grep-invert="$test_exclude" $trace_flag
+  # Build the playwright command arguments
+  local -a playwright_args=(npx playwright test --project="$project" --shard="${shard_index}/${shard_total}" --reporter="$reporter")
+  [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
+  [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
+
+  # Run with retry logic for pod failures (spot instance preemption)
+  _run_playwright_with_retry "$namespace" "${playwright_args[@]}"
   local playwright_rc=$?
 
   # Only show HTML report locally, never in CI (it blocks waiting for Ctrl+C)
@@ -220,18 +351,25 @@ run_playwright_tests_hybrid() {
   local auth_type="$3"
   local test_files="$4"
   local test_exclude="$5"
+  local namespace="${6:-}"  # Optional: namespace for pod health checks
 
   log "Running hybrid tests: auth_type='$auth_type' test_files='$test_files'"
+  [[ -n "$namespace" ]] && log "Namespace for pod checks: $namespace"
 
   _setup_playwright_environment "$test_suite_path" "true"
 
   local reporter
   reporter=$(_get_reporter "html" "$show_html_report")
 
+  # Build the playwright command arguments
+  # shellcheck disable=SC2206
+  local -a playwright_args=(npx playwright test $test_files --project=full-suite --reporter="$reporter")
+  [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
+
   # Run specific test files with the auth type set as environment variable
   # This overrides any TEST_AUTH_TYPE in .env file
-  # shellcheck disable=SC2086
-  TEST_AUTH_TYPE="$auth_type" npx playwright test $test_files --project=full-suite --reporter="$reporter" --grep-invert="$test_exclude"
+  # Run with retry logic for pod failures (spot instance preemption)
+  TEST_AUTH_TYPE="$auth_type" _run_playwright_with_retry "$namespace" "${playwright_args[@]}"
   local playwright_rc=$?
 
   _handle_playwright_result "$playwright_rc" "Hybrid Playwright tests ($auth_type)" "false"
