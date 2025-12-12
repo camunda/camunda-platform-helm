@@ -186,6 +186,14 @@ tasks:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
+      # If the scenario is 'qa-license', include external keycloak and/or elasticsearch scenario overlays
+      if [[ "{{ .TEST_VALUES_SCENARIO }}" == "qa-license" ]]; then
+        # Add the external Keycloak and Elasticsearch overlays for this scenario
+        echo "Applying use-external-keycloak and use-external-elasticsearch overlays for qa-license scenario"
+        export EXTRA_SCENARIO_VALUES_ARGS="--values {{ .TEST_VALUES_BASE_DIR }}/common/use-external-keycloak.yaml --values {{ .TEST_VALUES_BASE_DIR }}/common/use-external-elasticsearch.yaml"
+      else
+        export EXTRA_SCENARIO_VALUES_ARGS=""
+      fi
       helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
@@ -201,6 +209,7 @@ tasks:
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --values /tmp/extra-values-file.yaml \
+        {{ .EXTRA_SCENARIO_VALUES_ARGS }} \
         --timeout 20m0s \
         --wait \
         --wait-for-jobs \

@@ -53,6 +53,15 @@ tasks:
       {{ end -}}
       {{ end -}}
 
+      # If the scenario is 'qa-license', include external keycloak and/or elasticsearch scenario overlays
+      if [[ "{{ .TEST_VALUES_SCENARIO }}" == "qa-license" ]]; then
+        # Add the external Keycloak and Elasticsearch overlays for this scenario
+        echo "Applying use-external-keycloak and use-external-elasticsearch overlays for qa-license scenario"
+        export EXTRA_SCENARIO_VALUES_ARGS="--values {{ .TEST_VALUES_BASE_DIR }}/common/use-external-keycloak.yaml --values {{ .TEST_VALUES_BASE_DIR }}/common/use-external-elasticsearch.yaml"
+      else
+        export EXTRA_SCENARIO_VALUES_ARGS=""
+      fi
+
       helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
@@ -66,6 +75,7 @@ tasks:
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
+        {{ .EXTRA_SCENARIO_VALUES_ARGS }} \
         --force \
         --timeout 20m0s \
         --set orchestration.upgrade.allowPreReleaseImages=true \
