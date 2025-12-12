@@ -1,0 +1,30 @@
+global:
+  annotations:
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
+  # for bitnami images
+  identity:
+    keycloak:
+      url:
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
+        port: 443
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
+    auth:
+      enabled: true
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
+
+identity:
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
+
+identityKeycloak:
+  enabled: false
+
+console:
+  keycloak:
+    realm: $KEYCLOAK_REALM
