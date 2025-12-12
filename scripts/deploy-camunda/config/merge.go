@@ -217,3 +217,21 @@ func parseScenarios(scenario string) []string {
 	}
 	return scenarios
 }
+
+// LoadAndMerge loads config from the given path and merges the active deployment into flags.
+// If configPath is empty, it resolves the default config location.
+// The includeEnv parameter controls whether environment variable overrides are applied.
+func LoadAndMerge(configPath string, includeEnv bool, flags *RuntimeFlags) (*RootConfig, error) {
+	cfgPath, err := ResolvePath(configPath)
+	if err != nil {
+		return nil, err
+	}
+	rc, err := Read(cfgPath, includeEnv)
+	if err != nil {
+		return nil, err
+	}
+	if err := ApplyActiveDeployment(rc, rc.Current, flags); err != nil {
+		return nil, err
+	}
+	return rc, nil
+}
