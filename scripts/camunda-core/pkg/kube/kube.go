@@ -32,9 +32,31 @@ const fieldManagerName = "camunda-platform-helm"
 
 // formatNamespacePermissionError creates a user-friendly error message for namespace permission errors.
 func formatNamespacePermissionError(operation, namespace, verb string, err error) error {
+	// Namespaces are cluster-scoped resources, so kubectl commands don't include the namespace name
+	// For Apply operations, we need both create and patch permissions
+	var verifyCommands []string
 	var additionalHint string
+	
 	if verb == "get" {
 		additionalHint = "  2. Or request cluster-wide namespace read permissions\n"
+		verifyCommands = []string{"kubectl auth can-i get namespaces"}
+	} else if verb == "create" {
+		// Apply can use either create or patch, so check both
+		verifyCommands = []string{
+			"kubectl auth can-i create namespaces",
+			"kubectl auth can-i patch namespaces",
+		}
+		additionalHint = "  2. Note: Apply operations require either 'create' or 'patch' permissions\n"
+	} else {
+		verifyCommands = []string{fmt.Sprintf("kubectl auth can-i %s namespaces", verb)}
+	}
+	
+	verifyCmdsStr := ""
+	for i, cmd := range verifyCommands {
+		if i > 0 {
+			verifyCmdsStr += "\n"
+		}
+		verifyCmdsStr += "  " + cmd
 	}
 
 	return fmt.Errorf("permission denied: cannot %s namespace %q\n\n"+
@@ -45,8 +67,8 @@ func formatNamespacePermissionError(operation, namespace, verb string, err error
 		"     in the \"kubernetes_resources\" field of your Teleport role\n"+
 		"%s"+
 		"To verify your permissions, run:\n"+
-		"  kubectl auth can-i %s namespaces/%s\n\n"+
-		"Original error: %w", operation, namespace, verb, namespace, additionalHint, verb, namespace, err)
+		"%s\n\n"+
+		"Original error: %w", operation, namespace, verb, namespace, additionalHint, verifyCmdsStr, err)
 }
 
 func defaultApplyOptions() metav1.ApplyOptions {
@@ -119,14 +141,49 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 		return err
 	}
 
+	// Check if namespace exists
+	_, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	namespaceExists := !apierrors.IsNotFound(err)
+	if err != nil && !apierrors.IsNotFound(err) {
+		// If it's a permission error checking existence, we'll try to create anyway
+		if apierrors.IsForbidden(err) {
+			namespaceExists = false // Assume it doesn't exist and try create
+		} else {
+			return fmt.Errorf("failed to check if namespace %q exists: %w", namespace, err)
+		}
+	}
+
+	if !namespaceExists {
+		// Namespace doesn't exist, use Create() which only requires create permission
+		logging.Logger.Debug().Str("namespace", namespace).Msg("creating namespace")
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		}
+		_, err := c.clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+		if err != nil {
+			if apierrors.IsForbidden(err) {
+				return formatNamespacePermissionError("create", namespace, "create", err)
+			}
+			if apierrors.IsAlreadyExists(err) {
+				// Namespace was created between our check and create attempt
+				logging.Logger.Debug().Str("namespace", namespace).Msg("namespace already exists")
+				return nil
+			}
+			return fmt.Errorf("failed to create namespace %q (context=%q): %w", namespace, c.kubeContext, err)
+		}
+		logging.Logger.Debug().Str("namespace", namespace).Msg("namespace created successfully")
+		return nil
+	}
+
+	// Namespace exists, use Apply() to update it (requires patch permission)
 	logging.Logger.Debug().Str("namespace", namespace).Msg("applying namespace")
-
 	nsApply := corev1apply.Namespace(namespace)
-
-	_, err := c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
+	_, err = c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
 	if err != nil {
 		if apierrors.IsForbidden(err) {
-			return formatNamespacePermissionError("create/update", namespace, "create", err)
+			return formatNamespacePermissionError("update", namespace, "patch", err)
 		}
 		return fmt.Errorf("failed to apply namespace %q (context=%q): %w", namespace, c.kubeContext, err)
 	}
