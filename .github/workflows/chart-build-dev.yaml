@@ -5,8 +5,8 @@ name: "Chart - Build - Dev"
 # with unique dev tags for testing. They can be promoted to RC/release by retagging.
 #
 # Tagging scheme:
-#   Dev:     {version}-dev-{sha}     (e.g., 13.4.0-dev-abc1234)
-#   Rolling: latest-dev-{camunda}   (e.g., latest-dev-8.8)
+#   Dev:     {version}-dev-{sha}       (e.g., 13.4.0-dev-abc1234)
+#   Rolling: {camunda}-dev-latest     (e.g., 8.8-dev-latest)
 #
 # Chart.yaml version is the final release version (e.g., 13.4.0) computed via
 # release-please dry-run, making the artifact truly release-ready.
@@ -43,6 +43,8 @@ on:
 
 env:
   CHART_NAME: "camunda-platform"
+  HARBOR_REGISTRY_HOST: "dev.registry.camunda.cloud"
+  HARBOR_REGISTRY_PROJECT: "team-distribution"
 
 jobs:
   setup:
@@ -114,8 +116,6 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/distribution/ci HARBOR_REGISTRY_HOST;
-            secret/data/products/distribution/ci HARBOR_REGISTRY_PROJECT;
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
           exportEnv: true
@@ -284,7 +284,7 @@ jobs:
           echo "### Version Information"
           echo "- Release Version (in Chart.yaml): ${RELEASE_VERSION}"
           echo "- Dev Tag: ${DEV_TAG}"
-          echo "- Rolling Tag: latest-dev-${{ env.CAMUNDA_VERSION }}"
+          echo "- Rolling Tag: ${{ env.CAMUNDA_VERSION }}-dev-latest"
 
       #
       # Apply release transformations (makes artifact release-ready)
@@ -384,8 +384,8 @@ jobs:
           curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
             -X DELETE "${HARBOR_API}/${PUSHED_TAG}"
 
-          # Add rolling tag: latest-dev-{camunda-version}
-          ROLLING_TAG="latest-dev-${{ env.CAMUNDA_VERSION }}"
+          # Add rolling tag: {camunda-version}-dev-latest
+          ROLLING_TAG="${{ env.CAMUNDA_VERSION }}-dev-latest"
           echo "Adding rolling tag: ${ROLLING_TAG}"
           curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
             -X POST "${HARBOR_API}" \
@@ -433,7 +433,7 @@ jobs:
 
           # Set up registry URL for summary
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
-          ROLLING_TAG="latest-dev-${{ env.CAMUNDA_VERSION }}"
+          ROLLING_TAG="${{ env.CAMUNDA_VERSION }}-dev-latest"
 
           if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
             cat << EOF >> $GITHUB_STEP_SUMMARY
