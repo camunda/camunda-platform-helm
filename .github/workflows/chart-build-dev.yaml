@@ -390,6 +390,10 @@ jobs:
 
           # Add rolling tag: {chart-major}-dev-latest
           ROLLING_TAG="${CHART_MAJOR_VERSION}-dev-latest"
+          echo "Removing existing rolling tag if present: ${ROLLING_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${ROLLING_TAG}/tags/${ROLLING_TAG}" || true
+
           echo "Adding rolling tag: ${ROLLING_TAG}"
           curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
             -X POST "${HARBOR_API}" \
