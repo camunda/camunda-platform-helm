@@ -48,6 +48,10 @@ dependencies:
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 21.6.3
     condition: "elasticsearch.enabled"
+  - name: opensearch
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 2.x.x
+    condition: "opensearch.enabled"
   # Helpers.
   - name: common
     repository: oci://registry-1.docker.io/bitnamicharts
