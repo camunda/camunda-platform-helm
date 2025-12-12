@@ -75,8 +75,7 @@ tasks:
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
-        {{ .EXTRA_SCENARIO_VALUES_ARGS }} \
-        --force \
+        $EXTRA_SCENARIO_VALUES_ARGS \
         --timeout 20m0s \
         --set orchestration.upgrade.allowPreReleaseImages=true \
         --force \

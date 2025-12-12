@@ -187,6 +187,7 @@ tasks:
     cmds:
     - |
       # If the scenario is 'qa-license', include external keycloak and/or elasticsearch scenario overlays
+      echo "TEST_VALUES_SCENARIO: {{ .TEST_VALUES_SCENARIO }}"
       if [[ "{{ .TEST_VALUES_SCENARIO }}" == "qa-license" ]]; then
         # Add the external Keycloak and Elasticsearch overlays for this scenario
         echo "Applying use-external-keycloak and use-external-elasticsearch overlays for qa-license scenario"
@@ -209,7 +210,7 @@ tasks:
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --values /tmp/extra-values-file.yaml \
-        {{ .EXTRA_SCENARIO_VALUES_ARGS }} \
+        $EXTRA_SCENARIO_VALUES_ARGS \
         --timeout 20m0s \
         --wait \
         --wait-for-jobs \
