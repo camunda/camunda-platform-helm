@@ -1,21 +1,18 @@
 name: "Chart - Build - Dev"
 
 # Builds immutable dev packages for all active chart versions.
-# These packages are release-ready (transformations applied) and stored with
-# safe OCI tags for testing. They can be promoted to release by:
-#   1. QA workflows pull from OCI for testing
-#   2. Promotion fetches from OCI → uploads to GitHub Releases
+# These packages are release-ready (transformations applied) and stored in Harbor
+# with unique dev tags for testing. They can be promoted to RC/release by retagging.
 #
-# Chart.yaml inside the package contains the RELEASE VERSION (e.g., 11.11.3)
-# computed by release-please dry-run, making the artifact truly release-ready.
+# Tagging scheme:
+#   Dev:     {version}-dev-{sha}     (e.g., 13.4.0-dev-abc1234)
+#   Rolling: latest-dev-{camunda}   (e.g., latest-dev-8.8)
 #
-# OCI Tag (safe): 0.0.0-dev-<camunda-version>-<sha>
-#   Example: 0.0.0-dev-8.8-abc1234
+# Chart.yaml version is the final release version (e.g., 13.4.0) computed via
+# release-please dry-run, making the artifact truly release-ready.
 #
-# Chart.yaml version (release): computed by release-please (e.g., 11.11.3)
-#
-# Registry: oci://ghcr.io/camunda/helm/camunda-platform
-#   Note: OCI is for internal storage/testing. Customer releases go to
+# Registry: oci://dev.registry.camunda.cloud/team-distribution/camunda-platform
+#   Note: Harbor is for internal storage/testing. Public releases go to
 #   GitHub Releases → helm.camunda.io → Artifact Hub
 #
 
@@ -45,7 +42,6 @@ on:
         type: string
 
 env:
-  REPOSITORY_NAME: "camunda/helm"
   CHART_NAME: "camunda-platform"
 
 jobs:
@@ -93,8 +89,7 @@ jobs:
     needs: setup
     name: Build ${{ matrix.chart.version }}
     permissions:
-      packages: write
-      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -110,6 +105,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci HARBOR_REGISTRY_HOST;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PROJECT;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+          exportEnv: true
+
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -117,34 +127,22 @@ jobs:
             helm
             yq
 
+      - name: Login to Harbor registry
+        run: |
+          echo "${HARBOR_REGISTRY_PASSWORD}" | \
+            helm registry login "${HARBOR_REGISTRY_HOST}" \
+              -u "${HARBOR_REGISTRY_USER}" \
+              --password-stdin
+
       - name: Set version vars
         id: vars
         run: |
-          # Immutable version based on Camunda version + commit SHA
-          # Format: 0.0.0-dev-<camunda-version>-<sha>
-          # This enables downstream workflows to:
-          #   - Filter by Camunda version (e.g., 0.0.0-dev-8.8-*)
-          #   - Identify exact commit for traceability
+          # Version vars will be set after release-please computes the release version
+          # For now, just set the short SHA and Camunda version
           SHORT_SHA="${GITHUB_SHA::7}"
           CAMUNDA_VERSION="${{ matrix.chart.version }}"
-          CHART_VERSION="0.0.0-dev-${CAMUNDA_VERSION}-${SHORT_SHA}"
-          echo "CHART_VERSION=${CHART_VERSION}" | tee -a $GITHUB_ENV
           echo "SHORT_SHA=${SHORT_SHA}" | tee -a $GITHUB_ENV
           echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a $GITHUB_ENV
-
-      - name: Check if artifact already exists
-        id: check-artifact
-        run: |
-          # Dev packages are immutable - skip if already exists
-          helm pull oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \
-            --version ${{ env.CHART_VERSION }} 2> /dev/null && EXIT_CODE=0 || EXIT_CODE=1
-
-          if [[ ${EXIT_CODE} -eq 0 ]]; then
-            echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
-            echo "::notice::Dev package ${{ env.CHART_VERSION }} already exists, skipping build"
-          else
-            echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
-          fi
 
       #
       # Compute release version using release-please dry-run
@@ -152,11 +150,9 @@ jobs:
       # annotations that release-please would compute at release time.
       #
       - name: Install release-please CLI
-        if: env.SKIP_BUILD == 'false'
         run: npm install -g release-please
 
       - name: Compute release version (release-please dry-run)
-        if: env.SKIP_BUILD == 'false'
         id: release-please
         env:
           RELEASE_PLEASE_CONFIG: .github/config/release-please/release-please-config.json
@@ -211,6 +207,33 @@ jobs:
             fi
           fi
 
+          # Set dev tag version: {release-version}-dev-{sha}
+          if [[ "${RELEASE_VERSION_COMPUTED}" == "true" || -n "${RELEASE_VERSION}" ]]; then
+            DEV_TAG="${RELEASE_VERSION}-dev-${SHORT_SHA}"
+          else
+            # Fallback to current version if release-please couldn't compute
+            DEV_TAG="${CURRENT_VERSION}-dev-${SHORT_SHA}"
+            RELEASE_VERSION="${CURRENT_VERSION}"
+            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+          fi
+          echo "DEV_TAG=${DEV_TAG}" | tee -a $GITHUB_ENV
+          echo "::notice::Dev tag: ${DEV_TAG}"
+
+      - name: Check if artifact already exists
+        id: check-artifact
+        run: |
+          # Dev packages are immutable - skip if already exists
+          OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
+          helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
+            --version "${DEV_TAG}" 2>/dev/null && EXIT_CODE=0 || EXIT_CODE=1
+
+          if [[ ${EXIT_CODE} -eq 0 ]]; then
+            echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
+            echo "::notice::Dev package ${DEV_TAG} already exists, skipping build"
+          else
+            echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+          fi
+
       - name: Apply Chart.yaml version and changelog from release-please
         if: env.SKIP_BUILD == 'false' && env.RELEASE_VERSION_COMPUTED == 'true'
         run: |
@@ -230,7 +253,7 @@ jobs:
           # Look for lines between artifacthub.io/changes and the next annotation or end of annotations
           CHANGELOG_YAML=$(awk '
             /^\+.*artifacthub.io\/changes:/ { capture=1; next }
-            capture && /^\+/ { 
+            capture && /^\+/ {
               line=$0
               sub(/^\+[ ]*/, "", line)
               print line
@@ -259,12 +282,9 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         run: |
           echo "### Version Information"
-          echo "- OCI Tag (safe): ${CHART_VERSION}"
-          if [[ "${RELEASE_VERSION_COMPUTED}" == "true" ]]; then
-            echo "- Release Version (in Chart.yaml): ${RELEASE_VERSION}"
-          else
-            echo "- Release Version: Not computed (will use current Chart.yaml version)"
-          fi
+          echo "- Release Version (in Chart.yaml): ${RELEASE_VERSION}"
+          echo "- Dev Tag: ${DEV_TAG}"
+          echo "- Rolling Tag: latest-dev-${{ env.CAMUNDA_VERSION }}"
 
       #
       # Apply release transformations (makes artifact release-ready)
@@ -320,79 +340,59 @@ jobs:
           helm package .
 
           # The package filename will be based on Chart.yaml version
-          # Find it and rename to use the OCI tag version for pushing
           PACKAGED_FILE=$(ls ${{ env.CHART_NAME }}-*.tgz)
           echo "Packaged: ${PACKAGED_FILE}"
 
-          # Rename to OCI tag version for consistent tagging
-          mv "${PACKAGED_FILE}" "${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
-          echo "Renamed to: ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
-
           # Verify Chart.yaml inside has the release version
           echo "Verifying packaged Chart.yaml version:"
-          tar -xzf "${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz" -O ${{ env.CHART_NAME }}/Chart.yaml | grep "^version:"
+          tar -xzf "${PACKAGED_FILE}" -O ${{ env.CHART_NAME }}/Chart.yaml | grep "^version:"
 
-      - name: Push Helm chart to OCI registry
+          # Store the package filename for later steps
+          echo "HELM_PACKAGE=${PACKAGED_FILE}" >> $GITHUB_ENV
+
+      - name: Push Helm chart to Harbor
         if: env.SKIP_BUILD == 'false'
         run: |
-          OCI_REGISTRY="ghcr.io/${{ env.REPOSITORY_NAME }}"
-          SAFE_TAG="${{ env.CHART_VERSION }}"
+          OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
 
-          # helm push uses Chart.yaml version as OCI tag, not filename
-          CHART_VERSION_IN_PACKAGE=$(tar -xzf "${{ env.CHART_NAME }}-${SAFE_TAG}.tgz" -O ${{ env.CHART_NAME }}/Chart.yaml | yq '.version')
-          echo "Chart.yaml version: ${CHART_VERSION_IN_PACKAGE}"
-          echo "Safe OCI tag: ${SAFE_TAG}"
+          # helm push creates OCI tag from Chart.yaml version (the release version)
+          # We need to retag to our dev tag and add rolling tag
+          helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
 
-          go install github.com/google/go-containerregistry/cmd/crane@latest
-          export PATH="${PATH}:$(go env GOPATH)/bin"
+          # The helm push created a tag with the release version
+          PUSHED_TAG="${RELEASE_VERSION}"
+          echo "Pushed with tag: ${PUSHED_TAG}"
 
-          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
-          crane auth login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+          # Get the digest for API operations
+          DIGEST=$(helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" --version "${PUSHED_TAG}" 2>&1 | grep -oP 'Digest: \K[^\s]+' || \
+            curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${PUSHED_TAG}" | jq -r '.digest')
+          echo "Artifact digest: ${DIGEST}"
 
-          helm push "${{ env.CHART_NAME }}-${SAFE_TAG}.tgz" "oci://${OCI_REGISTRY}"
-          crane copy "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${CHART_VERSION_IN_PACKAGE}" "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${SAFE_TAG}"
-          crane delete "${OCI_REGISTRY}/${{ env.CHART_NAME }}:${CHART_VERSION_IN_PACKAGE}" || true
+          # Harbor API base URL for this artifact
+          HARBOR_API="https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DIGEST}/tags"
 
-          helm registry logout ghcr.io
+          # Add dev tag: {version}-dev-{sha}
+          echo "Adding dev tag: ${DEV_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X POST "${HARBOR_API}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\": \"${DEV_TAG}\"}"
 
-      #
-      # Security signature
-      #
-      - name: Install Cosign CLI
-        if: env.SKIP_BUILD == 'false'
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+          # Delete the release version tag (we only want dev tag for now)
+          echo "Removing release version tag: ${PUSHED_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X DELETE "${HARBOR_API}/${PUSHED_TAG}"
 
-      - name: Sign Helm chart with Cosign
-        if: env.SKIP_BUILD == 'false'
-        run: |
-          cosign sign-blob -y ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
-            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle
+          # Add rolling tag: latest-dev-{camunda-version}
+          ROLLING_TAG="latest-dev-${{ env.CAMUNDA_VERSION }}"
+          echo "Adding rolling tag: ${ROLLING_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X POST "${HARBOR_API}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\": \"${ROLLING_TAG}\"}"
 
-      - name: Verify signed Helm chart with Cosign
-        if: env.SKIP_BUILD == 'false'
-        run: |
-          cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
-            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
-            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-build-dev.yaml@${{ github.ref }}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-
-      - name: Login to GitHub Container Registry
-        if: env.SKIP_BUILD == 'false'
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install ORAS CLI
-        if: env.SKIP_BUILD == 'false'
-        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1
-
-      - name: Upload Helm chart Cosign bundle
-        if: env.SKIP_BUILD == 'false'
-        run: |
-          oras push ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }}.cosign.bundle \
-            ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain
+          echo "::notice::Pushed to Harbor with tags: ${DEV_TAG}, ${ROLLING_TAG}"
 
       #
       # Summary
@@ -431,24 +431,21 @@ jobs:
             IMAGE_IDENTITY=$(get_tag '.identity.image.tag')
           fi
 
+          # Set up registry URL for summary
+          OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
+          ROLLING_TAG="latest-dev-${{ env.CAMUNDA_VERSION }}"
+
           if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
             cat << EOF >> $GITHUB_STEP_SUMMARY
           ## 📦 Chart Build Skipped (Camunda ${{ env.CAMUNDA_VERSION }})
 
           Dev package already exists for this commit.
 
-          - **OCI Tag:** \`${{ env.CHART_VERSION }}\`
+          - **Dev Tag:** \`${DEV_TAG}\`
           - **Camunda Version:** \`${{ env.CAMUNDA_VERSION }}\`
 
           EOF
           else
-            # Prepare release version display
-            if [[ "${{ env.RELEASE_VERSION_COMPUTED }}" == "true" ]]; then
-              RELEASE_VERSION_DISPLAY="${{ env.RELEASE_VERSION }}"
-            else
-              RELEASE_VERSION_DISPLAY="(not computed)"
-            fi
-
             # Build summary based on architecture
             if [[ "${CHART_ARCHITECTURE}" == "orchestration" ]]; then
               # 8.8+ with orchestration cluster (single camunda image)
@@ -459,13 +456,13 @@ jobs:
 
           | Property | Value |
           |----------|-------|
-          | **Registry** | \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\` |
+          | **Registry** | \`oci://${OCI_REGISTRY}\` |
           | **Chart** | \`${{ env.CHART_NAME }}\` |
-          | **OCI Tag** | \`${{ env.CHART_VERSION }}\` |
-          | **Release Version** | \`${RELEASE_VERSION_DISPLAY}\` |
+          | **Dev Tag** | \`${DEV_TAG}\` |
+          | **Rolling Tag** | \`${ROLLING_TAG}\` |
+          | **Release Version (in Chart.yaml)** | \`${RELEASE_VERSION}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
-          | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
 
           ### 🐳 Image Versions (from values.yaml)
 
@@ -480,12 +477,13 @@ jobs:
 
           > **Note:** Compare these versions with the release train announcement to verify this dev package has the correct versions for release.
 
-          ### Install
+          ### Install (requires Harbor access)
 
           \`\`\`bash
+          helm registry login ${HARBOR_REGISTRY_HOST}
           helm install my-camunda-dev \\
-            oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
-            --version ${{ env.CHART_VERSION }}
+            oci://${OCI_REGISTRY}/${{ env.CHART_NAME }} \\
+            --version ${DEV_TAG}
           \`\`\`
 
           EOF
@@ -498,13 +496,13 @@ jobs:
 
           | Property | Value |
           |----------|-------|
-          | **Registry** | \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\` |
+          | **Registry** | \`oci://${OCI_REGISTRY}\` |
           | **Chart** | \`${{ env.CHART_NAME }}\` |
-          | **OCI Tag** | \`${{ env.CHART_VERSION }}\` |
-          | **Release Version** | \`${RELEASE_VERSION_DISPLAY}\` |
+          | **Dev Tag** | \`${DEV_TAG}\` |
+          | **Rolling Tag** | \`${ROLLING_TAG}\` |
+          | **Release Version (in Chart.yaml)** | \`${RELEASE_VERSION}\` |
           | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
           | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
-          | **Package** | [View in GHCR](https://github.com/${{ env.REPOSITORY_NAME }}/pkgs/container/helm%2F${{ env.CHART_NAME }}) |
 
           ### 🐳 Image Versions (from values.yaml)
 
@@ -521,12 +519,13 @@ jobs:
 
           > **Note:** Compare these versions with the release train announcement to verify this dev package has the correct versions for release.
 
-          ### Install
+          ### Install (requires Harbor access)
 
           \`\`\`bash
+          helm registry login ${HARBOR_REGISTRY_HOST}
           helm install my-camunda-dev \\
-            oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
-            --version ${{ env.CHART_VERSION }}
+            oci://${OCI_REGISTRY}/${{ env.CHART_NAME }} \\
+            --version ${DEV_TAG}
           \`\`\`
 
           EOF
