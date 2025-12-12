@@ -47,17 +47,7 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// Load config and merge with flags
-			cfgPath, err := config.ResolvePath(configFile)
-			if err != nil {
-				return err
-			}
-			rc, err := config.Read(cfgPath, true)
-			if err != nil {
-				return err
-			}
-
-			// Apply active deployment defaults
-			if err := config.ApplyActiveDeployment(rc, rc.Current, &flags); err != nil {
+			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {
 				return err
 			}
 
@@ -149,22 +139,13 @@ func registerScenarioCompletion(cmd *cobra.Command, flagName string) {
 		// First check CLI flags
 		scenarioPath, _ := cmd.Flags().GetString("scenario-path")
 		if scenarioPath == "" {
-			// Fall back to config file
-			cfgPath, err := config.ResolvePath(configFile)
-			if err == nil {
-				rc, err := config.Read(cfgPath, false)
-				if err == nil {
-					// Create temporary flags and merge config
-					var tempFlags config.RuntimeFlags
-					// Get CLI flag values that may have been set
-					tempFlags.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
-					tempFlags.ChartPath, _ = cmd.Flags().GetString("chart-path")
+			// Fall back to config file - create temporary flags with CLI values and merge config
+			var tempFlags config.RuntimeFlags
+			tempFlags.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
+			tempFlags.ChartPath, _ = cmd.Flags().GetString("chart-path")
 
-					// Apply active deployment to merge config values
-					if err := config.ApplyActiveDeployment(rc, rc.Current, &tempFlags); err == nil {
-						scenarioPath = tempFlags.ScenarioPath
-					}
-				}
+			if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
+				scenarioPath = tempFlags.ScenarioPath
 			}
 		}
 
