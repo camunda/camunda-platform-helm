@@ -474,13 +474,21 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
+          OVERLAY_ARGS=""
+          if [[ -f "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-keycloak.yaml" ]]; then
+            OVERLAY_ARGS="$OVERLAY_ARGS --overlay ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-keycloak.yaml"
+          fi
+          if [[ -f "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-elasticsearch.yaml" ]]; then
+            OVERLAY_ARGS="$OVERLAY_ARGS --overlay ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-elasticsearch.yaml"
+          fi
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
-            --interactive false
+            --interactive false \
+            $OVERLAY_ARGS
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -720,13 +728,21 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
+          OVERLAY_ARGS=""
+          if [[ -f "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-keycloak.yaml" ]]; then
+            OVERLAY_ARGS="$OVERLAY_ARGS --overlay ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-keycloak.yaml"
+          fi
+          if [[ -f "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-elasticsearch.yaml" ]]; then
+            OVERLAY_ARGS="$OVERLAY_ARGS --overlay ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/common/use-external-elasticsearch.yaml"
+          fi
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
-            --interactive false
+            --interactive false \
+            $OVERLAY_ARGS
 
       - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets

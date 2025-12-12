@@ -26,6 +26,7 @@ type Options struct {
 	OutputDir    string
 	Interactive  bool
 	EnvFile      string
+	Overlays     []string
 }
 
 type MissingEnvError struct {
@@ -236,6 +237,136 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 	}
 	logging.Logger.Debug().Int("bytes", len(content)).Str("output-path", outputPath).Msg("Successfully wrote bytes to")
 	return outputPath, content, nil
+}
+
+// ProcessOverlays processes overlay files with placeholder substitution (no license injection).
+// Overlays are written in-place by default, or to outputDir if specified.
+func ProcessOverlays(overlayPaths []string, opts Options) error {
+	// Build overlay env from JSON config (stringified)
+	configEnv := map[string]string{}
+	if opts.ValuesConfig != "" && opts.ValuesConfig != "{}" {
+		logging.Logger.Debug().Msg("Parsing values-config JSON for overlays")
+		var m map[string]any
+		if err := json.Unmarshal([]byte(opts.ValuesConfig), &m); err != nil {
+			logging.Logger.Debug().Err(err).Msg("Failed to parse values-config")
+			return err
+		}
+		for k, v := range m {
+			configEnv[k] = fmt.Sprintf("%v", v)
+		}
+		logging.Logger.Debug().Int("count", len(configEnv)).Msg("Loaded config values from values-config")
+	}
+
+	getVal := func(name string) (string, bool) {
+		if v, ok := configEnv[name]; ok {
+			return v, true
+		}
+		v, ok := os.LookupEnv(name)
+		return v, ok
+	}
+
+	// Collect all placeholders from all overlay files first
+	allPlaceholders := make(map[string]struct{})
+	for _, overlayPath := range overlayPaths {
+		logging.Logger.Debug().Str("overlay", overlayPath).Msg("Reading overlay file")
+		content, err := readFile(overlayPath)
+		if err != nil {
+			logging.Logger.Debug().Err(err).Str("overlay", overlayPath).Msg("Failed to read overlay file")
+			return fmt.Errorf("read overlay file %q: %w", overlayPath, err)
+		}
+		ph := placeholders.Find(content)
+		for _, p := range ph {
+			allPlaceholders[p] = struct{}{}
+		}
+	}
+
+	// Validate all placeholders are available
+	var missing []string
+	for p := range allPlaceholders {
+		if _, ok := getVal(p); !ok {
+			if opts.Interactive {
+				defVal := ""
+				val, err := env.Prompt(p, defVal)
+				if err != nil {
+					logging.Logger.Error().Err(err).Msg("Failed to read input")
+					missing = append(missing, p)
+					continue
+				}
+				if val != "" {
+					os.Setenv(p, val)
+					if opts.EnvFile != "" {
+						if err := env.Append(opts.EnvFile, p, val); err != nil {
+							logging.Logger.Warn().Err(err).Msg("Failed to append to .env file")
+						} else {
+							logging.Logger.Info().Msg("Saved to .env file")
+						}
+					}
+					continue
+				}
+			}
+			missing = append(missing, p)
+		}
+	}
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		logging.Logger.Debug().Int("count", len(missing)).Msg("Missing required environment variables for overlays")
+		return MissingEnvError{Missing: missing}
+	}
+
+	// Log substitutions
+	if len(allPlaceholders) > 0 {
+		logging.Logger.Info().Msg("Substituting environment variables in overlays:")
+		for p := range allPlaceholders {
+			if val, ok := getVal(p); ok {
+				displayVal := val
+				upper := strings.ToUpper(p)
+				if strings.Contains(upper, "KEY") || strings.Contains(upper, "SECRET") || strings.Contains(upper, "PASSWORD") || strings.Contains(upper, "TOKEN") {
+					displayVal = "***"
+				}
+				logging.Logger.Info().Str("var", p).Str("value", displayVal).Msg("")
+			}
+		}
+	}
+
+	// Process each overlay file
+	for _, overlayPath := range overlayPaths {
+		logging.Logger.Debug().Str("overlay", overlayPath).Msg("Processing overlay file")
+		content, err := readFile(overlayPath)
+		if err != nil {
+			return fmt.Errorf("read overlay file %q: %w", overlayPath, err)
+		}
+
+		// Perform substitution
+		content = os.Expand(content, func(name string) string {
+			if v, ok := getVal(name); ok {
+				return v
+			}
+			return ""
+		})
+
+		// Determine output path for overlay
+		var outputPath string
+		if opts.OutputDir != "" {
+			// Write to output directory with original filename
+			if err := os.MkdirAll(opts.OutputDir, 0o755); err != nil {
+				return fmt.Errorf("create output directory: %w", err)
+			}
+			filename := filepath.Base(overlayPath)
+			outputPath = filepath.Join(opts.OutputDir, filename)
+		} else {
+			// Write in-place
+			outputPath = overlayPath
+		}
+
+		// Write processed overlay
+		logging.Logger.Debug().Str("overlay", overlayPath).Str("output", outputPath).Msg("Writing processed overlay")
+		if err := writeFile(outputPath, content); err != nil {
+			return fmt.Errorf("write overlay file %q: %w", outputPath, err)
+		}
+		logging.Logger.Info().Str("overlay", overlayPath).Str("output", outputPath).Msg("Processed overlay file")
+	}
+
+	return nil
 }
 
 // IsMissingEnv returns (true, names) if err is a MissingEnvError.

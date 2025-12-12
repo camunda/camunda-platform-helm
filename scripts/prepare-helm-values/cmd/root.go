@@ -25,6 +25,7 @@ func Execute() {
 		interactive  bool
 		logLevel     string
 		noColor      bool
+		overlays     []string
 	)
 
 	root := &cobra.Command{
@@ -81,6 +82,7 @@ func Execute() {
 				OutputDir:    outputDir,
 				Interactive:  interactive,
 				EnvFile:      envFile,
+				Overlays:     overlays,
 			}
 
 			if opts.EnvFile == "" {
@@ -96,6 +98,22 @@ func Execute() {
 			logging.Logger.Info().Str("chart-path", chartPath).Msg("Using chart path")
 			logging.Logger.Info().Str("scenario", scenario).Msg("Scenario")
 			logging.Logger.Debug().Str("values-file", valuesFile).Msg("Source values file")
+
+			// Process overlay files first if any are provided
+			if len(overlays) > 0 {
+				logging.Logger.Info().Int("count", len(overlays)).Msg("Processing overlay files")
+				if err := values.ProcessOverlays(overlays, opts); err != nil {
+					if missing, names := values.IsMissingEnv(err); missing {
+						logging.Logger.Error().Msg("Missing required environment variables for overlay substitution:")
+						for _, v := range names {
+							fmt.Printf("   - %s\n", v)
+						}
+						os.Exit(3)
+					}
+					logging.Logger.Error().Err(err).Msg("Overlay processing failed")
+					return err
+				}
+			}
 
 			outputPath, content, err := values.Process(valuesFile, opts)
 			if err != nil {
@@ -127,6 +145,7 @@ func Execute() {
 	root.Flags().StringVar(&output, "output", "", "Output file path (defaults to scenario values file in-place)")
 	root.Flags().StringVar(&outputDir, "output-dir", "", "Output directory path (writes with scenario-based filename)")
 	root.Flags().StringVar(&envFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
+	root.Flags().StringSliceVar(&overlays, "overlay", nil, "Overlay files to process (can be repeated)")
 	root.Flags().BoolVar(&interactive, "interactive", true, "Enable interactive prompts for missing variables")
 	root.Flags().StringVar(&logLevel, "log-level", "info", "Log level: trace, debug, info, warn, error")
 	root.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
