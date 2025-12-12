@@ -81,6 +81,7 @@ on:
         type: choice
         options:
           - all
+          - elasticsearch
           - upgrade-migration
           - keycloak-original
           - keycloak-mt

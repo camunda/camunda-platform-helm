@@ -30,3 +30,8 @@ scripts/prepare-helm-values/prepare-helm-values
 
 scripts/deploy-camunda/deploy-camunda
 scripts/deploy-camunda/.env
+.env.86
+.env.88
+.env.87
+
+charts/camunda-platform*/test/e2e/package-lock.json

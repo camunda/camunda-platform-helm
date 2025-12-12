@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 export default defineConfig({
-  testDir: "./node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.7",
+  testDir: "./node_modules/@camunda/e2e-test-suite/dist/tests/SM-8.6",
   projects: [
     {
       name: "smoke-tests",

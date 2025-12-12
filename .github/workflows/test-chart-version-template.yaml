@@ -130,3 +130,4 @@ jobs:
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
         secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
         secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;

@@ -37,7 +37,7 @@ func ResolveScenarioFiles(scenarioDir string, scenarios []string) ([]string, err
 			filePath := filepath.Join(scenarioDir, fmt.Sprintf("values-integration-test-ingress-%s.yaml", miss))
 			errMsgs = append(errMsgs, fmt.Sprintf("missing scenario values file: %s", filePath))
 		}
-		return nil, fmt.Errorf(strings.Join(errMsgs, "; "))
+		return nil, fmt.Errorf("%s", strings.Join(errMsgs, "; "))
 	}
 	return files, nil
 }
