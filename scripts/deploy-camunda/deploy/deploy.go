@@ -860,6 +860,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		DockerRegistryUsername: flags.DockerUsername,
 		DockerRegistryPassword: flags.DockerPassword,
 		Platform:               flags.Platform,
+		NamespacePrefix:        "distribution",
 		RepoRoot:               flags.RepoRoot,
 		Identifier:             identifier,
 		TTL:                    "30m",
