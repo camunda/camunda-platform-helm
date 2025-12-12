@@ -24,11 +24,38 @@ var (
 	debugFlagsRaw []string
 )
 
+// isUsageError checks if an error is a usage/validation error that should show help.
+func isUsageError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// Check for common usage error patterns
+	usagePatterns := []string{
+		"unknown flag",
+		"unknown shorthand flag",
+		"required flag",
+		"invalid argument",
+		"accepts",
+		"unknown command",
+		"flag needs an argument",
+		"invalid value",
+	}
+	for _, pattern := range usagePatterns {
+		if strings.Contains(strings.ToLower(errStr), pattern) {
+			return true
+		}
+	}
+	return false
+}
+
 // NewRootCommand creates the root command.
 func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "deploy-camunda",
-		Short: "Deploy Camunda Platform with prepared Helm values",
+		Use:           "deploy-camunda",
+		Short:         "Deploy Camunda Platform with prepared Helm values",
+		SilenceUsage:  true, // Don't show usage for runtime errors, only for usage errors
+		SilenceErrors: true, // Handle all error printing ourselves
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Skip for config and completion subcommands
 			if cmd != nil {
@@ -225,5 +252,18 @@ func Execute() error {
 	rootCmd := NewRootCommand()
 	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 	rootCmd.AddCommand(newConfigCommand())
-	return rootCmd.Execute()
+	
+	err := rootCmd.Execute()
+	if err != nil {
+		// Only show usage/help for usage errors, not runtime errors
+		if isUsageError(err) {
+			// Print error and then show usage
+			fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
+			_ = rootCmd.Usage()
+		} else {
+			// For runtime errors, just print the error without usage
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
+	}
+	return err
 }
