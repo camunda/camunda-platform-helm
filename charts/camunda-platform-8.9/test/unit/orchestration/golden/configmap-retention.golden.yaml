@@ -24,7 +24,7 @@ data:
     else
       exec /usr/local/camunda/bin/camunda
     fi
-  application.yaml: |    
+  application.yaml: |
     spring:
       profiles:
         active: "broker,identity,operate,tasklist,consolidated-auth"
@@ -203,5 +203,4 @@ data:
                 waitPeriodBeforeArchiving: "1h"
                 delayBetweenRuns: 2000
                 maxDelayBetweenRuns: 60000
-    
   log4j2.xml: |

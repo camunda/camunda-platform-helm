@@ -6,12 +6,8 @@ metadata:
   labels: {{- include "webModeler.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
-  {{- if .Values.webModeler.websockets.configuration }}
   application.yaml: |
-    {{ .Values.webModeler.websockets.configuration | indent 4 | trim }}
-  {{- else }}
-  application.yaml: |
-  {{- end }}
+    {{ tpl .Values.webModeler.websockets.configuration . | indent 4 | trim }}
   {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
   {{ $key }}: |
     {{ $val | indent 4 | trim }}
