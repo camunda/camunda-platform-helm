@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"scripts/camunda-core/pkg/completion"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/format"
@@ -134,11 +134,75 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
 
-	// Register completions
-	completion.RegisterScenarioCompletion(rootCmd, "scenario", "chart-path")
-	completion.RegisterScenarioCompletion(rootCmd, "auth", "chart-path")
+	// Register completions using config-aware completion function
+	registerScenarioCompletion(rootCmd, "scenario")
+	registerScenarioCompletion(rootCmd, "auth")
 
 	return rootCmd
+}
+
+// registerScenarioCompletion adds tab completion for scenario-related flags.
+// It loads the config file and merges with CLI flags to resolve the scenario path.
+// Supports comma-separated multi-select for the scenario flag.
+func registerScenarioCompletion(cmd *cobra.Command, flagName string) {
+	_ = cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		// First check CLI flags
+		scenarioPath, _ := cmd.Flags().GetString("scenario-path")
+		if scenarioPath == "" {
+			// Fall back to config file
+			cfgPath, err := config.ResolvePath(configFile)
+			if err == nil {
+				rc, err := config.Read(cfgPath, false)
+				if err == nil {
+					// Create temporary flags and merge config
+					var tempFlags config.RuntimeFlags
+					// Get CLI flag values that may have been set
+					tempFlags.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
+					tempFlags.ChartPath, _ = cmd.Flags().GetString("chart-path")
+
+					// Apply active deployment to merge config values
+					if err := config.ApplyActiveDeployment(rc, rc.Current, &tempFlags); err == nil {
+						scenarioPath = tempFlags.ScenarioPath
+					}
+				}
+			}
+		}
+
+		if scenarioPath == "" {
+			return cobra.AppendActiveHelp(nil, "Please specify --scenario-path or configure scenarioRoot in your deployment config"), cobra.ShellCompDirectiveNoFileComp
+		}
+
+		list, err := scenarios.List(scenarioPath)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		// Handle comma-separated multi-select
+		// Parse already selected scenarios and filter them out
+		var prefix string
+		var alreadySelected []string
+		if idx := strings.LastIndex(toComplete, ","); idx >= 0 {
+			prefix = toComplete[:idx+1]
+			alreadySelected = strings.Split(toComplete[:idx], ",")
+		}
+
+		// Build set of already selected scenarios for fast lookup
+		selected := make(map[string]bool)
+		for _, s := range alreadySelected {
+			selected[strings.TrimSpace(s)] = true
+		}
+
+		// Filter out already selected and prepend prefix
+		var completions []string
+		for _, s := range list {
+			if !selected[s] {
+				completions = append(completions, prefix+s)
+			}
+		}
+
+		// Use NoSpace directive to allow continuing with comma for multi-select
+		return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+	})
 }
 
 // Execute runs the root command.
