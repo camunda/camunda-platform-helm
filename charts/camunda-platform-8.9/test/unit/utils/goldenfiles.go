@@ -42,10 +42,10 @@ type TemplateGoldenTest struct {
 func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	if s.SetValues == nil {
 		s.SetValues = map[string]string{
-			"connectors.security.authentication.oidc.existingSecret.name":             "camunda-credentials",
+			"connectors.security.authentication.oidc.existingSecret.name":    "camunda-credentials",
 			"orchestration.security.authentication.oidc.existingSecret.name": "camunda-credentials",
-			"global.identity.auth.console.existingSecret.name":                "camunda-credentials",
-			"global.identity.auth.optimize.existingSecret.name":               "camunda-credentials",
+			"global.identity.auth.console.existingSecret.name":               "camunda-credentials",
+			"global.identity.auth.optimize.existingSecret.name":              "camunda-credentials",
 		}
 	}
 	values := s.SetValues
@@ -53,6 +53,8 @@ func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	values["orchestration.security.authentication.oidc.existingSecret.name"] = "camunda-credentials"
 	values["global.identity.auth.console.existingSecret.name"] = "camunda-credentials"
 	values["global.identity.auth.optimize.existingSecret.name"] = "camunda-credentials"
+	values["global.elasticsearch.enabled"] = "true"
+	values["elasticsearch.enabled"] = "true"
 	options := &helm.Options{
 		KubectlOptions: k8s.NewKubectlOptions("", "", s.Namespace),
 		SetValues:      values,
