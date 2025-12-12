@@ -33,3 +33,5 @@ scripts/deploy-camunda/.env
 .env.86
 .env.88
 .env.87
+
+charts/camunda-platform*/test/e2e/package-lock.json
