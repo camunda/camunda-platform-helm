@@ -30,6 +30,25 @@ import (
 
 const fieldManagerName = "camunda-platform-helm"
 
+// formatNamespacePermissionError creates a user-friendly error message for namespace permission errors.
+func formatNamespacePermissionError(operation, namespace, verb string, err error) error {
+	var additionalHint string
+	if verb == "get" {
+		additionalHint = "  2. Or request cluster-wide namespace read permissions\n"
+	}
+
+	return fmt.Errorf("permission denied: cannot %s namespace %q\n\n"+
+		"Your Kubernetes user does not have permission to %s namespaces.\n"+
+		"This is typically a Teleport or RBAC configuration issue.\n\n"+
+		"To resolve this:\n"+
+		"  1. Ask your Teleport/cluster admin to grant access to namespace %q\n"+
+		"     in the \"kubernetes_resources\" field of your Teleport role\n"+
+		"%s"+
+		"To verify your permissions, run:\n"+
+		"  kubectl auth can-i %s namespaces/%s\n\n"+
+		"Original error: %w", operation, namespace, verb, namespace, additionalHint, verb, namespace, err)
+}
+
 func defaultApplyOptions() metav1.ApplyOptions {
 	return metav1.ApplyOptions{
 		FieldManager: fieldManagerName,
@@ -106,6 +125,9 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 
 	_, err := c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
 	if err != nil {
+		if apierrors.IsForbidden(err) {
+			return formatNamespacePermissionError("create/update", namespace, "create", err)
+		}
 		return fmt.Errorf("failed to apply namespace %q (context=%q): %w", namespace, c.kubeContext, err)
 	}
 
@@ -120,6 +142,9 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 		if apierrors.IsNotFound(err) {
 			// Namespace doesn't exist, we can proceed
 			return nil
+		}
+		if apierrors.IsForbidden(err) {
+			return formatNamespacePermissionError("access", namespace, "get", err)
 		}
 		return fmt.Errorf("failed to check namespace status: %w", err)
 	}
@@ -146,6 +171,9 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 			return true, nil
 		}
 		if err != nil {
+			if apierrors.IsForbidden(err) {
+				return false, formatNamespacePermissionError("check status of", namespace, "get", err)
+			}
 			return false, err
 		}
 
@@ -217,6 +245,9 @@ func (c *Client) DeleteNamespace(ctx context.Context, namespace string) error {
 			logging.Logger.Debug().Str("namespace", namespace).Msg("namespace not found, nothing to delete")
 			return nil
 		}
+		if apierrors.IsForbidden(err) {
+			return formatNamespacePermissionError("delete", namespace, "delete", err)
+		}
 		return fmt.Errorf("failed to delete namespace: %w", err)
 	}
 
@@ -228,6 +259,9 @@ func (c *Client) DeleteNamespace(ctx context.Context, namespace string) error {
 			return true, nil
 		}
 		if err != nil {
+			if apierrors.IsForbidden(err) {
+				return false, formatNamespacePermissionError("check deletion status of", namespace, "get", err)
+			}
 			return false, err
 		}
 		return false, nil
