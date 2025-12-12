@@ -145,6 +145,6 @@ runs:
       if: ${{ !cancelled() }}
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
-        name: blob-report-${{ inputs.identifier }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
+        name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
         retention-days: 1
