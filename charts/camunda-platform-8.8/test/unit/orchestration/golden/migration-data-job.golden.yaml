@@ -69,17 +69,17 @@ spec:
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
       affinity:
-          podAntiAffinity:
-            preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                  - key: app.kubernetes.io/component
-                    operator: In
-                    values:
-                    - zeebe-broker
-                topologyKey: kubernetes.io/hostname
-              weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - zeebe-broker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
       volumes:
         - name: config
           configMap:
