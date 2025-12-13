@@ -74,15 +74,15 @@ spec:
             {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-        {{ toYaml . | nindent 8 }}
+        {{ toYaml . | nindent 10 }}
       {{- end }}
       {{- with .Values.orchestration.migration.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 10 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:
-        {{ toYaml . | nindent 8 }}
+        {{ toYaml . | nindent 10 }}
       {{- end }}
       volumes:
         - name: config
