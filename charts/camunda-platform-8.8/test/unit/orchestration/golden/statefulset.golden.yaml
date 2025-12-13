@@ -137,15 +137,15 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/component
-                operator: In
-                values:
-                - zeebe-broker
-            topologyKey: kubernetes.io/hostname
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - zeebe-broker
+              topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
