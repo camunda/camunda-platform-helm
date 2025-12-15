@@ -15,7 +15,6 @@ global:
 
 identity:
   enabled: false
-
 identityKeycloak:
   enabled: false
 
