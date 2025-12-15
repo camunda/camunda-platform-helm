@@ -9,6 +9,7 @@ on:
         description: |
           RC package tag to release.
           Format: {version}-rc (e.g., "13.4.0-rc")
+          Or rolling tag: {chart-major}-rc-latest (e.g., "13-rc-latest")
         required: true
         type: string
 
@@ -23,7 +24,7 @@ permissions:
   issues: write
 
 env:
-  HARBOR_REGISTRY: dev.registry.camunda.cloud
+  HARBOR_REGISTRY: registry.camunda.cloud
   HARBOR_PROJECT: team-distribution
   CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
 
@@ -48,10 +49,54 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
+      - name: Import Vault secrets for Harbor
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-harbor
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+          exportEnv: true
+
       - name: Parse RC tag
         id: parse
+        env:
+          HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
+          HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
-          rc_tag="${{ inputs.rc-tag }}"
+          input_tag="${{ inputs.rc-tag }}"
+          
+          # Check if it's a rolling tag format: {major}-rc-latest
+          if [[ "$input_tag" =~ ^[0-9]+-rc-latest$ ]]; then
+            echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual RC tag..."
+            
+            # Query Harbor API to get all tags for this artifact
+            tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}")
+            
+            if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
+              echo "::error::Rolling tag ${input_tag} not found in Harbor"
+              exit 1
+            fi
+            
+            # Find the actual RC tag (format: {version}-rc)
+            rc_tag=$(echo "$tags_response" | jq -r '.[].name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?-rc$"))' | head -1)
+            
+            if [[ -z "$rc_tag" ]]; then
+              echo "::error::Could not find actual RC tag for rolling tag ${input_tag}"
+              exit 1
+            fi
+            
+            echo "::notice::Resolved rolling tag ${input_tag} to: ${rc_tag}"
+          else
+            rc_tag="$input_tag"
+          fi
+          
+          echo "resolved_tag=${rc_tag}" | tee -a $GITHUB_OUTPUT
           
           # Validate format: {version}-rc or {version}-{prerelease}-rc
           if [[ ! "$rc_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-rc$ ]]; then
@@ -84,18 +129,6 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Import Vault secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
-            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
-          exportEnv: true
-
       - name: Login to Harbor
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
@@ -108,7 +141,7 @@ jobs:
           mkdir -p .cr-release-packages
           
           helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
-            --version "${{ inputs.rc-tag }}" \
+            --version "${{ steps.parse.outputs.resolved_tag }}" \
             --destination .cr-release-packages
           
           echo "Downloaded package:"

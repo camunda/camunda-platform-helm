@@ -11,7 +11,7 @@ name: "Chart - Build - Dev"
 # Chart.yaml version is the final release version (e.g., 13.4.0) computed via
 # release-please dry-run, making the artifact truly release-ready.
 #
-# Registry: oci://dev.registry.camunda.cloud/team-distribution/camunda-platform
+# Registry: oci://registry.camunda.cloud/team-distribution/camunda-platform
 #   Note: Harbor is for internal storage/testing. Public releases go to
 #   GitHub Releases → helm.camunda.io → Artifact Hub
 #
@@ -43,7 +43,7 @@ on:
 
 env:
   CHART_NAME: "camunda-platform"
-  HARBOR_REGISTRY_HOST: "dev.registry.camunda.cloud"
+  HARBOR_REGISTRY_HOST: "registry.camunda.cloud"
   HARBOR_REGISTRY_PROJECT: "team-distribution"
 
 jobs:

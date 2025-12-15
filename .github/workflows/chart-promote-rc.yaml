@@ -9,6 +9,7 @@ on:
         description: |
           Dev package tag to promote to RC.
           Format: {version}-dev-{sha} (e.g., "13.4.0-dev-abc1234")
+          Or rolling tag: {chart-major}-dev-latest (e.g., "13-dev-latest")
         required: true
         type: string
 
@@ -21,7 +22,7 @@ permissions:
   pull-requests: write
 
 env:
-  HARBOR_REGISTRY: dev.registry.camunda.cloud
+  HARBOR_REGISTRY: registry.camunda.cloud
   HARBOR_PROJECT: team-distribution
   RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
   RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
@@ -46,10 +47,54 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
+      - name: Import Vault secrets for Harbor
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-harbor
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+          exportEnv: true
+
       - name: Parse dev tag
         id: parse
+        env:
+          HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
+          HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
-          dev_tag="${{ inputs.dev-tag }}"
+          input_tag="${{ inputs.dev-tag }}"
+          
+          # Check if it's a rolling tag format: {major}-dev-latest
+          if [[ "$input_tag" =~ ^[0-9]+-dev-latest$ ]]; then
+            echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual dev tag..."
+            
+            # Query Harbor API to get all tags for this artifact
+            tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}")
+            
+            if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
+              echo "::error::Rolling tag ${input_tag} not found in Harbor"
+              exit 1
+            fi
+            
+            # Find the actual dev tag (format: {version}-dev-{sha})
+            dev_tag=$(echo "$tags_response" | jq -r '.[].name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$"))' | head -1)
+            
+            if [[ -z "$dev_tag" ]]; then
+              echo "::error::Could not find actual dev tag for rolling tag ${input_tag}"
+              exit 1
+            fi
+            
+            echo "::notice::Resolved rolling tag ${input_tag} to: ${dev_tag}"
+          else
+            dev_tag="$input_tag"
+          fi
+          
+          echo "resolved_tag=${dev_tag}" | tee -a $GITHUB_OUTPUT
           
           # Validate format: {version}-dev-{sha}
           if [[ ! "$dev_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$ ]]; then
@@ -86,18 +131,6 @@ jobs:
             exit 1
           fi
 
-      - name: Import Vault secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
-            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
-          exportEnv: true
-
       - name: Login to Harbor
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
@@ -114,12 +147,12 @@ jobs:
       - name: Pull and validate dev package
         id: package
         run: |
-          echo "Checking for package: ${{ inputs.dev-tag }}"
+          echo "Checking for package: ${{ steps.parse.outputs.resolved_tag }}"
           
           helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
-            --version "${{ inputs.dev-tag }}" \
+            --version "${{ steps.parse.outputs.resolved_tag }}" \
             --destination /tmp || {
-              echo "::error::Dev package not found in Harbor: ${{ inputs.dev-tag }}"
+              echo "::error::Dev package not found in Harbor: ${{ steps.parse.outputs.resolved_tag }}"
               exit 1
             }
           
@@ -164,8 +197,8 @@ jobs:
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
           # Get artifact digest from dev tag
-          echo "Getting digest for dev tag: ${{ inputs.dev-tag }}"
-          digest=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ inputs.dev-tag }}" \
+          echo "Getting digest for dev tag: ${{ steps.parse.outputs.resolved_tag }}"
+          digest=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ steps.parse.outputs.resolved_tag }}" \
             -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" | jq -r '.digest')
           
           if [[ -z "$digest" || "$digest" == "null" ]]; then
@@ -210,7 +243,8 @@ jobs:
           
           | Property | Value |
           |----------|-------|
-          | **Dev Tag** | `${{ inputs.dev-tag }}` |
+          | **Input Tag** | `${{ inputs.dev-tag }}` |
+          | **Resolved Dev Tag** | `${{ steps.parse.outputs.resolved_tag }}` |
           | **RC Tag** | `${{ steps.parse.outputs.rc_tag }}` |
           | **RC Latest Tag** | `${{ steps.parse.outputs.rc_latest_tag }}` |
           | **Version** | `${{ steps.parse.outputs.version }}` |
