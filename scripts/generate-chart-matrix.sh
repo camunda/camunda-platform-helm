@@ -254,8 +254,9 @@ fi
 cat matrix_versions.txt
 
 if [ "$(cat matrix_versions.txt)" = "matrix:" ]; then
-  echo "The matrix.txt file is empty. This workflow is only triggered when there are changes to the code. Aborting."
-  exit 1
+  echo "No matching chart changes detected; emitting empty matrix and skipping downstream jobs."
+  echo 'matrix={"include":[]}' | tee -a "${GITHUB_OUTPUT:-/dev/null}"
+  exit 0
 fi
 
 matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \

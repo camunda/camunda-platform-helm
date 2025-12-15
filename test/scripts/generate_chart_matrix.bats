@@ -70,6 +70,23 @@ get_first_version() {
 }
 
 
+@test "non-chart changes produce an empty matrix and succeed" {
+  export GITHUB_OUTPUT="$TMPDIR_TEST/github_output"
+  : > "$GITHUB_OUTPUT"
+
+  # Simulate a PR that only changes tooling/scripts paths, not charts.
+  run bash "$ROOT/scripts/generate-chart-matrix.sh" \
+    --manual-trigger none \
+    --active-versions "$AV" \
+    --all-modified-files "scripts/camunda-core"
+  assert_success
+
+  # The script should emit an empty JSON matrix for downstream jobs to skip.
+  run bash -c 'grep -E "^matrix=\{\\\"include\\\":\[\]\}$" "$GITHUB_OUTPUT"'
+  assert_success
+}
+
+
 @test "manual flow single value applies to all entries" {
   v="$(get_first_version)"
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
