@@ -5331,6 +5331,17 @@
                     "description": "defines how each partition is replicated, the value defines the number of nodes",
                     "default": "3"
                 },
+                "cluster": {
+                    "type": "object",
+                    "properties": {
+                        "initialContactPoints": {
+                            "type": "array",
+                            "description": "Override auto-generated initial-contact-points for multi-region deployments.",
+                            "default": [],
+                            "items": {}
+                        }
+                    }
+                },
                 "env": {
                     "type": "array",
                     "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
