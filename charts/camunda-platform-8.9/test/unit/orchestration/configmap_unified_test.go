@@ -568,3 +568,82 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigmapTemplateTest) TestIndexPrefixConfiguration() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainElasticsearchPrefixInZeebeExporter",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":        "true",
+				"global.elasticsearch.prefix":         "custom-es-prefix",
+				"orchestration.exporters.zeebe.enabled": "true",
+				"orchestration.profiles.broker":       "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.elasticsearch.args.index.prefix": "custom-es-prefix",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchPrefixInZeebeExporter",
+			Values: map[string]string{
+				"global.opensearch.enabled":          "true",
+				"global.opensearch.prefix":            "custom-os-prefix",
+				"orchestration.exporters.zeebe.enabled": "true",
+				"orchestration.profiles.broker":       "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.zeebe.broker.exporters.opensearch.args.index.prefix": "custom-os-prefix",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchPrefixInOperateZeebeOpensearch",
+			Values: map[string]string{
+				"global.opensearch.enabled":        "true",
+				"global.opensearch.prefix":          "custom-os-prefix",
+				"orchestration.profiles.operate":    "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.operate.zeebeOpensearch.prefix": "custom-os-prefix",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchPrefixInTasklistZeebeOpensearch",
+			Values: map[string]string{
+				"global.opensearch.enabled":        "true",
+				"global.opensearch.prefix":          "custom-os-prefix",
+				"orchestration.profiles.tasklist":   "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.tasklist.zeebeOpensearch.prefix": "custom-os-prefix",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainCustomOrchestrationIndexPrefix",
+			Values: map[string]string{
+				"global.opensearch.enabled":        "true",
+				"orchestration.index.prefix":        "custom-orchestration-prefix",
+				"orchestration.exporters.camunda.enabled": "true",
+				"orchestration.profiles.broker":     "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.index-prefix": "custom-orchestration-prefix",
+				"configmapApplication.zeebe.broker.exporters.camundaexporter.args.connect.indexPrefix": "custom-orchestration-prefix",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainCustomOrchestrationIndexPrefixWithElasticsearch",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":     "true",
+				"orchestration.index.prefix":        "custom-orchestration-prefix",
+				"orchestration.exporters.camunda.enabled": "true",
+				"orchestration.profiles.broker":     "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.index-prefix": "custom-orchestration-prefix",
+				"configmapApplication.zeebe.broker.exporters.camundaexporter.args.connect.indexPrefix": "custom-orchestration-prefix",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

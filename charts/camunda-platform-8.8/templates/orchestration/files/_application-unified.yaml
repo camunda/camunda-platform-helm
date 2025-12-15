@@ -177,6 +177,7 @@ camunda:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
       username: {{ .Values.global.opensearch.auth.username | quote }}
       password: "${VALUES_OPENSEARCH_PASSWORD:}"
+      prefix: {{ .Values.global.opensearch.prefix | quote }}
     {{- end }}
     # Zeebe instance
     zeebe:
@@ -210,6 +211,7 @@ camunda:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
       username: {{ .Values.global.opensearch.auth.username | quote }}
       password: "${VALUES_OPENSEARCH_PASSWORD:}"
+      prefix: {{ .Values.global.opensearch.prefix | quote }}
     {{- end }}
     # Zeebe instance
     zeebe:
