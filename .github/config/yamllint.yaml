@@ -32,7 +32,7 @@ rules:
     max-spaces-after: 1
   indentation:
     spaces: 2
-    indent-sequences: true
+    indent-sequences: false
     check-multi-line-strings: false
     # Remove this exception for v8.2 when it gets EOL.
     ignore:
