@@ -177,6 +177,14 @@ jobs:
           set -euo pipefail
           chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
           head_ref="release-please--branches--main--components--camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
+
+          # For prerelease charts (alpha/beta/rc), force release-please to use the
+          # version already embedded in the dev tag. This avoids manual PR edits.
+          release_as_args=()
+          if [[ "${{ steps.parse.outputs.version }}" =~ -(alpha|beta|rc)[0-9]+$ ]]; then
+            echo "::notice::Prerelease dev tag detected; forcing release-please version to '${{ steps.parse.outputs.version }}'"
+            release_as_args+=("--release-as=${{ steps.parse.outputs.version }}")
+          fi
           
           release-please release-pr \
             --token="${{ steps.generate-github-token.outputs.token }}" \
@@ -185,6 +193,7 @@ jobs:
             --path="${chart_path}" \
             --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
             --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
+            "${release_as_args[@]}" \
             --debug 2>&1 | tee release-please.log
 
           if grep -qiE 'aborting|untagged, merged release PRs outstanding' release-please.log; then
