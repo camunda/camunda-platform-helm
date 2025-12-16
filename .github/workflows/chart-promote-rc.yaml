@@ -189,8 +189,20 @@ jobs:
 
       - name: Run release-please
         id: release-please
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
+          set -euo pipefail
           chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
+          head_ref="release-please--branches--main--components--camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
+
+          # For prerelease charts (alpha/beta/rc), force release-please to use the
+          # version already embedded in the dev tag. This avoids manual PR edits.
+          release_as_args=()
+          if [[ "${{ steps.parse.outputs.version }}" =~ -(alpha|beta|rc)[0-9]+$ ]]; then
+            echo "::notice::Prerelease dev tag detected; forcing release-please version to '${{ steps.parse.outputs.version }}'"
+            release_as_args+=("--release-as=${{ steps.parse.outputs.version }}")
+          fi
           
           release-please release-pr \
             --token="${{ steps.generate-github-token.outputs.token }}" \
@@ -199,21 +211,34 @@ jobs:
             --path="${chart_path}" \
             --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
             --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
+            "${release_as_args[@]}" \
             --debug 2>&1 | tee release-please.log
-          
-          # Extract PR URL from output
-          pr_url=$(grep -oP 'https://github.com/[^/]+/[^/]+/pull/\d+' release-please.log | head -1 || true)
-          if [[ -n "$pr_url" ]]; then
-            echo "pr_url=${pr_url}" | tee -a $GITHUB_OUTPUT
-          else
-            echo "::warning::Could not extract PR URL from release-please output"
+
+          if grep -qiE 'aborting|untagged, merged release PRs outstanding' release-please.log; then
+            echo "::error::release-please aborted (likely due to a merged release PR still labeled as pending)."
+            echo "::error::Fix the outstanding release PR labels (e.g., set 'autorelease: published') and re-run this workflow."
+            exit 1
           fi
+
+          # Determine the release-please PR for this component deterministically.
+          pr_url="$(gh pr list --state open --head "${head_ref}" --base main --json url --jq '.[0].url // empty' 2>/dev/null || true)"
+          if [[ -z "${pr_url}" ]]; then
+            echo "::error::No open release-please PR found for component head '${head_ref}'."
+            echo "::error::This indicates release-please did not create/update a PR (or there are no releasable changes)."
+            echo "::error::Refusing to retag Harbor RC without a corresponding open release-please PR for review/merge."
+            exit 1
+          fi
+          echo "pr_url=${pr_url}" | tee -a "$GITHUB_OUTPUT"
+          
+          echo "::notice::Release-please PR: ${pr_url}"
 
       - name: Add RC tags to Harbor package
         env:
           HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
+          set -euo pipefail
+
           # Get artifact digest from dev tag
           echo "Getting digest for dev tag: ${{ steps.parse.outputs.resolved_tag }}"
           digest=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ steps.parse.outputs.resolved_tag }}" \
@@ -225,32 +250,66 @@ jobs:
           fi
           echo "Digest: ${digest}"
           
-          # Function to add a tag (delete first if exists for rolling tags)
-          add_tag() {
+          # Helpers for idempotent tagging.
+          tag_digest() {
             local tag_name="$1"
-            local delete_first="$2"
-            
-            if [[ "$delete_first" == "true" ]]; then
-              echo "Removing existing tag if present: ${tag_name}"
-              curl -sf -X DELETE "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
-                -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" || true
+            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              | jq -r '.digest // empty' || true
+          }
+
+          delete_tag_if_exists() {
+            local tag_name="$1"
+            echo "Removing existing tag if present: ${tag_name}"
+            curl -sf -X DELETE "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" || true
+          }
+
+          add_or_update_tag() {
+            local tag_name="$1"
+            local must_move="$2" # true for rolling tags
+
+            existing_digest="$(tag_digest "${tag_name}")"
+            if [[ -n "${existing_digest}" ]]; then
+              if [[ "${existing_digest}" == "${digest}" ]]; then
+                echo "✅ Tag already present and up-to-date: ${tag_name} -> ${digest}"
+                return 0
+              fi
+
+              if [[ "${must_move}" == "true" ]]; then
+                echo "ℹ️ Tag exists but points elsewhere; will move: ${tag_name} (${existing_digest} -> ${digest})"
+              else
+                echo "ℹ️ Tag exists but points elsewhere; will overwrite: ${tag_name} (${existing_digest} -> ${digest})"
+              fi
+              delete_tag_if_exists "${tag_name}"
             fi
-            
+
             echo "Adding tag: ${tag_name}"
-            if ! curl -sf -X POST "${HARBOR_API}/${HARBOR_REPO}/artifacts/${digest}/tags" \
+            http_code="$(curl -sS -o /tmp/harbor-tag.json -w "%{http_code}" -X POST "${HARBOR_API}/${HARBOR_REPO}/artifacts/${digest}/tags" \
               -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
               -H "Content-Type: application/json" \
-              -d "{\"name\": \"${tag_name}\"}"; then
-              echo "::error::Failed to add tag: ${tag_name}"
+              -d "{\"name\": \"${tag_name}\"}" || true)"
+
+            if [[ "${http_code}" != "201" && "${http_code}" != "200" && "${http_code}" != "409" ]]; then
+              echo "::error::Failed to add tag: ${tag_name} (HTTP ${http_code})"
+              cat /tmp/harbor-tag.json || true
+              exit 1
+            fi
+
+            # If Harbor returned conflict (409), verify whether the tag now exists and points to the desired digest.
+            final_digest="$(tag_digest "${tag_name}")"
+            if [[ "${final_digest}" != "${digest}" ]]; then
+              echo "::error::Tag '${tag_name}' does not point to expected digest after update."
+              echo "::error::Expected: ${digest}; got: ${final_digest:-<missing>}"
               exit 1
             fi
           }
           
-          # Add RC version tag (unique per version, no delete needed)
-          add_tag "${{ steps.parse.outputs.rc_tag }}" "false"
+          # Add RC version tag (make reruns safe: overwrite if already exists)
+          add_or_update_tag "${{ steps.parse.outputs.rc_tag }}" "false"
           
-          # Add RC rolling latest tag (delete first to move it)
-          add_tag "${{ steps.parse.outputs.rc_latest_tag }}" "true"
+          # Add RC rolling latest tag (always move to the selected digest)
+          add_or_update_tag "${{ steps.parse.outputs.rc_latest_tag }}" "true"
           
           echo "✅ RC tags added successfully"
 
