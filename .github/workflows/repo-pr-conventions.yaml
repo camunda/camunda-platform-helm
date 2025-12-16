@@ -8,10 +8,14 @@ jobs:
   check:
     name: Check PR Conventions
     runs-on: ubuntu-latest
-    # Skip for release-please PRs - they have their own conventions and this check sometimes hangs on them
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     steps:
+      - name: Skip conventions for release-please PRs
+        if: ${{ startsWith(github.head_ref, 'release-please--') }}
+        run: |
+          echo "Release-please PR detected (${GITHUB_HEAD_REF}); skipping PR conventions checks."
+
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        if: ${{ !startsWith(github.head_ref, 'release-please--') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -45,11 +49,13 @@ jobs:
           # to also validate the commit message for one commit PRs.
           validateSingleCommit: true
       - name: Checkout
+        if: ${{ !startsWith(github.head_ref, 'release-please--') }}
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
       - name: Ensure PR branch is up to date
+        if: ${{ !startsWith(github.head_ref, 'release-please--') }}
         run: |
           (git rev-list --left-right --count origin/main...HEAD | grep -q "^0") \
             || (echo "PR branch is not up to date with main. Please rebase or merge main into your branch." && exit 1) \
