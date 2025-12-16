@@ -675,7 +675,7 @@ func checkIfExternalSecretsCRDExists(ctx context.Context, client *Client) (bool,
 func waitExternalSecretsReady(ctx context.Context, client *Client, namespace string, timeout time.Duration) error {
 	externalSecretGVR := schema.GroupVersionResource{
 		Group:    "external-secrets.io",
-		Version:  "v1beta1",
+		Version:  "v1",
 		Resource: "externalsecrets",
 	}
 
