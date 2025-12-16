@@ -3,6 +3,11 @@ name: "Test - Integration - Runner"
 on:
   workflow_call:
     inputs:
+      helmChartVersion:
+        description: Deploy from OCI registry using this version (overrides git-based chart packaging for install flow)
+        required: false
+        default: ""
+        type: string
       values-config:
         type: string
         description: Some of the values files will allow subsitutions. For example, on the image.tags. This config supplies those values
@@ -464,8 +469,28 @@ jobs:
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
       - name: Helm - Package
+        if: inputs.helmChartVersion == ''
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
+
+      - name: Helm - Package (OCI)
+        if: inputs.helmChartVersion != ''
+        env:
+          HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
+        run: |
+          set -euo pipefail
+          echo "Using OCI chart version: ${HELM_CHART_VERSION}"
+          helm registry login registry.camunda.cloud \
+            --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
+            --password "${TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD}"
+
+          cd "${CI_TASKS_BASE_DIR}/chart-full-setup"
+          rm -f ./*.tgz
+          helm pull "oci://registry.camunda.cloud/team-distribution/camunda-platform" \
+            --version "${HELM_CHART_VERSION}" \
+            --destination .
+
+          echo "TEST_CHART_VERSION=${HELM_CHART_VERSION}" >> "$GITHUB_ENV"
 
       - name: Helm – prepare values from values-config
         shell: bash
