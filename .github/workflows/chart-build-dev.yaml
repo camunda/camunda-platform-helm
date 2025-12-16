@@ -25,13 +25,6 @@ on:
       - charts/camunda-platform-*/**
       - "!charts/camunda-platform-*/test/**"
 
-  # TODO: Remove before merging - for testing workflow on feature branch
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/chart-build-dev.yaml
-
   workflow_dispatch:
     inputs:
       chart-version:
