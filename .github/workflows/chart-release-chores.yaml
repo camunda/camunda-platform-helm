@@ -116,6 +116,11 @@ jobs:
           done
       - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
+          # IMPORTANT: use a GitHub App token instead of the default GITHUB_TOKEN.
+          # Commits pushed with GITHUB_TOKEN do not trigger other workflows, which
+          # prevents required checks (e.g. "Check PR Conventions") from reporting
+          # a status on the latest head SHA of release-please PRs.
+          github_token: "${{ steps.generate-github-token.outputs.token }}"
           author_name: "distro-ci[bot]"
           author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
           message: "chore(release): update chart files + version matrix"
