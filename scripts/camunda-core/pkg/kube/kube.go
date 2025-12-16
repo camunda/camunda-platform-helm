@@ -441,8 +441,8 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 		return fmt.Errorf("failed to check for ExternalSecrets CRD: %w", err)
 	}
 	if !hasCRD {
-		logging.Logger.Error().Msg("ExternalSecrets CRD not installed. ExternalSecrets CRD is required for TLS certificates, integration test credentials and infra credentials.")
-		return fmt.Errorf("ExternalSecrets CRD not installed")
+		logging.Logger.Warn().Msg("ExternalSecrets CRD not installed - skipping external secrets setup. TLS certificates and infra credentials will need to be configured manually.")
+		return nil
 	}
 
 	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix)
