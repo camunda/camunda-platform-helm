@@ -47,7 +47,6 @@ jobs:
       camunda-helm-dir: 'camunda-platform-8.8'
 
       # Optional: Deploy the packaged chart artifact from the OCI registry instead of packaging from the git checkout.
-      # This is intended for testing release candidates (RC) and releases.
       # Example values: '13.4.0-rc', '13.4.0', '13.4.0-dev-abc1234'
       # Required: false
       helmChartVersion: ''
