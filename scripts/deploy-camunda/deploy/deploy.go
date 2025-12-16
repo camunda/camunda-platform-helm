@@ -1063,7 +1063,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		CIMetadata: types.CIMetadata{
 			Flow: flags.Flow,
 		},
-		ApplyIntegrationCreds: true,
+		ApplyIntegrationCreds: false,
 		VaultSecretPath:       prepared.VaultSecretPath,
 	}
 

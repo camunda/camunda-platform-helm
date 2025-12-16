@@ -36,10 +36,12 @@ func (p *ROSASecretsProvider) Apply(ctx context.Context, client *Client, namespa
 
 type EKSSecretsProvider struct {
 	NamespacePrefix string
+	RepoRoot        string
+	ChartPath       string
 }
 
 func (p *EKSSecretsProvider) Apply(ctx context.Context, client *Client, namespace string) error {
-	return applyTLSSecretForEKS(ctx, client, namespace, p.NamespacePrefix)
+	return applySecretsForEKS(ctx, client, p.RepoRoot, p.ChartPath, namespace, p.NamespacePrefix)
 }
 
 func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix string) (PlatformSecretsProvider, error) {
@@ -57,6 +59,8 @@ func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix s
 	case platformEKS:
 		return &EKSSecretsProvider{
 			NamespacePrefix: namespacePrefix,
+			RepoRoot:        repoRoot,
+			ChartPath:       chartPath,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported platform %q (supported: gke, rosa, eks)", platform)
@@ -64,6 +68,23 @@ func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix s
 }
 
 func applyExternalSecretsForGKERosa(ctx context.Context, client *Client, repoRoot, chartPath, namespace string) error {
+	if err := applyExternalSecretsCertificates(ctx, client, repoRoot, namespace); err != nil {
+		return err
+	}
+
+	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace); err != nil {
+		return err
+	}
+
+	logging.Logger.Debug().Str("namespace", namespace).Msg("waiting for ExternalSecrets to become Ready")
+	if err := waitExternalSecretsReady(ctx, client, namespace, externalSecretsReadyTimeout); err != nil {
+		return fmt.Errorf("wait for ExternalSecrets ready: %w", err)
+	}
+
+	return nil
+}
+
+func applyExternalSecretsCertificates(ctx context.Context, client *Client, repoRoot, namespace string) error {
 	externalSecretDir := filepath.Join(repoRoot, ".github", "config", "external-secret")
 
 	if err := applyManifestIfExists(ctx, client, namespace,
@@ -71,6 +92,12 @@ func applyExternalSecretsForGKERosa(ctx context.Context, client *Client, repoRoo
 		"certificates external-secret"); err != nil {
 		return fmt.Errorf("apply certificates: %w", err)
 	}
+
+	return nil
+}
+
+func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, chartPath, namespace string) error {
+	externalSecretDir := filepath.Join(repoRoot, ".github", "config", "external-secret")
 
 	if err := applyManifestIfExists(ctx, client, namespace,
 		filepath.Join(externalSecretDir, "external-secret-infra.yaml"),
@@ -95,15 +122,10 @@ func applyExternalSecretsForGKERosa(ctx context.Context, client *Client, repoRoo
 		logging.Logger.Debug().Msg("no integration-test external-secret manifest found (optional, continuing)")
 	}
 
-	logging.Logger.Debug().Str("namespace", namespace).Msg("waiting for ExternalSecrets to become Ready")
-	if err := waitExternalSecretsReady(ctx, client, namespace, externalSecretsReadyTimeout); err != nil {
-		return fmt.Errorf("wait for ExternalSecrets ready: %w", err)
-	}
-
 	return nil
 }
 
-func applyTLSSecretForEKS(ctx context.Context, client *Client, namespace, namespacePrefix string) error {
+func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, namespacePrefix string) error {
 	srcNamespace := computeEKSSourceNamespace(namespacePrefix)
 
 	logging.Logger.Debug().
@@ -116,6 +138,14 @@ func applyTLSSecretForEKS(ctx context.Context, client *Client, namespace, namesp
 		return fmt.Errorf("copy TLS secret from %s to %s: %w", srcNamespace, namespace, err)
 	}
 
+	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace); err != nil {
+		return err
+	}
+
+	logging.Logger.Debug().Str("namespace", namespace).Msg("waiting for ExternalSecrets to become Ready")
+	if err := waitExternalSecretsReady(ctx, client, namespace, externalSecretsReadyTimeout); err != nil {
+		return fmt.Errorf("wait for ExternalSecrets ready: %w", err)
+	}	
 	return nil
 }
 
