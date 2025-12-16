@@ -312,6 +312,30 @@ jobs:
         run: |
           make release.set-prs-version-label
 
+      - name: Mark release-please PR as published
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          CHART_DIR_ID: "${{ needs.release.outputs.chart-dir-id }}"
+        run: |
+          set -euo pipefail
+
+          head_ref="release-please--branches--main--components--camunda-platform-${CHART_DIR_ID}"
+          pr_number="$(gh pr list --state open --head "${head_ref}" --json number --jq '.[0].number // empty')"
+
+          if [[ -z "${pr_number}" ]]; then
+            echo "::error::Could not find open release-please PR with head '${head_ref}'."
+            echo "::error::Cannot update autorelease labels; refusing to continue."
+            exit 1
+          fi
+
+          current_labels="$(gh pr view "${pr_number}" --json labels --jq '.labels[].name')"
+          if echo "${current_labels}" | grep -qx "autorelease: pending"; then
+            gh pr edit "${pr_number}" --remove-label "autorelease: pending"
+          fi
+          if ! echo "${current_labels}" | grep -qx "autorelease: published"; then
+            gh pr edit "${pr_number}" --add-label "autorelease: published"
+          fi
+
       - name: Summary
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
@@ -324,6 +348,7 @@ jobs:
           ## Post-Release Complete
           
           ✅ PRs labeled with version \`${{ needs.release.outputs.version }}\`
+          ✅ Release-please PR labeled with \`autorelease: published\`
           
           ### Manual Step Required
           Merge the release-please PR to complete the release process.
