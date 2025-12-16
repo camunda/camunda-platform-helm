@@ -214,8 +214,9 @@ jobs:
           # Determine the release-please PR for this component deterministically.
           pr_url="$(gh pr list --state open --head "${head_ref}" --base main --json url --jq '.[0].url // empty' 2>/dev/null || true)"
           if [[ -z "${pr_url}" ]]; then
-            echo "::error::No open release-please PR found for head '${head_ref}'."
-            echo "::error::Refusing to retag Harbor RC without a corresponding release-please PR."
+            echo "::error::No open release-please PR found for component head '${head_ref}'."
+            echo "::error::This indicates release-please did not create/update a PR (or there are no releasable changes)."
+            echo "::error::Refusing to retag Harbor RC without a corresponding open release-please PR for review/merge."
             exit 1
           fi
           echo "pr_url=${pr_url}" | tee -a "$GITHUB_OUTPUT"
