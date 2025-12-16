@@ -230,6 +230,8 @@ func (f *RuntimeFlags) ResolveIngressHostname() string {
 		return f.IngressSubdomain + "." + DefaultIngressBaseDomain
 	}
 	return ""
+}
+
 // LoadAndMerge loads config from the given path and merges the active deployment into flags.
 // If configPath is empty, it resolves the default config location.
 // The includeEnv parameter controls whether environment variable overrides are applied.
