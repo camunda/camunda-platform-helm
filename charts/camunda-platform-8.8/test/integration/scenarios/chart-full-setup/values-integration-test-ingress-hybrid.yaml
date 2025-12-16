@@ -165,11 +165,3 @@ console:
     pullSecrets:
       - name: index-docker-io
       - name: registry-camunda-cloud
-
-# -----------------------------------------------------------------------------
-# Infrastructure
-# -----------------------------------------------------------------------------
-prometheusServiceMonitor:
-  enabled: true
-  labels:
-    release: kube-prometheus-stack

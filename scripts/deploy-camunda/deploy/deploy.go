@@ -72,8 +72,9 @@ var envMutex sync.Mutex
 
 // processCommonValues finds and processes common values files from the common/ sibling directory.
 // It processes each file through values.Process() to apply env var substitution and writes to outputDir.
+// If platform is specified, it also processes files from the platform-specific subdirectory (e.g., common/eks/).
 // Returns the list of processed file paths in the output directory.
-func processCommonValues(scenarioPath, outputDir, envFile string) ([]string, error) {
+func processCommonValues(scenarioPath, outputDir, envFile, platform string) ([]string, error) {
 	// Common directory is a sibling to the scenario directory
 	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
 
@@ -81,6 +82,7 @@ func processCommonValues(scenarioPath, outputDir, envFile string) ([]string, err
 		Str("scenarioPath", scenarioPath).
 		Str("commonDir", commonDir).
 		Str("outputDir", outputDir).
+		Str("platform", platform).
 		Msg("🔍 [processCommonValues] looking for common values directory")
 
 	info, err := os.Stat(commonDir)
@@ -141,6 +143,49 @@ func processCommonValues(scenarioPath, outputDir, envFile string) ([]string, err
 	// Sort additional files for deterministic ordering
 	sort.Strings(additionalFiles)
 	sourceFiles = append(sourceFiles, additionalFiles...)
+
+	// Discover platform-specific files from common/<platform>/ subdirectory
+	if strings.TrimSpace(platform) != "" {
+		platformDir := filepath.Join(commonDir, platform)
+		logging.Logger.Debug().
+			Str("platformDir", platformDir).
+			Str("platform", platform).
+			Msg("🔍 [processCommonValues] looking for platform-specific values directory")
+
+		if pInfo, pErr := os.Stat(platformDir); pErr == nil && pInfo.IsDir() {
+			platformEntries, pReadErr := os.ReadDir(platformDir)
+			if pReadErr != nil {
+				logging.Logger.Debug().
+					Err(pReadErr).
+					Str("platformDir", platformDir).
+					Msg("⚠️ [processCommonValues] failed to read platform directory")
+			} else {
+				var platformFiles []string
+				for _, entry := range platformEntries {
+					if entry.IsDir() {
+						continue
+					}
+					name := entry.Name()
+					if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+						p := filepath.Join(platformDir, name)
+						logging.Logger.Debug().
+							Str("file", p).
+							Str("platform", platform).
+							Msg("🔍 [processCommonValues] found platform-specific values file")
+						platformFiles = append(platformFiles, p)
+					}
+				}
+				// Sort platform files for deterministic ordering
+				sort.Strings(platformFiles)
+				sourceFiles = append(sourceFiles, platformFiles...)
+			}
+		} else {
+			logging.Logger.Debug().
+				Str("platformDir", platformDir).
+				Str("platform", platform).
+				Msg("🔍 [processCommonValues] platform-specific directory not found - skipping")
+		}
+	}
 
 	if len(sourceFiles) == 0 {
 		logging.Logger.Debug().
@@ -841,8 +886,9 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 	logging.Logger.Debug().
 		Str("scenarioPath", flags.ScenarioPath).
 		Str("tempDir", tempDir).
+		Str("platform", flags.Platform).
 		Msg("📋 [prepareScenarioValues] processing common values files")
-	processedCommonFiles, err := processCommonValues(flags.ScenarioPath, tempDir, flags.EnvFile)
+	processedCommonFiles, err := processCommonValues(flags.ScenarioPath, tempDir, flags.EnvFile, flags.Platform)
 	if err != nil {
 		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to process common values: %w", err)
