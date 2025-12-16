@@ -67,6 +67,9 @@ func Deploy(ctx context.Context, o types.Options) error {
 		if err := applyIntegrationTestCredentials(ctx, kubeClient, o.Namespace); err != nil {
 			return err
 		}
+		if err := applyInfraTestCredentials(ctx, kubeClient, o.Namespace); err != nil {
+			return err
+		}
 	}
 
 	if o.VaultSecretPath != "" {
