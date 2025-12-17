@@ -2029,6 +2029,8 @@ optimize:
   dnsPolicy: ""
   ## @param optimize.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
+  profiles: "ccsm"
 
 #########################################################################################################
 ###### #    # ######  ####  #    # ##### #  ####  #    #       # #####  ###### #    # ##### # ##### #   #

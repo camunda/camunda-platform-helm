@@ -3314,6 +3314,8 @@ optimize:
     annotations: {}
     ## @param optimize.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
+  ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
+  profiles: "ccsm"
 
 #####################################################################################
 #######
