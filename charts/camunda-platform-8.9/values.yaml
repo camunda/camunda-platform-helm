@@ -1699,6 +1699,9 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.restapi.javaOpts can be used to set extra Java options for the restapi container
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
