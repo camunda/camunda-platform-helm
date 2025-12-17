@@ -1207,6 +1207,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `optimize.extraConfiguration`                                | if specified, contents will be used for any extra configuration files such as environment-logback.xml                                                                                                                                                      | `{}`                        |
 | `optimize.dnsPolicy`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy                                                                                                                                                                  | `""`                        |
 | `optimize.dnsConfig`                                         | https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config                                                                                                                                                                    | `{}`                        |
+| `optimize.profiles`                                          | defines SPRING_ACTIVE_PROFILES                                                                                                                                                                                                                             | `""`                        |
 
 ### Identity Parameters
 
