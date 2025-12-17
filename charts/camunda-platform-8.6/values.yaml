@@ -3079,6 +3079,8 @@ webModeler:
     ## @param webModeler.restapi.javaOpts can be used to set extra Java options for the restapi container
     javaOpts: >-
       -XX:MaxRAMPercentage=80.0
+    ## @param webModeler.restapi.zeebeClientConfigPath can be used to set a custom path for the Zeebe client configuration file
+    zeebeClientConfigPath: /tmp/zeebe_client_cache.txt
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
