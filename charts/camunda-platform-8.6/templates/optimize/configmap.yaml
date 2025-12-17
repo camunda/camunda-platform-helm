@@ -53,6 +53,16 @@ data:
       audience: {{ include "optimize.authAudience" . | quote }}
       jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
     {{- end }}
+
+    {{- if .Values.global.multitenancy.enabled }}
+    multitenancy:
+      enabled: true
+
+    caches:
+      cloudTenantAuthorizations:
+        maxSize: 10000
+        defaultTtlMillis: 600000
+    {{- end }}
   {{- end }}
 
 
