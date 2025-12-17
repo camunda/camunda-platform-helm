@@ -178,14 +178,6 @@ spec:
                 "config" .Values.global.identity.auth.optimize
             ) | nindent 12 }}
             {{- end }}
-            {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
-            - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
-              value: "true"
-            - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
-              value: "10000"
-            - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
-              value: "600000"
-            {{- end }}
             {{- if .Values.global.opensearch.aws.enabled }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
