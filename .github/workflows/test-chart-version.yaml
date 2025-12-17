@@ -126,7 +126,7 @@ jobs:
           manual-flow: ${{ github.event.inputs.flows || 'none' }}
 
   unit-testing:
-    if: ${{ needs.init.outputs.camunda-versions != '[]' }}
+    if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
     name: ${{ matrix.version }} - Unit Test
     needs: [init]
     strategy:
@@ -154,7 +154,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   kind-testing:
-    if: ${{ needs.init.outputs.camunda-versions != '[]' }}
+    if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
     name: Local cluster - KIND ${{ matrix.version }}
     needs: [init, validation]
     strategy:
@@ -171,6 +171,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration-tests:
+    if: ${{ !contains(github.head_ref, 'release-please--branches--') }}
     name: ${{ matrix.version }} - ${{ matrix.shortname }} - ${{ matrix.flow }} - ${{ matrix.case }} - ${{ inputs.platforms || 'gke' }}
     needs: [init]
     strategy:
