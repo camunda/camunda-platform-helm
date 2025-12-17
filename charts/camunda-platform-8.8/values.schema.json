@@ -2296,6 +2296,11 @@
                         }
                     }
                 },
+                "nodeEnv": {
+                    "type": "string",
+                    "description": "can be used to set the node environment.",
+                    "default": "prod"
+                },
                 "sidecars": {
                     "type": "array",
                     "description": "can be used to attach extra containers to the console deployment",
@@ -3334,6 +3339,16 @@
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                             "default": {}
+                        },
+                        "javaOpts": {
+                            "type": "string",
+                            "description": "can be used to set extra Java options for the restapi container",
+                            "default": "-XX:MaxRAMPercentage=80.0"
+                        },
+                        "zeebeClientConfigPath": {
+                            "type": "string",
+                            "description": "can be used to set a custom path for the Zeebe client configuration file",
+                            "default": "/tmp/zeebe_client_cache.txt"
                         }
                     }
                 },
@@ -3717,6 +3732,16 @@
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                             "default": {}
+                        },
+                        "nodeEnv": {
+                            "type": "string",
+                            "description": "can be used to set the node environment.",
+                            "default": "production"
+                        },
+                        "nodeOptions": {
+                            "type": "string",
+                            "description": "can be used to set the NODE_OPTIONS env var.",
+                            "default": "--max-old-space-size=128"
                         }
                     }
                 },
