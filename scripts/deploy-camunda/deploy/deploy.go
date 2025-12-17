@@ -1048,6 +1048,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		EnsureDockerRegistry:   flags.EnsureDockerRegistry,
 		SkipDependencyUpdate:   flags.SkipDependencyUpdate,
 		ExternalSecretsEnabled: flags.ExternalSecrets,
+		ExternalSecretsStore:   flags.ExternalSecretsStore,
 		DockerRegistryUsername: flags.DockerUsername,
 		DockerRegistryPassword: flags.DockerPassword,
 		Platform:               flags.Platform,

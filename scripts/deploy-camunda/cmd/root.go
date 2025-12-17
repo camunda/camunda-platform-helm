@@ -150,6 +150,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
 	f.BoolVar(&flags.SkipDependencyUpdate, "skip-dependency-update", true, "Skip Helm dependency update")
 	f.BoolVar(&flags.ExternalSecrets, "external-secrets", true, "Enable external secrets")
+	f.StringVar(&flags.ExternalSecretsStore, "external-secrets-store", "", "External secrets store type (e.g., vault-backend)")
 	f.StringVar(&flags.KeycloakHost, "keycloak-host", "keycloak-24-9-0.ci.distro.ultrawombat.com", "Keycloak external host")
 	f.StringVar(&flags.KeycloakProtocol, "keycloak-protocol", "https", "Keycloak protocol")
 	f.StringVar(&flags.KeycloakRealm, "keycloak-realm", "", "Keycloak realm name (auto-generated if not specified)")
