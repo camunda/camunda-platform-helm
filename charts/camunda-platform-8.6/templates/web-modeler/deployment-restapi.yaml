@@ -70,7 +70,7 @@ spec:
                   name: {{ include "webModeler.fullname" . }}
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: /tmp/zeebe_client_cache.txt
+              value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | quote }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
