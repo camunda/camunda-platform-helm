@@ -55,7 +55,7 @@ spec:
             - name: NODE_EXTRA_CA_CERTS
               value: {{ printf "/usr/local/console/certificates/%s" .Values.console.tls.certKeyFilename | quote }}
             - name: NODE_ENV
-              value: prod
+              value: {{ .Values.console.nodeEnv | quote }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
             - name: KEYCLOAK_INTERNAL_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
