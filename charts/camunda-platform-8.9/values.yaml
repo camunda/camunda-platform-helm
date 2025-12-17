@@ -1874,6 +1874,10 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.webapp.nodeEnv can be used to set the node environment.
+    nodeEnv: production
+    ## @param webModeler.webapp.nodeOptions can be used to set the NODE_OPTIONS env var.
+    nodeOptions: "--max-old-space-size=128"
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
