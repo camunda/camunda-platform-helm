@@ -431,6 +431,9 @@ console:
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
+  ## @param console.nodeEnv can be used to set the node environment.
+  nodeEnv: prod
+
   ## @param console.sidecars can be used to attach extra containers to the console deployment
   sidecars: []
 
