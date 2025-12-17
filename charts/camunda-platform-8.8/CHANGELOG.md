@@ -1,5 +1,17 @@
 # Changelog
 
+## [13.4.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.3.2...camunda-platform-8.8-13.4.0) (2025-12-17)
+
+
+### Features
+
+* enable first user and add additional users with roles in qa scenario ([#4889](https://github.com/camunda/camunda-platform-helm/issues/4889)) ([159b39f](https://github.com/camunda/camunda-platform-helm/commit/159b39fe82262a24a9830e0b687e04f081ef7ffc))
+
+
+### Bug Fixes
+
+* remove constraint of identity.enabled=false and optimize.enabled=true ([#4910](https://github.com/camunda/camunda-platform-helm/issues/4910)) ([0753d6f](https://github.com/camunda/camunda-platform-helm/commit/0753d6fc58336e9538856c9dd88aca52777a40ac))
+
 ## [13.3.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.3.1...camunda-platform-8.8-13.3.2) (2025-12-11)
 
 
