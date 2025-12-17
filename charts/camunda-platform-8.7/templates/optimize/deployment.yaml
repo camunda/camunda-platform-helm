@@ -178,8 +178,6 @@ spec:
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.global.elasticsearch.url.port | quote }}
             {{- end }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: ccsm
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
               {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
