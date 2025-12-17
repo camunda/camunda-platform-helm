@@ -58,7 +58,7 @@ data:
       jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
     {{- end }}
 
-    {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
+    {{- if .Values.global.multitenancy.enabled }}
     multitenancy:
       enabled: true
 
