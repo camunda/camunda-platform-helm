@@ -76,6 +76,26 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInput() {
 				// then
 				s.Require().Equal("custom-prefix", configmapApplication.Zeebe.Name)
 			},
+		}, {
+			Name:                 "TestMultitenancyEnabled",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.multitenancy.enabled": "true",
+				"identityPostgresql.enabled":  "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication OptimizeConfigYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["environment-config.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// then
+				s.Require().Equal(true, configmapApplication.Multitenancy.Enabled)
+			},
 		},
 	}
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
