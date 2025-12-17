@@ -7035,6 +7035,11 @@
                             "default": {}
                         }
                     }
+                },
+                "profiles": {
+                    "type": "string",
+                    "description": "defines SPRING_ACTIVE_PROFILES",
+                    "default": "\"\""
                 }
             },
             "migration": {

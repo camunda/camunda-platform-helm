@@ -62,6 +62,8 @@ spec:
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "ccsm"
           resources:
             limits:
               cpu: 2000m
