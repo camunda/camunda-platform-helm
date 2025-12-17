@@ -225,17 +225,18 @@ else
   printf "%s\n" ${ALL_MODIFIED_FILES}
 
   # Directories/patterns that trigger building all chart versions when changed
-  # Format: "pattern|exclude_pattern|description"
+  # Format: "pattern;;exclude_pattern;;description"
   # Use empty string for exclude_pattern if no exclusion is needed
+  # Note: We use ';;' as delimiter to avoid conflicts with '|' in regex patterns
   BUILD_ALL_TRIGGERS=(
-    '\.github/(workflows|actions)||.github/workflows or .github/actions'
-    '\.github/config|\.github/config/release-please|.github/config (excluding release-please)'
-    'scripts/deploy-camunda/||scripts/deploy-camunda/'
+    '\.github/(workflows|actions);;.github/workflows or .github/actions'
+    '\.github/config;;\.github/config/release-please;;.github/config (excluding release-please)'
+    'scripts/deploy-camunda/;;scripts/deploy-camunda/'
   )
 
   build_all_triggered=false
   for trigger in "${BUILD_ALL_TRIGGERS[@]}"; do
-    IFS='|' read -r pattern exclude_pattern description <<< "$trigger"
+    IFS=';;' read -r pattern exclude_pattern description <<< "$trigger"
     if echo "${ALL_MODIFIED_FILES}" | grep -qE "$pattern"; then
       # Check exclusion pattern if specified
       if [ -n "$exclude_pattern" ] && echo "${ALL_MODIFIED_FILES}" | grep -qE "$exclude_pattern"; then
