@@ -108,6 +108,24 @@ jobs:
           
           # Extract SHA (everything after -dev-)
           sha="${dev_tag##*-dev-}"
+
+          # Resolve short SHA to full 40-char commit SHA.
+          # actions/checkout treats short SHAs as branch/tag names and fails.
+          if [[ ${#sha} -lt 40 ]]; then
+            echo "::notice::Short SHA detected (${sha}); resolving via GitHub API..."
+            full_sha=$(curl -sfL \
+              -H "Authorization: Bearer ${{ steps.generate-github-token.outputs.token }}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${{ github.repository }}/commits/${sha}" | jq -r '.sha')
+            if [[ -z "${full_sha}" || "${full_sha}" == "null" ]]; then
+              echo "::error::Failed to resolve short SHA '${sha}' to a full commit SHA"
+              exit 1
+            fi
+            sha="${full_sha}"
+            echo "::notice::Resolved to full SHA: ${sha}"
+          fi
+
           echo "sha=${sha}" | tee -a $GITHUB_OUTPUT
           
           # Extract chart major (first number of version)

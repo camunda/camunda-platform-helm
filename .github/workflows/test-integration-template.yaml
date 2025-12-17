@@ -4,6 +4,11 @@ name: "Test - Integration - Template"
 on:
   workflow_call:
     inputs:
+      helmChartVersion:
+        description: Deploy from OCI registry using this version (overrides git-based chart packaging for install flow)
+        required: false
+        default: ""
+        type: string
       values-config:
         type: string
         description: Some of the values files will allow subsitutions. For example, on the image.tags. This config supplies those values
@@ -270,6 +275,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}
     with:
+      helmChartVersion: ${{ inputs.helmChartVersion }}
       auth: ${{ inputs.auth }}
       exclude: ${{ inputs.exclude }}
       identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}

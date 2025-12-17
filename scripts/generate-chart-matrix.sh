@@ -224,25 +224,39 @@ else
   echo "Changed files:"
   printf "%s\n" ${ALL_MODIFIED_FILES}
 
-  # If any workflow, action, files have changed, build all chart versions
-  if echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/(workflows|actions)"; then
-    echo "Changes in .github/workflows or .github/actions detected — building all chart versions"
-    for camunda_version in ${ACTIVE_VERSIONS}; do
-      chart_dir="${CHARTS_DIR}/camunda-platform-${camunda_version}"
-      write_matrix_entry "$camunda_version" "$chart_dir"
-    done
+  # Directories/patterns that trigger building all chart versions when changed
+  # Format: "pattern|exclude_pattern|description"
+  # Use empty string for exclude_pattern if no exclusion is needed
+  BUILD_ALL_TRIGGERS=(
+    '\.github/(workflows|actions)||.github/workflows or .github/actions'
+    '\.github/config|\.github/config/release-please|.github/config (excluding release-please)'
+    'scripts/deploy-camunda/||scripts/deploy-camunda/'
+  )
 
-  # If any external secret config files have changed, build all chart versions
-  elif echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/config" \
-    && ! echo "${ALL_MODIFIED_FILES}" | grep -qE "\.github/config/release-please"; then
-    echo "Changes in .github/config (excluding release-please) detected — building all chart versions"
-    for camunda_version in ${ACTIVE_VERSIONS}; do
-      chart_dir="${CHARTS_DIR}/camunda-platform-${camunda_version}"
-      write_matrix_entry "$camunda_version" "$chart_dir"
-    done
+  build_all_triggered=false
+  for trigger in "${BUILD_ALL_TRIGGERS[@]}"; do
+    IFS='|' read -r pattern exclude_pattern description <<< "$trigger"
+    if echo "${ALL_MODIFIED_FILES}" | grep -qE "$pattern"; then
+      # Check exclusion pattern if specified
+      if [ -n "$exclude_pattern" ] && echo "${ALL_MODIFIED_FILES}" | grep -qE "$exclude_pattern"; then
+        # All matches are in the excluded path, skip this trigger
+        # Check if there are matches outside the exclusion
+        if ! echo "${ALL_MODIFIED_FILES}" | grep -E "$pattern" | grep -qvE "$exclude_pattern"; then
+          continue
+        fi
+      fi
+      echo "Changes in ${description} detected — building all chart versions"
+      for camunda_version in ${ACTIVE_VERSIONS}; do
+        chart_dir="${CHARTS_DIR}/camunda-platform-${camunda_version}"
+        write_matrix_entry "$camunda_version" "$chart_dir"
+      done
+      build_all_triggered=true
+      break
+    fi
+  done
 
-  # Else, only rebuild the affected charts
-  else
+  # If no global trigger matched, only rebuild the affected charts
+  if [ "$build_all_triggered" = false ]; then
     for camunda_version in ${ACTIVE_VERSIONS}; do
       if [[ $(echo ${ALL_MODIFIED_FILES} | grep "charts/camunda-platform-${camunda_version}") ]]; then
         chart_dir="${CHARTS_DIR}/camunda-platform-${camunda_version}"
