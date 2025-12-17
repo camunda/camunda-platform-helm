@@ -17,62 +17,68 @@ type PlatformSecretsProvider interface {
 }
 
 type GKESecretsProvider struct {
-	RepoRoot  string
-	ChartPath string
+	RepoRoot            string
+	ChartPath           string
+	ExternalSecretsStore string
 }
 
 func (p *GKESecretsProvider) Apply(ctx context.Context, client *Client, namespace string) error {
-	return applyExternalSecretsForGKERosa(ctx, client, p.RepoRoot, p.ChartPath, namespace)
+	return applyExternalSecretsForGKERosa(ctx, client, p.RepoRoot, p.ChartPath, namespace, p.ExternalSecretsStore)
 }
 
 type ROSASecretsProvider struct {
-	RepoRoot  string
-	ChartPath string
+	RepoRoot            string
+	ChartPath           string
+	ExternalSecretsStore string
 }
 
 func (p *ROSASecretsProvider) Apply(ctx context.Context, client *Client, namespace string) error {
-	return applyExternalSecretsForGKERosa(ctx, client, p.RepoRoot, p.ChartPath, namespace)
+	return applyExternalSecretsForGKERosa(ctx, client, p.RepoRoot, p.ChartPath, namespace, p.ExternalSecretsStore)
 }
 
 type EKSSecretsProvider struct {
-	NamespacePrefix string
-	RepoRoot        string
-	ChartPath       string
+	NamespacePrefix     string
+	RepoRoot            string
+	ChartPath           string
+	ExternalSecretsStore string
 }
 
 func (p *EKSSecretsProvider) Apply(ctx context.Context, client *Client, namespace string) error {
-	return applySecretsForEKS(ctx, client, p.RepoRoot, p.ChartPath, namespace, p.NamespacePrefix)
+	return applySecretsForEKS(ctx, client, p.RepoRoot, p.ChartPath, namespace, p.NamespacePrefix, p.ExternalSecretsStore)
 }
 
-func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix string) (PlatformSecretsProvider, error) {
+func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix, externalSecretsStore string) (PlatformSecretsProvider, error) {
 	switch platform {
 	case platformGKE:
 		return &GKESecretsProvider{
-			RepoRoot:  repoRoot,
-			ChartPath: chartPath,
+			RepoRoot:            repoRoot,
+			ChartPath:           chartPath,
+			ExternalSecretsStore: externalSecretsStore,
 		}, nil
 	case platformROSA:
 		return &ROSASecretsProvider{
-			RepoRoot:  repoRoot,
-			ChartPath: chartPath,
+			RepoRoot:            repoRoot,
+			ChartPath:           chartPath,
+			ExternalSecretsStore: externalSecretsStore,
 		}, nil
 	case platformEKS:
 		return &EKSSecretsProvider{
-			NamespacePrefix: namespacePrefix,
-			RepoRoot:        repoRoot,
-			ChartPath:       chartPath,
+			NamespacePrefix:     namespacePrefix,
+			RepoRoot:            repoRoot,
+			ChartPath:           chartPath,
+			ExternalSecretsStore: externalSecretsStore,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported platform %q (supported: gke, rosa, eks)", platform)
 	}
 }
 
-func applyExternalSecretsForGKERosa(ctx context.Context, client *Client, repoRoot, chartPath, namespace string) error {
+func applyExternalSecretsForGKERosa(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore string) error {
 	if err := applyExternalSecretsCertificates(ctx, client, repoRoot, namespace); err != nil {
 		return err
 	}
 
-	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace); err != nil {
+	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace, externalSecretsStore); err != nil {
 		return err
 	}
 
@@ -96,11 +102,17 @@ func applyExternalSecretsCertificates(ctx context.Context, client *Client, repoR
 	return nil
 }
 
-func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, chartPath, namespace string) error {
+func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore string) error {
 	externalSecretDir := filepath.Join(repoRoot, ".github", "config", "external-secret")
 
+	// Determine which infra secrets file to use based on external secrets store
+	infraSecretFile := "external-secret-infra.yaml"
+	if externalSecretsStore == "vault-backend" {
+		infraSecretFile = "external-secret-infra-vault-store.yaml"
+	}
+
 	if err := applyManifestIfExists(ctx, client, namespace,
-		filepath.Join(externalSecretDir, "external-secret-infra.yaml"),
+		filepath.Join(externalSecretDir, infraSecretFile),
 		"infra-secrets external-secret"); err != nil {
 		return fmt.Errorf("apply infra secrets: %w", err)
 	}
@@ -125,7 +137,7 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 	return nil
 }
 
-func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, namespacePrefix string) error {
+func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath, namespace, namespacePrefix, externalSecretsStore string) error {
 	srcNamespace := computeEKSSourceNamespace(namespacePrefix)
 
 	logging.Logger.Debug().
@@ -138,7 +150,7 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 		return fmt.Errorf("copy TLS secret from %s to %s: %w", srcNamespace, namespace, err)
 	}
 
-	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace); err != nil {
+	if err := applyExternalSecretsOther(ctx, client, repoRoot, chartPath, namespace, externalSecretsStore); err != nil {
 		return err
 	}
 
