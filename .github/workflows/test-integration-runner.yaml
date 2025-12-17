@@ -300,7 +300,7 @@ jobs:
         env:
           VSM: ${{ inputs.vault-secret-mapping }}
         run: |
-          (cd ./scripts/vault-secret-mapper && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
+          (cd ./scripts/vault-secret-mapper && go mod tidy && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
 
 
       - name: Import Vault secrets
@@ -637,7 +637,7 @@ jobs:
         env:
           VSM: ${{ inputs.vault-secret-mapping }}
         run: |
-          (cd ./scripts/vault-secret-mapper && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
+          (cd ./scripts/vault-secret-mapper && go mod tidy && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
 
       - name: Import Vault secrets
         id: test-credentials-secret
