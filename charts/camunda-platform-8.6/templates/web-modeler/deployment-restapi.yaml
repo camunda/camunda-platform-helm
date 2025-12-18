@@ -40,7 +40,7 @@ spec:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
             - name: JAVA_OPTIONS
-              value: {{ .Values.webModeler.restapi.javaOpts | quote }}
+              value: {{ .Values.webModeler.restapi.javaOpts | default "-XX:MaxRAMPercentage=80.0" | quote }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -70,7 +70,7 @@ spec:
                   name: {{ include "webModeler.fullname" . }}
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | quote }}
+              value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | default "/tmp/zeebe_client_cache.txt" | quote }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
