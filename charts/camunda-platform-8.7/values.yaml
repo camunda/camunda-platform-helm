@@ -1587,6 +1587,10 @@ operate:
   dnsPolicy: ""
   ## @param operate.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param operate.javaOpts can be used to set extra java options for the Operate application
+  javaOpts: ""
+  ## @param operate.zeebeClientConfigPath can be used to set a custom zeebe client config path
+  zeebeClientConfigPath: ""
 
 ##################################################
 #######
@@ -1832,6 +1836,10 @@ tasklist:
   dnsPolicy: ""
   ## @param tasklist.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param tasklist.javaOpts can be used to set java options for tasklist
+  javaOpts: ""
+  ## @param tasklist.zeebeClientConfigPath can be used to set a custom zeebe client config path
+  zeebeClientConfigPath: ""
 
 #############################################
  #####
@@ -1881,6 +1889,9 @@ optimize:
       limits:
         cpu: 2000m
         memory: 2Gi
+
+    ## @param optimize.migration.javaOpts can be used to set java options for optimize migration init container
+    javaOpts: ""
 
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
@@ -2087,6 +2098,8 @@ optimize:
   dnsConfig: {}
   ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
   profiles: "ccsm"
+  ## @param optimize.javaOpts can be used to set java options for optimize
+  javaOpts: ""
 
 #########################################################################################################
 ###### #    # ######  ####  #    # ##### #  ####  #    #       # #####  ###### #    # ##### # ##### #   #
@@ -3353,6 +3366,8 @@ webModeler:
     nodeEnv: production
     ## @param webModeler.webapp.nodeOptions can be used to set the NODE_OPTIONS env var.
     nodeOptions: "--max-old-space-size=128"
+    ## @param webModeler.webapp.playEnabled can be used to set the PLAY_ENABLED env var.
+    playEnabled: true
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
