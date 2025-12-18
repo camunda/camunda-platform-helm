@@ -53,8 +53,6 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            - name: JAVA_TOOL_OPTIONS
-              value: 
           resources:
             limits:
               cpu: 2000m
