@@ -76,7 +76,10 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks {{ .Values.optimize.migration.javaOpts | default .Values.optimize.javaOpts }}
+            {{- else if (or .Values.optimize.migration.javaOpts .Values.optimize.javaOpts) }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.optimize.migration.javaOpts | default .Values.optimize.javaOpts }}
             {{- end }}
             {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
@@ -166,7 +169,10 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks
+              value: -Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks {{ .Values.optimize.javaOpts }}
+            {{- else if .Values.optimize.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.optimize.javaOpts }}
             {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
