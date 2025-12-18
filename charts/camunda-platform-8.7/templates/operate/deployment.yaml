@@ -203,7 +203,7 @@ spec:
             {{- end }}
             {{- end }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: {{ operate.zeebeClientConfigPath | default "/tmp/zeebe_auth_cache" }}
+              value: {{ .Values.operate.zeebeClientConfigPath | default "/tmp/zeebe_auth_cache" }}
             # the host name of Operate that is used when connecting with the Zeebe cluster
             # via atomix-cluster (SWIM)
             - name: ZEEBE_GATEWAY_CLUSTER_HOST

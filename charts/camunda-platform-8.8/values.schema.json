@@ -7051,6 +7051,11 @@
                     "type": "string",
                     "description": "defines SPRING_ACTIVE_PROFILES",
                     "default": "\"\""
+                },
+                "javaOpts": {
+                    "type": "string",
+                    "description": "can be used to set java options for optimize",
+                    "default": ""
                 }
             },
             "migration": {
