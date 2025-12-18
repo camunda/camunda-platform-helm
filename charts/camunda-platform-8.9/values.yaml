@@ -3256,6 +3256,8 @@ optimize:
     selector: {}
   ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
   profiles: "ccsm"
+  ## @param optimize.javaOpts can be used to set java options for optimize
+  javaOpts: ""
 
 #####################################################################################
 #######

@@ -161,6 +161,9 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize" ) | nindent 12 }}
+            {{- else if .Values.optimize.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.optimize.javaOpts | quote }}
             {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
