@@ -152,7 +152,7 @@ spec:
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
               value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks {{ .Values.operate.javaOpts }}
-            {{- else }}
+            {{- else if .Values.operate.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.operate.javaOpts }}
             {{- end }}
