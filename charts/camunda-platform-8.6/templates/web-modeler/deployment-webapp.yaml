@@ -42,7 +42,7 @@ spec:
             - name: NODE_ENV
               value: {{ .Values.webModeler.webapp.nodeEnv | quote }}
             - name: PLAY_ENABLED
-              value: "true"
+              value: {{ .Values.webModeler.webapp.playEnabled | quote }}
             - name: NODE_OPTIONS
               value: {{ .Values.webModeler.webapp.nodeOptions | quote }}
             - name: PUSHER_APP_ID
