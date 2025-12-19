@@ -3324,6 +3324,18 @@ optimize:
   profiles: "ccsm"
   ## @param optimize.javaOpts can be used to set java options for optimize
   javaOpts: ""
+  ## @extra optimize.multitenancy options relating to multitenancy in optimize
+  multitenancy:
+    ## @extra optimize.multitenancy.enabled if true, enables multitenancy in Optimize
+    enabled: false
+  ## @extra optimize.caches options relating to caches in optimize
+  caches:
+    ## @extra optimize.caches.cloudTenantAuthorizations options relating to cloud tenant authorizations cache in optimize
+    cloudTenantAuthorizations:
+      ## @param optimize.caches.cloudTenantAuthorizations.maxSize defines the maximum number of entries in the cache
+      maxSize: 10000
+      ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds defines the minimum interval between fetches from the database for the cache
+      minFetchIntervalSeconds: 600000
 
 #####################################################################################
 #######
