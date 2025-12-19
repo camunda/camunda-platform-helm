@@ -86,10 +86,14 @@ runs:
           kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
         fi
 
-        echo "🔧 Applying external secret infra configuration"
-        apply_external_secret_with_retry \
-          ".github/config/external-secret/external-secret-infra.yaml" \
-          "$TEST_NAMESPACE"
+        if [[ "$DISTRO_PLATFORM" == "eks" ]]; then
+          echo "⚠️ Skipping external secret infra configuration for EKS (ExternalSecret CRD not available)"
+        else
+          echo "🔧 Applying external secret infra configuration"
+          apply_external_secret_with_retry \
+            ".github/config/external-secret/external-secret-infra.yaml" \
+            "$TEST_NAMESPACE"
+        fi
 
         echo "✅ TLS Certificates/Secrets configuration completed."
 
