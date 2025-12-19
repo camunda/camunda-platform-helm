@@ -7056,6 +7056,36 @@
                     "type": "string",
                     "description": "can be used to set java options for optimize",
                     "default": ""
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables multitenancy in Optimize",
+                            "default": false
+                        }
+                    }
+                },
+                "caches": {
+                    "type": "object",
+                    "properties": {
+                        "cloudTenantAuthorizations": {
+                            "type": "object",
+                            "properties": {
+                                "maxSize": {
+                                    "type": "number",
+                                    "description": "defines the maximum number of entries in the cache",
+                                    "default": 10000
+                                },
+                                "minFetchIntervalSeconds": {
+                                    "type": "number",
+                                    "description": "defines the minimum interval between fetches from the database for the cache",
+                                    "default": 600000
+                                }
+                            }
+                        }
+                    }
                 }
             },
             "migration": {
