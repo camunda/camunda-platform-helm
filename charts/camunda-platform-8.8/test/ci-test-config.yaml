@@ -25,6 +25,7 @@ integration:
           auth: keycloak
           shortname: eske
           exclude: []
+          platforms: [gke,eks]
         - name: upgrade-migration
           enabled: true
           flow: upgrade-minor
