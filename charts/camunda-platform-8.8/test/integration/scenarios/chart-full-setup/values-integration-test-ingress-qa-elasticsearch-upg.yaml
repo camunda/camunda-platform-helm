@@ -105,6 +105,26 @@ console:
   enabled: true
   image:
     tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: "$TEST_NAMESPACE"
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
 identity:
   enabled: true
   image:
