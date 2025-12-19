@@ -6,8 +6,7 @@ vars:
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" | default ">0.0.0" | quote }}'
   VALUES_CONFIG: '{{ env "VALUES_CONFIG" | default "{}" }}'
-  INFRA_TYPE_SUFFIX: '{{ if eq (env "PLATFORM") "eks" }}-eks{{ end }}-{{ .INFRA_TYPE }}'
-  INFRA_TYPE_SUFFIX_2: '{{ if eq (env "PLATFORM") "eks" }}-eks{{ end }}-{{ .INFRA_TYPE }}'
+  INFRA_TYPE_SUFFIX: '-{{ if eq (env "PLATFORM") "eks" }}eks-{{ end }}{{ .INFRA_TYPE }}'
 
 dotenv:
 - ../vars/common.env
@@ -59,7 +58,7 @@ tasks:
       MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
         "{{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml" \
         "{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
-        "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX_2 }}.yaml" \
+        "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml" \
         /tmp/extra-values-file.yaml)
       
       echo "--- Merged YAML ---"
