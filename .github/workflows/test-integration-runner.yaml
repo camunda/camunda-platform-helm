@@ -378,18 +378,27 @@ jobs:
       - name: Cluster Setup - Configure the namespace
         run: |
           echo $TEST_NAMESPACE
-          kubectl delete ns --ignore-not-found=true $TEST_NAMESPACE
-          kubectl create ns $TEST_NAMESPACE
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
-          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
-          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-          kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
-          kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }}
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }}
-          kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
-          kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          # Check if namespace exists and if we own it (created by same run)
+          if kubectl get ns $TEST_NAMESPACE &>/dev/null; then
+            EXISTING_RUN_ID=$(kubectl get ns $TEST_NAMESPACE -o jsonpath='{.metadata.labels.github-run-id}' 2>/dev/null || echo "")
+            if [[ "$EXISTING_RUN_ID" == "$GITHUB_WORKFLOW_RUN_ID" ]]; then
+              echo "Namespace exists and was created by this run, deleting and recreating..."
+              kubectl delete ns $TEST_NAMESPACE
+            else
+              echo "Namespace exists but was created by a different run (run-id: $EXISTING_RUN_ID), reusing it..."
+            fi
+          fi
+          kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }} --overwrite
+          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite
+          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID --overwrite
+          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID --overwrite
+          kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY) --overwrite
+          kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY) --overwrite
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true --overwrite
+          kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID --overwrite
           if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
