@@ -65,7 +65,7 @@ tasks:
         {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
         --force \
         --timeout 20m0s \
         --set orchestration.upgrade.allowPreReleaseImages=true \
