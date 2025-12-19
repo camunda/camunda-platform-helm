@@ -3326,7 +3326,7 @@ optimize:
   javaOpts: ""
   ## @extra optimize.multitenancy options relating to multitenancy in optimize
   multitenancy:
-    ## @extra optimize.multitenancy.enabled if true, enables multitenancy in Optimize
+    ## @param optimize.multitenancy.enabled if true, enables multitenancy in Optimize
     enabled: false
   ## @extra optimize.caches options relating to caches in optimize
   caches:
