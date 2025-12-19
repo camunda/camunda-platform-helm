@@ -205,13 +205,13 @@ spec:
                   key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
               {{- end }}
               {{- end }}
-            {{- if .Values.global.multitenancy.enabled }}
+            {{- if or .Values.global.multitenancy.enabled .Values.optimize.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
               value: "true"
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
-              value: "10000"
+              value: {{ .Values.optimize.caches.cloudTenantAuthorizations.maxSize | default "10000" | quote }}
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
-              value: "600000"
+              value: {{ .Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | default "600000" | quote }}
             {{- end }}
             {{- if .Values.global.opensearch.aws.enabled }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
