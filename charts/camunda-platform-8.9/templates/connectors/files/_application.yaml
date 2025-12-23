@@ -42,7 +42,11 @@ camunda:
       password: {{ $user.password | quote }}
     {{- else if eq (include "connectors.authMethod" .) "oidc" }}
     auth:
+      {{- if (include "orchestration.authIssuerUrl" .) }}
+      issuer-url: {{ include "orchestration.authIssuerUrl" . | quote }}
+      {{- else }}
       token-url: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . }}
+      {{- end }}
       client-id: {{ include "connectors.authClientId" . | quote }}
       client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
       audience: {{ include "connectors.authAudience" . | quote }}
