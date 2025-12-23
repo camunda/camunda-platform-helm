@@ -178,10 +178,18 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 			helmChartPath, err := filepath.Abs(s.chartPath)
 			s.Require().NoError(err)
 
+			// Merge test values with required elasticsearch flags
+			mergedValues := make(map[string]string)
+			mergedValues["elasticsearch.enabled"] = "true"
+			mergedValues["global.elasticsearch.enabled"] = "true"
+			for k, v := range testCase.Values {
+				mergedValues[k] = v
+			}
+
 			output, err := helm.RenderTemplateE(
 				s.T(),
 				&helm.Options{
-					SetValues: testCase.Values,
+					SetValues: mergedValues,
 				},
 				helmChartPath,
 				s.release,

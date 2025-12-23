@@ -103,8 +103,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
-				"global.image.registry": "global.custom.registry.io",
-				"global.image.tag":      "8.x.x",
+				"global.image.registry":          "global.custom.registry.io",
+				"global.image.tag":               "8.x.x",
 				"orchestration.image.registry":   "subchart.custom.registry.io",
 				"orchestration.image.repository": "camunda/camunda-test",
 				"orchestration.image.tag":        "snapshot",
@@ -132,8 +132,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSetImagePullSecretsSubChart",
 			Values: map[string]string{
-				"global.image.pullSecrets[0].name": "SecretNameGlobal",
-				"orchestration.image.pullSecrets[0].name":   "SecretNameSubChart",
+				"global.image.pullSecrets[0].name":        "SecretNameGlobal",
+				"orchestration.image.pullSecrets[0].name": "SecretNameSubChart",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -199,8 +199,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
-				"global.image.tag": "a.b.c",
-				"orchestration.image.tag":   "",
+				"global.image.tag":        "a.b.c",
+				"orchestration.image.tag": "",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -215,8 +215,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
-				"global.image.tag": "x.y.z",
-				"orchestration.image.tag":   "a.b.c",
+				"global.image.tag":        "x.y.z",
+				"orchestration.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -268,7 +268,12 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var statefulSetBefore appsv1.StatefulSet
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
 				volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 				// given
@@ -293,7 +298,12 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var statefulSetBefore appsv1.StatefulSet
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
 				volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
 				// given
@@ -320,7 +330,12 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var statefulSetBefore appsv1.StatefulSet
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
 				volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 				// given
@@ -346,7 +361,12 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var statefulSetBefore appsv1.StatefulSet
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
 				volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 				volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
@@ -517,7 +537,12 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var statefulSetBefore appsv1.StatefulSet
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
 				volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 				volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
@@ -550,7 +575,12 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Verifier: func(t *testing.T, output string, err error) {
 				// finding out the length of containers and volumeMounts array before addition of new volumeMount
 				var statefulSetBefore appsv1.StatefulSet
-				before := helm.RenderTemplate(s.T(), &helm.Options{}, s.chartPath, s.release, s.templates)
+				before := helm.RenderTemplate(s.T(), &helm.Options{
+					SetValues: map[string]string{
+						"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled": "true",
+					},
+				}, s.chartPath, s.release, s.templates)
 				helm.UnmarshalK8SYaml(s.T(), before, &statefulSetBefore)
 				volumeMountLenBefore := len(statefulSetBefore.Spec.Template.Spec.Containers[0].VolumeMounts)
 				volumeLenBefore := len(statefulSetBefore.Spec.Template.Spec.Volumes)
@@ -741,10 +771,10 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			// Test hybrid auth: orchestration uses basic auth, so no OIDC secret needed
 			Name: "TestHybridAuthOrchestrationBasicNoOidcSecret",
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"identityKeycloak.enabled":                      "true",
-				"global.identity.auth.enabled":                  "true",
-				"orchestration.security.authentication.method":  "basic",
+				"identity.enabled":                             "true",
+				"identityKeycloak.enabled":                     "true",
+				"global.identity.auth.enabled":                 "true",
+				"orchestration.security.authentication.method": "basic",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet

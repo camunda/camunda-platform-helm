@@ -77,6 +77,14 @@ func quietLogger() *logger.Logger {
 }
 
 func setupHelmOptions(namespace string, values map[string]string, helmOptionsExtraArgs map[string][]string) *helm.Options {
+	// Add default Elasticsearch flags if not already present
+	if _, hasGlobalES := values["global.elasticsearch.enabled"]; !hasGlobalES {
+		values["global.elasticsearch.enabled"] = "true"
+	}
+	if _, hasES := values["elasticsearch.enabled"]; !hasES {
+		values["elasticsearch.enabled"] = "true"
+	}
+
 	options := &helm.Options{
 		SetValues:      values,
 		KubectlOptions: k8s.NewKubectlOptions("", "", namespace),

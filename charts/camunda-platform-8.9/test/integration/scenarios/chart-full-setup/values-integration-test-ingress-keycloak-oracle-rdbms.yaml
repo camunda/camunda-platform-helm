@@ -1,6 +1,3 @@
-global:
-  elasticsearch:
-    enabled: false
 
 orchestration:
   data:
@@ -40,9 +37,6 @@ orchestration:
           mountPath: /driver-lib
       securityContext:
         runAsUser: 1001
-
-elasticsearch:
-  enabled: false
 
 optimize:
   enabled: false
