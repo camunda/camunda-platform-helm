@@ -269,15 +269,15 @@ spec:
       {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-        {{ toYamlPretty . | nindent 8 }}
+        {{ toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.affinity }}
       affinity:
-        {{- toYamlPretty . | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:
-        {{ toYamlPretty . | nindent 8 }}
+        {{ toYaml . | nindent 8 }}
       {{- end }}
   {{- if eq .Values.orchestration.persistenceType "disk" }}
   volumeClaimTemplates:

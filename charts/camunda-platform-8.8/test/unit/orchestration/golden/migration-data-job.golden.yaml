@@ -71,15 +71,15 @@ spec:
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: app.kubernetes.io/component
-                      operator: In
-                      values:
-                        - zeebe-broker
-                topologyKey: kubernetes.io/hostname
-              weight: 1
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - zeebe-broker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
       volumes:
         - name: config
           configMap:
