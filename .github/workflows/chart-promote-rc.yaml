@@ -137,7 +137,7 @@ jobs:
           echo "rc_latest_tag=${chart_major}-rc-latest" | tee -a $GITHUB_OUTPUT
 
       - name: Checkout at commit SHA
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           ref: ${{ steps.parse.outputs.sha }}
           fetch-depth: 0
