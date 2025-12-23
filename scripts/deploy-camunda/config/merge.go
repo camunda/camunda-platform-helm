@@ -20,6 +20,7 @@ type RuntimeFlags struct {
 	LogLevel                 string
 	SkipDependencyUpdate     bool
 	ExternalSecrets          bool
+	ExternalSecretsStore     string
 	KeycloakHost             string
 	KeycloakProtocol         string
 	KeycloakRealm            string
@@ -91,6 +92,7 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix)
+	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	// ScenarioPath special handling
 	if strings.TrimSpace(flags.ScenarioPath) == "" {
@@ -145,6 +147,7 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix)
+	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	if rc.ExternalSecrets {
 		flags.ExternalSecrets = true
@@ -230,6 +233,8 @@ func (f *RuntimeFlags) ResolveIngressHostname() string {
 		return f.IngressSubdomain + "." + DefaultIngressBaseDomain
 	}
 	return ""
+}
+
 // LoadAndMerge loads config from the given path and merges the active deployment into flags.
 // If configPath is empty, it resolves the default config location.
 // The includeEnv parameter controls whether environment variable overrides are applied.

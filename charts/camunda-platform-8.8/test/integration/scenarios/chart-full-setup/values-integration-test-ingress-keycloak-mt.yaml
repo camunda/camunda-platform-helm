@@ -203,8 +203,3 @@ identityPostgresql:
 
 elasticsearch:
   enabled: false
-
-prometheusServiceMonitor:
-  enabled: true
-  labels:
-    release: kube-prometheus-stack
