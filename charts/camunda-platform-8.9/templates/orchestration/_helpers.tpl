@@ -270,16 +270,20 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.secondaryStorage" -}}
-    {{- if .Values.global.noSecondaryStorage -}}
-        none
-    {{- else if .Values.global.elasticsearch.enabled -}}
-        elasticsearch
-    {{- else if .Values.global.opensearch.enabled -}}
-        opensearch
-    {{- else if .Values.orchestration.exporters.rdbms.enabled -}}
-        rdbms
+    {{- if .Values.orchestration.data.secondaryStorage.type -}}
+        {{- .Values.orchestration.data.secondaryStorage.type -}}
     {{- else -}}
-        {{- fail "Please enable a secondary storage type. Either Elasticsearch, OpenSearch or Postgres" -}}
+        {{- if .Values.global.noSecondaryStorage -}}
+            none
+        {{- else if .Values.global.elasticsearch.enabled -}}
+            elasticsearch
+        {{- else if .Values.global.opensearch.enabled -}}
+            opensearch
+        {{- else if .Values.orchestration.exporters.rdbms.enabled -}}
+            rdbms
+        {{- else -}}
+            {{- fail "Please enable a secondary storage type. Either Elasticsearch, OpenSearch or Postgres" -}}
+        {{- end -}}
     {{- end -}}
 {{- end -}}
 
