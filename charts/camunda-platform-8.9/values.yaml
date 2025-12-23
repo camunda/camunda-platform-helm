@@ -2546,6 +2546,15 @@ orchestration:
   partitionCount: "3"
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
+  ## @extra orchestration.cluster configuration for cluster settings
+  cluster:
+    ## @param orchestration.cluster.initialContactPoints Override auto-generated initial-contact-points for multi-region deployments.
+    ## Example for dual-region with cross-cluster FQDNs:
+    ## initialContactPoints:
+    ##   - zeebe-0.zeebe.namespace.svc.clusterset.local:26502
+    ##   - zeebe-1.zeebe.namespace.svc.clusterset.local:26502
+    ## If empty, defaults to generating local pods only (clusterSize / regions).
+    initialContactPoints: []
   ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
   env: []
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK

@@ -54,8 +54,16 @@ camunda:
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
     # zeebe.broker.cluster
     initial-contact-points:
-    {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+    {{- if .Values.orchestration.cluster.initialContactPoints }}
+    {{- range .Values.orchestration.cluster.initialContactPoints }}
+      - {{ . }}
+    {{- end }}
+    {{- else }}
+    {{- $regions := (int (default 1 .Values.global.multiregion.regions)) }}
+    {{- $localPodCount := (int (div (int .Values.orchestration.clusterSize) $regions)) }}
+    {{- range (untilStep 0 $localPodCount 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
     {{- end }}
 
   api:
