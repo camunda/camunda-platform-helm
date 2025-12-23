@@ -39,10 +39,10 @@ func TestSpringConfigMapTemplate(t *testing.T) {
 func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Skip:                 true,
 			Name:                 "TestContainerShouldAddContextPath",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
+				"identity.enabled":     "true",
 				"identity.fullURL":     "https://mydomain.com/identity",
 				"identity.contextPath": "/identity",
 			},
@@ -61,11 +61,11 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("/identity", configmapApplication.Server.Servlet.ContextPath)
 			},
 		}, {
-			Skip: true,
 			Name: "TestConfigMapBuiltinDatabaseEnabled",
 			Values: map[string]string{
+				"identity.enabled":              "true",
 				"identity.multitenancy.enabled": "true",
-				"identityPostgresql.enabled":  "true",
+				"identityPostgresql.enabled":    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -87,10 +87,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapGlobalMultitenancySetsIdentityFlag",
 			Values: map[string]string{
-				"global.multitenancy.enabled":   "true",
-				"identityPostgresql.enabled":    "true",
-				"identity.enabled":              "true",
-				"global.identity.auth.enabled":  "true",
+				"global.multitenancy.enabled":  "true",
+				"identityPostgresql.enabled":   "true",
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -110,15 +110,15 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestConfigMapExternalDatabaseEnabled",
 			Values: map[string]string{
-				"identity.enabled":                     "true",
-				"global.identity.auth.enabled":        "true",
-				"identity.multitenancy.enabled":       "true",
-				"identityPostgresql.enabled":          "false",
-				"identity.externalDatabase.enabled":   "true",
-				"identity.externalDatabase.host":      "my-database-host",
-				"identity.externalDatabase.port":      "2345",
-				"identity.externalDatabase.database":  "my-database-name",
-				"identity.externalDatabase.username":  "my-database-username",
+				"identity.enabled":                   "true",
+				"global.identity.auth.enabled":       "true",
+				"identity.multitenancy.enabled":      "true",
+				"identityPostgresql.enabled":         "false",
+				"identity.externalDatabase.enabled":  "true",
+				"identity.externalDatabase.host":     "my-database-host",
+				"identity.externalDatabase.port":     "2345",
+				"identity.externalDatabase.database": "my-database-name",
+				"identity.externalDatabase.username": "my-database-username",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -138,10 +138,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("my-database-username", configmapApplication.Spring.DataSource.Username)
 			},
 		}, {
-			Skip: true,
 			Name: "TestConfigMapAuthIssuerBackendUrlWhenExplicitlyDefined",
 			Values: map[string]string{
 				"identityKeycloak.enabled":              "false",
+				"identity.enabled":                      "true",
 				"global.identity.auth.enabled":          "false",
 				"global.identity.auth.issuerBackendUrl": "https://example.com/",
 			},
@@ -185,9 +185,9 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("https://camunda-platform-test.example.com/", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		}, {
-			Skip: true,
 			Name: "TestConfigMapAuthIssuerBackendUrlWhenKeycloakUrlDefined",
 			Values: map[string]string{
+				"identity.enabled":                      "true",
 				"global.identity.keycloak.url.protocol": "https",
 				"global.identity.keycloak.url.host":     "keycloak.com",
 				"global.identity.keycloak.url.port":     "443",
@@ -209,33 +209,16 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 				s.Require().Equal("https://keycloak.com:443/auth/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
-		}, {
-			Skip:   true,
-			Name:   "TestConfigMapAuthIssuerBackendUrlWhenKeycloakNotDefined",
-			Values: map[string]string{},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var configmapApplication IdentityConfigYAML
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// then
-				s.NotEmpty(configmap.Data)
-
-				s.Require().Equal("http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform", configmapApplication.Identity.AuthProvider.BackendUrl)
-			},
 		},
 		// Hybrid Auth Tests - verify OIDC client config is only included for components using OIDC auth
 		{
 			Name:                 "TestBasicAuthExcludesOidcConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                       "true",
-				"global.identity.auth.enabled":           "true",
-				"global.security.authentication.method":  "basic",
-				"connectors.enabled":                     "true",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "basic",
+				"connectors.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -253,10 +236,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGlobalOidcAuthIncludesBothOidcConfigs",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                       "true",
-				"global.identity.auth.enabled":           "true",
-				"global.security.authentication.method":  "oidc",
-				"connectors.enabled":                     "true",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"connectors.enabled":                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -274,11 +257,11 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestHybridAuthConnectorsBasicOrchestrationOidc",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                             "true",
-				"global.identity.auth.enabled":                 "true",
-				"global.security.authentication.method":        "oidc",
-				"connectors.security.authentication.method":    "basic",
-				"connectors.enabled":                           "true",
+				"identity.enabled":                          "true",
+				"global.identity.auth.enabled":              "true",
+				"global.security.authentication.method":     "oidc",
+				"connectors.security.authentication.method": "basic",
+				"connectors.enabled":                        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -297,10 +280,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestFirstUserRolesExcludeOrchestrationWhenBasicAuth",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"identity.firstUser.enabled":                    "true",
-				"global.identity.auth.enabled":                  "true",
-				"orchestration.security.authentication.method":  "basic",
+				"identity.enabled":                             "true",
+				"identity.firstUser.enabled":                   "true",
+				"global.identity.auth.enabled":                 "true",
+				"orchestration.security.authentication.method": "basic",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -321,10 +304,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestFirstUserRolesIncludeOrchestrationWhenOidcAuth",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"identity.firstUser.enabled":                    "true",
-				"global.identity.auth.enabled":                  "true",
-				"orchestration.security.authentication.method":  "oidc",
+				"identity.enabled":                             "true",
+				"identity.firstUser.enabled":                   "true",
+				"global.identity.auth.enabled":                 "true",
+				"orchestration.security.authentication.method": "oidc",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -342,10 +325,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestConnectorsDisabledExcludesOidcConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                         "true",
-				"global.identity.auth.enabled":             "true",
-				"global.security.authentication.method":    "oidc",
-				"connectors.enabled":                       "false",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"connectors.enabled":                    "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -360,10 +343,10 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestOrchestrationDisabledExcludesOidcConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                         "true",
-				"global.identity.auth.enabled":             "true",
-				"global.security.authentication.method":    "oidc",
-				"orchestration.enabled":                    "false",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"orchestration.enabled":                 "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -378,11 +361,11 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestBothDisabledExcludesOidcConfig",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                         "true",
-				"global.identity.auth.enabled":             "true",
-				"global.security.authentication.method":    "oidc",
-				"connectors.enabled":                       "false",
-				"orchestration.enabled":                    "false",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"connectors.enabled":                    "false",
+				"orchestration.enabled":                 "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
