@@ -27,6 +27,7 @@ integration:
           exclude: []
           auth: keycloak
           flow: install,upgrade-patch
+          platforms: [gke,eks]
         - name: keycloak-mt
           enabled: false
           shortname: kemt

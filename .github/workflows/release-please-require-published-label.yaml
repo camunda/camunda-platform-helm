@@ -17,10 +17,10 @@ jobs:
   guard:
     name: "Block merge until published"
     if: >-
-      ${
+      ${{
         startsWith(github.event.pull_request.head.ref, 'release-please--') ||
         contains(github.event.pull_request.labels.*.name, 'automation/release-please')
-      }
+      }}
     runs-on: ubuntu-latest
     steps:
       - name: "Require autorelease: published"
