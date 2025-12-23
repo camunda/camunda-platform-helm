@@ -109,7 +109,7 @@ jobs:
           echo "version=${version}" | tee -a $GITHUB_OUTPUT
 
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -130,7 +130,7 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Login to Harbor
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
         with:
           registry: ${{ env.HARBOR_REGISTRY }}
           username: ${{ env.HARBOR_REGISTRY_USER }}
@@ -291,7 +291,7 @@ jobs:
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
