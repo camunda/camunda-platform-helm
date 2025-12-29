@@ -620,8 +620,9 @@ identity:
   # Example:
   # - id: test
   #   name: Test
-  #   existingSecret: test-secret
-  #   existingSecretKey: test-secret-key
+  #   secret:
+  #     existingSecret: test-secret
+  #     existingSecretKey: test-secret-key
   #   redirectUris: /dummy
   #   rootUrl: http://dummy
   #   type: confidential
