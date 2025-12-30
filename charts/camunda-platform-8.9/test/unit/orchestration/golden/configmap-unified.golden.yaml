@@ -193,3 +193,4 @@ data:
                 maxDelayBetweenRuns: 60000
     
   log4j2.xml: |
+  additional-spring-properties.yaml: |
