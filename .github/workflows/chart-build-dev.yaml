@@ -353,11 +353,9 @@ jobs:
         run: |
           helm version
 
-          pwd
-          ls -la
           # Package WITHOUT --version flag to preserve Chart.yaml version (release version)
           # The Chart.yaml already contains the correct release version (e.g., 11.11.3)
-          helm-cr package ${{ env.CHART_DIR }} --config ${{ env.CHART_RELEASER_CONFIG_FILE }}
+          helm-cr package ./ --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }}
 
           # The package filename will be based on Chart.yaml version
           PACKAGED_FILE=$(ls .cr-release-packages/${{ env.CHART_NAME }}-*.tgz)
@@ -374,7 +372,7 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+          helm-cr upload --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }} \
             --push \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
@@ -383,7 +381,7 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+          helm-cr index --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }} \
             --push \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
