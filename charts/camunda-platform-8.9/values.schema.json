@@ -1591,10 +1591,10 @@
                     "description": "if specified, contents will be used as the application.yaml",
                     "default": ""
                 },
-                "extraConfiguration": {
-                    "type": "object",
-                    "description": "if specified, contents will be used for any extra configuration files such as the log4j2.xml",
-                    "default": {}
+                "springConfigImport": {
+                    "type": "string",
+                    "description": "can be used to set SPRING_CONFIG_IMPORT which defaults to \"optional:file:/app/config/additional-spring-properties.yaml\"",
+                    "default": "optional:file:/app/config/additional-spring-properties.yaml"
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -3310,10 +3310,10 @@
                             "description": "if specified, contents will be used as the application.yaml",
                             "default": ""
                         },
-                        "extraConfiguration": {
-                            "type": "object",
-                            "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                            "default": {}
+                        "springConfigImport": {
+                            "type": "string",
+                            "description": "can be used to set SPRING_CONFIG_IMPORT which defaults to \"optional:file:/home/runner/config/additional-spring-properties.yaml\"",
+                            "default": "optional:file:/home/runner/config/additional-spring-properties.yaml"
                         },
                         "dnsPolicy": {
                             "type": "string",
@@ -4933,10 +4933,10 @@
                     "description": "if specified, contents will be used as the application.yaml",
                     "default": ""
                 },
-                "extraConfiguration": {
-                    "type": "object",
-                    "description": "if specified, contents will be used for any extra configuration files such as the log4j2.xml",
-                    "default": {}
+                "springConfigImport": {
+                    "type": "string",
+                    "description": "can be used to set SPRING_CONFIG_IMPORT which defaults to \"optional:file:/config/additional-spring-properties.yaml\"",
+                    "default": "optional:file:/config/additional-spring-properties.yaml"
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -6293,10 +6293,10 @@
                     "description": "if specified, contents will be used as the application.yaml",
                     "default": ""
                 },
-                "extraConfiguration": {
-                    "type": "object",
-                    "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                    "default": {}
+                "springConfigImport": {
+                    "type": "string",
+                    "description": "can be used to set SPRING_CONFIG_IMPORT which defaults to \"optional:file:./config/additional-spring-properties.yaml\"",
+                    "default": "optional:file:./config/additional-spring-properties.yaml"
                 },
                 "dnsPolicy": {
                     "type": "string",

@@ -96,14 +96,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:/usr/local/zeebe/config/additional-spring-properties.yaml"
             - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
               value: 5m
             - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
               value: 2GB
             - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
               value: 3GB
-            - name: SPRING_CONFIG_IMPORT
-              value: "optional:file:/usr/local/zeebe/config/additional-spring-properties.yaml"
           ports:
             - containerPort: 9600
               name: http
