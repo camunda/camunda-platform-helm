@@ -853,8 +853,12 @@ identity:
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
+  ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration:
+    ## @param identity.extraConfiguration.additional-spring-properties.yaml if specified, extra spring configuration options will be added. Useful when helm chart doesn't support a specific application configuration option yet.
+    additional-spring-properties.yaml: ""
+  ## @param identity.springConfigImport can be used to set SPRING_CONFIG_IMPORT which defaults to "optional:file:/app/config/additional-spring-properties.yaml"
+  springConfigImport: "optional:file:/app/config/additional-spring-properties.yaml"
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1667,7 +1671,11 @@ webModeler:
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-    extraConfiguration: {}
+    extraConfiguration:
+      ## @param webModeler.restapi.extraConfiguration.additional-spring-properties.yaml if specified, extra spring configuration options will be added. Useful when helm chart doesn't support a specific application configuration option yet.
+      additional-spring-properties.yaml: ""
+    ## @param webModeler.restapi.springConfigImport can be used to set SPRING_CONFIG_IMPORT which defaults to "optional:file:/home/runner/config/additional-spring-properties.yaml"
+    springConfigImport: "optional:file:/home/runner/config/additional-spring-properties.yaml"
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -2346,8 +2354,12 @@ connectors:
   affinity: {}
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
+  ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  extraConfiguration:
+    ## @param connectors.extraConfiguration.additional-spring-properties.yaml if specified, extra spring configuration options will be added. Useful when helm chart doesn't support a specific application configuration option yet.
+    additional-spring-properties.yaml: ""
+  ## @param connectors.springConfigImport can be used to set SPRING_CONFIG_IMPORT which defaults to "optional:file:/config/additional-spring-properties.yaml"
+  springConfigImport: "optional:file:/config/additional-spring-properties.yaml"
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -3041,7 +3053,11 @@ orchestration:
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    ## @param orchestration.extraConfiguration.additional-spring-properties.yaml if specified, extra spring configuration options will be added. Useful when helm chart doesn't support a specific application configuration option yet.
+    additional-spring-properties.yaml: ""
+  ## @param orchestration.springConfigImport can be used to set SPRING_CONFIG_IMPORT which defaults to "optional:file:./config/additional-spring-properties.yaml"
+  springConfigImport: "optional:file:./config/additional-spring-properties.yaml"
   ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param orchestration.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
