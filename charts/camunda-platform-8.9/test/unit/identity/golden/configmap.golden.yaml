@@ -184,3 +184,4 @@ data:
       level:
         ROOT: INFO
         io.camunda.identity: INFO
+  additional-spring-properties.yaml: |
