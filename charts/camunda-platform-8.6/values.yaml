@@ -939,7 +939,10 @@ zeebe:
   ## @param zeebe.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    additional-spring-properties.yaml: ""
+  ## @param zeebe.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
+  springConfigImport: "optional:file:/usr/local/zeebe/config/additional-spring-properties.yaml"
   ## @param zeebe.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param zeebe.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1255,7 +1258,10 @@ zeebeGateway:
   ## @param zeebeGateway.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    additional-spring-properties.yaml: ""
+  ## @param zeebeGateway.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
+  springConfigImport: "optional:file:/usr/local/zeebe/config/additional-spring-properties.yaml"
   ## @param zeebeGateway.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param zeebeGateway.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1523,7 +1529,10 @@ operate:
   ## @param operate.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    additional-spring-properties.yaml: ""
+  ## @param operate.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
+  springConfigImport: "optional:file:/usr/local/operate/config/additional-spring-properties.yaml"
   ## @param operate.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param operate.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1768,7 +1777,10 @@ tasklist:
   ## @param tasklist.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    additional-spring-properties.yaml: ""
+  ## @param tasklist.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
+  springConfigImport: "optional:file:/usr/local/tasklist/config/additional-spring-properties.yaml"
   ## @param tasklist.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param tasklist.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -2566,7 +2578,10 @@ identity:
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    additional-spring-properties.yaml: ""
+  ## @param identity.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
+  springConfigImport: "optional:file:/app/config/additional-spring-properties.yaml"
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -3068,7 +3083,10 @@ webModeler:
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-    extraConfiguration: {}
+    extraConfiguration:
+      additional-spring-properties.yaml: ""
+    ## @param webModeler.restapi.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
+    springConfigImport: "optional:file:/home/runner/config/additional-spring-properties.yaml"
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -3781,7 +3799,10 @@ connectors:
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    additional-spring-properties.yaml: ""
+  ## @param connectors.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
+  springConfigImport: "optional:file:/config/additional-spring-properties.yaml"
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
