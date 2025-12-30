@@ -77,6 +77,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:/usr/local/zeebe/config/additional-spring-properties.yaml"
           envFrom:
           volumeMounts:
             - mountPath: /tmp
@@ -84,6 +86,9 @@ spec:
             - name: config
               mountPath: /usr/local/zeebe/config/application.yaml
               subPath: application.yaml
+            - name: config
+              mountPath: /usr/local/zeebe/config/additional-spring-properties.yaml
+              subPath: additional-spring-properties.yaml
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

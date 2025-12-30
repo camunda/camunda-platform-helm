@@ -74,3 +74,4 @@ data:
         io.camunda.operate: INFO
     #Spring Boot Actuator endpoints to be exposed
     management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
+  additional-spring-properties.yaml: |

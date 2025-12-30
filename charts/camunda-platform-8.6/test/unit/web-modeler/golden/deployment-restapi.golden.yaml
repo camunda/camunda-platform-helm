@@ -81,6 +81,8 @@ spec:
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:/home/runner/config/additional-spring-properties.yaml"
           resources:
             limits:
               cpu: 1000m
@@ -111,6 +113,9 @@ spec:
             - name: config
               mountPath: /home/runner/config/application.yaml
               subPath: application.yaml
+            - name: config
+              mountPath: /home/runner/config/additional-spring-properties.yaml
+              subPath: additional-spring-properties.yaml
       volumes:
         - name: tmp
           emptyDir: {}

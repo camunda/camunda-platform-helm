@@ -82,3 +82,4 @@ data:
       level:
         io.camunda.modeler: INFO
         io.grpc: INFO
+  additional-spring-properties.yaml: |

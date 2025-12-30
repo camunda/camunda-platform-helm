@@ -59,3 +59,5 @@ data:
     logging:
       level:
         io.camunda.connector: INFO
+    
+  additional-spring-properties.yaml: |

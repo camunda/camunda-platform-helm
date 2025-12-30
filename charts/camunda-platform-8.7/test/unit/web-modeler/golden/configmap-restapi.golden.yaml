@@ -77,3 +77,4 @@ data:
         multipart:
           max-file-size: "10MB"
           max-request-size: "10MB"
+  additional-spring-properties.yaml: |

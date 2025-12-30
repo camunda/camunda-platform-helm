@@ -57,3 +57,4 @@ data:
         network:
           host: 0.0.0.0
           port: "26500"
+  additional-spring-properties.yaml: |

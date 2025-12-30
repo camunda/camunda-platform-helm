@@ -102,6 +102,8 @@ spec:
                   key: admin-password
             - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
               value: "demo"
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:/app/config/additional-spring-properties.yaml"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
@@ -135,6 +137,9 @@ spec:
             - name: config
               mountPath: /app/config/application.yaml
               subPath: application.yaml
+            - name: config
+              mountPath: /app/config/additional-spring-properties.yaml
+              subPath: additional-spring-properties.yaml
 
       volumes:
         - name: tmp

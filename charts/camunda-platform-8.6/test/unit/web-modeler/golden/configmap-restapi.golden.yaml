@@ -60,3 +60,4 @@ data:
             jwt:
               issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
               jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+  additional-spring-properties.yaml: |

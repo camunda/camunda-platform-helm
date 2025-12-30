@@ -102,6 +102,8 @@ spec:
             # the initial contact point to join the SWIM (atomix) cluster
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: camunda-platform-test-zeebe:26502
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:/usr/local/tasklist/config/additional-spring-properties.yaml"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
@@ -141,6 +143,9 @@ spec:
               name: tmp
             - mountPath: /camunda
               name: camunda
+            - name: config
+              mountPath: /usr/local/tasklist/config/additional-spring-properties.yaml
+              subPath: additional-spring-properties.yaml
       volumes:
         - name: config
           configMap:

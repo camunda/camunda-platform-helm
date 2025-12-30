@@ -215,3 +215,4 @@ data:
                   usageMetricsPolicyName: "camunda-usage-metrics-retention-policy"
     
   log4j2.xml: |
+  additional-spring-properties.yaml: |
