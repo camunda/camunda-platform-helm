@@ -133,6 +133,11 @@ jobs:
               -u "${HARBOR_REGISTRY_USER}" \
               --password-stdin
 
+          echo "${HARBOR_REGISTRY_PASSWORD}" | \
+            cosign login "${HARBOR_REGISTRY_HOST}" \
+              -u "${HARBOR_REGISTRY_USER}" \
+              --password-stdin
+
       - name: Set version vars
         id: vars
         run: |
