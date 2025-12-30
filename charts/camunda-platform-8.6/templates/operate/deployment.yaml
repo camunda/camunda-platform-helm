@@ -220,6 +220,10 @@ spec:
             # the initial contact point to join the SWIM (atomix) cluster
             - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
               value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
+          {{- if .Values.operate.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.operate.springConfigImport | quote }}
+          {{- end }}
           {{- with .Values.operate.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
