@@ -51,6 +51,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
       - name: Get chart versions
         id: chart-versions
         uses: ./.github/actions/get-chart-versions
