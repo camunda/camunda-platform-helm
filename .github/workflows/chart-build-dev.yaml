@@ -391,6 +391,8 @@ jobs:
             --git-repo "$(basename ${{ github.repository }})" \
             --release-name-template "${CHART_RELEASE_TAG_NAME}"
 
+          cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq
+
           rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
           echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
 
@@ -584,7 +586,7 @@ jobs:
           ### Cosign and Rekor Verification
           - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${CHART_RELEASE_TAG_NAME}
           - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_RELEASE_VERSION }}
-          - Rekor record: https://rekor.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}
+          - Rekor record: https://rekor.sigstore.dev/?logIndex=${rekor_log_index}
           Note: Artifact Hub link needs some time till it's AH scraps the Helm repo index.
 
           EOF
