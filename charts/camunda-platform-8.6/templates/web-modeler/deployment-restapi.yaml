@@ -71,6 +71,10 @@ spec:
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: /tmp/zeebe_client_cache.txt
+            {{- if .Values.webModeler.restapi.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.webModeler.restapi.springConfigImport | quote }}
+            {{- end }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

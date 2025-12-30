@@ -94,6 +94,10 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
+            {{- if .Values.webModeler.restapi.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.webModeler.restapi.springConfigImport | quote }}
+            {{- end }}
           {{- with .Values.webModeler.restapi.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
