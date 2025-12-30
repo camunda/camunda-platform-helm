@@ -882,11 +882,11 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestBasicAuthExcludesOidcSecrets",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                               "true",
-				"global.identity.auth.enabled":                   "true",
-				"connectors.security.authentication.method":      "basic",
-				"orchestration.security.authentication.method":   "basic",
-				"connectors.enabled":                             "true",
+				"identity.enabled":                             "true",
+				"global.identity.auth.enabled":                 "true",
+				"connectors.security.authentication.method":    "basic",
+				"orchestration.security.authentication.method": "basic",
+				"connectors.enabled":                           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -906,12 +906,12 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGlobalOidcAuthIncludesBothOidcSecrets",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                                 "true",
-				"global.identity.auth.enabled":                                     "true",
-				"global.security.authentication.method":                            "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":      "connectors-oidc-secret",
-				"orchestration.security.authentication.oidc.existingSecret.name":   "orchestration-oidc-secret",
-				"connectors.enabled":                                               "true",
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"global.security.authentication.method":                          "oidc",
+				"connectors.security.authentication.oidc.existingSecret.name":    "connectors-oidc-secret",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+				"connectors.enabled":                                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -947,12 +947,12 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestHybridAuthConnectorsBasicOrchestrationOidc",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                                 "true",
-				"global.identity.auth.enabled":                                     "true",
-				"connectors.security.authentication.method":                        "basic",
-				"orchestration.security.authentication.method":                     "oidc",
-				"orchestration.security.authentication.oidc.existingSecret.name":   "orchestration-oidc-secret",
-				"connectors.enabled":                                               "true",
+				"identity.enabled":                                               "true",
+				"global.identity.auth.enabled":                                   "true",
+				"connectors.security.authentication.method":                      "basic",
+				"orchestration.security.authentication.method":                   "oidc",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+				"connectors.enabled":                                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -982,11 +982,11 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestConnectorsDisabledExcludesOidcSecretEnvVar",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                                 "true",
-				"global.identity.auth.enabled":                                     "true",
-				"global.security.authentication.method":                            "oidc",
-				"connectors.enabled":                                               "false",
-				"orchestration.security.authentication.oidc.existingSecret.name":   "orchestration-oidc-secret",
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"connectors.enabled":                    "false",
+				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -1016,12 +1016,12 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestOrchestrationDisabledExcludesOidcSecretEnvVar",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                              "true",
-				"global.identity.auth.enabled":                                  "true",
-				"global.security.authentication.method":                         "oidc",
-				"orchestration.enabled":                                         "false",
-				"connectors.enabled":                                            "true",
-				"connectors.security.authentication.oidc.existingSecret.name":   "connectors-oidc-secret",
+				"identity.enabled":                                            "true",
+				"global.identity.auth.enabled":                                "true",
+				"global.security.authentication.method":                       "oidc",
+				"orchestration.enabled":                                       "false",
+				"connectors.enabled":                                          "true",
+				"connectors.security.authentication.oidc.existingSecret.name": "connectors-oidc-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -1045,6 +1045,64 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						},
 					},
 					"Connectors OIDC secret should be present when connectors is enabled")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *deploymentTemplateTest) TestSpringConfigImport() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestSpringConfigImportDefault",
+			Values: map[string]string{
+				"identity.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - SPRING_CONFIG_IMPORT should be set with default value
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name:  "SPRING_CONFIG_IMPORT",
+					Value: "optional:file:/app/config/additional-spring-properties.yaml",
+				}, "SPRING_CONFIG_IMPORT should be set with default value")
+			},
+		}, {
+			Name: "TestSpringConfigImportCustomValue",
+			Values: map[string]string{
+				"identity.enabled":            "true",
+				"identity.springConfigImport": "optional:file:/app/config/custom-config.yaml",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - SPRING_CONFIG_IMPORT should be set with custom value
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name:  "SPRING_CONFIG_IMPORT",
+					Value: "optional:file:/app/config/custom-config.yaml",
+				}, "SPRING_CONFIG_IMPORT should be set with custom value")
+			},
+		}, {
+			Name: "TestSpringConfigImportEmpty",
+			Values: map[string]string{
+				"identity.enabled":            "true",
+				"identity.springConfigImport": "",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - SPRING_CONFIG_IMPORT should NOT be present when empty
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				for _, envvar := range env {
+					s.Require().NotEqual("SPRING_CONFIG_IMPORT", envvar.Name,
+						"SPRING_CONFIG_IMPORT should not be present when empty")
+				}
 			},
 		},
 	}
