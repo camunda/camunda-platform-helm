@@ -377,9 +377,9 @@ jobs:
           # We need to retag to our dev tag and add rolling tag
           helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
           blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
-          cosign sign-blob -y ${{ env.CHART_RELEASE_PACKAGE_FILE }} \
-            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
-          rekor_log_index="$(cat ${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
+          cosign sign-blob -y ${HELM_PACKAGE} \
+            --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
+          rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
           echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
 
           cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
@@ -388,13 +388,13 @@ jobs:
           echo "https://search.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}"
 
           # Cosign.
-          cosign verify-blob ${{ env.CHART_RELEASE_PACKAGE_FILE }} \\
-            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
+          cosign verify-blob ${HELM_PACKAGE} \\
+            --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
             --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
             --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
           EOF
 
-          oras push ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.CHART_NAME }} ${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
+          oras push ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
