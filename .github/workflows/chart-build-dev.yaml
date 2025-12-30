@@ -360,7 +360,7 @@ jobs:
           helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
 
           blob_sha="$(sha256sum "${HELM_PACKAGE}" | awk '{print $1}')"
-          cosign sign oci://${OCI_REGISTRY}/${HELM_PACKAGE}@sha256:${blob_sha}
+          cosign sign oci://${OCI_REGISTRY}/${CHART_NAME}@sha256:${blob_sha}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
