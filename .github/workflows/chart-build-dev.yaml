@@ -396,7 +396,7 @@ jobs:
             --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
           EOF
 
-          oras push ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
+          oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
