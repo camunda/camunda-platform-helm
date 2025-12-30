@@ -372,6 +372,8 @@ jobs:
 
       - name: Push Helm chart to Harbor
         if: env.SKIP_BUILD == 'false'
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
 
@@ -381,6 +383,13 @@ jobs:
           blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
           cosign sign-blob -y ${HELM_PACKAGE} \
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
+
+          helm-cr index --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
+
           rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
           echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
 
