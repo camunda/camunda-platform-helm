@@ -2982,7 +2982,21 @@ orchestration:
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration:
+    ## @param orchestration.extraConfiguration.additional-spring-properties.yaml if specified, extra spring configuration options will be added. Useful when helm chart doesn't support a specific application configuration option yet.
+    additional-spring-properties.yaml: ""
+    #Example:
+    # additional-spring-properties.yaml: |
+    #   camunda:
+    #     data:
+    #       secondary-storage:
+    #         type: rdbms
+    #         rdbms:
+    #           url: jdbc:postgresql://IP_ADDR:5432/camunda
+    #           username: camunda
+
+  ## @param orchestration.springConfigImport can be used to set SPRING_CONFIG_IMPORT which defaults to "optional:file:./config/additional-spring-properties.yaml"
+  springConfigImport: "optional:file:./config/additional-spring-properties.yaml"
   ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param orchestration.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
