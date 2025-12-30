@@ -102,7 +102,6 @@ jobs:
       CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
       CHART_DIR: "${{ matrix.chart.directory }}"
       CHART_RELEASE_VERSION: "${{ matrix.chart.version }}"
-      CHART_RELEASE_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
       CHART_RELEASE_PACKAGE_FILE: "camunda-platform-${{ matrix.chart.version }}.tgz"
       CHART_RELEASE_COSIGN_BUNDLE_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-bundle.json"
       CHART_RELEASE_COSIGN_VERIFY_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-verify.sh"
@@ -383,6 +382,9 @@ jobs:
           blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
           cosign sign-blob -y ${HELM_PACKAGE} \
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
+
+          CHART_RELEASE_TAG_NAME="camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}"
+          echo CHART_RELEASE_TAG_NAME="camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}" >> $GITHUB_ENV
 
           helm-cr index --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }} \
             --owner "${{ github.repository_owner }}" \
