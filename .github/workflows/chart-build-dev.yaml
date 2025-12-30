@@ -99,7 +99,7 @@ jobs:
         working-directory: ${{ matrix.chart.directory }}
     env:
       CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
-      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
+      CHART_DIR: "${{ matrix.chart.directory }}"
       CHART_RELEASE_VERSION: "${{ matrix.chart.version }}"
       CHART_RELEASE_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
       CHART_RELEASE_PACKAGE_FILE: "camunda-platform-${{ matrix.chart.version }}.tgz"
