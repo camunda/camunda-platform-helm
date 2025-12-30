@@ -86,28 +86,248 @@ camunda:
       {{- end }}
       {{- if .Values.global.elasticsearch.enabled }}
       elasticsearch:
-        url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
-        cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
-        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- with .Values.orchestration.data.secondaryStorage.elasticsearch }}
+        url: {{ .url | default (include "camundaPlatform.elasticsearchURL" $) | quote }}
+        clusterName: {{ .clusterName | default $.Values.global.elasticsearch.clusterName | quote }}
+        username: {{ .username | default $.Values.global.elasticsearch.auth.username | quote }}
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
-        index-prefix: {{ .Values.orchestration.index.prefix | quote }}
-        number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
-        {{- if .Values.orchestration.history.retention.enabled }}
+        indexPrefix: {{ .indexPrefix | default $.Values.orchestration.index.prefix | quote }}
+        numberOfReplicas: {{ .numberOfReplicas | default $.Values.orchestration.index.replicas | quote }}
+        {{- if .dateFormat }}
+        dateFormat: {{ .dateFormat | quote }}
+        {{- end }}
+        {{- if .numberOfShards }}
+        numberOfShards: {{ .numberOfShards | quote }}
+        {{- end }}
+        {{- if .variableSizeThreshold }}
+        variableSizeThreshold: {{ .variableSizeThreshold }}
+        {{- end }}
+        {{- if .numberOfReplicasPerIndex }}
+        numberOfReplicasPerIndex:
+          {{- .numberOfReplicasPerIndex | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if .numberOfShardsPerIndex }}
+        numberOfShardsPerIndex:
+          {{- .numberOfShardsPerIndex | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if or .security.enabled (ne .security.verifyHostname nil) (ne .security.selfSigned nil) }}
+        security:
+          {{- if ne .security.enabled nil }}
+          enabled: {{ .security.enabled }}
+          {{- end }}
+          {{- if ne .security.verifyHostname nil }}
+          verifyHostname: {{ .security.verifyHostname }}
+          {{- end }}
+          {{- if ne .security.selfSigned nil }}
+          selfSigned: {{ .security.selfSigned }}
+          {{- end }}
+        {{- end }}
+        {{- if .interceptorPlugins }}
+        interceptorPlugins:
+          {{- .interceptorPlugins | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if or $.Values.orchestration.history.retention.enabled .history.processInstanceEnabled .history.elsRolloverDateFormat .history.rolloverInterval .history.rolloverBatchSize .history.waitPeriodBeforeArchiving .history.delayBetweenRuns .history.maxDelayBetweenRuns .history.policyName }}
         history:
-          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
+          {{- if $.Values.orchestration.history.retention.enabled }}
+          policyName: {{ .history.policyName | default $.Values.orchestration.history.retention.policyName | quote }}
+          {{- else if .history.policyName }}
+          policyName: {{ .history.policyName | quote }}
+          {{- end }}
+          {{- if ne .history.processInstanceEnabled nil }}
+          processInstanceEnabled: {{ .history.processInstanceEnabled }}
+          {{- end }}
+          {{- if .history.elsRolloverDateFormat }}
+          elsRolloverDateFormat: {{ .history.elsRolloverDateFormat | quote }}
+          {{- end }}
+          {{- if .history.rolloverInterval }}
+          rolloverInterval: {{ .history.rolloverInterval | quote }}
+          {{- end }}
+          {{- if .history.rolloverBatchSize }}
+          rolloverBatchSize: {{ .history.rolloverBatchSize }}
+          {{- end }}
+          {{- if .history.waitPeriodBeforeArchiving }}
+          waitPeriodBeforeArchiving: {{ .history.waitPeriodBeforeArchiving | quote }}
+          {{- end }}
+          {{- if .history.delayBetweenRuns }}
+          delayBetweenRuns: {{ .history.delayBetweenRuns | quote }}
+          {{- end }}
+          {{- if .history.maxDelayBetweenRuns }}
+          maxDelayBetweenRuns: {{ .history.maxDelayBetweenRuns | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if ne .createSchema nil }}
+        createSchema: {{ .createSchema }}
+        {{- end }}
+        {{- if .incidentNotifier.auth0Protocol }}
+        incidentNotifier:
+          auth0Protocol: {{ .incidentNotifier.auth0Protocol | quote }}
+        {{- end }}
+        {{- if .batchOperationCache.maxSize }}
+        batchOperationCache:
+          maxSize: {{ .batchOperationCache.maxSize }}
+        {{- end }}
+        {{- if .processCache.maxSize }}
+        processCache:
+          maxSize: {{ .processCache.maxSize }}
+        {{- end }}
+        {{- if .formCache.maxSize }}
+        formCache:
+          maxSize: {{ .formCache.maxSize }}
+        {{- end }}
+        {{- if or .postExport.batchSize .postExport.delayBetweenRuns .postExport.maxDelayBetweenRuns (ne .postExport.ignoreMissingData nil) }}
+        postExport:
+          {{- if .postExport.batchSize }}
+          batchSize: {{ .postExport.batchSize }}
+          {{- end }}
+          {{- if .postExport.delayBetweenRuns }}
+          delayBetweenRuns: {{ .postExport.delayBetweenRuns | quote }}
+          {{- end }}
+          {{- if .postExport.maxDelayBetweenRuns }}
+          maxDelayBetweenRuns: {{ .postExport.maxDelayBetweenRuns | quote }}
+          {{- end }}
+          {{- if ne .postExport.ignoreMissingData nil }}
+          ignoreMissingData: {{ .postExport.ignoreMissingData }}
+          {{- end }}
+        {{- end }}
+        {{- if ne .batchOperations.exportItemsOnCreation nil }}
+        batchOperations:
+          exportItemsOnCreation: {{ .batchOperations.exportItemsOnCreation }}
+        {{- end }}
+        {{- if or .bulk.delay .bulk.size .bulk.memoryLimit }}
+        bulk:
+          {{- if .bulk.delay }}
+          delay: {{ .bulk.delay | quote }}
+          {{- end }}
+          {{- if .bulk.size }}
+          size: {{ .bulk.size }}
+          {{- end }}
+          {{- if .bulk.memoryLimit }}
+          memoryLimit: {{ .bulk.memoryLimit | quote }}
+          {{- end }}
+        {{- end }}
         {{- end }}
       {{- end }}
       {{- if .Values.global.opensearch.enabled }}
       opensearch:
-        url: {{ include "camundaPlatform.opensearchURL" . | quote }}
-        cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
-        username: {{ .Values.global.opensearch.auth.username | quote }}
+        {{- with .Values.orchestration.data.secondaryStorage.opensearch }}
+        url: {{ .url | default (include "camundaPlatform.opensearchURL" $) | quote }}
+        clusterName: {{ .clusterName | default $.Values.global.opensearch.clusterName | quote }}
+        username: {{ .username | default $.Values.global.opensearch.auth.username | quote }}
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
-        index-prefix: {{ .Values.orchestration.index.prefix | quote }}
-        number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
-        {{- if .Values.orchestration.history.retention.enabled }}
+        indexPrefix: {{ .indexPrefix | default $.Values.orchestration.index.prefix | quote }}
+        numberOfReplicas: {{ .numberOfReplicas | default $.Values.orchestration.index.replicas | quote }}
+        {{- if .dateFormat }}
+        dateFormat: {{ .dateFormat | quote }}
+        {{- end }}
+        {{- if .numberOfShards }}
+        numberOfShards: {{ .numberOfShards | quote }}
+        {{- end }}
+        {{- if .variableSizeThreshold }}
+        variableSizeThreshold: {{ .variableSizeThreshold }}
+        {{- end }}
+        {{- if .numberOfReplicasPerIndex }}
+        numberOfReplicasPerIndex:
+          {{- .numberOfReplicasPerIndex | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if .numberOfShardsPerIndex }}
+        numberOfShardsPerIndex:
+          {{- .numberOfShardsPerIndex | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if or .security.enabled (ne .security.verifyHostname nil) (ne .security.selfSigned nil) }}
+        security:
+          {{- if ne .security.enabled nil }}
+          enabled: {{ .security.enabled }}
+          {{- end }}
+          {{- if ne .security.verifyHostname nil }}
+          verifyHostname: {{ .security.verifyHostname }}
+          {{- end }}
+          {{- if ne .security.selfSigned nil }}
+          selfSigned: {{ .security.selfSigned }}
+          {{- end }}
+        {{- end }}
+        {{- if .interceptorPlugins }}
+        interceptorPlugins:
+          {{- .interceptorPlugins | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if or $.Values.orchestration.history.retention.enabled .history.processInstanceEnabled .history.elsRolloverDateFormat .history.rolloverInterval .history.rolloverBatchSize .history.waitPeriodBeforeArchiving .history.delayBetweenRuns .history.maxDelayBetweenRuns .history.policyName }}
         history:
-          policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
+          {{- if $.Values.orchestration.history.retention.enabled }}
+          policyName: {{ .history.policyName | default $.Values.orchestration.history.retention.policyName | quote }}
+          {{- else if .history.policyName }}
+          policyName: {{ .history.policyName | quote }}
+          {{- end }}
+          {{- if ne .history.processInstanceEnabled nil }}
+          processInstanceEnabled: {{ .history.processInstanceEnabled }}
+          {{- end }}
+          {{- if .history.elsRolloverDateFormat }}
+          elsRolloverDateFormat: {{ .history.elsRolloverDateFormat | quote }}
+          {{- end }}
+          {{- if .history.rolloverInterval }}
+          rolloverInterval: {{ .history.rolloverInterval | quote }}
+          {{- end }}
+          {{- if .history.rolloverBatchSize }}
+          rolloverBatchSize: {{ .history.rolloverBatchSize }}
+          {{- end }}
+          {{- if .history.waitPeriodBeforeArchiving }}
+          waitPeriodBeforeArchiving: {{ .history.waitPeriodBeforeArchiving | quote }}
+          {{- end }}
+          {{- if .history.delayBetweenRuns }}
+          delayBetweenRuns: {{ .history.delayBetweenRuns | quote }}
+          {{- end }}
+          {{- if .history.maxDelayBetweenRuns }}
+          maxDelayBetweenRuns: {{ .history.maxDelayBetweenRuns | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if ne .createSchema nil }}
+        createSchema: {{ .createSchema }}
+        {{- end }}
+        {{- if .incidentNotifier.auth0Protocol }}
+        incidentNotifier:
+          auth0Protocol: {{ .incidentNotifier.auth0Protocol | quote }}
+        {{- end }}
+        {{- if .batchOperationCache.maxSize }}
+        batchOperationCache:
+          maxSize: {{ .batchOperationCache.maxSize }}
+        {{- end }}
+        {{- if .processCache.maxSize }}
+        processCache:
+          maxSize: {{ .processCache.maxSize }}
+        {{- end }}
+        {{- if .formCache.maxSize }}
+        formCache:
+          maxSize: {{ .formCache.maxSize }}
+        {{- end }}
+        {{- if or .postExport.batchSize .postExport.delayBetweenRuns .postExport.maxDelayBetweenRuns (ne .postExport.ignoreMissingData nil) }}
+        postExport:
+          {{- if .postExport.batchSize }}
+          batchSize: {{ .postExport.batchSize }}
+          {{- end }}
+          {{- if .postExport.delayBetweenRuns }}
+          delayBetweenRuns: {{ .postExport.delayBetweenRuns | quote }}
+          {{- end }}
+          {{- if .postExport.maxDelayBetweenRuns }}
+          maxDelayBetweenRuns: {{ .postExport.maxDelayBetweenRuns | quote }}
+          {{- end }}
+          {{- if ne .postExport.ignoreMissingData nil }}
+          ignoreMissingData: {{ .postExport.ignoreMissingData }}
+          {{- end }}
+        {{- end }}
+        {{- if ne .batchOperations.exportItemsOnCreation nil }}
+        batchOperations:
+          exportItemsOnCreation: {{ .batchOperations.exportItemsOnCreation }}
+        {{- end }}
+        {{- if or .bulk.delay .bulk.size .bulk.memoryLimit }}
+        bulk:
+          {{- if .bulk.delay }}
+          delay: {{ .bulk.delay | quote }}
+          {{- end }}
+          {{- if .bulk.size }}
+          size: {{ .bulk.size }}
+          {{- end }}
+          {{- if .bulk.memoryLimit }}
+          memoryLimit: {{ .bulk.memoryLimit | quote }}
+          {{- end }}
+        {{- end }}
         {{- end }}
       {{- end }}
       {{- if .Values.orchestration.exporters.rdbms.enabled }}
@@ -348,7 +568,6 @@ zeebe:
     # zeebe.broker.exporters
     exporters:
     {{- if and
-      (not .Values.orchestration.exporters.rdbms.enabled)
       (or
         (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
         (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
@@ -419,7 +638,5 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-    {{- else -}}
-      {{ " {}" }}
     {{- end }}
 {{ end -}}

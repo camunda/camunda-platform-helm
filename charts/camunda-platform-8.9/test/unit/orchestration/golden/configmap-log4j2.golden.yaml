@@ -88,11 +88,11 @@ data:
           type: "elasticsearch"
           elasticsearch:
             url: "http://camunda-platform-test-elasticsearch:9200"
-            cluster-name: "elasticsearch"
+            clusterName: "elasticsearch"
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
-            index-prefix: ""
-            number-of-replicas: "1"
+            indexPrefix: ""
+            numberOfReplicas: "1"
     
       # Security configuration - Separated syntax.
       security:
