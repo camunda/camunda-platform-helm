@@ -368,15 +368,6 @@ jobs:
           # Store the package filename for later steps
           echo "HELM_PACKAGE=${PACKAGED_FILE}" >> $GITHUB_ENV
 
-      - name: Run Chart Releaser - Indexing
-        env:
-          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        run: |
-          helm-cr index --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }} \
-            --push \
-            --owner "${{ github.repository_owner }}" \
-            --git-repo "$(basename ${{ github.repository }})" \
-            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
       - name: Push Helm chart to Harbor
         if: env.SKIP_BUILD == 'false'
         run: |
