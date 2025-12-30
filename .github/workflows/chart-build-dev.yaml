@@ -375,10 +375,7 @@ jobs:
 
           # helm push creates OCI tag from Chart.yaml version (the release version)
           # We need to retag to our dev tag and add rolling tag
-          ls -shal
-          pwd
-
-          helm push "../../${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
+          helm push "${PACKAGED_FILE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
           blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
           cosign sign-blob -y ${{ env.CHART_RELEASE_PACKAGE_FILE }} \
             --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
