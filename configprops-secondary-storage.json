@@ -1,0 +1,552 @@
+{
+  "autoconfigureCamundaExporter": true,
+  "retention": {
+      "enabled": false,
+      "minimumAge": "30d"
+  },
+  "type": "elasticsearch",
+  "elasticsearch": {
+      "url": "http://cpt-elasticsearch:9200",
+      "username": "******",
+      "password": "******",
+      "indexPrefix": "",
+      "clusterName": "elasticsearch",
+      "dateFormat": "yyyy-MM-dd'T'HH:mm:ss.SSSZZ",
+      "numberOfShards": 1,
+      "numberOfReplicas": 1,
+      "variableSizeThreshold": 8191,
+      "numberOfReplicasPerIndex": {},
+      "numberOfShardsPerIndex": {},
+      "security": {
+          "enabled": false,
+          "verifyHostname": true,
+          "selfSigned": false
+      },
+      "interceptorPlugins": [],
+      "history": {
+          "processInstanceEnabled": true,
+          "elsRolloverDateFormat": "date",
+          "rolloverInterval": "1d",
+          "rolloverBatchSize": 100,
+          "waitPeriodBeforeArchiving": "1h",
+          "delayBetweenRuns": "PT2S",
+          "maxDelayBetweenRuns": "PT1M",
+          "policyName": "camunda-retention-policy"
+      },
+      "createSchema": true,
+      "incidentNotifier": {
+          "auth0Protocol": "https"
+      },
+      "batchOperationCache": {
+          "maxSize": 10000
+      },
+      "processCache": {
+          "maxSize": 10000
+      },
+      "formCache": {
+          "maxSize": 10000
+      },
+      "postExport": {
+          "batchSize": 100,
+          "delayBetweenRuns": "PT2S",
+          "maxDelayBetweenRuns": "PT1M",
+          "ignoreMissingData": false
+      },
+      "batchOperations": {
+          "exportItemsOnCreation": true
+      },
+      "bulk": {
+          "delay": "PT1S",
+          "size": 1000,
+          "memoryLimit": "20971520B"
+      }
+  },
+  "opensearch": {
+      "username": "******",
+      "password": "******",
+      "indexPrefix": "",
+      "clusterName": "opensearch",
+      "dateFormat": "yyyy-MM-dd'T'HH:mm:ss.SSSZZ",
+      "numberOfShards": 1,
+      "numberOfReplicas": 0,
+      "variableSizeThreshold": 8191,
+      "numberOfReplicasPerIndex": {},
+      "numberOfShardsPerIndex": {},
+      "security": {
+          "enabled": false,
+          "verifyHostname": true,
+          "selfSigned": false
+      },
+      "interceptorPlugins": [],
+      "history": {
+          "processInstanceEnabled": true,
+          "elsRolloverDateFormat": "date",
+          "rolloverInterval": "1d",
+          "rolloverBatchSize": 100,
+          "waitPeriodBeforeArchiving": "1h",
+          "delayBetweenRuns": "PT2S",
+          "maxDelayBetweenRuns": "PT1M",
+          "policyName": "camunda-retention-policy"
+      },
+      "createSchema": true,
+      "incidentNotifier": {
+          "auth0Protocol": "https"
+      },
+      "batchOperationCache": {
+          "maxSize": 10000
+      },
+      "processCache": {
+          "maxSize": 10000
+      },
+      "formCache": {
+          "maxSize": 10000
+      },
+      "postExport": {
+          "batchSize": 100,
+          "delayBetweenRuns": "PT2S",
+          "maxDelayBetweenRuns": "PT1M",
+          "ignoreMissingData": false
+      },
+      "batchOperations": {
+          "exportItemsOnCreation": true
+      },
+      "bulk": {
+          "delay": "PT1S",
+          "size": 1000,
+          "memoryLimit": "20971520B"
+      }
+  },
+  "rdbms": {
+      "url": "http://localhost:9200",
+      "username": "******",
+      "password": "******",
+      "flushInterval": "PT0.5S",
+      "queueSize": 1000,
+      "processCache": {
+          "maxSize": 10000
+      },
+      "batchOperationCache": {
+          "maxSize": 10000
+      },
+      "exportBatchOperationItemsOnCreation": true,
+      "batchOperationItemInsertBlockSize": 10000,
+      "history": {
+          "defaultHistoryTTL": "PT720H",
+          "decisionInstanceTTL": "PT720H",
+          "defaultBatchOperationHistoryTTL": "PT120H",
+          "batchOperationCancelProcessInstanceHistoryTTL": "PT120H",
+          "batchOperationMigrateProcessInstanceHistoryTTL": "PT120H",
+          "batchOperationModifyProcessInstanceHistoryTTL": "PT120H",
+          "batchOperationResolveIncidentHistoryTTL": "PT120H",
+          "minHistoryCleanupInterval": "PT1M",
+          "maxHistoryCleanupInterval": "PT1H",
+          "historyCleanupBatchSize": 1000,
+          "usageMetricsCleanup": "PT24H",
+          "usageMetricsTTL": "PT17520H"
+      }
+  }
+},
+"exporters": {}
+},
+"monitoring": {
+"metrics": {
+  "actor": true,
+  "enableExporterExecutionMetrics": false
+},
+"jfr": false
+}
+},
+"inputs": {
+"cluster": {
+"metadata": {
+  "syncDelay": {},
+  "syncRequestTimeout": {}
+},
+"network": {
+  "host": {},
+  "advertisedHost": {},
+  "portOffset": {},
+  "maxMessageSize": {},
+  "heartbeatTimeout": {},
+  "heartbeatInterval": {},
+  "internalApi": {
+      "port": {}
+  },
+  "commandApi": {
+      "port": {}
+  }
+},
+"initialContactPoints": [
+  {
+      "value": "cpt-zeebe-0.${K8S_SERVICE_NAME}:26502",
+      "origin": "URL [file:config/application.yaml] - 42:9"
+  }
+],
+"nodeIdProvider": {
+  "type": {}
+},
+"partitionCount": {
+  "value": "1",
+  "origin": "URL [file:config/application.yaml] - 39:22"
+},
+"replicationFactor": {
+  "value": "1",
+  "origin": "URL [file:config/application.yaml] - 38:25"
+},
+"size": {
+  "value": "1",
+  "origin": "URL [file:config/application.yaml] - 37:11"
+},
+"membership": {
+  "broadcastUpdates": {},
+  "broadcastDisputes": {},
+  "notifySuspect": {},
+  "gossipInterval": {},
+  "gossipFanout": {},
+  "probeInterval": {},
+  "probeTimeout": {},
+  "suspectProbes": {},
+  "failureTimeout": {},
+  "syncInterval": {}
+},
+"name": {},
+"raft": {
+  "heartbeatInterval": {},
+  "electionTimeout": {},
+  "priorityElectionEnabled": {},
+  "flushEnabled": {},
+  "flushDelay": {},
+  "maxAppendsPerFollower": {},
+  "maxAppendBatchSize": {},
+  "requestTimeout": {},
+  "snapshotRequestTimeout": {},
+  "snapshotChunkSize": {},
+  "configurationChangeTimeout": {},
+  "maxQuorumResponseTimeout": {},
+  "minStepDownFailureCount": {},
+  "preferSnapshotReplicationThreshold": {},
+  "preallocateSegmentFiles": {}
+},
+"compressionAlgorithm": {},
+"globalListeners": {
+  "userTask": []
+}
+},
+"processing": {
+"flowControl": {},
+"maxCommandsInBatch": {},
+"enableAsyncScheduledTasks": {},
+"scheduledTasksCheckInterval": {},
+"enablePreconditionsCheck": {},
+"enableForeignKeyChecks": {},
+"enableYieldingDueDateChecker": {},
+"enableAsyncMessageTtlChecker": {},
+"enableAsyncTimerDuedateChecker": {},
+"enableStraightthroughProcessingLoopDetector": {},
+"enableMessageBodyOnExpired": {}
+},
+"system": {
+"cpuThreadCount": {
+  "value": 3,
+  "origin": "URL [file:config/application.yaml] - 26:23"
+},
+"ioThreadCount": {
+  "value": 3,
+  "origin": "URL [file:config/application.yaml] - 27:22"
+},
+"clockControlled": {
+  "value": false,
+  "origin": "URL [file:config/application.yaml] - 28:23"
+},
+"actor": {
+  "idle": {
+      "maxSpins": {},
+      "maxYields": {},
+      "minParkPeriod": {},
+      "maxParkPeriod": {}
+  }
+},
+"upgrade": {
+  "enableVersionCheck": {
+      "value": true,
+      "origin": "URL [file:config/application.yaml] - 31:29"
+  }
+},
+"restore": {
+  "validateConfig": {},
+  "ignoreFilesInTarget": [
+      {}
+  ]
+}
+},
+"api": {
+"longPolling": {
+  "enabled": {},
+  "timeout": {},
+  "probeTimeout": {},
+  "minEmptyResponses": {}
+},
+"grpc": {
+  "address": {
+      "value": "0.0.0.0",
+      "origin": "URL [file:config/application.yaml] - 46:16"
+  },
+  "port": {
+      "value": 26500,
+      "origin": "URL [file:config/application.yaml] - 47:13"
+  },
+  "minKeepAliveInterval": {},
+  "ssl": {
+      "enabled": {},
+      "keyStore": {}
+  },
+  "interceptors": [],
+  "managementThreads": {}
+},
+"rest": {
+  "filters": [],
+  "processCache": {
+      "maxSize": {},
+      "expirationIdle": {}
+  },
+  "executor": {
+      "corePoolSizeMultiplier": {},
+      "maxPoolSizeMultiplier": {},
+      "keepAlive": {},
+      "queueCapacity": {}
+  }
+}
+},
+"data": {
+"snapshotPeriod": {
+  "value": "5m",
+  "origin": "URL [file:config/application.yaml] - 53:22"
+},
+"primaryStorage": {
+  "directory": {},
+  "disk": {
+      "monitoringEnabled": {},
+      "monitoringInterval": {},
+      "freeSpace": {
+          "processing": {
+              "value": "2GB",
+              "origin": "URL [file:config/application.yaml] - 57:23"
+          },
+          "replication": {
+              "value": "1GB",
+              "origin": "URL [file:config/application.yaml] - 58:24"
+          }
+      }
+  },
+  "logStream": {
+      "logIndexDensity": {},
+      "logSegmentSize": {}
+  },
+  "rocksDb": {
+      "columnFamilyOptions": {},
+      "statisticsEnabled": {},
+      "accessMetrics": {},
+      "memoryLimit": {},
+      "maxOpenFiles": {},
+      "maxWriteBufferNumber": {},
+      "minWriteBufferNumberToMerge": {},
+      "ioRateBytesPerSecond": {},
+      "walDisabled": {},
+      "sstPartitioningEnabled": {}
+  }
+},
+"backup": {
+  "snapshotTimeout": {},
+  "incompleteCheckTimeout": {},
+  "store": {},
+  "s3": {
+      "apiCallTimeout": {},
+      "forcePathStyleAccess": {},
+      "supportLegacyMd5": {},
+      "maxConcurrentConnections": {},
+      "connectionAcquisitionTimeout": {}
+  },
+  "gcs": {
+      "auth": {}
+  },
+  "filesystem": {},
+  "azure": {
+      "createContainer": {}
+  }
+},
+"export": {
+  "distributionInterval": {},
+  "skipRecords": []
+},
+"secondaryStorage": {
+  "autoconfigureCamundaExporter": {
+      "value": true,
+      "origin": "URL [file:config/application.yaml] - 60:39"
+  },
+  "retention": {
+      "enabled": {},
+      "minimumAge": {}
+  },
+  "type": {
+      "value": "elasticsearch",
+      "origin": "URL [file:config/application.yaml] - 61:13"
+  },
+  "elasticsearch": {
+      "url": {
+          "value": "http://cpt-elasticsearch:9200",
+          "origin": "URL [file:config/application.yaml] - 63:14"
+      },
+      "username": {
+          "value": "******",
+          "origin": "URL [file:config/application.yaml] - 65:19"
+      },
+      "password": {
+          "value": "******",
+          "origin": "URL [file:config/application.yaml] - 66:19"
+      },
+      "indexPrefix": {
+          "value": "",
+          "origin": "URL [file:config/application.yaml] - 67:23"
+      },
+      "clusterName": {
+          "value": "elasticsearch",
+          "origin": "URL [file:config/application.yaml] - 64:23"
+      },
+      "dateFormat": {},
+      "numberOfShards": {},
+      "numberOfReplicas": {
+          "value": "1",
+          "origin": "URL [file:config/application.yaml] - 68:29"
+      },
+      "variableSizeThreshold": {},
+      "numberOfReplicasPerIndex": {},
+      "numberOfShardsPerIndex": {},
+      "security": {
+          "enabled": {},
+          "verifyHostname": {},
+          "selfSigned": {}
+      },
+      "interceptorPlugins": [],
+      "history": {
+          "processInstanceEnabled": {},
+          "elsRolloverDateFormat": {},
+          "rolloverInterval": {},
+          "rolloverBatchSize": {},
+          "waitPeriodBeforeArchiving": {},
+          "delayBetweenRuns": {},
+          "maxDelayBetweenRuns": {},
+          "policyName": {}
+      },
+      "createSchema": {},
+      "incidentNotifier": {
+          "auth0Protocol": {}
+      },
+      "batchOperationCache": {
+          "maxSize": {}
+      },
+      "processCache": {
+          "maxSize": {}
+      },
+      "formCache": {
+          "maxSize": {}
+      },
+      "postExport": {
+          "batchSize": {},
+          "delayBetweenRuns": {},
+          "maxDelayBetweenRuns": {},
+          "ignoreMissingData": {}
+      },
+      "batchOperations": {
+          "exportItemsOnCreation": {}
+      },
+      "bulk": {
+          "delay": {},
+          "size": {},
+          "memoryLimit": {}
+      }
+  },
+  "opensearch": {
+      "username": {},
+      "password": {},
+      "indexPrefix": {},
+      "clusterName": {},
+      "dateFormat": {},
+      "numberOfShards": {},
+      "numberOfReplicas": {},
+      "variableSizeThreshold": {},
+      "numberOfReplicasPerIndex": {},
+      "numberOfShardsPerIndex": {},
+      "security": {
+          "enabled": {},
+          "verifyHostname": {},
+          "selfSigned": {}
+      },
+      "interceptorPlugins": [],
+      "history": {
+          "processInstanceEnabled": {},
+          "elsRolloverDateFormat": {},
+          "rolloverInterval": {},
+          "rolloverBatchSize": {},
+          "waitPeriodBeforeArchiving": {},
+          "delayBetweenRuns": {},
+          "maxDelayBetweenRuns": {},
+          "policyName": {}
+      },
+      "createSchema": {},
+      "incidentNotifier": {
+          "auth0Protocol": {}
+      },
+      "batchOperationCache": {
+          "maxSize": {}
+      },
+      "processCache": {
+          "maxSize": {}
+      },
+      "formCache": {
+          "maxSize": {}
+      },
+      "postExport": {
+          "batchSize": {},
+          "delayBetweenRuns": {},
+          "maxDelayBetweenRuns": {},
+          "ignoreMissingData": {}
+      },
+      "batchOperations": {
+          "exportItemsOnCreation": {}
+      },
+      "bulk": {
+          "delay": {},
+          "size": {},
+          "memoryLimit": {}
+      }
+  },
+  "rdbms": {
+      "url": {},
+      "username": {},
+      "password": {},
+      "flushInterval": {},
+      "queueSize": {},
+      "processCache": {
+          "maxSize": {}
+      },
+      "batchOperationCache": {
+          "maxSize": {}
+      },
+      "exportBatchOperationItemsOnCreation": {},
+      "batchOperationItemInsertBlockSize": {},
+      "history": {
+          "defaultHistoryTTL": {},
+          "decisionInstanceTTL": {},
+          "defaultBatchOperationHistoryTTL": {},
+          "batchOperationCancelProcessInstanceHistoryTTL": {},
+          "batchOperationMigrateProcessInstanceHistoryTTL": {},
+          "batchOperationModifyProcessInstanceHistoryTTL": {},
+          "batchOperationResolveIncidentHistoryTTL": {},
+          "minHistoryCleanupInterval": {},
+          "maxHistoryCleanupInterval": {},
+          "historyCleanupBatchSize": {},
+          "usageMetricsCleanup": {},
+          "usageMetricsTTL": {}
+      }
+  }
+}
