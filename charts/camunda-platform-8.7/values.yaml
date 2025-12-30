@@ -994,7 +994,7 @@ zeebe:
 
   ## @param zeebe.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## @extra zeebe.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration:
     additional-spring-properties.yaml: ""
   ## @param zeebe.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
@@ -1313,7 +1313,7 @@ zeebeGateway:
 
   ## @param zeebeGateway.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## @extra zeebeGateway.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration:
     additional-spring-properties.yaml: ""
   ## @param zeebeGateway.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
@@ -1584,7 +1584,7 @@ operate:
 
   ## @param operate.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  ## @extra operate.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration:
     additional-spring-properties.yaml: ""
   ## @param operate.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
@@ -1832,7 +1832,7 @@ tasklist:
 
   ## @param tasklist.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## @extra tasklist.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
   extraConfiguration:
     additional-spring-properties.yaml: ""
   ## @param tasklist.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
@@ -2634,7 +2634,7 @@ identity:
 
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  ## @extra identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration:
     additional-spring-properties.yaml: ""
   ## @param identity.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
@@ -3178,7 +3178,7 @@ webModeler:
 
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
-    ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    ## @extra webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
     extraConfiguration:
       additional-spring-properties.yaml: ""
     ## @param webModeler.restapi.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
@@ -3894,7 +3894,7 @@ connectors:
   affinity: {}
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
   configuration: ""
-  ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  ## @extra connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
   extraConfiguration:
     additional-spring-properties.yaml: ""
   ## @param connectors.springConfigImport if specified, value will be set to SPRING_CONFIG_IMPORT env var
