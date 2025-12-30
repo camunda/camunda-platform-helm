@@ -385,7 +385,6 @@ jobs:
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
 
           helm-cr index --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }} \
-            --push \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
             --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
