@@ -120,6 +120,9 @@ jobs:
             helm
             yq
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
       - name: Login to Harbor registry
         run: |
           echo "${HARBOR_REGISTRY_PASSWORD}" | \
@@ -355,6 +358,9 @@ jobs:
           # helm push creates OCI tag from Chart.yaml version (the release version)
           # We need to retag to our dev tag and add rolling tag
           helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
+
+          blob_sha="$(sha256sum "${HELM_PACKAGE}" | awk '{print $1}')"
+          cosign sign oci://${OCI_REGISTRY}/${HELM_PACKAGE}@sha256:${blob_sha}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
