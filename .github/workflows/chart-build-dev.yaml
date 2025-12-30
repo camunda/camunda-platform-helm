@@ -387,7 +387,7 @@ jobs:
           cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
           # Rekor.
           echo "Rekor record:"
-          echo "https://search.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}"
+          echo "https://search.sigstore.dev/?logIndex=${rekor_log_index}"
 
           # Cosign.
           cosign verify-blob ${HELM_PACKAGE} \\
