@@ -359,7 +359,7 @@ jobs:
           # We need to retag to our dev tag and add rolling tag
           helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
           blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
-          cosign sign oci://${OCI_REGISTRY}/${CHART_NAME}@${blob_sha}
+          cosign sign ${OCI_REGISTRY}/${CHART_NAME}@${blob_sha}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
