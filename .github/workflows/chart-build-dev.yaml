@@ -97,6 +97,16 @@ jobs:
       run:
         shell: bash
         working-directory: ${{ matrix.chart.directory }}
+    env:
+      CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
+      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
+      CHART_RELEASE_VERSION: "${{ matrix.chart.version }}"
+      CHART_RELEASE_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
+      CHART_RELEASE_PACKAGE_FILE: "camunda-platform-${{ matrix.chart.version }}.tgz"
+      CHART_RELEASE_COSIGN_BUNDLE_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-bundle.json"
+      CHART_RELEASE_COSIGN_VERIFY_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-verify.sh"
+      CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
+      CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -345,10 +355,10 @@ jobs:
 
           # Package WITHOUT --version flag to preserve Chart.yaml version (release version)
           # The Chart.yaml already contains the correct release version (e.g., 11.11.3)
-          helm package .
+          helm-cr package ${{ env.CHART_DIR }} --config ${{ env.CHART_RELEASER_CONFIG_FILE }}
 
           # The package filename will be based on Chart.yaml version
-          PACKAGED_FILE=$(ls ${{ env.CHART_NAME }}-*.tgz)
+          PACKAGED_FILE=$(ls .cr-release-packages/${{ env.CHART_NAME }}-*.tgz)
           echo "Packaged: ${PACKAGED_FILE}"
 
           # Verify Chart.yaml inside has the release version
@@ -358,6 +368,24 @@ jobs:
           # Store the package filename for later steps
           echo "HELM_PACKAGE=${PACKAGED_FILE}" >> $GITHUB_ENV
 
+      - name: Run Chart Releaser - Tagging/Uploading
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
+      - name: Run Chart Releaser - Indexing
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
       - name: Push Helm chart to Harbor
         if: env.SKIP_BUILD == 'false'
         run: |
@@ -365,9 +393,26 @@ jobs:
 
           # helm push creates OCI tag from Chart.yaml version (the release version)
           # We need to retag to our dev tag and add rolling tag
-          helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
+          helm push ".cr-release-packages/${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
           blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
-          cosign sign ${OCI_REGISTRY}/${CHART_NAME}@${blob_sha}
+          cosign sign-blob -y ${{ env.CHART_RELEASE_PACKAGE_FILE }} \
+            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
+          rekor_log_index="$(cat ${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
+          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
+
+          cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
+          # Rekor.
+          echo "Rekor record:"
+          echo "https://search.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}"
+
+          # Cosign.
+          cosign verify-blob ${{ env.CHART_RELEASE_PACKAGE_FILE }} \\
+            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
+            --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
+            --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
+          EOF
+
+          oras push ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.CHART_NAME }} ${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
