@@ -132,6 +132,7 @@ jobs:
         with:
           tools: |
             helm
+            oras
             yq
 
       - name: Install Cosign
