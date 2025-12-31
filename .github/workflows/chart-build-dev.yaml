@@ -578,12 +578,6 @@ jobs:
             --version ${DEV_TAG}
           \`\`\`
 
-          ### Cosign and Rekor Verification
-          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${CHART_RELEASE_TAG_NAME}
-          - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_RELEASE_VERSION }}
-          - Rekor record: https://rekor.sigstore.dev/?logIndex=${rekor_log_index}
-          Note: Artifact Hub link needs some time till it's AH scraps the Helm repo index.
-
           EOF
             fi
           fi
