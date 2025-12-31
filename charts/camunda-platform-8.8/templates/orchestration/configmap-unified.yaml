@@ -23,7 +23,7 @@ data:
     {{ .Values.orchestration.configuration | indent 4 | trim }}
   {{- else }}
   application.yaml: |
-    {{- (include (print $.Template.BasePath "/orchestration/files/_application.yaml") $) | indent 4 }}
+    {{- (include (print $.Template.BasePath "/orchestration/files/_application-unified.yaml") $) | indent 4 }}
   {{- end }}
   log4j2.xml: |
   {{- if .Values.orchestration.log4j2 }}
