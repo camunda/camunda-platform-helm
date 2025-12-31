@@ -404,9 +404,9 @@ jobs:
           EOF
 
           COSIGN_VERIFIED="$(
-            cosign verify-blob ${HELM_PACKAGE} \\
-              --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
-              --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
+            cosign verify-blob ${HELM_PACKAGE} \
+              --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
+              --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \
               --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
           )"
 
