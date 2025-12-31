@@ -407,7 +407,7 @@ jobs:
             cosign verify-blob ${HELM_PACKAGE} \
               --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
               --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \
-              --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
+              --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}" 2>&1
           )"
           echo COSIGN_VERIFIED="${COSIGN_VERIFIED}" >> $GITHUB_ENV
 
