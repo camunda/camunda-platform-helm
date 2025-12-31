@@ -179,6 +179,11 @@
                 "gateway": {
                     "type": "object",
                     "properties": {
+                        "createGatewayResource": {
+                            "type": "boolean",
+                            "description": "if true, the Gateway resource is created. This is dependent on whether you have a separate network administrator installing your Gateway or if you are installing it as part of the helm chart.",
+                            "default": false
+                        },
                         "enabled": {
                             "type": "boolean",
                             "description": "if true, a gateway resource is deployed. Only useful if a gateway controller is available, like Ingress-NGINX or Gateway API.",
