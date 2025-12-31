@@ -403,6 +403,15 @@ jobs:
             --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
           EOF
 
+          COSIGN_VERIFIED="$(
+            cosign verify-blob ${HELM_PACKAGE} \\
+              --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
+              --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
+              --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
+          )"
+
+          COSIGN_METADATA=$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq .verificationMaterial.certificate.rawBytes | sed 's/"//g' | base64 -d | openssl x509 -noout -text -)
+
           oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
@@ -576,6 +585,15 @@ jobs:
           helm install my-camunda-dev \\
             oci://${OCI_REGISTRY}/${{ env.CHART_NAME }} \\
             --version ${DEV_TAG}
+          \`\`\`
+
+          ### Cosign verified
+          
+          Verification status: ${COSIGN_VERIFIED}
+          Cosign certificate details:
+
+          \`\`\`
+          ${COSIGN_METADATA}
           \`\`\`
 
           EOF
