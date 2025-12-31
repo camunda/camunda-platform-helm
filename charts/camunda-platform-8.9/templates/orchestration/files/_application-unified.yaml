@@ -90,7 +90,7 @@ camunda:
         url: {{ .url | default (include "camundaPlatform.elasticsearchURL" $) | quote }}
         cluster-name: {{ .clusterName | default $.Values.global.elasticsearch.clusterName | quote }}
         username: {{ .username | default $.Values.global.elasticsearch.auth.username | quote }}
-        password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PASSWORD:}"
+        password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .indexPrefix | default $.Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .numberOfReplicas | default $.Values.orchestration.index.replicas | quote }}
         {{- if .dateFormat }}
@@ -213,7 +213,7 @@ camunda:
         url: {{ .url | default (include "camundaPlatform.opensearchURL" $) | quote }}
         cluster-name: {{ .clusterName | default $.Values.global.opensearch.clusterName | quote }}
         username: {{ .username | default $.Values.global.opensearch.auth.username | quote }}
-        password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_OPENSEARCH_PASSWORD:}"
+        password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .indexPrefix | default $.Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .numberOfReplicas | default $.Values.orchestration.index.replicas | quote }}
         {{- if .dateFormat }}
