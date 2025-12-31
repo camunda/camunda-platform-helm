@@ -90,7 +90,7 @@ data:
             url: "http://camunda-platform-test-elasticsearch:9200"
             cluster-name: "elasticsearch"
             username: ""
-            password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PASSWORD:}"
+            password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
             index-prefix: ""
             number-of-replicas: "1"
     
