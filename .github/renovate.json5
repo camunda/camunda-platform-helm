@@ -140,6 +140,17 @@
       matchManagers: ['helmv3', 'helm-values', 'custom.regex'],
       matchUpdateTypes: ['major'],
     },
+    // Internal scripts do not need to be updated as they are not versioned outside of git
+    // dependencies for those scripts will still be updated.
+    {
+      matchPackageNames: [
+        'scripts/camunda-core',
+        'scripts/camunda-deployer',
+        'scripts/prepare-helm-values',
+        'scripts/vault-secret-mapper',
+      ],
+      enabled: false,
+    },
     {
       description: 'Disable minor updates for Camunda components in previous chart versions.',
       enabled: false,
