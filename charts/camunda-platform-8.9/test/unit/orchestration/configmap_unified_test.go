@@ -43,7 +43,7 @@ func TestConfigmapUnifiedTemplate(t *testing.T) {
 		chartPath: chartPath,
 		release:   "camunda-platform-test",
 		namespace: "camunda-platform-" + strings.ToLower(random.UniqueId()),
-		templates: []string{"templates/orchestration/configmap-unified.yaml"},
+		templates: []string{"templates/orchestration/configmap.yaml"},
 	})
 }
 
