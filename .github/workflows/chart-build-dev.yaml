@@ -610,7 +610,7 @@ jobs:
           <summary>View Cosign metadata</summary>
 
           \`\`\`bash
-          ${COSIGN_METADATA}
+          "${COSIGN_METADATA}"
           \`\`\`
 
           </details>
