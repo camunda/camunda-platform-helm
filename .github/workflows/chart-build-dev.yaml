@@ -412,8 +412,8 @@ jobs:
 
           COSIGN_METADATA="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq .verificationMaterial.certificate.rawBytes | sed 's/"//g' | base64 -d | openssl x509 -noout -text -)"
           # newlines are getting stripped away, replace them with \n for GitHub Env
-          #COSIGN_METADATA_ESCAPED="${COSIGN_METADATA//$'\n'/\r}"
-          #COSIGN_METADATA="${COSIGN_METADATA_ESCAPED}"
+          COSIGN_METADATA_ESCAPED="${COSIGN_METADATA//$'\n'/\r}"
+          COSIGN_METADATA="${COSIGN_METADATA_ESCAPED}"
           echo COSIGN_METADATA=${COSIGN_METADATA} >> $GITHUB_ENV
 
           oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
