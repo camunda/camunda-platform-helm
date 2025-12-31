@@ -1,4 +1,4 @@
-{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
+{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) (.Values.global.gateway.createGatewayResource) -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
