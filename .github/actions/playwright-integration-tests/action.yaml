@@ -145,7 +145,7 @@ runs:
       run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
 
     - name: Test - Upload Playwright report
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
       with:
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
         name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner-${{ steps.report_date.outputs.date }}
