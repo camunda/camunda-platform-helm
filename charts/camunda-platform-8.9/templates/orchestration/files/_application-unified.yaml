@@ -570,7 +570,6 @@ zeebe:
     # zeebe.broker.exporters
     exporters:
     {{- if and
-      (not .Values.orchestration.exporters.rdbms.enabled)
       (or
         (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
         (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
