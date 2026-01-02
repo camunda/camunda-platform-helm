@@ -193,8 +193,11 @@ jobs:
           TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
           CHART_VERSION: ${{ matrix.chart.version }}
         run: |
-          go build -o ../../values-injector ../../scripts/values-injector/main.go
-          ../../values-injector ./values.yaml
+          cd $(git rev-parse --show-toplevel)
+          cd scripts/values-injector
+          go build
+          cd $(git rev-parse --show-toplevel)
+          ./scripts/values-injector/values-injector
 
       - name: Login to Harbor registry
         run: |
