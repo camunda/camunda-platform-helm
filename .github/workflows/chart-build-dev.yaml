@@ -33,6 +33,37 @@ on:
           Leave empty to build all active versions.
         required: false
         type: string
+      orchestration-image-tag:
+        type: string
+        required: false
+      zeebe-image-tag:
+        type: string
+        required: false
+      zeebe-gateway-image-tag:
+        type: string
+        required: false
+      operate-image-tag:
+        type: string
+        required: false
+      tasklist-image-tag:
+        type: string
+        required: false
+      console-image-tag:
+        type: string
+        required: false
+      modeler-image-tag:
+        type: string
+        required: false
+      connectors-image-tag:
+        type: string
+        required: false
+      optimize-image-tag:
+        type: string
+        required: false
+      identity-image-tag:
+        type: string
+        required: false
+
 
 env:
   CHART_NAME: "camunda-platform"
@@ -53,6 +84,16 @@ jobs:
 
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
+
+      - name: Info - ℹ️ Print workflow inputs ℹ️
+        env:
+          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+        run: |
+          echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          echo "Workflow Inputs:"
+          echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
+          echo "Workflow Inputs - Extra Values:"
+          echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: Get chart versions
         id: chart-versions
@@ -130,12 +171,30 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            golang
             helm
             oras
             yq
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Build values-injector
+        env:
+          CONSOLE_IMAGE_TAG: ${{ inputs.console-image-tag }}
+          CONNECTORS_IMAGE_TAG: ${{ inputs.connectors-image-tag }}
+          IDENTITY_IMAGE_TAG: ${{ inputs.identity-image-tag }}
+          WEB_MODELER_IMAGE_TAG: ${{ inputs.modeler-image-tag }}
+          OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-image-tag }}
+          ORCHESTRATION_IMAGE_TAG: ${{ inputs.orchestration-image-tag }}
+          ZEEBE_IMAGE_TAG: ${{ inputs.zeebe-image-tag }}
+          ZEEBE_GATEWAY_IMAGE_TAG: ${{ inputs.zeebe-gateway-image-tag }}
+          OPERATE_IMAGE_TAG: ${{ inputs.operate-image-tag }}
+          TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
+          CHART_VERSION: ${{ matrix.chart.version }}
+        run: |
+          go build -o values-injector ./scripts/values-injector/main.go
+          ./values-injector ./values.yaml
 
       - name: Login to Harbor registry
         run: |
