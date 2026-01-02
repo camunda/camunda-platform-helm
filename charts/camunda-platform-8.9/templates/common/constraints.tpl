@@ -26,6 +26,13 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 {{- end }}
 
 {{/*
+Fail if there is no secondary storage type specified and if noSecondaryStorage is not enabled.
+*/}}
+{{- if eq (include "orchestration.secondaryStorage" .) "unset" }}
+  {{- fail "Please enable a secondary storage type. Either Elasticsearch, OpenSearch or Postgres" -}}
+{{- end }}
+
+{{/*
 Fail with a message if noSecondaryStorage is enabled but Elasticsearch or OpenSearch are still enabled.
 */}}
 {{- if .Values.global.noSecondaryStorage }}

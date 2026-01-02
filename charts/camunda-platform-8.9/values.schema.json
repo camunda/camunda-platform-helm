@@ -2758,7 +2758,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.9.0-alpha2-rc1"
+                            "default": "8.9.0-alpha3-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -5690,6 +5690,11 @@
                         "secondaryStorage": {
                             "type": "object",
                             "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "the type of secondary storage (rdbms, elasticsearch, opensearch)",
+                                    "default": ""
+                                },
                                 "rdbms": {
                                     "type": "object",
                                     "properties": {
