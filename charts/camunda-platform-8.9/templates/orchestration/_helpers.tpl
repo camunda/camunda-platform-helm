@@ -282,7 +282,7 @@ Authentication.
         {{- else if .Values.orchestration.exporters.rdbms.enabled -}}
             rdbms
         {{- else -}}
-            {{- fail "Please enable a secondary storage type. Either Elasticsearch, OpenSearch or Postgres" -}}
+            unset
         {{- end -}}
     {{- end -}}
 {{- end -}}
