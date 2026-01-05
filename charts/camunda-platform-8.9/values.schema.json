@@ -227,7 +227,7 @@
                         "enabled": {
                             "type": "boolean",
                             "description": "if true, enables elasticsearch for all components",
-                            "default": true
+                            "default": false
                         },
                         "external": {
                             "type": "boolean",
@@ -6951,7 +6951,7 @@
                 "enabled": {
                     "type": "boolean",
                     "description": "",
-                    "default": true
+                    "default": false
                 },
                 "global": {
                     "type": "object",

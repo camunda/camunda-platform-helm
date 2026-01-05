@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: false
   exporter:
     zeebe:
       enabled: true
@@ -16,9 +14,6 @@ global:
       host: "$OPENSEARCH_HOST"
       port: $OPENSEARCH_PORT
     prefix: "custom-zeebe"
-
-elasticsearch:
-  enabled: false
 
 orchestration:
   index:
