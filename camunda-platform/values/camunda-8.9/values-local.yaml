@@ -3,6 +3,8 @@
 # It disables some features and reduces the resource requirements to run the Camunda Platform locally.
 #
 global:
+  elasticsearch:
+    enabled: true
   identity:
     auth:
       # Disable the Identity authentication for local development
@@ -38,6 +40,7 @@ optimize:
   enabled: false
 
 elasticsearch:
+  enabled: true
   master:
     replicaCount: 1
     persistence:
