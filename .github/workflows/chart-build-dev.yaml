@@ -51,6 +51,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
       - name: Get chart versions
         id: chart-versions
         uses: ./.github/actions/get-chart-versions
@@ -85,6 +88,7 @@ jobs:
     name: Build ${{ matrix.chart.version }}
     permissions:
       contents: read
+      id-token: write
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -94,6 +98,15 @@ jobs:
       run:
         shell: bash
         working-directory: ${{ matrix.chart.directory }}
+    env:
+      CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
+      CHART_DIR: "${{ matrix.chart.directory }}"
+      CHART_RELEASE_VERSION: "${{ matrix.chart.version }}"
+      CHART_RELEASE_PACKAGE_FILE: "camunda-platform-${{ matrix.chart.version }}.tgz"
+      CHART_RELEASE_COSIGN_BUNDLE_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-bundle.json"
+      CHART_RELEASE_COSIGN_VERIFY_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-verify.sh"
+      CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
+      CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -118,12 +131,21 @@ jobs:
         with:
           tools: |
             helm
+            oras
             yq
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
       - name: Login to Harbor registry
         run: |
           echo "${HARBOR_REGISTRY_PASSWORD}" | \
             helm registry login "${HARBOR_REGISTRY_HOST}" \
+              -u "${HARBOR_REGISTRY_USER}" \
+              --password-stdin
+
+          echo "${HARBOR_REGISTRY_PASSWORD}" | \
+            cosign login "${HARBOR_REGISTRY_HOST}" \
               -u "${HARBOR_REGISTRY_USER}" \
               --password-stdin
 
@@ -334,10 +356,10 @@ jobs:
 
           # Package WITHOUT --version flag to preserve Chart.yaml version (release version)
           # The Chart.yaml already contains the correct release version (e.g., 11.11.3)
-          helm package .
+          helm-cr package ./ --config ../../${{ env.CHART_RELEASER_CONFIG_FILE }}
 
           # The package filename will be based on Chart.yaml version
-          PACKAGED_FILE=$(ls ${{ env.CHART_NAME }}-*.tgz)
+          PACKAGED_FILE=$(ls .cr-release-packages/${{ env.CHART_NAME }}-*.tgz)
           echo "Packaged: ${PACKAGED_FILE}"
 
           # Verify Chart.yaml inside has the release version
@@ -349,12 +371,55 @@ jobs:
 
       - name: Push Helm chart to Harbor
         if: env.SKIP_BUILD == 'false'
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
 
           # helm push creates OCI tag from Chart.yaml version (the release version)
           # We need to retag to our dev tag and add rolling tag
-          helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
+          helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
+          blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
+          cosign sign-blob -y ${HELM_PACKAGE} \
+            --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
+
+          CHART_RELEASE_TAG_NAME="camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}"
+          echo "CHART_RELEASE_TAG_NAME=camunda-platform-${{ matrix.chart.version }}-${RELEASE_VERSION}" >> $GITHUB_ENV
+
+          cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq
+
+          rekor_log_index="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
+          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
+
+          cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
+          # Rekor.
+          echo "Rekor record:"
+          echo "https://search.sigstore.dev/?logIndex=${rekor_log_index}"
+
+          # Cosign.
+          cosign verify-blob ${HELM_PACKAGE} \\
+            --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
+            --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
+            --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
+          EOF
+
+          COSIGN_VERIFIED="$(
+            cosign verify-blob ${HELM_PACKAGE} \
+              --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
+              --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \
+              --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}" 2>&1
+          )"
+          echo COSIGN_VERIFIED="${COSIGN_VERIFIED}" >> $GITHUB_ENV
+
+          COSIGN_METADATA="$(cat .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq .verificationMaterial.certificate.rawBytes | sed 's/"//g' | base64 -d | openssl x509 -noout -text - )"
+          # funkiness to preserve newlines
+          {
+            echo "COSIGN_METADATA<<EOF"
+            echo "$COSIGN_METADATA"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+          oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
@@ -487,6 +552,19 @@ jobs:
             --version ${DEV_TAG}
           \`\`\`
 
+          ### Cosign verified
+          
+          Verification status: ${COSIGN_VERIFIED}
+
+          <details>
+          <summary>View Cosign metadata</summary>
+
+          \`\`\`bash
+          $(echo "${COSIGN_METADATA}")
+          \`\`\`
+
+          </details>
+
           EOF
             else
               # 8.6, 8.7 with separate component images
@@ -528,6 +606,19 @@ jobs:
             oci://${OCI_REGISTRY}/${{ env.CHART_NAME }} \\
             --version ${DEV_TAG}
           \`\`\`
+
+          ### Cosign verified
+          
+          Verification status: ${COSIGN_VERIFIED}
+
+          <details>
+          <summary>View Cosign metadata</summary>
+
+          \`\`\`bash
+          $(echo "${COSIGN_METADATA}")
+          \`\`\`
+
+          </details>
 
           EOF
             fi
