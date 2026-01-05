@@ -17,7 +17,7 @@ spec:
   - name: https
     port: 443
     protocol: HTTPS
-    hostname: {{ .Values.global.gateway.hostname }}
+    hostname: {{ tpl .Values.global.gateway.hostname $ }}
     tls:
       mode: Terminate
       certificateRefs:
@@ -27,6 +27,6 @@ spec:
   - name: http
     port: {{ if .Values.global.gateway.tls.enabled }}443{{ else }}80{{ end }}
     protocol: HTTP
-    hostname: {{ .Values.global.gateway.hostname }}
+    hostname: {{ tpl .Values.global.gateway.hostname $ }}
   {{- end }}
 {{- end }}
