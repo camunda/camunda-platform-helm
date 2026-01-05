@@ -8,7 +8,7 @@ apiVersion: v1
 data:
   {{- if .Values.optimize.configuration }}
   environment-config.yaml: |
-    {{ .Values.optimize.configuration | indent 4 | trim }}
+    {{ tpl .Values.optimize.configuration $ | indent 4 | trim }}
   {{- else }}
   environment-config.yaml: |
     {{- if .Values.optimize.contextPath }}

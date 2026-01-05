@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.webModeler.websockets.configuration }}
   application.yaml: |
-    {{ .Values.webModeler.websockets.configuration | indent 4 | trim }}
+    {{ tpl .Values.webModeler.websockets.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
   {{- end }}

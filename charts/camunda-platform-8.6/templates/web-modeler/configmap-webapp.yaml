@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.webModeler.webapp.configuration }}
   application.toml: |
-    {{ .Values.webModeler.webapp.configuration | indent 4 | trim }}
+    {{ tpl .Values.webModeler.webapp.configuration $ | indent 4 | trim }}
   {{- else }}
   application.toml: |
     httpWorkers = 2

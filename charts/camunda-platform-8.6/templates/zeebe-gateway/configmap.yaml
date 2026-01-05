@@ -12,7 +12,7 @@ data:
 {{- end }}
 {{- if .Values.zeebeGateway.configuration }}
   application.yaml: |
-    {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
+    {{ tpl .Values.zeebeGateway.configuration $ | indent 4 | trim }}
 {{- else }}
   application.yaml: |
     {{- if .Values.global.identity.auth.enabled }}

@@ -10,7 +10,7 @@ data:
   pusher-app-key: {{ randAlphaNum 20 }}
   {{- if .Values.webModeler.configuration }}
   application.yaml: |
-    {{ .Values.webModeler.configuration | indent 4 | trim }}
+    {{ tpl .Values.webModeler.configuration $ | indent 4 | trim }}
   {{- end }}
   {{- range $key, $val := .Values.webModeler.extraConfiguration }}
   {{ $key }}: |

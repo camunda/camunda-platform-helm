@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.connectors.configuration }}
   application.yaml: |
-    {{ .Values.connectors.configuration | indent 4 | trim }}
+    {{ tpl .Values.connectors.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     {{- (include (print $.Template.BasePath "/connectors/files/_application.yaml") $) | indent 4 }}

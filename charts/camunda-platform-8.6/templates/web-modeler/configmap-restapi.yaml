@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.webModeler.restapi.configuration }}
   application.yaml: |
-    {{ .Values.webModeler.restapi.configuration | indent 4 | trim }}
+    {{ tpl .Values.webModeler.restapi.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     camunda:

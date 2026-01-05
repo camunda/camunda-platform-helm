@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.identity.configuration }}
   application.yaml: |
-    {{ .Values.identity.configuration | indent 4 | trim }}
+    {{ tpl .Values.identity.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     # NOTE:

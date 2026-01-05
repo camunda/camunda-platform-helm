@@ -8,7 +8,7 @@ apiVersion: v1
 data:
   {{- if .Values.zeebe.configuration }}
   application.yaml: |
-    {{ .Values.zeebe.configuration | indent 4 | trim }}
+    {{ tpl .Values.zeebe.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     zeebe:

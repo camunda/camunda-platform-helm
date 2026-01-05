@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.operate.configuration }}
   application.yaml: |
-    {{ .Values.operate.configuration | indent 4 | trim }}
+    {{ tpl .Values.operate.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     {{- if .Values.operate.contextPath }}
