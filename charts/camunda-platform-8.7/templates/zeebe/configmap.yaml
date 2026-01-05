@@ -138,6 +138,6 @@ data:
 
   {{- range $key, $val := .Values.zeebe.extraConfiguration }}
   {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+    {{ tpl $val $ | indent 4 | trim }}
   {{- end }}
 {{- end }}

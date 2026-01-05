@@ -150,6 +150,6 @@ data:
   {{- end }}
   {{- range $key, $val := .Values.tasklist.extraConfiguration }}
   {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+    {{ tpl $val $ | indent 4 | trim }}
   {{- end }}
 {{- end }}
