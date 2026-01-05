@@ -378,23 +378,32 @@ jobs:
       - name: Cluster Setup - Configure the namespace
         run: |
           echo $TEST_NAMESPACE
-          kubectl delete ns --ignore-not-found=true $TEST_NAMESPACE
-          kubectl create ns $TEST_NAMESPACE
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }}
-          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
-          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
-          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
-          kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY)
-          kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY)
-          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }}
-          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }}
-          kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true
-          kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          # Check if namespace exists and if we own it (created by same run)
+          if kubectl get ns $TEST_NAMESPACE &>/dev/null; then
+            EXISTING_RUN_ID=$(kubectl get ns $TEST_NAMESPACE -o jsonpath='{.metadata.labels.github-run-id}' 2>/dev/null || echo "")
+            if [[ "$EXISTING_RUN_ID" == "$GITHUB_WORKFLOW_RUN_ID" ]]; then
+              echo "Namespace exists and was created by this run, deleting and recreating..."
+              kubectl delete ns $TEST_NAMESPACE
+            else
+              echo "Namespace exists but was created by a different run (run-id: $EXISTING_RUN_ID), reusing it..."
+            fi
+          fi
+          kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }} --overwrite
+          kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite
+          kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID --overwrite
+          kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID --overwrite
+          kubectl label ns $TEST_NAMESPACE github-org=$(dirname $GITHUB_REPOSITORY) --overwrite
+          kubectl label ns $TEST_NAMESPACE github-repo=$(basename $GITHUB_REPOSITORY) --overwrite
+          kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
+          kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true --overwrite
+          kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID --overwrite
           if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
             echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
             kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
           fi
-          kubectl describe ns $TEST_NAMESPACE
+          kubectl get ns $TEST_NAMESPACE -o yaml
 
       - name: Apply Vault mapped Secret
         if: inputs.vault-secret-mapping != ''
@@ -1184,20 +1193,20 @@ jobs:
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace
         run: |
-          kubectl annotate ns $TEST_NAMESPACE test-flow=${{ inputs.flow }}
-          kubectl annotate ns $TEST_NAMESPACE build-failed=true
+          kubectl annotate ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite || true
+          kubectl annotate ns $TEST_NAMESPACE build-failed=true --overwrite || true
 
-          if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" == "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
+          if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
-            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug
+            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
-              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
             else
-              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
-              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
-              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug
+              kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true || true
+              kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
+              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
             fi
           fi

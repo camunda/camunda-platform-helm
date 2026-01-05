@@ -81,15 +81,24 @@ runs:
 
         else
           echo "🔧 Running in EKS mode"
-          kubectl get secret -n "${NAMESPACE_PREFIX}-certs" aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
-          sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
-          kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
+          # Check if secret already exists in target namespace (e.g., during upgrade flow)
+          if kubectl get secret aws-camunda-cloud-tls -n "$TEST_NAMESPACE" &>/dev/null; then
+            echo "✅ Secret aws-camunda-cloud-tls already exists in $TEST_NAMESPACE, skipping copy"
+          else
+            kubectl get secret -n "${NAMESPACE_PREFIX}-certs" aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
+            sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
+            kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
+          fi
         fi
 
-        echo "🔧 Applying external secret infra configuration"
-        apply_external_secret_with_retry \
-          ".github/config/external-secret/external-secret-infra.yaml" \
-          "$TEST_NAMESPACE"
+        if [[ "$DISTRO_PLATFORM" == "eks" ]]; then
+          echo "⚠️ Skipping external secret infra configuration for EKS (ExternalSecret CRD not available)"
+        else
+          echo "🔧 Applying external secret infra configuration"
+          apply_external_secret_with_retry \
+            ".github/config/external-secret/external-secret-infra.yaml" \
+            "$TEST_NAMESPACE"
+        fi
 
         echo "✅ TLS Certificates/Secrets configuration completed."
 

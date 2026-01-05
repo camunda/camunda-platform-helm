@@ -27,6 +27,7 @@ integration:
           shortname: es
           auth: keycloak
           flow: install,upgrade-patch
+          platforms: [gke,eks]
     nightly:
       scenario:
         - name: elasticsearch
