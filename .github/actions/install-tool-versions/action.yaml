@@ -48,13 +48,15 @@ runs:
         done
         
         if [[ -z "$home" ]]; then
-          echo "⚠️ No writable home directory found, creating /tmp/asdf-home"
+          echo "⚠️ No writable home directory found, using /tmp/asdf-home"
           home="/tmp/asdf-home"
           mkdir -p "$home"
         fi
         
+        # Only set the env var - do NOT create .asdf directory!
+        # The asdf-vm/actions/install action needs to clone it as a git repo.
+        # If we create an empty dir, it tries to "update" instead of "install" and fails.
         echo "ASDF_DIR=$home/.asdf" >> "$GITHUB_ENV"
-        mkdir -p "$home/.asdf"
 
     - name: Restore cache
       id: restore-tools-cache
@@ -85,11 +87,22 @@ runs:
         set -uo pipefail  # Note: no -e so we can capture exit codes
         MAX_RETRIES=5
         FAILED_TOOLS=()
+        asdf_dir="${ASDF_DIR:-$HOME/.asdf}"
 
-        echo "⚠️ Initial asdf install failed, retrying individual tools with backoff..."
+        echo "⚠️ Initial asdf install failed, retrying..."
+
+        # Check if asdf itself needs to be installed
+        if [[ ! -f "$asdf_dir/asdf.sh" ]]; then
+          echo "📦 asdf not found at $asdf_dir, installing it first..."
+          # Remove any partial/empty directory that might exist
+          rm -rf "$asdf_dir"
+          # Clone asdf
+          git clone https://github.com/asdf-vm/asdf.git "$asdf_dir" --branch v0.15.0
+          echo "✅ asdf installed successfully"
+        fi
 
         # Source asdf
-        . "${ASDF_DIR:-$HOME/.asdf}/asdf.sh"
+        . "$asdf_dir/asdf.sh"
 
         while IFS= read -r line; do
           [[ -z "$line" || "$line" =~ ^# ]] && continue
@@ -116,7 +129,6 @@ runs:
           # Retry loop for installation
           RETRY_DELAY=10
           installed=false
-          asdf_dir="${ASDF_DIR:-$HOME/.asdf}"
           for attempt in $(seq 1 $MAX_RETRIES); do
             echo "🔄 Attempt $attempt/$MAX_RETRIES for $tool $version..."
             
