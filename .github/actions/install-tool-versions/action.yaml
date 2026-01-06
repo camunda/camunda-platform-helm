@@ -32,13 +32,27 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        # Compute a safe ASDF_DIR that works on both hosted runners and containers (e.g., Playwright image)
-        home="${HOME:-/home/runner}"
-        if [[ ! -d "$home" || ! -w "$home" ]]; then
-          if [[ -d "/home/runner" && -w "/home/runner" ]]; then
-            home="/home/runner"
+        # Compute a safe ASDF_DIR that works on both hosted runners and containers
+        # Common locations:
+        #   - /home/runner: GitHub hosted runners
+        #   - /github/home: Container jobs (e.g., Playwright image)
+        #   - $HOME: User's actual home directory
+        
+        home=""
+        for candidate in "$HOME" "/github/home" "/home/runner"; do
+          if [[ -n "$candidate" && -d "$candidate" && -w "$candidate" ]]; then
+            home="$candidate"
+            echo "✅ Using home directory: $home"
+            break
           fi
+        done
+        
+        if [[ -z "$home" ]]; then
+          echo "⚠️ No writable home directory found, creating /tmp/asdf-home"
+          home="/tmp/asdf-home"
+          mkdir -p "$home"
         fi
+        
         echo "ASDF_DIR=$home/.asdf" >> "$GITHUB_ENV"
         mkdir -p "$home/.asdf"
 
