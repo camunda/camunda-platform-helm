@@ -1,0 +1,98 @@
+name: Validate Documentation Links
+description: |
+  Validates that all https://docs.camunda.* URLs in chart directories
+  return successful HTTP responses (no 404s or other errors).
+
+inputs:
+  chart-versions:
+    description: Space-separated list of chart versions to validate (e.g., "8.9 8.8 8.7")
+    required: true
+
+outputs:
+  total-checked:
+    description: Total number of unique links checked
+    value: ${{ steps.validate.outputs.total-checked }}
+  invalid-count:
+    description: Number of invalid links found
+    value: ${{ steps.validate.outputs.invalid-count }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate documentation links
+      id: validate
+      shell: bash
+      run: |
+        set +e  # Don't exit on first error - collect all failures
+
+        VERSIONS="${{ inputs.chart-versions }}"
+        declare -a INVALID_LINKS
+        TOTAL_CHECKED=0
+        INVALID_COUNT=0
+
+        for version in $VERSIONS; do
+          CHART_DIR="charts/camunda-platform-${version}"
+
+          if [[ ! -d "$CHART_DIR" ]]; then
+            echo "::warning::Chart directory not found: $CHART_DIR"
+            continue
+          fi
+
+          echo ""
+          echo "Checking links in $CHART_DIR..."
+          echo ""
+
+          # Track URLs we've already checked to avoid duplicates
+          declare -A CHECKED_URLS
+
+          # Find all files and extract docs links with file:line info
+          while IFS=: read -r file line content; do
+            # Extract URL from the line
+            url=$(echo "$content" | grep -oE 'https://docs\.camunda\.[^[:space:]\)\"'\''<>]*' | head -1)
+
+            # Clean trailing punctuation that might be captured
+            url=$(echo "$url" | sed 's/[,;:]*$//')
+
+            if [[ -n "$url" && -z "${CHECKED_URLS[$url]:-}" ]]; then
+              CHECKED_URLS["$url"]=1
+              ((TOTAL_CHECKED++))
+
+              # Check if URL is valid (follows redirects, max 10 seconds)
+              HTTP_CODE=$(curl -sL --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+
+              if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 400 ]]; then
+                echo "  [VALID] $url"
+              else
+                echo "  [INVALID] $url (HTTP $HTTP_CODE)"
+                echo "::error file=${file},line=${line}::Invalid documentation link (HTTP ${HTTP_CODE}): $url"
+                INVALID_LINKS+=("${file}:${line} | $url")
+                ((INVALID_COUNT++))
+              fi
+            fi
+          done < <(grep -rn 'https://docs\.camunda\.' "$CHART_DIR" 2>/dev/null || true)
+
+          unset CHECKED_URLS
+        done
+
+        echo ""
+        echo "========================================="
+        echo "Summary: Checked $TOTAL_CHECKED unique links"
+        echo "========================================="
+
+        # Set outputs
+        echo "total-checked=${TOTAL_CHECKED}" >> $GITHUB_OUTPUT
+        echo "invalid-count=${INVALID_COUNT}" >> $GITHUB_OUTPUT
+
+        if [[ ${#INVALID_LINKS[@]} -gt 0 ]]; then
+          echo ""
+          echo "Found ${INVALID_COUNT} invalid link(s):"
+          echo ""
+          for link in "${INVALID_LINKS[@]}"; do
+            echo "  - $link"
+          done
+          echo ""
+          exit 1
+        else
+          echo ""
+          echo "All documentation links are valid!"
+        fi
