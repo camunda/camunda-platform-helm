@@ -12,7 +12,7 @@ vars:
 
 testcases:
 
-# https://docs.camunda.io/docs/self-managed/identity/user-guide/generating-m2m-tokens/
+# https://docs.camunda.io/docs/self-managed/components/management-identity/authentication/#m2m-machine-to-machine-authentication
 - name: TEST - Generating machine-to-machine token
   description: |
     Test generating tokens from Keycloak for components that use client type "CONFIDENTIAL".
