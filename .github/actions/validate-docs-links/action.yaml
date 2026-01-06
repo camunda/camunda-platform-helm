@@ -26,9 +26,13 @@ runs:
         set +e  # Don't exit on first error - collect all failures
 
         VERSIONS="${{ inputs.chart-versions }}"
-        declare -a INVALID_LINKS
-        TOTAL_CHECKED=0
-        INVALID_COUNT=0
+
+        # Associative array: URL -> space-separated list of "file:line" locations
+        declare -A URL_LOCATIONS
+
+        # Phase 1: Collect all URLs and their locations
+        echo "Phase 1: Collecting documentation links..."
+        echo ""
 
         for version in $VERSIONS; do
           CHART_DIR="charts/camunda-platform-${version}"
@@ -38,14 +42,8 @@ runs:
             continue
           fi
 
-          echo ""
-          echo "Checking links in $CHART_DIR..."
-          echo ""
+          echo "  Scanning $CHART_DIR..."
 
-          # Track URLs we've already checked to avoid duplicates
-          declare -A CHECKED_URLS
-
-          # Find all files and extract docs links with file:line info
           while IFS=: read -r file line content; do
             # Extract URL from the line
             url=$(echo "$content" | grep -oE 'https://docs\.camunda\.[^[:space:]\)\"'\''<>]*' | head -1)
@@ -53,44 +51,75 @@ runs:
             # Clean trailing punctuation that might be captured
             url=$(echo "$url" | sed 's/[,;:]*$//')
 
-            if [[ -n "$url" && -z "${CHECKED_URLS[$url]:-}" ]]; then
-              CHECKED_URLS["$url"]=1
-              ((TOTAL_CHECKED++))
-
-              # Check if URL is valid (follows redirects, max 10 seconds)
-              HTTP_CODE=$(curl -sL --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
-
-              if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 400 ]]; then
-                echo "  [VALID] $url"
+            if [[ -n "$url" ]]; then
+              # Append location to the URL's location list
+              if [[ -z "${URL_LOCATIONS[$url]:-}" ]]; then
+                URL_LOCATIONS["$url"]="${file}:${line}"
               else
-                echo "  [INVALID] $url (HTTP $HTTP_CODE)"
-                echo "::error file=${file},line=${line}::Invalid documentation link (HTTP ${HTTP_CODE}): $url"
-                INVALID_LINKS+=("${file}:${line} | $url")
-                ((INVALID_COUNT++))
+                URL_LOCATIONS["$url"]="${URL_LOCATIONS[$url]} ${file}:${line}"
               fi
             fi
           done < <(grep -rn 'https://docs\.camunda\.' "$CHART_DIR" 2>/dev/null || true)
-
-          unset CHECKED_URLS
         done
 
+        TOTAL_URLS=${#URL_LOCATIONS[@]}
+        echo ""
+        echo "Found $TOTAL_URLS unique URLs to validate"
+        echo ""
+
+        # Phase 2: Validate each unique URL once
+        echo "Phase 2: Validating URLs..."
+        echo ""
+
+        declare -A INVALID_URLS  # URL -> HTTP code
+        VALID_COUNT=0
+
+        for url in "${!URL_LOCATIONS[@]}"; do
+          # Check if URL is valid (follows redirects, max 10 seconds)
+          HTTP_CODE=$(curl -sL --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+
+          if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 400 ]]; then
+            echo "  [VALID] $url"
+            ((VALID_COUNT++))
+          else
+            echo "  [INVALID] $url (HTTP $HTTP_CODE)"
+            INVALID_URLS["$url"]="$HTTP_CODE"
+          fi
+        done
+
+        # Phase 3: Report results
         echo ""
         echo "========================================="
-        echo "Summary: Checked $TOTAL_CHECKED unique links"
+        echo "Summary: Checked $TOTAL_URLS unique URLs"
         echo "========================================="
 
         # Set outputs
-        echo "total-checked=${TOTAL_CHECKED}" >> $GITHUB_OUTPUT
-        echo "invalid-count=${INVALID_COUNT}" >> $GITHUB_OUTPUT
+        echo "total-checked=${TOTAL_URLS}" >> $GITHUB_OUTPUT
+        echo "invalid-count=${#INVALID_URLS[@]}" >> $GITHUB_OUTPUT
 
-        if [[ ${#INVALID_LINKS[@]} -gt 0 ]]; then
+        if [[ ${#INVALID_URLS[@]} -gt 0 ]]; then
           echo ""
-          echo "Found ${INVALID_COUNT} invalid link(s):"
+          echo "Found ${#INVALID_URLS[@]} invalid URL(s):"
           echo ""
-          for link in "${INVALID_LINKS[@]}"; do
-            echo "  - $link"
+
+          # For each invalid URL, report all locations where it was found
+          for url in "${!INVALID_URLS[@]}"; do
+            HTTP_CODE="${INVALID_URLS[$url]}"
+            locations="${URL_LOCATIONS[$url]}"
+
+            echo "  $url (HTTP $HTTP_CODE)"
+            echo "    Found in:"
+
+            # Split locations and emit GitHub error annotations
+            for location in $locations; do
+              file="${location%%:*}"
+              line="${location##*:}"
+              echo "      - $location"
+              echo "::error file=${file},line=${line}::Invalid documentation link (HTTP ${HTTP_CODE}): $url"
+            done
+            echo ""
           done
-          echo ""
+
           exit 1
         else
           echo ""
