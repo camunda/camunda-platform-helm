@@ -1460,7 +1460,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -6553,7 +6553,7 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "configuration for the optimize runtime environment. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/",
+                    "description": "configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "upgradeLogLevel": {
