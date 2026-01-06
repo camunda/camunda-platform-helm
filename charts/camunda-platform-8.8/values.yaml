@@ -670,7 +670,7 @@ identity:
 
   ## @extra identity.logging configuration for the Management Identity logging. This template will be directly included in the Management Identity configuration YAML file
   ## @param identity.logging.level.ROOT
-  ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/next/self-managed/identity/user-guide/configuration/configure-logging/#general-configuration-options
+  ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configure-logging/#general-configuration-options
   logging:
     level:
       ROOT: INFO
@@ -1523,7 +1523,7 @@ webModeler:
     podLabels: {}
 
     ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
-    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/next/self-managed/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
+    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
     ## @param webModeler.restapi.logging.level.io.grpc
     logging:
       level:
