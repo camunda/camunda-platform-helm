@@ -6459,7 +6459,7 @@
                 },
                 "esLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for Elasticsearch. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/",
+                    "description": "sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "warn"
                 },
                 "partitionCount": {
@@ -6469,7 +6469,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
