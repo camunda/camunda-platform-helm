@@ -237,8 +237,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
-      vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}      
-      vars-namespace: ${{ env.TEST_NAMESPACE }}
+      vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
+      vars-namespace: ${{ steps.vars.outputs.namespace }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -253,7 +253,9 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: |
-          echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
+            echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          fi
           echo "Workflow Inputs:"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
@@ -586,8 +588,8 @@ jobs:
     needs: [install]
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
-      vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}      
-      vars-namespace: ${{ env.TEST_NAMESPACE }}
+      vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
+      vars-namespace: ${{ steps.vars.outputs.namespace }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -602,7 +604,9 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: |
-          echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
+            echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          fi
           echo "Workflow Inputs:"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"

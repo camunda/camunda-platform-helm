@@ -28,6 +28,11 @@ fi
 # Helper Functions
 # ------------------------------------------------------------------------------
 
+# Mask a secret in GitHub Actions logs, but only if it's non-empty
+mask_secret() {
+  [[ -n "$1" ]] && echo "::add-mask::$1"
+}
+
 check_env_required_cmds() {
   local required_cmds=(kubectl jq envsubst)
   for cmd in "${required_cmds[@]}"; do
@@ -154,10 +159,10 @@ resolve_identity_passwords() {
   DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET="$(resolve_env_password "$namespace" "VALUES_TEST_CLIENT_SECRET")"
   
   # Mask sensitive values in CI logs (these should go to stdout for GitHub Actions)
-  echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
-  echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
-  echo "::add-mask::$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
-  echo "::add-mask::$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
+  mask_secret "$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
+  mask_secret "$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
+  mask_secret "$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
+  mask_secret "$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
 }
 
 render_env_file() {
@@ -179,7 +184,7 @@ render_env_file() {
 
   # Resolve credentials from cluster
   KEYCLOAK_SETUP_PASSWORD="$(resolve_keycloak_setup_password "$namespace")" || exit 1
-  echo "::add-mask::$KEYCLOAK_SETUP_PASSWORD"
+  mask_secret "$KEYCLOAK_SETUP_PASSWORD"
   
   resolve_identity_passwords "$namespace"
 

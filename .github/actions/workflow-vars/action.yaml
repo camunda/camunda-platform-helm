@@ -35,6 +35,9 @@ outputs:
   ingress-host:
     description: Ingress hostname that will be used in the test
     value: ${{ steps.vars.outputs.ingress-host }}
+  namespace:
+    description: The namespace for the deployment
+    value: ${{ steps.vars.outputs.namespace }}
 
 runs:
   using: composite
@@ -91,7 +94,9 @@ runs:
         : # no-op; this flow depends on the namespace given during installation so we don't adjust it here
       fi
 
-      echo "TEST_NAMESPACE=$(printf '%s' "$TEST_NAMESPACE" | head -c 63 | sed 's/-$//')" | tee -a "$GITHUB_ENV"
+      TEST_NAMESPACE="$(printf '%s' "$TEST_NAMESPACE" | head -c 63 | sed 's/-$//')"
+      echo "TEST_NAMESPACE=$TEST_NAMESPACE" | tee -a "$GITHUB_ENV"
+      echo "namespace=$TEST_NAMESPACE" >> "$GITHUB_OUTPUT"
 
       # Get alpha chart dir.
       TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"

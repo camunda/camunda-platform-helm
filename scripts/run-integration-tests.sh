@@ -48,6 +48,11 @@ log() {
   fi
 }
 
+# Mask a secret in GitHub Actions logs, but only if it's non-empty
+mask_secret() {
+  [[ -n "$1" ]] && echo "::add-mask::$1"
+}
+
 setup_env_file() {
   local env_file="$1"
   local test_suite_path="$2"
@@ -100,7 +105,7 @@ setup_env_file() {
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
-        echo "::add-mask::$secret"
+        mask_secret "$secret"
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
       done
     else
@@ -109,7 +114,7 @@ setup_env_file() {
         secret=$(kubectl -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
-        echo "::add-mask::$secret"
+        mask_secret "$secret"
         echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
       done
     fi
@@ -128,7 +133,7 @@ setup_env_file() {
           get secret integration-test-credentials \
           -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
       fi
-      echo "::add-mask::$secret"
+      mask_secret "$secret"
       echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
     done
   fi
@@ -137,7 +142,7 @@ setup_env_file() {
   secret=$(kubectl -n "$namespace" \
     get secret integration-test-credentials \
     -o jsonpath="{.data.identity-admin-client-password}" | base64 -d)
-  echo "::add-mask::$secret"
+  mask_secret "$secret"
   echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${secret}" >> "$env_file"
 
   # fixtures are the *.bpmn files that are used to test the platform. This is likely to change

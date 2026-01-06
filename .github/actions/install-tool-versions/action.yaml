@@ -28,12 +28,41 @@ runs:
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
 
+    - name: Determine ASDF_DIR
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Compute a safe ASDF_DIR that works on both hosted runners and containers
+        # Common locations:
+        #   - /home/runner: GitHub hosted runners
+        #   - /github/home: Container jobs (e.g., Playwright image)
+        #   - $HOME: User's actual home directory
+        
+        home=""
+        for candidate in "$HOME" "/github/home" "/home/runner"; do
+          if [[ -n "$candidate" && -d "$candidate" && -w "$candidate" ]]; then
+            home="$candidate"
+            echo "✅ Using home directory: $home"
+            break
+          fi
+        done
+        
+        if [[ -z "$home" ]]; then
+          echo "⚠️ No writable home directory found, using /tmp/asdf-home"
+          home="/tmp/asdf-home"
+          mkdir -p "$home"
+        fi
+        
+        # Only set the env var - do NOT create .asdf directory!
+        # The asdf-vm/actions/install action needs to clone it as a git repo.
+        # If we create an empty dir, it tries to "update" instead of "install" and fails.
+        echo "ASDF_DIR=$home/.asdf" >> "$GITHUB_ENV"
+
     - name: Restore cache
       id: restore-tools-cache
       uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5
       with:
-        # Using $HOME instead of /home/runner as inside of the container the home directory is might not be /home/runner.
-        path: $HOME/.asdf
+        path: ${{ env.ASDF_DIR }}
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: Install asdf and tools
@@ -58,11 +87,22 @@ runs:
         set -uo pipefail  # Note: no -e so we can capture exit codes
         MAX_RETRIES=5
         FAILED_TOOLS=()
+        asdf_dir="${ASDF_DIR:-$HOME/.asdf}"
 
-        echo "⚠️ Initial asdf install failed, retrying individual tools with backoff..."
+        echo "⚠️ Initial asdf install failed, retrying..."
+
+        # Check if asdf itself needs to be installed
+        if [[ ! -f "$asdf_dir/asdf.sh" ]]; then
+          echo "📦 asdf not found at $asdf_dir, installing it first..."
+          # Remove any partial/empty directory that might exist
+          rm -rf "$asdf_dir"
+          # Clone asdf
+          git clone https://github.com/asdf-vm/asdf.git "$asdf_dir" --branch v0.15.0
+          echo "✅ asdf installed successfully"
+        fi
 
         # Source asdf
-        . "${ASDF_DIR:-$HOME/.asdf}/asdf.sh"
+        . "$asdf_dir/asdf.sh"
 
         while IFS= read -r line; do
           [[ -z "$line" || "$line" =~ ^# ]] && continue
@@ -89,7 +129,6 @@ runs:
           # Retry loop for installation
           RETRY_DELAY=10
           installed=false
-          asdf_dir="${ASDF_DIR:-$HOME/.asdf}"
           for attempt in $(seq 1 $MAX_RETRIES); do
             echo "🔄 Attempt $attempt/$MAX_RETRIES for $tool $version..."
             
@@ -158,7 +197,7 @@ runs:
     - name: Save cache
       uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5
       with:
-        path: $HOME/.asdf
+        path: ${{ env.ASDF_DIR }}
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions

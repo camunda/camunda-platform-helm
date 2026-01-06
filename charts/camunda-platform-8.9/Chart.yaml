@@ -113,3 +113,4 @@ annotations:
       description: "8.9 version bumps for alpha2"
     - kind: fixed
       description: "Correct chart version"
+
