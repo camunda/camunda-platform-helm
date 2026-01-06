@@ -1,0 +1,69 @@
+name: "Chart - Validate Docs Links"
+
+on:
+  schedule:
+    - cron: "0 6 * * *"  # Daily at 6 AM UTC
+  workflow_dispatch:
+    inputs:
+      chart-version:
+        description: |
+          Specific chart version to check (e.g., "8.8"),
+          or leave empty for all standard supported versions
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.get-versions.outputs.versions }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 1
+
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: yq
+
+      - name: Get chart versions to validate
+        id: get-versions
+        run: |
+          MANUAL_VERSION="${{ inputs.chart-version }}"
+
+          if [[ -n "$MANUAL_VERSION" ]]; then
+            echo "Using manually specified version: $MANUAL_VERSION"
+            echo "versions=${MANUAL_VERSION}" >> $GITHUB_OUTPUT
+          else
+            echo "Using standard supported versions from chart-versions.yaml"
+            versions=$(yq '.camundaVersions.supportStandard | join(" ")' charts/chart-versions.yaml)
+            echo "versions=${versions}" >> $GITHUB_OUTPUT
+          fi
+
+  validate:
+    name: Validate Docs Links
+    needs: [init]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 1
+
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
+      - name: Validate documentation links
+        uses: ./.github/actions/validate-docs-links
+        with:
+          chart-versions: ${{ needs.init.outputs.versions }}
