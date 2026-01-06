@@ -282,3 +282,4 @@ data:
     camunda:
       identity:
         audience: "camunda-identity-resource-server"
+  additional-spring-properties.yaml: |

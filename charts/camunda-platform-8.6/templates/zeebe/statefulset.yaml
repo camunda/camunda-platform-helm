@@ -126,6 +126,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if .Values.zeebe.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.zeebe.springConfigImport | quote }}
+            {{- end }}
             {{- with .Values.zeebe.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

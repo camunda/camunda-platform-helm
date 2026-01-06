@@ -169,6 +169,10 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
             {{- end }}
+            {{- if .Values.tasklist.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.tasklist.springConfigImport | quote }}
+            {{- end }}
             {{- with .Values.tasklist.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}

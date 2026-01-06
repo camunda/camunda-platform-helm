@@ -196,3 +196,4 @@ data:
   log4j2.xml: |
     <xml>
     </xml>
+  additional-spring-properties.yaml: |

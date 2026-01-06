@@ -80,6 +80,8 @@ spec:
               value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: ZEEBE_TOKEN_AUDIENCE
               value: "zeebe-api"
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:/config/additional-spring-properties.yaml"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-identity-env-vars
@@ -106,6 +108,9 @@ spec:
             - name: config
               mountPath: /config/application.yml
               subPath: application.yml
+            - name: config
+              mountPath: /config/additional-spring-properties.yaml
+              subPath: additional-spring-properties.yaml
       volumes:
         - name: tmp
           emptyDir: {}

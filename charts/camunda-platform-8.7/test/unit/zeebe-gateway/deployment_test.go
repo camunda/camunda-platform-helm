@@ -232,7 +232,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				// then
 				volumeMounts := deployment.Spec.Template.Spec.Containers[0].VolumeMounts
-				s.Require().Equal(3, len(volumeMounts))
+				s.Require().Equal(4, len(volumeMounts))
 				s.Require().Equal("config", volumeMounts[1].Name)
 				s.Require().Equal("/usr/local/zeebe/config/log4j2.xml", volumeMounts[1].MountPath)
 				s.Require().Equal("gateway-log4j2.xml", volumeMounts[1].SubPath)

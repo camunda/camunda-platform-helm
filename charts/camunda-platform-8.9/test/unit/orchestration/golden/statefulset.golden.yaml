@@ -77,6 +77,8 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:file:./config/additional-spring-properties.yaml"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
@@ -121,6 +123,9 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            - name: config
+              mountPath: /usr/local/camunda/config/additional-spring-properties.yaml
+              subPath: additional-spring-properties.yaml
       volumes:
         - name: config
           configMap:
