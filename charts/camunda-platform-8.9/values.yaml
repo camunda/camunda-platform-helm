@@ -1239,7 +1239,7 @@ console:
       cpu: "2000m"
       memory: 2Gi
 
-  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.
   env: []
   ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -1527,7 +1527,7 @@ webModeler:
         io.camunda.modeler: INFO
         io.grpc: INFO
 
-    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.
     env: []
     ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1697,7 +1697,7 @@ webModeler:
     ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels
     podLabels: {}
 
-    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.
     env: []
     ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1876,7 +1876,7 @@ webModeler:
     ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels
     podLabels: {}
 
-    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.
     env: []
     ## @param webModeler.websockets.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -2220,7 +2220,7 @@ connectors:
       cpu: "2000m"
       memory: 2Gi
 
-  ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/ for more details.
   env: []
   ## @param connectors.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -2547,7 +2547,7 @@ orchestration:
   partitionCount: "3"
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.
   env: []
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
     #   value: TRACE
@@ -3029,7 +3029,7 @@ optimize:
   migration:
     ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
     enabled: true
-    ## @param optimize.migration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)
+    ## @param optimize.migration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details. (Note: there is no need to define this if optimize.env is defined)
     env: []
 
     ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits

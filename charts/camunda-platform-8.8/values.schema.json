@@ -2420,7 +2420,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -2996,7 +2996,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3379,7 +3379,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3772,7 +3772,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -4631,7 +4631,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -5631,7 +5631,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -6479,7 +6479,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details. (Note: there is no need to define this if optimize.env is defined)",
                             "default": [],
                             "items": {}
                         },
