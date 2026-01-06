@@ -32,7 +32,7 @@ runs:
       id: restore-tools-cache
       uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5
       with:
-        path: ${{ env.HOME }}/.asdf
+        path: /home/runner/.asdf
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: Install asdf and tools
@@ -157,7 +157,7 @@ runs:
     - name: Save cache
       uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5
       with:
-        path: ${{ env.HOME }}/.asdf
+        path: /home/runner/.asdf
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions
