@@ -28,11 +28,25 @@ runs:
         echo "⭐ Filtered .tool-versions content:"
         cat .tool-versions
 
+    - name: Determine ASDF_DIR
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Compute a safe ASDF_DIR that works on both hosted runners and containers (e.g., Playwright image)
+        home="${HOME:-/home/runner}"
+        if [[ ! -d "$home" || ! -w "$home" ]]; then
+          if [[ -d "/home/runner" && -w "/home/runner" ]]; then
+            home="/home/runner"
+          fi
+        fi
+        echo "ASDF_DIR=$home/.asdf" >> "$GITHUB_ENV"
+        mkdir -p "$home/.asdf"
+
     - name: Restore cache
       id: restore-tools-cache
       uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5
       with:
-        path: /home/runner/.asdf
+        path: ${{ env.ASDF_DIR }}
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: Install asdf and tools
@@ -157,7 +171,7 @@ runs:
     - name: Save cache
       uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5
       with:
-        path: /home/runner/.asdf
+        path: ${{ env.ASDF_DIR }}
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
 
     - name: List installed versions
