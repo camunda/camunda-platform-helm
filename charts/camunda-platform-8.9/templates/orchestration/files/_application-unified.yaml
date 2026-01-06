@@ -351,10 +351,7 @@ zeebe:
     exporters:
     {{- if and
       (not .Values.orchestration.exporters.rdbms.enabled)
-      (or
-        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
-      )
+      (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
@@ -378,10 +375,7 @@ zeebe:
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
     {{- else if and
-      (or
-        (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and .Values.global.opensearch.enabled .Values.optimize.enabled)
-      )
+      (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
       (or
         .Values.orchestration.exporters.zeebe.enabled
         (lt (int (default 0 .Values.global.multiregion.regions)) 2)
