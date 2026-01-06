@@ -23,7 +23,7 @@ Usage:
         "[orchestration][compatibility][error] Please migrate the value of \"%s\" to the new syntax under \"%s\" %s %s"
         .oldName .newName
         "For more details, please check Camunda Helm chart documentation."
-        "https://docs.camunda.io/docs/next/self-managed/installation-methods/helm/upgrade/upgrade-hc-870-880/"
+        "https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-870-880/"
     -}}
     {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
   {{- end }}

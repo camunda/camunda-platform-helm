@@ -3067,12 +3067,12 @@ optimize:
   logLevel: info
   ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
   upgradeLogLevel: info
-  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   esLogLevel: warn
 
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
-  ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details.
   env: []
   ## @param optimize.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
