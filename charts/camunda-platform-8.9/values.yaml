@@ -793,7 +793,7 @@ identity:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/ for more details.
   env: []
   ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -3063,7 +3063,7 @@ optimize:
   ## @param optimize.podLabels can be used to define extra Optimize pod labels
   podLabels: {}
 
-  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   logLevel: info
   ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
   upgradeLogLevel: info
