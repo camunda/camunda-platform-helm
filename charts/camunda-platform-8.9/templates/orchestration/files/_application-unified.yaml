@@ -366,7 +366,6 @@ zeebe:
             username: {{ .Values.global.elasticsearch.auth.username | quote }}
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
           {{- end }}
-          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.elasticsearch.prefix | quote }}
           {{- if .Values.orchestration.retention.enabled }}
@@ -388,7 +387,6 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
-          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.opensearch.prefix | quote }}
           {{- if .Values.global.opensearch.aws.enabled }}
@@ -408,7 +406,6 @@ zeebe:
         args:
           connect:
             type: {{ include "orchestration.secondaryStorage" . | quote }}
-            url: {{ .Values.global.elasticsearch.enabled | ternary (include "camundaPlatform.elasticsearchURL" .) (include "camundaPlatform.opensearchURL" .) | quote }}
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}

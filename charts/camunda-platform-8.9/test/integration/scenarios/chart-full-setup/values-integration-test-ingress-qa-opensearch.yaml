@@ -208,3 +208,6 @@ connectors:
   security:
     authentication:
       method: oidc
+
+elasticsearch:
+  enabled: false

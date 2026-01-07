@@ -70,3 +70,6 @@ optimize:
         value: custom-optimize
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
         value: custom-zeebe
+
+elasticsearch:
+  enabled: false
