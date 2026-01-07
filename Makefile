@@ -17,35 +17,35 @@ releaseName = camunda-platform-test
 #
 .PHONY: build.deployer
 build.deployer:
-	cd scripts/camunda-deployer && go build .
+	cd scripts/camunda-deployer && go mod tidy && go build .
 
 .PHONY: build.prepare-helm-values
 build.prepare-helm-values:
-	cd scripts/prepare-helm-values && go build .
+	cd scripts/prepare-helm-values && go mod tidy && go build .
 
 .PHONY: build.deploy-camunda
 build.deploy-camunda:
-	cd scripts/deploy-camunda && go build .
+	cd scripts/deploy-camunda && go mod tidy && go build .
 
 .PHONY: install.deployer
 install.deployer:
-	cd scripts/camunda-deployer && go install .
+	cd scripts/camunda-deployer && go mod tidy && go install .
 
 .PHONY: install.prepare-helm-values
 install.prepare-helm-values:
-	cd scripts/prepare-helm-values && go install .
+	cd scripts/prepare-helm-values && go mod tidy && go install .
 
 .PHONY: install.deploy-camunda
 install.deploy-camunda:
-	cd scripts/deploy-camunda && go install .
+	cd scripts/deploy-camunda && go mod tidy && go install .
 
 .PHONY: build.vault-secret-mapper
 build.vault-secret-mapper:
-	cd scripts/vault-secret-mapper && go build .
+	cd scripts/vault-secret-mapper && go mod tidy && go build .
 
 .PHONY: install.vault-secret-mapper
 install.vault-secret-mapper:
-	cd scripts/vault-secret-mapper && go install .
+	cd scripts/vault-secret-mapper && go mod tidy && go install .
 
 .PHONY: build.dx-tooling
 build.dx-tooling:
