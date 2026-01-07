@@ -265,8 +265,6 @@ camunda:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-      username: {{ .Values.global.opensearch.auth.username | quote }}
-      password: "${VALUES_OPENSEARCH_PASSWORD:}"
     {{- end }}
     # Zeebe instance
     zeebe:
@@ -413,10 +411,6 @@ zeebe:
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
-          {{- if or .Values.global.elasticsearch.auth.username .Values.global.opensearch.auth.username }}
-            username: {{ if .Values.global.elasticsearch.auth.username }}{{ .Values.global.elasticsearch.auth.username | quote }}{{ else }}{{ .Values.global.opensearch.auth.username | quote }}{{- end }}
-            password: "{{ if .Values.global.elasticsearch.auth.username }}${VALUES_ELASTICSEARCH_PASSWORD:}{{ else }}${VALUES_OPENSEARCH_PASSWORD:}{{- end }}"
-          {{- end }}
             awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
