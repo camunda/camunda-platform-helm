@@ -6162,7 +6162,7 @@
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true, enables the new Camunda exporter.",
-                                    "default": true
+                                    "default": false
                                 }
                             }
                         },

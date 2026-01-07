@@ -84,7 +84,7 @@ data:
               processing: "2GB"
               replication: "1GB"
         secondary-storage:
-          autoconfigure-camunda-exporter: true
+          autoconfigure-camunda-exporter: false
           type: "elasticsearch"
           elasticsearch:
             url: "http://camunda-platform-test-elasticsearch:9200"
@@ -177,20 +177,6 @@ data:
           clusterName: camunda-platform-test-zeebe
     
         # zeebe.broker.exporters
-        exporters:
-          camundaexporter:
-            className: "io.camunda.exporter.CamundaExporter"
-            args:
-              connect:
-                type: "elasticsearch"
-                url: "http://camunda-platform-test-elasticsearch:9200"
-                awsEnabled: false
-              history:
-                elsRolloverDateFormat: "date"
-                rolloverInterval: "1d"
-                rolloverBatchSize: 100
-                waitPeriodBeforeArchiving: "1h"
-                delayBetweenRuns: 2000
-                maxDelayBetweenRuns: 60000
+        exporters: {}
     
   log4j2.xml: |
