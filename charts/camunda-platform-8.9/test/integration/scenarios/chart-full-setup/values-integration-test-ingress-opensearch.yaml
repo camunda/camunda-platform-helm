@@ -16,6 +16,9 @@ global:
     prefix: "custom-zeebe"
 
 orchestration:
+  data:
+    secondaryStorage:
+      type: opensearch
   index:
     prefix: "custom-zeebe"
   env:
