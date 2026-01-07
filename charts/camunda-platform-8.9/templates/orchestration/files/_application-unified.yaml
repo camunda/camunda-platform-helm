@@ -417,7 +417,12 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-    {{- else -}}
-      {{ " {}" }}
+    {{- else }}
+      elasticsearch:
+        className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+      camundaexporter:
+        className: "io.camunda.exporter.CamundaExporter"
+      opensearch:
+        className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
     {{- end }}
 {{ end -}}
