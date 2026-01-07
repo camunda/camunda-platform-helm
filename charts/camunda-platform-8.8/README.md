@@ -50,46 +50,15 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/self-manage
 
 ## Dependencies
 
-Camunda 8 Helm chart is an umbrella chart for different components. Some are internal (sub-charts),
-and some are external (third-party). The dependency management is fully automated and managed by Helm itself;
-however, it's good to understand the dependency structure. This third-party dependency is reflected in the Helm chart
-as follows:
 
-```text
-camunda-platform
-  |_ elasticsearch
-  |_ identity
-    |_ keycloak
-      |_ postgresql
-  |_ optimize
-  |_ operate
-  |_ tasklist
-  |_ zeebe
-  |_ postgresql
-```
+The Camunda 8 Helm chart internalizes all Camunda components within a single chart. The Orchestration cluster is managed directly by the main chart and is not implemented as sub-charts. Other components such as Optimize, Identity, Connectors, and Web Modeler are also internalized.
 
-> [!NOTE]
-> Please note that the Connectors and Web Modeler components are part of the main chart and not implemented as sub-charts.
+Three third-party dependencies—Keycloak, PostgreSQL, and Elasticsearch—are managed as sub-charts or vendored charts. These are included for convenience and can be enabled or disabled as needed.
 
-For example, Camunda Identity utilizes Keycloak and allows you to manage users, roles, and permissions
-for Camunda 8 components.
-
-- Keycloak is a dependency for Camunda Identity, and PostgreSQL is a dependency for Keycloak.
-- Elasticsearch is a dependency for the Camunda chart, which is used in Zeebe, Operate, Tasklist, and Optimize.
-- PostgreSQL is an optional dependency for the Camunda chart and is used by Web Modeler.
-
-The values for the dependencies Keycloak and PostgreSQL can be set in the same hierarchy:
-
-```yaml
-identity:
-  [identity values]
-  keycloak:
-    [keycloak values]
-    postgresql:
-      [postgresql values]
-postgresql:
-  [postgresql values]
-```
+**Key points:**
+- All Camunda components, including the Orchestration cluster, are internalized and not listed as sub-charts.
+- Keycloak, PostgreSQL, and Elasticsearch are provided as sub-charts or vendored charts.
+- Values for these dependencies can be set directly in the main values file, using their respective keys (e.g., `identityKeycloak`, `identityPostgresql`, `elasticsearch`).
 
 ## Versioning
 
