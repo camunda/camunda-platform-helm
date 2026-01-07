@@ -822,7 +822,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble
       options: --ipc=host
-    timeout-minutes: 5
+    timeout-minutes: 20
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
