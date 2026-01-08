@@ -13,15 +13,15 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: 8.8.4
-    digest: "sha256:bd9da16ff0aa43c785c55a40b803d45efb6f242d78957420afb03de69ef79d41"
+    tag: 8.8.5
+    digest: "sha256:b90a9d2f23f6a4e4d84c6d05f2285c406029e45ec0a3e0f8ca380eb1ef1ca250"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8.8.3
-    digest: "sha256:15c172742ee53cc680b23fd5069dfc43f71070d09230ba11c34b45d24e603469"
+    tag: 8.8.4
+    digest: "sha256:5b7425a10cda9ead2bf3c5096b9fa0a6732aad189df6ab9d578c7e73eb1e19e7"
 
 #
 # Web Modeler
