@@ -240,6 +240,11 @@ jobs:
     if: github.event.action != 'closed' && inputs.flow != 'modular-upgrade-minor'
     name: install for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
+    container:
+      image: registry.camunda.cloud/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
@@ -276,17 +281,8 @@ jobs:
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
 
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
-            zbctl
+      # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
+      # See: .github/docker/ci-runner/Dockerfile
 
       # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
       # and populate environment variables from Vault
@@ -596,6 +592,11 @@ jobs:
     if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
+    container:
+      image: registry.camunda.cloud/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
     needs: [install]
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
@@ -630,17 +631,8 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
-            zbctl
+      # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
+      # See: .github/docker/ci-runner/Dockerfile
 
       # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
       # and populate environment variables from Vault
@@ -837,7 +829,10 @@ jobs:
     needs: [install]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
@@ -894,7 +889,10 @@ jobs:
     needs: [upgrade]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
@@ -950,6 +948,12 @@ jobs:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
     runs-on: gcp-core-8-default
+    container:
+      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+      options: --ipc=host
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
     timeout-minutes: 20
     strategy:
@@ -1003,6 +1007,12 @@ jobs:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
     runs-on: gcp-core-8-default
+    container:
+      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+      options: --ipc=host
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
     timeout-minutes: 20
     strategy:
@@ -1134,6 +1144,11 @@ jobs:
     needs: [merge-e2e-reports, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
+    container:
+      image: registry.camunda.cloud/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
     permissions:
       contents: read
       id-token: write
@@ -1172,16 +1187,8 @@ jobs:
           platform: "${{ inputs.distro-platform }}"
           flow: "${{ inputs.flow }}"
 
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
+      # Tools (golang, helm, kubectl, oc, task, yq) are pre-installed in the CI runner container image
+      # See: .github/docker/ci-runner/Dockerfile
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth

@@ -115,15 +115,66 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Force fresh install to always get the latest dependencies
-  # shellcheck disable=SC2086
-  rm -rf node_modules package-lock.json && npm i $npm_flags
+  # Check if we should skip npm install (node_modules exists and package-lock.json hasn't changed)
+  if [[ -d "node_modules" ]] && [[ -f "package-lock.json" ]]; then
+    # In CI with pre-configured containers, prefer using existing node_modules if available
+    if [[ "${CI:-false}" == "true" ]] && [[ -f "node_modules/.package-lock.json" ]]; then
+      log "node_modules exists in CI environment, checking if up to date..."
+      # Compare package-lock.json hash with cached version
+      local current_hash cached_hash
+      current_hash=$(md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 || echo "none")
+      cached_hash=$(cat node_modules/.package-lock-hash 2>/dev/null || echo "")
+      if [[ "$current_hash" == "$cached_hash" ]]; then
+        log "node_modules is up to date, skipping npm install"
+        mkdir -p "$test_suite_path/test-results"
+        return 0
+      fi
+    fi
+  fi
+
+  # Use npm ci in CI for faster, reproducible installs; npm install locally
+  if [[ "${CI:-false}" == "true" ]] && [[ -f "package-lock.json" ]]; then
+    log "Running npm ci (CI mode)..."
+    # shellcheck disable=SC2086
+    npm ci $npm_flags
+    # Store hash for future comparison
+    md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 > node_modules/.package-lock-hash || true
+  else
+    # Force fresh install locally to always get the latest dependencies
+    log "Running npm install (local mode)..."
+    # shellcheck disable=SC2086
+    rm -rf node_modules package-lock.json && npm i $npm_flags
+  fi
 
   mkdir -p "$test_suite_path/test-results"
 }
 
 # Install Playwright browsers (with deps on Linux)
+# Skips installation if browsers are already present (e.g., in pre-built container image)
 _install_playwright_browsers() {
+  # Check if we're running in a container with pre-installed browsers
+  # The official Playwright Docker image sets PLAYWRIGHT_BROWSERS_PATH
+  if [[ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]] && [[ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]]; then
+    local browser_count
+    browser_count=$(find "${PLAYWRIGHT_BROWSERS_PATH}" -maxdepth 1 -type d | wc -l)
+    if [[ "$browser_count" -gt 1 ]]; then
+      log "Playwright browsers already installed at ${PLAYWRIGHT_BROWSERS_PATH}, skipping installation"
+      return 0
+    fi
+  fi
+
+  # Also check common Playwright browser locations
+  local ms_playwright_path="/ms-playwright"
+  if [[ -d "$ms_playwright_path" ]]; then
+    local browser_count
+    browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
+    if [[ "$browser_count" -gt 1 ]]; then
+      log "Playwright browsers already installed at ${ms_playwright_path}, skipping installation"
+      return 0
+    fi
+  fi
+
+  log "Installing Playwright browsers..."
   if [[ "$(uname -s)" == "Linux" ]]; then
     npx playwright install --with-deps || exit 1
   else
