@@ -60,46 +60,18 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 
 ## Dependencies
 
-Camunda 8 Helm chart is an umbrella chart for different components. Some are internal (sub-charts),
-and some are external (third-party). The dependency management is fully automated and managed by Helm itself;
-however, it's good to understand the dependency structure. This third-party dependency is reflected in the Helm chart
-as follows:
 
-```text
-camunda-platform
-  |_ elasticsearch
-  |_ identity
-    |_ keycloak
-      |_ postgresql
-  |_ optimize
-  |_ operate
-  |_ tasklist
-  |_ zeebe
-  |_ postgresql
-```
 
-> [!NOTE]
-> Please note that the Connectors and Web Modeler components are part of the main chart and not implemented as sub-charts.
+The Camunda 8 Helm chart internalizes all Camunda components (such as Zeebe, Operate, Tasklist, Optimize, Identity, Connectors, and Web Modeler) within a single chart. These components are no longer managed as sub-charts, but are instead templated and configured directly by the main chart.
 
-For example, Camunda Identity utilizes Keycloak and allows you to manage users, roles, and permissions
-for Camunda 8 components.
+Three third-party dependencies—Keycloak, PostgreSQL, and Elasticsearch—are still managed as sub-charts or vendored charts. These are included for convenience and can be enabled or disabled as needed.
 
-- Keycloak is a dependency for Camunda Identity, and PostgreSQL is a dependency for Keycloak.
-- Elasticsearch is a dependency for the Camunda chart, which is used in Zeebe, Operate, Tasklist, and Optimize.
-- PostgreSQL is an optional dependency for the Camunda chart and is used by Web Modeler.
+**Key points:**
+- All Camunda components are internalized and not listed as sub-charts.
+- Only Keycloak, PostgreSQL, and Elasticsearch remain as sub-charts or vendored charts.
+- Values for these dependencies can be set directly in the main values file, using their respective keys (e.g., `identityKeycloak`, `identityPostgresql`, `elasticsearch`).
 
-The values for the dependencies Keycloak and PostgreSQL can be set in the same hierarchy:
-
-```yaml
-identity:
-  [identity values]
-  keycloak:
-    [keycloak values]
-    postgresql:
-      [postgresql values]
-postgresql:
-  [postgresql values]
-```
+> **Note:** The previous sub-chart hierarchy and dependency tree are no longer relevant. All configuration is now managed at the top level of the chart.
 
 ## Versioning
 
