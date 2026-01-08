@@ -14,7 +14,7 @@ connectors:
   image:
     repository: camunda/connectors-bundle
     tag: SNAPSHOT
-    digest: "sha256:f07d33f5bfbdfed325b32eda7446abad06b8d92c82ebdce80c0c4d919648a894"
+    digest: "sha256:ea25948cc624cb7165ac8128b197095a01fc24cf6c6ecf05edfc5a82217cd8e1"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
@@ -33,14 +33,14 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:122eec2f19d73ed809b08f2ab038af94b9ab7f669bb64b2e03b77fd244525470"
+      digest: "sha256:bffd7e2fe06eb9fa277d6086b29792b0377b0fed3ebbe19409e7f107bed6b72f"
 
   # https://hub.docker.com/r/camunda/web-modeler-webapp/tags
   webapp:
     image:
       repository: camunda/web-modeler-webapp
       tag: SNAPSHOT
-      digest: "sha256:3803afc8862edd9c563b597f6a5c8ddcee3852bd606f682618678b3b4d0128c8"
+      digest: "sha256:e401315287b626e611654cf30519b3b0ae26373315a51ff3d5d71d4114286fa8"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
@@ -58,7 +58,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: SNAPSHOT
-    digest: "sha256:dd093344f9cadfed47075bbdc425410f06cc996526f2d0821441f5884bfda1a0"
+    digest: "sha256:e57bbefbd36c8b2dcbe75729d7b7d389b771dd50f33f09ebca476f12feede854"
 
 #
 # Identity
