@@ -411,13 +411,7 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-    {{- else }}
-      # zeebe has an issue where classNames must be specified even though they are not enabled
-      elasticsearch:
-        className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-      camundaexporter:
-        className: "io.camunda.exporter.CamundaExporter"
-      opensearch:
-        className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+    {{- else -}}
+      {{ " {}" }}
     {{- end }}
 {{ end -}}
