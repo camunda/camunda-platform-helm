@@ -177,14 +177,7 @@ data:
           clusterName: camunda-platform-test-zeebe
     
         # zeebe.broker.exporters
-        exporters:
-          # zeebe has an issue where classNames must be specified even though they are not enabled
-          elasticsearch:
-            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
-          camundaexporter:
-            className: "io.camunda.exporter.CamundaExporter"
-          opensearch:
-            className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+        exporters: {}
     
   log4j2.xml: |
     <xml>
