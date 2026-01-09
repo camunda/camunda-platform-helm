@@ -101,9 +101,9 @@ RUN curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSIO
 RUN curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}/openshift-client-linux.tar.gz" | tar -xzf - -C /usr/local/bin oc kubectl.1 || \
     curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-4.14/openshift-client-linux.tar.gz" | tar -xzf - -C /usr/local/bin oc
 
-# zbctl (ZBCTL_VERSION already has 'v' prefix)
-RUN curl -fsSL "https://github.com/camunda/camunda/releases/download/${ZBCTL_VERSION}/zbctl" -o /usr/local/bin/zbctl \
-    && chmod +x /usr/local/bin/zbctl || true
+# zbctl - Install via npm (GitHub releases stopped including zbctl binary from 8.6.0+)
+# Strip 'v' prefix from version for npm
+RUN npm install -g zbctl@${ZBCTL_VERSION#v}
 
 # =============================================================================
 # Layer 4: Configuration
