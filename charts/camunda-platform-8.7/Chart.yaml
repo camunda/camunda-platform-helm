@@ -7,7 +7,7 @@ description: |
   Camunda's process automation platform allows developers to design, automate and improve processes.
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
-home: https://docs.camunda.io/docs/self-managed/overview/
+home: https://docs.camunda.io/docs/self-managed/about-self-managed/
 sources:
   - https://github.com/camunda/camunda-platform-helm
 keywords:
