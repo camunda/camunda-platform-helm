@@ -7,6 +7,8 @@
 #   --login            Force re-authentication to the registry (opens browser)
 #   --ci-only          Build only the CI runner image
 #   --playwright-only  Build only the Playwright runner image
+#
+# Note: Images are built for linux/amd64 platform to match CI runners
 
 set -euo pipefail
 
@@ -19,6 +21,9 @@ CI_IMAGE_NAME="team-distribution/ci-runner"
 PLAYWRIGHT_IMAGE_NAME="team-distribution/playwright-runner"
 CI_FULL_IMAGE="${REGISTRY}/${CI_IMAGE_NAME}"
 PLAYWRIGHT_FULL_IMAGE="${REGISTRY}/${PLAYWRIGHT_IMAGE_NAME}"
+
+# Target platform - CI runners are linux/amd64
+TARGET_PLATFORM="linux/amd64"
 
 # Parse arguments
 DO_PUSH=false
@@ -41,7 +46,7 @@ for arg in "$@"; do
             echo "  --ci-only          Build only the CI runner image"
             echo "  --playwright-only  Build only the Playwright runner image"
             echo ""
-            echo "Images:"
+            echo "Images (built for ${TARGET_PLATFORM}):"
             echo "  CI Runner:         ${CI_FULL_IMAGE}"
             echo "  Playwright Runner: ${PLAYWRIGHT_FULL_IMAGE}"
             echo ""
@@ -49,6 +54,27 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+# Ensure docker buildx is available for cross-platform builds
+setup_buildx() {
+    echo "Setting up Docker Buildx for cross-platform builds..."
+
+    # Check if buildx is available
+    if ! docker buildx version &>/dev/null; then
+        echo "❌ Docker Buildx is required for cross-platform builds"
+        echo "   Please install Docker Desktop or enable buildx"
+        exit 1
+    fi
+
+    # Create/use a builder that supports multi-platform
+    local builder_name="ci-runner-builder"
+    if ! docker buildx inspect "$builder_name" &>/dev/null; then
+        echo "Creating buildx builder: $builder_name"
+        docker buildx create --name "$builder_name" --driver docker-container --bootstrap
+    fi
+    docker buildx use "$builder_name"
+    echo "✅ Buildx ready (builder: $builder_name)"
+}
 
 # Harbor/Registry login function
 # Uses OIDC browser-based login if available, falls back to manual credentials
@@ -131,10 +157,15 @@ echo "=========================================="
 echo "Repository root: $REPO_ROOT"
 echo "Tools hash: sha-${TOOLS_HASH}"
 echo "Date tag: ${DATE_TAG}"
+echo "Target platform: ${TARGET_PLATFORM}"
 echo ""
 echo "Images to build:"
 [[ "$BUILD_CI" == "true" ]] && echo "  - CI Runner: ${CI_FULL_IMAGE}"
 [[ "$BUILD_PLAYWRIGHT" == "true" ]] && echo "  - Playwright Runner: ${PLAYWRIGHT_FULL_IMAGE}"
+echo ""
+
+# Setup buildx for cross-platform builds
+setup_buildx
 echo ""
 
 # Login if pushing or forced
@@ -143,8 +174,20 @@ if [[ "$DO_PUSH" == "true" ]] || [[ "$FORCE_LOGIN" == "true" ]]; then
     echo ""
 fi
 
+# Determine build output - if pushing, push directly; otherwise load to local docker
+if [[ "$DO_PUSH" == "true" ]]; then
+    BUILD_OUTPUT="--push"
+    echo "ℹ️  Images will be pushed directly to registry (required for cross-platform builds)"
+else
+    # For local builds, we need to use --load which only works for single platform
+    # and the platform must match the host or use emulation
+    BUILD_OUTPUT="--load"
+    echo "ℹ️  Images will be loaded to local Docker daemon"
+fi
+
 # Build CI Runner image
 if [[ "$BUILD_CI" == "true" ]]; then
+    echo ""
     echo "=========================================="
     echo "Building CI Runner Image"
     echo "=========================================="
@@ -153,13 +196,15 @@ if [[ "$BUILD_CI" == "true" ]]; then
     echo "Copying .tool-versions to docker context..."
     cp "$REPO_ROOT/.tool-versions" "$REPO_ROOT/.github/docker/ci-runner/.tool-versions"
 
-    # Build the image
-    echo "Building image..."
-    docker build \
+    # Build the image using buildx
+    echo "Building image for ${TARGET_PLATFORM}..."
+    docker buildx build \
+        --platform "${TARGET_PLATFORM}" \
         -t "${CI_FULL_IMAGE}:latest" \
         -t "${CI_FULL_IMAGE}:sha-${TOOLS_HASH}" \
         -t "${CI_FULL_IMAGE}:${DATE_TAG}" \
         -f "$REPO_ROOT/.github/docker/ci-runner/Dockerfile" \
+        ${BUILD_OUTPUT} \
         "$REPO_ROOT/.github/docker/ci-runner"
 
     # Cleanup
@@ -168,11 +213,11 @@ if [[ "$BUILD_CI" == "true" ]]; then
     echo ""
     echo "✅ CI Runner build complete!"
     echo "   Tags: latest, sha-${TOOLS_HASH}, ${DATE_TAG}"
-    echo ""
 fi
 
 # Build Playwright Runner image
 if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
+    echo ""
     echo "=========================================="
     echo "Building Playwright Runner Image"
     echo "=========================================="
@@ -181,13 +226,15 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     echo "Copying .tool-versions to docker context..."
     cp "$REPO_ROOT/.tool-versions" "$REPO_ROOT/.github/docker/playwright-runner/.tool-versions"
 
-    # Build the image
-    echo "Building image..."
-    docker build \
+    # Build the image using buildx
+    echo "Building image for ${TARGET_PLATFORM}..."
+    docker buildx build \
+        --platform "${TARGET_PLATFORM}" \
         -t "${PLAYWRIGHT_FULL_IMAGE}:latest" \
         -t "${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}" \
         -t "${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}" \
         -f "$REPO_ROOT/.github/docker/playwright-runner/Dockerfile" \
+        ${BUILD_OUTPUT} \
         "$REPO_ROOT/.github/docker/playwright-runner"
 
     # Cleanup
@@ -196,13 +243,15 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     echo ""
     echo "✅ Playwright Runner build complete!"
     echo "   Tags: latest, sha-${TOOLS_HASH}, ${DATE_TAG}"
-    echo ""
 fi
 
 # Summary
+echo ""
 echo "=========================================="
 echo "Build Summary"
 echo "=========================================="
+echo "Platform: ${TARGET_PLATFORM}"
+echo ""
 if [[ "$BUILD_CI" == "true" ]]; then
     echo "CI Runner:"
     echo "  - ${CI_FULL_IMAGE}:latest"
@@ -217,32 +266,12 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
 fi
 echo ""
 
-# Push if requested
 if [[ "$DO_PUSH" == "true" ]]; then
-    echo "Pushing images to registry..."
-
-    if [[ "$BUILD_CI" == "true" ]]; then
-        echo "Pushing CI Runner images..."
-        docker push "${CI_FULL_IMAGE}:latest"
-        docker push "${CI_FULL_IMAGE}:sha-${TOOLS_HASH}"
-        docker push "${CI_FULL_IMAGE}:${DATE_TAG}"
-    fi
-
-    if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
-        echo "Pushing Playwright Runner images..."
-        docker push "${PLAYWRIGHT_FULL_IMAGE}:latest"
-        docker push "${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}"
-        docker push "${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
-    fi
-
-    echo ""
-    echo "✅ Push complete!"
+    echo "✅ Images pushed to registry!"
 else
-    echo "To push the images, re-run with --push:"
+    echo "To build and push to registry, run:"
     echo "  $0 --push"
+    echo ""
+    echo "Note: Cross-platform images (linux/amd64 on Apple Silicon) must be"
+    echo "      pushed directly to registry. Use --push to build and push."
 fi
-fi
-
-# Cleanup
-rm -f "$REPO_ROOT/.github/docker/ci-runner/.tool-versions"
-

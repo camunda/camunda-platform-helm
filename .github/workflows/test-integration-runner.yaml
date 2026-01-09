@@ -245,6 +245,10 @@ jobs:
       credentials:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
@@ -597,6 +601,10 @@ jobs:
       credentials:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
     needs: [install]
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
@@ -833,7 +841,10 @@ jobs:
       credentials:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
-      options: --ipc=host
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
     permissions:
@@ -893,7 +904,10 @@ jobs:
       credentials:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
-      options: --ipc=host
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
     permissions:
@@ -953,7 +967,10 @@ jobs:
       credentials:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
-      options: --ipc=host
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
     timeout-minutes: 20
     strategy:
@@ -1012,7 +1029,10 @@ jobs:
       credentials:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
-      options: --ipc=host
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
     timeout-minutes: 20
     strategy:
@@ -1149,6 +1169,10 @@ jobs:
       credentials:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: read
       id-token: write

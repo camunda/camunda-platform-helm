@@ -13,14 +13,14 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# Install system dependencies including bash
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
     ca-certificates \
     curl \
     git \
     gnupg \
     gettext-base \
-    jq \
     make \
     unzip \
     wget \
@@ -32,6 +32,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
+
+# Set bash as default shell
+SHELL ["/bin/bash", "-c"]
 
 # Install Google Cloud CLI for GKE authentication
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
@@ -49,18 +52,18 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     && ./aws/install \
     && rm -rf awscliv2.zip aws
 
-# Set up asdf environment
-ENV ASDF_DIR=/root/.asdf
-ENV ASDF_DATA_DIR=/root/.asdf
+# Set up asdf environment variables
+ENV ASDF_DIR=/opt/asdf
+ENV ASDF_DATA_DIR=/opt/asdf
 ENV PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"
 
-# Install asdf
+# Install asdf to /opt/asdf (accessible by all users)
 RUN git clone https://github.com/asdf-vm/asdf.git ${ASDF_DIR} --branch v0.15.0
 
 # Copy .tool-versions file
-COPY .tool-versions /root/.tool-versions
+COPY .tool-versions /opt/asdf/.tool-versions
 
-WORKDIR /root
+WORKDIR /opt/asdf
 
 # Add all asdf plugins
 RUN asdf plugin add git-cliff || true \
@@ -95,6 +98,7 @@ RUN set -e; \
         for attempt in 1 2 3; do \
             if asdf install "$tool" "$version"; then \
                 echo "✅ Successfully installed $tool $version"; \
+                asdf global "$tool" "$version"; \
                 break; \
             else \
                 echo "⚠️ Attempt $attempt failed for $tool $version"; \
@@ -105,29 +109,54 @@ RUN set -e; \
                 sleep 10; \
             fi; \
         done; \
-    done < /root/.tool-versions
+    done < /opt/asdf/.tool-versions
 
-# Set global versions for all tools
+# Reshim to ensure all binaries are available
 RUN asdf reshim
+
+# Copy .tool-versions to common locations where GitHub Actions might look
+RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
+    && cp /opt/asdf/.tool-versions /.tool-versions
 
 # Set up Go environment
 ENV GOPATH=/root/go
 ENV PATH="${GOPATH}/bin:${PATH}"
 
+# Set up shell initialization for interactive and non-interactive shells
+# This ensures asdf works in GitHub Actions which uses non-login shells
+RUN echo 'export ASDF_DIR=/opt/asdf' >> /etc/bash.bashrc \
+    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /etc/bash.bashrc \
+    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /etc/bash.bashrc \
+    && echo '. "${ASDF_DIR}/asdf.sh"' >> /etc/bash.bashrc \
+    && echo 'export ASDF_DIR=/opt/asdf' >> /root/.bashrc \
+    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /root/.bashrc \
+    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /root/.bashrc \
+    && echo '. "${ASDF_DIR}/asdf.sh"' >> /root/.bashrc
+
+# Also set up for GitHub Actions runner user (uid 1001)
+RUN mkdir -p /home/runner \
+    && echo 'export ASDF_DIR=/opt/asdf' >> /home/runner/.bashrc \
+    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /home/runner/.bashrc \
+    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /home/runner/.bashrc \
+    && echo '. "${ASDF_DIR}/asdf.sh"' >> /home/runner/.bashrc \
+    && cp /opt/asdf/.tool-versions /home/runner/.tool-versions
+
 # Create workspace directory
 WORKDIR /workspace
 
-# Verify installations
+# Verify installations work from the shims directly (no shell sourcing needed)
 RUN echo "Verifying tool installations..." \
-    && helm version --short \
-    && kubectl version --client \
-    && task --version \
-    && yq --version \
-    && jq --version \
-    && go version \
+    && /opt/asdf/shims/helm version --short \
+    && /opt/asdf/shims/kubectl version --client \
+    && /opt/asdf/shims/task --version \
+    && /opt/asdf/shims/yq --version \
+    && /opt/asdf/shims/jq --version \
+    && /opt/asdf/shims/go version \
     && echo "✅ All tools verified successfully"
 
-# Default entrypoint
+# Default shell for RUN commands
+SHELL ["/bin/bash", "-c"]
+
+# Entry point that ensures PATH is set correctly
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["bash"]
-
