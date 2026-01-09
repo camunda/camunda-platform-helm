@@ -42,6 +42,10 @@ outputs:
 runs:
   using: composite
   steps:
+  - name: Configure Git safe directory
+    shell: bash
+    run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
   - name: Set workflow vars
     id: vars
     shell: bash
