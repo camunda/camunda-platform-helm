@@ -342,11 +342,23 @@
         'charts/camunda-platform-8.9/values.yaml',
         'charts/camunda-platform-8.9/values-latest.yaml',
       ],
-      // force permanent unstable updates for a packages (e.g. alpha, see https://docs.renovatebot.com/configuration-options/#ignoreunstable)
-      ignoreUnstable: false,
       matchUpdateTypes: ['major', 'minor', 'patch'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
+    },
+    {
+      // needed as ignoreUnstable does not work with 'matchUpdateTypes' from above
+      description: 'Allow alpha/pre-release tags for Camunda 8.9 images',
+      enabled: true,
+      matchPackageNames: ['/.*camunda.*/'],
+      matchDatasources: ['helmv3', 'helm-values', 'docker', 'regex'],
+      matchFileNames: [
+        'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.9/values.yaml',
+        'charts/camunda-platform-8.9/values-latest.yaml',
+      ],
+      // force permanent unstable updates for a packages (e.g. alpha, see https://docs.renovatebot.com/configuration-options/#ignoreunstable)
+      ignoreUnstable: false,
     },
     {
       enabled: true,
