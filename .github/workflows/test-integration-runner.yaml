@@ -241,10 +241,6 @@ jobs:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
       options: --user root
-      env:
-        ASDF_DIR: /opt/asdf
-        ASDF_DATA_DIR: /opt/asdf
-        PATH: /root/.local/bin:/opt/asdf/shims:/opt/asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     defaults:
       run:
         shell: bash
@@ -595,10 +591,6 @@ jobs:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
       options: --user root
-      env:
-        ASDF_DIR: /opt/asdf
-        ASDF_DATA_DIR: /opt/asdf
-        PATH: /root/.local/bin:/opt/asdf/shims:/opt/asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     defaults:
       run:
         shell: bash
@@ -833,10 +825,6 @@ jobs:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host --user root
-      env:
-        ASDF_DIR: /opt/asdf
-        ASDF_DATA_DIR: /opt/asdf
-        PATH: /opt/asdf/shims:/opt/asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     defaults:
       run:
         shell: bash
@@ -900,10 +888,6 @@ jobs:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host --user root
-      env:
-        ASDF_DIR: /opt/asdf
-        ASDF_DATA_DIR: /opt/asdf
-        PATH: /opt/asdf/shims:/opt/asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     defaults:
       run:
         shell: bash
@@ -967,10 +951,6 @@ jobs:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host --user root
-      env:
-        ASDF_DIR: /opt/asdf
-        ASDF_DATA_DIR: /opt/asdf
-        PATH: /opt/asdf/shims:/opt/asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     defaults:
       run:
         shell: bash
@@ -1033,10 +1013,6 @@ jobs:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host --user root
-      env:
-        ASDF_DIR: /opt/asdf
-        ASDF_DATA_DIR: /opt/asdf
-        PATH: /opt/asdf/shims:/opt/asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     defaults:
       run:
         shell: bash
@@ -1177,10 +1153,6 @@ jobs:
         username: ${{ secrets.NEXUS_USERNAME }}
         password: ${{ secrets.NEXUS_PASSWORD }}
       options: --user root
-      env:
-        ASDF_DIR: /opt/asdf
-        ASDF_DATA_DIR: /opt/asdf
-        PATH: /root/.local/bin:/opt/asdf/shims:/opt/asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     defaults:
       run:
         shell: bash
