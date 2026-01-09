@@ -15,6 +15,9 @@ global:
       port: 443
     prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
 orchestration:
+  data:
+    secondaryStorage:
+      type: opensearch
   image:
     tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
   security:
@@ -49,8 +52,6 @@ orchestration:
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
       value: "connectors-client-mapping-rule"
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
-      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
-    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
@@ -205,3 +206,6 @@ connectors:
   security:
     authentication:
       method: oidc
+
+elasticsearch:
+  enabled: false
