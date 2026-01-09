@@ -1,16 +1,9 @@
 # Playwright Runner Image for Camunda Platform Helm Integration Tests
 # Extends the official Playwright image with additional CI tools
+# Tools are installed directly (not via asdf) for reliable PATH access in GitHub Actions
 #
 # Build: docker build -t registry.camunda.cloud/team-distribution/playwright-runner:latest .
 # Push:  docker push registry.camunda.cloud/team-distribution/playwright-runner:latest
-#
-# Layer order (most stable first):
-# 1. Base system packages (rarely change)
-# 2. Cloud CLIs - gcloud, aws (rarely change)
-# 3. asdf installation (rarely changes)
-# 4. asdf plugins (occasionally change)
-# 5. Tool installations from .tool-versions (change when versions update)
-# 6. Shell configuration (rarely changes)
 
 FROM mcr.microsoft.com/playwright:v1.57.0-noble
 
@@ -24,7 +17,7 @@ USER root
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Set bash as default shell early
+# Set bash as default shell
 SHELL ["/bin/bash", "-c"]
 
 # =============================================================================
@@ -65,103 +58,80 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     && rm -rf awscliv2.zip aws
 
 # =============================================================================
-# Layer 3: asdf installation (stable - rarely changes)
+# Layer 3: Copy .tool-versions for version reference
 # =============================================================================
-ENV ASDF_DIR=/opt/asdf
-ENV ASDF_DATA_DIR=/opt/asdf
-ENV PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"
-
-RUN git clone https://github.com/asdf-vm/asdf.git ${ASDF_DIR} --branch v0.15.0
+COPY .tool-versions /opt/.tool-versions
 
 # =============================================================================
-# Layer 4: asdf plugins (moderately stable - occasionally changes)
-# Playwright runner only needs a subset of tools
+# Layer 4: Install tools directly from releases (only tools needed for Playwright)
 # =============================================================================
-WORKDIR /opt/asdf
 
-RUN asdf plugin add helm || true
-RUN asdf plugin add kubectl || true
-RUN asdf plugin add oc || true
-RUN asdf plugin add task https://github.com/particledecay/asdf-task.git || true
-RUN asdf plugin add yq || true
-RUN asdf plugin add jq || true
-RUN asdf plugin add zbctl || true
+# Helm
+RUN HELM_VERSION=$(grep "^helm " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar -xzf - \
+    && mv linux-amd64/helm /usr/local/bin/helm \
+    && rm -rf linux-amd64
 
-# =============================================================================
-# Layer 5: Tool versions (changes when .tool-versions updates)
-# Copy full .tool-versions but only install what we need
-# =============================================================================
-COPY .tool-versions /tmp/.tool-versions-full
+# kubectl
+RUN KUBECTL_VERSION=$(grep "^kubectl " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+    && chmod +x /usr/local/bin/kubectl
 
-# Extract only the tools we need for Playwright runner
-RUN grep -E "^(helm|kubectl|oc|task|yq|jq|zbctl) " /tmp/.tool-versions-full > /opt/asdf/.tool-versions \
-    && cat /opt/asdf/.tool-versions
+# jq
+RUN JQ_VERSION=$(grep "^jq " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/jq "https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-linux-amd64" \
+    && chmod +x /usr/local/bin/jq
 
-# Install tools individually for better layer caching
-RUN asdf install helm $(grep "^helm " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global helm $(grep "^helm " /opt/asdf/.tool-versions | awk '{print $2}')
+# yq
+RUN YQ_VERSION=$(grep "^yq " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
+    && chmod +x /usr/local/bin/yq
 
-RUN asdf install kubectl $(grep "^kubectl " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global kubectl $(grep "^kubectl " /opt/asdf/.tool-versions | awk '{print $2}')
+# task (taskfile)
+RUN TASK_VERSION=$(grep "^task " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz" | tar -xzf - -C /usr/local/bin task
 
-RUN asdf install task $(grep "^task " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global task $(grep "^task " /opt/asdf/.tool-versions | awk '{print $2}')
+# oc (OpenShift CLI)
+RUN OC_VERSION=$(grep "^oc " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}/openshift-client-linux.tar.gz" | tar -xzf - -C /usr/local/bin oc kubectl.1 || \
+    curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-4.14/openshift-client-linux.tar.gz" | tar -xzf - -C /usr/local/bin oc
 
-RUN asdf install yq $(grep "^yq " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global yq $(grep "^yq " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install jq $(grep "^jq " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global jq $(grep "^jq " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install oc $(grep "^oc " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global oc $(grep "^oc " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install zbctl $(grep "^zbctl " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global zbctl $(grep "^zbctl " /opt/asdf/.tool-versions | awk '{print $2}')
-
-# Reshim to ensure all binaries are available
-RUN asdf reshim
+# zbctl (version in .tool-versions already has 'v' prefix)
+RUN ZBCTL_VERSION=$(grep "^zbctl " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/zbctl "https://github.com/camunda/zeebe/releases/download/${ZBCTL_VERSION}/zbctl.tar.gz" \
+    && tar -xzf /usr/local/bin/zbctl -C /tmp \
+    && mv /tmp/zbctl /usr/local/bin/zbctl \
+    && chmod +x /usr/local/bin/zbctl || \
+    curl -fsSL -o /usr/local/bin/zbctl "https://github.com/camunda/camunda/releases/download/${ZBCTL_VERSION}/zbctl" \
+    && chmod +x /usr/local/bin/zbctl || true
 
 # =============================================================================
-# Layer 6: Symlink tools to /usr/local/bin for standard PATH access
-# This ensures tools work without asdf environment variables being set
-# =============================================================================
-RUN ln -sf /opt/asdf/shims/helm /usr/local/bin/helm \
-    && ln -sf /opt/asdf/shims/kubectl /usr/local/bin/kubectl \
-    && ln -sf /opt/asdf/shims/task /usr/local/bin/task \
-    && ln -sf /opt/asdf/shims/yq /usr/local/bin/yq \
-    && ln -sf /opt/asdf/shims/jq /usr/local/bin/jq \
-    && ln -sf /opt/asdf/shims/oc /usr/local/bin/oc \
-    && ln -sf /opt/asdf/shims/zbctl /usr/local/bin/zbctl
-
-# =============================================================================
-# Layer 7: Configuration (stable - rarely changes)
+# Layer 5: Configuration
 # =============================================================================
 # Copy .tool-versions to common locations
-RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
-    && cp /opt/asdf/.tool-versions /.tool-versions \
-    && cp /opt/asdf/.tool-versions /home/pwuser/.tool-versions 2>/dev/null || true
-
-# Set up for GitHub Actions runner user (uid 1001)
-RUN mkdir -p /home/runner \
-    && cp /opt/asdf/.tool-versions /home/runner/.tool-versions
+RUN cp /opt/.tool-versions /root/.tool-versions \
+    && cp /opt/.tool-versions /.tool-versions \
+    && mkdir -p /home/runner \
+    && cp /opt/.tool-versions /home/runner/.tool-versions \
+    && cp /opt/.tool-versions /home/pwuser/.tool-versions 2>/dev/null || true
 
 # =============================================================================
-# Layer 8: Verification and final setup
+# Layer 6: Verification
 # =============================================================================
 WORKDIR /workspace
 
-# Verify critical tools work via /usr/local/bin symlinks
+# Verify critical tools work
 RUN echo "Verifying tool installations..." \
-    && /usr/local/bin/helm version --short \
-    && /usr/local/bin/kubectl version --client \
-    && /usr/local/bin/task --version \
-    && /usr/local/bin/yq --version \
-    && /usr/local/bin/jq --version \
+    && helm version --short \
+    && kubectl version --client \
+    && jq --version \
+    && yq --version \
+    && task --version \
     && echo "✅ All tools verified successfully"
 
-# Keep root user as default for GitHub Actions (--user root in container options)
+# Keep root user as default for GitHub Actions
 USER root
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["bash"]
+
