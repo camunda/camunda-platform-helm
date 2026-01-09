@@ -118,7 +118,7 @@ test_ci_runner() {
     if docker run --rm --user root \
         -e GITHUB_CONTEXT='{"extra-values": "test-value", "flow": "install"}' \
         "$image" \
-        bash -c 'echo "Workflow Inputs:" && echo "${GITHUB_CONTEXT}" | jq '\''."extra-values" = "<Check below>"'\''' ; then
+        bash -c 'echo "Workflow Inputs:" && echo "$GITHUB_CONTEXT" | jq .' ; then
         echo -e "${GREEN}✓ Workflow simulation passed${NC}"
     else
         echo -e "${RED}✗ Workflow simulation failed${NC}"

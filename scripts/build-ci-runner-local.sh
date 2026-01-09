@@ -36,6 +36,7 @@ DO_TEST=false
 FORCE_LOGIN=false
 BUILD_CI=true
 BUILD_PLAYWRIGHT=true
+USE_BUILDX=true
 
 for arg in "$@"; do
     case "$arg" in
@@ -44,8 +45,9 @@ for arg in "$@"; do
         --login) FORCE_LOGIN=true ;;
         --ci-only) BUILD_PLAYWRIGHT=false ;;
         --playwright-only) BUILD_CI=false ;;
+        --no-buildx) USE_BUILDX=false ;;
         --help|-h)
-            echo "Usage: $0 [--push] [--test] [--login] [--ci-only] [--playwright-only]"
+            echo "Usage: $0 [--push] [--test] [--login] [--ci-only] [--playwright-only] [--no-buildx]"
             echo ""
             echo "Options:"
             echo "  --push             Build and push the images to the registry"
@@ -53,6 +55,7 @@ for arg in "$@"; do
             echo "  --login            Force re-authentication to the registry (opens browser)"
             echo "  --ci-only          Build only the CI runner image"
             echo "  --playwright-only  Build only the Playwright runner image"
+            echo "  --no-buildx        Use standard docker build instead of buildx (for local testing)"
             echo ""
             echo "Images (built for ${TARGET_PLATFORM}):"
             echo "  CI Runner:         ${CI_FULL_IMAGE}"
@@ -62,6 +65,7 @@ for arg in "$@"; do
             echo "  $0 --test              # Build and test locally"
             echo "  $0 --test --push       # Build, test, then push if tests pass"
             echo "  $0 --ci-only --test    # Build and test only CI runner"
+            echo "  $0 --test --no-buildx  # Build locally without buildx (avoids cache issues)"
             echo ""
             exit 0
             ;;
@@ -264,9 +268,11 @@ echo "Images to build:"
 [[ "$BUILD_PLAYWRIGHT" == "true" ]] && echo "  - Playwright Runner: ${PLAYWRIGHT_FULL_IMAGE}"
 echo ""
 
-# Setup buildx for cross-platform builds
-setup_buildx
-echo ""
+# Setup buildx for cross-platform builds (only if using buildx)
+if [[ "$USE_BUILDX" == "true" ]]; then
+    setup_buildx
+    echo ""
+fi
 
 # Login if pushing or forced
 if [[ "$DO_PUSH" == "true" ]] || [[ "$FORCE_LOGIN" == "true" ]]; then
@@ -293,6 +299,10 @@ else
     echo "ℹ️  Images will be loaded to local Docker daemon"
 fi
 
+if [[ "$USE_BUILDX" == "false" ]]; then
+    echo "ℹ️  Using standard docker build (--no-buildx)"
+fi
+
 # Build CI Runner image
 if [[ "$BUILD_CI" == "true" ]]; then
     echo ""
@@ -311,15 +321,32 @@ if [[ "$BUILD_CI" == "true" ]]; then
         CI_BUILD_TAGS="-t ${CI_FULL_IMAGE}:latest -t ${CI_FULL_IMAGE}:sha-${TOOLS_HASH} -t ${CI_FULL_IMAGE}:${DATE_TAG}"
     fi
 
-    # Build the image using buildx with version arguments
+    # Build the image
     echo "Building image for ${TARGET_PLATFORM}..."
-    docker buildx build \
-        --platform "${TARGET_PLATFORM}" \
-        ${CI_BUILD_ARGS} \
-        ${CI_BUILD_TAGS} \
-        -f "$REPO_ROOT/.github/docker/ci-runner/Dockerfile" \
-        ${BUILD_OUTPUT} \
-        "$REPO_ROOT/.github/docker/ci-runner"
+    if [[ "$USE_BUILDX" == "true" ]]; then
+        docker buildx build \
+            --platform "${TARGET_PLATFORM}" \
+            ${CI_BUILD_ARGS} \
+            ${CI_BUILD_TAGS} \
+            -f "$REPO_ROOT/.github/docker/ci-runner/Dockerfile" \
+            ${BUILD_OUTPUT} \
+            "$REPO_ROOT/.github/docker/ci-runner"
+    else
+        # Standard docker build (for local testing without buildx)
+        docker build \
+            ${CI_BUILD_ARGS} \
+            ${CI_BUILD_TAGS} \
+            -f "$REPO_ROOT/.github/docker/ci-runner/Dockerfile" \
+            "$REPO_ROOT/.github/docker/ci-runner"
+
+        # If pushing without test, push now (with --test, push happens after tests pass)
+        if [[ "$DO_PUSH" == "true" && "$DO_TEST" == "false" ]]; then
+            echo "Pushing CI Runner images..."
+            docker push "${CI_FULL_IMAGE}:latest"
+            docker push "${CI_FULL_IMAGE}:sha-${TOOLS_HASH}"
+            docker push "${CI_FULL_IMAGE}:${DATE_TAG}"
+        fi
+    fi
 
     # Cleanup
     rm -f "$REPO_ROOT/.github/docker/ci-runner/.tool-versions"
@@ -346,15 +373,32 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
         PW_BUILD_TAGS="-t ${PLAYWRIGHT_FULL_IMAGE}:latest -t ${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH} -t ${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
     fi
 
-    # Build the image using buildx with version arguments
+    # Build the image
     echo "Building image for ${TARGET_PLATFORM}..."
-    docker buildx build \
-        --platform "${TARGET_PLATFORM}" \
-        ${PW_BUILD_ARGS} \
-        ${PW_BUILD_TAGS} \
-        -f "$REPO_ROOT/.github/docker/playwright-runner/Dockerfile" \
-        ${BUILD_OUTPUT} \
-        "$REPO_ROOT/.github/docker/playwright-runner"
+    if [[ "$USE_BUILDX" == "true" ]]; then
+        docker buildx build \
+            --platform "${TARGET_PLATFORM}" \
+            ${PW_BUILD_ARGS} \
+            ${PW_BUILD_TAGS} \
+            -f "$REPO_ROOT/.github/docker/playwright-runner/Dockerfile" \
+            ${BUILD_OUTPUT} \
+            "$REPO_ROOT/.github/docker/playwright-runner"
+    else
+        # Standard docker build (for local testing without buildx)
+        docker build \
+            ${PW_BUILD_ARGS} \
+            ${PW_BUILD_TAGS} \
+            -f "$REPO_ROOT/.github/docker/playwright-runner/Dockerfile" \
+            "$REPO_ROOT/.github/docker/playwright-runner"
+
+        # If pushing without test, push now (with --test, push happens after tests pass)
+        if [[ "$DO_PUSH" == "true" && "$DO_TEST" == "false" ]]; then
+            echo "Pushing Playwright Runner images..."
+            docker push "${PLAYWRIGHT_FULL_IMAGE}:latest"
+            docker push "${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}"
+            docker push "${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
+        fi
+    fi
 
     # Cleanup
     rm -f "$REPO_ROOT/.github/docker/playwright-runner/.tool-versions"
