@@ -133,9 +133,10 @@ RUN curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_V
 RUN curl -fsSL -o /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64" \
     && chmod +x /usr/local/bin/kind
 
-# zbctl (ZBCTL_VERSION already has 'v' prefix)
-RUN curl -fsSL "https://github.com/camunda/camunda/releases/download/${ZBCTL_VERSION}/zbctl" -o /usr/local/bin/zbctl \
-    && chmod +x /usr/local/bin/zbctl || true
+# zbctl - Download from npm CDN (GitHub releases stopped including zbctl binary from 8.6.0+)
+# Strip 'v' prefix from version for npm/unpkg
+RUN curl -fsSL "https://unpkg.com/zbctl@${ZBCTL_VERSION#v}/bin/zbctl-cli.linux" -o /usr/local/bin/zbctl \
+    && chmod +x /usr/local/bin/zbctl
 
 # oras
 RUN curl -fsSL "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" | tar -xzf - -C /usr/local/bin oras
