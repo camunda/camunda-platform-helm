@@ -108,6 +108,9 @@ RUN curl -fsSL "https://github.com/camunda/camunda/releases/download/${ZBCTL_VER
 # =============================================================================
 # Layer 4: Configuration
 # =============================================================================
+# Configure git to allow any directory (fixes "dubious ownership" error in containers)
+RUN git config --global --add safe.directory '*'
+
 # Copy .tool-versions to common locations (for reference only, not used during build)
 COPY .tool-versions /opt/.tool-versions
 RUN cp /opt/.tool-versions /root/.tool-versions \

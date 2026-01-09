@@ -162,6 +162,9 @@ RUN git clone --depth 1 --branch v${BATS_VERSION} https://github.com/bats-core/b
 ENV GOPATH=/root/go
 ENV PATH="${GOPATH}/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/go/bin"
 
+# Configure git to allow any directory (fixes "dubious ownership" error in containers)
+RUN git config --global --add safe.directory '*'
+
 # Copy .tool-versions to common locations (for reference only, not used during build)
 COPY .tool-versions /opt/.tool-versions
 RUN cp /opt/.tool-versions /root/.tool-versions \
