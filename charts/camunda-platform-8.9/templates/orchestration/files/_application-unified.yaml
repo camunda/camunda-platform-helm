@@ -361,6 +361,7 @@ zeebe:
       elasticsearch:
         className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         args:
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           {{- if .Values.global.elasticsearch.external }}
           authentication:
             username: {{ .Values.global.elasticsearch.auth.username | quote }}
@@ -387,6 +388,7 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
+          url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.opensearch.prefix | quote }}
           {{- if .Values.global.opensearch.aws.enabled }}
