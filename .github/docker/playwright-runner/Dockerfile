@@ -16,10 +16,14 @@ USER root
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Set bash as default shell
+SHELL ["/bin/bash", "-c"]
+
 # Install system dependencies with retry logic for apt mirror sync issues
 RUN for attempt in 1 2 3 4 5; do \
         echo "Attempt $attempt of 5..." && \
         apt-get update && apt-get install -y --no-install-recommends \
+            bash \
             ca-certificates \
             curl \
             git \
@@ -60,23 +64,22 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     && ./aws/install \
     && rm -rf awscliv2.zip aws
 
-# Set up asdf environment
-ENV ASDF_DIR=/root/.asdf
-ENV ASDF_DATA_DIR=/root/.asdf
+# Set up asdf environment variables (use /opt/asdf for all users)
+ENV ASDF_DIR=/opt/asdf
+ENV ASDF_DATA_DIR=/opt/asdf
 ENV PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"
 
-# Install asdf
+# Install asdf to /opt/asdf (accessible by all users)
 RUN git clone https://github.com/asdf-vm/asdf.git ${ASDF_DIR} --branch v0.15.0
 
 # Create a minimal .tool-versions with only the tools needed for Playwright tests
-# These versions should match the main .tool-versions file
 COPY .tool-versions /tmp/.tool-versions-full
 
 # Extract only the tools needed for Playwright runner
-RUN grep -E "^(helm|kubectl|oc|task|yq|zbctl|jq) " /tmp/.tool-versions-full > /root/.tool-versions \
-    && cat /root/.tool-versions
+RUN grep -E "^(helm|kubectl|oc|task|yq|zbctl|jq) " /tmp/.tool-versions-full > /opt/asdf/.tool-versions \
+    && cat /opt/asdf/.tool-versions
 
-WORKDIR /root
+WORKDIR /opt/asdf
 
 # Add required asdf plugins
 RUN asdf plugin add helm || true \
@@ -101,6 +104,7 @@ RUN set -e; \
         for attempt in 1 2 3; do \
             if asdf install "$tool" "$version"; then \
                 echo "✅ Successfully installed $tool $version"; \
+                asdf global "$tool" "$version"; \
                 break; \
             else \
                 echo "⚠️ Attempt $attempt failed for $tool $version"; \
@@ -111,29 +115,62 @@ RUN set -e; \
                 sleep 10; \
             fi; \
         done; \
-    done < /root/.tool-versions
+    done < /opt/asdf/.tool-versions
 
-# Set global versions for all tools
+# Reshim to ensure all binaries are available
 RUN asdf reshim
+
+# Copy .tool-versions to common locations
+RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
+    && cp /opt/asdf/.tool-versions /.tool-versions \
+    && cp /opt/asdf/.tool-versions /home/pwuser/.tool-versions 2>/dev/null || true
+
+# Set up shell initialization for root
+RUN echo 'export ASDF_DIR=/opt/asdf' >> /root/.bashrc \
+    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /root/.bashrc \
+    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /root/.bashrc \
+    && echo '. "${ASDF_DIR}/asdf.sh"' >> /root/.bashrc
+
+# Set up shell initialization for pwuser
+RUN echo 'export ASDF_DIR=/opt/asdf' >> /home/pwuser/.bashrc \
+    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /home/pwuser/.bashrc \
+    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /home/pwuser/.bashrc \
+    && echo '. "${ASDF_DIR}/asdf.sh"' >> /home/pwuser/.bashrc
+
+# Set up for GitHub Actions runner user (uid 1001)
+RUN mkdir -p /home/runner \
+    && echo 'export ASDF_DIR=/opt/asdf' >> /home/runner/.bashrc \
+    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /home/runner/.bashrc \
+    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /home/runner/.bashrc \
+    && echo '. "${ASDF_DIR}/asdf.sh"' >> /home/runner/.bashrc \
+    && cp /opt/asdf/.tool-versions /home/runner/.tool-versions
+
+# Also set up system-wide bash configuration
+RUN echo 'export ASDF_DIR=/opt/asdf' >> /etc/bash.bashrc \
+    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /etc/bash.bashrc \
+    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /etc/bash.bashrc
 
 # Create workspace directory
 WORKDIR /workspace
 
-# Verify installations
+# Verify installations work from the shims directly
 RUN echo "Verifying tool installations..." \
-    && helm version --short \
-    && kubectl version --client \
-    && task --version \
-    && yq --version \
-    && jq --version \
+    && /opt/asdf/shims/helm version --short \
+    && /opt/asdf/shims/kubectl version --client \
+    && /opt/asdf/shims/task --version \
+    && /opt/asdf/shims/yq --version \
+    && /opt/asdf/shims/jq --version \
     && echo "✅ All tools verified successfully"
 
-# Switch back to pwuser for running tests (Playwright convention)
-USER pwuser
+# Keep root user as default for GitHub Actions (--user root in container options)
+# pwuser can be used for local testing if needed
+USER root
 
-# Default working directory for tests
-WORKDIR /home/pwuser
+# Default working directory
+WORKDIR /workspace
+
+# Default shell
+SHELL ["/bin/bash", "-c"]
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["bash"]
-
