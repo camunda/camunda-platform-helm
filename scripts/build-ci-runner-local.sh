@@ -55,7 +55,7 @@ for arg in "$@"; do
             echo "  --login            Force re-authentication to the registry (opens browser)"
             echo "  --ci-only          Build only the CI runner image"
             echo "  --playwright-only  Build only the Playwright runner image"
-            echo "  --no-buildx        Use standard docker build instead of buildx (for local testing)"
+            echo "  --no-buildx        Use standard docker build instead of buildx (ignored with --push)"
             echo ""
             echo "Images (built for ${TARGET_PLATFORM}):"
             echo "  CI Runner:         ${CI_FULL_IMAGE}"
@@ -299,8 +299,16 @@ else
     echo "ℹ️  Images will be loaded to local Docker daemon"
 fi
 
+# When pushing, we must use buildx for reliable cross-platform builds
+# QEMU emulation with standard docker build has GPG signature issues
+if [[ "$USE_BUILDX" == "false" && "$DO_PUSH" == "true" ]]; then
+    echo "⚠️  --no-buildx is incompatible with --push (QEMU emulation causes GPG failures)"
+    echo "ℹ️  Automatically enabling buildx for reliable cross-platform builds"
+    USE_BUILDX="true"
+fi
+
 if [[ "$USE_BUILDX" == "false" ]]; then
-    echo "ℹ️  Using standard docker build (--no-buildx)"
+    echo "ℹ️  Using standard docker build (local testing only)"
 fi
 
 # Build CI Runner image
@@ -333,7 +341,9 @@ if [[ "$BUILD_CI" == "true" ]]; then
             "$REPO_ROOT/.github/docker/ci-runner"
     else
         # Standard docker build (for local testing without buildx)
+        # Still specify platform to ensure linux/amd64 even on ARM machines
         docker build \
+            --platform "${TARGET_PLATFORM}" \
             ${CI_BUILD_ARGS} \
             ${CI_BUILD_TAGS} \
             -f "$REPO_ROOT/.github/docker/ci-runner/Dockerfile" \
@@ -385,7 +395,9 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
             "$REPO_ROOT/.github/docker/playwright-runner"
     else
         # Standard docker build (for local testing without buildx)
+        # Still specify platform to ensure linux/amd64 even on ARM machines
         docker build \
+            --platform "${TARGET_PLATFORM}" \
             ${PW_BUILD_ARGS} \
             ${PW_BUILD_TAGS} \
             -f "$REPO_ROOT/.github/docker/playwright-runner/Dockerfile" \

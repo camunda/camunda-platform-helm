@@ -282,6 +282,9 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
 
@@ -638,6 +641,9 @@ jobs:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
@@ -1188,6 +1194,9 @@ jobs:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
