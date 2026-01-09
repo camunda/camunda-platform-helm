@@ -44,7 +44,10 @@ SHELL ["/bin/bash", "-c"]
 # =============================================================================
 # Layer 1: System packages (very stable - rarely changes)
 # =============================================================================
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
     curl \
