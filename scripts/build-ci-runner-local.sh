@@ -192,6 +192,57 @@ docker_login() {
 TOOLS_HASH=$(sha256sum "$REPO_ROOT/.tool-versions" | cut -c1-8)
 DATE_TAG=$(date +%Y%m%d)
 
+# Extract versions from .tool-versions for build arguments
+# This enables proper layer caching - layers only rebuild when specific versions change
+extract_version() {
+    local tool="$1"
+    grep "^${tool} " "$REPO_ROOT/.tool-versions" | awk '{print $2}'
+}
+
+GOLANG_VERSION=$(extract_version "golang")
+HELM_VERSION=$(extract_version "helm")
+KUBECTL_VERSION=$(extract_version "kubectl")
+JQ_VERSION=$(extract_version "jq")
+YQ_VERSION=$(extract_version "yq")
+TASK_VERSION=$(extract_version "task")
+KUSTOMIZE_VERSION=$(extract_version "kustomize")
+OC_VERSION=$(extract_version "oc")
+KIND_VERSION=$(extract_version "kind")
+ZBCTL_VERSION=$(extract_version "zbctl")
+ORAS_VERSION=$(extract_version "oras")
+HELM_CT_VERSION=$(extract_version "helm-ct")
+HELM_CR_VERSION=$(extract_version "helm-cr")
+GOMPLATE_VERSION=$(extract_version "gomplate")
+BATS_VERSION=$(extract_version "bats")
+YAMLLINT_VERSION=$(extract_version "yamllint")
+
+# Build arguments for CI runner
+CI_BUILD_ARGS="--build-arg GOLANG_VERSION=${GOLANG_VERSION} \
+    --build-arg HELM_VERSION=${HELM_VERSION} \
+    --build-arg KUBECTL_VERSION=${KUBECTL_VERSION} \
+    --build-arg JQ_VERSION=${JQ_VERSION} \
+    --build-arg YQ_VERSION=${YQ_VERSION} \
+    --build-arg TASK_VERSION=${TASK_VERSION} \
+    --build-arg KUSTOMIZE_VERSION=${KUSTOMIZE_VERSION} \
+    --build-arg OC_VERSION=${OC_VERSION} \
+    --build-arg KIND_VERSION=${KIND_VERSION} \
+    --build-arg ZBCTL_VERSION=${ZBCTL_VERSION} \
+    --build-arg ORAS_VERSION=${ORAS_VERSION} \
+    --build-arg HELM_CT_VERSION=${HELM_CT_VERSION} \
+    --build-arg HELM_CR_VERSION=${HELM_CR_VERSION} \
+    --build-arg GOMPLATE_VERSION=${GOMPLATE_VERSION} \
+    --build-arg BATS_VERSION=${BATS_VERSION} \
+    --build-arg YAMLLINT_VERSION=${YAMLLINT_VERSION}"
+
+# Build arguments for Playwright runner (subset of tools)
+PW_BUILD_ARGS="--build-arg HELM_VERSION=${HELM_VERSION} \
+    --build-arg KUBECTL_VERSION=${KUBECTL_VERSION} \
+    --build-arg JQ_VERSION=${JQ_VERSION} \
+    --build-arg YQ_VERSION=${YQ_VERSION} \
+    --build-arg TASK_VERSION=${TASK_VERSION} \
+    --build-arg OC_VERSION=${OC_VERSION} \
+    --build-arg ZBCTL_VERSION=${ZBCTL_VERSION}"
+
 echo "=========================================="
 echo "Building CI Runner Docker Images"
 echo "=========================================="
@@ -199,6 +250,14 @@ echo "Repository root: $REPO_ROOT"
 echo "Tools hash: sha-${TOOLS_HASH}"
 echo "Date tag: ${DATE_TAG}"
 echo "Target platform: ${TARGET_PLATFORM}"
+echo ""
+echo "Tool versions:"
+echo "  golang:    ${GOLANG_VERSION}"
+echo "  helm:      ${HELM_VERSION}"
+echo "  kubectl:   ${KUBECTL_VERSION}"
+echo "  jq:        ${JQ_VERSION}"
+echo "  yq:        ${YQ_VERSION}"
+echo "  task:      ${TASK_VERSION}"
 echo ""
 echo "Images to build:"
 [[ "$BUILD_CI" == "true" ]] && echo "  - CI Runner: ${CI_FULL_IMAGE}"
@@ -252,10 +311,11 @@ if [[ "$BUILD_CI" == "true" ]]; then
         CI_BUILD_TAGS="-t ${CI_FULL_IMAGE}:latest -t ${CI_FULL_IMAGE}:sha-${TOOLS_HASH} -t ${CI_FULL_IMAGE}:${DATE_TAG}"
     fi
 
-    # Build the image using buildx
+    # Build the image using buildx with version arguments
     echo "Building image for ${TARGET_PLATFORM}..."
     docker buildx build \
         --platform "${TARGET_PLATFORM}" \
+        ${CI_BUILD_ARGS} \
         ${CI_BUILD_TAGS} \
         -f "$REPO_ROOT/.github/docker/ci-runner/Dockerfile" \
         ${BUILD_OUTPUT} \
@@ -286,10 +346,11 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
         PW_BUILD_TAGS="-t ${PLAYWRIGHT_FULL_IMAGE}:latest -t ${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH} -t ${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
     fi
 
-    # Build the image using buildx
+    # Build the image using buildx with version arguments
     echo "Building image for ${TARGET_PLATFORM}..."
     docker buildx build \
         --platform "${TARGET_PLATFORM}" \
+        ${PW_BUILD_ARGS} \
         ${PW_BUILD_TAGS} \
         -f "$REPO_ROOT/.github/docker/playwright-runner/Dockerfile" \
         ${BUILD_OUTPUT} \
