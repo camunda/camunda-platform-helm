@@ -8,6 +8,8 @@ import (
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // labelAndAnnotateNamespace adds Camunda/GitHub-specific labels and annotations
@@ -67,4 +69,41 @@ func applyIntegrationTestCredentials(ctx context.Context, kubeClient *kube.Clien
 
 	// Use generic method to apply manifest
 	return kubeClient.ApplyManifest(ctx, namespace, decoded)
+}
+
+func applyInfraTestCredentials(ctx context.Context, kubeClient *kube.Client, namespace string) error {
+	b64 := strings.TrimSpace(os.Getenv("INTEGRATION_TEST"))
+	if b64 == "" {
+		logging.Logger.Debug().Str("namespace", namespace).Msg("skipping infra-credentials (env not present)")
+		return nil
+	}
+	
+	decoded, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return fmt.Errorf("failed to decode INTEGRATION_TEST: %w", err)
+	}
+	decoded, err = replaceNameFieldInYAML(decoded, "infra-credentials")
+	if err != nil {
+		return fmt.Errorf("failed to update name field in decoded manifest: %w", err)
+	}
+
+
+	// Use generic method to apply manifest
+	return kubeClient.ApplyManifest(ctx, namespace, decoded)
+}
+
+func replaceNameFieldInYAML(data []byte, name string) ([]byte, error) {
+	var obj map[string]interface{}
+	err := yaml.Unmarshal(data, &obj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
+	}
+
+	metadata, ok := obj["metadata"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to find metadata field in YAML")
+	}
+	metadata["name"] = name
+
+	return yaml.Marshal(obj)
 }

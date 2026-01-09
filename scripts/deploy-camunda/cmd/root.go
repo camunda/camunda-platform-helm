@@ -21,11 +21,38 @@ var (
 	flags      config.RuntimeFlags
 )
 
+// isUsageError checks if an error is a usage/validation error that should show help.
+func isUsageError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// Check for common usage error patterns
+	usagePatterns := []string{
+		"unknown flag",
+		"unknown shorthand flag",
+		"required flag",
+		"invalid argument",
+		"accepts",
+		"unknown command",
+		"flag needs an argument",
+		"invalid value",
+	}
+	for _, pattern := range usagePatterns {
+		if strings.Contains(strings.ToLower(errStr), pattern) {
+			return true
+		}
+	}
+	return false
+}
+
 // NewRootCommand creates the root command.
 func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "deploy-camunda",
-		Short: "Deploy Camunda Platform with prepared Helm values",
+		Use:           "deploy-camunda",
+		Short:         "Deploy Camunda Platform with prepared Helm values",
+		SilenceUsage:  true, // Don't show usage for runtime errors, only for usage errors
+		SilenceErrors: true, // Handle all error printing ourselves
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Skip for config and completion subcommands
 			if cmd != nil {
@@ -99,6 +126,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
 	f.BoolVar(&flags.SkipDependencyUpdate, "skip-dependency-update", true, "Skip Helm dependency update")
 	f.BoolVar(&flags.ExternalSecrets, "external-secrets", true, "Enable external secrets")
+	f.StringVar(&flags.ExternalSecretsStore, "external-secrets-store", "", "External secrets store type (e.g., vault-backend)")
 	f.StringVar(&flags.KeycloakHost, "keycloak-host", "keycloak-24-9-0.ci.distro.ultrawombat.com", "Keycloak external host")
 	f.StringVar(&flags.KeycloakProtocol, "keycloak-protocol", "https", "Keycloak protocol")
 	f.StringVar(&flags.KeycloakRealm, "keycloak-realm", "", "Keycloak realm name (auto-generated if not specified)")
@@ -191,5 +219,18 @@ func Execute() error {
 	rootCmd := NewRootCommand()
 	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 	rootCmd.AddCommand(newConfigCommand())
-	return rootCmd.Execute()
+	
+	err := rootCmd.Execute()
+	if err != nil {
+		// Only show usage/help for usage errors, not runtime errors
+		if isUsageError(err) {
+			// Print error and then show usage
+			fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
+			_ = rootCmd.Usage()
+		} else {
+			// For runtime errors, just print the error without usage
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
+	}
+	return err
 }
