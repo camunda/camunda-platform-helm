@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Build the CI Runner Docker images locally
-# Usage: ./scripts/build-ci-runner-local.sh [--push] [--login] [--ci-only] [--playwright-only]
+# Usage: ./scripts/build-ci-runner-local.sh [--push] [--test] [--login] [--ci-only] [--playwright-only]
 #
 # Options:
 #   --push             Build and push the images to the registry
+#   --test             Test the images after building (before pushing)
 #   --login            Force re-authentication to the registry (opens browser)
 #   --ci-only          Build only the CI runner image
 #   --playwright-only  Build only the Playwright runner image
@@ -22,11 +23,16 @@ PLAYWRIGHT_IMAGE_NAME="team-distribution/playwright-runner"
 CI_FULL_IMAGE="${REGISTRY}/${CI_IMAGE_NAME}"
 PLAYWRIGHT_FULL_IMAGE="${REGISTRY}/${PLAYWRIGHT_IMAGE_NAME}"
 
+# Local test image names
+CI_TEST_IMAGE="ci-runner-test"
+PLAYWRIGHT_TEST_IMAGE="playwright-runner-test"
+
 # Target platform - CI runners are linux/amd64
 TARGET_PLATFORM="linux/amd64"
 
 # Parse arguments
 DO_PUSH=false
+DO_TEST=false
 FORCE_LOGIN=false
 BUILD_CI=true
 BUILD_PLAYWRIGHT=true
@@ -34,14 +40,16 @@ BUILD_PLAYWRIGHT=true
 for arg in "$@"; do
     case "$arg" in
         --push) DO_PUSH=true ;;
+        --test) DO_TEST=true ;;
         --login) FORCE_LOGIN=true ;;
         --ci-only) BUILD_PLAYWRIGHT=false ;;
         --playwright-only) BUILD_CI=false ;;
         --help|-h)
-            echo "Usage: $0 [--push] [--login] [--ci-only] [--playwright-only]"
+            echo "Usage: $0 [--push] [--test] [--login] [--ci-only] [--playwright-only]"
             echo ""
             echo "Options:"
             echo "  --push             Build and push the images to the registry"
+            echo "  --test             Test the images after building (before pushing)"
             echo "  --login            Force re-authentication to the registry (opens browser)"
             echo "  --ci-only          Build only the CI runner image"
             echo "  --playwright-only  Build only the Playwright runner image"
@@ -50,10 +58,43 @@ for arg in "$@"; do
             echo "  CI Runner:         ${CI_FULL_IMAGE}"
             echo "  Playwright Runner: ${PLAYWRIGHT_FULL_IMAGE}"
             echo ""
+            echo "Examples:"
+            echo "  $0 --test              # Build and test locally"
+            echo "  $0 --test --push       # Build, test, then push if tests pass"
+            echo "  $0 --ci-only --test    # Build and test only CI runner"
+            echo ""
             exit 0
             ;;
     esac
 done
+
+# Test function - runs the test script
+run_tests() {
+    echo ""
+    echo "=========================================="
+    echo "Running Tests"
+    echo "=========================================="
+
+    local test_args="--local"
+
+    if [[ "$BUILD_CI" == "true" && "$BUILD_PLAYWRIGHT" == "true" ]]; then
+        test_args="$test_args --both"
+    elif [[ "$BUILD_CI" == "true" ]]; then
+        test_args="$test_args --ci-runner"
+    elif [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
+        test_args="$test_args --playwright-runner"
+    fi
+
+    if "${SCRIPT_DIR}/test-ci-runner-local.sh" $test_args; then
+        echo ""
+        echo "✅ All tests passed!"
+        return 0
+    else
+        echo ""
+        echo "❌ Tests failed!"
+        return 1
+    fi
+}
 
 # Ensure docker buildx is available for cross-platform builds
 setup_buildx() {
@@ -174,8 +215,16 @@ if [[ "$DO_PUSH" == "true" ]] || [[ "$FORCE_LOGIN" == "true" ]]; then
     echo ""
 fi
 
-# Determine build output - if pushing, push directly; otherwise load to local docker
-if [[ "$DO_PUSH" == "true" ]]; then
+# Determine build output strategy
+# If testing, we build locally first with --load, test, then optionally push
+# If just pushing (no test), we push directly
+if [[ "$DO_TEST" == "true" ]]; then
+    BUILD_OUTPUT="--load"
+    echo "ℹ️  Images will be built locally for testing"
+    if [[ "$DO_PUSH" == "true" ]]; then
+        echo "ℹ️  After tests pass, images will be pushed to registry"
+    fi
+elif [[ "$DO_PUSH" == "true" ]]; then
     BUILD_OUTPUT="--push"
     echo "ℹ️  Images will be pushed directly to registry (required for cross-platform builds)"
 else
@@ -196,13 +245,18 @@ if [[ "$BUILD_CI" == "true" ]]; then
     echo "Copying .tool-versions to docker context..."
     cp "$REPO_ROOT/.tool-versions" "$REPO_ROOT/.github/docker/ci-runner/.tool-versions"
 
+    # Determine image tags based on whether we're testing
+    if [[ "$DO_TEST" == "true" ]]; then
+        CI_BUILD_TAGS="-t ${CI_TEST_IMAGE}:latest"
+    else
+        CI_BUILD_TAGS="-t ${CI_FULL_IMAGE}:latest -t ${CI_FULL_IMAGE}:sha-${TOOLS_HASH} -t ${CI_FULL_IMAGE}:${DATE_TAG}"
+    fi
+
     # Build the image using buildx
     echo "Building image for ${TARGET_PLATFORM}..."
     docker buildx build \
         --platform "${TARGET_PLATFORM}" \
-        -t "${CI_FULL_IMAGE}:latest" \
-        -t "${CI_FULL_IMAGE}:sha-${TOOLS_HASH}" \
-        -t "${CI_FULL_IMAGE}:${DATE_TAG}" \
+        ${CI_BUILD_TAGS} \
         -f "$REPO_ROOT/.github/docker/ci-runner/Dockerfile" \
         ${BUILD_OUTPUT} \
         "$REPO_ROOT/.github/docker/ci-runner"
@@ -212,7 +266,6 @@ if [[ "$BUILD_CI" == "true" ]]; then
 
     echo ""
     echo "✅ CI Runner build complete!"
-    echo "   Tags: latest, sha-${TOOLS_HASH}, ${DATE_TAG}"
 fi
 
 # Build Playwright Runner image
@@ -226,13 +279,18 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     echo "Copying .tool-versions to docker context..."
     cp "$REPO_ROOT/.tool-versions" "$REPO_ROOT/.github/docker/playwright-runner/.tool-versions"
 
+    # Determine image tags based on whether we're testing
+    if [[ "$DO_TEST" == "true" ]]; then
+        PW_BUILD_TAGS="-t ${PLAYWRIGHT_TEST_IMAGE}:latest"
+    else
+        PW_BUILD_TAGS="-t ${PLAYWRIGHT_FULL_IMAGE}:latest -t ${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH} -t ${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
+    fi
+
     # Build the image using buildx
     echo "Building image for ${TARGET_PLATFORM}..."
     docker buildx build \
         --platform "${TARGET_PLATFORM}" \
-        -t "${PLAYWRIGHT_FULL_IMAGE}:latest" \
-        -t "${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}" \
-        -t "${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}" \
+        ${PW_BUILD_TAGS} \
         -f "$REPO_ROOT/.github/docker/playwright-runner/Dockerfile" \
         ${BUILD_OUTPUT} \
         "$REPO_ROOT/.github/docker/playwright-runner"
@@ -242,7 +300,44 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
 
     echo ""
     echo "✅ Playwright Runner build complete!"
-    echo "   Tags: latest, sha-${TOOLS_HASH}, ${DATE_TAG}"
+fi
+
+# Run tests if requested
+if [[ "$DO_TEST" == "true" ]]; then
+    if ! run_tests; then
+        echo ""
+        echo "❌ Tests failed! Not pushing images."
+        exit 1
+    fi
+
+    # If tests passed and push requested, now push the images
+    if [[ "$DO_PUSH" == "true" ]]; then
+        echo ""
+        echo "=========================================="
+        echo "Tests passed! Pushing images to registry..."
+        echo "=========================================="
+
+        # Re-tag test images with final names and push
+        if [[ "$BUILD_CI" == "true" ]]; then
+            echo "Tagging and pushing CI Runner..."
+            docker tag "${CI_TEST_IMAGE}:latest" "${CI_FULL_IMAGE}:latest"
+            docker tag "${CI_TEST_IMAGE}:latest" "${CI_FULL_IMAGE}:sha-${TOOLS_HASH}"
+            docker tag "${CI_TEST_IMAGE}:latest" "${CI_FULL_IMAGE}:${DATE_TAG}"
+            docker push "${CI_FULL_IMAGE}:latest"
+            docker push "${CI_FULL_IMAGE}:sha-${TOOLS_HASH}"
+            docker push "${CI_FULL_IMAGE}:${DATE_TAG}"
+        fi
+
+        if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
+            echo "Tagging and pushing Playwright Runner..."
+            docker tag "${PLAYWRIGHT_TEST_IMAGE}:latest" "${PLAYWRIGHT_FULL_IMAGE}:latest"
+            docker tag "${PLAYWRIGHT_TEST_IMAGE}:latest" "${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}"
+            docker tag "${PLAYWRIGHT_TEST_IMAGE}:latest" "${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
+            docker push "${PLAYWRIGHT_FULL_IMAGE}:latest"
+            docker push "${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}"
+            docker push "${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
+        fi
+    fi
 fi
 
 # Summary
@@ -268,9 +363,19 @@ echo ""
 
 if [[ "$DO_PUSH" == "true" ]]; then
     echo "✅ Images pushed to registry!"
+elif [[ "$DO_TEST" == "true" ]]; then
+    echo "✅ Tests passed! Images built locally as:"
+    [[ "$BUILD_CI" == "true" ]] && echo "  - ${CI_TEST_IMAGE}:latest"
+    [[ "$BUILD_PLAYWRIGHT" == "true" ]] && echo "  - ${PLAYWRIGHT_TEST_IMAGE}:latest"
+    echo ""
+    echo "To push to registry, run:"
+    echo "  $0 --test --push"
 else
-    echo "To build and push to registry, run:"
-    echo "  $0 --push"
+    echo "To test the images locally, run:"
+    echo "  $0 --test"
+    echo ""
+    echo "To build, test, and push to registry, run:"
+    echo "  $0 --test --push"
     echo ""
     echo "Note: Cross-platform images (linux/amd64 on Apple Silicon) must be"
     echo "      pushed directly to registry. Use --push to build and push."
