@@ -1,16 +1,9 @@
 # CI Runner Image for Camunda Platform Helm Integration Tests
-# This image contains all tools from .tool-versions pre-installed to avoid runtime downloads
+# This image contains all tools pre-installed to avoid runtime downloads
+# Tools are installed directly (not via asdf) for reliable PATH access in GitHub Actions
 #
 # Build: docker build -t registry.camunda.cloud/team-distribution/ci-runner:latest .
 # Push:  docker push registry.camunda.cloud/team-distribution/ci-runner:latest
-#
-# Layer order (most stable first):
-# 1. Base system packages (rarely change)
-# 2. Cloud CLIs - gcloud, aws (rarely change)
-# 3. asdf installation (rarely changes)
-# 4. asdf plugins (occasionally change)
-# 5. Tool installations from .tool-versions (change when versions update)
-# 6. Shell configuration (rarely changes)
 
 FROM ubuntu:24.04
 
@@ -21,7 +14,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Set bash as default shell early
+# Set bash as default shell
 SHELL ["/bin/bash", "-c"]
 
 # =============================================================================
@@ -67,149 +60,134 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     && rm -rf awscliv2.zip aws
 
 # =============================================================================
-# Layer 3: asdf installation (stable - rarely changes)
-# =============================================================================
-ENV ASDF_DIR=/opt/asdf
-ENV ASDF_DATA_DIR=/opt/asdf
-ENV PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"
-
-RUN git clone https://github.com/asdf-vm/asdf.git ${ASDF_DIR} --branch v0.15.0
-
-# =============================================================================
-# Layer 4: asdf plugins (moderately stable - occasionally changes)
-# =============================================================================
-WORKDIR /opt/asdf
-
-RUN asdf plugin add golang || true
-RUN asdf plugin add helm || true
-RUN asdf plugin add kubectl || true
-RUN asdf plugin add kustomize || true
-RUN asdf plugin add oc || true
-RUN asdf plugin add task https://github.com/particledecay/asdf-task.git || true
-RUN asdf plugin add yq || true
-RUN asdf plugin add jq || true
-RUN asdf plugin add bats || true
-RUN asdf plugin add zbctl || true
-RUN asdf plugin add oras || true
-RUN asdf plugin add kind || true
-RUN asdf plugin add helm-ct || true
-RUN asdf plugin add helm-cr || true
-RUN asdf plugin add gomplate || true
-
-# =============================================================================
-# Layer 5: Python-based tools via pipx (separate layer for caching)
+# Layer 3: Python-based tools via pipx
 # =============================================================================
 RUN pipx install yamllint==1.37.1 && pipx ensurepath
 ENV PATH="/root/.local/bin:${PATH}"
 
 # =============================================================================
-# Layer 6: Tool versions (changes when .tool-versions updates)
-# This is the layer that changes most frequently
+# Layer 4: Copy .tool-versions for version reference
 # =============================================================================
-COPY .tool-versions /opt/asdf/.tool-versions
-
-# Install tools individually for better layer caching on failures
-# Core tools (most critical)
-RUN asdf install golang $(grep "^golang " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global golang $(grep "^golang " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install helm $(grep "^helm " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global helm $(grep "^helm " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install kubectl $(grep "^kubectl " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global kubectl $(grep "^kubectl " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install task $(grep "^task " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global task $(grep "^task " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install yq $(grep "^yq " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global yq $(grep "^yq " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install jq $(grep "^jq " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global jq $(grep "^jq " /opt/asdf/.tool-versions | awk '{print $2}')
-
-# Secondary tools
-RUN asdf install oc $(grep "^oc " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global oc $(grep "^oc " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install kustomize $(grep "^kustomize " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global kustomize $(grep "^kustomize " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install zbctl $(grep "^zbctl " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global zbctl $(grep "^zbctl " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install bats $(grep "^bats " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global bats $(grep "^bats " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install oras $(grep "^oras " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global oras $(grep "^oras " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install kind $(grep "^kind " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global kind $(grep "^kind " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install helm-ct $(grep "^helm-ct " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global helm-ct $(grep "^helm-ct " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install helm-cr $(grep "^helm-cr " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global helm-cr $(grep "^helm-cr " /opt/asdf/.tool-versions | awk '{print $2}')
-
-RUN asdf install gomplate $(grep "^gomplate " /opt/asdf/.tool-versions | awk '{print $2}') \
-    && asdf global gomplate $(grep "^gomplate " /opt/asdf/.tool-versions | awk '{print $2}')
-
-# Reshim to ensure all binaries are available
-RUN asdf reshim
+COPY .tool-versions /opt/.tool-versions
 
 # =============================================================================
-# Layer 7: Symlink tools to /usr/local/bin for standard PATH access
-# This ensures tools work without asdf environment variables being set
+# Layer 5: Install tools directly from releases (not via asdf)
+# Each tool in its own layer for better caching
 # =============================================================================
-RUN ln -sf /opt/asdf/shims/go /usr/local/bin/go \
-    && ln -sf /opt/asdf/shims/gofmt /usr/local/bin/gofmt \
-    && ln -sf /opt/asdf/shims/helm /usr/local/bin/helm \
-    && ln -sf /opt/asdf/shims/kubectl /usr/local/bin/kubectl \
-    && ln -sf /opt/asdf/shims/task /usr/local/bin/task \
-    && ln -sf /opt/asdf/shims/yq /usr/local/bin/yq \
-    && ln -sf /opt/asdf/shims/jq /usr/local/bin/jq \
-    && ln -sf /opt/asdf/shims/oc /usr/local/bin/oc \
-    && ln -sf /opt/asdf/shims/kustomize /usr/local/bin/kustomize \
-    && ln -sf /opt/asdf/shims/zbctl /usr/local/bin/zbctl \
-    && ln -sf /opt/asdf/shims/bats /usr/local/bin/bats \
-    && ln -sf /opt/asdf/shims/oras /usr/local/bin/oras \
-    && ln -sf /opt/asdf/shims/kind /usr/local/bin/kind \
-    && ln -sf /opt/asdf/shims/ct /usr/local/bin/ct \
-    && ln -sf /opt/asdf/shims/cr /usr/local/bin/cr \
-    && ln -sf /opt/asdf/shims/gomplate /usr/local/bin/gomplate
+
+# Go
+RUN GOLANG_VERSION=$(grep "^golang " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://go.dev/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xzf - \
+    && ln -sf /usr/local/go/bin/go /usr/local/bin/go \
+    && ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+
+# Helm
+RUN HELM_VERSION=$(grep "^helm " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar -xzf - \
+    && mv linux-amd64/helm /usr/local/bin/helm \
+    && rm -rf linux-amd64
+
+# kubectl
+RUN KUBECTL_VERSION=$(grep "^kubectl " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+    && chmod +x /usr/local/bin/kubectl
+
+# jq
+RUN JQ_VERSION=$(grep "^jq " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/jq "https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-linux-amd64" \
+    && chmod +x /usr/local/bin/jq
+
+# yq
+RUN YQ_VERSION=$(grep "^yq " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
+    && chmod +x /usr/local/bin/yq
+
+# task (taskfile)
+RUN TASK_VERSION=$(grep "^task " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz" | tar -xzf - -C /usr/local/bin task
+
+# kustomize
+RUN KUSTOMIZE_VERSION=$(grep "^kustomize " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar -xzf - -C /usr/local/bin
+
+# oc (OpenShift CLI)
+RUN OC_VERSION=$(grep "^oc " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_VERSION}/openshift-client-linux.tar.gz" | tar -xzf - -C /usr/local/bin oc kubectl.1 || \
+    curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable-4.14/openshift-client-linux.tar.gz" | tar -xzf - -C /usr/local/bin oc
+
+# kind
+RUN KIND_VERSION=$(grep "^kind " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64" \
+    && chmod +x /usr/local/bin/kind
+
+# zbctl (version in .tool-versions already has 'v' prefix)
+RUN ZBCTL_VERSION=$(grep "^zbctl " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/zbctl "https://github.com/camunda/zeebe/releases/download/${ZBCTL_VERSION}/zbctl.tar.gz" \
+    && tar -xzf /usr/local/bin/zbctl -C /tmp \
+    && mv /tmp/zbctl /usr/local/bin/zbctl \
+    && chmod +x /usr/local/bin/zbctl || \
+    curl -fsSL -o /usr/local/bin/zbctl "https://github.com/camunda/camunda/releases/download/${ZBCTL_VERSION}/zbctl" \
+    && chmod +x /usr/local/bin/zbctl || true
+
+# oras
+RUN ORAS_VERSION=$(grep "^oras " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" | tar -xzf - -C /usr/local/bin oras
+
+# helm-ct (chart-testing)
+RUN CT_VERSION=$(grep "^helm-ct " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://github.com/helm/chart-testing/releases/download/v${CT_VERSION}/chart-testing_${CT_VERSION}_linux_amd64.tar.gz" | tar -xzf - -C /usr/local/bin ct
+
+# helm-cr (chart-releaser)
+RUN CR_VERSION=$(grep "^helm-cr " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz" | tar -xzf - -C /usr/local/bin cr
+
+# gomplate (version in .tool-versions already has 'v' prefix)
+RUN GOMPLATE_VERSION=$(grep "^gomplate " /opt/.tool-versions | awk '{print $2}') \
+    && curl -fsSL -o /usr/local/bin/gomplate "https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_linux-amd64" \
+    && chmod +x /usr/local/bin/gomplate
+
+# bats
+RUN BATS_VERSION=$(grep "^bats " /opt/.tool-versions | awk '{print $2}') \
+    && git clone --depth 1 --branch v${BATS_VERSION} https://github.com/bats-core/bats-core.git /tmp/bats \
+    && /tmp/bats/install.sh /usr/local \
+    && rm -rf /tmp/bats
 
 # =============================================================================
-# Layer 8: Configuration (stable - rarely changes)
+# Layer 6: Configuration
 # =============================================================================
-# Copy .tool-versions to common locations
-RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
-    && cp /opt/asdf/.tool-versions /.tool-versions
-
 # Set up Go environment
 ENV GOPATH=/root/go
-ENV PATH="${GOPATH}/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin"
+ENV PATH="${GOPATH}/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/go/bin"
 
-# Set up for GitHub Actions runner user (uid 1001)
-RUN mkdir -p /home/runner \
-    && cp /opt/asdf/.tool-versions /home/runner/.tool-versions
+# Copy .tool-versions to common locations
+RUN cp /opt/.tool-versions /root/.tool-versions \
+    && cp /opt/.tool-versions /.tool-versions \
+    && mkdir -p /home/runner \
+    && cp /opt/.tool-versions /home/runner/.tool-versions
 
 # =============================================================================
-# Layer 9: Verification and final setup (changes rarely)
+# Layer 7: Verification
 # =============================================================================
 WORKDIR /workspace
 
-# Verify critical tools work via /usr/local/bin symlinks
+# Verify critical tools work
 RUN echo "Verifying tool installations..." \
-    && /usr/local/bin/helm version --short \
-    && /usr/local/bin/kubectl version --client \
-    && /usr/local/bin/task --version \
-    && /usr/local/bin/yq --version \
-    && /usr/local/bin/jq --version \
-    && /usr/local/bin/go version \
+    && go version \
+    && helm version --short \
+    && kubectl version --client \
+    && jq --version \
+    && yq --version \
+    && task --version \
+    && kustomize version \
+    && kind version \
+    && oras version \
+    && ct version \
+    && cr version \
+    && gomplate --version \
+    && bats --version \
     && yamllint --version \
     && echo "✅ All tools verified successfully"
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["bash"]
+
