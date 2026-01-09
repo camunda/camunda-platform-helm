@@ -243,8 +243,8 @@ jobs:
     container:
       image: registry.camunda.cloud/team-distribution/ci-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ secrets.NEXUS_USERNAME }}
+        password: ${{ secrets.NEXUS_PASSWORD }}
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
@@ -595,8 +595,8 @@ jobs:
     container:
       image: registry.camunda.cloud/team-distribution/ci-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ secrets.NEXUS_USERNAME }}
+        password: ${{ secrets.NEXUS_PASSWORD }}
     needs: [install]
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
@@ -831,8 +831,8 @@ jobs:
     container:
       image: registry.camunda.cloud/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ secrets.NEXUS_USERNAME }}
+        password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
@@ -891,8 +891,8 @@ jobs:
     container:
       image: registry.camunda.cloud/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ secrets.NEXUS_USERNAME }}
+        password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
@@ -951,8 +951,8 @@ jobs:
     container:
       image: registry.camunda.cloud/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ secrets.NEXUS_USERNAME }}
+        password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
     timeout-minutes: 20
@@ -1010,8 +1010,8 @@ jobs:
     container:
       image: registry.camunda.cloud/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ secrets.NEXUS_USERNAME }}
+        password: ${{ secrets.NEXUS_PASSWORD }}
       options: --ipc=host
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
     timeout-minutes: 20
@@ -1147,8 +1147,8 @@ jobs:
     container:
       image: registry.camunda.cloud/team-distribution/ci-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ secrets.NEXUS_USERNAME }}
+        password: ${{ secrets.NEXUS_PASSWORD }}
     permissions:
       contents: read
       id-token: write
