@@ -71,30 +71,23 @@ global:
         existingSecret: $ENTRA_APP_CLIENT_SECRET
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
-
 operate:
   contextPath: "/operate"
-
 tasklist:
   contextPath: "/tasklist"
-
 identityKeycloak:
   enabled: false
-
 optimize:
   enabled: true
   contextPath: "/optimize"
-
 webModeler:
   enabled: true
   contextPath: "/modeler"
   restapi:
     mail:
       fromAddress: "fake@fake.com"
-
 postgresql:
   enabled: true
-
 console:
   enabled: true
   contextPath: "/"
@@ -120,19 +113,17 @@ console:
                       url: "https://docs.camunda.io"
   env:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-      value: 'true'      
+      value: 'true'
     - name: CAMUNDA_IDENTITY_JWKS_URL
       value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
-
 identity:
   contextPath: "/identity"
   enabled: true
-
 identityPostgresql:
   enabled: true
-
 connectors:
   contextPath: "/connectors"
   env:
     - name: OPERATE_CLIENT_SCOPE
       value: $ENTRA_APP_CLIENT_ID/.default
+orchestration: {}

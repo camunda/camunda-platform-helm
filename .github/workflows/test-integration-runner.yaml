@@ -181,6 +181,11 @@ on:
         required: false
         default: ""
         type: string
+      include-image-tags:
+        description: Include the image tags file for substitution from values-config
+        required: false
+        default: false
+        type: boolean
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -510,10 +515,16 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
+          IMAGE_TAGS_ARG=""
+          if [[ "${{ inputs.include-image-tags }}" == "true" ]]; then
+            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
+          fi
+
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
+            $IMAGE_TAGS_ARG \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
             --interactive false
@@ -758,10 +769,16 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
+          IMAGE_TAGS_ARG=""
+          if [[ "${{ inputs.include-image-tags }}" == "true" ]]; then
+            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
+          fi
+
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
+            $IMAGE_TAGS_ARG \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
             --interactive false
