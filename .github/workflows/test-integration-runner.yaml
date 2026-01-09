@@ -510,11 +510,16 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
+          IMAGE_TAGS_ARG=""
+          if echo '${{ inputs.values-config }}' | grep -q "E2E_TESTS_CONSOLE_IMAGE_TAG"; then
+            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
+          fi
+
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
-            --image-tags-file "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml" \
+            $IMAGE_TAGS_ARG \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
             --interactive false
@@ -759,11 +764,16 @@ jobs:
           TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
         run: |
+          IMAGE_TAGS_ARG=""
+          if echo '${{ inputs.values-config }}' | grep -q "E2E_TESTS_CONSOLE_IMAGE_TAG"; then
+            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
+          fi
+
           ./scripts/prepare-helm-values.sh \
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
-            --image-tags-file "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml" \
+            $IMAGE_TAGS_ARG \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
             --interactive false
