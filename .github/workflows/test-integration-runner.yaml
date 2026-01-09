@@ -514,6 +514,7 @@ jobs:
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
+            --image-tags-file "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml" \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
             --interactive false
@@ -762,6 +763,7 @@ jobs:
             --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
             --scenario "${{ inputs.scenario }}" \
             --values-config '${{ inputs.values-config }}' \
+            --image-tags-file "${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml" \
             --license-key "${E2E_TESTS_LICENSE_KEY}" \
             --log-level debug \
             --interactive false
