@@ -1,5 +1,39 @@
 # Changelog
 
+## [13.4.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.3.2...camunda-platform-8.8-13.4.0) (2026-01-08)
+
+
+### Features
+
+* enable first user and add additional users with roles in qa scenario ([#4889](https://github.com/camunda/camunda-platform-helm/issues/4889)) ([159b39f](https://github.com/camunda/camunda-platform-helm/commit/159b39fe82262a24a9830e0b687e04f081ef7ffc))
+
+
+### Bug Fixes
+
+* remove constraint of identity.enabled=false and optimize.enabled=true ([#4910](https://github.com/camunda/camunda-platform-helm/issues/4910)) ([0753d6f](https://github.com/camunda/camunda-platform-helm/commit/0753d6fc58336e9538856c9dd88aca52777a40ac))
+
+
+### Documentation
+
+* update readme dependency section ([#4960](https://github.com/camunda/camunda-platform-helm/issues/4960)) ([3ddfb86](https://github.com/camunda/camunda-platform-helm/commit/3ddfb860ff8c4355a3ef2c0f2a5f71195f929e40))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#4891](https://github.com/camunda/camunda-platform-helm/issues/4891)) ([b51a8f0](https://github.com/camunda/camunda-platform-helm/commit/b51a8f0c8661193b738eb3e99bfeb679c3a92741))
+* update camunda-platform-digests ([#4939](https://github.com/camunda/camunda-platform-helm/issues/4939)) ([2a45096](https://github.com/camunda/camunda-platform-helm/commit/2a450962ba4b0cc7ab374a13ac13f65ff64650a6))
+* update camunda-platform-digests ([#4941](https://github.com/camunda/camunda-platform-helm/issues/4941)) ([e0be86d](https://github.com/camunda/camunda-platform-helm/commit/e0be86d30985e801c04072b66f45db1fe79af21b))
+* update camunda-platform-digests ([#4963](https://github.com/camunda/camunda-platform-helm/issues/4963)) ([e514afd](https://github.com/camunda/camunda-platform-helm/commit/e514afd03d84da86a6dc2a1a2a00fb80d5d235ed))
+* update camunda-platform-images (patch) ([#4923](https://github.com/camunda/camunda-platform-helm/issues/4923)) ([94829aa](https://github.com/camunda/camunda-platform-helm/commit/94829aaba5c970f84d0c6ccd01cec67a37d463e9))
+* update camunda-platform-images (patch) ([#4946](https://github.com/camunda/camunda-platform-helm/issues/4946)) ([bceb9d1](https://github.com/camunda/camunda-platform-helm/commit/bceb9d13dee52708b4a625ee31e5f282d868fd99))
+* update camunda-platform-images (patch) ([#4964](https://github.com/camunda/camunda-platform-helm/issues/4964)) ([9abc71b](https://github.com/camunda/camunda-platform-helm/commit/9abc71bf7b0d88bf340059fb66ebff3fe05d9120))
+* update camunda/camunda docker tag to v8.8.9 ([#4952](https://github.com/camunda/camunda-platform-helm/issues/4952)) ([ce88e07](https://github.com/camunda/camunda-platform-helm/commit/ce88e076a2a87092dcddfb5fb4a7fbc44beabd99))
+* update camunda/console docker tag to v8.8.70 ([#4928](https://github.com/camunda/camunda-platform-helm/issues/4928)) ([0ff4033](https://github.com/camunda/camunda-platform-helm/commit/0ff4033df8edd1e1926a265f4cb5c6a884c15e03))
+* update camunda/identity docker tag to v8.8.6 ([#4945](https://github.com/camunda/camunda-platform-helm/issues/4945)) ([f3f0616](https://github.com/camunda/camunda-platform-helm/commit/f3f0616b26e9cf9ceba8f5c5a3af3e65d5d01489))
+* update minor-updates (minor) ([#4929](https://github.com/camunda/camunda-platform-helm/issues/4929)) ([6a63cdc](https://github.com/camunda/camunda-platform-helm/commit/6a63cdc23cdc6d17b7cec3aa8ea55c40eae7d372))
+* update patch-updates (patch) ([#4924](https://github.com/camunda/camunda-platform-helm/issues/4924)) ([8814e76](https://github.com/camunda/camunda-platform-helm/commit/8814e76c6fa71cc4db57051db959b4cec20ef9a1))
+* update patch-updates (patch) ([#4965](https://github.com/camunda/camunda-platform-helm/issues/4965)) ([0f1fb59](https://github.com/camunda/camunda-platform-helm/commit/0f1fb590b96d7e124835b10c2a69ddbb31af4e34))
+
 ## [13.3.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.3.1...camunda-platform-8.8-13.3.2) (2025-12-11)
 
 
