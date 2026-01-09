@@ -282,6 +282,8 @@
         // bump these to whatever the latest alpha is
         'charts/camunda-platform-8.9/Chart.yaml',
       ],
+      // force permanent unstable updates for a packages (e.g. alpha, see https://docs.renovatebot.com/configuration-options/#ignoreunstable)
+      ignoreUnstable: false,
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
     {
@@ -362,19 +364,6 @@
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
-    },
-    {
-      enabled: true,
-      matchDatasources: [
-        'github-tags',
-      ],
-      matchPackageNames: [
-        'camunda/camunda',
-      ],
-      matchFileNames: [
-        'charts/camunda-platform-8.9/Chart.yaml',
-      ],
-      versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
     {
       matchFileNames: [
