@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.tasklist.configuration }}
   application.yaml: |
-    {{ .Values.tasklist.configuration | indent 4 | trim }}
+    {{ tpl .Values.tasklist.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     {{- if .Values.tasklist.contextPath }}
@@ -150,6 +150,6 @@ data:
   {{- end }}
   {{- range $key, $val := .Values.tasklist.extraConfiguration }}
   {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+    {{ tpl $val $ | indent 4 | trim }}
   {{- end }}
 {{- end }}
