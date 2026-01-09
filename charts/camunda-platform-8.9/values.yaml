@@ -2783,6 +2783,203 @@ orchestration:
             maxLifetime: ""
             ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.connectionTimeout defines the maximum time to wait for a connection from the pool
             connectionTimeout: ""
+      ## @extra orchestration.data.secondaryStorage.elasticsearch configuration for Elasticsearch as secondary storage. These values override global.elasticsearch settings when specified.
+      elasticsearch:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.url the Elasticsearch URL, overrides global.elasticsearch when specified
+        url:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.username the Elasticsearch username, overrides global.elasticsearch.auth.username when specified
+        username:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.secret configuration to provide the Elasticsearch password secret
+        secret:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          existingSecret:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+          existingSecretKey:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage
+          inlineSecret:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.indexPrefix the prefix to use for Elasticsearch indices, overrides orchestration.index.prefix when specified
+        indexPrefix:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.clusterName the Elasticsearch cluster name, overrides global.elasticsearch.clusterName when specified
+        clusterName:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.dateFormat the date format to use for Elasticsearch indices
+        dateFormat:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.numberOfShards the number of shards for Elasticsearch indices
+        numberOfShards:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.numberOfReplicas the number of replicas for Elasticsearch indices, overrides orchestration.index.replicas when specified
+        numberOfReplicas:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.variableSizeThreshold the threshold size for variables in bytes
+        variableSizeThreshold:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.numberOfReplicasPerIndex a map of index names to their replica counts for fine-grained control
+        numberOfReplicasPerIndex:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.numberOfShardsPerIndex a map of index names to their shard counts for fine-grained control
+        numberOfShardsPerIndex:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.security configuration for Elasticsearch security settings
+        security:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.security.enabled if true, enables SSL/TLS security for Elasticsearch connections
+          enabled:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.security.verifyHostname if true, verifies the hostname in the SSL certificate
+          verifyHostname:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.security.selfSigned if true, allows self-signed SSL certificates
+          selfSigned:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.interceptorPlugins a list of interceptor plugins to use for Elasticsearch
+        interceptorPlugins:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.history configuration for history and archiving settings
+        history:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.processInstanceEnabled if true, enables process instance history
+          processInstanceEnabled:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.elsRolloverDateFormat the date format used for index rollover
+          elsRolloverDateFormat:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.rolloverInterval the interval for index rollover (e.g., "1d")
+          rolloverInterval:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.rolloverBatchSize the batch size for rollover operations
+          rolloverBatchSize:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.waitPeriodBeforeArchiving the wait period before archiving indices (e.g., "1h")
+          waitPeriodBeforeArchiving:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.delayBetweenRuns the delay between archiving runs (ISO8601 Duration)
+          delayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.maxDelayBetweenRuns the maximum delay between archiving runs (ISO8601 Duration)
+          maxDelayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.history.policyName the ILM policy name for retention, overrides orchestration.history.retention.policyName when specified
+          policyName:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.createSchema if true, creates the Elasticsearch schema automatically
+        createSchema:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.incidentNotifier configuration for incident notification
+        incidentNotifier:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.incidentNotifier.auth0Protocol the protocol to use for Auth0 integration
+          auth0Protocol:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.batchOperationCache configuration for batch operation caching
+        batchOperationCache:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.batchOperationCache.maxSize the maximum number of batch operations to cache
+          maxSize:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.processCache configuration for process caching
+        processCache:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.processCache.maxSize the maximum number of processes to cache
+          maxSize:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.formCache configuration for form caching
+        formCache:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.formCache.maxSize the maximum number of forms to cache
+          maxSize:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.postExport configuration for post-export processing
+        postExport:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.postExport.batchSize the batch size for post-export operations
+          batchSize:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.postExport.delayBetweenRuns the delay between post-export runs (ISO8601 Duration)
+          delayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.postExport.maxDelayBetweenRuns the maximum delay between post-export runs (ISO8601 Duration)
+          maxDelayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.postExport.ignoreMissingData if true, ignores missing data during post-export
+          ignoreMissingData:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.batchOperations configuration for batch operations
+        batchOperations:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.batchOperations.exportItemsOnCreation if true, exports batch operation items when they are created
+          exportItemsOnCreation:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.bulk configuration for bulk operations
+        bulk:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.bulk.delay the delay for bulk operations (ISO8601 Duration)
+          delay:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.bulk.size the maximum number of items in a bulk request
+          size:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.bulk.memoryLimit the memory limit for bulk operations (e.g., "20971520B")
+          memoryLimit:
+      ## @extra orchestration.data.secondaryStorage.opensearch configuration for OpenSearch as secondary storage. These values override global.opensearch settings when specified.
+      opensearch:
+        ## @param orchestration.data.secondaryStorage.opensearch.url the OpenSearch URL, overrides global.opensearch when specified
+        url:
+        ## @param orchestration.data.secondaryStorage.opensearch.username the OpenSearch username, overrides global.opensearch.auth.username when specified
+        username:
+        ## @extra orchestration.data.secondaryStorage.opensearch.secret configuration to provide the OpenSearch password secret
+        secret:
+          ## @param orchestration.data.secondaryStorage.opensearch.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          existingSecret:
+          ## @param orchestration.data.secondaryStorage.opensearch.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+          existingSecretKey:
+          ## @param orchestration.data.secondaryStorage.opensearch.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage
+          inlineSecret:
+        ## @param orchestration.data.secondaryStorage.opensearch.indexPrefix the prefix to use for OpenSearch indices, overrides orchestration.index.prefix when specified
+        indexPrefix:
+        ## @param orchestration.data.secondaryStorage.opensearch.clusterName the OpenSearch cluster name, overrides global.opensearch.clusterName when specified
+        clusterName:
+        ## @param orchestration.data.secondaryStorage.opensearch.dateFormat the date format to use for OpenSearch indices
+        dateFormat:
+        ## @param orchestration.data.secondaryStorage.opensearch.numberOfShards the number of shards for OpenSearch indices
+        numberOfShards:
+        ## @param orchestration.data.secondaryStorage.opensearch.numberOfReplicas the number of replicas for OpenSearch indices, overrides orchestration.index.replicas when specified
+        numberOfReplicas:
+        ## @param orchestration.data.secondaryStorage.opensearch.variableSizeThreshold the threshold size for variables in bytes
+        variableSizeThreshold:
+        ## @param orchestration.data.secondaryStorage.opensearch.numberOfReplicasPerIndex a map of index names to their replica counts for fine-grained control
+        numberOfReplicasPerIndex:
+        ## @param orchestration.data.secondaryStorage.opensearch.numberOfShardsPerIndex a map of index names to their shard counts for fine-grained control
+        numberOfShardsPerIndex:
+        ## @extra orchestration.data.secondaryStorage.opensearch.security configuration for OpenSearch security settings
+        security:
+          ## @param orchestration.data.secondaryStorage.opensearch.security.enabled if true, enables SSL/TLS security for OpenSearch connections
+          enabled:
+          ## @param orchestration.data.secondaryStorage.opensearch.security.verifyHostname if true, verifies the hostname in the SSL certificate
+          verifyHostname:
+          ## @param orchestration.data.secondaryStorage.opensearch.security.selfSigned if true, allows self-signed SSL certificates
+          selfSigned:
+        ## @param orchestration.data.secondaryStorage.opensearch.interceptorPlugins a list of interceptor plugins to use for OpenSearch
+        interceptorPlugins:
+        ## @extra orchestration.data.secondaryStorage.opensearch.history configuration for history and archiving settings
+        history:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.processInstanceEnabled if true, enables process instance history
+          processInstanceEnabled:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.elsRolloverDateFormat the date format used for index rollover
+          elsRolloverDateFormat:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.rolloverInterval the interval for index rollover (e.g., "1d")
+          rolloverInterval:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.rolloverBatchSize the batch size for rollover operations
+          rolloverBatchSize:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.waitPeriodBeforeArchiving the wait period before archiving indices (e.g., "1h")
+          waitPeriodBeforeArchiving:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.delayBetweenRuns the delay between archiving runs (ISO8601 Duration)
+          delayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.maxDelayBetweenRuns the maximum delay between archiving runs (ISO8601 Duration)
+          maxDelayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.opensearch.history.policyName the ILM policy name for retention, overrides orchestration.history.retention.policyName when specified
+          policyName:
+        ## @param orchestration.data.secondaryStorage.opensearch.createSchema if true, creates the OpenSearch schema automatically
+        createSchema:
+        ## @extra orchestration.data.secondaryStorage.opensearch.incidentNotifier configuration for incident notification
+        incidentNotifier:
+          ## @param orchestration.data.secondaryStorage.opensearch.incidentNotifier.auth0Protocol the protocol to use for Auth0 integration
+          auth0Protocol:
+        ## @extra orchestration.data.secondaryStorage.opensearch.batchOperationCache configuration for batch operation caching
+        batchOperationCache:
+          ## @param orchestration.data.secondaryStorage.opensearch.batchOperationCache.maxSize the maximum number of batch operations to cache
+          maxSize:
+        ## @extra orchestration.data.secondaryStorage.opensearch.processCache configuration for process caching
+        processCache:
+          ## @param orchestration.data.secondaryStorage.opensearch.processCache.maxSize the maximum number of processes to cache
+          maxSize:
+        ## @extra orchestration.data.secondaryStorage.opensearch.formCache configuration for form caching
+        formCache:
+          ## @param orchestration.data.secondaryStorage.opensearch.formCache.maxSize the maximum number of forms to cache
+          maxSize:
+        ## @extra orchestration.data.secondaryStorage.opensearch.postExport configuration for post-export processing
+        postExport:
+          ## @param orchestration.data.secondaryStorage.opensearch.postExport.batchSize the batch size for post-export operations
+          batchSize:
+          ## @param orchestration.data.secondaryStorage.opensearch.postExport.delayBetweenRuns the delay between post-export runs (ISO8601 Duration)
+          delayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.opensearch.postExport.maxDelayBetweenRuns the maximum delay between post-export runs (ISO8601 Duration)
+          maxDelayBetweenRuns:
+          ## @param orchestration.data.secondaryStorage.opensearch.postExport.ignoreMissingData if true, ignores missing data during post-export
+          ignoreMissingData:
+        ## @extra orchestration.data.secondaryStorage.opensearch.batchOperations configuration for batch operations
+        batchOperations:
+          ## @param orchestration.data.secondaryStorage.opensearch.batchOperations.exportItemsOnCreation if true, exports batch operation items when they are created
+          exportItemsOnCreation:
+        ## @extra orchestration.data.secondaryStorage.opensearch.bulk configuration for bulk operations
+        bulk:
+          ## @param orchestration.data.secondaryStorage.opensearch.bulk.delay the delay for bulk operations (ISO8601 Duration)
+          delay:
+          ## @param orchestration.data.secondaryStorage.opensearch.bulk.size the maximum number of items in a bulk request
+          size:
+          ## @param orchestration.data.secondaryStorage.opensearch.bulk.memoryLimit the memory limit for bulk operations (e.g., "20971520B")
+          memoryLimit:
+
   ## @param orchestration.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
   ## @param orchestration.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters

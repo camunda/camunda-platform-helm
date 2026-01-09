@@ -351,9 +351,9 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 		{
 			Name: "TestApplicationYamlShouldContainRDBMSMaxQueueSizeMemoryLimit",
 			Values: map[string]string{
-				"orchestration.exporters.rdbms.enabled":                  "true",
-				"orchestration.data.secondaryStorage.rdbms.url":          "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondaryStorage.rdbms.username":     "camunda",
+				"orchestration.exporters.rdbms.enabled":                      "true",
+				"orchestration.data.secondaryStorage.rdbms.url":              "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":         "camunda",
 				"orchestration.data.secondaryStorage.rdbms.queueMemoryLimit": "5000",
 			},
 			Expected: map[string]string{
@@ -574,6 +574,619 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 			},
 			Expected: map[string]string{
 				"configmapApplication.camunda.data.secondary-storage.type": "custom-type",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearch() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestElasticsearchUrlOverridesGlobal",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.url": "http://custom-elasticsearch:9200",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.url": "http://custom-elasticsearch:9200",
+			},
+		},
+		{
+			Name: "TestElasticsearchUrlFallsBackToGlobal",
+			Values: map[string]string{
+				"global.elasticsearch.url.host": "global-elasticsearch",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.url": "http://global-elasticsearch:9200",
+			},
+		},
+		{
+			Name: "TestElasticsearchUsernameOverridesGlobal",
+			Values: map[string]string{
+				"global.elasticsearch.auth.username":                         "global-user",
+				"orchestration.data.secondaryStorage.elasticsearch.username": "custom-user",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.username": "custom-user",
+			},
+		},
+		{
+			Name: "TestElasticsearchUsernameFallsBackToGlobal",
+			Values: map[string]string{
+				"global.elasticsearch.auth.username": "global-user",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.username": "global-user",
+			},
+		},
+		{
+			Name: "TestElasticsearchClusterNameOverridesGlobal",
+			Values: map[string]string{
+				"global.elasticsearch.clusterName":                              "global-cluster",
+				"orchestration.data.secondaryStorage.elasticsearch.clusterName": "custom-cluster",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.clusterName": "custom-cluster",
+			},
+		},
+		{
+			Name: "TestElasticsearchClusterNameFallsBackToGlobal",
+			Values: map[string]string{
+				"global.elasticsearch.clusterName": "global-cluster",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.clusterName": "global-cluster",
+			},
+		},
+		{
+			Name: "TestElasticsearchIndexPrefixOverridesOrchestration",
+			Values: map[string]string{
+				"orchestration.index.prefix":                                    "orchestration-prefix",
+				"orchestration.data.secondaryStorage.elasticsearch.indexPrefix": "custom-prefix",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.indexPrefix": "custom-prefix",
+			},
+		},
+		{
+			Name: "TestElasticsearchIndexPrefixFallsBackToOrchestration",
+			Values: map[string]string{
+				"orchestration.index.prefix": "orchestration-prefix",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.indexPrefix": "orchestration-prefix",
+			},
+		},
+		{
+			Name: "TestElasticsearchNumberOfReplicasOverridesOrchestration",
+			Values: map[string]string{
+				"orchestration.index.replicas":                                       "2",
+				"orchestration.data.secondaryStorage.elasticsearch.numberOfReplicas": "5",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.numberOfReplicas": "5",
+			},
+		},
+		{
+			Name: "TestElasticsearchNumberOfReplicasFallsBackToOrchestration",
+			Values: map[string]string{
+				"orchestration.index.replicas": "3",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.numberOfReplicas": "3",
+			},
+		},
+		{
+			Name: "TestElasticsearchDateFormat",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.dateFormat": "yyyy-MM-dd",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.dateFormat": "yyyy-MM-dd",
+			},
+		},
+		{
+			Name: "TestElasticsearchNumberOfShards",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.numberOfShards": "3",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.numberOfShards": "3",
+			},
+		},
+		{
+			Name: "TestElasticsearchVariableSizeThreshold",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.variableSizeThreshold": "16000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.variableSizeThreshold": "16000",
+			},
+		},
+		{
+			Name: "TestElasticsearchSecurityEnabled",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.security.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.security.enabled": "true",
+			},
+		},
+		{
+			Name: "TestElasticsearchSecurityVerifyHostname",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.security.verifyHostname": "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.security.verifyHostname": "false",
+			},
+		},
+		{
+			Name: "TestElasticsearchSecuritySelfSigned",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.security.selfSigned": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.security.selfSigned": "true",
+			},
+		},
+		{
+			Name: "TestElasticsearchHistoryPolicyNameOverridesRetention",
+			Values: map[string]string{
+				"orchestration.history.retention.enabled":                              "true",
+				"orchestration.history.retention.policyName":                           "global-policy",
+				"orchestration.data.secondaryStorage.elasticsearch.history.policyName": "custom-policy",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.policyName": "custom-policy",
+			},
+		},
+		{
+			Name: "TestElasticsearchHistoryPolicyNameFallsBackToRetention",
+			Values: map[string]string{
+				"orchestration.history.retention.enabled":    "true",
+				"orchestration.history.retention.policyName": "global-policy",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.policyName": "global-policy",
+			},
+		},
+		{
+			Name: "TestElasticsearchHistoryRolloverSettings",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.history.elsRolloverDateFormat":     "date",
+				"orchestration.data.secondaryStorage.elasticsearch.history.rolloverInterval":          "7d",
+				"orchestration.data.secondaryStorage.elasticsearch.history.rolloverBatchSize":         "200",
+				"orchestration.data.secondaryStorage.elasticsearch.history.waitPeriodBeforeArchiving": "2h",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.elsRolloverDateFormat":     "date",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.rolloverInterval":          "7d",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.rolloverBatchSize":         "200",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.waitPeriodBeforeArchiving": "2h",
+			},
+		},
+		{
+			Name: "TestElasticsearchHistoryDelaySettings",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.history.delayBetweenRuns":    "PT5S",
+				"orchestration.data.secondaryStorage.elasticsearch.history.maxDelayBetweenRuns": "PT2M",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.delayBetweenRuns":    "PT5S",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.history.maxDelayBetweenRuns": "PT2M",
+			},
+		},
+		{
+			Name: "TestElasticsearchCreateSchema",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.createSchema": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.createSchema": "true",
+			},
+		},
+		{
+			Name: "TestElasticsearchIncidentNotifier",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.incidentNotifier.auth0Protocol": "https",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.incidentNotifier.auth0Protocol": "https",
+			},
+		},
+		{
+			Name: "TestElasticsearchBatchOperationCacheMaxSize",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.batchOperationCache.maxSize": "20000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.batchOperationCache.maxSize": "20000",
+			},
+		},
+		{
+			Name: "TestElasticsearchProcessCacheMaxSize",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.processCache.maxSize": "15000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.processCache.maxSize": "15000",
+			},
+		},
+		{
+			Name: "TestElasticsearchFormCacheMaxSize",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.formCache.maxSize": "5000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.formCache.maxSize": "5000",
+			},
+		},
+		{
+			Name: "TestElasticsearchPostExportSettings",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.postExport.batchSize":           "200",
+				"orchestration.data.secondaryStorage.elasticsearch.postExport.delayBetweenRuns":    "PT3S",
+				"orchestration.data.secondaryStorage.elasticsearch.postExport.maxDelayBetweenRuns": "PT2M",
+				"orchestration.data.secondaryStorage.elasticsearch.postExport.ignoreMissingData":   "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.postExport.batchSize":           "200",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.postExport.delayBetweenRuns":    "PT3S",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.postExport.maxDelayBetweenRuns": "PT2M",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.postExport.ignoreMissingData":   "true",
+			},
+		},
+		{
+			Name: "TestElasticsearchBatchOperationsExportItemsOnCreation",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.batchOperations.exportItemsOnCreation": "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.batchOperations.exportItemsOnCreation": "false",
+			},
+		},
+		{
+			Name: "TestElasticsearchBulkSettings",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.elasticsearch.bulk.delay":       "PT2S",
+				"orchestration.data.secondaryStorage.elasticsearch.bulk.size":        "2000",
+				"orchestration.data.secondaryStorage.elasticsearch.bulk.memoryLimit": "41943040B",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.bulk.delay":       "PT2S",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.bulk.size":        "2000",
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.bulk.memoryLimit": "41943040B",
+			},
+		},
+		{
+			Name:   "TestElasticsearchPasswordEnvVar",
+			Values: map[string]string{},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.password": "${VALUES_ELASTICSEARCH_PASSWORD:}",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearch() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestOpenSearchUrlOverridesGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":                          "true",
+				"global.opensearch.url.host":                         "global-opensearch",
+				"orchestration.data.secondaryStorage.opensearch.url": "http://custom-opensearch:9200",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.url": "http://custom-opensearch:9200",
+			},
+		},
+		{
+			Name: "TestOpenSearchUrlFallsBackToGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":  "true",
+				"global.opensearch.url.host": "global-opensearch",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.url": "https://global-opensearch:443",
+			},
+		},
+		{
+			Name: "TestOpenSearchUsernameOverridesGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":                               "true",
+				"global.opensearch.auth.username":                         "global-user",
+				"orchestration.data.secondaryStorage.opensearch.username": "custom-user",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.username": "custom-user",
+			},
+		},
+		{
+			Name: "TestOpenSearchUsernameFallsBackToGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":       "true",
+				"global.opensearch.auth.username": "global-user",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.username": "global-user",
+			},
+		},
+		{
+			Name: "TestOpenSearchClusterNameOverridesGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                  "true",
+				"global.opensearch.clusterName":                              "global-cluster",
+				"orchestration.data.secondaryStorage.opensearch.clusterName": "custom-cluster",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.clusterName": "custom-cluster",
+			},
+		},
+		{
+			Name: "TestOpenSearchClusterNameFallsBackToGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":     "true",
+				"global.opensearch.clusterName": "global-cluster",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.clusterName": "global-cluster",
+			},
+		},
+		{
+			Name: "TestOpenSearchIndexPrefixOverridesOrchestration",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                  "true",
+				"orchestration.index.prefix":                                 "orchestration-prefix",
+				"orchestration.data.secondaryStorage.opensearch.indexPrefix": "custom-prefix",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.indexPrefix": "custom-prefix",
+			},
+		},
+		{
+			Name: "TestOpenSearchIndexPrefixFallsBackToOrchestration",
+			Values: map[string]string{
+				"global.opensearch.enabled":  "true",
+				"orchestration.index.prefix": "orchestration-prefix",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.indexPrefix": "orchestration-prefix",
+			},
+		},
+		{
+			Name: "TestOpenSearchNumberOfReplicasOverridesOrchestration",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                       "true",
+				"orchestration.index.replicas":                                    "2",
+				"orchestration.data.secondaryStorage.opensearch.numberOfReplicas": "5",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.numberOfReplicas": "5",
+			},
+		},
+		{
+			Name: "TestOpenSearchNumberOfReplicasFallsBackToOrchestration",
+			Values: map[string]string{
+				"global.opensearch.enabled":    "true",
+				"orchestration.index.replicas": "3",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.numberOfReplicas": "3",
+			},
+		},
+		{
+			Name: "TestOpenSearchDateFormat",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                 "true",
+				"orchestration.data.secondaryStorage.opensearch.dateFormat": "yyyy-MM-dd",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.dateFormat": "yyyy-MM-dd",
+			},
+		},
+		{
+			Name: "TestOpenSearchNumberOfShards",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                     "true",
+				"orchestration.data.secondaryStorage.opensearch.numberOfShards": "3",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.numberOfShards": "3",
+			},
+		},
+		{
+			Name: "TestOpenSearchVariableSizeThreshold",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.variableSizeThreshold": "16000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.variableSizeThreshold": "16000",
+			},
+		},
+		{
+			Name: "TestOpenSearchSecurityEnabled",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                       "true",
+				"orchestration.data.secondaryStorage.opensearch.security.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.security.enabled": "true",
+			},
+		},
+		{
+			Name: "TestOpenSearchSecurityVerifyHostname",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.security.verifyHostname": "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.security.verifyHostname": "false",
+			},
+		},
+		{
+			Name: "TestOpenSearchSecuritySelfSigned",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.security.selfSigned": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.security.selfSigned": "true",
+			},
+		},
+		{
+			Name: "TestOpenSearchHistoryPolicyNameOverridesRetention",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                         "true",
+				"orchestration.history.retention.enabled":                           "true",
+				"orchestration.history.retention.policyName":                        "global-policy",
+				"orchestration.data.secondaryStorage.opensearch.history.policyName": "custom-policy",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.policyName": "custom-policy",
+			},
+		},
+		{
+			Name: "TestOpenSearchHistoryPolicyNameFallsBackToRetention",
+			Values: map[string]string{
+				"global.opensearch.enabled":                  "true",
+				"orchestration.history.retention.enabled":    "true",
+				"orchestration.history.retention.policyName": "global-policy",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.policyName": "global-policy",
+			},
+		},
+		{
+			Name: "TestOpenSearchHistoryRolloverSettings",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.history.elsRolloverDateFormat":     "date",
+				"orchestration.data.secondaryStorage.opensearch.history.rolloverInterval":          "7d",
+				"orchestration.data.secondaryStorage.opensearch.history.rolloverBatchSize":         "200",
+				"orchestration.data.secondaryStorage.opensearch.history.waitPeriodBeforeArchiving": "2h",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.elsRolloverDateFormat":     "date",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.rolloverInterval":          "7d",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.rolloverBatchSize":         "200",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.waitPeriodBeforeArchiving": "2h",
+			},
+		},
+		{
+			Name: "TestOpenSearchHistoryDelaySettings",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.history.delayBetweenRuns":    "PT5S",
+				"orchestration.data.secondaryStorage.opensearch.history.maxDelayBetweenRuns": "PT2M",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.delayBetweenRuns":    "PT5S",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.history.maxDelayBetweenRuns": "PT2M",
+			},
+		},
+		{
+			Name: "TestOpenSearchCreateSchema",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                   "true",
+				"orchestration.data.secondaryStorage.opensearch.createSchema": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.createSchema": "true",
+			},
+		},
+		{
+			Name: "TestOpenSearchIncidentNotifier",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.incidentNotifier.auth0Protocol": "https",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.incidentNotifier.auth0Protocol": "https",
+			},
+		},
+		{
+			Name: "TestOpenSearchBatchOperationCacheMaxSize",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.batchOperationCache.maxSize": "20000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.batchOperationCache.maxSize": "20000",
+			},
+		},
+		{
+			Name: "TestOpenSearchProcessCacheMaxSize",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.processCache.maxSize": "15000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.processCache.maxSize": "15000",
+			},
+		},
+		{
+			Name: "TestOpenSearchFormCacheMaxSize",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                        "true",
+				"orchestration.data.secondaryStorage.opensearch.formCache.maxSize": "5000",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.formCache.maxSize": "5000",
+			},
+		},
+		{
+			Name: "TestOpenSearchPostExportSettings",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.postExport.batchSize":           "200",
+				"orchestration.data.secondaryStorage.opensearch.postExport.delayBetweenRuns":    "PT3S",
+				"orchestration.data.secondaryStorage.opensearch.postExport.maxDelayBetweenRuns": "PT2M",
+				"orchestration.data.secondaryStorage.opensearch.postExport.ignoreMissingData":   "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.postExport.batchSize":           "200",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.postExport.delayBetweenRuns":    "PT3S",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.postExport.maxDelayBetweenRuns": "PT2M",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.postExport.ignoreMissingData":   "true",
+			},
+		},
+		{
+			Name: "TestOpenSearchBatchOperationsExportItemsOnCreation",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+				"orchestration.data.secondaryStorage.opensearch.batchOperations.exportItemsOnCreation": "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.batchOperations.exportItemsOnCreation": "false",
+			},
+		},
+		{
+			Name: "TestOpenSearchBulkSettings",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                       "true",
+				"orchestration.data.secondaryStorage.opensearch.bulk.delay":       "PT2S",
+				"orchestration.data.secondaryStorage.opensearch.bulk.size":        "2000",
+				"orchestration.data.secondaryStorage.opensearch.bulk.memoryLimit": "41943040B",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.bulk.delay":       "PT2S",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.bulk.size":        "2000",
+				"configmapApplication.camunda.data.secondary-storage.opensearch.bulk.memoryLimit": "41943040B",
+			},
+		},
+		{
+			Name: "TestOpenSearchPasswordEnvVar",
+			Values: map[string]string{
+				"global.opensearch.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.password": "${VALUES_OPENSEARCH_PASSWORD:}",
 			},
 		},
 	}
