@@ -15,7 +15,6 @@ global:
       port: 443
     prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
 orchestration:
-  image: {}
   security:
     authentication:
       method: oidc
@@ -57,7 +56,6 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
-  image: {}
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
@@ -71,14 +69,10 @@ webModeler:
     authentication:
       method: oidc
   restapi:
-    image: {}
   webapp:
-    image: {}
   websockets:
-    image: {}
 console:
   enabled: true
-  image: {}
   overrideConfiguration: |
     camunda:
       console:
@@ -104,7 +98,6 @@ console:
       value: 'true'
 identity:
   enabled: true
-  image: {}
   firstUser:
     user: demo
     secret:
@@ -188,7 +181,6 @@ identity:
         - Console
         - Orchestration
 connectors:
-  image: {}
   env:
     - name: username
       value: username

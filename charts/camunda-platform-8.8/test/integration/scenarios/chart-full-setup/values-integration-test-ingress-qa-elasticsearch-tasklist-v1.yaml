@@ -27,7 +27,6 @@ global:
         existingSecret:
           name: "integration-test-credentials"
 orchestration:
-  image: {}
   security:
     initialization:
       defaultRoles:
@@ -73,18 +72,14 @@ identityKeycloak:
     passwordSecretKey: "identity-keycloak-admin-password"
 optimize:
   enabled: true
-  image: {}
 webModeler:
   enabled: true
   restapi:
-    image: {}
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
   webapp:
-    image: {}
   websockets:
-    image: {}
   image:
     pullSecrets:
       - name: index-docker-io
@@ -98,7 +93,6 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 console:
   enabled: true
-  image: {}
   overrideConfiguration: |
     camunda:
       console:
@@ -121,7 +115,6 @@ console:
                       url: "https://docs.camunda.io"
 identity:
   enabled: true
-  image: {}
   firstUser:
     enabled: true
     user: demo
@@ -158,7 +151,6 @@ identity:
         - Console
         - Orchestration
 connectors:
-  image: {}
   security:
     authentication:
       oidc:

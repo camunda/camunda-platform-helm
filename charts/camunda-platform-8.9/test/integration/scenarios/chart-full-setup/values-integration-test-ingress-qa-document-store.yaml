@@ -22,7 +22,6 @@ global:
 elasticsearch:
   enabled: true
 orchestration:
-  image: {}
   security:
     authentication:
       method: oidc
@@ -57,23 +56,18 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
-  image: {}
 webModeler:
   enabled: true
   security:
     authentication:
       method: oidc
   restapi:
-    image: {}
   webapp:
-    image: {}
   websockets:
-    image: {}
 webModelerPostgresql:
   enabled: true
 console:
   enabled: true
-  image: {}
   overrideConfiguration: |
     camunda:
       console:
@@ -99,7 +93,6 @@ console:
       value: 'true'
 identity:
   enabled: true
-  image: {}
   firstUser:
     user: demo
     secret:
@@ -186,7 +179,6 @@ connectors:
   security:
     authentication:
       method: oidc
-  image: {}
   env:
     - name: username
       value: username

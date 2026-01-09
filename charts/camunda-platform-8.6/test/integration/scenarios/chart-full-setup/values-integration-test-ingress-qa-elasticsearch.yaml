@@ -2,24 +2,15 @@ global:
   image:
     pullPolicy: Always
 zeebe:
-  image: {}
 tasklist:
-  image: {}
 operate:
-  image: {}
 optimize:
-  image: {}
 webModeler:
   restapi:
-    image: {}
   webapp:
-    image: {}
   websockets:
-    image: {}
 console:
-  image: {}
 identity:
-  image: {}
   firstUser:
     user: demo
     existingSecret: vault-mapped-secrets
@@ -118,7 +109,6 @@ identity:
         - Console
         - Zeebe
 connectors:
-  image: {}
   env:
     - name: username
       value: username
