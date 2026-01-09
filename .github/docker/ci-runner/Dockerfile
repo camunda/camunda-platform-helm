@@ -160,7 +160,28 @@ RUN asdf install gomplate $(grep "^gomplate " /opt/asdf/.tool-versions | awk '{p
 RUN asdf reshim
 
 # =============================================================================
-# Layer 7: Configuration (stable - rarely changes)
+# Layer 7: Symlink tools to /usr/local/bin for standard PATH access
+# This ensures tools work without asdf environment variables being set
+# =============================================================================
+RUN ln -sf /opt/asdf/shims/go /usr/local/bin/go \
+    && ln -sf /opt/asdf/shims/gofmt /usr/local/bin/gofmt \
+    && ln -sf /opt/asdf/shims/helm /usr/local/bin/helm \
+    && ln -sf /opt/asdf/shims/kubectl /usr/local/bin/kubectl \
+    && ln -sf /opt/asdf/shims/task /usr/local/bin/task \
+    && ln -sf /opt/asdf/shims/yq /usr/local/bin/yq \
+    && ln -sf /opt/asdf/shims/jq /usr/local/bin/jq \
+    && ln -sf /opt/asdf/shims/oc /usr/local/bin/oc \
+    && ln -sf /opt/asdf/shims/kustomize /usr/local/bin/kustomize \
+    && ln -sf /opt/asdf/shims/zbctl /usr/local/bin/zbctl \
+    && ln -sf /opt/asdf/shims/bats /usr/local/bin/bats \
+    && ln -sf /opt/asdf/shims/oras /usr/local/bin/oras \
+    && ln -sf /opt/asdf/shims/kind /usr/local/bin/kind \
+    && ln -sf /opt/asdf/shims/ct /usr/local/bin/ct \
+    && ln -sf /opt/asdf/shims/cr /usr/local/bin/cr \
+    && ln -sf /opt/asdf/shims/gomplate /usr/local/bin/gomplate
+
+# =============================================================================
+# Layer 8: Configuration (stable - rarely changes)
 # =============================================================================
 # Copy .tool-versions to common locations
 RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
@@ -168,43 +189,27 @@ RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
 
 # Set up Go environment
 ENV GOPATH=/root/go
-ENV PATH="${GOPATH}/bin:${PATH}"
-
-# Set up shell initialization for all users
-RUN echo 'export ASDF_DIR=/opt/asdf' >> /etc/bash.bashrc \
-    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /etc/bash.bashrc \
-    && echo 'export PATH="/root/.local/bin:${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /etc/bash.bashrc \
-    && echo '. "${ASDF_DIR}/asdf.sh"' >> /etc/bash.bashrc
-
-RUN echo 'export ASDF_DIR=/opt/asdf' >> /root/.bashrc \
-    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /root/.bashrc \
-    && echo 'export PATH="/root/.local/bin:${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /root/.bashrc \
-    && echo '. "${ASDF_DIR}/asdf.sh"' >> /root/.bashrc
+ENV PATH="${GOPATH}/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
 # Set up for GitHub Actions runner user (uid 1001)
 RUN mkdir -p /home/runner \
-    && echo 'export ASDF_DIR=/opt/asdf' >> /home/runner/.bashrc \
-    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /home/runner/.bashrc \
-    && echo 'export PATH="/root/.local/bin:${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /home/runner/.bashrc \
-    && echo '. "${ASDF_DIR}/asdf.sh"' >> /home/runner/.bashrc \
     && cp /opt/asdf/.tool-versions /home/runner/.tool-versions
 
 # =============================================================================
-# Layer 8: Verification and final setup (changes rarely)
+# Layer 9: Verification and final setup (changes rarely)
 # =============================================================================
 WORKDIR /workspace
 
-# Verify critical tools work
+# Verify critical tools work via /usr/local/bin symlinks
 RUN echo "Verifying tool installations..." \
-    && helm version --short \
-    && kubectl version --client \
-    && task --version \
-    && yq --version \
-    && jq --version \
-    && go version \
+    && /usr/local/bin/helm version --short \
+    && /usr/local/bin/kubectl version --client \
+    && /usr/local/bin/task --version \
+    && /usr/local/bin/yq --version \
+    && /usr/local/bin/jq --version \
+    && /usr/local/bin/go version \
     && yamllint --version \
     && echo "✅ All tools verified successfully"
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["bash"]
-

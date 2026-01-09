@@ -123,50 +123,41 @@ RUN asdf install zbctl $(grep "^zbctl " /opt/asdf/.tool-versions | awk '{print $
 RUN asdf reshim
 
 # =============================================================================
-# Layer 6: Configuration (stable - rarely changes)
+# Layer 6: Symlink tools to /usr/local/bin for standard PATH access
+# This ensures tools work without asdf environment variables being set
+# =============================================================================
+RUN ln -sf /opt/asdf/shims/helm /usr/local/bin/helm \
+    && ln -sf /opt/asdf/shims/kubectl /usr/local/bin/kubectl \
+    && ln -sf /opt/asdf/shims/task /usr/local/bin/task \
+    && ln -sf /opt/asdf/shims/yq /usr/local/bin/yq \
+    && ln -sf /opt/asdf/shims/jq /usr/local/bin/jq \
+    && ln -sf /opt/asdf/shims/oc /usr/local/bin/oc \
+    && ln -sf /opt/asdf/shims/zbctl /usr/local/bin/zbctl
+
+# =============================================================================
+# Layer 7: Configuration (stable - rarely changes)
 # =============================================================================
 # Copy .tool-versions to common locations
 RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
     && cp /opt/asdf/.tool-versions /.tool-versions \
     && cp /opt/asdf/.tool-versions /home/pwuser/.tool-versions 2>/dev/null || true
 
-# Set up shell initialization for root
-RUN echo 'export ASDF_DIR=/opt/asdf' >> /root/.bashrc \
-    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /root/.bashrc \
-    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /root/.bashrc \
-    && echo '. "${ASDF_DIR}/asdf.sh"' >> /root/.bashrc
-
-# Set up shell initialization for pwuser (Playwright default user)
-RUN echo 'export ASDF_DIR=/opt/asdf' >> /home/pwuser/.bashrc \
-    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /home/pwuser/.bashrc \
-    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /home/pwuser/.bashrc \
-    && echo '. "${ASDF_DIR}/asdf.sh"' >> /home/pwuser/.bashrc
-
 # Set up for GitHub Actions runner user (uid 1001)
 RUN mkdir -p /home/runner \
-    && echo 'export ASDF_DIR=/opt/asdf' >> /home/runner/.bashrc \
-    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /home/runner/.bashrc \
-    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /home/runner/.bashrc \
-    && echo '. "${ASDF_DIR}/asdf.sh"' >> /home/runner/.bashrc \
     && cp /opt/asdf/.tool-versions /home/runner/.tool-versions
 
-# System-wide bash configuration
-RUN echo 'export ASDF_DIR=/opt/asdf' >> /etc/bash.bashrc \
-    && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /etc/bash.bashrc \
-    && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /etc/bash.bashrc
-
 # =============================================================================
-# Layer 7: Verification and final setup
+# Layer 8: Verification and final setup
 # =============================================================================
 WORKDIR /workspace
 
-# Verify critical tools work
+# Verify critical tools work via /usr/local/bin symlinks
 RUN echo "Verifying tool installations..." \
-    && helm version --short \
-    && kubectl version --client \
-    && task --version \
-    && yq --version \
-    && jq --version \
+    && /usr/local/bin/helm version --short \
+    && /usr/local/bin/kubectl version --client \
+    && /usr/local/bin/task --version \
+    && /usr/local/bin/yq --version \
+    && /usr/local/bin/jq --version \
     && echo "✅ All tools verified successfully"
 
 # Keep root user as default for GitHub Actions (--user root in container options)
@@ -174,4 +165,3 @@ USER root
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["bash"]
-
