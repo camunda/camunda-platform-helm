@@ -2,28 +2,20 @@ global:
   image:
     pullPolicy: Always
 zeebe:
-  image: {}
 tasklist:
-  image: {}
   env:
     - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
       value: 'true'
 operate:
-  image: {}
   env:
     - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
       value: 'true'
 optimize:
-  image: {}
 webModeler:
   restapi:
-    image: {}
   webapp:
-    image: {}
   websockets:
-    image: {}
 console:
-  image: {}
   overrideConfiguration: |
     camunda:
       console:
@@ -48,7 +40,6 @@ console:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
       value: "true"
 identity:
-  image: {}
   postgresql:
     enabled: true
   firstUser:
@@ -152,7 +143,6 @@ identity:
     - name: RESOURCE_PERMISSIONS_ENABLED
       value: 'true'
 connectors:
-  image: {}
   env:
     - name: username
       value: username

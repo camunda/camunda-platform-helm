@@ -17,12 +17,10 @@ global:
 elasticsearch:
   enabled: false
 zeebe:
-  image: {}
   env:
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 operate:
-  image: {}
   env:
     - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
@@ -35,14 +33,12 @@ operate:
       - name: CAMUNDA_OPERATE_ZEEBEEOPENSEARCH_PREFIX
         value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 tasklist:
-  image: {}
   env:
     - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_TASKLIST"
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 optimize:
-  image: {}
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
@@ -56,15 +52,10 @@ optimize:
         value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
 webModeler:
   restapi:
-    image: {}
   webapp:
-    image: {}
   websockets:
-    image: {}
 console:
-  image: {}
 identity:
-  image: {}
   firstUser:
     user: demo
     existingSecret: vault-mapped-secrets
@@ -163,7 +154,6 @@ identity:
         - Console
         - Zeebe
 connectors:
-  image: {}
   env:
     - name: username
       value: username

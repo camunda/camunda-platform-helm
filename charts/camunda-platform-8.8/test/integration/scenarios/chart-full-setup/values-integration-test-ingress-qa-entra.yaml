@@ -56,7 +56,6 @@ global:
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
 orchestration:
-  image: {}
   security:
     authentication:
       method: oidc
@@ -81,23 +80,18 @@ identityKeycloak:
   enabled: false
 optimize:
   enabled: true
-  image: {}
 webModeler:
   enabled: true
   security:
     authentication:
       method: oidc
   restapi:
-    image: {}
   webapp:
-    image: {}
   websockets:
-    image: {}
 webModelerPostgresql:
   enabled: true
 console:
   enabled: true
-  image: {}
   overrideConfiguration: |
     camunda:
       console:
@@ -125,7 +119,6 @@ console:
       value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
 identity:
   enabled: true
-  image: {}
 connectors:
   security:
     authentication:
@@ -138,4 +131,3 @@ connectors:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
-  image: {}
