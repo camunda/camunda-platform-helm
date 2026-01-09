@@ -211,12 +211,6 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
-            - resourceServerId: orchestration-api
-              definition: read:*
-            - resourceServerId: orchestration-api
-              definition: write:*
-            {{- end }}
             - resourceServerId: optimize-api
               definition: write:*
             - resourceServerId: web-modeler-api
@@ -259,9 +253,6 @@ data:
             {{- end }}
             {{- if .Values.console.enabled }}
             - Console
-            {{- end }}
-            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
-            - Orchestration
             {{- end }}
           {{- end }}
         {{- end }}
