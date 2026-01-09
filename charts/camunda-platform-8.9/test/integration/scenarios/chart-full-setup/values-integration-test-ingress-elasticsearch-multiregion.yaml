@@ -1,0 +1,12 @@
+global:
+  multiregion:
+    regions: 2
+    regionId: 0  # or 1 for the second region
+
+orchestration:
+  clusterSize: '8'
+  partitionCount: '8'
+  replicationFactor: '4'
+
+elasticsearch:
+  maxUnavailable: 0
