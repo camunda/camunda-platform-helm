@@ -2,30 +2,22 @@ global:
   image:
     pullPolicy: Always
 zeebe:
-  image:
-    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
+  image: {}
 tasklist:
-  image:
-    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
+  image: {}
 operate:
-  image:
-    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
+  image: {}
 optimize:
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+  image: {}
 webModeler:
   restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    image: {}
   webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    image: {}
   websockets:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    image: {}
 console:
-  image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  image: {}
   overrideConfiguration: |
     camunda:
       console:
@@ -50,8 +42,7 @@ console:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
       value: "true"
 identity:
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  image: {}
   firstUser:
     user: demo
     existingSecret: vault-mapped-secrets
@@ -150,10 +141,10 @@ identity:
         - Console
         - Zeebe
 connectors:
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  image: {}
   env:
     - name: username
       value: username
     - name: password
       value: password
+orchestration: {}

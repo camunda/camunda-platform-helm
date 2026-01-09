@@ -4,33 +4,24 @@ global:
   multitenancy:
     enabled: true
 zeebe:
-  image:
-    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
+  image: {}
 tasklist:
-  image:
-    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
+  image: {}
 operate:
-  image:
-    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
+  image: {}
 optimize:
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+  image: {}
 webModeler:
   restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    image: {}
   webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    image: {}
   websockets:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    image: {}
 console:
-  image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  image: {}
 identity:
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  image: {}
   firstUser:
     user: demo
     existingSecret: vault-mapped-secrets
@@ -162,8 +153,7 @@ identity:
     - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
       value: venom
 connectors:
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  image: {}
   env:
     - name: username
       value: username
@@ -171,3 +161,4 @@ connectors:
       value: password
     - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
       value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
+orchestration: {}

@@ -17,15 +17,16 @@ import (
 )
 
 type Options struct {
-	ChartPath    string
-	Scenario     string
-	ScenarioDir  string
-	ValuesConfig string
-	LicenseKey   string
-	Output       string
-	OutputDir    string
-	Interactive  bool
-	EnvFile      string
+	ChartPath     string
+	Scenario      string
+	ScenarioDir   string
+	ValuesConfig  string
+	LicenseKey    string
+	Output        string
+	OutputDir     string
+	Interactive   bool
+	EnvFile       string
+	ImageTagsFile string
 }
 
 type MissingEnvError struct {
@@ -245,4 +246,100 @@ func IsMissingEnv(err error) (bool, []string) {
 		return true, me.Missing
 	}
 	return false, nil
+}
+
+// ProcessImageTags processes the image tags file by substituting placeholders from configEnv
+// and environment variables, then writes to /tmp/values-image-tags-processed.yaml.
+// Returns the output path if successful, or empty string if the file doesn't exist (not an error).
+func ProcessImageTags(opts Options) (string, error) {
+	if opts.ImageTagsFile == "" {
+		logging.Logger.Debug().Msg("No image tags file specified, skipping")
+		return "", nil
+	}
+
+	// Check if file exists - not an error if it doesn't
+	if _, err := os.Stat(opts.ImageTagsFile); os.IsNotExist(err) {
+		logging.Logger.Debug().Str("file", opts.ImageTagsFile).Msg("Image tags file does not exist, skipping")
+		return "", nil
+	}
+
+	logging.Logger.Info().Str("file", opts.ImageTagsFile).Msg("Processing image tags file")
+
+	// Build overlay env from JSON config (stringified)
+	configEnv := map[string]string{}
+	if opts.ValuesConfig != "" && opts.ValuesConfig != "{}" {
+		logging.Logger.Debug().Msg("Parsing values-config JSON for image tags")
+		var m map[string]any
+		if err := json.Unmarshal([]byte(opts.ValuesConfig), &m); err != nil {
+			logging.Logger.Debug().Err(err).Msg("Failed to parse values-config")
+			return "", err
+		}
+		for k, v := range m {
+			configEnv[k] = fmt.Sprintf("%v", v)
+		}
+		logging.Logger.Debug().Int("count", len(configEnv)).Msg("Loaded config values for image tags")
+	}
+
+	// Read the image tags file
+	content, err := readFile(opts.ImageTagsFile)
+	if err != nil {
+		logging.Logger.Error().Err(err).Msg("Failed to read image tags file")
+		return "", err
+	}
+	logging.Logger.Debug().Int("bytes", len(content)).Msg("Read bytes from image tags file")
+
+	// Find placeholders
+	ph := placeholders.Find(content)
+	logging.Logger.Debug().Int("count", len(ph)).Msg("Found placeholders in image tags file")
+
+	getVal := func(name string) (string, bool) {
+		if v, ok := configEnv[name]; ok {
+			return v, true
+		}
+		v, ok := os.LookupEnv(name)
+		return v, ok
+	}
+
+	// Check for missing variables - for image tags we skip missing vars silently
+	// since not all image tags may be provided in every scenario
+	var missing []string
+	for _, p := range ph {
+		if _, ok := getVal(p); !ok {
+			missing = append(missing, p)
+		}
+	}
+
+	if len(missing) > 0 {
+		logging.Logger.Debug().Strs("missing", missing).Msg("Some image tag placeholders not provided, they will remain as placeholders")
+	}
+
+	// Log substitutions that will happen
+	if len(ph) > 0 {
+		logging.Logger.Info().Msg("Substituting image tag environment variables:")
+		for _, p := range ph {
+			if val, ok := getVal(p); ok {
+				logging.Logger.Info().Str("var", p).Str("value", val).Msg("")
+			}
+		}
+	}
+
+	// Perform substitution - only substitute vars that are present
+	content = os.Expand(content, func(name string) string {
+		if v, ok := getVal(name); ok {
+			return v
+		}
+		// Return the original placeholder if not found
+		return "$" + name
+	})
+	logging.Logger.Debug().Msg("Image tags placeholder substitution complete")
+
+	// Write to fixed output path
+	outputPath := "/tmp/values-image-tags-processed.yaml"
+	if err := writeFile(outputPath, content); err != nil {
+		logging.Logger.Error().Err(err).Msg("Failed to write processed image tags file")
+		return "", err
+	}
+
+	logging.Logger.Info().Str("output", outputPath).Msg("Wrote processed image tags file")
+	return outputPath, nil
 }
