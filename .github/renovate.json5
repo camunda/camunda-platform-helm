@@ -348,12 +348,12 @@
       description: 'Parse Camunda 8.9 image tags as semver so alpha updates work',
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
-      matchDatasources: ['docker'],
+      matchDatasources: ['helmv3', 'helm-values', 'docker', 'regex'],
       matchFileNames: [
+        'charts/camunda-platform-8.9/Chart.yaml',
         'charts/camunda-platform-8.9/values.yaml',
         'charts/camunda-platform-8.9/values-latest.yaml',
       ],
-      ignoreUnstable: false,
       versioning: 'semver'
     },
     {
