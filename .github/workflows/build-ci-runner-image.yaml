@@ -1,6 +1,8 @@
 # Build CI Runner Images
 # Builds and pushes Docker images for integration test runners
 # Triggered on .tool-versions changes or manual dispatch
+#
+# Local build: ./scripts/build-ci-runner-local.sh [--push]
 
 name: "Build - CI Runner Images"
 
@@ -12,6 +14,7 @@ on:
       - ".tool-versions"
       - ".github/docker/**"
       - ".github/workflows/build-ci-runner-image.yaml"
+      - "scripts/build-ci-runner-local.sh"
   workflow_dispatch:
     inputs:
       force-rebuild:
@@ -39,7 +42,7 @@ jobs:
       - name: Generate image tags
         id: tags
         run: |
-          # Generate hash from .tool-versions for versioning
+          # Generate hash from .tool-versions for versioning (same logic as build-ci-runner-local.sh)
           TOOLS_HASH=$(sha256sum .tool-versions | cut -c1-8)
           DATE_TAG=$(date +%Y%m%d)
 
@@ -49,11 +52,13 @@ jobs:
           # Tags for CI runner
           CI_TAGS="${CI_RUNNER_IMAGE}:latest"
           CI_TAGS="${CI_TAGS},${CI_RUNNER_IMAGE}:sha-${TOOLS_HASH}"
+          CI_TAGS="${CI_TAGS},${CI_RUNNER_IMAGE}:${DATE_TAG}"
           echo "ci-tags=${CI_TAGS}" >> "$GITHUB_OUTPUT"
 
           # Tags for Playwright runner
           PW_TAGS="${PLAYWRIGHT_RUNNER_IMAGE}:latest"
           PW_TAGS="${PW_TAGS},${PLAYWRIGHT_RUNNER_IMAGE}:sha-${TOOLS_HASH}"
+          PW_TAGS="${PW_TAGS},${PLAYWRIGHT_RUNNER_IMAGE}:${DATE_TAG}"
           echo "playwright-tags=${PW_TAGS}" >> "$GITHUB_OUTPUT"
 
           echo "Generated tags:"
@@ -109,13 +114,18 @@ jobs:
           echo "### CI Runner" >> "$GITHUB_STEP_SUMMARY"
           echo "- \`${CI_RUNNER_IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- \`${CI_RUNNER_IMAGE}:${{ steps.tags.outputs.tools-hash }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`${CI_RUNNER_IMAGE}:${{ steps.tags.outputs.date-tag }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Playwright Runner" >> "$GITHUB_STEP_SUMMARY"
           echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:${{ steps.tags.outputs.tools-hash }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`${PLAYWRIGHT_RUNNER_IMAGE}:${{ steps.tags.outputs.date-tag }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Tool Versions Hash" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${{ steps.tags.outputs.tools-hash }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Local Build" >> "$GITHUB_STEP_SUMMARY"
+          echo "To build locally: \`./scripts/build-ci-runner-local.sh\`" >> "$GITHUB_STEP_SUMMARY"
 
   verify-images:
     name: Verify Images
