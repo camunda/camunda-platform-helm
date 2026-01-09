@@ -3,6 +3,14 @@
 #
 # Build: docker build -t registry.camunda.cloud/team-distribution/playwright-runner:latest .
 # Push:  docker push registry.camunda.cloud/team-distribution/playwright-runner:latest
+#
+# Layer order (most stable first):
+# 1. Base system packages (rarely change)
+# 2. Cloud CLIs - gcloud, aws (rarely change)
+# 3. asdf installation (rarely changes)
+# 4. asdf plugins (occasionally change)
+# 5. Tool installations from .tool-versions (change when versions update)
+# 6. Shell configuration (rarely changes)
 
 FROM mcr.microsoft.com/playwright:v1.57.0-noble
 
@@ -16,39 +24,31 @@ USER root
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Set bash as default shell
+# Set bash as default shell early
 SHELL ["/bin/bash", "-c"]
 
-# Install system dependencies with retry logic for apt mirror sync issues
-RUN for attempt in 1 2 3 4 5; do \
-        echo "Attempt $attempt of 5..." && \
-        apt-get update && apt-get install -y --no-install-recommends \
-            bash \
-            ca-certificates \
-            curl \
-            git \
-            gnupg \
-            gettext-base \
-            make \
-            unzip \
-            wget \
-            xz-utils \
-            tar \
-            gzip \
-        && break; \
-        echo "Failed, cleaning apt cache and retrying in $((attempt * 30)) seconds..." && \
-        rm -rf /var/lib/apt/lists/* && \
-        sleep $((attempt * 30)); \
-        if [ $attempt -eq 3 ]; then \
-            echo "Switching to alternative Ubuntu mirror..." && \
-            sed -i 's|http://archive.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true && \
-            sed -i 's|http://security.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true; \
-        fi; \
-        [ $attempt -eq 5 ] && exit 1; \
-    done \
+# =============================================================================
+# Layer 1: System packages (very stable - rarely changes)
+# =============================================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    gettext-base \
+    make \
+    unzip \
+    wget \
+    xz-utils \
+    tar \
+    gzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Google Cloud CLI for GKE authentication
+# =============================================================================
+# Layer 2: Cloud CLIs (stable - rarely changes)
+# =============================================================================
+# Google Cloud CLI for GKE authentication
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
     | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
     && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
@@ -58,68 +58,73 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     google-cloud-cli-gke-gcloud-auth-plugin \
     && rm -rf /var/lib/apt/lists/*
 
-# Install AWS CLI for EKS authentication
+# AWS CLI for EKS authentication
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
     && ./aws/install \
     && rm -rf awscliv2.zip aws
 
-# Set up asdf environment variables (use /opt/asdf for all users)
+# =============================================================================
+# Layer 3: asdf installation (stable - rarely changes)
+# =============================================================================
 ENV ASDF_DIR=/opt/asdf
 ENV ASDF_DATA_DIR=/opt/asdf
 ENV PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"
 
-# Install asdf to /opt/asdf (accessible by all users)
 RUN git clone https://github.com/asdf-vm/asdf.git ${ASDF_DIR} --branch v0.15.0
 
-# Create a minimal .tool-versions with only the tools needed for Playwright tests
-COPY .tool-versions /tmp/.tool-versions-full
-
-# Extract only the tools needed for Playwright runner
-RUN grep -E "^(helm|kubectl|oc|task|yq|zbctl|jq) " /tmp/.tool-versions-full > /opt/asdf/.tool-versions \
-    && cat /opt/asdf/.tool-versions
-
+# =============================================================================
+# Layer 4: asdf plugins (moderately stable - occasionally changes)
+# Playwright runner only needs a subset of tools
+# =============================================================================
 WORKDIR /opt/asdf
 
-# Add required asdf plugins
-RUN asdf plugin add helm || true \
-    && asdf plugin add kubectl || true \
-    && asdf plugin add oc || true \
-    && asdf plugin add task https://github.com/particledecay/asdf-task.git || true \
-    && asdf plugin add yq || true \
-    && asdf plugin add zbctl || true \
-    && asdf plugin add jq || true
+RUN asdf plugin add helm || true
+RUN asdf plugin add kubectl || true
+RUN asdf plugin add oc || true
+RUN asdf plugin add task https://github.com/particledecay/asdf-task.git || true
+RUN asdf plugin add yq || true
+RUN asdf plugin add jq || true
+RUN asdf plugin add zbctl || true
 
-# Install all tools from .tool-versions with retry logic
-RUN set -e; \
-    MAX_RETRIES=3; \
-    while IFS= read -r line; do \
-        # Skip empty lines and comments \
-        case "$line" in \
-            ''|'#'*) continue ;; \
-        esac; \
-        tool=$(echo "$line" | awk '{print $1}'); \
-        version=$(echo "$line" | awk '{print $2}'); \
-        echo "Installing $tool $version..."; \
-        for attempt in 1 2 3; do \
-            if asdf install "$tool" "$version"; then \
-                echo "✅ Successfully installed $tool $version"; \
-                asdf global "$tool" "$version"; \
-                break; \
-            else \
-                echo "⚠️ Attempt $attempt failed for $tool $version"; \
-                if [ $attempt -eq $MAX_RETRIES ]; then \
-                    echo "❌ Failed to install $tool $version after $MAX_RETRIES attempts"; \
-                    exit 1; \
-                fi; \
-                sleep 10; \
-            fi; \
-        done; \
-    done < /opt/asdf/.tool-versions
+# =============================================================================
+# Layer 5: Tool versions (changes when .tool-versions updates)
+# Copy full .tool-versions but only install what we need
+# =============================================================================
+COPY .tool-versions /tmp/.tool-versions-full
+
+# Extract only the tools we need for Playwright runner
+RUN grep -E "^(helm|kubectl|oc|task|yq|jq|zbctl) " /tmp/.tool-versions-full > /opt/asdf/.tool-versions \
+    && cat /opt/asdf/.tool-versions
+
+# Install tools individually for better layer caching
+RUN asdf install helm $(grep "^helm " /opt/asdf/.tool-versions | awk '{print $2}') \
+    && asdf global helm $(grep "^helm " /opt/asdf/.tool-versions | awk '{print $2}')
+
+RUN asdf install kubectl $(grep "^kubectl " /opt/asdf/.tool-versions | awk '{print $2}') \
+    && asdf global kubectl $(grep "^kubectl " /opt/asdf/.tool-versions | awk '{print $2}')
+
+RUN asdf install task $(grep "^task " /opt/asdf/.tool-versions | awk '{print $2}') \
+    && asdf global task $(grep "^task " /opt/asdf/.tool-versions | awk '{print $2}')
+
+RUN asdf install yq $(grep "^yq " /opt/asdf/.tool-versions | awk '{print $2}') \
+    && asdf global yq $(grep "^yq " /opt/asdf/.tool-versions | awk '{print $2}')
+
+RUN asdf install jq $(grep "^jq " /opt/asdf/.tool-versions | awk '{print $2}') \
+    && asdf global jq $(grep "^jq " /opt/asdf/.tool-versions | awk '{print $2}')
+
+RUN asdf install oc $(grep "^oc " /opt/asdf/.tool-versions | awk '{print $2}') \
+    && asdf global oc $(grep "^oc " /opt/asdf/.tool-versions | awk '{print $2}')
+
+RUN asdf install zbctl $(grep "^zbctl " /opt/asdf/.tool-versions | awk '{print $2}') \
+    && asdf global zbctl $(grep "^zbctl " /opt/asdf/.tool-versions | awk '{print $2}')
 
 # Reshim to ensure all binaries are available
 RUN asdf reshim
 
+# =============================================================================
+# Layer 6: Configuration (stable - rarely changes)
+# =============================================================================
 # Copy .tool-versions to common locations
 RUN cp /opt/asdf/.tool-versions /root/.tool-versions \
     && cp /opt/asdf/.tool-versions /.tool-versions \
@@ -131,7 +136,7 @@ RUN echo 'export ASDF_DIR=/opt/asdf' >> /root/.bashrc \
     && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /root/.bashrc \
     && echo '. "${ASDF_DIR}/asdf.sh"' >> /root/.bashrc
 
-# Set up shell initialization for pwuser
+# Set up shell initialization for pwuser (Playwright default user)
 RUN echo 'export ASDF_DIR=/opt/asdf' >> /home/pwuser/.bashrc \
     && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /home/pwuser/.bashrc \
     && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /home/pwuser/.bashrc \
@@ -145,32 +150,28 @@ RUN mkdir -p /home/runner \
     && echo '. "${ASDF_DIR}/asdf.sh"' >> /home/runner/.bashrc \
     && cp /opt/asdf/.tool-versions /home/runner/.tool-versions
 
-# Also set up system-wide bash configuration
+# System-wide bash configuration
 RUN echo 'export ASDF_DIR=/opt/asdf' >> /etc/bash.bashrc \
     && echo 'export ASDF_DATA_DIR=/opt/asdf' >> /etc/bash.bashrc \
     && echo 'export PATH="${ASDF_DIR}/shims:${ASDF_DIR}/bin:${PATH}"' >> /etc/bash.bashrc
 
-# Create workspace directory
+# =============================================================================
+# Layer 7: Verification and final setup
+# =============================================================================
 WORKDIR /workspace
 
-# Verify installations work from the shims directly
+# Verify critical tools work
 RUN echo "Verifying tool installations..." \
-    && /opt/asdf/shims/helm version --short \
-    && /opt/asdf/shims/kubectl version --client \
-    && /opt/asdf/shims/task --version \
-    && /opt/asdf/shims/yq --version \
-    && /opt/asdf/shims/jq --version \
+    && helm version --short \
+    && kubectl version --client \
+    && task --version \
+    && yq --version \
+    && jq --version \
     && echo "✅ All tools verified successfully"
 
 # Keep root user as default for GitHub Actions (--user root in container options)
-# pwuser can be used for local testing if needed
 USER root
-
-# Default working directory
-WORKDIR /workspace
-
-# Default shell
-SHELL ["/bin/bash", "-c"]
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["bash"]
+
