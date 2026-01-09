@@ -361,12 +361,12 @@ zeebe:
       elasticsearch:
         className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         args:
-          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           {{- if .Values.global.elasticsearch.external }}
           authentication:
             username: {{ .Values.global.elasticsearch.auth.username | quote }}
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
           {{- end }}
+          url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.elasticsearch.prefix | quote }}
           {{- if .Values.orchestration.retention.enabled }}
