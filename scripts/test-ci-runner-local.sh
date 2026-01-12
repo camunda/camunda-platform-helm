@@ -109,6 +109,7 @@ test_ci_runner() {
     run_test "gomplate" "docker run --rm --user root $image bash -c 'gomplate --version'" || ((failed++))
     run_test "bats" "docker run --rm --user root $image bash -c 'bats --version'" || ((failed++))
     run_test "yamllint" "docker run --rm --user root $image bash -c 'yamllint --version'" || ((failed++))
+    run_test "zbctl" "docker run --rm --user root $image bash -c 'zbctl version'" || ((failed++))
     run_test "gcloud" "docker run --rm --user root $image bash -c 'gcloud version'" || ((failed++))
     run_test "aws" "docker run --rm --user root $image bash -c 'aws --version'" || ((failed++))
     run_test "envsubst" "docker run --rm --user root $image bash -c 'envsubst --version'" || ((failed++))
@@ -168,6 +169,7 @@ test_playwright_runner() {
     run_test "node" "docker run --rm --user root $image bash -c 'node --version'" || ((failed++))
     run_test "npm" "docker run --rm --user root $image bash -c 'npm --version'" || ((failed++))
     run_test "npx" "docker run --rm --user root $image bash -c 'npx --version'" || ((failed++))
+    run_test "zbctl" "docker run --rm --user root $image bash -c 'zbctl version'" || ((failed++))
 
     echo ""
     if [[ $failed -eq 0 ]]; then
