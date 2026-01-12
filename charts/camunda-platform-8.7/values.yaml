@@ -2097,7 +2097,7 @@ executionIdentity:
   ## @skip executionIdentity.enabled if true, the executionIdentity deployment and its related resources are deployed via a helm release
   enabled: false
 
-  ## @skip executionIdentity.configuration Configuration passed directly to executionIdentity as YAML file. More details on [executionIdentity official documentations](https://docs.camunda.io/docs/self-managed/executionIdentity-deployment/configuration/)
+  ## @skip executionIdentity.configuration Configuration passed directly to executionIdentity as YAML file. More details on [executionIdentity official documentations](https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/)
   configuration: ""
 
   ## executionIdentity.image configuration to configure the executionIdentity image specifics
@@ -2549,7 +2549,7 @@ identity:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param identity.env can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/ for more details.
   env: []
   ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
