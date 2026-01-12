@@ -164,7 +164,7 @@ jobs:
 
           # drop -rc from filename
           filename=$(ls .cr-release-packages/camunda-platform-*-rc*.tgz)
-          mv "$filename" "${filename/-rc/}"
+          mv ".cr-release-packages/$filename" ".cr-release-packages/${filename/-rc/}"
           
           echo "Downloaded package:"
           ls -la .cr-release-packages/
