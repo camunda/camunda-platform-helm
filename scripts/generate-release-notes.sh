@@ -20,8 +20,10 @@ main () {
 
     #
     # Early exit if the tag already exists.
-    git tag -l | grep -q "${chart_tag}" &&
+    if git tag -l | grep -q "${chart_tag}"; then
         echo "[WARN] The tag ${chart_tag} already exists, nothing to do..."
+        exit 0
+    fi
 
     #
     # Set Helm CLI version.
