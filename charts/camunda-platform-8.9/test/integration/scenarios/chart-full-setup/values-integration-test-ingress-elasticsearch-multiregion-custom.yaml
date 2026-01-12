@@ -1,0 +1,16 @@
+global:
+  multiregion:
+    regions: 2
+    regionId: 0  # or 1 for the second region
+
+orchestration:
+  clusterSize: '8'
+  partitionCount: '8'
+  replicationFactor: '4'
+  cluster:
+    initialContactPoints:
+      - foo-0.zeebe.namespace.svc.clusterset.local:26502
+      - foo-5.zeebe.namespace.svc.clusterset.local:26502
+
+elasticsearch:
+  maxUnavailable: 0

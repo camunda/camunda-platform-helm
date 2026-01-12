@@ -20,9 +20,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ConfigmapTemplateTest struct {
@@ -31,6 +34,14 @@ type ConfigmapTemplateTest struct {
 	release   string
 	namespace string
 	templates []string
+}
+
+type OrchestrationConfigYAML struct {
+	Camunda struct {
+		Cluster struct {
+			InitialContactPoints []string `yaml:"initial-contact-points"`
+		} `yaml:"cluster"`
+	} `yaml:"camunda"`
 }
 
 func TestConfigmapUnifiedTemplate(t *testing.T) {
@@ -579,4 +590,82 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestApplicationYamlMultiregion() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainMultiregion",
+			Values: map[string]string{
+				"global.multiregion.regions":  "2",
+				"global.multiregion.regionId": "0",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.clusterSize=8",
+				"--set-string", "orchestration.partitionCount=8",
+				"--set-string", "orchestration.replicationFactor=4",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err, "Template rendering should not fail")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				var configmapApplication OrchestrationConfigYAML
+				err = yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				require.NoError(t, err, "Failed to unmarshal application.yaml")
+
+				// Verify that we have 4 initial-contact-points (clusterSize=8, regions=2, so 8/2=4 local pods)
+				initialContactPoints := configmapApplication.Camunda.Cluster.InitialContactPoints
+				require.Len(t, initialContactPoints, 4, "Should have 4 initial-contact-points for clusterSize=8 with 2 regions")
+
+				// Verify the actual values match expected format
+				expectedPrefix := s.release + "-zeebe-"
+				expectedSuffix := ".${K8S_SERVICE_NAME}:26502"
+				expectedContactPoints := []string{
+					expectedPrefix + "0" + expectedSuffix,
+					expectedPrefix + "1" + expectedSuffix,
+					expectedPrefix + "2" + expectedSuffix,
+					expectedPrefix + "3" + expectedSuffix,
+				}
+				require.Equal(t, expectedContactPoints, initialContactPoints,
+					"Initial contact points should match expected values for local pods only")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldUseCustomInitialContactPoints",
+			Values: map[string]string{
+				"global.multiregion.regions":  "2",
+				"global.multiregion.regionId": "0",
+			},
+			RenderTemplateExtraArgs: []string{
+				"--set-string", "orchestration.clusterSize=8",
+				"--set-string", "orchestration.partitionCount=8",
+				"--set-string", "orchestration.replicationFactor=4",
+				"--set", "orchestration.cluster.initialContactPoints[0]=foo-0.zeebe.namespace.svc.clusterset.local:26502",
+				"--set", "orchestration.cluster.initialContactPoints[1]=foo-1.zeebe.namespace.svc.clusterset.local:26502",
+				"--set", "orchestration.cluster.initialContactPoints[2]=foo-4.zeebe.namespace.svc.clusterset.local:26502",
+				"--set", "orchestration.cluster.initialContactPoints[3]=foo-5.zeebe.namespace.svc.clusterset.local:26502",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err, "Template rendering should not fail")
+
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				var configmapApplication OrchestrationConfigYAML
+				err = yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				require.NoError(t, err, "Failed to unmarshal application.yaml")
+
+				// Verify that custom initial-contact-points are used
+				initialContactPoints := configmapApplication.Camunda.Cluster.InitialContactPoints
+				require.Len(t, initialContactPoints, 4, "Should have 4 custom initial-contact-points")
+				require.Equal(t, "foo-0.zeebe.namespace.svc.clusterset.local:26502", initialContactPoints[0])
+				require.Equal(t, "foo-1.zeebe.namespace.svc.clusterset.local:26502", initialContactPoints[1])
+				require.Equal(t, "foo-4.zeebe.namespace.svc.clusterset.local:26502", initialContactPoints[2])
+				require.Equal(t, "foo-5.zeebe.namespace.svc.clusterset.local:26502", initialContactPoints[3])
+			},
+		},
+	}
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
