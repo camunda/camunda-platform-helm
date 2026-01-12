@@ -17,6 +17,8 @@ global:
         adminUser: "admin"
         existingSecret: "infra-credentials"
         existingSecretKey: "keycloak-admin-password"
+  elasticsearch:
+    enabled: false
   opensearch:
     enabled: true
     auth:
