@@ -58,7 +58,7 @@ commit_parsers = [
   { message = "^feat:", group = "<!-- 0 -->Features" },
   { message = "^refactor:", group = "<!-- 1 -->Refactor" },
   { message = "^fix:", group = "<!-- 2 -->Fixes" },
-  { message = "^doc:", group = "<!-- 3 -->Documentation" },
+  { message = "^docs:", group = "<!-- 3 -->Documentation" },
   { message = "^revert:", group = "<!-- 4 -->Revert" },
 ]
 # protect breaking changes from being skipped due to matching a skipping commit_parser
