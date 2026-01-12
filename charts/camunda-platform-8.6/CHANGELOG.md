@@ -1,5 +1,21 @@
 # Changelog
 
+## [11.11.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.3...camunda-platform-8.6-11.11.4) (2026-01-08)
+
+
+### Documentation
+
+* update readme dependency section ([#4960](https://github.com/camunda/camunda-platform-helm/issues/4960)) ([3ddfb86](https://github.com/camunda/camunda-platform-helm/commit/3ddfb860ff8c4355a3ef2c0f2a5f71195f929e40))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#4923](https://github.com/camunda/camunda-platform-helm/issues/4923)) ([94829aa](https://github.com/camunda/camunda-platform-helm/commit/94829aaba5c970f84d0c6ccd01cec67a37d463e9))
+* update camunda-platform-images (patch) ([#4946](https://github.com/camunda/camunda-platform-helm/issues/4946)) ([bceb9d1](https://github.com/camunda/camunda-platform-helm/commit/bceb9d13dee52708b4a625ee31e5f282d868fd99))
+* update camunda-platform-images (patch) ([#4964](https://github.com/camunda/camunda-platform-helm/issues/4964)) ([9abc71b](https://github.com/camunda/camunda-platform-helm/commit/9abc71bf7b0d88bf340059fb66ebff3fe05d9120))
+* update minor-updates (minor) ([#4929](https://github.com/camunda/camunda-platform-helm/issues/4929)) ([6a63cdc](https://github.com/camunda/camunda-platform-helm/commit/6a63cdc23cdc6d17b7cec3aa8ea55c40eae7d372))
+* update patch-updates (patch) ([#4924](https://github.com/camunda/camunda-platform-helm/issues/4924)) ([8814e76](https://github.com/camunda/camunda-platform-helm/commit/8814e76c6fa71cc4db57051db959b4cec20ef9a1))
+
 ## [11.11.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.2...camunda-platform-8.6-11.11.3) (2025-12-11)
 
 
