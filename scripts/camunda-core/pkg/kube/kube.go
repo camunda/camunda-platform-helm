@@ -30,6 +30,47 @@ import (
 
 const fieldManagerName = "camunda-platform-helm"
 
+// formatNamespacePermissionError creates a user-friendly error message for namespace permission errors.
+func formatNamespacePermissionError(operation, namespace, verb string, err error) error {
+	// Namespaces are cluster-scoped resources, so kubectl commands don't include the namespace name
+	// For Apply operations, we need both create and patch permissions
+	var verifyCommands []string
+	var additionalHint string
+	
+	if verb == "get" {
+		additionalHint = "  2. Or request cluster-wide namespace read permissions\n"
+		verifyCommands = []string{"kubectl auth can-i get namespaces"}
+	} else if verb == "create" {
+		// Apply can use either create or patch, so check both
+		verifyCommands = []string{
+			"kubectl auth can-i create namespaces",
+			"kubectl auth can-i patch namespaces",
+		}
+		additionalHint = "  2. Note: Apply operations require either 'create' or 'patch' permissions\n"
+	} else {
+		verifyCommands = []string{fmt.Sprintf("kubectl auth can-i %s namespaces", verb)}
+	}
+	
+	verifyCmdsStr := ""
+	for i, cmd := range verifyCommands {
+		if i > 0 {
+			verifyCmdsStr += "\n"
+		}
+		verifyCmdsStr += "  " + cmd
+	}
+
+	return fmt.Errorf("permission denied: cannot %s namespace %q\n\n"+
+		"Your Kubernetes user does not have permission to %s namespaces.\n"+
+		"This is typically a Teleport or RBAC configuration issue.\n\n"+
+		"To resolve this:\n"+
+		"  1. Ask your Teleport/cluster admin to grant access to namespace %q\n"+
+		"     in the \"kubernetes_resources\" field of your Teleport role\n"+
+		"%s"+
+		"To verify your permissions, run:\n"+
+		"%s\n\n"+
+		"Original error: %w", operation, namespace, verb, namespace, additionalHint, verifyCmdsStr, err)
+}
+
 func defaultApplyOptions() metav1.ApplyOptions {
 	return metav1.ApplyOptions{
 		FieldManager: fieldManagerName,
@@ -100,12 +141,50 @@ func (c *Client) EnsureNamespace(ctx context.Context, namespace string) error {
 		return err
 	}
 
+	// Check if namespace exists
+	_, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	namespaceExists := !apierrors.IsNotFound(err)
+	if err != nil && !apierrors.IsNotFound(err) {
+		// If it's a permission error checking existence, we'll try to create anyway
+		if apierrors.IsForbidden(err) {
+			namespaceExists = false // Assume it doesn't exist and try create
+		} else {
+			return fmt.Errorf("failed to check if namespace %q exists: %w", namespace, err)
+		}
+	}
+
+	if !namespaceExists {
+		// Namespace doesn't exist, use Create() which only requires create permission
+		logging.Logger.Debug().Str("namespace", namespace).Msg("creating namespace")
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		}
+		_, err := c.clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+		if err != nil {
+			if apierrors.IsForbidden(err) {
+				return formatNamespacePermissionError("create", namespace, "create", err)
+			}
+			if apierrors.IsAlreadyExists(err) {
+				// Namespace was created between our check and create attempt
+				logging.Logger.Debug().Str("namespace", namespace).Msg("namespace already exists")
+				return nil
+			}
+			return fmt.Errorf("failed to create namespace %q (context=%q): %w", namespace, c.kubeContext, err)
+		}
+		logging.Logger.Debug().Str("namespace", namespace).Msg("namespace created successfully")
+		return nil
+	}
+
+	// Namespace exists, use Apply() to update it (requires patch permission)
 	logging.Logger.Debug().Str("namespace", namespace).Msg("applying namespace")
-
 	nsApply := corev1apply.Namespace(namespace)
-
-	_, err := c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
+	_, err = c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
 	if err != nil {
+		if apierrors.IsForbidden(err) {
+			return formatNamespacePermissionError("update", namespace, "patch", err)
+		}
 		return fmt.Errorf("failed to apply namespace %q (context=%q): %w", namespace, c.kubeContext, err)
 	}
 
@@ -120,6 +199,9 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 		if apierrors.IsNotFound(err) {
 			// Namespace doesn't exist, we can proceed
 			return nil
+		}
+		if apierrors.IsForbidden(err) {
+			return formatNamespacePermissionError("access", namespace, "get", err)
 		}
 		return fmt.Errorf("failed to check namespace status: %w", err)
 	}
@@ -146,6 +228,9 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 			return true, nil
 		}
 		if err != nil {
+			if apierrors.IsForbidden(err) {
+				return false, formatNamespacePermissionError("check status of", namespace, "get", err)
+			}
 			return false, err
 		}
 
@@ -217,6 +302,9 @@ func (c *Client) DeleteNamespace(ctx context.Context, namespace string) error {
 			logging.Logger.Debug().Str("namespace", namespace).Msg("namespace not found, nothing to delete")
 			return nil
 		}
+		if apierrors.IsForbidden(err) {
+			return formatNamespacePermissionError("delete", namespace, "delete", err)
+		}
 		return fmt.Errorf("failed to delete namespace: %w", err)
 	}
 
@@ -228,6 +316,9 @@ func (c *Client) DeleteNamespace(ctx context.Context, namespace string) error {
 			return true, nil
 		}
 		if err != nil {
+			if apierrors.IsForbidden(err) {
+				return false, formatNamespacePermissionError("check deletion status of", namespace, "get", err)
+			}
 			return false, err
 		}
 		return false, nil
@@ -331,7 +422,7 @@ const (
 	secretNameTLS = "aws-camunda-cloud-tls"
 )
 
-func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, namespacePrefix string) error {
+func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, platform, repoRoot, chartPath, namespace, namespacePrefix, externalSecretsStore string) error {
 	platform = strings.ToLower(strings.TrimSpace(platform))
 
 	logging.Logger.Debug().
@@ -339,6 +430,7 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 		Str("namespace", namespace).
 		Str("chartPath", chartPath).
 		Str("repoRoot", repoRoot).
+		Str("externalSecretsStore", externalSecretsStore).
 		Msg("applying external secrets/certs")
 
 	client, err := NewClient(kubeconfig, kubeContext)
@@ -350,11 +442,11 @@ func ApplyExternalSecretsAndCerts(ctx context.Context, kubeconfig, kubeContext, 
 		return fmt.Errorf("failed to check for ExternalSecrets CRD: %w", err)
 	}
 	if !hasCRD {
-		logging.Logger.Error().Msg("ExternalSecrets CRD not installed. ExternalSecrets CRD is required for TLS certificates, integration test credentials and infra credentials.")
-		return fmt.Errorf("ExternalSecrets CRD not installed")
+		logging.Logger.Warn().Msg("ExternalSecrets CRD not installed - skipping external secrets setup. TLS certificates and infra credentials will need to be configured manually.")
+		return nil
 	}
 
-	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix)
+	provider, err := NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix, externalSecretsStore)
 	if err != nil {
 		return err
 	}
@@ -584,7 +676,7 @@ func checkIfExternalSecretsCRDExists(ctx context.Context, client *Client) (bool,
 func waitExternalSecretsReady(ctx context.Context, client *Client, namespace string, timeout time.Duration) error {
 	externalSecretGVR := schema.GroupVersionResource{
 		Group:    "external-secrets.io",
-		Version:  "v1beta1",
+		Version:  "v1",
 		Resource: "externalsecrets",
 	}
 
