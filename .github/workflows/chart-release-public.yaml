@@ -300,79 +300,69 @@ jobs:
 
       - name: Add release info to workflow summary
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 🚀 Release Published
-
-          ### Release Info
-
-          | Property | Value |
-          |----------|-------|
-          | **Chart Version** | `${{ steps.metadata.outputs.version }}` |
-          | **Camunda Version** | `${{ steps.metadata.outputs.app_version }}` |
-          | **Release Tag** | `${{ steps.metadata.outputs.release_tag }}` |
-          | **Input RC Tag** | `${{ inputs.rc-tag }}` |
-          | **Prerelease** | `${{ steps.metadata.outputs.prerelease }}` |
-
-          ### Links
-
-          | Resource | URL |
-          |----------|-----|
-          | **GitHub Release** | [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.metadata.outputs.release_tag }}) |
-          | **Artifact Hub** | [View on Artifact Hub](https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ steps.metadata.outputs.version }}) |
-          | **Rekor Transparency Log** | [View Record](https://search.sigstore.dev/?logIndex=${{ steps.rekor.outputs.log_index }}) |
-
-          > **Note:** Artifact Hub may take a few minutes to index the new release.
-          EOF
-
-          # Add image versions table if available
+          VERSION="${{ steps.metadata.outputs.version }}"
+          APP_VERSION="${{ steps.metadata.outputs.app_version }}"
+          RELEASE_TAG="${{ steps.metadata.outputs.release_tag }}"
+          PRERELEASE="${{ steps.metadata.outputs.prerelease }}"
           IMAGE_VERSIONS="${{ steps.metadata.outputs.image_versions }}"
-          if [[ -n "${IMAGE_VERSIONS}" ]]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          REKOR_LOG_INDEX="${{ steps.rekor.outputs.log_index }}"
+          DEV_TAG="${{ steps.parse.outputs.dev_tag }}"
+          COMMIT_SHA="${{ steps.parse.outputs.commit_sha }}"
 
-          ### 🐳 Component Image Versions
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${RELEASE_TAG}"
+          ARTIFACTHUB_URL="https://artifacthub.io/packages/helm/camunda/camunda-platform/${VERSION}"
+          REKOR_URL="https://search.sigstore.dev/?logIndex=${REKOR_LOG_INDEX}"
 
-          | Component | Version |
-          |-----------|---------|
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🚀 Helm Chart ${VERSION} Released
+
+          | | |
+          |---|---|
+          | **Chart** | [\`${VERSION}\`](${RELEASE_URL}) |
+          | **Camunda** | \`${APP_VERSION}\` |
+          | **Prerelease** | ${PRERELEASE} |
+          | **Artifact Hub** | [camunda-platform/${VERSION}](${ARTIFACTHUB_URL}) |
+          | **Rekor Log** | [#${REKOR_LOG_INDEX}](${REKOR_URL}) |
           EOF
-            # Parse YAML and format as markdown table rows
+
+          # Add image versions if available
+          if [[ -n "${IMAGE_VERSIONS}" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Component Images" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
             echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
               [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |" >> $GITHUB_STEP_SUMMARY
             done
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
-          ### Install
-
-          ```bash
-          helm repo add camunda https://helm.camunda.io
-          helm repo update
-          helm install camunda camunda/camunda-platform --version ${{ steps.metadata.outputs.version }}
-          ```
-          EOF
-
-          # Add traceability section if we have the source info
-          DEV_TAG="${{ steps.parse.outputs.dev_tag }}"
-          COMMIT_SHA="${{ steps.parse.outputs.commit_sha }}"
+          # Add traceability if we have source info
           if [[ -n "${DEV_TAG}" && -n "${COMMIT_SHA}" ]]; then
             SHORT_SHA="${COMMIT_SHA:0:7}"
             COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
-            DEV_BUILD_URL="https://github.com/${{ github.repository }}/actions/workflows/chart-build-dev.yaml?query=branch%3Amain+is%3Asuccess"
-            RC_PROMOTE_URL="https://github.com/${{ github.repository }}/actions/workflows/chart-promote-rc.yaml?query=is%3Asuccess"
 
             cat >> $GITHUB_STEP_SUMMARY << EOF
 
-          ### 🔗 Traceability
+          ### Traceability
 
-          | Stage | Reference |
-          |-------|-----------|
-          | **Source Commit** | [\`${SHORT_SHA}\`](${COMMIT_URL}) |
+          | | |
+          |---|---|
+          | **Source** | [\`${SHORT_SHA}\`](${COMMIT_URL}) |
           | **Dev Tag** | \`${DEV_TAG}\` |
-          | **RC Tag** | \`${{ steps.parse.outputs.resolved_tag }}\` |
-          | **Dev Build** | [Find workflow run](${DEV_BUILD_URL}) |
-          | **RC Promotion** | [Find workflow run](${RC_PROMOTE_URL}) |
           EOF
           fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ### Install
+
+          \`\`\`bash
+          helm repo add camunda https://helm.camunda.io
+          helm repo update
+          helm install camunda camunda/camunda-platform --version ${VERSION}
+          \`\`\`
+          EOF
 
   post-release:
     name: Post-Release
