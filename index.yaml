@@ -55,6 +55,120 @@ entries:
       camunda.io/helmCLIVersion: 3.19.2
     apiVersion: v2
     appVersion: 8.9.x
+    created: "2026-01-13T11:45:27.864399665Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 16.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 98ee8ef5815847e5d0e0c1a49d5d8fba2f3d00a08c893f4fdd9ccc39388325f0
+    home: https://docs.camunda.io/docs/self-managed/overview/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.9-14.0.0-alpha3/camunda-platform-14.0.0-alpha3.tgz
+    version: 14.0.0-alpha3
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Backport custom client creation to 8.6 and 8.9"
+        - kind: added
+          description: "Define custom users through values.yaml"
+        - kind: added
+          description: "Add RDBMS support to 8.9 helm charts"
+        - kind: added
+          description: "Enhance Keycloak integration with realm support and additional client configurations"
+        - kind: fixed
+          description: "Incorrect example for keycloak in readme.md"
+        - kind: fixed
+          description: "Remap replicas key from legacy to new keys"
+        - kind: fixed
+          description: "Refactor tls secrets to use new pattern"
+        - kind: fixed
+          description: "ExtraVolumeClaimTemplateTemplate indent for orchestration cluster"
+        - kind: fixed
+          description: "Remove client env vars from qa scenario files"
+        - kind: fixed
+          description: "Typo lower case values"
+        - kind: fixed
+          description: "Remove leftover console secret constraints"
+        - kind: fixed
+          description: "Remove conditional rendering from management identity configmap"
+        - kind: fixed
+          description: "Let helm chart support hybrid auth"
+        - kind: fixed
+          description: "Return none for authMethod when component is disabled"
+        - kind: fixed
+          description: "Align 8.9 retention config with Wave 1 property names"
+        - kind: fixed
+          description: "Enable auto-ddl by default"
+        - kind: fixed
+          description: "Modeler webapp to websockets connection not using override option"
+        - kind: fixed
+          description: "Add requestBodySize to orchestration multipart config"
+        - kind: fixed
+          description: "8.9 version bumps for alpha2"
+        - kind: fixed
+          description: "Correct chart version"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/helmCLIVersion: 3.19.2
+    apiVersion: v2
+    appVersion: 8.9.x
     created: "2025-12-05T21:31:23.695438527Z"
     dependencies:
     - alias: identityKeycloak
@@ -24627,4 +24741,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-01-12T07:00:17.826003903Z"
+generated: "2026-01-13T11:45:27.865454185Z"
