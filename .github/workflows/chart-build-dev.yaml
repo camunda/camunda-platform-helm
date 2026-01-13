@@ -89,7 +89,9 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(inputs) }}
         run: |
-          echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
+            echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          fi
           echo "Workflow Inputs:"
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
