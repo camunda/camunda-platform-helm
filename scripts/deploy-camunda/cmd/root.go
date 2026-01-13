@@ -39,17 +39,26 @@ func NewRootCommand() *cobra.Command {
 				}
 			}
 
-			// Load .env file
-			if flags.EnvFile != "" {
-				_ = env.Load(flags.EnvFile)
-			} else {
-				_ = env.Load(".env")
-			}
-
-			// Load config and merge with flags
+			// Load config and merge with flags first to get envFile from config
 			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {
 				return err
 			}
+
+			// Load .env file - use config value if set, otherwise default to .env
+			envFileToLoad := flags.EnvFile
+			if envFileToLoad == "" {
+				envFileToLoad = ".env"
+			}
+			logging.Logger.Debug().
+				Str("envFile", envFileToLoad).
+				Str("source", func() string {
+					if flags.EnvFile != "" {
+						return "config/flag"
+					}
+					return "default"
+				}()).
+				Msg("Loading environment file")
+			_ = env.Load(envFileToLoad)
 
 			// Validate merged configuration
 			if err := config.Validate(&flags); err != nil {
