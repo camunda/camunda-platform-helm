@@ -40,6 +40,17 @@ jobs:
       rc-tag: ${{ steps.parse.outputs.rc_tag }}
       release-pr-url: ${{ steps.release-please.outputs.pr_url }}
     steps:
+      - name: Info - ℹ️ Print workflow inputs ℹ️
+        env:
+          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+        run: |
+          if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
+            echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          fi
+          echo "Workflow Inputs:"
+          echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
+          echo "Workflow Inputs - Extra Values:"
+          echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
