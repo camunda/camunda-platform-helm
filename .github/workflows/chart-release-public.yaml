@@ -187,6 +187,13 @@ jobs:
           echo "version=${version}" | tee -a $GITHUB_OUTPUT
           echo "app_version=${app_version}" | tee -a $GITHUB_OUTPUT
           echo "prerelease=${prerelease}" | tee -a $GITHUB_OUTPUT
+
+          latest_app_version="$(yq '.camundaVersions.supportStandard.[0]' $(git rev-parse --show-toplevel)/charts/chart-versions.yaml)"
+          is_latest_stable="false"
+          if [[ "${app_version}" == "${latest_app_version}" ]]; then
+            is_latest_stable="true"
+          fi
+          echo "is_latest_stable=${is_latest_stable}" | tee -a $GITHUB_OUTPUT
           
           # Chart dir ID is the app version (e.g., 8.8)
           echo "chart_dir_id=${app_version}" | tee -a $GITHUB_OUTPUT
@@ -226,6 +233,7 @@ jobs:
             --push \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
+            --make-release-latest "${{ steps.metadata.outputs.is_latest_stable }}" \
             --release-name-template "${{ steps.metadata.outputs.release_tag }}"
 
       - name: Run Chart Releaser - Indexing
@@ -237,15 +245,6 @@ jobs:
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
             --release-name-template "${{ steps.metadata.outputs.release_tag }}"
-
-      - name: Set GitHub release type (prerelease)
-        if: ${{ steps.metadata.outputs.prerelease == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release edit "${{ steps.metadata.outputs.release_tag }}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --prerelease
 
       - name: Sign Helm chart with Cosign
         working-directory: .cr-release-packages
