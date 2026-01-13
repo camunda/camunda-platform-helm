@@ -1,4 +1,4 @@
-name: "Chart - Build - Dev"
+name: "Chart - Release - Pipeline - 1 - Build Dev"
 
 # Builds immutable dev packages for all active chart versions.
 # These packages are release-ready (transformations applied) and stored in Harbor
@@ -296,6 +296,53 @@ jobs:
 
           echo "Updated Chart.yaml:"
           head -50 Chart.yaml
+
+      - name: Add component image versions to Chart.yaml annotations
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          # Extract image tags from values.yaml and add as Chart.yaml annotation
+          # This makes the artifact self-documenting with exact component versions
+
+          get_tag() {
+            local path=$1
+            yq -r "${path} // \"N/A\"" values.yaml
+          }
+
+          # Version-specific components (order matches workflow summary)
+          CAMUNDA_MINOR=$(echo "${{ env.CAMUNDA_VERSION }}" | sed 's/^8\.//')
+
+          if [[ ${CAMUNDA_MINOR} -ge 8 ]]; then
+            # 8.8+ orchestration architecture
+            IMAGE_VERSIONS=$(cat << YAML
+          camunda: $(get_tag '.orchestration.image.tag')
+          managementIdentity: $(get_tag '.identity.image.tag')
+          optimize: $(get_tag '.optimize.image.tag')
+          webModeler: $(get_tag '.webModeler.image.tag')
+          connectors: $(get_tag '.connectors.image.tag')
+          console: $(get_tag '.console.image.tag')
+          YAML
+            )
+          else
+            # 8.6-8.7 classic architecture
+            IMAGE_VERSIONS=$(cat << YAML
+          zeebe: $(get_tag '.zeebe.image.tag')
+          operate: $(get_tag '.operate.image.tag')
+          tasklist: $(get_tag '.tasklist.image.tag')
+          identity: $(get_tag '.identity.image.tag')
+          optimize: $(get_tag '.optimize.image.tag')
+          webModeler: $(get_tag '.webModeler.image.tag')
+          connectors: $(get_tag '.connectors.image.tag')
+          console: $(get_tag '.console.image.tag')
+          YAML
+            )
+          fi
+
+          # Write to temp file and add annotation
+          echo "${IMAGE_VERSIONS}" > /tmp/image-versions.yaml
+          yq -i '.annotations."camunda.io/component-image-versions" = load_str("/tmp/image-versions.yaml")' Chart.yaml
+
+          echo "Added camunda.io/component-image-versions annotation:"
+          yq '.annotations."camunda.io/component-image-versions"' Chart.yaml
 
       - name: Show computed version info
         if: env.SKIP_BUILD == 'false'

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow
 ---
-name: "Chart - Promote RC"
+name: "Chart - Release - Pipeline - 2 - Promote RC"
 
 on:
   workflow_dispatch:
@@ -184,6 +184,14 @@ jobs:
           echo "camunda_version=${camunda_version}" | tee -a $GITHUB_OUTPUT
           echo "chart_dir_id=${camunda_version}" | tee -a $GITHUB_OUTPUT
 
+          # Extract component image versions from annotation (added by dev build)
+          image_versions=$(yq '.annotations."camunda.io/component-image-versions" // ""' /tmp/Chart.yaml)
+          if [[ -n "${image_versions}" ]]; then
+            echo "image_versions<<EOF" >> $GITHUB_OUTPUT
+            echo "${image_versions}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install release-please
         run: npm i release-please -g
 
@@ -315,22 +323,55 @@ jobs:
 
       - name: Summary
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # Build workflow search URLs for traceability
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ steps.parse.outputs.sha }}"
+          DEV_BUILD_SEARCH_URL="https://github.com/${{ github.repository }}/actions/workflows/chart-build-dev.yaml?query=branch%3Amain+is%3Asuccess"
+          SHORT_SHA="${${{ steps.parse.outputs.sha }}:0:7}"
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
           ## RC Promotion Summary
           
           | Property | Value |
           |----------|-------|
-          | **Input Tag** | `${{ inputs.dev-tag }}` |
-          | **Resolved Dev Tag** | `${{ steps.parse.outputs.resolved_tag }}` |
-          | **RC Tag** | `${{ steps.parse.outputs.rc_tag }}` |
-          | **RC Latest Tag** | `${{ steps.parse.outputs.rc_latest_tag }}` |
-          | **Version** | `${{ steps.parse.outputs.version }}` |
-          | **Commit SHA** | `${{ steps.parse.outputs.sha }}` |
-          | **Camunda Version** | `${{ steps.package.outputs.camunda_version }}` |
-          | **Chart Path** | `charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}` |
+          | **Input Tag** | \`${{ inputs.dev-tag }}\` |
+          | **Resolved Dev Tag** | \`${{ steps.parse.outputs.resolved_tag }}\` |
+          | **RC Tag** | \`${{ steps.parse.outputs.rc_tag }}\` |
+          | **RC Latest Tag** | \`${{ steps.parse.outputs.rc_latest_tag }}\` |
+          | **Version** | \`${{ steps.parse.outputs.version }}\` |
+          | **Camunda Version** | \`${{ steps.package.outputs.camunda_version }}\` |
+          | **Chart Path** | \`charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}\` |
+
+          ### 🔗 Traceability
+
+          | Resource | Link |
+          |----------|------|
+          | **Source Commit** | [\`${SHORT_SHA}\`](${COMMIT_URL}) |
+          | **Dev Build Workflow** | [Find build run](${DEV_BUILD_SEARCH_URL}) (search for commit \`${SHORT_SHA}\`) |
+          EOF
+
+          # Add image versions table if available
+          IMAGE_VERSIONS="${{ steps.package.outputs.image_versions }}"
+          if [[ -n "${IMAGE_VERSIONS}" ]]; then
+            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+          ### 🐳 Component Image Versions
+
+          | Component | Version |
+          |-----------|---------|
+          EOF
+            # Parse YAML and format as markdown table rows
+            echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
+              [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           
           ### Release Please PR
-          ${{ steps.release-please.outputs.pr_url || 'PR URL not captured - check release-please output' }}
+          EOF
+          echo "${{ steps.release-please.outputs.pr_url || 'PR URL not captured - check release-please output' }}" >> $GITHUB_STEP_SUMMARY
+          
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           
           ### Next Steps
           1. QA: Test RC package from Harbor using tag `${{ steps.parse.outputs.rc_tag }}`
