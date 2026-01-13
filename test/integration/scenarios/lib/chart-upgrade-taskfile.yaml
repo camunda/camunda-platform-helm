@@ -71,4 +71,4 @@ tasks:
         --set orchestration.upgrade.allowPreReleaseImages=true \
         --force \
         --wait-for-jobs \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }} 
+        --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
