@@ -204,7 +204,7 @@ tasks:
         --timeout 20m0s \
         --wait \
         --wait-for-jobs \
-        {{ .TEST_HELM_EXTRA_ARGS }} | grep -v 'Ignoring non-table value'
+        {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
 
   setup.post:
     cmds:
