@@ -161,6 +161,10 @@ jobs:
           helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
             --version "${{ steps.parse.outputs.resolved_tag }}" \
             --destination .cr-release-packages
+
+          # drop -rc from filename
+          filename=$(ls .cr-release-packages/camunda-platform-*-rc*.tgz)
+          mv "$filename" "${filename/-rc/}"
           
           echo "Downloaded package:"
           ls -la .cr-release-packages/
