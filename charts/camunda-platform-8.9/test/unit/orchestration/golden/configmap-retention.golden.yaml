@@ -1,8 +1,8 @@
 ---
-# Source: camunda-platform/templates/orchestration/configmap-unified.yaml
+# Source: camunda-platform/templates/orchestration/configmap.yaml
 kind: ConfigMap
 metadata:
-  name: camunda-platform-test-zeebe-configuration-unified
+  name: camunda-platform-test-zeebe-configuration
   labels:
     app: camunda-platform
     app.kubernetes.io/name: camunda-platform
