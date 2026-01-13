@@ -8,12 +8,12 @@ metadata:
 data:
   {{- if .Values.webModeler.websockets.configuration }}
   application.yaml: |
-    {{ .Values.webModeler.websockets.configuration | indent 4 | trim }}
+    {{ tpl .Values.webModeler.websockets.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yaml: |
   {{- end }}
   {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
   {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+    {{ tpl $val $ | indent 4 | trim }}
   {{- end }}
 {{- end }}

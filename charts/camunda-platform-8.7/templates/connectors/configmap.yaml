@@ -8,7 +8,7 @@ metadata:
 data:
   {{- if .Values.connectors.configuration }}
   application.yml: |
-    {{ .Values.connectors.configuration | indent 4 | trim }}
+    {{ tpl .Values.connectors.configuration $ | indent 4 | trim }}
   {{- else }}
   application.yml: |
     server:
@@ -68,6 +68,6 @@ data:
 
 {{- range $key, $val := .Values.connectors.extraConfiguration }}
   {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+    {{ tpl $val $ | indent 4 | trim }}
   {{- end }}
 {{- end }}
