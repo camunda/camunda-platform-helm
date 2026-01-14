@@ -155,6 +155,11 @@ on:
         required: false
         default: ""
         type: string
+      include-image-tags:
+        description: Include the image tags file for substitution from values-config
+        required: false
+        default: false
+        type: boolean
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -315,7 +320,7 @@ jobs:
       values-config: ${{ inputs.values-config }}
       always-delete-namespace: ${{ inputs.always-delete-namespace }}
       initialClaimValue: ${{ inputs.initialClaimValue }}
-
+      include-image-tags: ${{ inputs.include-image-tags }}
   print-outputs:
     name: Print outputs
     runs-on: ubuntu-latest

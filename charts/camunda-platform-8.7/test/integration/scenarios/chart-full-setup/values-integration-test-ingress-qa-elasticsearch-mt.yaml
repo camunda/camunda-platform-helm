@@ -4,30 +4,14 @@ global:
   image:
     pullPolicy: Always
 zeebe:
-  image:
-    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
 tasklist:
-  image:
-    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
 operate:
-  image:
-    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
 optimize:
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
 webModeler:
   restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
   webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
   websockets:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
 console:
-  image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
   overrideConfiguration: |
     camunda:
       console:
@@ -52,8 +36,6 @@ console:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
       value: "true"
 identity:
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
     user: demo
     existingSecret: vault-mapped-secrets
@@ -185,8 +167,6 @@ identity:
     - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
       value: APPLICATION
 connectors:
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:
     - name: username
       value: username
@@ -194,3 +174,4 @@ connectors:
       value: password
     - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
       value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
+orchestration: {}
