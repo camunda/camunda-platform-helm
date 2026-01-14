@@ -2,10 +2,6 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 
 ## [camunda-platform-14.0.0-alpha3](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-14.0.0-alpha3) (2026-01-14)
 
-### ⚠ BREAKING CHANGES
-
-- **No default secondaryStorage** ([#4820](https://github.com/camunda/camunda-platform-helm/issues/4820)) - Secondary storage is no longer enabled by default
-
 ### Refactor
 
 - Remove unused identity redirect-url (#4853)
@@ -17,7 +13,6 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 - Add rdbms type option to values.yaml (#4883)
 - Asdf installation cache passes in an env var that doesn't get rendered (#4947)
 - Do not redundantly set zeebe exporter options when set in secondary-storage (#4950)
-- No default secondaryStorage (#4820)
 
 ### Documentation
 

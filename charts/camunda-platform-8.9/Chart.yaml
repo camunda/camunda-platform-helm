@@ -85,5 +85,3 @@ annotations:
       description: "Asdf installation cache passes in an env var that doesn't get rendered"
     - kind: fixed
       description: "Do not redundantly set zeebe exporter options when set in secondary-storage"
-    - kind: fixed
-      description: "Add missing breaking change to RELEASE-NOTES.md"
