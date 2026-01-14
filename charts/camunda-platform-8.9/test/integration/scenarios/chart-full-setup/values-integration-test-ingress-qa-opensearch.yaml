@@ -69,9 +69,6 @@ webModeler:
   security:
     authentication:
       method: oidc
-  restapi:
-  webapp:
-  websockets:
 console:
   enabled: true
   overrideConfiguration: |
