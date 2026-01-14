@@ -153,6 +153,11 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.OutputTestEnv, "output-test-env", false, "Generate a .env file for E2E tests after deployment")
 	f.StringVar(&flags.OutputTestEnvPath, "output-test-env-path", ".env.test", "Path for the test .env file output (for multi-scenario: used as base, e.g., .env.test.{scenario})")
 
+	// Test execution flags
+	f.BoolVar(&flags.RunIntegrationTests, "test-it", false, "Run integration tests after deployment")
+	f.BoolVar(&flags.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
+	f.BoolVar(&flags.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
+
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
 	registerScenarioCompletion(rootCmd, "auth")
