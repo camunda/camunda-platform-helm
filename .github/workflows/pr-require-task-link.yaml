@@ -1,0 +1,49 @@
+name: PR - Require Task Link
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-task-link:
+    name: Check Task Link
+    # Skip release-please PRs, dependency updates, and automation
+    if: ${{ !startsWith(github.head_ref, 'release-please--') && !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'automation/renovatebot') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for task link in PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # Check if PR body is empty
+          if [ -z "$PR_BODY" ]; then
+            echo "::error::PR body is empty. Please add a description with a link to a GitHub issue."
+            echo ""
+            echo "Expected formats:"
+            echo "  - Issue reference: #123, org/repo#123"
+            echo "  - Full URL: https://github.com/org/repo/issues/123"
+            exit 1
+          fi
+
+          # Pattern to match GitHub issue references:
+          # - #123 (same repo)
+          # - org/repo#123 (cross-repo)
+          # - https://github.com/org/repo/issues/123 (full URL)
+          ISSUE_PATTERN='(#[0-9]+|[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+#[0-9]+|https://github\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+/issues/[0-9]+)'
+
+          if echo "$PR_BODY" | grep -qE "$ISSUE_PATTERN"; then
+            echo "✓ Found task link in PR body"
+            # Show matched references
+            echo ""
+            echo "Matched references:"
+            echo "$PR_BODY" | grep -oE "$ISSUE_PATTERN" | head -5
+          else
+            echo "::error::No task link found in PR body."
+            echo ""
+            echo "Please add a link to a GitHub issue in your PR description."
+            echo ""
+            echo "Expected formats:"
+            echo "  - Issue reference: #123, org/repo#123"
+            echo "  - Full URL: https://github.com/org/repo/issues/123"
+            exit 1
+          fi
