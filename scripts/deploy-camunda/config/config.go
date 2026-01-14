@@ -57,6 +57,8 @@ type DeploymentConfig struct {
 	RepoRoot                 string   `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
 	ScenarioRoot             string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
 	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
+	RunIntegrationTests      *bool    `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
+	RunE2ETests              *bool    `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
 }
 
 // RootConfig represents the entire configuration file.
@@ -95,6 +97,8 @@ type RootConfig struct {
 	RenderTemplates          *bool                       `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
 	RenderOutputDir          string                      `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
 	ExtraValues              []string                    `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
+	RunIntegrationTests      *bool                       `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
+	RunE2ETests              *bool                       `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
 	Keycloak                 KeycloakConfig              `mapstructure:"keycloak" yaml:"keycloak,omitempty"`
 	Deployments              map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
 	FilePath                 string                      `mapstructure:"-" yaml:"-"`
