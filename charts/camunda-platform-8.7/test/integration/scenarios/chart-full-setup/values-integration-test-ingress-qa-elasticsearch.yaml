@@ -1,14 +1,6 @@
 global:
   image:
     pullPolicy: Always
-zeebe:
-tasklist:
-operate:
-optimize:
-webModeler:
-  restapi:
-  webapp:
-  websockets:
 console:
   overrideConfiguration: |
     camunda:
@@ -137,4 +129,3 @@ connectors:
       value: username
     - name: password
       value: password
-orchestration: {}

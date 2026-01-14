@@ -1,15 +1,6 @@
 global:
   image:
     pullPolicy: Always
-zeebe:
-tasklist:
-operate:
-optimize:
-webModeler:
-  restapi:
-  webapp:
-  websockets:
-console:
 identity:
   firstUser:
     user: demo
@@ -114,4 +105,3 @@ connectors:
       value: username
     - name: password
       value: password
-orchestration: {}
