@@ -3,14 +3,6 @@ global:
     pullPolicy: Always
   license:
     key:
-zeebe:
-tasklist:
-operate:
-optimize:
-webModeler:
-  restapi:
-  webapp:
-  websockets:
 console:
   overrideConfiguration: |
     camunda:
@@ -139,4 +131,3 @@ connectors:
       value: username
     - name: password
       value: password
-orchestration: {}

@@ -126,4 +126,3 @@ connectors:
   env:
     - name: OPERATE_CLIENT_SCOPE
       value: $ENTRA_APP_CLIENT_ID/.default
-orchestration: {}

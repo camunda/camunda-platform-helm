@@ -1,7 +1,6 @@
 global:
   image:
     pullPolicy: Always
-zeebe:
 tasklist:
   env:
     - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
@@ -10,11 +9,6 @@ operate:
   env:
     - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
       value: 'true'
-optimize:
-webModeler:
-  restapi:
-  webapp:
-  websockets:
 console:
   overrideConfiguration: |
     camunda:
@@ -148,4 +142,3 @@ connectors:
       value: username
     - name: password
       value: password
-orchestration: {}
