@@ -15,16 +15,17 @@ import (
 
 func Execute() {
 	var (
-		chartPath    string
-		scenario     string
-		valuesConfig string
-		licenseKey   string
-		output       string
-		outputDir    string
-		envFile      string
-		interactive  bool
-		logLevel     string
-		noColor      bool
+		chartPath     string
+		scenario      string
+		valuesConfig  string
+		licenseKey    string
+		output        string
+		outputDir     string
+		envFile       string
+		interactive   bool
+		logLevel      string
+		noColor       bool
+		imageTagsFile string
 	)
 
 	root := &cobra.Command{
@@ -72,19 +73,30 @@ func Execute() {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := values.Options{
-				ChartPath:    chartPath,
-				Scenario:     scenario,
-				ScenarioDir:  filepath.Join(chartPath, "test", "integration", "scenarios", "chart-full-setup"),
-				ValuesConfig: valuesConfig,
-				LicenseKey:   licenseKey,
-				Output:       output,
-				OutputDir:    outputDir,
-				Interactive:  interactive,
-				EnvFile:      envFile,
+				ChartPath:     chartPath,
+				Scenario:      scenario,
+				ScenarioDir:   filepath.Join(chartPath, "test", "integration", "scenarios", "chart-full-setup"),
+				ValuesConfig:  valuesConfig,
+				LicenseKey:    licenseKey,
+				Output:        output,
+				OutputDir:     outputDir,
+				Interactive:   interactive,
+				EnvFile:       envFile,
+				ImageTagsFile: imageTagsFile,
 			}
 
 			if opts.EnvFile == "" {
 				opts.EnvFile = ".env" // Default for persistence
+			}
+
+			// Process image tags file first (if provided)
+			imageTagsOutput, err := values.ProcessImageTags(opts)
+			if err != nil {
+				logging.Logger.Error().Err(err).Msg("Failed to process image tags file")
+				return err
+			}
+			if imageTagsOutput != "" {
+				logging.Logger.Info().Str("image-tags-output", imageTagsOutput).Msg("Processed image tags file")
 			}
 
 			valuesFile, err := values.ResolveValuesFile(opts)
@@ -127,6 +139,7 @@ func Execute() {
 	root.Flags().StringVar(&output, "output", "", "Output file path (defaults to scenario values file in-place)")
 	root.Flags().StringVar(&outputDir, "output-dir", "", "Output directory path (writes with scenario-based filename)")
 	root.Flags().StringVar(&envFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
+	root.Flags().StringVar(&imageTagsFile, "image-tags-file", "", "Path to image tags values file for substitution (optional)")
 	root.Flags().BoolVar(&interactive, "interactive", true, "Enable interactive prompts for missing variables")
 	root.Flags().StringVar(&logLevel, "log-level", "info", "Log level: trace, debug, info, warn, error")
 	root.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")

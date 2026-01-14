@@ -1,4 +1,4 @@
-name: "Chart - Build - Dev"
+name: "Chart - Release - Pipeline - 1 - Build Dev"
 
 # Builds immutable dev packages for all active chart versions.
 # These packages are release-ready (transformations applied) and stored in Harbor
@@ -33,6 +33,37 @@ on:
           Leave empty to build all active versions.
         required: false
         type: string
+      orchestration-image-tag:
+        type: string
+        required: false
+      zeebe-image-tag:
+        type: string
+        required: false
+      zeebe-gateway-image-tag:
+        type: string
+        required: false
+      operate-image-tag:
+        type: string
+        required: false
+      tasklist-image-tag:
+        type: string
+        required: false
+      console-image-tag:
+        type: string
+        required: false
+      modeler-image-tag:
+        type: string
+        required: false
+      connectors-image-tag:
+        type: string
+        required: false
+      optimize-image-tag:
+        type: string
+        required: false
+      identity-image-tag:
+        type: string
+        required: false
+
 
 env:
   CHART_NAME: "camunda-platform"
@@ -53,6 +84,18 @@ jobs:
 
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
+
+      - name: Info - ℹ️ Print workflow inputs ℹ️
+        env:
+          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+        run: |
+          if [[ -n "${INITIAL_CLAIM_VALUE}" ]]; then
+            echo "::add-mask::${INITIAL_CLAIM_VALUE}"
+          fi
+          echo "Workflow Inputs:"
+          echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
+          echo "Workflow Inputs - Extra Values:"
+          echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: Get chart versions
         id: chart-versions
@@ -130,12 +173,33 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            golang
             helm
             oras
             yq
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Build values-injector
+        env:
+          CONSOLE_IMAGE_TAG: ${{ inputs.console-image-tag }}
+          CONNECTORS_IMAGE_TAG: ${{ inputs.connectors-image-tag }}
+          IDENTITY_IMAGE_TAG: ${{ inputs.identity-image-tag }}
+          WEB_MODELER_IMAGE_TAG: ${{ inputs.modeler-image-tag }}
+          OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-image-tag }}
+          ORCHESTRATION_IMAGE_TAG: ${{ inputs.orchestration-image-tag }}
+          ZEEBE_IMAGE_TAG: ${{ inputs.zeebe-image-tag }}
+          ZEEBE_GATEWAY_IMAGE_TAG: ${{ inputs.zeebe-gateway-image-tag }}
+          OPERATE_IMAGE_TAG: ${{ inputs.operate-image-tag }}
+          TASKLIST_IMAGE_TAG: ${{ inputs.tasklist-image-tag }}
+          CHART_VERSION: ${{ matrix.chart.version }}
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          cd scripts/values-injector
+          go build
+          cd $(git rev-parse --show-toplevel)
+          ./scripts/values-injector/values-injector
 
       - name: Login to Harbor registry
         run: |
@@ -296,6 +360,53 @@ jobs:
 
           echo "Updated Chart.yaml:"
           head -50 Chart.yaml
+
+      - name: Add component image versions to Chart.yaml annotations
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          # Extract image tags from values.yaml and add as Chart.yaml annotation
+          # This makes the artifact self-documenting with exact component versions
+
+          get_tag() {
+            local path=$1
+            yq -r "${path} // \"N/A\"" values.yaml
+          }
+
+          # Version-specific components (order matches workflow summary)
+          CAMUNDA_MINOR=$(echo "${{ env.CAMUNDA_VERSION }}" | sed 's/^8\.//')
+
+          if [[ ${CAMUNDA_MINOR} -ge 8 ]]; then
+            # 8.8+ orchestration architecture
+            IMAGE_VERSIONS=$(cat << YAML
+          camunda: $(get_tag '.orchestration.image.tag')
+          managementIdentity: $(get_tag '.identity.image.tag')
+          optimize: $(get_tag '.optimize.image.tag')
+          webModeler: $(get_tag '.webModeler.image.tag')
+          connectors: $(get_tag '.connectors.image.tag')
+          console: $(get_tag '.console.image.tag')
+          YAML
+            )
+          else
+            # 8.6-8.7 classic architecture
+            IMAGE_VERSIONS=$(cat << YAML
+          zeebe: $(get_tag '.zeebe.image.tag')
+          operate: $(get_tag '.operate.image.tag')
+          tasklist: $(get_tag '.tasklist.image.tag')
+          identity: $(get_tag '.identity.image.tag')
+          optimize: $(get_tag '.optimize.image.tag')
+          webModeler: $(get_tag '.webModeler.image.tag')
+          connectors: $(get_tag '.connectors.image.tag')
+          console: $(get_tag '.console.image.tag')
+          YAML
+            )
+          fi
+
+          # Write to temp file and add annotation
+          echo "${IMAGE_VERSIONS}" > /tmp/image-versions.yaml
+          yq -i '.annotations."camunda.io/component-image-versions" = load_str("/tmp/image-versions.yaml")' Chart.yaml
+
+          echo "Added camunda.io/component-image-versions annotation:"
+          yq '.annotations."camunda.io/component-image-versions"' Chart.yaml
 
       - name: Show computed version info
         if: env.SKIP_BUILD == 'false'

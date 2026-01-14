@@ -186,6 +186,12 @@ tasks:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
+      IMAGE_TAGS_ARGS=""
+      if [[ -f /tmp/values-image-tags-processed.yaml ]]; then
+        IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
+        echo "Including processed image tags file"
+      fi
+
       helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
@@ -200,11 +206,12 @@ tasks:
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
+        $IMAGE_TAGS_ARGS \
         --values /tmp/extra-values-file.yaml \
         --timeout 20m0s \
         --wait \
         --wait-for-jobs \
-        {{ .TEST_HELM_EXTRA_ARGS }}
+        {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
 
   setup.post:
     cmds:

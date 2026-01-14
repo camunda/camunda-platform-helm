@@ -35,7 +35,7 @@ func TestGoldenDefaultsTemplateOrchestration(t *testing.T) {
 		"service-headless",
 		"serviceaccount",
 		"statefulset",
-		"configmap-unified",
+		"configmap",
 	}
 
 	for _, name := range templateNames {
