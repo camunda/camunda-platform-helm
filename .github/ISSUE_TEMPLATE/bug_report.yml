@@ -1,0 +1,85 @@
+name: Bug report
+description: Report a bug in the Camunda Platform Helm charts
+title: "[BUG] "
+labels:
+  - kind/bug
+
+body:
+  - type: dropdown
+    id: affected-version
+    attributes:
+      label: Affected version(s)
+      description: |
+        Select the affected Helm chart version(s).
+        Labels will be applied based on the corresponding Camunda version.
+      multiple: true
+      options:
+        - 11.x (Camunda 8.6)
+        - 12.x (Camunda 8.7)
+        - 13.x (Camunda 8.8)
+        - 14.x (Camunda 8.9)
+        - unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: User impact
+      options:
+        - low
+        - mid
+        - high
+        - critical
+        - unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: likelihood
+    attributes:
+      label: Likelihood
+      description: How likely it is to occur
+      options:
+        - low
+        - mid
+        - high
+        - unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Bug details
+      description: Provide enough information to reproduce the issue.
+      value: |
+        ## Summary
+        <!-- Short, concrete description of the problem -->
+
+        ## Impact
+        <!-- What is broken and for whom? -->
+
+        ## Steps to Reproduce
+        1.
+        2.
+        3.
+
+        ## Expected Behavior
+        <!-- What you expected to happen -->
+
+        ## Actual Behavior
+        <!-- What actually happened -->
+
+        ## Environment
+        <!-- Issues without environment details may be closed -->
+
+        - Platform: <!-- [e.g. GCP, AWS, etc] -->
+        - Helm CLI version: <!-- [e.g. 3.10.0] -->
+        - Values file: <!-- [e.g. include or link to your values file] -->
+
+        ## Evidence
+        <!-- Logs, error messages, screenshots -->
+    validations:
+      required: true
