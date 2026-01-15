@@ -101,8 +101,10 @@ jobs:
       - name: Generate version matrix
         run: |
           make helm.repos-add
-          make release.generate-version-matrix-released
           for chartPath in "${CHANGED_CHARTS}"; do
+            # Extract app version (e.g., 8.8 from charts/camunda-platform-8.8)
+            appVersion=$(echo "$chartPath" | sed 's|charts/camunda-platform-||')
+            CAMUNDA_VERSION=$appVersion make -e release.generate-version-matrix-released
             chartPath=$chartPath make -e release.generate-version-matrix-index
             chartPath=$chartPath make -e release.generate-version-matrix-unreleased
           done
