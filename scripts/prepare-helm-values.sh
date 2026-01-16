@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euox pipefail
 
 if ! command -v go > /dev/null 2>&1; then
   echo "[ERR ] Go toolchain not found on PATH; cannot run prepare-helm-values CLI" >&2
