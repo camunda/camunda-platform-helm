@@ -790,6 +790,11 @@
                                             "description": "Enable AWS document store configuration.",
                                             "default": false
                                         },
+                                        "useCredentialsInSecret": {
+                                            "type": "boolean",
+                                            "description": "When set to false, no AWS credentials are injected into pods, allowing IRSA (IAM Roles for Service Accounts) to be used. When true (default), credentials are required via existingSecret or accessKeyId/secretAccessKey configuration.",
+                                            "default": true
+                                        },
                                         "storeId": {
                                             "type": "string",
                                             "description": "Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
