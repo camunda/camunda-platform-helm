@@ -1,0 +1,9 @@
+global:
+  ingress:
+    tls:
+      secretName: aws-camunda-cloud-tls
+orchestration:
+  ingress:
+    grpc:
+      tls:
+        secretName: aws-camunda-cloud-tls
