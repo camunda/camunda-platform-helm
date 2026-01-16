@@ -1634,7 +1634,7 @@ func runTests(ctx context.Context, flags *config.RuntimeFlags, results []*Scenar
 				Str("namespace", result.Namespace).
 				Msg("Running integration tests")
 
-			err := executeIntegrationTests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.Platform)
+			err := executeIntegrationTests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.Platform, flags.KubeContext)
 			testResults = append(testResults, &TestResult{
 				Scenario:  result.Scenario,
 				Namespace: result.Namespace,
@@ -1663,7 +1663,7 @@ func runTests(ctx context.Context, flags *config.RuntimeFlags, results []*Scenar
 				Str("namespace", result.Namespace).
 				Msg("Running e2e tests")
 
-			err := executeE2ETests(ctx, scriptsDir, flags.ChartPath, result.Namespace)
+			err := executeE2ETests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.KubeContext)
 			testResults = append(testResults, &TestResult{
 				Scenario:  result.Scenario,
 				Namespace: result.Namespace,
@@ -1754,7 +1754,7 @@ func resolveScriptsDir(flags *config.RuntimeFlags) (string, error) {
 }
 
 // executeIntegrationTests runs the integration test script against a deployment.
-func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespace, platform string) error {
+func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespace, platform, kubeContext string) error {
 	scriptPath := filepath.Join(scriptsDir, "run-integration-tests.sh")
 
 	// Verify script exists
@@ -1773,14 +1773,23 @@ func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespa
 		Str("chartPath", absChartPath).
 		Str("namespace", namespace).
 		Str("platform", platform).
+		Str("kubeContext", kubeContext).
 		Msg("Executing integration tests")
 
-	// Build command
-	cmd := exec.CommandContext(ctx, scriptPath,
+	// Build command arguments
+	args := []string{
 		"--absolute-chart-path", absChartPath,
 		"--namespace", namespace,
 		"--platform", platform,
-	)
+	}
+
+	// Add kube-context if specified
+	if kubeContext != "" {
+		args = append(args, "--kube-context", kubeContext)
+	}
+
+	// Build command
+	cmd := exec.CommandContext(ctx, scriptPath, args...)
 
 	// Set working directory to scripts dir
 	cmd.Dir = scriptsDir
@@ -1801,7 +1810,7 @@ func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespa
 }
 
 // executeE2ETests runs the e2e test script against a deployment.
-func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace string) error {
+func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace, kubeContext string) error {
 	scriptPath := filepath.Join(scriptsDir, "run-e2e-tests.sh")
 
 	// Verify script exists
@@ -1819,13 +1828,22 @@ func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace strin
 		Str("script", scriptPath).
 		Str("chartPath", absChartPath).
 		Str("namespace", namespace).
+		Str("kubeContext", kubeContext).
 		Msg("Executing e2e tests")
 
-	// Build command
-	cmd := exec.CommandContext(ctx, scriptPath,
+	// Build command arguments
+	args := []string{
 		"--absolute-chart-path", absChartPath,
 		"--namespace", namespace,
-	)
+	}
+
+	// Add kube-context if specified
+	if kubeContext != "" {
+		args = append(args, "--kube-context", kubeContext)
+	}
+
+	// Build command
+	cmd := exec.CommandContext(ctx, scriptPath, args...)
 
 	// Set working directory to scripts dir
 	cmd.Dir = scriptsDir
