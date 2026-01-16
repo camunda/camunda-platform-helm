@@ -618,16 +618,16 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 	// Print summary
 	printMultiScenarioSummary(results, flags)
 
-	// Return error if any scenario failed
-	var hasErrors bool
+	// Return error if any scenario failed deployment
+	var hasDeploymentErrors bool
 	for _, r := range results {
 		if r.Error != nil {
-			hasErrors = true
+			hasDeploymentErrors = true
 			break
 		}
 	}
 
-	if hasErrors {
+	if hasDeploymentErrors {
 		return fmt.Errorf("one or more scenarios failed deployment")
 	}
 
@@ -641,6 +641,10 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 			}
 			// Only run tests once - against the first successful deployment
 			break
+	// Phase 3: Run tests if requested (only if all deployments succeeded)
+	if flags.RunTestsIT || flags.RunTestsE2E {
+		if err := runTests(ctx, flags, results); err != nil {
+			return err
 		}
 	}
 
@@ -681,6 +685,13 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 	// Phase 3: Run tests if requested
 	if err := RunTests(ctx, flags, result.Namespace); err != nil {
 		return fmt.Errorf("post-deployment tests failed: %w", err)
+	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix)
+
+	// Phase 3: Run tests if requested
+	if flags.RunTestsIT || flags.RunTestsE2E {
+		if err := runTests(ctx, flags, []*ScenarioResult{result}); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -1565,6 +1576,351 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 			}
 			out.WriteString("\n")
 			out.WriteString(fmt.Sprintf("  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port))))
+		}
+	}
+
+	logging.Logger.Info().Msg(out.String())
+}
+
+// TestResult holds the result of a test execution for a scenario.
+type TestResult struct {
+	Scenario  string
+	Namespace string
+	TestType  string // "integration" or "e2e"
+	Error     error
+}
+
+// runTests executes integration and/or e2e tests against all successful deployments.
+// Tests run sequentially against each deployment to avoid resource contention.
+func runTests(ctx context.Context, flags *config.RuntimeFlags, results []*ScenarioResult) error {
+	// Filter to only successful deployments
+	var successfulResults []*ScenarioResult
+	for _, r := range results {
+		if r.Error == nil {
+			successfulResults = append(successfulResults, r)
+		}
+	}
+
+	if len(successfulResults) == 0 {
+		logging.Logger.Warn().Msg("No successful deployments to run tests against")
+		return nil
+	}
+
+	logging.Logger.Info().
+		Int("count", len(successfulResults)).
+		Bool("runIT", flags.RunTestsIT).
+		Bool("runE2E", flags.RunTestsE2E).
+		Msg("Starting test execution against deployed scenarios")
+
+	// Resolve the scripts directory
+	scriptsDir, err := resolveScriptsDir(flags)
+	if err != nil {
+		return fmt.Errorf("failed to resolve scripts directory: %w", err)
+	}
+
+	var testResults []*TestResult
+
+	// Run tests sequentially against each deployment
+	for _, result := range successfulResults {
+		logging.Logger.Info().
+			Str("scenario", result.Scenario).
+			Str("namespace", result.Namespace).
+			Msg("Running tests against deployment")
+
+		// Run integration tests if requested
+		if flags.RunTestsIT {
+			logging.Logger.Info().
+				Str("scenario", result.Scenario).
+				Str("namespace", result.Namespace).
+				Msg("Running integration tests")
+
+			err := executeIntegrationTests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.Platform)
+			testResults = append(testResults, &TestResult{
+				Scenario:  result.Scenario,
+				Namespace: result.Namespace,
+				TestType:  "integration",
+				Error:     err,
+			})
+
+			if err != nil {
+				logging.Logger.Error().
+					Err(err).
+					Str("scenario", result.Scenario).
+					Str("namespace", result.Namespace).
+					Msg("Integration tests failed")
+			} else {
+				logging.Logger.Info().
+					Str("scenario", result.Scenario).
+					Str("namespace", result.Namespace).
+					Msg("Integration tests passed")
+			}
+		}
+
+		// Run e2e tests if requested
+		if flags.RunTestsE2E {
+			logging.Logger.Info().
+				Str("scenario", result.Scenario).
+				Str("namespace", result.Namespace).
+				Msg("Running e2e tests")
+
+			err := executeE2ETests(ctx, scriptsDir, flags.ChartPath, result.Namespace)
+			testResults = append(testResults, &TestResult{
+				Scenario:  result.Scenario,
+				Namespace: result.Namespace,
+				TestType:  "e2e",
+				Error:     err,
+			})
+
+			if err != nil {
+				logging.Logger.Error().
+					Err(err).
+					Str("scenario", result.Scenario).
+					Str("namespace", result.Namespace).
+					Msg("E2E tests failed")
+			} else {
+				logging.Logger.Info().
+					Str("scenario", result.Scenario).
+					Str("namespace", result.Namespace).
+					Msg("E2E tests passed")
+			}
+		}
+	}
+
+	// Print test summary
+	printTestSummary(testResults)
+
+	// Check if any tests failed
+	var failedTests []string
+	for _, tr := range testResults {
+		if tr.Error != nil {
+			failedTests = append(failedTests, fmt.Sprintf("%s/%s (%s)", tr.Scenario, tr.Namespace, tr.TestType))
+		}
+	}
+
+	if len(failedTests) > 0 {
+		return fmt.Errorf("tests failed for: %s", strings.Join(failedTests, ", "))
+	}
+
+	return nil
+}
+
+// resolveScriptsDir determines the path to the scripts directory.
+func resolveScriptsDir(flags *config.RuntimeFlags) (string, error) {
+	// If repoRoot is set, use it directly
+	if flags.RepoRoot != "" {
+		scriptsDir := filepath.Join(flags.RepoRoot, "scripts")
+		if _, err := os.Stat(scriptsDir); err == nil {
+			return scriptsDir, nil
+		}
+	}
+
+	// Try to find scripts relative to chart path
+	// Charts are typically at <repo>/charts/<chart-name> or just <repo>/<chart-name>
+	chartPath := flags.ChartPath
+	if chartPath != "" {
+		// Try going up from chart path to find scripts directory
+		// e.g., /path/to/repo/charts/camunda-platform-8.7 -> /path/to/repo/scripts
+		for i := 0; i < 4; i++ {
+			parentDir := chartPath
+			for j := 0; j < i; j++ {
+				parentDir = filepath.Dir(parentDir)
+			}
+			scriptsDir := filepath.Join(parentDir, "scripts")
+			if _, err := os.Stat(scriptsDir); err == nil {
+				// Verify it's the right scripts directory by checking for our test scripts
+				itScript := filepath.Join(scriptsDir, "run-integration-tests.sh")
+				e2eScript := filepath.Join(scriptsDir, "run-e2e-tests.sh")
+				if _, err := os.Stat(itScript); err == nil {
+					if _, err := os.Stat(e2eScript); err == nil {
+						return scriptsDir, nil
+					}
+				}
+			}
+		}
+	}
+
+	// Fall back to current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
+	scriptsDir := filepath.Join(cwd, "scripts")
+	if _, err := os.Stat(scriptsDir); err == nil {
+		return scriptsDir, nil
+	}
+
+	return "", fmt.Errorf("could not find scripts directory; set --repo-root or run from repository root")
+}
+
+// executeIntegrationTests runs the integration test script against a deployment.
+func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespace, platform string) error {
+	scriptPath := filepath.Join(scriptsDir, "run-integration-tests.sh")
+
+	// Verify script exists
+	if _, err := os.Stat(scriptPath); err != nil {
+		return fmt.Errorf("integration test script not found at %s: %w", scriptPath, err)
+	}
+
+	// Resolve absolute chart path
+	absChartPath, err := filepath.Abs(chartPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute chart path: %w", err)
+	}
+
+	logging.Logger.Debug().
+		Str("script", scriptPath).
+		Str("chartPath", absChartPath).
+		Str("namespace", namespace).
+		Str("platform", platform).
+		Msg("Executing integration tests")
+
+	// Build command
+	cmd := exec.CommandContext(ctx, scriptPath,
+		"--absolute-chart-path", absChartPath,
+		"--namespace", namespace,
+		"--platform", platform,
+	)
+
+	// Set working directory to scripts dir
+	cmd.Dir = scriptsDir
+
+	// Stream output to logger
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Run the command
+	if err := cmd.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("integration tests exited with code %d", exitErr.ExitCode())
+		}
+		return fmt.Errorf("failed to run integration tests: %w", err)
+	}
+
+	return nil
+}
+
+// executeE2ETests runs the e2e test script against a deployment.
+func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace string) error {
+	scriptPath := filepath.Join(scriptsDir, "run-e2e-tests.sh")
+
+	// Verify script exists
+	if _, err := os.Stat(scriptPath); err != nil {
+		return fmt.Errorf("e2e test script not found at %s: %w", scriptPath, err)
+	}
+
+	// Resolve absolute chart path
+	absChartPath, err := filepath.Abs(chartPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute chart path: %w", err)
+	}
+
+	logging.Logger.Debug().
+		Str("script", scriptPath).
+		Str("chartPath", absChartPath).
+		Str("namespace", namespace).
+		Msg("Executing e2e tests")
+
+	// Build command
+	cmd := exec.CommandContext(ctx, scriptPath,
+		"--absolute-chart-path", absChartPath,
+		"--namespace", namespace,
+	)
+
+	// Set working directory to scripts dir
+	cmd.Dir = scriptsDir
+
+	// Stream output to logger
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Run the command
+	if err := cmd.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("e2e tests exited with code %d", exitErr.ExitCode())
+		}
+		return fmt.Errorf("failed to run e2e tests: %w", err)
+	}
+
+	return nil
+}
+
+// printTestSummary outputs a summary of all test results.
+func printTestSummary(results []*TestResult) {
+	if len(results) == 0 {
+		return
+	}
+
+	passCount := 0
+	failCount := 0
+	for _, r := range results {
+		if r.Error == nil {
+			passCount++
+		} else {
+			failCount++
+		}
+	}
+
+	if !logging.IsTerminal(os.Stdout.Fd()) {
+		// Plain, machine-friendly output
+		var out strings.Builder
+		fmt.Fprintf(&out, "\ntest execution: completed\n")
+		fmt.Fprintf(&out, "total tests: %d\n", len(results))
+		fmt.Fprintf(&out, "passed: %d\n", passCount)
+		fmt.Fprintf(&out, "failed: %d\n", failCount)
+		fmt.Fprintf(&out, "\ntest results:\n")
+		for _, r := range results {
+			status := "passed"
+			if r.Error != nil {
+				status = "failed"
+			}
+			fmt.Fprintf(&out, "- scenario: %s\n", r.Scenario)
+			fmt.Fprintf(&out, "  namespace: %s\n", r.Namespace)
+			fmt.Fprintf(&out, "  type: %s\n", r.TestType)
+			fmt.Fprintf(&out, "  status: %s\n", status)
+			if r.Error != nil {
+				fmt.Fprintf(&out, "  error: %v\n", r.Error)
+			}
+		}
+		logging.Logger.Info().Msg(out.String())
+		return
+	}
+
+	// Pretty, human-friendly output
+	styleOk := func(s string) string { return logging.Emphasize(s, gchalk.Green) }
+	styleErr := func(s string) string { return logging.Emphasize(s, gchalk.Red) }
+	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
+	styleWarn := func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
+
+	var out strings.Builder
+	out.WriteString("\n")
+
+	if failCount == 0 {
+		out.WriteString(styleOk("✅ All tests passed!"))
+	} else if passCount == 0 {
+		out.WriteString(styleErr("❌ All tests failed"))
+	} else {
+		out.WriteString(styleWarn(fmt.Sprintf("⚠️  Partial success: %d/%d tests passed", passCount, len(results))))
+	}
+	out.WriteString("\n\n")
+
+	out.WriteString(styleHead("Test Summary"))
+	out.WriteString("\n")
+	fmt.Fprintf(&out, "  Total: %s\n", styleVal(fmt.Sprintf("%d", len(results))))
+	fmt.Fprintf(&out, "  Passed: %s\n", styleOk(fmt.Sprintf("%d", passCount)))
+	if failCount > 0 {
+		fmt.Fprintf(&out, "  Failed: %s\n", styleErr(fmt.Sprintf("%d", failCount)))
+	}
+	out.WriteString("\n")
+
+	// Details per test
+	for _, r := range results {
+		if r.Error != nil {
+			fmt.Fprintf(&out, "  %s %s/%s (%s)\n", styleErr("❌"), r.Scenario, r.Namespace, r.TestType)
+			fmt.Fprintf(&out, "     Error: %s\n", styleErr(r.Error.Error()))
+		} else {
+			fmt.Fprintf(&out, "  %s %s/%s (%s)\n", styleOk("✓"), r.Scenario, r.Namespace, r.TestType)
 		}
 	}
 

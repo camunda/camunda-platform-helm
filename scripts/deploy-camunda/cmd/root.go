@@ -188,6 +188,8 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
 	f.StringVar(&flags.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
 	f.BoolVar(&flags.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
+	f.BoolVar(&flags.RunTestsIT, "run-tests-it", false, "Run integration tests after deployment (runs against each deployed scenario)")
+	f.BoolVar(&flags.RunTestsE2E, "run-tests-e2e", false, "Run e2e tests after deployment (runs against each deployed scenario)")
 
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
