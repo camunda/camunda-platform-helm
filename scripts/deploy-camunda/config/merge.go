@@ -46,6 +46,7 @@ type RuntimeFlags struct {
 	ValuesPreset             string
 	Timeout                  int // Timeout in minutes for Helm deployment
 	KubeContext              string
+	UseVaultBackedSecrets    bool
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
