@@ -58,7 +58,7 @@ orchestration:
     ####################
 
 optimize:
-  enabled: false
+  enabled: true
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: custom-optimize
