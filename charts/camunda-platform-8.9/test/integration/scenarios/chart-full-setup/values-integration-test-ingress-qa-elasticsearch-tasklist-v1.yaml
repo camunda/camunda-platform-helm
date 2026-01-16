@@ -72,8 +72,6 @@ webModeler:
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
-  webapp:
-  websockets:
   image:
     pullSecrets:
       - name: index-docker-io

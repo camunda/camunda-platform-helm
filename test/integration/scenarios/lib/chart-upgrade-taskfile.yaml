@@ -30,6 +30,8 @@ tasks:
   exec:
     cmds:
     - |
+      set -o pipefail
+
       {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
       export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
       export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}

@@ -50,10 +50,6 @@ optimize:
         value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
         value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
-webModeler:
-  restapi:
-  webapp:
-  websockets:
 console:
   overrideConfiguration: |
     camunda:
@@ -182,4 +178,3 @@ connectors:
       value: username
     - name: password
       value: password
-orchestration: {}

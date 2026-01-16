@@ -61,9 +61,6 @@ webModeler:
   security:
     authentication:
       method: oidc
-  restapi:
-  webapp:
-  websockets:
 webModelerPostgresql:
   enabled: true
 console:
