@@ -152,6 +152,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
 	f.StringVar(&flags.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
+	f.BoolVar(&flags.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
