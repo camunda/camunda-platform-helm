@@ -151,6 +151,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (appended to ."+config.DefaultIngressBaseDomain+")")
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
+	f.StringVar(&flags.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
 
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
@@ -219,7 +220,7 @@ func Execute() error {
 	rootCmd := NewRootCommand()
 	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 	rootCmd.AddCommand(newConfigCommand())
-	
+
 	err := rootCmd.Execute()
 	if err != nil {
 		// Only show usage/help for usage errors, not runtime errors

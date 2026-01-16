@@ -57,6 +57,7 @@ type DeploymentConfig struct {
 	RepoRoot                 string   `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
 	ScenarioRoot             string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
 	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
+	KubeContext              string   `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
 }
 
 // RootConfig represents the entire configuration file.
@@ -98,6 +99,7 @@ type RootConfig struct {
 	Keycloak                 KeycloakConfig              `mapstructure:"keycloak" yaml:"keycloak,omitempty"`
 	Deployments              map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
 	FilePath                 string                      `mapstructure:"-" yaml:"-"`
+	KubeContext              string                      `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
 }
 
 // ResolvePath determines the config file path to use.
@@ -232,6 +234,9 @@ func applyEnvOverrides(rc *RootConfig) {
 	}
 	if v := get("CAMUNDA_HOSTNAME"); v != "" {
 		rc.IngressHost = v
+	}
+	if v := get("CAMUNDA_KUBE_CONTEXT"); v != "" {
+		rc.KubeContext = v
 	}
 }
 
