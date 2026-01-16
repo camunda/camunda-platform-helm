@@ -17,8 +17,8 @@ type PlatformSecretsProvider interface {
 }
 
 type GKESecretsProvider struct {
-	RepoRoot            string
-	ChartPath           string
+	RepoRoot             string
+	ChartPath            string
 	ExternalSecretsStore string
 }
 
@@ -27,8 +27,8 @@ func (p *GKESecretsProvider) Apply(ctx context.Context, client *Client, namespac
 }
 
 type ROSASecretsProvider struct {
-	RepoRoot            string
-	ChartPath           string
+	RepoRoot             string
+	ChartPath            string
 	ExternalSecretsStore string
 }
 
@@ -37,9 +37,9 @@ func (p *ROSASecretsProvider) Apply(ctx context.Context, client *Client, namespa
 }
 
 type EKSSecretsProvider struct {
-	NamespacePrefix     string
-	RepoRoot            string
-	ChartPath           string
+	NamespacePrefix      string
+	RepoRoot             string
+	ChartPath            string
 	ExternalSecretsStore string
 }
 
@@ -51,21 +51,21 @@ func NewPlatformSecretsProvider(platform, repoRoot, chartPath, namespacePrefix, 
 	switch platform {
 	case platformGKE:
 		return &GKESecretsProvider{
-			RepoRoot:            repoRoot,
-			ChartPath:           chartPath,
+			RepoRoot:             repoRoot,
+			ChartPath:            chartPath,
 			ExternalSecretsStore: externalSecretsStore,
 		}, nil
 	case platformROSA:
 		return &ROSASecretsProvider{
-			RepoRoot:            repoRoot,
-			ChartPath:           chartPath,
+			RepoRoot:             repoRoot,
+			ChartPath:            chartPath,
 			ExternalSecretsStore: externalSecretsStore,
 		}, nil
 	case platformEKS:
 		return &EKSSecretsProvider{
-			NamespacePrefix:     namespacePrefix,
-			RepoRoot:            repoRoot,
-			ChartPath:           chartPath,
+			NamespacePrefix:      namespacePrefix,
+			RepoRoot:             repoRoot,
+			ChartPath:            chartPath,
 			ExternalSecretsStore: externalSecretsStore,
 		}, nil
 	default:
@@ -117,8 +117,14 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		return fmt.Errorf("apply infra secrets: %w", err)
 	}
 
-	chartSpecific := filepath.Join(chartPath, "test", "integration", "external-secrets", "external-secret-integration-test-credentials.yaml")
-	fallback := filepath.Join(externalSecretDir, "external-secret-integration-test-credentials.yaml")
+	// Determine which integration test credentials file to use based on external secrets store
+	integrationCredsFile := "external-secret-integration-test-credentials.yaml"
+	if externalSecretsStore == "vault-backend" {
+		integrationCredsFile = "external-secret-integration-test-credentials-vault.yaml"
+	}
+
+	chartSpecific := filepath.Join(chartPath, "test", "integration", "external-secrets", integrationCredsFile)
+	fallback := filepath.Join(externalSecretDir, integrationCredsFile)
 
 	if fileExists(chartSpecific) {
 		if err := applyManifestFile(ctx, client, namespace, chartSpecific); err != nil {
@@ -157,7 +163,7 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 	logging.Logger.Debug().Str("namespace", namespace).Msg("waiting for ExternalSecrets to become Ready")
 	if err := waitExternalSecretsReady(ctx, client, namespace, externalSecretsReadyTimeout); err != nil {
 		return fmt.Errorf("wait for ExternalSecrets ready: %w", err)
-	}	
+	}
 	return nil
 }
 

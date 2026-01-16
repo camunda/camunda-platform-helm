@@ -1034,6 +1034,15 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Str("identifier", identifier).
 		Msg("🏷️ [executeDeployment] generated deployment identifier")
 
+	// Determine external secrets store - vault-backend if using vault-backed secrets
+	externalSecretsStore := flags.ExternalSecretsStore
+	if flags.UseVaultBackedSecrets {
+		externalSecretsStore = "vault-backend"
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("🔐 [executeDeployment] using vault-backed external secrets")
+	}
+
 	// Build deployment options
 	deployOpts := types.Options{
 		ChartPath:              flags.ChartPath,
@@ -1048,7 +1057,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		EnsureDockerRegistry:   flags.EnsureDockerRegistry,
 		SkipDependencyUpdate:   flags.SkipDependencyUpdate,
 		ExternalSecretsEnabled: flags.ExternalSecrets,
-		ExternalSecretsStore:   flags.ExternalSecretsStore,
+		ExternalSecretsStore:   externalSecretsStore,
 		DockerRegistryUsername: flags.DockerUsername,
 		DockerRegistryPassword: flags.DockerPassword,
 		Platform:               flags.Platform,

@@ -86,6 +86,7 @@ func ParseDebugFlag(value string, defaultPort int) (string, int, error) {
 	return component, port, nil
 	Timeout                  int // Timeout in minutes for Helm deployment
 	KubeContext              string
+	UseVaultBackedSecrets    bool
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
