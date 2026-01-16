@@ -10,10 +10,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	// DefaultIngressBaseDomain is the base domain for CI ingress hosts.
-	DefaultIngressBaseDomain = "ci.distro.ultrawombat.com"
-)
+// ValidIngressBaseDomains lists the allowed base domains for ingress hosts.
+var ValidIngressBaseDomains = []string{
+	"ci.distro.ultrawombat.com",
+	"distribution.aws.camunda.cloud",
+}
 
 // KeycloakConfig holds Keycloak connection settings.
 type KeycloakConfig struct {
@@ -42,6 +43,7 @@ type DeploymentConfig struct {
 	TasklistIndexPrefix      string   `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string   `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
 	IngressHost              string   `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressBaseDomain        string   `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	Flow                     string   `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string   `mapstructure:"envFile" yaml:"envFile,omitempty"`
 	Interactive              *bool    `mapstructure:"interactive" yaml:"interactive,omitempty"`
@@ -84,6 +86,7 @@ type RootConfig struct {
 	TasklistIndexPrefix      string                      `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string                      `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
 	IngressHost              string                      `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressBaseDomain        string                      `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	Flow                     string                      `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string                      `mapstructure:"envFile" yaml:"envFile,omitempty"`
 	Interactive              *bool                       `mapstructure:"interactive" yaml:"interactive,omitempty"`
