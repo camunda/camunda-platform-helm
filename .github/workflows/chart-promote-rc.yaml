@@ -334,58 +334,52 @@ jobs:
 
       - name: Summary
         run: |
-          # Build workflow search URLs for traceability
-          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ steps.parse.outputs.sha }}"
-          DEV_BUILD_SEARCH_URL="https://github.com/${{ github.repository }}/actions/workflows/chart-build-dev.yaml?query=branch%3Amain+is%3Asuccess"
-          SHORT_SHA="${${{ steps.parse.outputs.sha }}:0:7}"
+          VERSION="${{ steps.parse.outputs.version }}"
+          RC_TAG="${{ steps.parse.outputs.rc_tag }}"
+          DEV_TAG="${{ steps.parse.outputs.resolved_tag }}"
+          COMMIT_SHA="${{ steps.parse.outputs.sha }}"
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          CAMUNDA_VERSION="${{ steps.package.outputs.camunda_version }}"
+          IMAGE_VERSIONS="${{ steps.package.outputs.image_versions }}"
+
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
 
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## RC Promotion Summary
-          
-          | Property | Value |
-          |----------|-------|
-          | **Input Tag** | \`${{ inputs.dev-tag }}\` |
-          | **Resolved Dev Tag** | \`${{ steps.parse.outputs.resolved_tag }}\` |
-          | **RC Tag** | \`${{ steps.parse.outputs.rc_tag }}\` |
-          | **RC Latest Tag** | \`${{ steps.parse.outputs.rc_latest_tag }}\` |
-          | **Version** | \`${{ steps.parse.outputs.version }}\` |
-          | **Camunda Version** | \`${{ steps.package.outputs.camunda_version }}\` |
-          | **Chart Path** | \`charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}\` |
+          ## ✅ RC Promoted: ${VERSION}
 
-          ### 🔗 Traceability
-
-          | Resource | Link |
-          |----------|------|
-          | **Source Commit** | [\`${SHORT_SHA}\`](${COMMIT_URL}) |
-          | **Dev Build Workflow** | [Find build run](${DEV_BUILD_SEARCH_URL}) (search for commit \`${SHORT_SHA}\`) |
+          | | |
+          |---|---|
+          | **RC Tag** | \`${RC_TAG}\` |
+          | **Dev Tag** | \`${DEV_TAG}\` |
+          | **Camunda** | \`${CAMUNDA_VERSION}\` |
+          | **Source** | [\`${SHORT_SHA}\`](${COMMIT_URL}) |
           EOF
 
-          # Add image versions table if available
-          IMAGE_VERSIONS="${{ steps.package.outputs.image_versions }}"
+          # Add image versions if available
           if [[ -n "${IMAGE_VERSIONS}" ]]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
-          ### 🐳 Component Image Versions
-
-          | Component | Version |
-          |-----------|---------|
-          EOF
-            # Parse YAML and format as markdown table rows
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Component Images" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
             echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
               [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |" >> $GITHUB_STEP_SUMMARY
             done
           fi
 
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          
-          ### Release Please PR
-          EOF
-          echo "${{ steps.release-please.outputs.pr_url || 'PR URL not captured - check release-please output' }}" >> $GITHUB_STEP_SUMMARY
-          
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          
+          PR_URL="${{ steps.release-please.outputs.pr_url }}"
+          if [[ -n "${PR_URL}" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Release Please PR" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "[${PR_URL}](${PR_URL})" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
           ### Next Steps
-          1. QA: Test RC package from Harbor using tag `${{ steps.parse.outputs.rc_tag }}`
-          2. Review the release-please PR for correctness
-          3. Once tests pass, run **Public Release** workflow with RC tag
+
+          1. QA: Test RC from Harbor using \`${RC_TAG}\`
+          2. Review release-please PR
+          3. Run **Chart - Release - Pipeline - 3 - Public** with \`${RC_TAG}\`
           EOF

@@ -173,7 +173,9 @@ jobs:
         uses: ./.github/actions/install-tool-versions
         with:
           tools: |
+            git-cliff
             golang
+            gomplate
             helm
             oras
             yq
@@ -445,6 +447,20 @@ jobs:
         run: |
           echo "Applied release transformations:"
           git --no-pager diff --stat
+
+      #
+      # Generate release notes
+      #
+      - name: Generate RELEASE-NOTES.md
+        if: env.SKIP_BUILD == 'false'
+        working-directory: ${{ github.workspace }}
+        run: |
+          # Generate release notes using the same script as the release process
+          bash scripts/generate-release-notes.sh --main ${{ matrix.chart.directory }}
+          bash scripts/generate-release-notes.sh --footer ${{ matrix.chart.directory }}
+          
+          echo "Generated RELEASE-NOTES.md:"
+          cat ${{ matrix.chart.directory }}/RELEASE-NOTES.md
 
       #
       # Package and publish
