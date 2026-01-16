@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/format"
 	"sort"
@@ -267,8 +268,14 @@ Examples:
 
 // completeConfigKeys provides shell completion for config keys.
 func completeConfigKeys(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	// If we already have an argument, no more completions
-	if len(args) >= 1 {
+	// If we have one argument (the key), provide value completions for specific keys
+	if len(args) == 1 {
+		key := args[0]
+		return completeConfigValue(key, toComplete)
+	}
+
+	// If we have two or more arguments, no more completions
+	if len(args) >= 2 {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
@@ -309,4 +316,82 @@ func completeConfigKeys(cmd *cobra.Command, args []string, toComplete string) ([
 
 	sort.Strings(completions)
 	return completions, cobra.ShellCompDirectiveNoSpace
+}
+
+// completeConfigValue provides value completions for specific config keys.
+func completeConfigValue(key, toComplete string) ([]string, cobra.ShellCompDirective) {
+	// Extract the actual key name (after the last dot for deployment-specific keys)
+	keyName := key
+	if idx := strings.LastIndex(key, "."); idx >= 0 {
+		keyName = key[idx+1:]
+	}
+
+	switch keyName {
+	case "kubeContext":
+		return completeKubeContexts(toComplete)
+	case "platform":
+		return completePlatforms(toComplete)
+	case "externalSecrets", "skipDependencyUpdate", "interactive",
+		"autoGenerateSecrets", "deleteNamespace", "ensureDockerRegistry", "renderTemplates":
+		return completeBooleans(toComplete)
+	case "logLevel":
+		return completeLogLevels(toComplete)
+	default:
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+// completeKubeContexts returns available kubectl contexts.
+func completeKubeContexts(toComplete string) ([]string, cobra.ShellCompDirective) {
+	// Run kubectl config get-contexts to get available contexts
+	out, err := exec.Command("kubectl", "config", "get-contexts", "-o", "name").Output()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var contexts []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		ctx := strings.TrimSpace(line)
+		if ctx != "" && (toComplete == "" || strings.HasPrefix(ctx, toComplete)) {
+			contexts = append(contexts, ctx)
+		}
+	}
+
+	return contexts, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completePlatforms returns available platform values.
+func completePlatforms(toComplete string) ([]string, cobra.ShellCompDirective) {
+	platforms := []string{"gke", "eks", "rosa"}
+	var completions []string
+	for _, p := range platforms {
+		if toComplete == "" || strings.HasPrefix(p, toComplete) {
+			completions = append(completions, p)
+		}
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeBooleans returns boolean value completions.
+func completeBooleans(toComplete string) ([]string, cobra.ShellCompDirective) {
+	bools := []string{"true", "false"}
+	var completions []string
+	for _, b := range bools {
+		if toComplete == "" || strings.HasPrefix(b, toComplete) {
+			completions = append(completions, b)
+		}
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeLogLevels returns log level completions.
+func completeLogLevels(toComplete string) ([]string, cobra.ShellCompDirective) {
+	levels := []string{"debug", "info", "warn", "error"}
+	var completions []string
+	for _, l := range levels {
+		if toComplete == "" || strings.HasPrefix(l, toComplete) {
+			completions = append(completions, l)
+		}
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
 }

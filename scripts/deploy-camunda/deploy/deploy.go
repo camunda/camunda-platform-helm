@@ -241,6 +241,7 @@ func redactDeployOpts(opts types.Options) map[string]interface{} {
 		"version":                opts.Version,
 		"releaseName":            opts.ReleaseName,
 		"namespace":              opts.Namespace,
+		"kubeContext":            opts.KubeContext,
 		"timeout":                opts.Timeout.String(),
 		"wait":                   opts.Wait,
 		"atomic":                 opts.Atomic,
@@ -903,6 +904,14 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 			Msg("🔐 [executeDeployment] using vault-backed external secrets")
 	}
 
+	// Log kubeContext if set
+	if flags.KubeContext != "" {
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("kubeContext", flags.KubeContext).
+			Msg("🔧 [executeDeployment] using specified kubeContext")
+	}
+
 	// Build deployment options
 	deployOpts := types.Options{
 		ChartPath:              flags.ChartPath,
@@ -910,6 +919,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Version:                flags.ChartVersion,
 		ReleaseName:            scenarioCtx.Release,
 		Namespace:              scenarioCtx.Namespace,
+		KubeContext:            flags.KubeContext,
 		Wait:                   true,
 		Atomic:                 true,
 		Timeout:                time.Duration(timeoutMinutes) * time.Minute,
@@ -946,7 +956,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	// Delete namespace first if requested
 	if flags.DeleteNamespaceFirst {
 		logging.Logger.Info().Str("namespace", scenarioCtx.Namespace).Str("scenario", scenarioCtx.ScenarioName).Msg("Deleting namespace prior to deployment as requested")
-		if err := deleteNamespace(ctx, scenarioCtx.Namespace); err != nil {
+		if err := deleteNamespace(ctx, flags.KubeContext, scenarioCtx.Namespace); err != nil {
 			logging.Logger.Debug().
 				Err(err).
 				Str("namespace", scenarioCtx.Namespace).
@@ -1073,8 +1083,8 @@ func generateTestSecrets(envFile string) error {
 }
 
 // deleteNamespace deletes a Kubernetes namespace.
-func deleteNamespace(ctx context.Context, namespace string) error {
-	return kube.DeleteNamespace(ctx, "", "", namespace)
+func deleteNamespace(ctx context.Context, kubeContext, namespace string) error {
+	return kube.DeleteNamespace(ctx, "", kubeContext, namespace)
 }
 
 // printDeploymentSummary outputs the deployment results.
