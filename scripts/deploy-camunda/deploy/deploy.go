@@ -250,7 +250,12 @@ func redactDeployOpts(opts types.Options) map[string]interface{} {
 		"ttl":                    opts.TTL,
 		"ensureDockerRegistry":   opts.EnsureDockerRegistry,
 		"dockerRegistryUsername": opts.DockerRegistryUsername,
-		"dockerRegistryPassword": func() string { if opts.DockerRegistryPassword != "" { return redacted }; return "" }(),
+		"dockerRegistryPassword": func() string {
+			if opts.DockerRegistryPassword != "" {
+				return redacted
+			}
+			return ""
+		}(),
 		"skipDockerLogin":        opts.SkipDockerLogin,
 		"skipDependencyUpdate":   opts.SkipDependencyUpdate,
 		"applyIntegrationCreds":  opts.ApplyIntegrationCreds,
@@ -889,6 +894,15 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Str("identifier", identifier).
 		Msg("🏷️ [executeDeployment] generated deployment identifier")
 
+	// Determine external secrets store - vault-backend if using vault-backed secrets
+	externalSecretsStore := flags.ExternalSecretsStore
+	if flags.UseVaultBackedSecrets {
+		externalSecretsStore = "vault-backend"
+		logging.Logger.Debug().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("🔐 [executeDeployment] using vault-backed external secrets")
+	}
+
 	// Build deployment options
 	deployOpts := types.Options{
 		ChartPath:              flags.ChartPath,
@@ -903,7 +917,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		EnsureDockerRegistry:   flags.EnsureDockerRegistry,
 		SkipDependencyUpdate:   flags.SkipDependencyUpdate,
 		ExternalSecretsEnabled: flags.ExternalSecrets,
-		ExternalSecretsStore:   flags.ExternalSecretsStore,
+		ExternalSecretsStore:   externalSecretsStore,
 		DockerRegistryUsername: flags.DockerUsername,
 		DockerRegistryPassword: flags.DockerPassword,
 		Platform:               flags.Platform,
