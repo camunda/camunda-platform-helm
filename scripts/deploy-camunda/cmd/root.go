@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/deploy-camunda/config"
@@ -157,6 +158,8 @@ func NewRootCommand() *cobra.Command {
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
 	registerScenarioCompletion(rootCmd, "auth")
+	registerKubeContextCompletion(rootCmd)
+	registerPlatformCompletion(rootCmd)
 
 	return rootCmd
 }
@@ -214,6 +217,55 @@ func registerScenarioCompletion(cmd *cobra.Command, flagName string) {
 		// Use NoSpace directive to allow continuing with comma for multi-select
 		return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
 	})
+}
+
+// registerKubeContextCompletion adds tab completion for the --kube-context flag.
+func registerKubeContextCompletion(cmd *cobra.Command) {
+	_ = cmd.RegisterFlagCompletionFunc("kube-context", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		contexts, err := getKubeContexts()
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		var completions []string
+		for _, ctx := range contexts {
+			if toComplete == "" || strings.HasPrefix(ctx, toComplete) {
+				completions = append(completions, ctx)
+			}
+		}
+		return completions, cobra.ShellCompDirectiveNoFileComp
+	})
+}
+
+// registerPlatformCompletion adds tab completion for the --platform flag.
+func registerPlatformCompletion(cmd *cobra.Command) {
+	_ = cmd.RegisterFlagCompletionFunc("platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		platforms := []string{"gke", "eks", "rosa"}
+		var completions []string
+		for _, p := range platforms {
+			if toComplete == "" || strings.HasPrefix(p, toComplete) {
+				completions = append(completions, p)
+			}
+		}
+		return completions, cobra.ShellCompDirectiveNoFileComp
+	})
+}
+
+// getKubeContexts returns available kubectl contexts.
+func getKubeContexts() ([]string, error) {
+	out, err := exec.Command("kubectl", "config", "get-contexts", "-o", "name").Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var contexts []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		ctx := strings.TrimSpace(line)
+		if ctx != "" {
+			contexts = append(contexts, ctx)
+		}
+	}
+	return contexts, nil
 }
 
 // Execute runs the root command.
