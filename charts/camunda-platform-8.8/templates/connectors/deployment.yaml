@@ -66,6 +66,10 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
+            {{- if .Values.connectors.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.connectors.springConfigImport | quote }}
+            {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}

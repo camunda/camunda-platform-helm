@@ -768,6 +768,52 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				require.Equal(s.T(), expectedDNSConfig, statefulSet.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
 		}, {
+			Name:   "TestSpringConfigImportDefault",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then - SPRING_CONFIG_IMPORT should be set with default value
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name:  "SPRING_CONFIG_IMPORT",
+					Value: "optional:file:./config/additional-spring-properties.yaml",
+				}, "SPRING_CONFIG_IMPORT should be set with default value")
+			},
+		}, {
+			Name: "TestSpringConfigImportCustomValue",
+			Values: map[string]string{
+				"orchestration.springConfigImport": "optional:file:./config/custom-config.yaml",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then - SPRING_CONFIG_IMPORT should be set with custom value
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name:  "SPRING_CONFIG_IMPORT",
+					Value: "optional:file:./config/custom-config.yaml",
+				}, "SPRING_CONFIG_IMPORT should be set with custom value")
+			},
+		}, {
+			Name: "TestSpringConfigImportEmpty",
+			Values: map[string]string{
+				"orchestration.springConfigImport": "",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then - SPRING_CONFIG_IMPORT should NOT be present when empty
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				for _, envvar := range env {
+					s.Require().NotEqual("SPRING_CONFIG_IMPORT", envvar.Name,
+						"SPRING_CONFIG_IMPORT should not be present when empty")
+				}
+			},
+		}, {
 			// Test hybrid auth: orchestration uses basic auth, so no OIDC secret needed
 			Name: "TestHybridAuthOrchestrationBasicNoOidcSecret",
 			Values: map[string]string{

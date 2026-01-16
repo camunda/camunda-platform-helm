@@ -74,3 +74,4 @@ data:
     fi
 
   broker-log4j2.xml: |
+  additional-spring-properties.yaml: |
