@@ -236,6 +236,10 @@ camunda:
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
       {{- end }}
+      {{- if .Values.orchestration.security.initialization.authorizations }}
+      authorizations:
+        {{- .Values.orchestration.security.initialization.authorizations | toYaml | nindent 8 }}
+      {{- end }}
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
