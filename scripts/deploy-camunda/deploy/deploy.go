@@ -205,7 +205,12 @@ func redactDeployOpts(opts types.Options) map[string]interface{} {
 		"ttl":                    opts.TTL,
 		"ensureDockerRegistry":   opts.EnsureDockerRegistry,
 		"dockerRegistryUsername": opts.DockerRegistryUsername,
-		"dockerRegistryPassword": func() string { if opts.DockerRegistryPassword != "" { return redacted }; return "" }(),
+		"dockerRegistryPassword": func() string {
+			if opts.DockerRegistryPassword != "" {
+				return redacted
+			}
+			return ""
+		}(),
 		"skipDockerLogin":        opts.SkipDockerLogin,
 		"skipDependencyUpdate":   opts.SkipDependencyUpdate,
 		"applyIntegrationCreds":  opts.ApplyIntegrationCreds,
@@ -480,6 +485,20 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 	if hasErrors {
 		return fmt.Errorf("one or more scenarios failed deployment")
 	}
+
+	// Run tests for each successful deployment (in parallel)
+	// For multi-scenario deployments, we run tests against the first successful namespace
+	// since all scenarios should be equivalent for testing purposes
+	for _, r := range results {
+		if r.Error == nil {
+			if err := RunTests(ctx, flags, r.Namespace); err != nil {
+				return fmt.Errorf("post-deployment tests failed for namespace %s: %w", r.Namespace, err)
+			}
+			// Only run tests once - against the first successful deployment
+			break
+		}
+	}
+
 	return nil
 }
 
@@ -503,6 +522,12 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 
 	// Print single deployment summary
 	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix)
+
+	// Phase 3: Run tests if requested
+	if err := RunTests(ctx, flags, result.Namespace); err != nil {
+		return fmt.Errorf("post-deployment tests failed: %w", err)
+	}
+
 	return nil
 }
 
