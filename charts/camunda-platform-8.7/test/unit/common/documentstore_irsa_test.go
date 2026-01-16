@@ -78,9 +78,10 @@ func hasAwsSecretAccessKeyEnvVar(containers []corev1.Container) bool {
 // baseValues returns common values needed for chart rendering
 func baseValues() map[string]string {
 	return map[string]string{
-		"identity.enabled": "true",
-		"connectors.security.authentication.oidc.existingSecret.existingSecret":    "foo",
-		"orchestration.security.authentication.oidc.existingSecret.existingSecret": "bar",
+		"global.identity.auth.publicIssuerUrl":  "https://example.com",
+		"global.identity.auth.issuerBackendUrl": "https://example.com",
+		"identity.firstUser.password":           "testpassword",
+		"connectors.inbound.mode":               "disabled",
 	}
 }
 
@@ -104,12 +105,12 @@ func awsDocumentStoreValuesWithIRSA(irsaEnabled bool) map[string]string {
 	return values
 }
 
-func (s *documentStoreIRSATest) TestOrchestrationStatefulSetWithIRSA() {
+func (s *documentStoreIRSATest) TestZeebeStatefulSetWithIRSA() {
+	templates := []string{"templates/zeebe/statefulset.yaml"}
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/orchestration/statefulset.yaml",
-			Values:   awsDocumentStoreValuesWithIRSA(true),
+			Name:   "AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: awsDocumentStoreValuesWithIRSA(true),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var statefulSet appsv1.StatefulSet
@@ -123,9 +124,8 @@ func (s *documentStoreIRSATest) TestOrchestrationStatefulSetWithIRSA() {
 			},
 		},
 		{
-			Name:     "AWS credentials SHOULD be injected when irsa.enabled is false (default)",
-			Template: "templates/orchestration/statefulset.yaml",
-			Values:   awsDocumentStoreValuesWithIRSA(false),
+			Name:   "AWS credentials SHOULD be injected when irsa.enabled is false (default)",
+			Values: awsDocumentStoreValuesWithIRSA(false),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var statefulSet appsv1.StatefulSet
@@ -140,10 +140,50 @@ func (s *documentStoreIRSATest) TestOrchestrationStatefulSetWithIRSA() {
 		},
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+}
+
+func (s *documentStoreIRSATest) TestZeebeGatewayWithIRSA() {
+	templates := []string{"templates/zeebe-gateway/deployment.yaml"}
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "Zeebe Gateway: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: awsDocumentStoreValuesWithIRSA(true),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
+			},
+		},
+		{
+			Name:   "Zeebe Gateway: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: awsDocumentStoreValuesWithIRSA(false),
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
+				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestConsoleWithIRSA() {
+	templates := []string{"templates/console/deployment.yaml"}
+
 	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
 	valuesIRSA["console.enabled"] = "true"
 
@@ -152,9 +192,8 @@ func (s *documentStoreIRSATest) TestConsoleWithIRSA() {
 
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "Console: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/console/deployment.yaml",
-			Values:   valuesIRSA,
+			Name:   "Console: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: valuesIRSA,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -168,9 +207,8 @@ func (s *documentStoreIRSATest) TestConsoleWithIRSA() {
 			},
 		},
 		{
-			Name:     "Console: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/console/deployment.yaml",
-			Values:   valuesWithCredentials,
+			Name:   "Console: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: valuesWithCredentials,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -185,15 +223,15 @@ func (s *documentStoreIRSATest) TestConsoleWithIRSA() {
 		},
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
+	templates := []string{"templates/connectors/deployment.yaml"}
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "Connectors: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/connectors/deployment.yaml",
-			Values:   awsDocumentStoreValuesWithIRSA(true),
+			Name:   "Connectors: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: awsDocumentStoreValuesWithIRSA(true),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -207,9 +245,8 @@ func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
 			},
 		},
 		{
-			Name:     "Connectors: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/connectors/deployment.yaml",
-			Values:   awsDocumentStoreValuesWithIRSA(false),
+			Name:   "Connectors: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: awsDocumentStoreValuesWithIRSA(false),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -224,15 +261,15 @@ func (s *documentStoreIRSATest) TestConnectorsWithIRSA() {
 		},
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestIdentityWithIRSA() {
+	templates := []string{"templates/identity/deployment.yaml"}
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "Identity: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/identity/deployment.yaml",
-			Values:   awsDocumentStoreValuesWithIRSA(true),
+			Name:   "Identity: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: awsDocumentStoreValuesWithIRSA(true),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -246,9 +283,8 @@ func (s *documentStoreIRSATest) TestIdentityWithIRSA() {
 			},
 		},
 		{
-			Name:     "Identity: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/identity/deployment.yaml",
-			Values:   awsDocumentStoreValuesWithIRSA(false),
+			Name:   "Identity: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: awsDocumentStoreValuesWithIRSA(false),
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -263,21 +299,22 @@ func (s *documentStoreIRSATest) TestIdentityWithIRSA() {
 		},
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
-func (s *documentStoreIRSATest) TestOptimizeWithIRSA() {
+func (s *documentStoreIRSATest) TestOperateWithIRSA() {
+	templates := []string{"templates/operate/deployment.yaml"}
+
 	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
-	valuesIRSA["optimize.enabled"] = "true"
+	valuesIRSA["operate.enabled"] = "true"
 
 	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
-	valuesWithCredentials["optimize.enabled"] = "true"
+	valuesWithCredentials["operate.enabled"] = "true"
 
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "Optimize: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/optimize/deployment.yaml",
-			Values:   valuesIRSA,
+			Name:   "Operate: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: valuesIRSA,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -291,9 +328,8 @@ func (s *documentStoreIRSATest) TestOptimizeWithIRSA() {
 			},
 		},
 		{
-			Name:     "Optimize: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/optimize/deployment.yaml",
-			Values:   valuesWithCredentials,
+			Name:   "Operate: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: valuesWithCredentials,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -308,10 +344,102 @@ func (s *documentStoreIRSATest) TestOptimizeWithIRSA() {
 		},
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+}
+
+func (s *documentStoreIRSATest) TestTasklistWithIRSA() {
+	templates := []string{"templates/tasklist/deployment.yaml"}
+
+	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
+	valuesIRSA["tasklist.enabled"] = "true"
+
+	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
+	valuesWithCredentials["tasklist.enabled"] = "true"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "Tasklist: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: valuesIRSA,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
+			},
+		},
+		{
+			Name:   "Tasklist: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: valuesWithCredentials,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
+				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
+}
+
+func (s *documentStoreIRSATest) TestExecutionIdentityWithIRSA() {
+	templates := []string{"templates/execution-identity/deployment.yaml"}
+
+	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
+	valuesIRSA["executionIdentity.enabled"] = "true"
+
+	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
+	valuesWithCredentials["executionIdentity.enabled"] = "true"
+
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "ExecutionIdentity: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: valuesIRSA,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
+				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
+			},
+		},
+		{
+			Name:   "ExecutionIdentity: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: valuesWithCredentials,
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				containers := deployment.Spec.Template.Spec.Containers
+				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
+					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
+				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
+					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestWebModelerWebappWithIRSA() {
+	templates := []string{"templates/web-modeler/deployment-webapp.yaml"}
+
 	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
 	valuesIRSA["webModeler.enabled"] = "true"
 	valuesIRSA["webModeler.restapi.mail.fromAddress"] = "test@example.com"
@@ -322,9 +450,8 @@ func (s *documentStoreIRSATest) TestWebModelerWebappWithIRSA() {
 
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "WebModeler Webapp: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/web-modeler/deployment-webapp.yaml",
-			Values:   valuesIRSA,
+			Name:   "WebModeler Webapp: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: valuesIRSA,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -338,9 +465,8 @@ func (s *documentStoreIRSATest) TestWebModelerWebappWithIRSA() {
 			},
 		},
 		{
-			Name:     "WebModeler Webapp: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/web-modeler/deployment-webapp.yaml",
-			Values:   valuesWithCredentials,
+			Name:   "WebModeler Webapp: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: valuesWithCredentials,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -355,10 +481,12 @@ func (s *documentStoreIRSATest) TestWebModelerWebappWithIRSA() {
 		},
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }
 
 func (s *documentStoreIRSATest) TestWebModelerRestapiWithIRSA() {
+	templates := []string{"templates/web-modeler/deployment-restapi.yaml"}
+
 	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
 	valuesIRSA["webModeler.enabled"] = "true"
 	valuesIRSA["webModeler.restapi.mail.fromAddress"] = "test@example.com"
@@ -369,9 +497,8 @@ func (s *documentStoreIRSATest) TestWebModelerRestapiWithIRSA() {
 
 	testCases := []testhelpers.TestCase{
 		{
-			Name:     "WebModeler REST API: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/web-modeler/deployment-restapi.yaml",
-			Values:   valuesIRSA,
+			Name:   "WebModeler REST API: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
+			Values: valuesIRSA,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -385,9 +512,8 @@ func (s *documentStoreIRSATest) TestWebModelerRestapiWithIRSA() {
 			},
 		},
 		{
-			Name:     "WebModeler REST API: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/web-modeler/deployment-restapi.yaml",
-			Values:   valuesWithCredentials,
+			Name:   "WebModeler REST API: AWS credentials SHOULD be injected when irsa.enabled is false",
+			Values: valuesWithCredentials,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				var deployment appsv1.Deployment
@@ -402,5 +528,5 @@ func (s *documentStoreIRSATest) TestWebModelerRestapiWithIRSA() {
 		},
 	}
 
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, templates, testCases)
 }

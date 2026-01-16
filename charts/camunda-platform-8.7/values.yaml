@@ -397,6 +397,10 @@ global:
       aws:
         ## @param global.documentStore.type.aws.enabled Enable AWS document store configuration.
         enabled: false
+        ## @extra global.documentStore.type.aws.irsa IRSA (IAM Roles for Service Accounts) configuration for AWS authentication.
+        irsa:
+          ## @param global.documentStore.type.aws.irsa.enabled When set to true, no AWS credentials are injected into pods, allowing IRSA to be used for authentication. When false (default), credentials are required via existingSecret or accessKeyId/secretAccessKey configuration.
+          enabled: false
         ## @param global.documentStore.type.aws.storeId Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.
         storeId: "AWS"
         ## @param global.documentStore.type.aws.region AWS region for the S3 bucket. (example: us-east-1)

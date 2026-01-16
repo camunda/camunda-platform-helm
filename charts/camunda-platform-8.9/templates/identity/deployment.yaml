@@ -104,7 +104,7 @@ spec:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
             {{- end }}
-            {{- if and .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.aws.useCredentialsInSecret }}
+            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
                   "secretType" "accessKeyId"

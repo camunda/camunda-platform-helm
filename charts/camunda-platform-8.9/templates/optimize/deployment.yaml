@@ -200,7 +200,7 @@ spec:
               value: {{ .Values.optimize.upgradeLogLevel | quote }}
             - name: ES_LOG_LEVEL
               value: {{ .Values.optimize.esLogLevel | quote }}
-            {{- if and .Values.global.documentStore.type.aws.enabled .Values.global.documentStore.type.aws.useCredentialsInSecret }}
+            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
                   "secretType" "accessKeyId"
