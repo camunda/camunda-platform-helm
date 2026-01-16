@@ -105,23 +105,31 @@ func applyExternalSecretsCertificates(ctx context.Context, client *Client, repoR
 func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, chartPath, namespace, externalSecretsStore string) error {
 	externalSecretDir := filepath.Join(repoRoot, ".github", "config", "external-secret")
 
-	// Determine which infra secrets file to use based on external secrets store
-	infraSecretFile := "external-secret-infra.yaml"
+	// Determine suffix for vault-backed secrets
+	vaultSuffix := ""
 	if externalSecretsStore == "vault-backend" {
-		infraSecretFile = "external-secret-infra-vault-store.yaml"
+		vaultSuffix = "-vault"
+		logging.Logger.Debug().Msg("using vault-backed external secrets")
 	}
 
+	// Apply infra secrets
+	infraSecretFile := fmt.Sprintf("external-secret-infra%s.yaml", vaultSuffix)
 	if err := applyManifestIfExists(ctx, client, namespace,
 		filepath.Join(externalSecretDir, infraSecretFile),
 		"infra-secrets external-secret"); err != nil {
 		return fmt.Errorf("apply infra secrets: %w", err)
 	}
 
-	// Determine which integration test credentials file to use based on external secrets store
-	integrationCredsFile := "external-secret-integration-test-credentials.yaml"
-	if externalSecretsStore == "vault-backend" {
-		integrationCredsFile = "external-secret-integration-test-credentials-vault.yaml"
+	// Apply credentials secrets
+	credentialsSecretFile := fmt.Sprintf("external-secret-credentials%s.yaml", vaultSuffix)
+	if err := applyManifestIfExists(ctx, client, namespace,
+		filepath.Join(externalSecretDir, credentialsSecretFile),
+		"credentials external-secret"); err != nil {
+		return fmt.Errorf("apply credentials secrets: %w", err)
 	}
+
+	// Determine which integration test credentials file to use based on external secrets store
+	integrationCredsFile := fmt.Sprintf("external-secret-integration-test-credentials%s.yaml", vaultSuffix)
 
 	chartSpecific := filepath.Join(chartPath, "test", "integration", "external-secrets", integrationCredsFile)
 	fallback := filepath.Join(externalSecretDir, integrationCredsFile)
