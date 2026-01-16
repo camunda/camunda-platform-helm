@@ -71,8 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Enable first user and add additional users with roles in qa scenario"
-    - kind: fixed
-      description: "Remove constraint of identity.enabled=false and optimize.enabled=true"
+  artifacthub.io/changes: ""
