@@ -280,3 +280,209 @@ func MergeStringSliceField(target *[]string, depVal, rootVal []string) {
 		}
 	}
 }
+
+// SetValue sets a configuration value in the config file.
+// Key format: "key" for root-level or "deployment.key" for deployment-specific.
+func SetValue(cfgPath, key, value string) error {
+	// Read current config as raw map to preserve unknown fields
+	content, err := os.ReadFile(cfgPath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+
+	var data map[string]any
+	if len(content) > 0 {
+		if err := yaml.Unmarshal(content, &data); err != nil {
+			return fmt.Errorf("failed to parse config: %w", err)
+		}
+	}
+	if data == nil {
+		data = make(map[string]any)
+	}
+
+	// Check if this is a deployment-specific key (contains a dot)
+	if idx := strings.Index(key, "."); idx > 0 {
+		depName := key[:idx]
+		fieldKey := key[idx+1:]
+
+		// Ensure deployments map exists
+		deployments, ok := data["deployments"].(map[string]any)
+		if !ok {
+			deployments = make(map[string]any)
+			data["deployments"] = deployments
+		}
+
+		// Ensure specific deployment exists
+		dep, ok := deployments[depName].(map[string]any)
+		if !ok {
+			dep = make(map[string]any)
+			deployments[depName] = dep
+		}
+
+		// Set the value (with type conversion for booleans)
+		dep[fieldKey] = parseValue(value)
+	} else {
+		// Root-level key
+		data[key] = parseValue(value)
+	}
+
+	// Write back
+	out, err := yaml.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	dir := filepath.Dir(cfgPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	return os.WriteFile(cfgPath, out, 0o644)
+}
+
+// GetValue gets a configuration value from the config file.
+// Key format: "key" for root-level or "deployment.key" for deployment-specific.
+func GetValue(cfgPath, key string) (string, error) {
+	content, err := os.ReadFile(cfgPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read config: %w", err)
+	}
+
+	var data map[string]any
+	if err := yaml.Unmarshal(content, &data); err != nil {
+		return "", fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	// Check if this is a deployment-specific key
+	if idx := strings.Index(key, "."); idx > 0 {
+		depName := key[:idx]
+		fieldKey := key[idx+1:]
+
+		deployments, ok := data["deployments"].(map[string]any)
+		if !ok {
+			return "", fmt.Errorf("no deployments configured")
+		}
+
+		dep, ok := deployments[depName].(map[string]any)
+		if !ok {
+			return "", fmt.Errorf("deployment %q not found", depName)
+		}
+
+		val, ok := dep[fieldKey]
+		if !ok {
+			return "", fmt.Errorf("key %q not found in deployment %q", fieldKey, depName)
+		}
+
+		return formatValue(val), nil
+	}
+
+	// Root-level key
+	val, ok := data[key]
+	if !ok {
+		return "", fmt.Errorf("key %q not found", key)
+	}
+
+	return formatValue(val), nil
+}
+
+// CreateDeployment creates a new empty deployment configuration.
+func CreateDeployment(cfgPath, name string) error {
+	content, err := os.ReadFile(cfgPath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+
+	var data map[string]any
+	if len(content) > 0 {
+		if err := yaml.Unmarshal(content, &data); err != nil {
+			return fmt.Errorf("failed to parse config: %w", err)
+		}
+	}
+	if data == nil {
+		data = make(map[string]any)
+	}
+
+	// Ensure deployments map exists
+	deployments, ok := data["deployments"].(map[string]any)
+	if !ok {
+		deployments = make(map[string]any)
+		data["deployments"] = deployments
+	}
+
+	// Check if deployment already exists
+	if _, exists := deployments[name]; exists {
+		return fmt.Errorf("deployment %q already exists", name)
+	}
+
+	// Create empty deployment
+	deployments[name] = make(map[string]any)
+
+	// Write back
+	out, err := yaml.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	dir := filepath.Dir(cfgPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	return os.WriteFile(cfgPath, out, 0o644)
+}
+
+// parseValue converts a string value to an appropriate type.
+func parseValue(value string) any {
+	// Try boolean
+	if strings.EqualFold(value, "true") {
+		return true
+	}
+	if strings.EqualFold(value, "false") {
+		return false
+	}
+
+	// Try integer
+	if i, err := parseInt(value); err == nil {
+		return i
+	}
+
+	// Return as string
+	return value
+}
+
+// parseInt attempts to parse a string as an integer.
+func parseInt(s string) (int, error) {
+	var result int
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return 0, fmt.Errorf("not an integer")
+		}
+		result = result*10 + int(c-'0')
+	}
+	return result, nil
+}
+
+// formatValue converts a value to a string for display.
+func formatValue(val any) string {
+	switch v := val.(type) {
+	case string:
+		return v
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case int:
+		return fmt.Sprintf("%d", v)
+	case float64:
+		return fmt.Sprintf("%v", v)
+	case []any:
+		var parts []string
+		for _, item := range v {
+			parts = append(parts, formatValue(item))
+		}
+		return strings.Join(parts, ",")
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
