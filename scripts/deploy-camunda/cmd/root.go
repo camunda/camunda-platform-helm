@@ -173,7 +173,8 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
 	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
 	f.StringVar(&flags.ValuesPreset, "values-preset", "", "Shortcut to append values-<preset>.yaml from chartPath if present (e.g. latest, enterprise)")
-	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (appended to ."+config.DefaultIngressBaseDomain+")")
+	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (requires --ingress-base-domain)")
+	f.StringVar(&flags.IngressBaseDomain, "ingress-base-domain", "", "Base domain for ingress (ci.distro.ultrawombat.com or distribution.aws.camunda.cloud)")
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
 	f.StringSliceVar(&debugFlagsRaw, "debug", nil, "Enable JVM remote debugging for component (repeatable, e.g., --debug orchestration:5005 --debug connectors:5006)")
@@ -196,6 +197,7 @@ func NewRootCommand() *cobra.Command {
 	registerScenarioCompletion(rootCmd, "auth")
 	registerKubeContextCompletion(rootCmd)
 	registerPlatformCompletion(rootCmd)
+	registerIngressBaseDomainCompletion(rootCmd)
 
 	return rootCmd
 }
@@ -281,6 +283,19 @@ func registerPlatformCompletion(cmd *cobra.Command) {
 		for _, p := range platforms {
 			if toComplete == "" || strings.HasPrefix(p, toComplete) {
 				completions = append(completions, p)
+			}
+		}
+		return completions, cobra.ShellCompDirectiveNoFileComp
+	})
+}
+
+// registerIngressBaseDomainCompletion adds tab completion for the --ingress-base-domain flag.
+func registerIngressBaseDomainCompletion(cmd *cobra.Command) {
+	_ = cmd.RegisterFlagCompletionFunc("ingress-base-domain", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var completions []string
+		for _, d := range config.ValidIngressBaseDomains {
+			if toComplete == "" || strings.HasPrefix(d, toComplete) {
+				completions = append(completions, d)
 			}
 		}
 		return completions, cobra.ShellCompDirectiveNoFileComp

@@ -154,7 +154,7 @@ var validConfigKeys = []string{
 	"ingressHost", "flow", "envFile", "interactive", "vaultSecretMapping",
 	"autoGenerateSecrets", "deleteNamespace", "dockerUsername", "dockerPassword",
 	"ensureDockerRegistry", "renderTemplates", "renderOutputDir", "extraValues",
-	"repoRoot", "scenarioRoot", "valuesPreset", "kubeContext",
+	"repoRoot", "scenarioRoot", "valuesPreset", "kubeContext", "ingressBaseDomain",
 }
 
 // newSetCommand creates the set subcommand.
@@ -331,6 +331,8 @@ func completeConfigValue(key, toComplete string) ([]string, cobra.ShellCompDirec
 		return completeKubeContexts(toComplete)
 	case "platform":
 		return completePlatforms(toComplete)
+	case "ingressBaseDomain":
+		return completeIngressBaseDomains(toComplete)
 	case "externalSecrets", "skipDependencyUpdate", "interactive",
 		"autoGenerateSecrets", "deleteNamespace", "ensureDockerRegistry", "renderTemplates":
 		return completeBooleans(toComplete)
@@ -391,6 +393,17 @@ func completeLogLevels(toComplete string) ([]string, cobra.ShellCompDirective) {
 	for _, l := range levels {
 		if toComplete == "" || strings.HasPrefix(l, toComplete) {
 			completions = append(completions, l)
+		}
+	}
+	return completions, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeIngressBaseDomains returns valid ingress base domain completions.
+func completeIngressBaseDomains(toComplete string) ([]string, cobra.ShellCompDirective) {
+	var completions []string
+	for _, d := range config.ValidIngressBaseDomains {
+		if toComplete == "" || strings.HasPrefix(d, toComplete) {
+			completions = append(completions, d)
 		}
 	}
 	return completions, cobra.ShellCompDirectiveNoFileComp
