@@ -45,6 +45,7 @@ type RuntimeFlags struct {
 	ExtraValues              []string
 	ValuesPreset             string
 	Timeout                  int // Timeout in minutes for Helm deployment
+	KubeContext              string
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -92,6 +93,7 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix)
+	MergeStringField(&flags.KubeContext, dep.KubeContext, rc.KubeContext)
 	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	// ScenarioPath special handling
@@ -147,6 +149,7 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix)
+	MergeStringField(&flags.KubeContext, "", rc.KubeContext)
 	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	if rc.ExternalSecrets {
