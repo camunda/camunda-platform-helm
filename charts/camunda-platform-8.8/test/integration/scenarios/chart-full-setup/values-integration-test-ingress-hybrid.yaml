@@ -144,7 +144,6 @@ orchestration:
       tls:
         enabled: true
         # A wildcard certificate will be used.
-        secretName: camunda-platform-zeebe-gateway
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
