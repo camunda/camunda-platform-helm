@@ -142,7 +142,7 @@ runs:
         CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
     - name: Cache - node_modules
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
+      uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5
       with:
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
         key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -150,7 +150,7 @@ runs:
           node_modules-${{ runner.os }}-
 
     - name: Cache - Playwright
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
+      uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5
       with:
         path: ~/.cache/ms-playwright
         key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
