@@ -60,46 +60,16 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 
 ## Dependencies
 
-Camunda 8 Helm chart is an umbrella chart for different components. Some are internal (sub-charts),
-and some are external (third-party). The dependency management is fully automated and managed by Helm itself;
-however, it's good to understand the dependency structure. This third-party dependency is reflected in the Helm chart
-as follows:
 
-```text
-camunda-platform
-  |_ elasticsearch
-  |_ identity
-    |_ keycloak
-      |_ postgresql
-  |_ optimize
-  |_ operate
-  |_ tasklist
-  |_ zeebe
-  |_ postgresql
-```
 
-> [!NOTE]
-> Please note that the Connectors and Web Modeler components are part of the main chart and not implemented as sub-charts.
+The Camunda 8 Helm chart internalizes all Camunda components (such as Zeebe, Operate, Tasklist, Optimize, Identity, Connectors, and Web Modeler) within a single chart. These components are managed directly by the main chart and are not implemented as sub-charts.
 
-For example, Camunda Identity utilizes Keycloak and allows you to manage users, roles, and permissions
-for Camunda 8 components.
+Three third-party dependencies—Keycloak, PostgreSQL, and Elasticsearch—are managed as sub-charts or vendored charts. These are included for convenience and can be enabled or disabled as needed.
 
-- Keycloak is a dependency for Camunda Identity, and PostgreSQL is a dependency for Keycloak.
-- Elasticsearch is a dependency for the Camunda chart, which is used in Zeebe, Operate, Tasklist, and Optimize.
-- PostgreSQL is an optional dependency for the Camunda chart and is used by Web Modeler.
-
-The values for the dependencies Keycloak and PostgreSQL can be set in the same hierarchy:
-
-```yaml
-identity:
-  [identity values]
-  keycloak:
-    [keycloak values]
-    postgresql:
-      [postgresql values]
-postgresql:
-  [postgresql values]
-```
+**Key points:**
+- All Camunda components are internalized and not listed as sub-charts.
+- Keycloak, PostgreSQL, and Elasticsearch are provided as sub-charts or vendored charts.
+- Values for these dependencies can be set directly in the main values file, using their respective keys (e.g., `identityKeycloak`, `identityPostgresql`, `elasticsearch`).
 
 ## Versioning
 
@@ -587,7 +557,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `console.overrideConfiguration`                             | When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`                                                                                                           | `""`                       |
 | `console.image.registry`                                    | can be used to set container image registry.                                                                                                                                                                                                              | `""`                       |
 | `console.image.repository`                                  | defines which image repository to use                                                                                                                                                                                                                     | `camunda/console`          |
-| `console.image.tag`                                         | can be used to set the Docker image tag for the Console image (overwrites global.image.tag)                                                                                                                                                               | `8.7.94`                   |
+| `console.image.tag`                                         | can be used to set the Docker image tag for the Console image (overwrites global.image.tag)                                                                                                                                                               | `8.7.95`                   |
 | `console.image.digest`                                      | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                             | `""`                       |
 | `console.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                   | `[]`                       |
 | `console.sidecars`                                          | can be used to attach extra containers to the console deployment                                                                                                                                                                                          | `[]`                       |
@@ -1140,7 +1110,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `optimize.image`                                             | configuration to configure the Optimize image specifics                                                                                                                                                                                                    |                             |
 | `optimize.image.registry`                                    | can be used to set container image registry                                                                                                                                                                                                                | `""`                        |
 | `optimize.image.repository`                                  | defines which image repository to use                                                                                                                                                                                                                      | `camunda/optimize`          |
-| `optimize.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                 | `8.7.15`                    |
+| `optimize.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                 | `8.7.16`                    |
 | `optimize.image.digest`                                      | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                              | `""`                        |
 | `optimize.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                    | `[]`                        |
 | `optimize.migration`                                         | configuration for Optimize migration                                                                                                                                                                                                                       |                             |
@@ -1322,7 +1292,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `identity.resources.limits.cpu`                              |                                                                                                                                                                                                                                                            | `2000m`                       |
 | `identity.resources.requests.cpu`                            |                                                                                                                                                                                                                                                            | `600m`                        |
 | `identity.resources.limits.memory`                           |                                                                                                                                                                                                                                                            | `2Gi`                         |
-| `identity.env`                                               | can be used to set extra environment variables in each identity container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.                                                  | `[]`                          |
+| `identity.env`                                               | can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/ for more details.                               | `[]`                          |
 | `identity.envFrom`                                           | list of environment variables to import from configMapRef and secretRef                                                                                                                                                                                    | `[]`                          |
 | `identity.command`                                           | can be used to override the default command provided by the container image. See https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/                                                                               | `[]`                          |
 | `identity.extraVolumes`                                      | can be used to define extra volumes for the identity pods, useful for tls and self-signed certificates                                                                                                                                                     | `[]`                          |
@@ -1452,7 +1422,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `webModeler.nameOverride`      | can be used to partly override the name of the WebModeler resources (names will still be prefixed with the release name)                      | `""`     |
 | `webModeler.image`             | configuration of the WebModeler Docker images                                                                                                 |          |
 | `webModeler.image.registry`    | can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)                                           | `""`     |
-| `webModeler.image.tag`         | can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)                                               | `8.7.14` |
+| `webModeler.image.tag`         | can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)                                               | `8.7.15` |
 | `webModeler.image.pullSecrets` | can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod  | `[]`     |
 | `webModeler.contextPath`       | can be used to make WebModeler available on a custom sub-path. This is mainly used to run the Camunda web applications under a single domain. | `""`     |
 
@@ -1771,7 +1741,7 @@ Please see the corresponding [release guide](../../docs/release.md) to find out 
 | `connectors.image`                                             | configuration to configure the Connectors image specifics                                                                                                                                                                                                    |                               |
 | `connectors.image.registry`                                    | can be used to set container image registry.                                                                                                                                                                                                                 | `""`                          |
 | `connectors.image.repository`                                  | defines which image repository to use                                                                                                                                                                                                                        | `camunda/connectors-bundle`   |
-| `connectors.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                   | `8.7.13`                      |
+| `connectors.image.tag`                                         | can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                                   | `8.7.14`                      |
 | `connectors.image.digest`                                      | can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")                                                                                                                                                                                | `""`                          |
 | `connectors.image.pullSecrets`                                 | can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod                                                                                                                      | `[]`                          |
 | `connectors.sidecars`                                          | can be used to attach extra containers to the connectors deployment                                                                                                                                                                                          | `[]`                          |

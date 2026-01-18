@@ -17,15 +17,11 @@ global:
 elasticsearch:
   enabled: false
 zeebe:
-  image:
-    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
   env:
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 operate:
-  image:
-    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
-  env: 
+  env:
     - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
     - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
@@ -37,17 +33,13 @@ operate:
       - name: CAMUNDA_OPERATE_ZEEBEEOPENSEARCH_PREFIX
         value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 tasklist:
-  image:
-    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
   env:
     - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_TASKLIST"
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 optimize:
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
-  env: 
+  env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
@@ -58,19 +50,7 @@ optimize:
         value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
         value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
-webModeler:
-  restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  websockets:
-    image:
-      tag: SNAPSHOT
 console:
-  image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
   overrideConfiguration: |
     camunda:
       console:
@@ -93,10 +73,8 @@ console:
                       url: "https://docs.camunda.io"
   env:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-      value: 'true'      
+      value: 'true'
 identity:
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
     user: demo
     existingSecret: vault-mapped-secrets
@@ -195,8 +173,6 @@ identity:
         - Console
         - Zeebe
 connectors:
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:
     - name: username
       value: username

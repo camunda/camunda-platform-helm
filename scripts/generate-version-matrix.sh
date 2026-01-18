@@ -128,9 +128,17 @@ generate_version_matrix_single () {
 # Generate a version matrix for each released and supported Camunda version.
 # It's still possible to generate the version matrix for all released Camunda versions by setting 
 # CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX to "any" so it will match all versions even unsupported ones.
+# Set CAMUNDA_VERSION to only regenerate a specific version (e.g., CAMUNDA_VERSION=8.8).
 generate_version_matrix_released () {
     get_versions_filtered | jq -c '.[]' | while read SUPPORTED_CAMUNDA_VERSION_DATA; do
         SUPPORTED_CAMUNDA_VERSION="$(echo ${SUPPORTED_CAMUNDA_VERSION_DATA} | jq -r '.app')"
+        
+        # If CAMUNDA_VERSION is set, only process that specific version
+        if [[ -n "${CAMUNDA_VERSION:-}" && "${SUPPORTED_CAMUNDA_VERSION}" != "${CAMUNDA_VERSION}" ]]; then
+            echo -e "#\n# Skipping Camunda ${SUPPORTED_CAMUNDA_VERSION} (CAMUNDA_VERSION=${CAMUNDA_VERSION})\n#"
+            continue
+        fi
+        
         mkdir -p "version-matrix/camunda-${SUPPORTED_CAMUNDA_VERSION}"
         echo -e "#\n# Generating version matrix for Camunda ${SUPPORTED_CAMUNDA_VERSION}\n#"
         generate_version_matrix_single "${SUPPORTED_CAMUNDA_VERSION_DATA}" | tee \

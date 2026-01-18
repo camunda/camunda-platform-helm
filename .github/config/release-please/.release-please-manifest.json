@@ -1,9 +1,15 @@
 {
   "charts/camunda-platform-8.3": "8.3.26",
+  "charts/camunda-platform-8.3+FILLER": "0.0.0",
   "charts/camunda-platform-8.4": "9.7.0",
+  "charts/camunda-platform-8.4+FILLER": "0.0.0",
   "charts/camunda-platform-8.5": "10.11.3",
-  "charts/camunda-platform-8.6": "11.11.3",
-  "charts/camunda-platform-8.7": "12.7.4",
-  "charts/camunda-platform-8.8": "13.3.2",
-  "charts/camunda-platform-8.9": "14.0.0-alpha2"
+  "charts/camunda-platform-8.5+FILLER": "0.0.0",
+  "charts/camunda-platform-8.6": "11.11.4",
+  "charts/camunda-platform-8.6+FILLER": "0.0.0",
+  "charts/camunda-platform-8.7": "12.7.5",
+  "charts/camunda-platform-8.7+FILLER": "0.0.0",
+  "charts/camunda-platform-8.8": "13.4.0",
+  "charts/camunda-platform-8.8+FILLER": "0.0.0",
+  "charts/camunda-platform-8.9": "14.0.0-alpha3"
 }

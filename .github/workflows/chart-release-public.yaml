@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow
 ---
-name: "Chart - Release Public"
+name: "Chart - Release - Pipeline - 3 - Public"
 
 on:
   workflow_dispatch:
@@ -108,6 +108,24 @@ jobs:
           version="${rc_tag%-rc}"
           echo "version=${version}" | tee -a $GITHUB_OUTPUT
 
+          # Find the dev tag associated with this RC for traceability
+          # Query all tags on this artifact to find the dev tag (format: {version}-dev-{sha})
+          all_tags=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${rc_tag}/tags" \
+            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" | jq -r '.[].name' 2>/dev/null || echo "")
+          
+          dev_tag=$(echo "${all_tags}" | grep -E "^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$" | head -1 || echo "")
+          if [[ -n "${dev_tag}" ]]; then
+            echo "dev_tag=${dev_tag}" | tee -a $GITHUB_OUTPUT
+            # Extract commit SHA from dev tag (everything after -dev-)
+            commit_sha="${dev_tag##*-dev-}"
+            echo "commit_sha=${commit_sha}" | tee -a $GITHUB_OUTPUT
+            echo "::notice::Found source dev tag: ${dev_tag} (commit: ${commit_sha})"
+          else
+            echo "::warning::Could not find associated dev tag for traceability"
+            echo "dev_tag=" >> $GITHUB_OUTPUT
+            echo "commit_sha=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
@@ -143,6 +161,10 @@ jobs:
           helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
             --version "${{ steps.parse.outputs.resolved_tag }}" \
             --destination .cr-release-packages
+
+          # drop -rc from filename
+          filename=$(ls .cr-release-packages/camunda-platform-*-rc*.tgz)
+          mv "$filename" "${filename/-rc/}"
           
           echo "Downloaded package:"
           ls -la .cr-release-packages/
@@ -165,6 +187,13 @@ jobs:
           echo "version=${version}" | tee -a $GITHUB_OUTPUT
           echo "app_version=${app_version}" | tee -a $GITHUB_OUTPUT
           echo "prerelease=${prerelease}" | tee -a $GITHUB_OUTPUT
+
+          latest_app_version="$(yq '.camundaVersions.supportStandard.[0]' $(git rev-parse --show-toplevel)/charts/chart-versions.yaml)"
+          is_latest_stable="false"
+          if [[ "${app_version}" == "${latest_app_version}" ]]; then
+            is_latest_stable="true"
+          fi
+          echo "is_latest_stable=${is_latest_stable}" | tee -a $GITHUB_OUTPUT
           
           # Chart dir ID is the app version (e.g., 8.8)
           echo "chart_dir_id=${app_version}" | tee -a $GITHUB_OUTPUT
@@ -176,6 +205,14 @@ jobs:
           # Cosign file names (match current workflow naming)
           echo "cosign_bundle=camunda-platform-${version}-cosign-bundle.json" | tee -a $GITHUB_OUTPUT
           echo "cosign_verify=camunda-platform-${version}-cosign-verify.sh" | tee -a $GITHUB_OUTPUT
+
+          # Extract component image versions from annotation (added by dev build)
+          image_versions=$(yq '.annotations."camunda.io/component-image-versions" // ""' /tmp/Chart.yaml)
+          if [[ -n "${image_versions}" ]]; then
+            echo "image_versions<<EOF" >> $GITHUB_OUTPUT
+            echo "${image_versions}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check if release already exists
         env:
@@ -196,6 +233,7 @@ jobs:
             --push \
             --owner "${{ github.repository_owner }}" \
             --git-repo "$(basename ${{ github.repository }})" \
+            --make-release-latest "${{ steps.metadata.outputs.is_latest_stable }}" \
             --release-name-template "${{ steps.metadata.outputs.release_tag }}"
 
       - name: Run Chart Releaser - Indexing
@@ -208,15 +246,6 @@ jobs:
             --git-repo "$(basename ${{ github.repository }})" \
             --release-name-template "${{ steps.metadata.outputs.release_tag }}"
 
-      - name: Set GitHub release type (prerelease)
-        if: ${{ steps.metadata.outputs.prerelease == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release edit "${{ steps.metadata.outputs.release_tag }}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --prerelease
-
       - name: Sign Helm chart with Cosign
         working-directory: .cr-release-packages
         run: |
@@ -227,7 +256,8 @@ jobs:
         id: rekor
         working-directory: .cr-release-packages
         run: |
-          rekor_log_index=$(jq '.rekorBundle.Payload.logIndex' "${{ steps.metadata.outputs.cosign_bundle }}")
+          # New cosign bundle format uses .verificationMaterial.tlogEntries[0].logIndex
+          rekor_log_index=$(jq -r '.verificationMaterial.tlogEntries[0].logIndex // .rekorBundle.Payload.logIndex // "unavailable"' "${{ steps.metadata.outputs.cosign_bundle }}")
           echo "log_index=${rekor_log_index}" | tee -a $GITHUB_OUTPUT
 
       - name: Create Cosign verify script
@@ -270,12 +300,68 @@ jobs:
 
       - name: Add release info to workflow summary
         run: |
-          echo "ℹ️ Release Published ℹ️" >> $GITHUB_STEP_SUMMARY
-          cat << EOF >> $GITHUB_STEP_SUMMARY
-          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ steps.metadata.outputs.release_tag }}
-          - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ steps.metadata.outputs.version }}
-          - Rekor record: https://search.sigstore.dev/?logIndex=${{ steps.rekor.outputs.log_index }}
-          Note: Artifact Hub link needs some time till AH scrapes the Helm repo index.
+          VERSION="${{ steps.metadata.outputs.version }}"
+          APP_VERSION="${{ steps.metadata.outputs.app_version }}"
+          RELEASE_TAG="${{ steps.metadata.outputs.release_tag }}"
+          PRERELEASE="${{ steps.metadata.outputs.prerelease }}"
+          IMAGE_VERSIONS="${{ steps.metadata.outputs.image_versions }}"
+          REKOR_LOG_INDEX="${{ steps.rekor.outputs.log_index }}"
+          DEV_TAG="${{ steps.parse.outputs.dev_tag }}"
+          COMMIT_SHA="${{ steps.parse.outputs.commit_sha }}"
+
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${RELEASE_TAG}"
+          ARTIFACTHUB_URL="https://artifacthub.io/packages/helm/camunda/camunda-platform/${VERSION}"
+          REKOR_URL="https://search.sigstore.dev/?logIndex=${REKOR_LOG_INDEX}"
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🚀 Helm Chart ${VERSION} Released
+
+          | | |
+          |---|---|
+          | **Chart** | [\`${VERSION}\`](${RELEASE_URL}) |
+          | **Camunda** | \`${APP_VERSION}\` |
+          | **Prerelease** | ${PRERELEASE} |
+          | **Artifact Hub** | [camunda-platform/${VERSION}](${ARTIFACTHUB_URL}) |
+          | **Rekor Log** | [#${REKOR_LOG_INDEX}](${REKOR_URL}) |
+          EOF
+
+          # Add image versions if available
+          if [[ -n "${IMAGE_VERSIONS}" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Component Images" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Component | Version |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
+            echo "${IMAGE_VERSIONS}" | while IFS=': ' read -r component version; do
+              [[ -n "${component}" && -n "${version}" ]] && echo "| ${component} | \`${version}\` |" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          # Add traceability if we have source info
+          if [[ -n "${DEV_TAG}" && -n "${COMMIT_SHA}" ]]; then
+            SHORT_SHA="${COMMIT_SHA:0:7}"
+            COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
+
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ### Traceability
+
+          | | |
+          |---|---|
+          | **Source** | [\`${SHORT_SHA}\`](${COMMIT_URL}) |
+          | **Dev Tag** | \`${DEV_TAG}\` |
+          EOF
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ### Install
+
+          \`\`\`bash
+          helm repo add camunda https://helm.camunda.io
+          helm repo update
+          helm install camunda camunda/camunda-platform --version ${VERSION}
+          \`\`\`
           EOF
 
   post-release:

@@ -30,6 +30,8 @@ tasks:
   exec:
     cmds:
     - |
+      set -o pipefail
+
       {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
       export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
       export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
@@ -53,6 +55,12 @@ tasks:
       {{ end -}}
       {{ end -}}
 
+      IMAGE_TAGS_ARGS=""
+      if [[ -f /tmp/values-image-tags-processed.yaml ]]; then
+        IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
+        echo "Including processed image tags file"
+      fi
+
       helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
@@ -66,9 +74,10 @@ tasks:
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
         --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
+        $IMAGE_TAGS_ARGS \
         --force \
         --timeout 20m0s \
         --set orchestration.upgrade.allowPreReleaseImages=true \
         --force \
         --wait-for-jobs \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }} 
+        --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'

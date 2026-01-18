@@ -670,7 +670,7 @@ identity:
 
   ## @extra identity.logging configuration for the Management Identity logging. This template will be directly included in the Management Identity configuration YAML file
   ## @param identity.logging.level.ROOT
-  ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/next/self-managed/identity/user-guide/configuration/configure-logging/#general-configuration-options
+  ## @param identity.logging.level.io.camunda.identity https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configure-logging/#general-configuration-options
   logging:
     level:
       ROOT: INFO
@@ -800,7 +800,7 @@ identity:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param identity.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/ for more details.
   env: []
   ## @param identity.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -1175,7 +1175,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.71
+    tag: 8.8.73
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1242,7 +1242,7 @@ console:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param console.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.
   env: []
   ## @param console.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -1394,7 +1394,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.4
+    tag: 8.8.6
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1523,14 +1523,14 @@ webModeler:
     podLabels: {}
 
     ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
-    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/next/self-managed/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
+    ## @param webModeler.restapi.logging.level.io.camunda.modeler https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/troubleshooting/troubleshoot-zeebe-connection/#how-can-i-debug-log-grpc--zeebe-communication
     ## @param webModeler.restapi.logging.level.io.grpc
     logging:
       level:
         io.camunda.modeler: INFO
         io.grpc: INFO
 
-    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+    ## @param webModeler.restapi.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.
     env: []
     ## @param webModeler.restapi.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1700,7 +1700,7 @@ webModeler:
     ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels
     podLabels: {}
 
-    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.
     env: []
     ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -1879,7 +1879,7 @@ webModeler:
     ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels
     podLabels: {}
 
-    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+    ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.
     env: []
     ## @param webModeler.websockets.envFrom list of environment variables to import from configMapRef and secretRef
     envFrom: []
@@ -2169,7 +2169,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.4
+    tag: 8.8.5
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2223,7 +2223,7 @@ connectors:
       cpu: 2000m
       memory: 2Gi
 
-  ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param connectors.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/ for more details.
   env: []
   ## @param connectors.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []
@@ -2608,7 +2608,7 @@ orchestration:
           ## @param orchestration.migration.identity.waitContainer.image.repository defines which image repository to use
           repository: curlimages/curl
           ## @param orchestration.migration.identity.waitContainer.image.tag can be set to overwrite the global tag, which should be used in that chart
-          tag: 8.17.0
+          tag: 8.18.0
           ## @param orchestration.migration.identity.waitContainer.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
           digest: ""
       ## @param orchestration.migration.identity.backoffLimit can be used to specify the backoffLimit for the job https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
@@ -2681,7 +2681,7 @@ orchestration:
   partitionCount: "3"
   ## @param orchestration.replicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-  ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param orchestration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.
   env: []
     # - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
     #   value: TRACE
@@ -3078,7 +3078,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.3
+    tag: 8.8.4
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3088,7 +3088,7 @@ optimize:
   migration:
     ## @param optimize.migration.enabled if true, run Optimize migration script as an init container
     enabled: true
-    ## @param optimize.migration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)
+    ## @param optimize.migration.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details. (Note: there is no need to define this if optimize.env is defined)
     env: []
 
     ## @extra optimize.migration.resources configuration to set request and limit configuration for the migration container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
@@ -3122,16 +3122,16 @@ optimize:
   ## @param optimize.podLabels can be used to define extra Optimize pod labels
   podLabels: {}
 
-  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   logLevel: info
-  ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  ## @param optimize.upgradeLogLevel sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   upgradeLogLevel: info
-  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/
+  ## @param optimize.esLogLevel sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
   esLogLevel: warn
 
   ## @param optimize.partitionCount defines how many Zeebe partitions are set up in the cluster and which should be imported by Optimize
   partitionCount: "3"
-  ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.
+  ## @param optimize.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details.
   env: []
   ## @param optimize.envFrom list of environment variables to import from configMapRef and secretRef
   envFrom: []

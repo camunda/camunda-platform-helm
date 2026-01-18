@@ -1095,7 +1095,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.5"
+                            "default": "8.8.6"
                         },
                         "digest": {
                             "type": "string",
@@ -1460,7 +1460,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -2281,7 +2281,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.70"
+                            "default": "8.8.72"
                         },
                         "digest": {
                             "type": "string",
@@ -2420,7 +2420,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/console/configuration/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -2768,7 +2768,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.4"
+                            "default": "8.8.5"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2996,7 +2996,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3379,7 +3379,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -3772,7 +3772,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.",
                             "default": [],
                             "items": {}
                         },
@@ -4532,7 +4532,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.4"
+                            "default": "8.8.5"
                         },
                         "digest": {
                             "type": "string",
@@ -4631,7 +4631,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -5269,7 +5269,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.8"
+                            "default": "8.8.9"
                         },
                         "digest": {
                             "type": "string",
@@ -5494,7 +5494,7 @@
                                                 "tag": {
                                                     "type": "string",
                                                     "description": "can be set to overwrite the global tag, which should be used in that chart",
-                                                    "default": "8.17.0"
+                                                    "default": "8.18.0"
                                                 },
                                                 "digest": {
                                                     "type": "string",
@@ -5631,7 +5631,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/properties/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -6454,7 +6454,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.3"
+                            "default": "8.8.4"
                         },
                         "digest": {
                             "type": "string",
@@ -6479,7 +6479,7 @@
                         },
                         "env": {
                             "type": "array",
-                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details. (Note: there is no need to define this if optimize.env is defined)",
+                            "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details. (Note: there is no need to define this if optimize.env is defined)",
                             "default": [],
                             "items": {}
                         },
@@ -6553,17 +6553,17 @@
                 },
                 "logLevel": {
                     "type": "string",
-                    "description": "configuration for the optimize runtime environment. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/",
+                    "description": "configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "upgradeLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/",
+                    "description": "sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "esLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for Elasticsearch. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/",
+                    "description": "sets the logging level for Elasticsearch. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "warn"
                 },
                 "partitionCount": {
@@ -6573,7 +6573,7 @@
                 },
                 "env": {
                     "type": "array",
-                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/ for more details.",
+                    "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details.",
                     "default": [],
                     "items": {
                         "type": "object",

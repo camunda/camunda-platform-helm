@@ -19,8 +19,6 @@ global:
 elasticsearch:
   enabled: false
 orchestration:
-  image:
-    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
   security:
     authentication:
       method: oidc
@@ -62,9 +60,7 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
-  env: 
+  env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
@@ -82,19 +78,8 @@ webModeler:
   security:
     authentication:
       method: oidc
-  restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  websockets:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
 console:
   enabled: true
-  image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
   overrideConfiguration: |
     camunda:
       console:
@@ -120,8 +105,6 @@ console:
       value: 'true'
 identity:
   enabled: true
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
     user: demo
     secret:
@@ -205,8 +188,6 @@ identity:
         - Console
         - Orchestration
 connectors:
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:
     - name: username
       value: username

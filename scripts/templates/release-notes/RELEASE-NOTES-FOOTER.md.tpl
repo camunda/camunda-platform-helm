@@ -9,7 +9,7 @@ For quick verification of the Helm chart integrity using [Cosign](https://docs.s
 ```shell
 cosign verify-blob {{ getenv "CHART_RELEASE_NAME" }}.tgz \
   --bundle "{{ getenv "CHART_RELEASE_NAME" }}-cosign-bundle.json" \
-  --certificate-identity-regex "https://github.com/{{ getenv "GITHUB_REPOSITORY" }}" \
+  --certificate-identity-regexp "https://github.com/{{ getenv "GITHUB_REPOSITORY" }}" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 

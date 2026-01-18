@@ -7,8 +7,6 @@ global:
     auth:
       enabled: true
 orchestration:
-  image:
-    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
   security:
     authentication:
       method: oidc
@@ -24,28 +22,15 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
-  image:
-    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
 webModeler:
   enabled: true
   security:
     authentication:
       method: oidc
-  restapi:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  webapp:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
-  websockets:
-    image:
-      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
 webModelerPostgresql:
   enabled: true
 console:
   enabled: true
-  image:
-    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
   overrideConfiguration: |
     camunda:
       console:
@@ -68,7 +53,7 @@ console:
                       url: "https://docs.camunda.io"
   env:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-      value: 'true'      
+      value: 'true'
 identityPostgresql:
   enabled: true
   auth:
@@ -80,8 +65,6 @@ identity:
   enabled: true
   externalDatabase:
     enabled: false
-  image:
-    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
   firstUser:
     enabled: false
   env:
@@ -91,8 +74,6 @@ connectors:
   security:
     authentication:
       method: oidc
-  image:
-    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
   env:
     - name: username
       value: username

@@ -16,13 +16,14 @@ global:
     prefix: "custom-zeebe"
 
 orchestration:
+  data:
+    secondaryStorage:
+      type: opensearch
   index:
     prefix: "custom-zeebe"
   env:
     # group1
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
-      value: custom
-    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
       value: custom
     # group2
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
@@ -67,3 +68,6 @@ optimize:
         value: custom-optimize
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
         value: custom-zeebe
+
+elasticsearch:
+  enabled: false

@@ -1,13 +1,13 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.3.2
+version: 13.4.0
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
   Camunda's process automation platform allows developers to design, automate and improve processes.
 type: application
 icon: https://helm.camunda.io/imgs/camunda.svg
-home: https://docs.camunda.io/docs/self-managed/overview/
+home: https://docs.camunda.io/docs/self-managed/about-self-managed/
 sources:
   - https://github.com/camunda/camunda-platform-helm
 keywords:
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.19.3"
+  camunda.io/helmCLIVersion: "3.19.4"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -71,4 +71,8 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Enable first user and add additional users with roles in qa scenario"
+    - kind: fixed
+      description: "Remove constraint of identity.enabled=false and optimize.enabled=true"

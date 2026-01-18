@@ -1,0 +1,28 @@
+# Centralized image tags for qa-* scenarios
+# These values are substituted from values-config before helm install
+orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+optimize:
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+webModeler:
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+console:
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+identity:
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+connectors:
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+

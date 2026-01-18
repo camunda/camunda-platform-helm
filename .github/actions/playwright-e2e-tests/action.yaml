@@ -60,7 +60,34 @@ runs:
       run: |
         # Install gettext for envsubst command used by render-e2e-env.sh
         if command -v apt-get &> /dev/null; then
-          sudo apt-get update && sudo apt-get install -y gettext-base
+          install_packages() {
+            sudo apt-get update && sudo apt-get install -y gettext-base
+          }
+
+          # Try up to 5 times with exponential backoff
+          for attempt in 1 2 3 4 5; do
+            echo "Attempt $attempt of 5..."
+            if install_packages; then
+              echo "Successfully installed packages"
+              break
+            fi
+
+            if [ $attempt -lt 5 ]; then
+              echo "apt-get failed, cleaning cache and retrying in $((attempt * 30)) seconds..."
+              sudo rm -rf /var/lib/apt/lists/*
+              sleep $((attempt * 30))
+
+              # On third attempt, try switching to a different mirror
+              if [ $attempt -eq 3 ]; then
+                echo "Switching to alternative Ubuntu mirror..."
+                sudo sed -i 's|http://archive.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
+                sudo sed -i 's|http://security.ubuntu.com|http://mirrors.edge.kernel.org|g' /etc/apt/sources.list 2>/dev/null || true
+              fi
+            else
+              echo "All attempts failed"
+              exit 1
+            fi
+          done
         elif command -v apk &> /dev/null; then
           apk add --no-cache gettext
         fi
