@@ -479,6 +479,10 @@ func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName str
 		config.Upgrade = true
 	}
 
+	// Set chart version and flow for migrator detection
+	config.ChartVersion = flags.ChartVersion
+	config.Flow = flags.Flow
+
 	return config
 }
 
@@ -1050,6 +1054,9 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			return nil, fmt.Errorf("failed to generate vault secrets: %w", err)
 		}
 	}
+
+	// Build deployment config for layered values resolution (includes ChartVersion and Flow for migrator)
+	deployConfig := buildDeploymentConfigFromFlags(flags, scenarioCtx.ScenarioName)
 
 	// Build values files list
 	logging.Logger.Debug().
