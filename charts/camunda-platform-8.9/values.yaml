@@ -2506,7 +2506,7 @@ orchestration:
             - connectors
       ## @param orchestration.security.initialization.mappingRules define mapping rules.
       mappingRules: []
-      ## @extra orchestration.security.initialization.authorizations define authorizations.
+      ## @param orchestration.security.initialization.authorizations define authorizations.
       authorizations: []
   ## @extra orchestration.image configuration to configure the image specifics
   image:
