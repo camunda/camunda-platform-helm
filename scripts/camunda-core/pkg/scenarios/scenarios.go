@@ -34,6 +34,10 @@ type DeploymentConfig struct {
 	QA        bool // Enable QA configuration (test users, etc.)
 	ImageTags bool // Enable image tag overrides from env vars
 	Upgrade   bool // Enable upgrade flow configuration
+
+	// Migration support (for helm chart schema changes)
+	ChartVersion string // Chart version (e.g., "13.0.0") - used to determine if migrator is needed
+	Flow         string // Deployment flow: install, upgrade-patch, upgrade-minor
 }
 
 // Validate checks that required fields are set and feature constraints are satisfied.
@@ -75,7 +79,7 @@ func (c *DeploymentConfig) Validate() error {
 }
 
 // ResolvePaths returns the ordered list of values files based on the configuration.
-// Files are returned in order: base -> base modifiers -> identity -> persistence -> platform -> features
+// Files are returned in order: base -> base modifiers -> identity -> persistence -> platform -> features -> migrator -> image-tags
 func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 	valuesDir := filepath.Join(scenariosDir, ValuesDir)
 
@@ -142,7 +146,18 @@ func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 		}
 	}
 
-	// Layer 7: Image tags (applied last, needs env var processing)
+	// Layer 7: Migrator (for chart version 13.x minor upgrades)
+	// The migrator handles schema migrations like global.security.initialization -> orchestration.security.initialization
+	// Include when: chart version starts with "13" AND flow is not "upgrade-patch" (i.e., it's a minor upgrade or install)
+	if c.needsMigrator() {
+		// Migrator file is at chart-full-setup/values-enable-migrator.yaml (one level up from values/)
+		migratorPath := filepath.Join(scenariosDir, "values-enable-migrator.yaml")
+		if _, err := os.Stat(migratorPath); err == nil {
+			files = append(files, migratorPath)
+		}
+	}
+
+	// Layer 8: Image tags (applied last, needs env var processing)
 	// Note: ImageTags file path is returned but the caller is responsible
 	// for processing environment variable substitution
 	if c.ImageTags {
@@ -153,6 +168,23 @@ func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+// needsMigrator returns true if the migrator values file should be included.
+// The migrator is needed for chart version 13.x when the flow is not a patch upgrade.
+func (c *DeploymentConfig) needsMigrator() bool {
+	// Only needed for chart version 13.x
+	if !strings.HasPrefix(c.ChartVersion, "13") {
+		return false
+	}
+
+	// Skip for patch upgrades (they don't need schema migration)
+	if c.Flow == "upgrade-patch" {
+		return false
+	}
+
+	// Include for install, upgrade-minor, or any other flow on chart 13.x
+	return true
 }
 
 // MapScenarioToConfig converts a legacy scenario name to a DeploymentConfig.

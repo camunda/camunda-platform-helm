@@ -334,6 +334,10 @@ func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName str
 		config.Upgrade = true
 	}
 
+	// Set chart version and flow for migrator detection
+	config.ChartVersion = flags.ChartVersion
+	config.Flow = flags.Flow
+
 	return config
 }
 
@@ -873,12 +877,15 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		}
 	}
 
+	// Build deployment config for layered values resolution (includes ChartVersion and Flow for migrator)
+	deployConfig := buildDeploymentConfigFromFlags(flags, scenarioCtx.ScenarioName)
+
 	// Build values files list
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
 		Str("tempDir", tempDir).
 		Msg("📋 [prepareScenarioValues] building values files list")
-	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
+	vals, err := deployer.BuildValuesListWithConfig(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles, deployConfig)
 	if err != nil {
 		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to build values list: %w", err)
