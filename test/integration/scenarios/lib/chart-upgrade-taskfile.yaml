@@ -6,6 +6,9 @@ vars:
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   INFRA_TYPE_SUFFIX: '{{ if eq (env "PLATFORM") "eks" }}eks-{{ end }}{{ .INFRA_TYPE }}'
   TEST_CHART_FLOW: '{{ env "TEST_CHART_FLOW" }}'
+  # Selection + composition model configuration
+  LAYERED_VALUES_DIR: '{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values'
+
 tasks:
   pre:
     env:
@@ -26,58 +29,256 @@ tasks:
         bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-upgrade-minor.sh
       {{ end }}
 
+  # =============================================================================
+  # upgrade:exec - Uses selection + composition model
+  # =============================================================================
+  # This task now uses the selection + composition approach.
+  # 
+  # Environment variables (new - preferred):
+  #   TEST_IDENTITY    - Identity: keycloak, keycloak-external, oidc, basic, hybrid
+  #   TEST_PERSISTENCE - Persistence: elasticsearch, opensearch, rdbms, rdbms-oracle
+  #   TEST_PLATFORM    - Platform: gke, eks, openshift
+  #   TEST_FEATURES    - Features (comma-separated): multitenancy, rba, documentstore
+  #   TEST_QA          - Enable QA config: true/false
+  #   TEST_IMAGE_TAGS  - Enable image tag overrides: true/false
+  #   TEST_UPGRADE     - Enable upgrade flow: true/false
+  #
+  # Legacy variables (deprecated but still supported):
+  #   TEST_VALUES_SCENARIO - Used to derive all settings
+  #   TEST_AUTH_TYPE       - Maps to TEST_IDENTITY
+  # =============================================================================
   # https://docs.camunda.io/docs/self-managed/setup/upgrade/
   exec:
     cmds:
     - |
       set -o pipefail
+      
+      VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
+      
+      # Check if values directory exists (new model)
+      if [ -d "$VALUES_DIR" ]; then
+        echo "Using selection + composition model from: $VALUES_DIR"
+        
+        # Build values arguments
+        VALUES_ARGS=""
+        
+        # =============================================================================
+        # Layer 1: Base (always included)
+        # =============================================================================
+        if [ -f "$VALUES_DIR/base.yaml" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base.yaml"
+          echo "Layer 1 (base): $VALUES_DIR/base.yaml"
+        fi
+        
+        # =============================================================================
+        # Layer 2: Base modifiers (QA, Upgrade)
+        # =============================================================================
+        QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
+        if [ -z "$QA_MODE" ]; then
+          case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
+        fi
+        if [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-qa.yaml"
+          echo "Layer 2 (qa): $VALUES_DIR/base-qa.yaml"
+        fi
+        
+        # For upgrade flow, include upgrade values
+        if [ -f "$VALUES_DIR/base-upgrade.yaml" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-upgrade.yaml"
+          echo "Layer 2 (upgrade): $VALUES_DIR/base-upgrade.yaml"
+        fi
+        
+        # =============================================================================
+        # Layer 3: Identity method
+        # =============================================================================
+        IDENTITY="${TEST_IDENTITY:-${TEST_VALUES_AUTH:-${TEST_AUTH_TYPE:-keycloak}}}"
+        
+        # Map legacy composite auth types
+        case "$IDENTITY" in
+          keycloak-mt)
+            IDENTITY_FILE="keycloak-external"
+            ;;
+          keycloak-rba|keycloak-rdbms|keycloak-oracle-rdbms)
+            IDENTITY_FILE="keycloak"
+            ;;
+          *)
+            IDENTITY_FILE="$IDENTITY"
+            ;;
+        esac
+        
+        # Handle OIDC templating for Entra
+        if [ "$IDENTITY_FILE" = "oidc" ] && [ -f "$VALUES_DIR/identity/oidc.yaml" ]; then
+          export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
+          export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
+          export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
+          export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
+          
+          envsubst < "$VALUES_DIR/identity/oidc.yaml" > "$VALUES_DIR/identity/oidc.yaml.tmp"
+          mv "$VALUES_DIR/identity/oidc.yaml.tmp" "$VALUES_DIR/identity/oidc.yaml"
+          cat "$VALUES_DIR/identity/oidc.yaml"
+        fi
+        
+        if [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
+          echo "Layer 3 (identity): $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
+        else
+          echo "WARNING: Identity file not found: $VALUES_DIR/identity/${IDENTITY_FILE}.yaml" >&2
+        fi
+        
+        # =============================================================================
+        # Layer 4: Persistence
+        # =============================================================================
+        PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
+        
+        if [ -z "$PERSISTENCE" ]; then
+          case "${TEST_VALUES_SCENARIO:-}" in
+            *opensearch*)
+              PERSISTENCE="opensearch"
+              ;;
+            *oracle-rdbms*|*rdbms-oracle*)
+              PERSISTENCE="rdbms-oracle"
+              ;;
+            *rdbms*)
+              PERSISTENCE="rdbms"
+              ;;
+            *)
+              PERSISTENCE="elasticsearch"
+              ;;
+          esac
+        fi
+        
+        if [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
+          echo "Layer 4 (persistence): $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
+        fi
+        
+        # =============================================================================
+        # Layer 5: Platform
+        # =============================================================================
+        PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
+        
+        if [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
+          echo "Layer 5 (platform): $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
+        fi
+        
+        # =============================================================================
+        # Layer 6: Features
+        # =============================================================================
+        FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
+        
+        if [ -z "$FEATURES" ]; then
+          SCENARIO="${TEST_VALUES_SCENARIO:-}"
+          
+          # Derive features from scenario name
+          case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
+          [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
+          case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
+          [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
+          case "$SCENARIO" in *"document"*|*"documentstore"*) FEATURES="$FEATURES,documentstore" ;; esac
+          
+          FEATURES="${FEATURES#,}"
+        fi
+        
+        # Parse comma-separated features (POSIX-compatible using IFS)
+        OLD_IFS="$IFS"
+        IFS=','
+        for feature in $FEATURES; do
+          IFS="$OLD_IFS"
+          feature=$(echo "$feature" | xargs)
+          if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
+            VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/features/${feature}.yaml"
+            echo "Layer 6 (feature): $VALUES_DIR/features/${feature}.yaml"
+          fi
+        done
+        IFS="$OLD_IFS"
+        
+        # =============================================================================
+        # Layer 7: Image tags (if enabled)
+        # =============================================================================
+        IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
+        IMAGE_TAGS_ARGS=""
+        
+        if [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-image-tags.yaml"
+          echo "Layer 7 (image-tags): $VALUES_DIR/base-image-tags.yaml"
+        elif [ -f /tmp/values-image-tags-processed.yaml ]; then
+          IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
+          echo "Including processed image tags file"
+        fi
+        
+        echo ""
+        echo "=========================================="
+        echo "Final helm upgrade command:"
+        echo "=========================================="
+        
+        helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
+          --namespace {{ .TEST_NAMESPACE }} \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+          $VALUES_ARGS \
+          {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
+          --values {{ .TEST_HELM_DIGEST_VALUES }} \
+          {{ end -}}
+          --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
+          $IMAGE_TAGS_ARGS \
+          --force \
+          --timeout 20m0s \
+          --set orchestration.upgrade.allowPreReleaseImages=true \
+          --wait-for-jobs \
+          --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
+      
+      else
+        # Fallback to legacy monolithic values files
+        echo "WARNING: Values directory not found: $VALUES_DIR" >&2
+        echo "Falling back to legacy values files" >&2
+        
+        {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
+        export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
+        export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
+        export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
+        export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
 
-      {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
-      export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
-      export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
-      export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
-      export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
+        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp
+        mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        {{ end }}
 
-      envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp
-      mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      {{ end }}
+        MERGED_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}-merged.yaml
+        USE_SCENARIO_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
+        {{ if (ne .TEST_CHART_FLOW "upgrade-patch") -}}
+        yq ea '. as $item ireduce ({}; . *+ $item)' \
+          "$USE_SCENARIO_FILE" \
+          {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
+          > "$MERGED_FILE"
+        USE_SCENARIO_FILE="$MERGED_FILE"
+        {{ end -}}
+        {{ end -}}
 
-      MERGED_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}-merged.yaml
-      USE_SCENARIO_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
-      {{ if (ne .TEST_CHART_FLOW "upgrade-patch") -}}
-      yq ea '. as $item ireduce ({}; . *+ $item)' \
-        "$USE_SCENARIO_FILE" \
-        {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
-        > "$MERGED_FILE"
-      USE_SCENARIO_FILE="$MERGED_FILE"
-      {{ end -}}
-      {{ end -}}
+        IMAGE_TAGS_ARGS=""
+        if [ -f /tmp/values-image-tags-processed.yaml ]; then
+          IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
+          echo "Including processed image tags file"
+        fi
 
-      IMAGE_TAGS_ARGS=""
-      if [[ -f /tmp/values-image-tags-processed.yaml ]]; then
-        IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
-        echo "Including processed image tags file"
+        helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
+          --namespace {{ .TEST_NAMESPACE }} \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+          --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
+          --values "$USE_SCENARIO_FILE" \
+          {{ if eq .PLATFORM "eks" -}}
+          --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
+          {{ end -}}
+          {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
+          --values {{ .TEST_HELM_DIGEST_VALUES }} \
+          {{ end -}}
+          --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
+          $IMAGE_TAGS_ARGS \
+          --force \
+          --timeout 20m0s \
+          --set orchestration.upgrade.allowPreReleaseImages=true \
+          --wait-for-jobs \
+          --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
       fi
-
-      helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
-        --namespace {{ .TEST_NAMESPACE }} \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-        --values "$USE_SCENARIO_FILE" \
-        {{ if eq .PLATFORM "eks" -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
-        {{ end -}}
-        {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
-        --values {{ .TEST_HELM_DIGEST_VALUES }} \
-        {{ end -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
-        $IMAGE_TAGS_ARGS \
-        --force \
-        --timeout 20m0s \
-        --set orchestration.upgrade.allowPreReleaseImages=true \
-        --force \
-        --wait-for-jobs \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
