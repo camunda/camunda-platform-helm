@@ -44,6 +44,23 @@ type RuntimeFlags struct {
 	ExtraValues              []string
 	ValuesPreset             string
 	Timeout                  int // Timeout in minutes for Helm deployment
+
+	// Selection + composition model (new - preferred over deprecated --scenario)
+	Identity     string   // Identity selection: keycloak, keycloak-external, oidc, basic, hybrid
+	Persistence  string   // Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle
+	TestPlatform string   // Platform selection: gke, eks, openshift (named TestPlatform to avoid conflict with Platform)
+	Features     []string // Feature selections: multitenancy, rba, documentstore
+	QA           bool     // Enable QA configuration (test users, etc.)
+	ImageTags    bool     // Enable image tag overrides from env vars
+	UpgradeFlow  bool     // Enable upgrade flow configuration
+
+	// Deprecated layered values (kept for backward compatibility, will be removed)
+	// These are now aliases that map to the new model
+	ValuesAuth     string   // Deprecated: use --identity instead
+	ValuesBackend  string   // Deprecated: use --persistence instead
+	ValuesFeatures []string // Deprecated: use --features instead
+	ValuesQA       bool     // Deprecated: use --qa instead
+	ValuesInfra    string   // Deprecated: use --platform instead
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -217,6 +234,52 @@ func parseScenarios(scenario string) []string {
 		}
 	}
 	return scenarios
+}
+
+// HasExplicitSelectionConfig returns true if any selection + composition flags were explicitly set.
+func (f *RuntimeFlags) HasExplicitSelectionConfig() bool {
+	return f.Identity != "" || f.Persistence != "" || f.TestPlatform != "" || len(f.Features) > 0 || f.QA || f.ImageTags || f.UpgradeFlow
+}
+
+// HasExplicitLayeredConfig returns true if any deprecated layered values flags were explicitly set.
+// Deprecated: Use HasExplicitSelectionConfig instead.
+func (f *RuntimeFlags) HasExplicitLayeredConfig() bool {
+	return f.ValuesAuth != "" || f.ValuesBackend != "" || len(f.ValuesFeatures) > 0 || f.ValuesQA || f.ValuesInfra != ""
+}
+
+// MigrateDeprecatedFlags copies deprecated layered values flags to the new selection fields.
+// This is called during validation to ensure backward compatibility.
+func (f *RuntimeFlags) MigrateDeprecatedFlags() {
+	// Only migrate if new fields are not already set
+	if f.Identity == "" && f.ValuesAuth != "" {
+		f.Identity = f.ValuesAuth
+	}
+	if f.Persistence == "" && f.ValuesBackend != "" {
+		f.Persistence = f.ValuesBackend
+	}
+	if f.TestPlatform == "" && f.ValuesInfra != "" {
+		f.TestPlatform = f.ValuesInfra
+	}
+	if len(f.Features) == 0 && len(f.ValuesFeatures) > 0 {
+		// Filter out features that are now in other categories
+		for _, feature := range f.ValuesFeatures {
+			switch feature {
+			case "rdbms", "rdbms-oracle":
+				// These moved to persistence - only set if persistence not already set
+				if f.Persistence == "" {
+					f.Persistence = feature
+				}
+			case "upgrade":
+				// This is now a separate flag
+				f.UpgradeFlow = true
+			default:
+				f.Features = append(f.Features, feature)
+			}
+		}
+	}
+	if !f.QA && f.ValuesQA {
+		f.QA = true
+	}
 }
 
 // ResolveIngressHostname returns the resolved ingress hostname.
