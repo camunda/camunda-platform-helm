@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/camunda-deployer/pkg/types"
 	"scripts/deploy-camunda/config"
@@ -440,7 +441,56 @@ func restoreEnv(envVars map[string]string) {
 	}
 }
 
+// buildDeploymentConfigFromFlags creates a DeploymentConfig from RuntimeFlags.
+// It prefers the new selection flags (--identity, --persistence, etc.) over deprecated flags.
+// Returns nil if no explicit flags are set (use auto-detection from scenario name).
+func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) *scenarios.DeploymentConfig {
+	// Migrate deprecated flags to new fields first
+	flags.MigrateDeprecatedFlags()
+
+	// Check if we have any explicit configuration
+	if !flags.HasExplicitSelectionConfig() && !flags.HasExplicitLayeredConfig() {
+		return nil
+	}
+
+	// Start with derived config from scenario name, then override with explicit flags
+	config := scenarios.MapScenarioToConfig(scenarioName)
+
+	// Apply new selection flags (preferred)
+	if flags.Identity != "" {
+		config.Identity = flags.Identity
+	}
+	if flags.Persistence != "" {
+		config.Persistence = flags.Persistence
+	}
+	if flags.TestPlatform != "" {
+		config.Platform = flags.TestPlatform
+	}
+	if len(flags.Features) > 0 {
+		config.Features = flags.Features
+	}
+	if flags.QA {
+		config.QA = true
+	}
+	if flags.ImageTags {
+		config.ImageTags = true
+	}
+	if flags.UpgradeFlow {
+		config.Upgrade = true
+	}
+
+	return config
+}
+
+// buildLayeredConfigFromFlags creates a LayeredConfig from RuntimeFlags if explicit flags are set.
+// Deprecated: Use buildDeploymentConfigFromFlags instead.
+// Returns nil if no explicit layered flags are set (use auto-detection from scenario name).
+func buildLayeredConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) *scenarios.LayeredConfig {
+	return buildDeploymentConfigFromFlags(flags, scenarioName)
+}
+
 // enhanceScenarioError wraps scenario resolution errors with helpful context.
+// Supports both layered values (values/ directory) and legacy single-file approach.
 func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) error {
 	if err == nil {
 		return nil
@@ -460,44 +510,111 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 	}
 
 	var helpMsg strings.Builder
-	fmt.Fprintf(&helpMsg, "❌ Scenario %q not found\n\n", scenario)
-	fmt.Fprintf(&helpMsg, "Searched in: %s\n", scenarioDir)
-	fmt.Fprintf(&helpMsg, "Expected file: values-integration-test-ingress-%s.yaml\n\n", scenario)
+	fmt.Fprintf(&helpMsg, "Scenario %q not found\n\n", scenario)
+	fmt.Fprintf(&helpMsg, "Searched in: %s\n\n", scenarioDir)
 
-	// Try to list available scenarios
-	entries, readErr := os.ReadDir(scenarioDir)
-	if readErr != nil {
-		fmt.Fprintf(&helpMsg, "⚠️  Could not list available scenarios: %v\n\n", readErr)
-		fmt.Fprintf(&helpMsg, "Please check:\n")
-		fmt.Fprintf(&helpMsg, "  1. The scenario directory exists: %s\n", scenarioDir)
-		fmt.Fprintf(&helpMsg, "  2. You have permission to read it\n")
-		fmt.Fprintf(&helpMsg, "  3. The --chart-path or --scenario-path flags are set correctly\n")
-	} else {
-		var availableScenarios []string
-		for _, e := range entries {
-			name := e.Name()
-			if !e.IsDir() && strings.HasPrefix(name, "values-integration-test-ingress-") && strings.HasSuffix(name, ".yaml") {
-				// Extract scenario name
-				scenarioName := strings.TrimPrefix(name, "values-integration-test-ingress-")
-				scenarioName = strings.TrimSuffix(scenarioName, ".yaml")
-				availableScenarios = append(availableScenarios, scenarioName)
+	// Check if this directory uses layered values (new structure)
+	valuesDir := filepath.Join(scenarioDir, "values")
+	if _, statErr := os.Stat(valuesDir); statErr == nil {
+		// Layered values structure
+		fmt.Fprintf(&helpMsg, "This scenario directory uses SELECTION + COMPOSITION model.\n")
+		fmt.Fprintf(&helpMsg, "Scenario names are derived from layer combinations.\n\n")
+
+		// List available identity types
+		identityDir := filepath.Join(valuesDir, "identity")
+		if identityEntries, err := os.ReadDir(identityDir); err == nil && len(identityEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available identity types (--identity):\n")
+			for _, e := range identityEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
 			}
+			fmt.Fprintf(&helpMsg, "\n")
 		}
 
-		if len(availableScenarios) == 0 {
-			fmt.Fprintf(&helpMsg, "⚠️  No scenario files found in: %s\n\n", scenarioDir)
-			fmt.Fprintf(&helpMsg, "Expected files matching pattern: values-integration-test-ingress-*.yaml\n")
-		} else {
-			fmt.Fprintf(&helpMsg, "✅ Available scenarios (%d found):\n", len(availableScenarios))
-			for _, s := range availableScenarios {
-				fmt.Fprintf(&helpMsg, "  • %s\n", s)
+		// List available persistence types
+		persistenceDir := filepath.Join(valuesDir, "persistence")
+		if persistenceEntries, err := os.ReadDir(persistenceDir); err == nil && len(persistenceEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available persistence types (--persistence):\n")
+			for _, e := range persistenceEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
 			}
-			fmt.Fprintf(&helpMsg, "\n💡 Hint: Use --scenario <name> or --scenario <name1>,<name2> for multiple scenarios\n")
+			fmt.Fprintf(&helpMsg, "\n")
+		}
+
+		// List available platform types
+		platformDir := filepath.Join(valuesDir, "platform")
+		if platformEntries, err := os.ReadDir(platformDir); err == nil && len(platformEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available platforms (--test-platform):\n")
+			for _, e := range platformEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
+			}
+			fmt.Fprintf(&helpMsg, "\n")
+		}
+
+		// List available features
+		featuresDir := filepath.Join(valuesDir, "features")
+		if featureEntries, err := os.ReadDir(featuresDir); err == nil && len(featureEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available features (--features):\n")
+			for _, e := range featureEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
+			}
+			fmt.Fprintf(&helpMsg, "\n")
+		}
+
+		fmt.Fprintf(&helpMsg, "Hint: Use the new flags directly. Examples:\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak-external --persistence opensearch --test-platform gke --features multitenancy\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke --qa --image-tags\n")
+	} else {
+		// Legacy single-file structure
+		fmt.Fprintf(&helpMsg, "Expected file: values-integration-test-ingress-%s.yaml\n\n", scenario)
+
+		// Try to list available scenarios
+		entries, readErr := os.ReadDir(scenarioDir)
+		if readErr != nil {
+			fmt.Fprintf(&helpMsg, "Could not list available scenarios: %v\n\n", readErr)
+			fmt.Fprintf(&helpMsg, "Please check:\n")
+			fmt.Fprintf(&helpMsg, "  1. The scenario directory exists: %s\n", scenarioDir)
+			fmt.Fprintf(&helpMsg, "  2. You have permission to read it\n")
+			fmt.Fprintf(&helpMsg, "  3. The --chart-path or --scenario-path flags are set correctly\n")
+		} else {
+			var availableScenarios []string
+			for _, e := range entries {
+				name := e.Name()
+				if !e.IsDir() && strings.HasPrefix(name, "values-integration-test-ingress-") && strings.HasSuffix(name, ".yaml") {
+					// Extract scenario name
+					scenarioName := strings.TrimPrefix(name, "values-integration-test-ingress-")
+					scenarioName = strings.TrimSuffix(scenarioName, ".yaml")
+					availableScenarios = append(availableScenarios, scenarioName)
+				}
+			}
+
+			if len(availableScenarios) == 0 {
+				fmt.Fprintf(&helpMsg, "No scenario files found in: %s\n\n", scenarioDir)
+				fmt.Fprintf(&helpMsg, "Expected files matching pattern: values-integration-test-ingress-*.yaml\n")
+			} else {
+				fmt.Fprintf(&helpMsg, "Available scenarios (%d found):\n", len(availableScenarios))
+				for _, s := range availableScenarios {
+					fmt.Fprintf(&helpMsg, "  - %s\n", s)
+				}
+				fmt.Fprintf(&helpMsg, "\nHint: Use --scenario <name> or --scenario <name1>,<name2> for multiple scenarios\n")
+			}
 		}
 	}
 
-	fmt.Fprintf(&helpMsg, "\n📚 Documentation: Check the chart's test/integration/scenarios/ directory\n")
-	fmt.Fprintf(&helpMsg, "   for available scenario configurations.\n")
+	fmt.Fprintf(&helpMsg, "\nDocumentation: Check the chart's test/integration/scenarios/ directory\n")
+	fmt.Fprintf(&helpMsg, "for available scenario configurations.\n")
 
 	return fmt.Errorf("%s\n%s", helpMsg.String(), err)
 }
@@ -528,16 +645,9 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 	}
 
 	for _, scenario := range flags.Scenarios {
-		// Try to resolve the scenario file
-		var filename string
-		if strings.HasPrefix(scenario, "values-integration-test-ingress-") && strings.HasSuffix(scenario, ".yaml") {
-			filename = scenario
-		} else {
-			filename = fmt.Sprintf("values-integration-test-ingress-%s.yaml", scenario)
-		}
-
-		sourceValuesFile := filepath.Join(scenarioDir, filename)
-		if _, err := os.Stat(sourceValuesFile); err != nil {
+		// Use the scenarios package to resolve paths - this supports both layered and legacy values
+		_, err := scenarios.ResolvePath(scenarioDir, scenario)
+		if err != nil {
 			// Enhance error with helpful context
 			return enhanceScenarioError(err, scenario, flags.ScenarioPath, flags.ChartPath)
 		}
