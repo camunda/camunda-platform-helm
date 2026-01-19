@@ -103,6 +103,37 @@ on:
         required: false
         default: "elasticsearch"
         type: string
+      # =============================================================================
+      # Selection + Composition Model Inputs (New - Preferred)
+      # These inputs allow explicit configuration of identity, persistence, platform,
+      # and features instead of relying on scenario name parsing.
+      # =============================================================================
+      test-identity:
+        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        required: false
+        type: string
+      test-persistence:
+        description: "Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle"
+        required: false
+        type: string
+      test-platform:
+        description: "Platform selection: gke, eks, openshift"
+        required: false
+        type: string
+      test-features:
+        description: "Features (comma-separated): multitenancy, rba, documentstore"
+        required: false
+        type: string
+      test-qa:
+        description: "Enable QA configuration"
+        required: false
+        default: false
+        type: boolean
+      test-upgrade:
+        description: "Enable upgrade flow configuration"
+        required: false
+        default: false
+        type: boolean
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -453,7 +484,7 @@ jobs:
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Install - Configure Helm with Entra Values
-        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc') && inputs.values-config == '{}'
+        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -462,6 +493,11 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -481,6 +517,14 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
+          TEST_QA: ${{ inputs.test-qa }}
+          TEST_UPGRADE: ${{ inputs.test-upgrade }}
+          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -550,6 +594,14 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           VALUES_CONFIG: ${{ inputs.values-config }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
+          TEST_QA: ${{ inputs.test-qa }}
+          TEST_UPGRADE: ${{ inputs.test-upgrade }}
+          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
@@ -749,7 +801,7 @@ jobs:
       # Upgrade
       ##########################################################################################################
       - name: Helm - Install - Configure Helm with Entra Values
-        if: inputs.auth == 'oidc' && inputs.values-config == '{}'
+        if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -758,6 +810,11 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -830,6 +887,14 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
+          TEST_QA: ${{ inputs.test-qa }}
+          TEST_UPGRADE: ${{ inputs.test-upgrade }}
+          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
