@@ -47,20 +47,29 @@ get_chart_images () {
     test -d "${CHART_DIR}" || CHART_DIR="$(ls -d1 charts/camunda-platform-8* | tail -n1)"
     test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
 
+    # Check if version is released; if not, use local chart directory
+    is_local_chart=false
     if [ ! -f "../released-charts.json" ]; then
       export RELEASED_CHARTS="$(helm search repo "${CHART_SOURCE}" --versions --output json)"
       echo $RELEASED_CHARTS > ../released-charts.json
     fi
     if ! $(cat ../released-charts.json | jq "any(.version == \"${chart_version}\")"); then
       export CHART_SOURCE="charts/camunda-platform-${major_minor}"
+      is_local_chart=true
     fi
 
     # Check if the chart data already in version-matrix.json and add it if needed.
     if ! $(jq "any(.chart_version == \"${chart_version}\")" ${version_matrix_file}); then
-      # Generateing the chart version data.
+      # Generating the chart version data.
       helm repo update > /dev/null
+      # Note: --version flag only works for remote charts, not local directories
+      if [[ "${is_local_chart}" == "true" ]]; then
+        helm_version_arg=""
+      else
+        helm_version_arg="--version ${chart_version}"
+      fi
       chart_images="$(
-        helm template --skip-tests camunda "${CHART_SOURCE}" --version "${chart_version}" \
+        helm template --skip-tests camunda "${CHART_SOURCE}" ${helm_version_arg} \
           --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-keycloak.yaml" 2> /dev/null |
         tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
         sort | uniq;
@@ -76,10 +85,15 @@ get_chart_images () {
 }
 
 # Get Helm CLI version based on the asdf .tool-versions file.
+# Falls back to HEAD if the specified git ref doesn't exist (e.g., unreleased version tags).
 get_helm_cli_version () {
     chart_ref_name="${CHART_REF_NAME:-$1}"
-    (git show ${chart_ref_name}:.tool-versions 2> /dev/null | awk '/helm /{printf $2}') ||
-      echo -n ''
+    # Try the specified ref first, fall back to HEAD if it doesn't exist
+    version=$(git show ${chart_ref_name}:.tool-versions 2>/dev/null | awk '/helm /{printf $2}' || true)
+    if [[ -z "${version}" ]]; then
+        version=$(git show HEAD:.tool-versions 2>/dev/null | awk '/helm /{printf $2}' || true)
+    fi
+    echo -n "${version}"
 }
 
 # Generate version matrix index for all Camunda versions with corresponding charts.
