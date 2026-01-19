@@ -207,6 +207,21 @@ tasks:
           echo "Including processed image tags file"
         fi
         
+        # =============================================================================
+        # Layer 8: Migrator (for chart version 13.x minor upgrades)
+        # =============================================================================
+        # Include migrator values for minor upgrades on chart version 13.x
+        # This handles schema migrations like global.security.initialization -> orchestration.security.initialization
+        MIGRATOR_FILE="{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml"
+        {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
+        {{ if (ne .TEST_CHART_FLOW "upgrade-patch") -}}
+        if [ -f "$MIGRATOR_FILE" ]; then
+          VALUES_ARGS="$VALUES_ARGS --values $MIGRATOR_FILE"
+          echo "Layer 8 (migrator): $MIGRATOR_FILE"
+        fi
+        {{ end -}}
+        {{ end -}}
+        
         echo ""
         echo "=========================================="
         echo "Final helm upgrade command:"
