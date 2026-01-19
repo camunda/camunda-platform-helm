@@ -81,12 +81,27 @@ runs:
       env:
         ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
       run: |
+        # Detect image-only PRs by branch name (Renovate groups image updates)
+        # Branch patterns that indicate image-only changes:
+        # - renovate/camunda-platform-images (patch updates)
+        # - renovate/patch-camunda-platform-images (patch updates)
+        # - renovate/camunda-platform-digests (digest updates)
+        SKIP_UPGRADE_FLOWS="false"
+        BRANCH_NAME="${GITHUB_HEAD_REF:-}"
+        echo "Branch name: ${BRANCH_NAME}"
+        
+        if [[ "$BRANCH_NAME" =~ ^renovate/(patch-)?camunda-platform-(images|digests)$ ]]; then
+          SKIP_UPGRADE_FLOWS="true"
+          echo "✅ Image/digest update branch detected - upgrade flows will be skipped"
+        fi
+
         bash scripts/generate-chart-matrix.sh \
           --manual-trigger "${{ inputs.manual-trigger }}" \
           --manual-scenario "${{ inputs.manual-scenario }}" \
           --manual-flow "${{ inputs.manual-flow }}" \
           --active-versions "${{ steps.get-chart-versions.outputs.active }}" \
-          --all-modified-files "${{ steps.changed-files.outputs.all_modified_files }}"
+          --all-modified-files "${{ steps.changed-files.outputs.all_modified_files }}" \
+          --skip-upgrade-flows "${SKIP_UPGRADE_FLOWS}"
     - name: Generate matrix Camunda versions
       shell: bash
       id: set-camunda-versions

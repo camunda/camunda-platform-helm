@@ -6,6 +6,7 @@ MANUAL_SCENARIO="none"
 MANUAL_FLOW="none"
 ACTIVE_VERSIONS=""
 ALL_MODIFIED_FILES="${ALL_MODIFIED_FILES}"
+SKIP_UPGRADE_FLOWS="false"
 
 # Resolve repository root based on this script's location so paths work from anywhere
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,6 +33,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --all-modified-files)
       ALL_MODIFIED_FILES="$2"
+      shift 2
+      ;;
+    --skip-upgrade-flows)
+      SKIP_UPGRADE_FLOWS="$2"
       shift 2
       ;;
     *)
@@ -154,6 +159,12 @@ write_matrix_entry() {
         flow_trimmed=$(echo "$flow_item" | sed 's/^ *//;s/ *$//')
         if [ -z "$flow_trimmed" ] || [ "$flow_trimmed" = "null" ]; then
           flow_trimmed="install"
+        fi
+        # Skip upgrade flows when only image versions/digests changed (e.g., Renovate image PRs)
+        # Upgrade tests validate chart structure changes and migration logic, not image compatibility
+        if [ "$SKIP_UPGRADE_FLOWS" = "true" ] && { [ "$flow_trimmed" = "upgrade-patch" ] || [ "$flow_trimmed" = "upgrade-minor" ]; }; then
+          echo "⏭️ Skipping $flow_trimmed for $scenario_name (image-only changes detected)"
+          continue
         fi
         # Filter out upgrade-patch for keycloak-original and keycloak-mt scenarios because the templates on the released chart don't support custom realm bootstrapping.
         if [ "$flow_trimmed" = "upgrade-patch" ] && { [ "$scenario_name" = "keycloak-original" ] || [ "$scenario_name" = "keycloak-mt" ]; }; then
