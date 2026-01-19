@@ -11,6 +11,24 @@ unit:
       packages: web-modeler
 
 # Used in the GitHub Actions integration test CI workflow.
+# 
+# Scenarios support two configuration approaches:
+#
+# 1. Legacy (scenario name parsing - still supported):
+#    - name: elasticsearch        # Scenario name is parsed to derive settings
+#    - name: keycloak-mt         # Multitenancy derived from "-mt" suffix
+#    - name: opensearch-rba      # RBA feature derived from "-rba" suffix
+#
+# 2. Selection + Composition (new - preferred for clarity):
+#    - name: my-test
+#      identity: keycloak        # Explicit: keycloak, keycloak-external, oidc, basic, hybrid
+#      persistence: elasticsearch # Explicit: elasticsearch, opensearch, rdbms, rdbms-oracle
+#      platform: gke             # Explicit: gke, eks, openshift
+#      features: [multitenancy]  # Explicit: multitenancy, rba, documentstore
+#      qa: true                  # Enable QA config
+#      upgrade: false            # Enable upgrade flow config
+#
+# Both approaches work - the legacy format is automatically mapped to the new model.
 integration:
   vars:
     # Using the common test dir.
