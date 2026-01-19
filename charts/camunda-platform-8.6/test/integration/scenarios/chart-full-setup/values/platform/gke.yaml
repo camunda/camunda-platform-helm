@@ -1,0 +1,5 @@
+# GKE platform configuration
+# This file contains GKE-specific settings for integration tests.
+# Currently GKE is the default platform and requires no special configuration.
+# This file exists for consistency with other platform configurations.
+{}

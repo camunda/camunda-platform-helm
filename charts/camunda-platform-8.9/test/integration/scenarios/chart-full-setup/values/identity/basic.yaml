@@ -1,0 +1,21 @@
+# Basic auth configuration for 8.9
+# Layer 2: Auth method - Basic authentication (no identity provider)
+
+global:
+  exporter:
+    zeebe:
+      enabled: false
+
+orchestration:
+  security:
+    authentication:
+      method: basic
+      authenticationRefreshInterval: "PT30S"
+
+console:
+  enabled: false
+
+connectors:
+  security:
+    authentication:
+      method: basic

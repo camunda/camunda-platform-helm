@@ -1,0 +1,13 @@
+# Hybrid auth configuration for 8.8
+# Layer 2: Auth method - Hybrid (mix of auth methods)
+# Note: This is a placeholder - extend as needed based on actual hybrid scenarios
+
+global:
+  identity:
+    auth:
+      enabled: true
+
+orchestration:
+  security:
+    authentication:
+      method: oidc
