@@ -5226,6 +5226,12 @@
                                     "description": "define mapping rules.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "authorizations": {
+                                    "type": "array",
+                                    "description": "define authorizations.",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         }
