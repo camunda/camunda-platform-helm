@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
 	"sort"
 	"strings"
 )
@@ -26,11 +27,17 @@ var CommonValuesFiles = []string{
 // If commonFiles is provided (non-nil), those files are used directly as the common base layer.
 // If commonFiles is nil, the function will attempt to discover common files from ../common/ relative to scenarioDir.
 func BuildValuesList(scenarioDir string, scenarios []string, auth string, includeEnterprise, includeDigest bool, userValues []string, commonFiles []string) ([]string, error) {
+	return BuildValuesListWithConfig(scenarioDir, scenarios, auth, includeEnterprise, includeDigest, userValues, commonFiles, nil)
+}
+
+// BuildValuesListWithConfig is like BuildValuesList but accepts a DeploymentConfig
+// for layered values resolution. This allows passing ChartVersion and Flow for migrator detection.
+func BuildValuesListWithConfig(scenarioDir string, scenarioNames []string, auth string, includeEnterprise, includeDigest bool, userValues []string, commonFiles []string, config *scenarios.DeploymentConfig) ([]string, error) {
 	var files []string
 
 	logging.Logger.Debug().
 		Str("scenarioDir", scenarioDir).
-		Strs("scenarios", scenarios).
+		Strs("scenarios", scenarioNames).
 		Str("auth", auth).
 		Bool("includeEnterprise", includeEnterprise).
 		Bool("includeDigest", includeDigest).
@@ -65,7 +72,7 @@ func BuildValuesList(scenarioDir string, scenarios []string, auth string, includ
 		logging.Logger.Debug().
 			Str("auth", auth).
 			Msg("📋 [BuildValuesList] resolving auth scenario")
-		authFiles, err := ResolveScenarioFiles(scenarioDir, []string{auth})
+		authFiles, err := ResolveScenarioFilesWithConfig(scenarioDir, []string{auth}, config)
 		if err != nil {
 			logging.Logger.Debug().
 				Err(err).
@@ -81,13 +88,13 @@ func BuildValuesList(scenarioDir string, scenarios []string, auth string, includ
 
 	// Add main scenario values
 	logging.Logger.Debug().
-		Strs("scenarios", scenarios).
+		Strs("scenarios", scenarioNames).
 		Msg("📋 [BuildValuesList] resolving main scenario(s)")
-	scenarioFiles, err := ResolveScenarioFiles(scenarioDir, scenarios)
+	scenarioFiles, err := ResolveScenarioFilesWithConfig(scenarioDir, scenarioNames, config)
 	if err != nil {
 		logging.Logger.Debug().
 			Err(err).
-			Strs("scenarios", scenarios).
+			Strs("scenarios", scenarioNames).
 			Msg("❌ [BuildValuesList] failed to resolve scenario files")
 		return nil, err
 	}

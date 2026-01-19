@@ -17,13 +17,20 @@ type ScenarioMeta struct {
 // ResolveScenarioFiles resolves scenario names to their values file paths.
 // It supports both layered values (values/ directory) and legacy single-file approach.
 func ResolveScenarioFiles(scenarioDir string, scenarioNames []string) ([]string, error) {
+	return ResolveScenarioFilesWithConfig(scenarioDir, scenarioNames, nil)
+}
+
+// ResolveScenarioFilesWithConfig resolves scenario names to their values file paths,
+// using the provided deployment config for layered values resolution.
+// This allows passing ChartVersion and Flow for migrator detection.
+func ResolveScenarioFilesWithConfig(scenarioDir string, scenarioNames []string, config *scenarios.DeploymentConfig) ([]string, error) {
 	if len(scenarioNames) == 0 {
 		return nil, nil
 	}
 
 	// Check if this scenario directory uses layered values
 	if scenarios.HasLayeredValues(scenarioDir) {
-		return resolveLayeredScenarioFiles(scenarioDir, scenarioNames)
+		return resolveLayeredScenarioFiles(scenarioDir, scenarioNames, config)
 	}
 
 	// Fall back to legacy single-file approach
@@ -32,7 +39,7 @@ func ResolveScenarioFiles(scenarioDir string, scenarioNames []string) ([]string,
 
 // resolveLayeredScenarioFiles resolves scenarios using the layered values structure.
 // For layered values, we combine all layer files for each scenario.
-func resolveLayeredScenarioFiles(scenarioDir string, scenarioNames []string) ([]string, error) {
+func resolveLayeredScenarioFiles(scenarioDir string, scenarioNames []string, baseConfig *scenarios.DeploymentConfig) ([]string, error) {
 	var allFiles []string
 	var missing []string
 
@@ -42,7 +49,14 @@ func resolveLayeredScenarioFiles(scenarioDir string, scenarioNames []string) ([]
 			continue
 		}
 
-		files, err := scenarios.ResolveLayeredPaths(scenarioDir, s, nil)
+		// Start with the provided config or derive from scenario name
+		var config *scenarios.DeploymentConfig
+		if baseConfig != nil {
+			// Use the provided config (which includes ChartVersion and Flow)
+			config = baseConfig
+		}
+
+		files, err := scenarios.ResolveLayeredPaths(scenarioDir, s, config)
 		if err != nil {
 			missing = append(missing, s)
 			continue
@@ -90,15 +104,4 @@ func resolveLegacyScenarioFiles(scenarioDir string, scenarioNames []string) ([]s
 	}
 
 	return files, nil
-}
-
-// ResolveScenarioFilesWithConfig resolves scenario files using an explicit layered config.
-// This allows callers to specify exactly which layers to use, bypassing auto-detection.
-func ResolveScenarioFilesWithConfig(scenarioDir string, config *scenarios.LayeredConfig) ([]string, error) {
-	if config == nil {
-		return nil, fmt.Errorf("layered config is required")
-	}
-
-	// Use an empty scenario name since config is explicit
-	return scenarios.ResolveLayeredPaths(scenarioDir, "", config)
 }
