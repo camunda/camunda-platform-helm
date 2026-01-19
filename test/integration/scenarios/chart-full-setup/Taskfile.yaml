@@ -74,7 +74,7 @@ tasks:
         VALUES_ARGS=""
         
         # Check if values directory exists for this chart version
-        if [[ ! -d "$VALUES_DIR" ]]; then
+        if [ ! -d "$VALUES_DIR" ]; then
           echo "WARNING: Values directory not found: $VALUES_DIR" >&2
           echo "Falling back to legacy values files" >&2
           exit 1
@@ -83,7 +83,7 @@ tasks:
         # =============================================================================
         # Layer 1: Base (always included)
         # =============================================================================
-        if [[ -f "$VALUES_DIR/base.yaml" ]]; then
+        if [ -f "$VALUES_DIR/base.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base.yaml"
         fi
         
@@ -91,18 +91,18 @@ tasks:
         # Layer 2: Base modifiers (QA, Upgrade)
         # =============================================================================
         QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-        if [[ -z "$QA_MODE" ]]; then
-          [[ "${TEST_VALUES_SCENARIO:-}" == qa-* ]] && QA_MODE="true"
+        if [ -z "$QA_MODE" ]; then
+          case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
         fi
-        if [[ "$QA_MODE" == "true" && -f "$VALUES_DIR/base-qa.yaml" ]]; then
+        if [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-qa.yaml"
         fi
         
         UPGRADE_MODE="${TEST_UPGRADE:-}"
-        if [[ -z "$UPGRADE_MODE" ]]; then
-          [[ "${TEST_VALUES_SCENARIO:-}" == *"-upg"* || "${TEST_VALUES_SCENARIO:-}" == *"upgrade"* ]] && UPGRADE_MODE="true"
+        if [ -z "$UPGRADE_MODE" ]; then
+          case "${TEST_VALUES_SCENARIO:-}" in *"-upg"*|*"upgrade"*) UPGRADE_MODE="true" ;; esac
         fi
-        if [[ "$UPGRADE_MODE" == "true" && -f "$VALUES_DIR/base-upgrade.yaml" ]]; then
+        if [ "$UPGRADE_MODE" = "true" ] && [ -f "$VALUES_DIR/base-upgrade.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-upgrade.yaml"
         fi
         
@@ -125,7 +125,7 @@ tasks:
             ;;
         esac
         
-        if [[ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]]; then
+        if [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
         else
           echo "WARNING: Identity file not found: $VALUES_DIR/identity/${IDENTITY_FILE}.yaml" >&2
@@ -138,7 +138,7 @@ tasks:
         PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
         
         # If not explicitly set, derive from scenario or features
-        if [[ -z "$PERSISTENCE" ]]; then
+        if [ -z "$PERSISTENCE" ]; then
           case "${TEST_VALUES_SCENARIO:-}" in
             *opensearch*)
               PERSISTENCE="opensearch"
@@ -155,7 +155,7 @@ tasks:
           esac
         fi
         
-        if [[ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]]; then
+        if [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
         fi
         
@@ -164,7 +164,7 @@ tasks:
         # =============================================================================
         PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
         
-        if [[ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]]; then
+        if [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
         fi
         
@@ -175,32 +175,37 @@ tasks:
         FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
         
         # If not explicitly set, derive from scenario and identity type
-        if [[ -z "$FEATURES" ]]; then
+        if [ -z "$FEATURES" ]; then
           SCENARIO="${TEST_VALUES_SCENARIO:-}"
           
           # Derive features from scenario name
-          [[ "$SCENARIO" == *"-mt"* || "$SCENARIO" == *"multitenancy"* || "$IDENTITY" == "keycloak-mt" ]] && FEATURES="$FEATURES,multitenancy"
-          [[ "$SCENARIO" == *"-rba"* || "$IDENTITY" == "keycloak-rba" ]] && FEATURES="$FEATURES,rba"
-          [[ "$SCENARIO" == *"document"* || "$SCENARIO" == *"documentstore"* ]] && FEATURES="$FEATURES,documentstore"
+          case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
+          [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
+          case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
+          [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
+          case "$SCENARIO" in *"document"*|*"documentstore"*) FEATURES="$FEATURES,documentstore" ;; esac
           
           # Remove leading comma
           FEATURES="${FEATURES#,}"
         fi
         
-        # Add feature files
-        IFS=',' read -ra FEATURE_ARRAY <<< "$FEATURES"
-        for feature in "${FEATURE_ARRAY[@]}"; do
+        # Add feature files (POSIX-compatible using IFS)
+        OLD_IFS="$IFS"
+        IFS=','
+        for feature in $FEATURES; do
+          IFS="$OLD_IFS"
           feature=$(echo "$feature" | xargs)  # trim whitespace
-          if [[ -n "$feature" && -f "$VALUES_DIR/features/${feature}.yaml" ]]; then
+          if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
             VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/features/${feature}.yaml"
           fi
         done
+        IFS="$OLD_IFS"
         
         # =============================================================================
         # Layer 7: Image tags (if enabled)
         # =============================================================================
         IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
-        if [[ "$IMAGE_TAGS" == "true" && -f "$VALUES_DIR/base-image-tags.yaml" ]]; then
+        if [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-image-tags.yaml"
         fi
         
@@ -225,16 +230,20 @@ tasks:
       VALUES_FILES=""
       
       # Layer 1: Base
-      [[ -f "$VALUES_DIR/base.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base.yaml"
+      [ -f "$VALUES_DIR/base.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base.yaml"
       
       # Layer 2: Base modifiers (QA, Upgrade)
       QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-      [[ -z "$QA_MODE" && "${TEST_VALUES_SCENARIO:-}" == qa-* ]] && QA_MODE="true"
-      [[ "$QA_MODE" == "true" && -f "$VALUES_DIR/base-qa.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-qa.yaml"
+      if [ -z "$QA_MODE" ]; then
+        case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
+      fi
+      [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-qa.yaml"
       
       UPGRADE_MODE="${TEST_UPGRADE:-}"
-      [[ -z "$UPGRADE_MODE" && ("${TEST_VALUES_SCENARIO:-}" == *"-upg"* || "${TEST_VALUES_SCENARIO:-}" == *"upgrade"*) ]] && UPGRADE_MODE="true"
-      [[ "$UPGRADE_MODE" == "true" && -f "$VALUES_DIR/base-upgrade.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-upgrade.yaml"
+      if [ -z "$UPGRADE_MODE" ]; then
+        case "${TEST_VALUES_SCENARIO:-}" in *"-upg"*|*"upgrade"*) UPGRADE_MODE="true" ;; esac
+      fi
+      [ "$UPGRADE_MODE" = "true" ] && [ -f "$VALUES_DIR/base-upgrade.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-upgrade.yaml"
       
       # Layer 3: Identity
       IDENTITY="${TEST_IDENTITY:-${TEST_VALUES_AUTH:-${TEST_AUTH_TYPE:-keycloak}}}"
@@ -243,11 +252,11 @@ tasks:
         keycloak-rba|keycloak-rdbms|keycloak-oracle-rdbms) IDENTITY_FILE="keycloak" ;;
         *) IDENTITY_FILE="$IDENTITY" ;;
       esac
-      [[ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
+      [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
       
       # Layer 4: Persistence
       PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
-      if [[ -z "$PERSISTENCE" ]]; then
+      if [ -z "$PERSISTENCE" ]; then
         case "${TEST_VALUES_SCENARIO:-}" in
           *opensearch*) PERSISTENCE="opensearch" ;;
           *oracle-rdbms*|*rdbms-oracle*) PERSISTENCE="rdbms-oracle" ;;
@@ -255,30 +264,38 @@ tasks:
           *) PERSISTENCE="elasticsearch" ;;
         esac
       fi
-      [[ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
+      [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
       
       # Layer 5: Platform
       PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
-      [[ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
+      [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
       
       # Layer 6: Features
       FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
-      if [[ -z "$FEATURES" ]]; then
+      if [ -z "$FEATURES" ]; then
         SCENARIO="${TEST_VALUES_SCENARIO:-}"
-        [[ "$SCENARIO" == *"-mt"* || "$SCENARIO" == *"multitenancy"* || "$IDENTITY" == "keycloak-mt" ]] && FEATURES="$FEATURES,multitenancy"
-        [[ "$SCENARIO" == *"-rba"* || "$IDENTITY" == "keycloak-rba" ]] && FEATURES="$FEATURES,rba"
-        [[ "$SCENARIO" == *"document"* ]] && FEATURES="$FEATURES,documentstore"
+        case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
+        [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
+        case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
+        [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
+        case "$SCENARIO" in *"document"*) FEATURES="$FEATURES,documentstore" ;; esac
         FEATURES="${FEATURES#,}"
       fi
-      IFS=',' read -ra FEATURE_ARRAY <<< "$FEATURES"
-      for feature in "${FEATURE_ARRAY[@]}"; do
+      # Parse comma-separated features (POSIX-compatible using IFS)
+      OLD_IFS="$IFS"
+      IFS=','
+      for feature in $FEATURES; do
+        IFS="$OLD_IFS"
         feature=$(echo "$feature" | xargs)
-        [[ -n "$feature" && -f "$VALUES_DIR/features/${feature}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/features/${feature}.yaml"
+        if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
+          VALUES_FILES="$VALUES_FILES $VALUES_DIR/features/${feature}.yaml"
+        fi
       done
+      IFS="$OLD_IFS"
       
       # Layer 7: Image tags
       IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
-      [[ "$IMAGE_TAGS" == "true" && -f "$VALUES_DIR/base-image-tags.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-image-tags.yaml"
+      [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-image-tags.yaml"
       
       # Step 1: Merge all YAMLs
       MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
@@ -344,7 +361,7 @@ tasks:
       
       echo "Values from: $VALUES_DIR"
       for f in "$VALUES_DIR"/*.yaml "$VALUES_DIR"/**/*.yaml; do
-        [[ -f "$f" ]] && echo "  - $f"
+        [ -f "$f" ] && echo "  - $f"
       done
       echo ""
       
@@ -390,12 +407,14 @@ tasks:
         VALUES_FILES=""
         
         # Layer 1: Base
-        [[ -f "$VALUES_DIR/base.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base.yaml"
+        [ -f "$VALUES_DIR/base.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base.yaml"
         
         # Layer 2: Base modifiers (QA, Upgrade)
         QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-        [[ -z "$QA_MODE" && "${TEST_VALUES_SCENARIO:-}" == qa-* ]] && QA_MODE="true"
-        [[ "$QA_MODE" == "true" && -f "$VALUES_DIR/base-qa.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-qa.yaml"
+        if [ -z "$QA_MODE" ]; then
+          case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
+        fi
+        [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-qa.yaml"
         
         # Layer 3: Identity
         IDENTITY="${TEST_IDENTITY:-${TEST_VALUES_AUTH:-${TEST_AUTH_TYPE:-keycloak}}}"
@@ -404,11 +423,11 @@ tasks:
           keycloak-rba|keycloak-rdbms|keycloak-oracle-rdbms) IDENTITY_FILE="keycloak" ;;
           *) IDENTITY_FILE="$IDENTITY" ;;
         esac
-        [[ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
+        [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
         
         # Layer 4: Persistence
         PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
-        if [[ -z "$PERSISTENCE" ]]; then
+        if [ -z "$PERSISTENCE" ]; then
           case "${TEST_VALUES_SCENARIO:-}" in
             *opensearch*) PERSISTENCE="opensearch" ;;
             *oracle-rdbms*|*rdbms-oracle*) PERSISTENCE="rdbms-oracle" ;;
@@ -416,30 +435,38 @@ tasks:
             *) PERSISTENCE="elasticsearch" ;;
           esac
         fi
-        [[ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
+        [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
         
         # Layer 5: Platform
         PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
-        [[ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
+        [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
         
         # Layer 6: Features (simplified for venom env)
         FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
-        if [[ -z "$FEATURES" ]]; then
+        if [ -z "$FEATURES" ]; then
           SCENARIO="${TEST_VALUES_SCENARIO:-}"
-          [[ "$SCENARIO" == *"-mt"* || "$SCENARIO" == *"multitenancy"* || "$IDENTITY" == "keycloak-mt" ]] && FEATURES="$FEATURES,multitenancy"
-          [[ "$SCENARIO" == *"-rba"* || "$IDENTITY" == "keycloak-rba" ]] && FEATURES="$FEATURES,rba"
-          [[ "$SCENARIO" == *"document"* ]] && FEATURES="$FEATURES,documentstore"
+          case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
+          [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
+          case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
+          [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
+          case "$SCENARIO" in *"document"*) FEATURES="$FEATURES,documentstore" ;; esac
           FEATURES="${FEATURES#,}"
         fi
-        IFS=',' read -ra FEATURE_ARRAY <<< "$FEATURES"
-        for feature in "${FEATURE_ARRAY[@]}"; do
+        # Parse comma-separated features (POSIX-compatible using IFS)
+        OLD_IFS="$IFS"
+        IFS=','
+        for feature in $FEATURES; do
+          IFS="$OLD_IFS"
           feature=$(echo "$feature" | xargs)
-          [[ -n "$feature" && -f "$VALUES_DIR/features/${feature}.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/features/${feature}.yaml"
+          if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
+            VALUES_FILES="$VALUES_FILES $VALUES_DIR/features/${feature}.yaml"
+          fi
         done
+        IFS="$OLD_IFS"
         
         # Layer 7: Image tags
         IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
-        [[ "$IMAGE_TAGS" == "true" && -f "$VALUES_DIR/base-image-tags.yaml" ]] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-image-tags.yaml"
+        [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-image-tags.yaml"
         
         # Step 1: Merge all YAMLs
         MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
@@ -502,7 +529,7 @@ tasks:
       VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
       
       # Check if values directory exists
-      if [[ ! -d "$VALUES_DIR" ]]; then
+      if [ ! -d "$VALUES_DIR" ]; then
         echo "ERROR: Values directory not found: $VALUES_DIR" >&2
         echo "Please ensure the values structure exists for this chart version" >&2
         exit 1
@@ -514,7 +541,7 @@ tasks:
       # =============================================================================
       # Layer 1: Base (always included)
       # =============================================================================
-      if [[ -f "$VALUES_DIR/base.yaml" ]]; then
+      if [ -f "$VALUES_DIR/base.yaml" ]; then
         VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base.yaml"
         echo "Layer 1 (base): $VALUES_DIR/base.yaml"
       fi
@@ -523,19 +550,19 @@ tasks:
       # Layer 2: Base modifiers (QA, Upgrade)
       # =============================================================================
       QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-      if [[ -z "$QA_MODE" ]]; then
-        [[ "${TEST_VALUES_SCENARIO:-}" == qa-* ]] && QA_MODE="true"
+      if [ -z "$QA_MODE" ]; then
+        case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
       fi
-      if [[ "$QA_MODE" == "true" && -f "$VALUES_DIR/base-qa.yaml" ]]; then
+      if [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ]; then
         VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-qa.yaml"
         echo "Layer 2 (qa): $VALUES_DIR/base-qa.yaml"
       fi
       
       UPGRADE_MODE="${TEST_UPGRADE:-}"
-      if [[ -z "$UPGRADE_MODE" ]]; then
-        [[ "${TEST_VALUES_SCENARIO:-}" == *"-upg"* || "${TEST_VALUES_SCENARIO:-}" == *"upgrade"* ]] && UPGRADE_MODE="true"
+      if [ -z "$UPGRADE_MODE" ]; then
+        case "${TEST_VALUES_SCENARIO:-}" in *"-upg"*|*"upgrade"*) UPGRADE_MODE="true" ;; esac
       fi
-      if [[ "$UPGRADE_MODE" == "true" && -f "$VALUES_DIR/base-upgrade.yaml" ]]; then
+      if [ "$UPGRADE_MODE" = "true" ] && [ -f "$VALUES_DIR/base-upgrade.yaml" ]; then
         VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-upgrade.yaml"
         echo "Layer 2 (upgrade): $VALUES_DIR/base-upgrade.yaml"
       fi
@@ -558,7 +585,7 @@ tasks:
           ;;
       esac
       
-      if [[ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]]; then
+      if [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]; then
         VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
         echo "Layer 3 (identity): $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
       else
@@ -570,7 +597,7 @@ tasks:
       # =============================================================================
       PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
       
-      if [[ -z "$PERSISTENCE" ]]; then
+      if [ -z "$PERSISTENCE" ]; then
         case "${TEST_VALUES_SCENARIO:-}" in
           *opensearch*)
             PERSISTENCE="opensearch"
@@ -587,7 +614,7 @@ tasks:
         esac
       fi
       
-      if [[ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]]; then
+      if [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]; then
         VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
         echo "Layer 4 (persistence): $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
       fi
@@ -597,7 +624,7 @@ tasks:
       # =============================================================================
       PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
       
-      if [[ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]]; then
+      if [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]; then
         VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
         echo "Layer 5 (platform): $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
       fi
@@ -607,25 +634,31 @@ tasks:
       # =============================================================================
       FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
       
-      if [[ -z "$FEATURES" ]]; then
+      if [ -z "$FEATURES" ]; then
         SCENARIO="${TEST_VALUES_SCENARIO:-}"
         
         # Derive features from scenario name
-        [[ "$SCENARIO" == *"-mt"* || "$SCENARIO" == *"multitenancy"* || "$IDENTITY" == "keycloak-mt" ]] && FEATURES="$FEATURES,multitenancy"
-        [[ "$SCENARIO" == *"-rba"* || "$IDENTITY" == "keycloak-rba" ]] && FEATURES="$FEATURES,rba"
-        [[ "$SCENARIO" == *"document"* || "$SCENARIO" == *"documentstore"* ]] && FEATURES="$FEATURES,documentstore"
+        case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
+        [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
+        case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
+        [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
+        case "$SCENARIO" in *"document"*|*"documentstore"*) FEATURES="$FEATURES,documentstore" ;; esac
         
         FEATURES="${FEATURES#,}"
       fi
       
-      IFS=',' read -ra FEATURE_ARRAY <<< "$FEATURES"
-      for feature in "${FEATURE_ARRAY[@]}"; do
+      # Parse comma-separated features (POSIX-compatible using IFS)
+      OLD_IFS="$IFS"
+      IFS=','
+      for feature in $FEATURES; do
+        IFS="$OLD_IFS"
         feature=$(echo "$feature" | xargs)
-        if [[ -n "$feature" && -f "$VALUES_DIR/features/${feature}.yaml" ]]; then
+        if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
           VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/features/${feature}.yaml"
           echo "Layer 6 (feature): $VALUES_DIR/features/${feature}.yaml"
         fi
       done
+      IFS="$OLD_IFS"
       
       # =============================================================================
       # Layer 7: Image tags (if enabled)
@@ -633,10 +666,10 @@ tasks:
       IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
       IMAGE_TAGS_ARGS=""
       
-      if [[ "$IMAGE_TAGS" == "true" && -f "$VALUES_DIR/base-image-tags.yaml" ]]; then
+      if [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ]; then
         VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-image-tags.yaml"
         echo "Layer 7 (image-tags): $VALUES_DIR/base-image-tags.yaml"
-      elif [[ -f /tmp/values-image-tags-processed.yaml ]]; then
+      elif [ -f /tmp/values-image-tags-processed.yaml ]; then
         IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
         echo "Including processed image tags file"
       fi
@@ -779,7 +812,7 @@ tasks:
 
         # Template the OIDC identity file for Entra
         OIDC_FILE="{{ .LAYERED_VALUES_DIR }}/identity/oidc.yaml"
-        if [[ -f "$OIDC_FILE" ]]; then
+        if [ -f "$OIDC_FILE" ]; then
           envsubst < "$OIDC_FILE" > "${OIDC_FILE}.tmp"
           mv "${OIDC_FILE}.tmp" "$OIDC_FILE"
           cat "$OIDC_FILE"
