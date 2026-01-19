@@ -94,6 +94,37 @@ on:
         required: false
         default: "elasticsearch"
         type: string
+      # =============================================================================
+      # Selection + Composition Model Inputs (New - Preferred)
+      # These inputs allow explicit configuration of identity, persistence, platform,
+      # and features instead of relying on scenario name parsing.
+      # =============================================================================
+      test-identity:
+        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        required: false
+        type: string
+      test-persistence:
+        description: "Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle"
+        required: false
+        type: string
+      test-platform:
+        description: "Platform selection: gke, eks, openshift"
+        required: false
+        type: string
+      test-features:
+        description: "Features (comma-separated): multitenancy, rba, documentstore"
+        required: false
+        type: string
+      test-qa:
+        description: "Enable QA configuration"
+        required: false
+        default: false
+        type: boolean
+      test-upgrade:
+        description: "Enable upgrade flow configuration"
+        required: false
+        default: false
+        type: boolean
       shortname:
         required: false
         default: "es"
@@ -311,6 +342,13 @@ jobs:
       username: ${{ matrix.distro.secret.username }}
       password: ${{ matrix.distro.secret.password }}
       scenario: ${{ inputs.scenario }}
+      # Selection + composition model inputs (new - preferred)
+      test-identity: ${{ inputs.test-identity }}
+      test-persistence: ${{ inputs.test-persistence }}
+      test-platform: ${{ inputs.test-platform }}
+      test-features: ${{ inputs.test-features }}
+      test-qa: ${{ inputs.test-qa }}
+      test-upgrade: ${{ inputs.test-upgrade }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}

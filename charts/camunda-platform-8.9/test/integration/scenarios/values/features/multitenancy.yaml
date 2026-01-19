@@ -1,0 +1,14 @@
+# Multi-tenancy feature
+# Layer 4: Optional feature
+# Included when TEST_FEATURES contains "multitenancy"
+
+global:
+  multitenancy:
+    enabled: true
+    checksEnabled: true
+    apiEnabled: true
+
+connectors:
+  env:
+    - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
+      value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
