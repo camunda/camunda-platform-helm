@@ -1,0 +1,142 @@
+# =============================================================================
+# External Keycloak Authentication (8.6)
+# =============================================================================
+# Layer 2: Auth method - External/Shared Keycloak instance
+# Used with: TEST_AUTH_TYPE=keycloak-mt (multitenancy with shared keycloak)
+# Note: 8.6 uses separate operate, tasklist, zeebe components
+# =============================================================================
+
+global:
+  annotations:
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
+  elasticsearch:
+    external: true
+    prefix: $ZEEBE_INDEX_PREFIX-$FLOW
+    auth:
+      username: elastic
+      secret:
+        existingSecret: infra-credentials
+        existingSecretKey: elasticsearch-password
+    url:
+      protocol: https
+      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+      port: 443
+  identity:
+    keycloak:
+      url:
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
+        port: 443
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
+    auth:
+      enabled: true
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
+      admin:
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-admin-client-password"
+      connectors:
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-connectors-client-password"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-console-client-password"
+      operate:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/operate"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-operate-client-password"
+      tasklist:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/tasklist"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-tasklist-client-password"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-optimize-client-password"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      zeebe:
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-zeebe-client-password"
+
+# -----------------------------------------------------------------------------
+# Identity (with realm creation)
+# -----------------------------------------------------------------------------
+identity:
+  enabled: true
+  contextPath: "/identity"
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
+  firstUser:
+    existingSecret: "integration-test-credentials"
+    existingSecretKey: "identity-user-password"
+
+# -----------------------------------------------------------------------------
+# Identity PostgreSQL (no Keycloak PostgreSQL needed)
+# -----------------------------------------------------------------------------
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: identity-keycloak-postgresql-admin-password
+      userPasswordKey: identity-keycloak-postgresql-user-password
+
+# -----------------------------------------------------------------------------
+# Keycloak disabled (external)
+# -----------------------------------------------------------------------------
+identityKeycloak:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Operate (with custom index prefix)
+# -----------------------------------------------------------------------------
+operate:
+  env:
+    - name: CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# -----------------------------------------------------------------------------
+# Tasklist (with custom index prefix)
+# -----------------------------------------------------------------------------
+tasklist:
+  env:
+    - name: CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# -----------------------------------------------------------------------------
+# Zeebe (with custom index prefix)
+# -----------------------------------------------------------------------------
+zeebe:
+  env:
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# -----------------------------------------------------------------------------
+# Optimize (with custom index prefix)
+# -----------------------------------------------------------------------------
+optimize:
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# -----------------------------------------------------------------------------
+# Console (with custom realm)
+# -----------------------------------------------------------------------------
+console:
+  keycloak:
+    realm: $KEYCLOAK_REALM
