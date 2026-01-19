@@ -1,0 +1,11 @@
+# Elasticsearch backend
+# Layer 3: Data backend
+# Used when TEST_BACKEND=elasticsearch
+
+global:
+  elasticsearch:
+    enabled: true
+
+elasticsearch:
+  enabled: true
+  maxUnavailable: 0

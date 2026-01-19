@@ -1,0 +1,12 @@
+# =============================================================================
+# Upgrade Test Feature (8.7)
+# =============================================================================
+# Layer 4: Optional feature - Upgrade/migration test configuration
+# Used with: TEST_VALUES_FEATURES containing "upgrade"
+# Note: In 8.7, no orchestration-level migration options needed; this is the
+# source version for upgrade tests to 8.8+
+# =============================================================================
+
+# Ensure Elasticsearch cluster stays available during upgrade
+elasticsearch:
+  maxUnavailable: 0
