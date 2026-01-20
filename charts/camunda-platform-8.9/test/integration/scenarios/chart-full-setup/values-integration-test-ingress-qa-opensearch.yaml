@@ -117,6 +117,9 @@ console:
       value: 'true'
 identity:
   enabled: true
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
   firstUser:
     user: demo
     secret:
