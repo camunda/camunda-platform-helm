@@ -26,6 +26,11 @@ integration:
           shortname: eske
           exclude: []
           platforms: [gke,eks]
+        - name: opensearch
+          enabled: true
+          auth: keycloak
+          shortname: oske
+          exclude: []
         - name: upgrade-migration
           # upgrade migrators are only for 8.7 -> 8.8, not for 8.9
           enabled: false

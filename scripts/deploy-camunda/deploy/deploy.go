@@ -153,14 +153,12 @@ func processCommonValues(scenarioPath, outputDir, envFile string) ([]string, err
 		logging.Logger.Debug().
 			Str("source", srcFile).
 			Str("outputDir", outputDir).
+			Str("envFile", envFile).
 			Msg("⚙️ [processCommonValues] processing common values file")
 
 		opts := values.Options{
 			OutputDir: outputDir,
 			EnvFile:   envFile,
-		}
-		if opts.EnvFile == "" {
-			opts.EnvFile = ".env"
 		}
 
 		outputPath, _, err := values.Process(srcFile, opts)
@@ -205,7 +203,12 @@ func redactDeployOpts(opts types.Options) map[string]interface{} {
 		"ttl":                    opts.TTL,
 		"ensureDockerRegistry":   opts.EnsureDockerRegistry,
 		"dockerRegistryUsername": opts.DockerRegistryUsername,
-		"dockerRegistryPassword": func() string { if opts.DockerRegistryPassword != "" { return redacted }; return "" }(),
+		"dockerRegistryPassword": func() string {
+			if opts.DockerRegistryPassword != "" {
+				return redacted
+			}
+			return ""
+		}(),
 		"skipDockerLogin":        opts.SkipDockerLogin,
 		"skipDependencyUpdate":   opts.SkipDependencyUpdate,
 		"applyIntegrationCreds":  opts.ApplyIntegrationCreds,
@@ -675,6 +678,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Str("scenarioDir", flags.ScenarioPath).
 			Str("outputDir", tempDir).
 			Bool("interactive", flags.Interactive).
+			Str("envFile", flags.EnvFile).
 			Msg("📝 [prepareScenarioValues.processValues] building values options")
 
 		opts := values.Options{
@@ -684,9 +688,6 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			OutputDir:   tempDir,
 			Interactive: flags.Interactive,
 			EnvFile:     flags.EnvFile,
-		}
-		if opts.EnvFile == "" {
-			opts.EnvFile = ".env"
 		}
 
 		file, err := values.ResolveValuesFile(opts)
