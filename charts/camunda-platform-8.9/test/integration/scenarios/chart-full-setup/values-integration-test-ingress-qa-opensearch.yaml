@@ -1,9 +1,22 @@
 global:
+  annotations:
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
   image:
     pullPolicy: Always
   identity:
     auth:
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
       enabled: true
+    keycloak:
+      url:
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
+        port: 443
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
   opensearch:
     enabled: true
     auth:
@@ -53,8 +66,10 @@ orchestration:
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+
 identityKeycloak:
-  enabled: true
+  enabled: false
+
 optimize:
   enabled: true
   env:
@@ -71,6 +86,8 @@ webModeler:
       method: oidc
 console:
   enabled: true
+  keycloak:
+    realm: $KEYCLOAK_REALM
   overrideConfiguration: |
     camunda:
       console:
