@@ -208,6 +208,9 @@ connectors:
   security:
     authentication:
       method: oidc
+      oidc:
+        existingSecret:
+          name: "integration-test-credentials"
 
 elasticsearch:
   enabled: false
