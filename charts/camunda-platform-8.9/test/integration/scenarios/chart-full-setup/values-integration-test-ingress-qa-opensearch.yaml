@@ -30,6 +30,8 @@ global:
       port: 443
     prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
 orchestration:
+  index:
+    prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
   data:
     secondaryStorage:
       type: opensearch
