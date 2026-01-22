@@ -19,6 +19,9 @@ var (
 	// Global flags
 	configFile string
 	flags      config.RuntimeFlags
+
+	// Raw debug flags (parsed into flags.DebugComponents in PreRunE)
+	debugFlagsRaw []string
 )
 
 // NewRootCommand creates the root command.
@@ -69,6 +72,18 @@ func NewRootCommand() *cobra.Command {
 			if strings.TrimSpace(flags.ChartPath) != "" {
 				if fi, err := os.Stat(flags.ChartPath); err != nil || !fi.IsDir() {
 					return fmt.Errorf("resolved chart path %q does not exist or is not a directory; set --repo-root/--chart/--version or --chart-path explicitly", flags.ChartPath)
+				}
+			}
+
+			// Parse debug flags into the DebugComponents map
+			if len(debugFlagsRaw) > 0 {
+				flags.DebugComponents = make(map[string]config.DebugConfig)
+				for _, raw := range debugFlagsRaw {
+					component, port, err := config.ParseDebugFlag(raw, flags.DebugPort)
+					if err != nil {
+						return fmt.Errorf("invalid --debug flag %q: %w", raw, err)
+					}
+					flags.DebugComponents[component] = config.DebugConfig{Port: port}
 				}
 			}
 
@@ -132,6 +147,9 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (appended to ."+config.DefaultIngressBaseDomain+")")
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
+	f.StringSliceVar(&debugFlagsRaw, "debug", nil, "Enable JVM remote debugging for component (repeatable, e.g., --debug orchestration:5005 --debug connectors:5006)")
+	f.IntVar(&flags.DebugPort, "debug-port", 5005, "Default JVM debug port (used when no port specified in --debug)")
+	f.BoolVar(&flags.DebugSuspend, "debug-suspend", false, "Suspend JVM on startup until debugger attaches")
 
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
