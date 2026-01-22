@@ -1,0 +1,136 @@
+# QA-specific configuration for 8.7
+# Layer 5: QA additions - Extra users, clients, and test configuration
+
+global:
+  image:
+    pullPolicy: Always
+
+console:
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: $TEST_NAMESPACE
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: "true"
+
+identity:
+  firstUser:
+    user: demo
+    existingSecret: vault-mapped-secrets
+    existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+    - id: test
+      name: Test
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+  users:
+    - username: lisa
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+      firstName: Lisa
+      lastName: Doe
+      email: cawemodev+lisa@gmail.com
+      roles:
+        - Identity
+        - Operate
+        - Tasklist
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Zeebe
+    - username: bart
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+      firstName: Bart
+      lastName: Foo
+      email: cawemodev+bart@gmail.com
+      roles:
+        - Identity
+        - Operate
+        - Tasklist
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Zeebe
+
+connectors:
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password

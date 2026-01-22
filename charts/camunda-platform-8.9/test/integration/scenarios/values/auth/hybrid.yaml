@@ -1,0 +1,61 @@
+# Hybrid authentication
+# Layer 2: Auth method
+# Used when TEST_AUTH=hybrid
+#
+# This configuration enables:
+# - Basic Auth for Orchestration Cluster (Operate, Tasklist, Zeebe) and Connectors
+# - OIDC via Internal Keycloak for Management Components (Identity, Console, Web Modeler, Optimize)
+
+global:
+  identity:
+    auth:
+      enabled: true
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        existingSecret:
+          name: "integration-test-credentials"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        existingSecret:
+          name: "integration-test-credentials"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        existingSecret:
+          name: "integration-test-credentials"
+      # NOTE: No orchestration or connectors auth config here since they use basic auth
+
+identityKeycloak:
+  enabled: true
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
+
+# Connectors uses Basic Auth
+connectors:
+  security:
+    authentication:
+      method: basic
+
+# Web Modeler uses OIDC via Keycloak
+webModeler:
+  security:
+    authentication:
+      method: oidc
+
+# Orchestration uses Basic Auth
+orchestration:
+  importer:
+    enabled: true
+  security:
+    authentication:
+      method: basic
+      authenticationRefreshInterval: "PT30S"
