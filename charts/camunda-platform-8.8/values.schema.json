@@ -2291,7 +2291,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.72"
+                            "default": "8.8.73"
                         },
                         "digest": {
                             "type": "string",
@@ -2778,7 +2778,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.5"
+                            "default": "8.8.6"
                         },
                         "pullSecrets": {
                             "type": "array",
