@@ -202,7 +202,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # Build arguments
 # ------------------------------------------------------------------------------
 ARG ZBCTL_VERSION=v8.6.0
-ARG PLAYWRIGHT_VERSION=1.57.0
+ARG PLAYWRIGHT_VERSION=1.58.0
 
 # Environment configuration
 ENV DEBIAN_FRONTEND=noninteractive
