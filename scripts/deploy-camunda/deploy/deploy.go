@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
@@ -50,6 +51,7 @@ type ScenarioResult struct {
 	SecondUserPassword       string
 	ThirdUserPassword        string
 	KeycloakClientsSecret    string
+	TestEnvFile              string // Path to generated E2E test .env file
 	Error                    error
 }
 
@@ -603,8 +605,18 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 		return result.Error
 	}
 
+	// Generate E2E test env file if requested
+	if flags.OutputTestEnv {
+		envPath, err := renderTestEnvFile(ctx, flags, result.Namespace, scenario)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Msg("Failed to generate E2E test env file")
+		} else if envPath != "" {
+			result.TestEnvFile = envPath
+		}
+	}
+
 	// Print single deployment summary
-	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix, result.Namespace, result.Release, flags)
+	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix, result.Namespace, result.Release, result.TestEnvFile, flags)
 	return nil
 }
 
@@ -1046,6 +1058,16 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	result.ThirdUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
 	result.KeycloakClientsSecret = os.Getenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET")
 
+	// Generate E2E test env file if requested
+	if flags.OutputTestEnv {
+		envPath, err := renderTestEnvFile(ctx, flags, scenarioCtx.Namespace, scenarioCtx.ScenarioName)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Str("scenario", scenarioCtx.ScenarioName).Msg("Failed to generate E2E test env file")
+		} else if envPath != "" {
+			result.TestEnvFile = envPath
+		}
+	}
+
 	totalDuration := time.Since(startTime)
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
@@ -1128,8 +1150,69 @@ func deleteNamespace(ctx context.Context, namespace string) error {
 	return kube.DeleteNamespace(ctx, "", "", namespace)
 }
 
+// renderTestEnvFile generates the E2E test .env file by calling render-e2e-env.sh.
+// For multi-scenario deployments, the scenario name is appended to the output path.
+// This function logs warnings but does not fail the deployment if env file generation fails.
+func renderTestEnvFile(ctx context.Context, flags *config.RuntimeFlags, namespace, scenario string) (string, error) {
+	if !flags.OutputTestEnv {
+		return "", nil
+	}
+
+	// Determine output path - for multi-scenario, append scenario name
+	outputPath := flags.OutputTestEnvPath
+	if len(flags.Scenarios) > 1 && scenario != "" {
+		outputPath = fmt.Sprintf("%s.%s", flags.OutputTestEnvPath, scenario)
+	}
+
+	// Locate the render-e2e-env.sh script
+	var scriptPath string
+	candidates := []string{
+		filepath.Join(flags.RepoRoot, "scripts", "render-e2e-env.sh"),
+		filepath.Join(filepath.Dir(flags.ChartPath), "..", "scripts", "render-e2e-env.sh"),
+		filepath.Join(flags.ChartPath, "..", "..", "scripts", "render-e2e-env.sh"),
+	}
+
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			scriptPath = candidate
+			break
+		}
+	}
+
+	if scriptPath == "" {
+		return "", fmt.Errorf("render-e2e-env.sh script not found; searched: %v", candidates)
+	}
+
+	// Build args for render-e2e-env.sh
+	args := []string{
+		"--absolute-chart-path", flags.ChartPath,
+		"--namespace", namespace,
+		"--output", outputPath,
+	}
+
+	logging.Logger.Info().
+		Str("output", outputPath).
+		Str("namespace", namespace).
+		Str("script", scriptPath).
+		Msg("Generating E2E test environment file")
+
+	cmd := exec.CommandContext(ctx, scriptPath, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("render-e2e-env.sh failed: %w", err)
+	}
+
+	logging.Logger.Info().
+		Str("path", outputPath).
+		Msg("E2E test environment file generated successfully")
+
+	return outputPath, nil
+}
+
 // printDeploymentSummary outputs the deployment results.
-func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespace, release string, flags *config.RuntimeFlags) {
+func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespace, release, testEnvFile string, flags *config.RuntimeFlags) {
 	firstPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")
 	secondPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")
 	thirdPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
@@ -1147,6 +1230,10 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 		fmt.Fprintf(&out, "  secondUserPassword: %s\n", secondPwd)
 		fmt.Fprintf(&out, "  thirdUserPassword: %s\n", thirdPwd)
 		fmt.Fprintf(&out, "  keycloakClientsSecret: %s\n", clientSecret)
+		// Add test env file path if generated
+		if testEnvFile != "" {
+			fmt.Fprintf(&out, "testEnvFile: %s\n", testEnvFile)
+		}
 		// Add debug port-forward instructions
 		if len(flags.DebugComponents) > 0 {
 			fmt.Fprintf(&out, "debug:\n")
@@ -1191,6 +1278,14 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Second user password")), styleVal(secondPwd))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Third user password")), styleVal(thirdPwd))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak clients secret")), styleVal(clientSecret))
+
+	// Add test env file path if generated
+	if testEnvFile != "" {
+		out.WriteString("\n")
+		out.WriteString(styleHead("Test Environment"))
+		out.WriteString("\n")
+		fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(testEnvFile))
+	}
 
 	// Add debug port-forward instructions if debug mode is enabled
 	if len(flags.DebugComponents) > 0 {
@@ -1256,6 +1351,9 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 				fmt.Fprintf(&out, "  orchestrationIndexPrefix: %s\n", r.OrchestrationIndexPrefix)
 				if r.IngressHost != "" {
 					fmt.Fprintf(&out, "  ingressHost: %s\n", r.IngressHost)
+				}
+				if r.TestEnvFile != "" {
+					fmt.Fprintf(&out, "  testEnvFile: %s\n", r.TestEnvFile)
 				}
 				fmt.Fprintf(&out, "  credentials:\n")
 				fmt.Fprintf(&out, "    firstUserPassword: %s\n", r.FirstUserPassword)
@@ -1338,6 +1436,9 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak Realm")), styleVal(r.KeycloakRealm))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize Index Prefix")), styleVal(r.OptimizeIndexPrefix))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration Index Prefix")), styleVal(r.OrchestrationIndexPrefix))
+			if r.TestEnvFile != "" {
+				fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(r.TestEnvFile))
+			}
 			out.WriteString(styleHead("  Credentials:"))
 			out.WriteString("\n")
 			fmt.Fprintf(&out, "    %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey-2, "First user password")), styleVal(r.FirstUserPassword))

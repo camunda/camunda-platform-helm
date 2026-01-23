@@ -150,6 +150,8 @@ func NewRootCommand() *cobra.Command {
 	f.StringSliceVar(&debugFlagsRaw, "debug", nil, "Enable JVM remote debugging for component (repeatable, e.g., --debug orchestration:5005 --debug connectors:5006)")
 	f.IntVar(&flags.DebugPort, "debug-port", 5005, "Default JVM debug port (used when no port specified in --debug)")
 	f.BoolVar(&flags.DebugSuspend, "debug-suspend", false, "Suspend JVM on startup until debugger attaches")
+	f.BoolVar(&flags.OutputTestEnv, "output-test-env", false, "Generate a .env file for E2E tests after deployment")
+	f.StringVar(&flags.OutputTestEnvPath, "output-test-env-path", ".env.test", "Path for the test .env file output (for multi-scenario: used as base, e.g., .env.test.{scenario})")
 
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
