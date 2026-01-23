@@ -20,6 +20,7 @@ type RuntimeFlags struct {
 	LogLevel                 string
 	SkipDependencyUpdate     bool
 	ExternalSecrets          bool
+	ExternalSecretsStore     string
 	KeycloakHost             string
 	KeycloakProtocol         string
 	KeycloakRealm            string
@@ -28,6 +29,7 @@ type RuntimeFlags struct {
 	TasklistIndexPrefix      string
 	OperateIndexPrefix       string
 	IngressSubdomain         string
+	IngressBaseDomain        string
 	IngressHostname          string
 	RepoRoot                 string
 	Flow                     string
@@ -44,6 +46,10 @@ type RuntimeFlags struct {
 	ExtraValues              []string
 	ValuesPreset             string
 	Timeout                  int // Timeout in minutes for Helm deployment
+	KubeContext              string
+	UseVaultBackedSecrets    bool
+	RunTestsIT               bool // Run integration tests after deployment
+	RunTestsE2E              bool // Run e2e tests after deployment
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -91,6 +97,9 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix)
+	MergeStringField(&flags.KubeContext, dep.KubeContext, rc.KubeContext)
+	MergeStringField(&flags.IngressBaseDomain, dep.IngressBaseDomain, rc.IngressBaseDomain)
+	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	// ScenarioPath special handling
 	if strings.TrimSpace(flags.ScenarioPath) == "" {
@@ -145,6 +154,9 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix)
+	MergeStringField(&flags.KubeContext, "", rc.KubeContext)
+	MergeStringField(&flags.IngressBaseDomain, "", rc.IngressBaseDomain)
+	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	if rc.ExternalSecrets {
 		flags.ExternalSecrets = true
@@ -204,6 +216,16 @@ func Validate(flags *RuntimeFlags) error {
 		return fmt.Errorf("no valid scenarios found in %q", flags.Scenario)
 	}
 
+	// Validate ingress configuration
+	if flags.IngressSubdomain != "" && flags.IngressBaseDomain == "" {
+		return fmt.Errorf("--ingress-base-domain is required when using --ingress-subdomain; valid values: %s", strings.Join(ValidIngressBaseDomains, ", "))
+	}
+	if flags.IngressBaseDomain != "" {
+		if !isValidIngressBaseDomain(flags.IngressBaseDomain) {
+			return fmt.Errorf("--ingress-base-domain must be one of: %s", strings.Join(ValidIngressBaseDomains, ", "))
+		}
+	}
+
 	return nil
 }
 
@@ -219,15 +241,25 @@ func parseScenarios(scenario string) []string {
 	return scenarios
 }
 
+// isValidIngressBaseDomain checks if the given domain is in the allowed list.
+func isValidIngressBaseDomain(domain string) bool {
+	for _, valid := range ValidIngressBaseDomains {
+		if domain == valid {
+			return true
+		}
+	}
+	return false
+}
+
 // ResolveIngressHostname returns the resolved ingress hostname.
 // If IngressHostname is set, it takes precedence (full override).
-// Otherwise, IngressSubdomain is appended to DefaultIngressBaseDomain.
+// Otherwise, IngressSubdomain is appended to IngressBaseDomain.
 func (f *RuntimeFlags) ResolveIngressHostname() string {
 	if f.IngressHostname != "" {
 		return f.IngressHostname
 	}
-	if f.IngressSubdomain != "" {
-		return f.IngressSubdomain + "." + DefaultIngressBaseDomain
+	if f.IngressSubdomain != "" && f.IngressBaseDomain != "" {
+		return f.IngressSubdomain + "." + f.IngressBaseDomain
 	}
 	return ""
 }
