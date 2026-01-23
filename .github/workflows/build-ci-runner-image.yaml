@@ -1,5 +1,5 @@
 # Build CI Runner Images
-# Builds and pushes Docker images for integration test runners
+# Builds and pushes Docker images for integration test runners to GitHub Container Registry
 # Triggered on .tool-versions changes or manual dispatch
 #
 # Local build: ./scripts/build-ci-runner-local.sh [--push]
@@ -24,9 +24,9 @@ on:
         type: boolean
 
 env:
-  REGISTRY: registry.camunda.cloud
-  CI_RUNNER_IMAGE: registry.camunda.cloud/team-distribution/ci-runner
-  PLAYWRIGHT_RUNNER_IMAGE: registry.camunda.cloud/team-distribution/playwright-runner
+  REGISTRY: ghcr.io
+  CI_RUNNER_IMAGE: ghcr.io/camunda/team-distribution/ci-runner
+  PLAYWRIGHT_RUNNER_IMAGE: ghcr.io/camunda/team-distribution/playwright-runner
 
 jobs:
   build-ci-runner:
@@ -68,12 +68,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3
 
-      - name: Login to Camunda Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-          password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Copy .tool-versions for CI Runner build
         run: |
@@ -131,13 +131,15 @@ jobs:
     name: Verify Images
     runs-on: ubuntu-latest
     needs: build-ci-runner
+    permissions:
+      packages: read
     steps:
-      - name: Login to Camunda Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-          password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify CI Runner image
         run: |
