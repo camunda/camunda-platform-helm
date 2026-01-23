@@ -198,6 +198,7 @@ permissions:
   contents: read
   id-token: write
   deployments: write
+  packages: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ github.ref_name || github.ref }}-runner
@@ -241,10 +242,10 @@ jobs:
     name: install for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
     container:
-      image: registry.camunda.cloud/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:
-        username: ${{ secrets.NEXUS_USERNAME }}
-        password: ${{ secrets.NEXUS_PASSWORD }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --user root
     defaults:
       run:
@@ -259,6 +260,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
@@ -600,10 +602,10 @@ jobs:
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
     container:
-      image: registry.camunda.cloud/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:
-        username: ${{ secrets.NEXUS_USERNAME }}
-        password: ${{ secrets.NEXUS_PASSWORD }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --user root
     defaults:
       run:
@@ -619,6 +621,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
@@ -843,10 +846,10 @@ jobs:
     needs: [install]
     runs-on: ubuntu-latest
     container:
-      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.NEXUS_USERNAME }}
-        password: ${{ secrets.NEXUS_PASSWORD }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --ipc=host --user root
     defaults:
       run:
@@ -857,6 +860,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
       TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
@@ -906,10 +910,10 @@ jobs:
     needs: [upgrade]
     runs-on: ubuntu-latest
     container:
-      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.NEXUS_USERNAME }}
-        password: ${{ secrets.NEXUS_PASSWORD }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --ipc=host --user root
     defaults:
       run:
@@ -920,6 +924,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
       TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
@@ -969,10 +974,10 @@ jobs:
     needs: [install]
     runs-on: gcp-core-8-default
     container:
-      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.NEXUS_USERNAME }}
-        password: ${{ secrets.NEXUS_PASSWORD }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --ipc=host --user root
     defaults:
       run:
@@ -988,6 +993,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -1031,10 +1037,10 @@ jobs:
     needs: [upgrade]
     runs-on: gcp-core-8-default
     container:
-      image: registry.camunda.cloud/team-distribution/playwright-runner:latest
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
-        username: ${{ secrets.NEXUS_USERNAME }}
-        password: ${{ secrets.NEXUS_PASSWORD }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --ipc=host --user root
     defaults:
       run:
@@ -1050,6 +1056,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -1171,10 +1178,10 @@ jobs:
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
-      image: registry.camunda.cloud/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:
-        username: ${{ secrets.NEXUS_USERNAME }}
-        password: ${{ secrets.NEXUS_PASSWORD }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --user root
     defaults:
       run:
@@ -1182,7 +1189,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      deployments: write 
+      deployments: write
+      packages: read
     steps:
       - name: CI Cleanup - 🚨 Get failed Pods info 🚨
         if: failure()

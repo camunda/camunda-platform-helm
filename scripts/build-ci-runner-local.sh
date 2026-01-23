@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build the CI Runner Docker images locally
+# Build the CI Runner Docker images locally and push to GitHub Container Registry
 # Usage: ./scripts/build-ci-runner-local.sh [--push] [--test] [--login] [--ci-only] [--playwright-only]
 #
 # Options:
-#   --push             Build and push the images to the registry
+#   --push             Build and push the images to ghcr.io
 #   --test             Test the images after building (before pushing)
-#   --login            Force re-authentication to the registry (opens browser)
+#   --login            Force re-authentication to ghcr.io (uses gh CLI or prompts for PAT)
 #   --ci-only          Build only the CI runner image
 #   --playwright-only  Build only the Playwright runner image
 #
@@ -17,11 +17,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Image configuration
-REGISTRY="registry.camunda.cloud"
+REGISTRY="ghcr.io"
+GITHUB_ORG="camunda"
 CI_IMAGE_NAME="team-distribution/ci-runner"
 PLAYWRIGHT_IMAGE_NAME="team-distribution/playwright-runner"
-CI_FULL_IMAGE="${REGISTRY}/${CI_IMAGE_NAME}"
-PLAYWRIGHT_FULL_IMAGE="${REGISTRY}/${PLAYWRIGHT_IMAGE_NAME}"
+CI_FULL_IMAGE="${REGISTRY}/${GITHUB_ORG}/${CI_IMAGE_NAME}"
+PLAYWRIGHT_FULL_IMAGE="${REGISTRY}/${GITHUB_ORG}/${PLAYWRIGHT_IMAGE_NAME}"
 
 # Local test image names
 CI_TEST_IMAGE="ci-runner-test"
@@ -50,9 +51,9 @@ for arg in "$@"; do
             echo "Usage: $0 [--push] [--test] [--login] [--ci-only] [--playwright-only] [--no-buildx]"
             echo ""
             echo "Options:"
-            echo "  --push             Build and push the images to the registry"
+            echo "  --push             Build and push the images to ghcr.io"
             echo "  --test             Test the images after building (before pushing)"
-            echo "  --login            Force re-authentication to the registry (opens browser)"
+            echo "  --login            Force re-authentication to ghcr.io (uses gh CLI or prompts for PAT)"
             echo "  --ci-only          Build only the CI runner image"
             echo "  --playwright-only  Build only the Playwright runner image"
             echo "  --no-buildx        Use standard docker build instead of buildx (ignored with --push)"
@@ -60,6 +61,10 @@ for arg in "$@"; do
             echo "Images (built for ${TARGET_PLATFORM}):"
             echo "  CI Runner:         ${CI_FULL_IMAGE}"
             echo "  Playwright Runner: ${PLAYWRIGHT_FULL_IMAGE}"
+            echo ""
+            echo "Authentication:"
+            echo "  Set GITHUB_TOKEN or GHCR_TOKEN environment variable, or use 'gh auth login'"
+            echo "  Alternatively, create a PAT at: https://github.com/settings/tokens/new?scopes=write:packages"
             echo ""
             echo "Examples:"
             echo "  $0 --test              # Build and test locally"
@@ -121,8 +126,8 @@ setup_buildx() {
     echo "✅ Buildx ready (builder: $builder_name)"
 }
 
-# Harbor/Registry login function
-# Uses OIDC browser-based login if available, falls back to manual credentials
+# GitHub Container Registry login function
+# Uses GITHUB_TOKEN, gh CLI, or prompts for a Personal Access Token (PAT)
 docker_login() {
     local registry="$1"
 
@@ -138,16 +143,31 @@ docker_login() {
     echo "Authentication required for ${registry}"
     echo ""
 
-    # Check if we have the Harbor CLI for OIDC login
-    if command -v harbor &>/dev/null; then
-        echo "Using Harbor CLI for OIDC login..."
-        harbor login "${registry}" --oidc
-        # Harbor CLI sets up docker credentials automatically
+    # Option 1: Use GITHUB_TOKEN or GHCR_TOKEN environment variable (CI mode)
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        echo "Using GITHUB_TOKEN from environment..."
+        echo "${GITHUB_TOKEN}" | docker login "${registry}" -u "oauth2" --password-stdin
         return $?
     fi
 
-    # Try browser-based OIDC login via docker credential helper if available
-    # This works with registries that support OIDC (like Harbor with OIDC configured)
+    if [[ -n "${GHCR_TOKEN:-}" ]]; then
+        echo "Using GHCR_TOKEN from environment..."
+        echo "${GHCR_TOKEN}" | docker login "${registry}" -u "oauth2" --password-stdin
+        return $?
+    fi
+
+    # Option 2: Use GitHub CLI if available
+    if command -v gh &>/dev/null; then
+        echo "Using GitHub CLI for authentication..."
+        if gh auth token &>/dev/null; then
+            gh auth token | docker login "${registry}" -u "oauth2" --password-stdin
+            return $?
+        else
+            echo "GitHub CLI not authenticated. Run 'gh auth login' first."
+        fi
+    fi
+
+    # Option 3: Try docker credential helper
     if [[ -f ~/.docker/config.json ]] && grep -q "credsStore" ~/.docker/config.json; then
         echo "Attempting login via credential helper..."
         if docker login "${registry}" 2>/dev/null; then
@@ -156,37 +176,15 @@ docker_login() {
         fi
     fi
 
-    # Check for environment variables (CI mode)
-    if [[ -n "${DOCKER_USERNAME:-}" ]] && [[ -n "${DOCKER_PASSWORD:-}" ]]; then
-        echo "Using credentials from environment variables..."
-        echo "${DOCKER_PASSWORD}" | docker login "${registry}" -u "${DOCKER_USERNAME}" --password-stdin
-        return $?
-    fi
-
-    # Interactive browser-based login for Harbor with OIDC
-    echo "Opening browser for OIDC authentication..."
+    # Option 4: Prompt for Personal Access Token (PAT)
+    echo "To authenticate with ghcr.io, you need a GitHub Personal Access Token (PAT)"
+    echo "with 'write:packages' scope."
     echo ""
-    echo "If the browser doesn't open automatically, please visit:"
-    echo "  https://${registry}/c/oidc/login"
-    echo ""
-    echo "After logging in via the browser, copy the CLI secret from:"
-    echo "  https://${registry}/harbor/users → User Profile → CLI Secret"
+    echo "Create a token at: https://github.com/settings/tokens/new?scopes=write:packages"
     echo ""
 
-    # Try to open browser (works on macOS, Linux with xdg-open, WSL)
-    local login_url="https://${registry}/c/oidc/login"
-    if command -v open &>/dev/null; then
-        open "${login_url}" 2>/dev/null || true
-    elif command -v xdg-open &>/dev/null; then
-        xdg-open "${login_url}" 2>/dev/null || true
-    elif command -v wslview &>/dev/null; then
-        wslview "${login_url}" 2>/dev/null || true
-    fi
-
-    # Prompt for credentials after browser login
-    echo ""
-    read -r -p "Enter your username (email): " username
-    read -r -s -p "Enter your CLI secret (from Harbor profile): " password
+    read -r -p "Enter your GitHub username: " username
+    read -r -s -p "Enter your GitHub PAT: " password
     echo ""
 
     echo "${password}" | docker login "${registry}" -u "${username}" --password-stdin
