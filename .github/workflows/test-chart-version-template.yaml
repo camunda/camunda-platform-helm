@@ -78,6 +78,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   parse-platforms:
@@ -100,6 +101,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     secrets: inherit
     strategy:
       matrix:
