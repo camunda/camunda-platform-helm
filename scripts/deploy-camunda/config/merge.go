@@ -53,6 +53,8 @@ type RuntimeFlags struct {
 	DebugComponents          map[string]DebugConfig // Components to enable JVM debugging for, with their ports
 	DebugPort                int                    // Default JVM debug port (used when no port specified)
 	DebugSuspend             bool                   // Suspend JVM on startup until debugger attaches
+	OutputTestEnv            bool                   // Generate .env file for E2E tests after deployment
+	OutputTestEnvPath        string                 // Path for the test .env file output
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
