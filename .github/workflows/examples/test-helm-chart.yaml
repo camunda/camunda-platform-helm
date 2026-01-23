@@ -17,6 +17,11 @@ jobs:
   helm-deploy:
     name: Helm chart Integration Tests
     secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     # For full inputs:
     # https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md#workflow-inputs
