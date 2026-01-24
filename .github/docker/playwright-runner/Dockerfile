@@ -232,9 +232,11 @@ SHELL ["/bin/bash", "-c"]
 # 4. Test that Chromium launches successfully
 #
 # Libraries we SKIP (not needed for headless):
-# - libgbm1 (pulls in mesa-libgallium + libllvm20 = 180 MB)
 # - libwayland-* (Wayland display server)
 # - libgtk-* (GTK UI toolkit)
+#
+# NOTE: libgbm1 is required starting from Playwright 1.58.0
+# With --no-install-recommends it only adds ~2MB (avoids mesa/LLVM)
 # ==============================================================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Essential system tools
@@ -256,6 +258,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcups2 \
     libdbus-1-3 \
     libdrm2 \
+    libgbm1 \
     libglib2.0-0 \
     libnspr4 \
     libnss3 \
