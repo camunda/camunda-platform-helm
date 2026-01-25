@@ -322,18 +322,13 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 # - headless_shell is a stripped-down Chromium for this exact use case
 # - Saves 250+ MB vs keeping both browser variants
 #
-# WHY DELETE FFMPEG:
-# - ffmpeg is only needed for video recording of tests
-# - We don't record test videos in CI
-# - Saves 5 MB
+# NOTE: We keep ffmpeg as it's required for trace recording
 # ==============================================================================
 RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
     && mkdir -p /ms-playwright \
     && npx playwright install chromium \
     # Delete full Chromium browser - keep only headless shell
     && rm -rf /ms-playwright/chromium-*/chrome-linux \
-    # Delete ffmpeg - not needed for headless testing
-    && rm -rf /ms-playwright/ffmpeg-* \
     # Clean npm cache
     && npm cache clean --force \
     && rm -rf /root/.npm /tmp/*
