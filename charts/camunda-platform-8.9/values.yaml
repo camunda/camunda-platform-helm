@@ -2689,6 +2689,8 @@ orchestration:
   #   local - means the data is stored into the container, no volumeMount nor volume nor claim is configured
   #   memory   - means it uses a tmpfs for the data persistence, be aware that this takes the limits into account
   persistenceType: disk
+  ## @param orchestration.pvcDataSource defines the pvc data source to restore from (useful for GKE PVC Snapshotting)
+  pvcDataSource: {}
   ## @param orchestration.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "32Gi"
   ## @param orchestration.pvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes

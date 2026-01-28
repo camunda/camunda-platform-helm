@@ -288,6 +288,9 @@ spec:
         annotations:
           {{- toYaml .Values.orchestration.pvcAnnotations | nindent 10 }}
       spec:
+        {{- if .Values.orchestration.pvcDataSource }}
+        dataSource: {{ .Values.orchestration.pvcDataSource | toYaml | nindent 10 }}
+        {{- end }}
         accessModes: {{ .Values.orchestration.pvcAccessModes }}
         {{- if .Values.orchestration.pvcStorageClassName }}
         {{- if (eq "-" .Values.orchestration.pvcStorageClassName) }}
