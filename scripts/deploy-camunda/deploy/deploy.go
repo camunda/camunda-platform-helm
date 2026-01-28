@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
@@ -50,6 +51,7 @@ type ScenarioResult struct {
 	SecondUserPassword       string
 	ThirdUserPassword        string
 	KeycloakClientsSecret    string
+	TestEnvFile              string // Path to generated E2E test .env file
 	Error                    error
 }
 
@@ -153,14 +155,12 @@ func processCommonValues(scenarioPath, outputDir, envFile string) ([]string, err
 		logging.Logger.Debug().
 			Str("source", srcFile).
 			Str("outputDir", outputDir).
+			Str("envFile", envFile).
 			Msg("⚙️ [processCommonValues] processing common values file")
 
 		opts := values.Options{
 			OutputDir: outputDir,
 			EnvFile:   envFile,
-		}
-		if opts.EnvFile == "" {
-			opts.EnvFile = ".env"
 		}
 
 		outputPath, _, err := values.Process(srcFile, opts)
@@ -187,6 +187,105 @@ func processCommonValues(scenarioPath, outputDir, envFile string) ([]string, err
 	return processedFiles, nil
 }
 
+// generateDebugValuesFile creates a temporary values file with debug configuration
+// for the specified components. Returns the path to the generated file, or empty string
+// if no debug components are enabled.
+func generateDebugValuesFile(outputDir string, flags *config.RuntimeFlags) (string, error) {
+	if len(flags.DebugComponents) == 0 {
+		return "", nil
+	}
+
+	// Determine suspend mode
+	suspendMode := "n"
+	if flags.DebugSuspend {
+		suspendMode = "y"
+	}
+
+	// Build debug values YAML
+	var yamlContent strings.Builder
+
+	for component, debugCfg := range flags.DebugComponents {
+		switch component {
+		case "orchestration":
+			// Include default JVM options + debug agent
+			// The default javaOpts from values.yaml are:
+			// -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data
+			// -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log -XX:+ExitOnOutOfMemoryError
+			debugJavaOpts := fmt.Sprintf(
+				"-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/camunda/data -XX:ErrorFile=/usr/local/camunda/data/camunda_error%%p.log -XX:+ExitOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=%s,address=*:%d",
+				suspendMode,
+				debugCfg.Port,
+			)
+
+			// For debugging, set clusterSize, partitionCount, and replicationFactor to 1
+			// to avoid complexity with multiple replicas during debug sessions
+			yamlContent.WriteString(fmt.Sprintf(`orchestration:
+  clusterSize: "1"
+  partitionCount: "1"
+  replicationFactor: "1"
+  env:
+    - name: JAVA_TOOL_OPTIONS
+      value: "%s"
+  service:
+    extraPorts:
+      - name: debug
+        protocol: TCP
+        port: %d
+        targetPort: %d
+`, debugJavaOpts, debugCfg.Port, debugCfg.Port))
+
+			logging.Logger.Info().
+				Str("component", "orchestration").
+				Int("port", debugCfg.Port).
+				Bool("suspend", flags.DebugSuspend).
+				Msg("Debug mode enabled for component (clusterSize, partitionCount, replicationFactor set to 1)")
+
+		case "connectors":
+			// Connectors uses JAVA_TOOL_OPTIONS via connectors.env
+			debugJavaOpts := fmt.Sprintf(
+				"-agentlib:jdwp=transport=dt_socket,server=y,suspend=%s,address=*:%d",
+				suspendMode,
+				debugCfg.Port,
+			)
+
+			// Set replicas to 1 for easier debugging
+			yamlContent.WriteString(fmt.Sprintf(`connectors:
+  replicas: 1
+  env:
+    - name: JAVA_TOOL_OPTIONS
+      value: "%s"
+`, debugJavaOpts))
+
+			logging.Logger.Info().
+				Str("component", "connectors").
+				Int("port", debugCfg.Port).
+				Bool("suspend", flags.DebugSuspend).
+				Msg("Debug mode enabled for component (replicas set to 1)")
+
+		default:
+			logging.Logger.Warn().
+				Str("component", component).
+				Msg("Unknown debug component (supported: orchestration, connectors)")
+		}
+	}
+
+	if yamlContent.Len() == 0 {
+		return "", nil
+	}
+
+	// Write to temp file
+	debugValuesPath := filepath.Join(outputDir, "values-debug.yaml")
+	if err := os.WriteFile(debugValuesPath, []byte(yamlContent.String()), 0644); err != nil {
+		return "", fmt.Errorf("failed to write debug values file: %w", err)
+	}
+
+	logging.Logger.Debug().
+		Str("path", debugValuesPath).
+		Msg("Generated debug values file")
+
+	return debugValuesPath, nil
+}
+
 // redactDeployOpts returns a copy of deploy options with sensitive fields redacted for logging.
 func redactDeployOpts(opts types.Options) map[string]interface{} {
 	redacted := "[REDACTED]"
@@ -205,7 +304,12 @@ func redactDeployOpts(opts types.Options) map[string]interface{} {
 		"ttl":                    opts.TTL,
 		"ensureDockerRegistry":   opts.EnsureDockerRegistry,
 		"dockerRegistryUsername": opts.DockerRegistryUsername,
-		"dockerRegistryPassword": func() string { if opts.DockerRegistryPassword != "" { return redacted }; return "" }(),
+		"dockerRegistryPassword": func() string {
+			if opts.DockerRegistryPassword != "" {
+				return redacted
+			}
+			return ""
+		}(),
 		"skipDockerLogin":        opts.SkipDockerLogin,
 		"skipDependencyUpdate":   opts.SkipDependencyUpdate,
 		"applyIntegrationCreds":  opts.ApplyIntegrationCreds,
@@ -466,7 +570,7 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 	}
 
 	// Print summary
-	printMultiScenarioSummary(results)
+	printMultiScenarioSummary(results, flags)
 
 	// Return error if any scenario failed
 	var hasErrors bool
@@ -501,8 +605,18 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 		return result.Error
 	}
 
+	// Generate E2E test env file if requested
+	if flags.OutputTestEnv {
+		envPath, err := renderTestEnvFile(ctx, flags, result.Namespace, scenario)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Msg("Failed to generate E2E test env file")
+		} else if envPath != "" {
+			result.TestEnvFile = envPath
+		}
+	}
+
 	// Print single deployment summary
-	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix)
+	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix, result.Namespace, result.Release, result.TestEnvFile, flags)
 	return nil
 }
 
@@ -675,6 +789,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Str("scenarioDir", flags.ScenarioPath).
 			Str("outputDir", tempDir).
 			Bool("interactive", flags.Interactive).
+			Str("envFile", flags.EnvFile).
 			Msg("📝 [prepareScenarioValues.processValues] building values options")
 
 		opts := values.Options{
@@ -684,9 +799,6 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			OutputDir:   tempDir,
 			Interactive: flags.Interactive,
 			EnvFile:     flags.EnvFile,
-		}
-		if opts.EnvFile == "" {
-			opts.EnvFile = ".env"
 		}
 
 		file, err := values.ResolveValuesFile(opts)
@@ -763,10 +875,23 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		Str("scenario", scenarioCtx.ScenarioName).
 		Str("tempDir", tempDir).
 		Msg("📋 [prepareScenarioValues] building values files list")
+
+	// Generate debug values file if debug components are specified
+	debugValuesFile, err := generateDebugValuesFile(tempDir, flags)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return nil, fmt.Errorf("failed to generate debug values: %w", err)
+	}
+
 	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
 	if err != nil {
 		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to build values list: %w", err)
+	}
+
+	// Append debug values file last to ensure it overrides other values
+	if debugValuesFile != "" {
+		vals = append(vals, debugValuesFile)
 	}
 
 	logging.Logger.Debug().
@@ -933,6 +1058,16 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	result.ThirdUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
 	result.KeycloakClientsSecret = os.Getenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET")
 
+	// Generate E2E test env file if requested
+	if flags.OutputTestEnv {
+		envPath, err := renderTestEnvFile(ctx, flags, scenarioCtx.Namespace, scenarioCtx.ScenarioName)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Str("scenario", scenarioCtx.ScenarioName).Msg("Failed to generate E2E test env file")
+		} else if envPath != "" {
+			result.TestEnvFile = envPath
+		}
+	}
+
 	totalDuration := time.Since(startTime)
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
@@ -1015,8 +1150,69 @@ func deleteNamespace(ctx context.Context, namespace string) error {
 	return kube.DeleteNamespace(ctx, "", "", namespace)
 }
 
+// renderTestEnvFile generates the E2E test .env file by calling render-e2e-env.sh.
+// For multi-scenario deployments, the scenario name is appended to the output path.
+// This function logs warnings but does not fail the deployment if env file generation fails.
+func renderTestEnvFile(ctx context.Context, flags *config.RuntimeFlags, namespace, scenario string) (string, error) {
+	if !flags.OutputTestEnv {
+		return "", nil
+	}
+
+	// Determine output path - for multi-scenario, append scenario name
+	outputPath := flags.OutputTestEnvPath
+	if len(flags.Scenarios) > 1 && scenario != "" {
+		outputPath = fmt.Sprintf("%s.%s", flags.OutputTestEnvPath, scenario)
+	}
+
+	// Locate the render-e2e-env.sh script
+	var scriptPath string
+	candidates := []string{
+		filepath.Join(flags.RepoRoot, "scripts", "render-e2e-env.sh"),
+		filepath.Join(filepath.Dir(flags.ChartPath), "..", "scripts", "render-e2e-env.sh"),
+		filepath.Join(flags.ChartPath, "..", "..", "scripts", "render-e2e-env.sh"),
+	}
+
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			scriptPath = candidate
+			break
+		}
+	}
+
+	if scriptPath == "" {
+		return "", fmt.Errorf("render-e2e-env.sh script not found; searched: %v", candidates)
+	}
+
+	// Build args for render-e2e-env.sh
+	args := []string{
+		"--absolute-chart-path", flags.ChartPath,
+		"--namespace", namespace,
+		"--output", outputPath,
+	}
+
+	logging.Logger.Info().
+		Str("output", outputPath).
+		Str("namespace", namespace).
+		Str("script", scriptPath).
+		Msg("Generating E2E test environment file")
+
+	cmd := exec.CommandContext(ctx, scriptPath, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("render-e2e-env.sh failed: %w", err)
+	}
+
+	logging.Logger.Info().
+		Str("path", outputPath).
+		Msg("E2E test environment file generated successfully")
+
+	return outputPath, nil
+}
+
 // printDeploymentSummary outputs the deployment results.
-func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix string) {
+func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespace, release, testEnvFile string, flags *config.RuntimeFlags) {
 	firstPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")
 	secondPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")
 	thirdPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
@@ -1034,6 +1230,25 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix string) {
 		fmt.Fprintf(&out, "  secondUserPassword: %s\n", secondPwd)
 		fmt.Fprintf(&out, "  thirdUserPassword: %s\n", thirdPwd)
 		fmt.Fprintf(&out, "  keycloakClientsSecret: %s\n", clientSecret)
+		// Add test env file path if generated
+		if testEnvFile != "" {
+			fmt.Fprintf(&out, "testEnvFile: %s\n", testEnvFile)
+		}
+		// Add debug port-forward instructions
+		if len(flags.DebugComponents) > 0 {
+			fmt.Fprintf(&out, "debug:\n")
+			for component, debugCfg := range flags.DebugComponents {
+				if component == "orchestration" {
+					fmt.Fprintf(&out, "  orchestration:\n")
+					fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
+					fmt.Fprintf(&out, "    portForwardCommand: kubectl port-forward -n %s svc/%s-zeebe %d:%d\n", namespace, release, debugCfg.Port, debugCfg.Port)
+				} else if component == "connectors" {
+					fmt.Fprintf(&out, "  connectors:\n")
+					fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
+					fmt.Fprintf(&out, "    portForwardCommand: kubectl port-forward -n %s deploy/%s-connectors %d:%d\n", namespace, release, debugCfg.Port, debugCfg.Port)
+				}
+			}
+		}
 		logging.Logger.Info().Msg(out.String())
 		return
 	}
@@ -1064,6 +1279,38 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix string) {
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Third user password")), styleVal(thirdPwd))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak clients secret")), styleVal(clientSecret))
 
+	// Add test env file path if generated
+	if testEnvFile != "" {
+		out.WriteString("\n")
+		out.WriteString(styleHead("Test Environment"))
+		out.WriteString("\n")
+		fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(testEnvFile))
+	}
+
+	// Add debug port-forward instructions if debug mode is enabled
+	if len(flags.DebugComponents) > 0 {
+		out.WriteString("\n")
+		out.WriteString(styleHead("Debug mode"))
+		out.WriteString("\n")
+		for component, debugCfg := range flags.DebugComponents {
+			fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Component")), styleVal(component))
+			fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Debug port")), styleVal(fmt.Sprintf("%d", debugCfg.Port)))
+			fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Suspend on start")), styleVal(fmt.Sprintf("%t", flags.DebugSuspend)))
+			out.WriteString("\n")
+			out.WriteString(styleHead("  To connect your debugger, run:"))
+			out.WriteString("\n")
+			var portForwardCmd string
+			if component == "orchestration" {
+				portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s svc/%s-zeebe %d:%d", namespace, release, debugCfg.Port, debugCfg.Port)
+			} else if component == "connectors" {
+				portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s deploy/%s-connectors %d:%d", namespace, release, debugCfg.Port, debugCfg.Port)
+			}
+			fmt.Fprintf(&out, "    %s\n", styleVal(portForwardCmd))
+			out.WriteString("\n")
+			out.WriteString(fmt.Sprintf("  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port))))
+		}
+	}
+
 	out.WriteString("\n")
 	out.WriteString("Please keep these credentials safe. If you have any questions, refer to the documentation or reach out for support. 🚀")
 
@@ -1071,7 +1318,7 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix string) {
 }
 
 // printMultiScenarioSummary outputs the deployment results for multiple scenarios.
-func printMultiScenarioSummary(results []*ScenarioResult) {
+func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeFlags) {
 	successCount := 0
 	failureCount := 0
 	for _, r := range results {
@@ -1105,11 +1352,33 @@ func printMultiScenarioSummary(results []*ScenarioResult) {
 				if r.IngressHost != "" {
 					fmt.Fprintf(&out, "  ingressHost: %s\n", r.IngressHost)
 				}
+				if r.TestEnvFile != "" {
+					fmt.Fprintf(&out, "  testEnvFile: %s\n", r.TestEnvFile)
+				}
 				fmt.Fprintf(&out, "  credentials:\n")
 				fmt.Fprintf(&out, "    firstUserPassword: %s\n", r.FirstUserPassword)
 				fmt.Fprintf(&out, "    secondUserPassword: %s\n", r.SecondUserPassword)
 				fmt.Fprintf(&out, "    thirdUserPassword: %s\n", r.ThirdUserPassword)
 				fmt.Fprintf(&out, "    keycloakClientsSecret: %s\n", r.KeycloakClientsSecret)
+			}
+		}
+		// Add debug port-forward instructions for machine-friendly output
+		if len(flags.DebugComponents) > 0 && successCount > 0 {
+			fmt.Fprintf(&out, "debug:\n")
+			for component, debugCfg := range flags.DebugComponents {
+				fmt.Fprintf(&out, "  - component: %s\n", component)
+				fmt.Fprintf(&out, "    port: %d\n", debugCfg.Port)
+				fmt.Fprintf(&out, "    portForwardCommands:\n")
+				for _, r := range results {
+					if r.Error == nil {
+						fmt.Fprintf(&out, "      - scenario: %s\n", r.Scenario)
+						if component == "orchestration" {
+							fmt.Fprintf(&out, "        command: kubectl port-forward -n %s svc/%s-zeebe %d:%d\n", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
+						} else if component == "connectors" {
+							fmt.Fprintf(&out, "        command: kubectl port-forward -n %s deploy/%s-connectors %d:%d\n", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
+						}
+					}
+				}
 			}
 		}
 		logging.Logger.Info().Msg(out.String())
@@ -1167,6 +1436,9 @@ func printMultiScenarioSummary(results []*ScenarioResult) {
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak Realm")), styleVal(r.KeycloakRealm))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize Index Prefix")), styleVal(r.OptimizeIndexPrefix))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration Index Prefix")), styleVal(r.OrchestrationIndexPrefix))
+			if r.TestEnvFile != "" {
+				fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(r.TestEnvFile))
+			}
 			out.WriteString(styleHead("  Credentials:"))
 			out.WriteString("\n")
 			fmt.Fprintf(&out, "    %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey-2, "First user password")), styleVal(r.FirstUserPassword))
@@ -1179,6 +1451,34 @@ func printMultiScenarioSummary(results []*ScenarioResult) {
 	out.WriteString("\n")
 	if failureCount == 0 {
 		out.WriteString("Please keep these credentials safe. All deployments are ready to use! 🚀")
+	}
+
+	// Add debug port-forward instructions if debug mode is enabled
+	if len(flags.DebugComponents) > 0 && successCount > 0 {
+		out.WriteString("\n\n")
+		out.WriteString(styleHead("Debug mode"))
+		out.WriteString("\n")
+		for component, debugCfg := range flags.DebugComponents {
+			fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Component")), styleVal(component))
+			fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Debug port")), styleVal(fmt.Sprintf("%d", debugCfg.Port)))
+			fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Suspend on start")), styleVal(fmt.Sprintf("%t", flags.DebugSuspend)))
+			out.WriteString("\n")
+			out.WriteString(styleHead("  To connect your debugger, run one of the following:"))
+			out.WriteString("\n")
+			for _, r := range results {
+				if r.Error == nil {
+					var portForwardCmd string
+					if component == "orchestration" {
+						portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s svc/%s-zeebe %d:%d", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
+					} else if component == "connectors" {
+						portForwardCmd = fmt.Sprintf("kubectl port-forward -n %s deploy/%s-connectors %d:%d", r.Namespace, r.Release, debugCfg.Port, debugCfg.Port)
+					}
+					fmt.Fprintf(&out, "    [%s] %s\n", styleVal(r.Scenario), portForwardCmd)
+				}
+			}
+			out.WriteString("\n")
+			out.WriteString(fmt.Sprintf("  Then connect your IDE debugger to %s\n", styleVal(fmt.Sprintf("localhost:%d", debugCfg.Port))))
+		}
 	}
 
 	logging.Logger.Info().Msg(out.String())

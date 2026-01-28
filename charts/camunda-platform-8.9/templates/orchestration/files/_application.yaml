@@ -392,6 +392,11 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
+          {{- if not .Values.global.opensearch.aws.enabled }}
+          authentication:
+            username: {{ .Values.global.opensearch.auth.username | quote }}
+            password: "${VALUES_OPENSEARCH_PASSWORD:}"
+          {{- end }}
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
             prefix: {{ .Values.global.opensearch.prefix | quote }}
