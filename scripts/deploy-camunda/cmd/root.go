@@ -124,6 +124,11 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
 
+	// Test execution flags
+	f.BoolVar(&flags.RunIntegrationTests, "test-it", false, "Run integration tests after deployment")
+	f.BoolVar(&flags.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
+	f.BoolVar(&flags.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
+
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")
 	registerScenarioCompletion(rootCmd, "auth")
