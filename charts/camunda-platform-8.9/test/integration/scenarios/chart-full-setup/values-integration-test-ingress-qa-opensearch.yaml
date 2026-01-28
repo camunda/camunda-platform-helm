@@ -4,6 +4,8 @@ global:
   identity:
     auth:
       enabled: true
+  elasticsearch:
+    enabled: false
   opensearch:
     enabled: true
     auth:
