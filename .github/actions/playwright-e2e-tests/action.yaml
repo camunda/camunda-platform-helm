@@ -58,6 +58,12 @@ runs:
     - name: Install system dependencies
       shell: bash
       run: |
+        # Skip if gettext-base is already installed (pre-configured container)
+        if command -v envsubst &> /dev/null; then
+          echo "envsubst already available, skipping system dependencies installation"
+          exit 0
+        fi
+        
         # Install gettext for envsubst command used by render-e2e-env.sh
         if command -v apt-get &> /dev/null; then
           install_packages() {
@@ -92,7 +98,20 @@ runs:
           apk add --no-cache gettext
         fi
         
+    - name: Check if tools are pre-installed
+      id: check-tools
+      shell: bash
+      run: |
+        if command -v helm &> /dev/null && command -v kubectl &> /dev/null && command -v task &> /dev/null; then
+          echo "Tools are pre-installed in container, skipping installation"
+          echo "skip-install=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Tools not found, will install"
+          echo "skip-install=false" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Install if required common software tooling
+      if: steps.check-tools.outputs.skip-install != 'true'
       uses: camunda/infra-global-github-actions/common-tooling@main
       with:
         overwrite: "false"
@@ -104,6 +123,7 @@ runs:
         python-enabled: "false"
 
     - name: Install tools
+      if: steps.check-tools.outputs.skip-install != 'true'
       uses: ./.github/actions/install-tool-versions
       with:
         tools: |
