@@ -84,7 +84,7 @@ elasticsearch:
 
 ### Values.yaml scenario files
 Ingress with basic auth: ./camunda-platform-helm/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-basic.yaml
-Interal keycloak with elasticsearch external: ./camunda-platform-helm/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-keycloak.yaml
+Intenral keycloak with elasticsearch external: ./camunda-platform-helm/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-keycloak.yaml
 ## Response Style
 
 - Be concise but complete
