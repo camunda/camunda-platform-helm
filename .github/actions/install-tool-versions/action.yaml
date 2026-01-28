@@ -60,7 +60,7 @@ runs:
 
     - name: Restore cache
       id: restore-tools-cache
-      uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5
+      uses: actions/cache/restore@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5
       with:
         path: ${{ env.ASDF_DIR }}
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
@@ -195,7 +195,7 @@ runs:
         fi
 
     - name: Save cache
-      uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5
+      uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5
       with:
         path: ${{ env.ASDF_DIR }}
         key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
