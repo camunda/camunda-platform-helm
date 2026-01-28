@@ -1,0 +1,81 @@
+name: Label issues by kind
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label by issue kind
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || "";
+            const kindLabels = new Set((issue.labels || []).map(l => l.name));
+
+            const isBug = kindLabels.has("kind/bug");
+            const isFeature = kindLabels.has("kind/feature");
+
+            // Only act on known kinds
+            if (!isBug && !isFeature) return;
+
+            function extract(title) {
+              const esc = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              const re = new RegExp(`###\\s+${esc}\\s*\\n([\\s\\S]*?)(?=\\n###\\s+|$)`, "i");
+              const m = body.match(re);
+              return m ? m[1].trim() : null;
+            }
+
+            function uniqPush(arr, v) {
+              if (v && !arr.includes(v)) arr.push(v);
+            }
+
+            const labelsToAdd = [];
+
+            if (isBug) {
+              // --- BUG: apply affects/severity/likelihood labels ---
+
+              const affectsMap = {
+                "11.x (Camunda 8.6)": "8.6",
+                "12.x (Camunda 8.7)": "8.7",
+                "13.x (Camunda 8.8)": "8.8",
+                "14.x (Camunda 8.9)": "8.9",
+                "unknown": "unknown",
+              };
+
+              const severity = extract("Severity");
+              if (severity) uniqPush(labelsToAdd, `severity/${severity.toLowerCase()}`);
+
+              const likelihood = extract("Likelihood");
+              if (likelihood) uniqPush(labelsToAdd, `likelihood/${likelihood.toLowerCase()}`);
+
+              const affected = extract("Affected version(s)");
+              if (affected) {
+                affected.split(",").map(s => s.trim()).forEach(v => {
+                  const mapped = affectsMap[v];
+                  if (mapped) uniqPush(labelsToAdd, `affects/${mapped}`);
+                });
+              }
+            }
+
+            if (isFeature) {
+              // --- FEATURE: TBD ---
+              // Example later:
+              // const area = extract("Area");
+              // if (area) uniqPush(labelsToAdd, `area/${area.toLowerCase()}`);
+            }
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labelsToAdd
+              });
+            }
