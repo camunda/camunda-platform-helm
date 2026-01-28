@@ -1,0 +1,39 @@
+{
+  "name": "camunda-platform-helm-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Camunda Platform Helm chart installation and upgrade support",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "camunda-helm-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "mcp",
+    "camunda",
+    "helm",
+    "kubernetes",
+    "model-context-protocol"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
