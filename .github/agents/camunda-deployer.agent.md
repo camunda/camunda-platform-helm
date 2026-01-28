@@ -32,8 +32,6 @@ Parse their request for:
 
 Reference `.github/skills/camunda-helm-deploy/SKILL.md` for:
 - Correct chart version (currently 13.4.1 for Camunda 8.8.x)
-- Valid ingress annotations
-- Environment-specific defaults
 - Command sequences
 
 You can also run the helper script:
@@ -50,14 +48,13 @@ Always provide:
 3. **Commands** - In order:
    - `helm repo add camunda https://helm.camunda.io`
    - `kubectl create namespace <ns>`
-   - Secret creation (if auth/TLS)
-   - `helm upgrade --install ...`
-   - `kubectl get pods -n <ns> -w`
+   - Secret creation
+   - `helm install`
 4. **Access URLs** - Where to find Operate, Tasklist, Optimize
 
 ### 4. Apply Best Practices
 
-- Always enable TLS for production
+- Always enable TLS ingress for production
 - Warn if exposing without authentication
 - Use odd numbers for Zeebe cluster size (1, 3, 5) for Raft consensus
 - Set appropriate resource requests/limits
@@ -85,22 +82,9 @@ elasticsearch:
   minimumMasterNodes: 2
 ```
 
-### Ingress with Basic Auth
-```yaml
-global:
-  ingress:
-    enabled: true
-    className: nginx
-    host: "<hostname>"
-    annotations:
-      nginx.ingress.kubernetes.io/auth-type: basic
-      nginx.ingress.kubernetes.io/auth-secret: camunda-basic-auth
-      nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
-    tls:
-      enabled: true
-      secretName: camunda-platform-tls
-```
-
+### Values.yaml scenario files
+Ingress with basic auth: ./camunda-platform-helm/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-basic.yaml
+Interal keycloak with elasticsearch external: ./camunda-platform-helm/charts/camunda-platform-8.8/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-keycloak.yaml
 ## Response Style
 
 - Be concise but complete
