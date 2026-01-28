@@ -1,0 +1,103 @@
+{
+  "chart": {
+    "name": "camunda-platform",
+    "version": "13.4.1",
+    "appVersion": "8.8.x",
+    "repository": "https://helm.camunda.io"
+  },
+  "components": [
+    "zeebe",
+    "operate",
+    "tasklist",
+    "optimize",
+    "connectors",
+    "identity",
+    "webModeler"
+  ],
+  "ingress": {
+    "controllers": {
+      "nginx": {
+        "className": "nginx",
+        "annotations": {
+          "ingress.kubernetes.io/rewrite-target": "/",
+          "nginx.ingress.kubernetes.io/ssl-redirect": "false",
+          "nginx.ingress.kubernetes.io/proxy-buffer-size": "128k",
+          "nginx.ingress.kubernetes.io/proxy-buffering": "on",
+          "nginx.ingress.kubernetes.io/proxy-body-size": "10m"
+        },
+        "basicAuth": {
+          "nginx.ingress.kubernetes.io/auth-type": "basic",
+          "nginx.ingress.kubernetes.io/auth-secret": "camunda-basic-auth",
+          "nginx.ingress.kubernetes.io/auth-realm": "Authentication Required"
+        }
+      }
+    },
+    "tls": {
+      "secretName": "camunda-platform-tls"
+    }
+  },
+  "defaults": {
+    "development": {
+      "zeebe": {
+        "clusterSize": 1,
+        "partitionCount": 1,
+        "replicationFactor": 1,
+        "resources": {
+          "requests": { "cpu": "500m", "memory": "1Gi" },
+          "limits": { "cpu": "1", "memory": "2Gi" }
+        }
+      },
+      "operate": {
+        "resources": {
+          "requests": { "cpu": "200m", "memory": "512Mi" },
+          "limits": { "cpu": "500m", "memory": "1Gi" }
+        }
+      },
+      "tasklist": {
+        "resources": {
+          "requests": { "cpu": "200m", "memory": "512Mi" },
+          "limits": { "cpu": "500m", "memory": "1Gi" }
+        }
+      },
+      "elasticsearch": {
+        "replicas": 1,
+        "minimumMasterNodes": 1,
+        "resources": {
+          "requests": { "cpu": "500m", "memory": "1Gi" },
+          "limits": { "cpu": "1", "memory": "2Gi" }
+        }
+      }
+    },
+    "production": {
+      "zeebe": {
+        "clusterSize": 3,
+        "partitionCount": 3,
+        "replicationFactor": 3,
+        "resources": {
+          "requests": { "cpu": "1", "memory": "2Gi" },
+          "limits": { "cpu": "2", "memory": "4Gi" }
+        }
+      },
+      "operate": {
+        "resources": {
+          "requests": { "cpu": "500m", "memory": "1Gi" },
+          "limits": { "cpu": "1", "memory": "2Gi" }
+        }
+      },
+      "tasklist": {
+        "resources": {
+          "requests": { "cpu": "500m", "memory": "1Gi" },
+          "limits": { "cpu": "1", "memory": "2Gi" }
+        }
+      },
+      "elasticsearch": {
+        "replicas": 3,
+        "minimumMasterNodes": 2,
+        "resources": {
+          "requests": { "cpu": "1", "memory": "2Gi" },
+          "limits": { "cpu": "2", "memory": "4Gi" }
+        }
+      }
+    }
+  }
+}
