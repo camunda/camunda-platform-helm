@@ -1,165 +1,276 @@
 ---
 name: camunda-helm-deploy
-description: 'Generate Camunda Platform Helm deployments from natural language. Use when asked to deploy Camunda, install Camunda on Kubernetes, set up a Camunda cluster, configure Camunda ingress, generate Helm values, or add authentication to Camunda. Supports development and production environments with nginx ingress and basic auth.'
+description: 'Generate Camunda Platform Helm deployments from natural language. Uses battle-tested integration scenarios as baselines and applies user-specific modifications. Supports Keycloak SSO, basic auth, OIDC, OpenSearch, and multi-tenancy.'
 ---
 
 # Camunda Helm Deploy
 
-A skill for generating production-ready Camunda Platform Helm deployments from natural language requests. Transforms user intent into complete values.yaml files and kubectl/helm commands.
+Generate production-ready Camunda Platform Helm values from natural language. Uses real integration test scenarios as validated baselines, then applies targeted modifications.
 
-## When to Use This Skill
+## Triggers
 
-- User asks to "deploy Camunda" or "install Camunda"
-- User wants to "set up a Camunda cluster" on Kubernetes
-- User needs to "configure ingress" for Camunda
-- User asks to "add authentication" or "basic auth" to Camunda
-- User wants to "generate Helm values" for Camunda Platform
-- User mentions a hostname like "camunda.example.com"
+Activate when user mentions:
+- "deploy camunda", "install camunda", "set up camunda"
+- "camunda on kubernetes", "helm values"
+- A hostname like "camunda.example.com"
+- Authentication: "keycloak", "basic auth", "OIDC", "Azure AD"
 
 ## Prerequisites
 
-- Kubernetes cluster access (`kubectl` configured)
-- Helm 3.10+ installed
-- For basic auth: `htpasswd` command available
+- `kubectl` configured with cluster access
+- `helm` 3.10+ installed
+- Repository cloned: `camunda/camunda-platform-helm`
+- Go tools built: `make install.prepare-helm-values`
 
-## Step-by-Step Workflow
+---
 
-### Step 1: Parse User Intent
+## Workflow
 
-Extract from user message:
+### Step 1: Select Scenario + Explain
 
-| Pattern | Meaning | Default |
-|---------|---------|---------|
-| "namespace X", "ns X" | Custom namespace | `camunda` |
-| hostname mentioned | Enable ingress | - |
-| "ingress", "expose" | Enable ingress | disabled |
-| "basic auth", "authentication" | Enable basic auth | disabled |
-| "production", "prod" | HA sizing | development |
-| "no tls", "without tls" | Disable TLS | enabled |
+**ALWAYS output this block** to show transparency:
 
-### Step 2: Generate Configuration Summary
+```
+📋 **Baseline**: `{scenario}` scenario
+💡 **Why**: {1 sentence}
 
-Present a table:
+🔧 **Modifications**:
+- {change 1}
+- {change 2}
+```
 
-| Setting | Value |
-|---------|-------|
-| Namespace | `<namespace>` |
-| Chart Version | `13.4.1` (Camunda 8.8.x) |
-| Environment | development/production |
-| Hostname | `<hostname>` |
-| Ingress | ✅/❌ |
-| Basic Auth | ✅/❌ |
-| TLS | ✅/❌ |
-
-### Step 3: Generate values.yaml
-
-Use the helper script or knowledge.json for accurate values:
+### Step 2: Generate Baseline
 
 ```bash
-node .github/skills/camunda-helm-deploy/generate-values.js "<user request>"
+export CAMUNDA_HOSTNAME="{hostname}"
+prepare-helm-values \
+  --chart-path ./charts/camunda-platform-8.9 \
+  --scenario {scenario} \
+  --output-dir /tmp/camunda-values \
+  --interactive=false
 ```
 
-#### Development Defaults
+### Step 3: Apply Modifications
+
+Edit the generated file at `/tmp/camunda-values/values-integration-test-ingress-{scenario}.yaml`
+
+### Step 4: Validate
+
+```bash
+helm template test ./charts/camunda-platform-8.9 \
+  -f /tmp/camunda-values/values-integration-test-ingress-{scenario}.yaml \
+  --skip-tests
+```
+
+### Step 5: Output Commands
+
+```bash
+# Create namespace
+kubectl create namespace {namespace} --dry-run=client -o yaml | kubectl apply -f -
+
+# Install
+helm upgrade --install camunda ./charts/camunda-platform-8.9 \
+  --namespace {namespace} \
+  -f values.yaml \
+  --wait
+```
+
+---
+
+## Scenario Selection
+
+| Scenario | Triggers | Description |
+|----------|----------|-------------|
+| **`keycloak`** (default) | "deploy", "SSO", "identity", "full" | Full stack + embedded Keycloak |
+| `basic` | "simple", "basic auth", "minimal", "no SSO" | Basic auth, no Identity/Keycloak |
+| `oidc` | "Azure AD", "Entra", "Okta", "external IdP" | External OIDC provider |
+| `opensearch` | "OpenSearch", "AWS" | OpenSearch backend |
+| `keycloak-mt` | "multi-tenant", "tenants" | Multi-tenancy enabled |
+
+### Scenario Details
+
+#### `keycloak` (default)
+- **Components**: All enabled (Orchestration, Console, Optimize, WebModeler, Connectors)
+- **Auth**: Embedded Keycloak + Identity
+- **Placeholders**: `$CAMUNDA_HOSTNAME`
+- **Best for**: Production-like setups with full SSO
+
+#### `basic`
+- **Components**: Orchestration only, Console disabled
+- **Auth**: Basic authentication at orchestration level
+- **Placeholders**: `$CAMUNDA_HOSTNAME`
+- **Best for**: Quick testing, CI/CD pipelines
+
+#### `oidc`
+- **Components**: All enabled
+- **Auth**: External OIDC (Azure AD/Entra)
+- **Placeholders**: `$CAMUNDA_HOSTNAME`, `$ENTRA_APP_*` variables
+- **Best for**: Enterprise SSO integration
+
+#### `opensearch`
+- **Components**: Orchestration-focused
+- **Auth**: Keycloak (from overlay)
+- **Placeholders**: `$OPENSEARCH_*` variables
+- **Best for**: AWS environments
+
+---
+
+## Modifications Reference
+
+### Environment Sizing
+
+**Development** (default):
 ```yaml
-zeebe:
-  clusterSize: 1
-  partitionCount: 1
-  replicationFactor: 1
-elasticsearch:
-  replicas: 1
+# No changes needed - scenarios use sensible defaults
 ```
 
-#### Production Defaults
+**Production**:
 ```yaml
 zeebe:
   clusterSize: 3
   partitionCount: 3
   replicationFactor: 3
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
 elasticsearch:
   replicas: 3
   minimumMasterNodes: 2
 ```
 
-#### Ingress with Basic Auth
+### Disable Components
+
 ```yaml
-global:
-  ingress:
-    enabled: true
-    className: nginx
-    host: "<hostname>"
-    annotations:
-      nginx.ingress.kubernetes.io/auth-type: basic
-      nginx.ingress.kubernetes.io/auth-secret: camunda-basic-auth
-      nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
-    tls:
-      enabled: true
-      secretName: camunda-platform-tls
+optimize:
+  enabled: false
+
+webModeler:
+  enabled: false
+
+console:
+  enabled: false
+
+connectors:
+  enabled: false
 ```
 
-### Step 4: Generate Commands
+### Custom Resources
 
-Provide in order:
-
-1. **Helm repo**:
-```bash
-helm repo add camunda https://helm.camunda.io
-helm repo update
+```yaml
+orchestration:
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
 ```
 
-2. **Namespace**:
-```bash
-kubectl create namespace <namespace> --dry-run=client -o yaml | kubectl apply -f -
+---
+
+## Response Examples
+
+### Example 1: Simple Request
+
+**User**: "Deploy Camunda at demo.camunda.io"
+
+```
+📋 **Baseline**: `keycloak` scenario
+💡 **Why**: Default full stack with embedded Identity/Keycloak for SSO.
+
+🔧 **Modifications**:
+- None (using baseline as-is)
 ```
 
-3. **Basic auth secret** (if enabled):
-```bash
-htpasswd -cb auth USERNAME PASSWORD
-kubectl create secret generic camunda-basic-auth --from-file=auth -n <namespace>
-rm auth
+### Example 2: Development Setup
+
+**User**: "Deploy Camunda for dev at dev.example.com, no Optimize"
+
+```
+📋 **Baseline**: `keycloak` scenario
+💡 **Why**: Full stack requested (dev doesn't imply minimal).
+
+🔧 **Modifications**:
+- Disabled Optimize (`optimize.enabled: false`)
 ```
 
-4. **TLS secret** (if enabled, not using cert-manager):
-```bash
-kubectl create secret tls camunda-platform-tls \
-  --cert=path/to/tls.crt \
-  --key=path/to/tls.key \
-  -n <namespace>
+### Example 3: Basic Auth
+
+**User**: "Simple Camunda cluster with basic auth at test.local"
+
+```
+📋 **Baseline**: `basic` scenario
+💡 **Why**: "Simple" + "basic auth" → minimal setup without Identity overhead.
+
+🔧 **Modifications**:
+- None (basic scenario already configured for basic auth)
 ```
 
-5. **Helm install**:
+### Example 4: Production HA
+
+**User**: "Production Camunda with HA at prod.company.com"
+
+```
+📋 **Baseline**: `keycloak` scenario
+💡 **Why**: Production with full auth capabilities.
+
+🔧 **Modifications**:
+- Zeebe: 3 replicas, increased resources
+- Elasticsearch: 3 replicas
+- Added PodDisruptionBudgets
+```
+
+### Example 5: Azure AD
+
+**User**: "Camunda with Azure AD SSO at azure.mycompany.com"
+
+```
+📋 **Baseline**: `oidc` scenario
+💡 **Why**: Azure AD requires external OIDC configuration.
+
+🔧 **Modifications**:
+- Set hostname
+- ⚠️ Requires env vars: `ENTRA_APP_CLIENT_ID`, `ENTRA_APP_DIRECTORY_ID`, `ENTRA_APP_CLIENT_SECRET`
+```
+
+---
+
+## Validation
+
+Always validate before presenting to user:
+
 ```bash
-helm upgrade --install camunda camunda/camunda-platform \
-  --namespace <namespace> \
-  --version 13.4.1 \
+# Syntax check
+helm template test ./charts/camunda-platform-8.9 \
   -f values.yaml \
-  --wait
+  --skip-tests > /dev/null && echo "✅ Valid"
+
+# Schema check (optional)
+helm lint ./charts/camunda-platform-8.9 -f values.yaml
 ```
 
-6. **Verify**:
-```bash
-kubectl get pods -n <namespace> -w
-```
-
-### Step 5: Provide Access URLs
-
-```
-- Operate: https://<hostname>/operate
-- Tasklist: https://<hostname>/tasklist  
-- Optimize: https://<hostname>/optimize
-```
+---
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| Pods not starting | Check resources: `kubectl describe pod -n <ns>` |
+| Missing env var error | Set required `$CAMUNDA_HOSTNAME` or scenario-specific vars |
+| Helm template fails | Check YAML syntax, ensure all placeholders substituted |
+| Pods not starting | `kubectl describe pod -n <ns>` for events |
 | Ingress not working | Verify ingress controller: `kubectl get ingressclass` |
-| Auth not prompting | Check secret exists: `kubectl get secret camunda-basic-auth -n <ns>` |
-| TLS errors | Verify cert/key match: `openssl verify` |
+
+---
 
 ## References
 
-- Chart source: `charts/camunda-platform-8.8/`
-- Values schema: `charts/camunda-platform-8.8/values.schema.json`
-- Full values: `charts/camunda-platform-8.8/values.yaml`
+- Scenarios: `charts/camunda-platform-8.9/test/integration/scenarios/chart-full-setup/`
+- Values schema: `charts/camunda-platform-8.9/values.schema.json`
+- prepare-helm-values: `scripts/prepare-helm-values/`
 - Helm repo: https://helm.camunda.io
