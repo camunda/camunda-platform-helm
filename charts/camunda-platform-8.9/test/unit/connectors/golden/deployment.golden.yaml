@@ -42,6 +42,7 @@ spec:
         []
       initContainers:
         []
+      runtimeClassName: gvisor
       containers:
         - name: connectors
           image: camunda/connectors-bundle:8.9.0-alpha4
