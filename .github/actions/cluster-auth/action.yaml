@@ -56,7 +56,7 @@ runs:
 
     - name: Authenticate with Teleport
       if: inputs.platform == 'eks' && inputs.auth-data == ''
-      uses: teleport-actions/auth-k8s@171cc0ad4b6b7cebcb33c672defe3f6dc58967ba # v2
+      uses: teleport-actions/auth-k8s@d45dc8f8d215c23519c9d87095ac5de98796bfdc # v2
       with:
         proxy: camunda.teleport.sh:443
         token: ${{ env.TELEPORT_TOKEN }}
