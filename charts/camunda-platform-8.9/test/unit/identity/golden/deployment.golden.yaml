@@ -42,6 +42,7 @@ spec:
         []
       initContainers:
         []
+      runtimeClassName: gvisor
       containers:
         - name: camunda-platform
           image: camunda/identity:8.9.0-alpha3
