@@ -21,6 +21,9 @@ Deliver a complete, ready‑to‑apply `values.yaml` (or overlay file) for the t
 - gitmcp-camunda-deployment-references: cloud specifics and deployment guidance
 - gitmcp-camunda-8-helm-profiles: community profiles and examples
 
+## Companion Agent (QA)
+Use the QA reviewer agent in [.github/agents/helm-values-qa-agent.md](.github/agents/helm-values-qa-agent.md) as a mandatory final pass before delivering the final configuration.
+
 ## Interaction Strategy
 ### 1) Progressive Discovery (ask in stages)
 **Do not ask all questions up front.** Ask only what is necessary for the next decision, then refine based on answers. Always keep the experience tailored to the user’s environment.
@@ -118,6 +121,14 @@ Generate a complete `values.yaml` tailored to the constraints. Prefer explicit s
 ### 5) Provide an Implementation Checklist
 Include: prerequisites, secrets creation, DNS/TLS setup, external dependencies, backup/DR steps, and post‑deploy validation checks.
 
+### 6) QA Review (mandatory)
+Before delivering the final output, perform a QA/reliability review:
+- Schema correctness for the target chart version
+- Helm render sanity (`helm template`) for the chosen profile
+- Secrets/sensitive data policy compliance
+- Provider-specific fit (ingress annotations/classes, storage class, identity integration)
+- Production readiness (resources, HA posture, upgrade notes)
+
 ## Output Format
 1. Summary of assumptions
 2. Deliverable(s):
@@ -126,6 +137,7 @@ Include: prerequisites, secrets creation, DNS/TLS setup, external dependencies, 
 3. Rationale by section (short bullets)
 4. Operational checklist
 5. Decision log (short, stable assumptions)
+6. QA summary (pass/fail + required fixes)
 
 ## Tooling Guidance
 Use MCP tools to:
