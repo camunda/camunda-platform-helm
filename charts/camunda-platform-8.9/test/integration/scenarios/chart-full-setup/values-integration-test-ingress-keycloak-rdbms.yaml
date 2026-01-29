@@ -1,6 +1,80 @@
+global:
+  elasticsearch:
+    enabled: true
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
 orchestration:
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        groupsClaim: ""
+      authenticationRefreshInterval: "PT30S"
+identityKeycloak:
+  enabled: true
+optimize:
+  enabled: true
+webModeler:
+  enabled: true
+  security:
+    authentication:
+      method: oidc
+webModelerPostgresql:
+  enabled: true
+console:
+  contextPath: "/console"
+  enabled: true
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: "$TEST_NAMESPACE"
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: 'true'
+identity:
+  enabled: true
+connectors:
+  security:
+    authentication:
+      method: oidc
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
+elasticsearch:
+  enabled: true
+global:
+  elasticsearch:
+    enabled: false
+orchestration:
+  contextPath: "/"
+  clusterSize: "3"
+  partitionCount: "3"
+  replicationFactor: "3"
   data:
     secondaryStorage:
+      elasticsearch: {}
+      type: rdbms
       rdbms:
         url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
         username: ${POSTGRESQL_USERNAME}
@@ -43,4 +117,10 @@ orchestration:
 
 
 optimize:
+  enabled: false
+
+elasticsearch:
+  enabled: false
+
+prometheusServiceMonitor:
   enabled: false

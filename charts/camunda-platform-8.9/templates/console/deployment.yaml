@@ -39,6 +39,7 @@ spec:
       dnsPolicy: {{ .Values.console.dnsPolicy | quote }}
       {{- end }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.console.podSecurityContext "context" $) | nindent 8 }}
+      runtimeClassName: gvisor
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}

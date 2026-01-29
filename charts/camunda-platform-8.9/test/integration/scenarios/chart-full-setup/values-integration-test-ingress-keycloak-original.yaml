@@ -11,10 +11,11 @@ global:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-      secretName: camunda-platform
+      
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
+      nginx.ingress.kubernetes.io/affinity: cookie
   elasticsearch:
     enabled: true
     external: true
@@ -77,12 +78,23 @@ identity:
   firstUser:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"
+  tolerations:
+    - key: "sandbox.gke.io/runtime"
+      operator: "Equal"
+      value: "gvisor"
+      effect: "NoSchedule"
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
+    timeoutSeconds: 1
 
 identityKeycloak:
   enabled: false
 
 optimize:
-  enabled: true
+  enabled: false
   contextPath: "/optimize"
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
@@ -98,9 +110,20 @@ connectors:
       oidc:
         existingSecret:
           name: "integration-test-credentials"
+  tolerations:
+    - key: "sandbox.gke.io/runtime"
+      operator: "Equal"
+      value: "gvisor"
+      effect: "NoSchedule"
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
+    timeoutSeconds: 1
 
 webModeler:
-  enabled: true
+  enabled: false
   contextPath: "/modeler"
   image:
     pullSecrets:
@@ -113,7 +136,7 @@ webModeler:
 
 # WebModeler Database.
 webModelerPostgresql:
-  enabled: true
+  enabled: false
   auth:
     existingSecret: "integration-test-credentials"
     secretKeys:
@@ -122,6 +145,9 @@ webModelerPostgresql:
 
 orchestration:
   contextPath: "/orchestration"
+  clusterSize: "1"
+  partitionsCount: "1"
+  replicationFactor: "1"
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   ingress:
@@ -132,10 +158,27 @@ orchestration:
       tls:
         enabled: true
         # A wildcard certificate will be used.
-        secretName: camunda-platform-zeebe-gateway
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.ingress.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
+#  data:
+#    secondaryStorage:
+#      elasticsearch: {}
+#      type: rdbms
+#      rdbms:
+#        url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
+#        username: ${POSTGRESQL_USERNAME}
+#        secret:
+#          inlineSecret: ${POSTGRESQL_PASSWORD}
+#  exporters:
+#    rdbms:
+#      enabled: true
+#  extraVolumeMounts:
+#    - name: jdbcdrivers
+#      mountPath: /driver-lib
+#  extraVolumes:
+#    - name: jdbcdrivers
+#      emptyDir: {}
   security:
     initialization:
       defaultRoles:
@@ -151,6 +194,17 @@ orchestration:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
         existingSecret:
           name: "integration-test-credentials"
+#  tolerations:
+#    - key: "sandbox.gke.io/runtime"
+#      operator: "Equal"
+#      value: "gvisor"
+#      effect: "NoSchedule"
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
+    timeoutSeconds: 1
 
 console:
   enabled: true
@@ -161,8 +215,22 @@ console:
       - name: registry-camunda-cloud
   keycloak:
     realm: $KEYCLOAK_REALM
+  tolerations:
+    - key: "sandbox.gke.io/runtime"
+      operator: "Equal"
+      value: "gvisor"
+      effect: "NoSchedule"
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
+    timeoutSeconds: 1
 
 prometheusServiceMonitor:
-  enabled: true
+  enabled: false
   labels:
     release: kube-prometheus-stack
+
+elasticsearch:
+  enabled: false

@@ -38,6 +38,7 @@ spec:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+      runtimeClassName: gvisor
       containers:
         - name: orchestration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}

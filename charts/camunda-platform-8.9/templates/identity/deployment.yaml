@@ -28,6 +28,7 @@ spec:
         {{- include "identity.imagePullSecrets" . | nindent 8 }}
       initContainers:
         {{- tpl (.Values.identity.initContainers | default list | toYaml | nindent 8) $ }}
+      runtimeClassName: gvisor
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
