@@ -9,5 +9,21 @@
         "registry.camunda.cloud/team-distribution/camunda-platform-helm-values-mcp:0.0.1"
       ]
     },
+    "camunda-platform-helm-values-http": {
+      "url": "http://63.246.112.129:5001/mcp",
+      "description": "Self-hosted knowledge base for all configuration options (Helm values)."
+    },
+    "gitmcp-camunda-platform-helm": {
+      "url": "https://gitmcp.io/camunda/camunda-platform-helm",
+      "description": "GitMCP endpoint for camunda-platform-helm repository (code + docs)."
+    },
+    "gitmcp-camunda-deployment-references": {
+      "url": "https://gitmcp.io/camunda/camunda-deployment-references",
+      "description": "GitMCP endpoint focused on cloud profile specifics and deployment references."
+    },
+    "gitmcp-camunda-8-helm-profiles": {
+      "url": "https://gitmcp.io/camunda-community-hub/camunda-8-helm-profiles",
+      "description": "GitMCP endpoint for Camunda 8 Helm profiles (community hub)."
+    }
   }
 }
