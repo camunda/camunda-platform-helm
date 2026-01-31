@@ -837,7 +837,7 @@ jobs:
     needs: [install]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
@@ -894,7 +894,7 @@ jobs:
     needs: [upgrade]
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
       options: --ipc=host
     timeout-minutes: 5
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
