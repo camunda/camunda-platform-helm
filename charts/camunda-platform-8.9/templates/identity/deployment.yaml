@@ -16,12 +16,12 @@ spec:
       labels:
         {{- include "identity.labels" . | nindent 8 }}
         {{- if .Values.identity.podLabels }}
-        {{- toYaml .Values.identity.podLabels | nindent 8 }}
+        {{- tpl (toYaml .Values.identity.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
       {{- if .Values.identity.podAnnotations }}
-        {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.identity.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:

@@ -19,12 +19,12 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/console/configmap.yaml") . | sha256sum }}
       {{- with .Values.console.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       labels:
         {{- include "console.matchLabels" . | nindent 8 }}
         {{- if .Values.console.podLabels }}
-          {{- toYaml .Values.console.podLabels | nindent 8 }}
+          {{- tpl (toYaml .Values.console.podLabels) $ | nindent 8 }}
         {{- end }}
     spec:
       imagePullSecrets:
