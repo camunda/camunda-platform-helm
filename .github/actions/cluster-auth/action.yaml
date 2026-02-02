@@ -55,6 +55,17 @@ runs:
       with:
         version: 17.2.2
 
+    # Authenticate with Teleport for EKS clusters using tbot with retry logic.
+    # 
+    # Why retry logic is needed:
+    # The teleport-actions/auth-k8s GitHub Action occasionally fails with intermittent
+    # errors like "invalid character 'u' looking for beginning of value" due to transient
+    # issues with the Teleport service. These failures are not configuration problems but
+    # rather infrastructure hiccups that resolve on retry.
+    #
+    # Instead of using the teleport-actions/auth-k8s action directly (which doesn't support
+    # retries), we use tbot directly with a config file to authenticate. This gives us
+    # control over retry behavior with exponential backoff (30s, 60s, 120s delays).
     - name: Authenticate with Teleport (with retry)
       if: inputs.platform == 'eks' && inputs.auth-data == ''
       id: teleport-auth
@@ -76,8 +87,9 @@ runs:
           DEST_DIR="${HOME}/.tbot-output"
           mkdir -p "${DEST_DIR}"
 
-          # Generate tbot config file for kubernetes output
-          # Using printf to avoid heredoc indentation issues
+          # Generate tbot config file for kubernetes output.
+          # This is equivalent to what teleport-actions/auth-k8s does internally.
+          # Using printf to avoid heredoc indentation issues in YAML.
           printf '%s\n' \
             "version: v2" \
             "proxy_server: \"${TELEPORT_PROXY}\"" \
@@ -94,11 +106,11 @@ runs:
             "      path: \"${DEST_DIR}\"" \
             > /tmp/tbot-config.yaml
 
-          # Run tbot with the config file
+          # Run tbot in oneshot mode to generate credentials and exit
           tbot start -c /tmp/tbot-config.yaml --oneshot
 
-          # Set KUBECONFIG environment variable for subsequent steps
-          # tbot outputs kubeconfig.yaml, not kubeconfig
+          # Set KUBECONFIG environment variable for subsequent steps.
+          # Note: tbot outputs the file as "kubeconfig.yaml" (not "kubeconfig")
           KUBECONFIG_PATH="${DEST_DIR}/kubeconfig.yaml"
           if [[ -f "${KUBECONFIG_PATH}" ]]; then
             echo "KUBECONFIG=${KUBECONFIG_PATH}" >> "$GITHUB_ENV"
@@ -111,6 +123,7 @@ runs:
           fi
         }
 
+        # Retry loop with exponential backoff
         for attempt in $(seq 1 ${MAX_RETRIES}); do
           echo "=== Teleport authentication attempt ${attempt}/${MAX_RETRIES} ==="
           
@@ -124,7 +137,7 @@ runs:
             if [[ ${attempt} -lt ${MAX_RETRIES} ]]; then
               echo "Waiting ${RETRY_DELAY} seconds before retry..."
               sleep ${RETRY_DELAY}
-              # Increase delay for next retry (exponential backoff)
+              # Exponential backoff: 30s -> 60s -> 120s
               RETRY_DELAY=$((RETRY_DELAY * 2))
             fi
           fi
