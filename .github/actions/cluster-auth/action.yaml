@@ -98,7 +98,8 @@ runs:
           tbot start -c /tmp/tbot-config.yaml --oneshot
 
           # Set KUBECONFIG environment variable for subsequent steps
-          KUBECONFIG_PATH="${DEST_DIR}/kubeconfig"
+          # tbot outputs kubeconfig.yaml, not kubeconfig
+          KUBECONFIG_PATH="${DEST_DIR}/kubeconfig.yaml"
           if [[ -f "${KUBECONFIG_PATH}" ]]; then
             echo "KUBECONFIG=${KUBECONFIG_PATH}" >> "$GITHUB_ENV"
             echo "Teleport authentication successful"
