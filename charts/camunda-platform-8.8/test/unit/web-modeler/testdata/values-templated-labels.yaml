@@ -1,0 +1,17 @@
+webModeler:
+  enabled: true
+  restapi:
+    podLabels:
+      release: "{{ .Release.Name }}"
+    podAnnotations:
+      release: "{{ .Release.Name }}"
+  webapp:
+    podLabels:
+      release: "{{ .Release.Name }}"
+    podAnnotations:
+      release: "{{ .Release.Name }}"
+  websockets:
+    podLabels:
+      release: "{{ .Release.Name }}"
+    podAnnotations:
+      release: "{{ .Release.Name }}"

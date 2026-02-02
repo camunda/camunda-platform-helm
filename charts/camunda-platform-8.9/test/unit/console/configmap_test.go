@@ -97,3 +97,38 @@ func (s *configMapTemplateTest) TestContextPathRootDoesNotCreateDoubleSlashes() 
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *configMapTemplateTest) TestGlobalIngressHostTemplating() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestReleaseInfoURLsWithTemplatedIngressHost",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/console/testdata/values-templated-ingress-host.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Verify templated global.ingress.host is resolved in releaseInfo URLs
+				// The release name is "camunda-platform-test" so host should resolve to "camunda-platform-test.example.com"
+				require.Contains(t, output, "https://camunda-platform-test.example.com", "releaseInfo URLs should contain resolved templated host")
+				// Verify literal template syntax is NOT present (would indicate tpl was not called)
+				require.NotContains(t, output, "{{ .Release.Name }}", "releaseInfo should not contain unresolved template syntax")
+			},
+		},
+		{
+			Name: "TestReleaseInfoURLsWithLiteralIngressHost",
+			Values: map[string]string{
+				"console.enabled":              "true",
+				"identity.enabled":             "true",
+				"orchestration.enabled":        "true",
+				"global.ingress.enabled":       "true",
+				"global.ingress.host":          "literal.example.com",
+				"global.ingress.tls.enabled":   "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Verify literal host values still work (backward compatibility)
+				require.Contains(t, output, "https://literal.example.com", "releaseInfo URLs should contain literal host")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
