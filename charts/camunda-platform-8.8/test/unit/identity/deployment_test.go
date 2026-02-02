@@ -85,7 +85,6 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 					})
 			},
 		}, {
-			Skip: true,
 			Name: "TestContainerSetPodLabels",
 			Values: map[string]string{
 				"identity.enabled":       "true",
@@ -99,7 +98,6 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("bar", deployment.Spec.Template.Labels["foo"])
 			},
 		}, {
-			Skip: true,
 			Name: "TestContainerSetPodAnnotations",
 			Values: map[string]string{
 				"identity.enabled":            "true",
@@ -113,6 +111,17 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar", deployment.Spec.Template.Annotations["foo"])
 				s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
+			},
+		}, {
+			Name:        "TestContainerSetPodLabelsAndAnnotationsWithTemplating",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/identity/testdata/values-templated-labels.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then - verify templating is evaluated for both labels and annotations
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Labels["release"])
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Annotations["release"])
 			},
 		}, {
 			Skip: true,

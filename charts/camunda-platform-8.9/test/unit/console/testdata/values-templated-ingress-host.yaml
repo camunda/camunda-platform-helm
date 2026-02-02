@@ -1,0 +1,16 @@
+# Test values for global.ingress.host templating in Console ConfigMap (releaseInfo)
+global:
+  ingress:
+    enabled: true
+    host: "{{ .Release.Name }}.example.com"
+    tls:
+      enabled: true
+
+console:
+  enabled: true
+
+identity:
+  enabled: true
+
+orchestration:
+  enabled: true

@@ -84,6 +84,17 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
 			},
 		}, {
+			Name:        "TestContainerSetPodLabelsAndAnnotationsWithTemplating",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/connectors/testdata/values-templated-labels.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - verify templating is evaluated
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Labels["release"])
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Annotations["release"])
+			},
+		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"connectors.enabled":     "true",
