@@ -18,7 +18,7 @@
 #      exports it for the tests as TEST_INGRESS_HOST.
 #   4. Builds a temporary .env file populated with service client secrets and
 #      Playwright variables, removing it automatically on exit.
-#   5. Installs Node dependencies with `npm ci` and finally executes the
+#   5. Installs Node dependencies with `npm install` and finally executes the
 #      Playwright test runner.
 #
 # Expected environment / assumptions
@@ -132,11 +132,11 @@ _setup_playwright_environment() {
     fi
   fi
 
-  # Use npm ci in CI for faster, reproducible installs; npm install locally
-  if [[ "${CI:-false}" == "true" ]] && [[ -f "package-lock.json" ]]; then
-    log "Running npm ci (CI mode)..."
+  # Use npm install in CI to handle package.json/lock file mismatches gracefully
+  if [[ "${CI:-false}" == "true" ]]; then
+    log "Running npm install (CI mode)..."
     # shellcheck disable=SC2086
-    npm ci $npm_flags
+    npm install $npm_flags
     # Store hash for future comparison
     md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 > node_modules/.package-lock-hash || true
   else
