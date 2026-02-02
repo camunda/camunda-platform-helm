@@ -20,6 +20,7 @@ env:
   ROSA_USER:        {}
   ROSA_PASS:        {}
   CLUSTER_NAME:     {}
+  TELEPORT_TOKEN:   {}
 
 runs:
   using: "composite"
@@ -54,13 +55,82 @@ runs:
       with:
         version: 17.2.2
 
-    - name: Authenticate with Teleport
+    - name: Authenticate with Teleport (with retry)
       if: inputs.platform == 'eks' && inputs.auth-data == ''
-      uses: teleport-actions/auth-k8s@171cc0ad4b6b7cebcb33c672defe3f6dc58967ba # v2
-      with:
-        proxy: camunda.teleport.sh:443
-        token: ${{ env.TELEPORT_TOKEN }}
-        kubernetes-cluster: ${{ env.CLUSTER_NAME }}
+      id: teleport-auth
+      shell: bash
+      env:
+        TELEPORT_PROXY: "camunda.teleport.sh:443"
+        TELEPORT_TOKEN: ${{ env.TELEPORT_TOKEN }}
+        KUBERNETES_CLUSTER: ${{ env.CLUSTER_NAME }}
+      run: |
+        set -euo pipefail
+
+        MAX_RETRIES=3
+        RETRY_DELAY=30
+
+        teleport_auth() {
+          echo "Authenticating with Teleport..."
+          
+          # Create destination directory for tbot output
+          DEST_DIR="${HOME}/.tbot-output"
+          mkdir -p "${DEST_DIR}"
+
+          # Generate tbot config file for kubernetes output
+          # Using printf to avoid heredoc indentation issues
+          printf '%s\n' \
+            "version: v2" \
+            "proxy_server: \"${TELEPORT_PROXY}\"" \
+            "onboarding:" \
+            "  join_method: github" \
+            "  token: \"${TELEPORT_TOKEN}\"" \
+            "storage:" \
+            "  type: memory" \
+            "outputs:" \
+            "  - type: kubernetes" \
+            "    kubernetes_cluster: \"${KUBERNETES_CLUSTER}\"" \
+            "    destination:" \
+            "      type: directory" \
+            "      path: \"${DEST_DIR}\"" \
+            > /tmp/tbot-config.yaml
+
+          # Run tbot with the config file
+          tbot start -c /tmp/tbot-config.yaml --oneshot
+
+          # Set KUBECONFIG environment variable for subsequent steps
+          KUBECONFIG_PATH="${DEST_DIR}/kubeconfig"
+          if [[ -f "${KUBECONFIG_PATH}" ]]; then
+            echo "KUBECONFIG=${KUBECONFIG_PATH}" >> "$GITHUB_ENV"
+            echo "Teleport authentication successful"
+          else
+            echo "ERROR: kubeconfig not found at ${KUBECONFIG_PATH}"
+            echo "Contents of ${DEST_DIR}:"
+            ls -la "${DEST_DIR}" || true
+            return 1
+          fi
+        }
+
+        for attempt in $(seq 1 ${MAX_RETRIES}); do
+          echo "=== Teleport authentication attempt ${attempt}/${MAX_RETRIES} ==="
+          
+          if teleport_auth; then
+            echo "✅ Teleport authentication succeeded on attempt ${attempt}"
+            exit 0
+          else
+            EXIT_CODE=$?
+            echo "❌ Teleport authentication failed on attempt ${attempt} with exit code ${EXIT_CODE}"
+            
+            if [[ ${attempt} -lt ${MAX_RETRIES} ]]; then
+              echo "Waiting ${RETRY_DELAY} seconds before retry..."
+              sleep ${RETRY_DELAY}
+              # Increase delay for next retry (exponential backoff)
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            fi
+          fi
+        done
+
+        echo "❌ Teleport authentication failed after ${MAX_RETRIES} attempts"
+        exit 1
 
     - name: Authenticate via var
       if: inputs.auth-data != ''
