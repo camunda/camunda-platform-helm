@@ -219,6 +219,9 @@ _get_reporter() {
 
 # Check if all pods in namespace are Ready
 # Returns 0 if all pods ready, 1 otherwise
+# For pods to be considered ready:
+#   - Completed/Succeeded pods (Jobs) are always considered ready
+#   - Running pods must have all containers ready (e.g., 1/1, 2/2)
 # Args: namespace
 _check_all_pods_ready() {
   local namespace="$1"
@@ -228,22 +231,42 @@ _check_all_pods_ready() {
     return 0
   fi
   
-  local not_ready
-  not_ready=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || true)
+  # Get pods that are NOT completed jobs AND are not fully ready
+  # kubectl get pods output: NAME READY STATUS RESTARTS AGE
+  # READY column (field 2) shows "X/Y" - we need X==Y for ready
+  # STATUS column (field 3) shows Running, Completed, Succeeded, etc.
+  local not_ready_pods
+  not_ready_pods=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | awk '
+    # Skip completed jobs - they are always considered ready
+    $3 == "Completed" || $3 == "Succeeded" { next }
+    # For other pods, check if READY column shows all containers ready AND status is Running
+    {
+      split($2, ready, "/")
+      if (ready[1] != ready[2] || $3 != "Running") {
+        print $0
+      }
+    }
+  ')
   
-  if [[ "$not_ready" -eq 0 ]]; then
+  if [[ -z "$not_ready_pods" ]]; then
     return 0
   else
-    log "WARNING: $not_ready pod(s) not in Running/Completed state in namespace $namespace"
+    local count
+    count=$(echo "$not_ready_pods" | wc -l | tr -d ' ')
+    log "WARNING: $count pod(s) not ready in namespace $namespace:"
+    while IFS= read -r line; do
+      log "  $line"
+    done <<< "$not_ready_pods"
     return 1
   fi
 }
 
 # Wait for all pods in namespace to be Ready
-# Args: namespace, [timeout_seconds=300]
+# Excludes completed Job pods (they use Succeeded status, not Ready condition)
+# Args: namespace, [timeout_seconds=420]
 _wait_for_pods_ready() {
   local namespace="$1"
-  local timeout="${2:-300}"
+  local timeout="${2:-420}"
   
   if [[ -z "$namespace" ]]; then
     log "WARNING: No namespace provided for pod wait, skipping"
@@ -252,21 +275,38 @@ _wait_for_pods_ready() {
   
   log "Waiting up to ${timeout}s for all pods in namespace $namespace to be Ready..."
   
-  if kubectl wait --for=condition=Ready pods --all -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
+  # Exclude completed Jobs (status.phase=Succeeded) - they don't have Ready condition
+  if kubectl wait --for=condition=Ready pods --all \
+       --field-selector=status.phase!=Succeeded \
+       -n "$namespace" \
+       --timeout="${timeout}s" 2>/dev/null; then
     log "All pods in namespace $namespace are Ready"
     return 0
   else
     log "ERROR: Timeout waiting for pods to be Ready in namespace $namespace"
+    _dump_pod_status "$namespace"
     return 1
   fi
 }
 
+# Helper to dump pod status for diagnostics
+_dump_pod_status() {
+  local namespace="$1"
+  log "Current pod status in namespace $namespace:"
+  kubectl get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
+    log "  $line"
+  done
+}
+
 # Configuration for pod failure retry logic
 _POD_RETRY_MAX_ATTEMPTS=2
-_POD_RETRY_TIMEOUT=300  # 5 minutes
+_POD_RETRY_TIMEOUT=420  # 7 minutes
 
 # Run a playwright command with retry logic for pod failures (spot instance preemption)
-# This function will retry the test if pods go down during execution
+# This function will retry the test if:
+#   1. Pods are detected as not ready after test failure
+#   2. Connection errors (ECONNREFUSED, etc.) are detected in test output
+#      (handles race condition where pods recovered quickly after disruption)
 # Args: namespace, playwright_command...
 # Returns: playwright exit code (0 = success, non-zero = failure)
 _run_playwright_with_retry() {
@@ -295,19 +335,43 @@ _run_playwright_with_retry() {
       log "Retry attempt $attempt/$_POD_RETRY_MAX_ATTEMPTS after pod recovery..."
     fi
     
-    # Run the playwright command
-    "${playwright_cmd[@]}"
-    playwright_rc=$?
+    # Create temp file to capture output for connection error analysis
+    local output_file
+    output_file=$(mktemp)
+    
+    # Run the playwright command, tee output to file for analysis
+    # Use pipefail to capture the actual playwright exit code
+    set -o pipefail
+    "${playwright_cmd[@]}" 2>&1 | tee "$output_file"
+    playwright_rc=${PIPESTATUS[0]}
+    set +o pipefail
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then
+      rm -f "$output_file"
       return 0
     fi
     
-    # Tests failed - check if it's due to pod failure
+    # Tests failed - analyze why
+    log "Tests failed with exit code $playwright_rc"
+    
+    # Check for connection-related errors in output (infrastructure issues)
+    local has_connection_error=false
+    if grep -qiE "ECONNREFUSED|ECONNRESET|ETIMEDOUT|connection refused|connection reset|transport error|dial tcp.*connect:|Unavailable desc = connection error" "$output_file" 2>/dev/null; then
+      has_connection_error=true
+      log "WARNING: Detected connection error in test output (likely infrastructure issue)"
+    fi
+    rm -f "$output_file"
+    
     if [[ -n "$namespace" ]]; then
+      log "Checking pod health after test failure..."
+      local pods_ready=true
       if ! _check_all_pods_ready "$namespace"; then
-        # Pods are not ready - this was likely a spot instance preemption
+        pods_ready=false
+      fi
+      
+      if [[ "$pods_ready" == "false" ]]; then
+        # Pods are not ready - clear infrastructure issue
         log "WARNING: Test failed and pods are not ready (possible spot instance preemption)"
         
         if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
@@ -323,9 +387,26 @@ _run_playwright_with_retry() {
           log "ERROR: Max retry attempts reached, pods still not ready"
           return $playwright_rc
         fi
+      elif [[ "$has_connection_error" == "true" ]]; then
+        # Pods are ready NOW, but we saw connection errors - likely recovered mid-test
+        log "WARNING: Pods are ready now, but connection errors occurred during test"
+        log "This suggests infrastructure disruption during test execution (pods may have recovered after failure)"
+        
+        if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
+          log "Will retry due to connection errors..."
+          # Brief pause to ensure stability after recovery
+          log "Pausing 10s to ensure pod stability..."
+          sleep 10
+          continue
+        else
+          log "ERROR: Max retry attempts reached"
+          _dump_pod_status "$namespace"
+          return $playwright_rc
+        fi
       else
-        # Pods are ready - this is a legitimate test failure
-        log "Pods are healthy, test failure is not due to pod issues"
+        # Pods are ready and no connection errors - legitimate test failure
+        log "Pods are healthy and no connection errors detected - this appears to be a legitimate test failure"
+        _dump_pod_status "$namespace"
         return $playwright_rc
       fi
     else
