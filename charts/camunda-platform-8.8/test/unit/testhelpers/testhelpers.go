@@ -51,6 +51,11 @@ type TestCase struct {
 	// These are equivalent to values passed with --set flag in Helm CLI
 	Values map[string]string
 
+	// ValuesFiles contains paths to values files to use for this test case
+	// Use this for values containing Go template syntax (e.g., {{ .Release.Name }})
+	// as these cannot be passed via --set flag
+	ValuesFiles []string
+
 	// Expected contains key-value pairs that should be present in the rendered output
 	// For error tests, it should contain an "ERROR" key with the expected error message
 	// For ConfigMap tests, keys can be direct data keys or dot-notation paths into application.yaml
@@ -76,9 +81,10 @@ func quietLogger() *logger.Logger {
 	return logger.Discard
 }
 
-func setupHelmOptions(namespace string, values map[string]string, helmOptionsExtraArgs map[string][]string) *helm.Options {
+func setupHelmOptions(namespace string, values map[string]string, valuesFiles []string, helmOptionsExtraArgs map[string][]string) *helm.Options {
 	options := &helm.Options{
 		SetValues:      values,
+		ValuesFiles:    valuesFiles,
 		KubectlOptions: k8s.NewKubectlOptions("", "", namespace),
 		Logger:         quietLogger(), // Use quiet logger to reduce verbosity
 		ExtraArgs:      helmOptionsExtraArgs,
@@ -86,8 +92,8 @@ func setupHelmOptions(namespace string, values map[string]string, helmOptionsExt
 	return options
 }
 
-func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, extraArgs map[string][]string, renderTemplateExtraArgs []string) (string, error) {
-	options := setupHelmOptions(namespace, values, extraArgs)
+func renderTemplateE(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string, valuesFiles []string, extraArgs map[string][]string, renderTemplateExtraArgs []string) (string, error) {
+	options := setupHelmOptions(namespace, values, valuesFiles, extraArgs)
 
 	output, err := helm.RenderTemplateE(t, options, chartPath, release, templates, renderTemplateExtraArgs...)
 	return output, err
@@ -118,7 +124,7 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 	} else {
 		caseTemplates = templates
 	}
-	output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
+	output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.ValuesFiles, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
 	if err != nil {
 		t.Logf("Error during rendering: %v", err)
 	}
@@ -143,7 +149,7 @@ func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates 
 
 // renderTemplate renders the specified Helm templates into a Kubernetes ConfigMap
 func renderTemplate(t *testing.T, chartPath, release string, namespace string, templates []string, values map[string]string) corev1.ConfigMap {
-	options := setupHelmOptions(namespace, values, nil)
+	options := setupHelmOptions(namespace, values, nil, nil)
 
 	output := helm.RenderTemplate(t, options, chartPath, release, templates)
 	var configmap corev1.ConfigMap
