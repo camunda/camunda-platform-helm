@@ -316,6 +316,10 @@ _run_playwright_with_retry() {
   
   local attempt=0
   local playwright_rc=0
+  local output_file=""
+  
+  # Cleanup temp file on function exit
+  trap 'rm -f "$output_file"' RETURN
   
   while [[ $attempt -le $_POD_RETRY_MAX_ATTEMPTS ]]; do
     attempt=$((attempt + 1))
@@ -336,7 +340,8 @@ _run_playwright_with_retry() {
     fi
     
     # Create temp file to capture output for connection error analysis
-    local output_file
+    # Clean up any previous iteration's file first
+    rm -f "$output_file"
     output_file=$(mktemp)
     
     # Run the playwright command, tee output to file for analysis
@@ -348,7 +353,6 @@ _run_playwright_with_retry() {
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then
-      rm -f "$output_file"
       return 0
     fi
     
@@ -361,7 +365,6 @@ _run_playwright_with_retry() {
       has_connection_error=true
       log "WARNING: Detected connection error in test output (likely infrastructure issue)"
     fi
-    rm -f "$output_file"
     
     if [[ -n "$namespace" ]]; then
       log "Checking pod health after test failure..."

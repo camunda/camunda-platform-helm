@@ -79,6 +79,13 @@ runs:
 
         MAX_RETRIES=3
         RETRY_DELAY=30
+        TBOT_CONFIG="/tmp/tbot-config.yaml"
+
+        # Cleanup temporary files on exit
+        cleanup() {
+          rm -f "${TBOT_CONFIG}"
+        }
+        trap cleanup EXIT
 
         teleport_auth() {
           echo "Authenticating with Teleport..."
@@ -104,10 +111,10 @@ runs:
             "    destination:" \
             "      type: directory" \
             "      path: \"${DEST_DIR}\"" \
-            > /tmp/tbot-config.yaml
+            > "${TBOT_CONFIG}"
 
           # Run tbot in oneshot mode to generate credentials and exit
-          tbot start -c /tmp/tbot-config.yaml --oneshot
+          tbot start -c "${TBOT_CONFIG}" --oneshot
 
           # Set KUBECONFIG environment variable for subsequent steps.
           # Note: tbot outputs the file as "kubeconfig.yaml" (not "kubeconfig")
@@ -150,9 +157,11 @@ runs:
       if: inputs.auth-data != ''
       shell: bash
       run: |
+        ENC_FILE="$(mktemp)"
+        trap 'rm -f "${ENC_FILE}"' EXIT
+        
         mkdir -p "$HOME/.kube"
-        echo "${{ inputs.auth-data }}" | base64 -d > enc.cfg
-        openssl enc -aes-256-cbc -d -in enc.cfg -out "$HOME/.kube/config" \
+        echo "${{ inputs.auth-data }}" | base64 -d > "${ENC_FILE}"
+        openssl enc -aes-256-cbc -d -in "${ENC_FILE}" -out "$HOME/.kube/config" \
                -pass pass:"${{ steps.generate-github-token.outputs.token }}" -pbkdf2
-        rm enc.cfg
         chmod 600 "$HOME/.kube/config"

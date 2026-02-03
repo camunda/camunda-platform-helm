@@ -86,6 +86,7 @@ jobs:
           file: .github/docker/ci-runner/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.ci-tags }}
+          no-cache: ${{ inputs.force-rebuild == true }}
           cache-from: type=gha,scope=ci-runner
           cache-to: type=gha,mode=max,scope=ci-runner
           platforms: linux/amd64
@@ -102,6 +103,7 @@ jobs:
           file: .github/docker/playwright-runner/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.playwright-tags }}
+          no-cache: ${{ inputs.force-rebuild == true }}
           cache-from: type=gha,scope=playwright-runner
           cache-to: type=gha,mode=max,scope=playwright-runner
           platforms: linux/amd64
