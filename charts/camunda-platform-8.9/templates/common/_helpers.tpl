@@ -568,7 +568,7 @@ Zeebe templates.
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
     {{- printf "%s://%s%s" $proto .Values.global.ingress.host (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
-    {{- printf "http://localhost:8088" -}}
+    {{- printf "http://localhost:8080" -}}
   {{- end -}}
 {{- end -}}
 
