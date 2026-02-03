@@ -342,7 +342,12 @@ _run_playwright_with_retry() {
         log "WARNING: Pods not ready before test attempt $attempt, waiting for recovery..."
         if ! _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT"; then
           log "ERROR: Pods did not recover before test attempt $attempt"
-          return 1
+          if [[ $attempt -ge $_POD_RETRY_MAX_ATTEMPTS ]]; then
+            log "ERROR: Max retry attempts reached, pods never recovered"
+            return 1
+          fi
+          log "Will continue to next attempt..."
+          continue
         fi
       fi
     fi

@@ -164,8 +164,24 @@ runs:
           TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
         fi
         if [[ -z "${{ inputs.chart-upgrade-version }}" ]]; then
-          test "$(git branch --show-current)" != "main" &&
-          git fetch origin main:main --no-tags
+          if [[ "$(git branch --show-current)" != "main" ]]; then
+            # Retry git fetch up to 3 times with exponential backoff.
+            # GitHub occasionally returns transient 500 errors during high load,
+            # which would otherwise fail the entire workflow unnecessarily.
+            for attempt in 1 2 3; do
+              echo "Attempt $attempt of 3: Fetching main branch..."
+              if git fetch origin main:main --no-tags; then
+                break
+              fi
+              if [ $attempt -lt 3 ]; then
+                echo "git fetch failed, retrying in $((attempt * 10)) seconds..."
+                sleep $((attempt * 10))
+              else
+                echo "All git fetch attempts failed"
+                exit 1
+              fi
+            done
+          fi
           if [[ -n "$(git ls-tree main -- charts/${{ inputs.chart-dir }}/Chart.yaml)" ]]; then
             TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
           else
