@@ -849,7 +849,7 @@ jobs:
   playwright-integration-tests-after-install:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [install]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-32-longrunning-big-ssd
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -913,7 +913,7 @@ jobs:
   playwright-integration-tests-after-upgrade:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [upgrade]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-32-longrunning-big-ssd
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
