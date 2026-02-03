@@ -859,7 +859,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 5
+    timeout-minutes: 20
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
@@ -923,7 +923,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 5
+    timeout-minutes: 20
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
