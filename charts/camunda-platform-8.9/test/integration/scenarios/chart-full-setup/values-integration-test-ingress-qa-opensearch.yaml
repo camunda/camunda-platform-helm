@@ -1,9 +1,24 @@
 global:
+  annotations:
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
   image:
     pullPolicy: Always
   identity:
     auth:
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
       enabled: true
+    keycloak:
+      url:
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
+        port: 443
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
+  elasticsearch:
+    enabled: false
   opensearch:
     enabled: true
     auth:
@@ -15,6 +30,8 @@ global:
       port: 443
     prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
 orchestration:
+  index:
+    prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
   data:
     secondaryStorage:
       type: opensearch
@@ -51,10 +68,12 @@ orchestration:
       value: "connectors-client-mapping-rule"
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+
 identityKeycloak:
-  enabled: true
+  enabled: false
+
 optimize:
   enabled: true
   env:
@@ -71,6 +90,8 @@ webModeler:
       method: oidc
 console:
   enabled: true
+  keycloak:
+    realm: $KEYCLOAK_REALM
   overrideConfiguration: |
     camunda:
       console:
@@ -96,6 +117,9 @@ console:
       value: 'true'
 identity:
   enabled: true
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
   firstUser:
     user: demo
     secret:
@@ -187,6 +211,9 @@ connectors:
   security:
     authentication:
       method: oidc
+      oidc:
+        existingSecret:
+          name: "integration-test-credentials"
 
 elasticsearch:
   enabled: false
