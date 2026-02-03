@@ -283,6 +283,18 @@ _wait_for_pods_ready() {
     log "All pods in namespace $namespace are Ready"
     return 0
   else
+    # kubectl wait failed - this can happen if:
+    # 1. Actual timeout (pods not ready)
+    # 2. A pod was deleted during the wait (e.g., Error pod removed by controller)
+    # 
+    # Re-check if all current pods are now ready. If they are, the failed pod
+    # was likely deleted and we can proceed.
+    log "kubectl wait failed, verifying current pod state..."
+    if _check_all_pods_ready "$namespace"; then
+      log "All current pods in namespace $namespace are Ready (previous failure may have been due to pod deletion)"
+      return 0
+    fi
+    
     log "ERROR: Timeout waiting for pods to be Ready in namespace $namespace"
     _dump_pod_status "$namespace"
     return 1
