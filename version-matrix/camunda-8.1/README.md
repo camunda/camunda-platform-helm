@@ -1,4 +1,5 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
+
 # Camunda 8.1 Helm Chart Version Matrix
 
 ## Helm chart 8.1.27
@@ -27,7 +28,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.26
 
 Supported versions:
@@ -53,7 +53,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-
 
 ## Helm chart 8.1.25
 
@@ -81,7 +80,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.24
 
 Supported versions:
@@ -107,7 +105,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-
 
 ## Helm chart 8.1.23
 
@@ -135,7 +132,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.22
 
 Supported versions:
@@ -161,7 +157,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-
 
 ## Helm chart 8.1.21
 
@@ -189,7 +184,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.20
 
 Supported versions:
@@ -215,7 +209,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-
 
 ## Helm chart 8.1.19
 
@@ -243,7 +236,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.18
 
 Supported versions:
@@ -269,7 +261,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-
 
 ## Helm chart 8.1.17
 
@@ -297,7 +288,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.5.0
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.16
 
 Supported versions:
@@ -323,7 +313,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-
 
 ## Helm chart 8.1.15
 
@@ -351,7 +340,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.14
 
 Supported versions:
@@ -377,7 +365,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
-
 
 ## Helm chart 8.1.8
 
@@ -405,7 +392,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.7
 
 Supported versions:
@@ -432,7 +418,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 
-
 ## Helm chart 8.1.6
 
 Supported versions:
@@ -454,7 +439,6 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.1
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
-
 
 ## Helm chart 8.1.5
 
@@ -478,7 +462,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 
-
 ## Helm chart 8.1.4
 
 Supported versions:
@@ -500,7 +483,6 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.1
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
-
 
 ## Helm chart 8.1.3
 
@@ -524,7 +506,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 
-
 ## Helm chart 8.1.2
 
 Supported versions:
@@ -546,7 +527,6 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.1
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
-
 
 ## Helm chart 8.1.1
 
@@ -570,7 +550,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 
-
 ## Helm chart 8.1.0
 
 Supported versions:
@@ -592,3 +571,4 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.1
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
+

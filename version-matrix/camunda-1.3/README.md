@@ -1,4 +1,5 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
+
 # Camunda 1.3 Helm Chart Version Matrix
 
 ## Helm chart 8.0.0
@@ -22,7 +23,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 
-
 ## Helm chart 0.0.30
 
 Supported versions:
@@ -43,7 +43,6 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.17.1
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
-
 
 ## Helm chart 0.0.29
 
@@ -66,7 +65,6 @@ Non-Camunda images:
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
 
-
 ## Helm chart 0.0.28
 
 Supported versions:
@@ -87,3 +85,4 @@ Non-Camunda images:
 - docker.elastic.co/elasticsearch/elasticsearch:7.16.2
 - docker.io/bitnami/keycloak:16.1.1-debian-10-r52
 - docker.io/bitnami/postgresql:14.2.0-debian-10-r35
+

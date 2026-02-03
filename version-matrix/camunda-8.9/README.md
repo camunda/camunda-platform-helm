@@ -1,5 +1,5 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
-🔙 [Back to version matrix index](../)
+🔙 [Back to version matrix index](.-->
 
 # Camunda 8.9 Helm Chart Version Matrix
 
@@ -37,7 +37,6 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 14.0.0-alpha2
 
 Supported versions:
@@ -66,7 +65,6 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 14.0.0-alpha1
 
 Supported versions:
@@ -94,3 +92,4 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/os-shell:12-debian-12-r43
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+

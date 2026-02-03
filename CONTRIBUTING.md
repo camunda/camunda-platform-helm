@@ -99,13 +99,11 @@ The `main` branch contains the current in-development state of the project. To w
    git checkout main
    git pull
    ```
-
 4. Create a new branch with the naming scheme `issueId-description`.
 
    ```
    git checkout -b 123-adding-bpel-support
    ```
-
 5. Implement the required changes on your branch and regularly push your
    changes to the origin so that the CI can run. Code formatting, style, and
    license header are fixed automatically by running Maven. Checkstyle
@@ -115,7 +113,6 @@ The `main` branch contains the current in-development state of the project. To w
    git commit -am 'feat: add BPEL execution support'
    git push -u origin 123-adding-bpel-support
    ```
-
 6. If you think you finished the issue, please prepare the branch for review. Please consider our [pull requests and code reviews](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews) guide, before requesting a review. In general, the commits should be squashed into meaningful commits with a helpful message. This means cleanup/fix etc. commits should be squashed into the related commit. If you made refactorings it would be best if they are split up into another commit. Think about how a reviewer can best understand your changes. Please follow the [commit message guidelines](#commit-message-guidelines).
 
 ## Commit message guidelines
@@ -197,14 +194,14 @@ Files follow the naming convention: `values-integration-test-ingress-<scenario-n
 
 **Available scenarios include:**
 
-| Scenario | Description |
-|----------|-------------|
+|      Scenario       |                               Description                               |
+|---------------------|-------------------------------------------------------------------------|
 | `keycloak-original` | Full deployment with Keycloak authentication and external elasticsearch |
-| `elasticsearch` | Deployment using Elasticsearch for data storage |
-| `opensearch` | Deployment using OpenSearch for data storage |
-| `multitenancy` | Multi-tenant configuration |
-| `qa-elasticsearch` | QA-specific configuration with custom image tags |
-| `qa-opensearch` | QA-specific OpenSearch configuration |
+| `elasticsearch`     | Deployment using Elasticsearch for data storage                         |
+| `opensearch`        | Deployment using OpenSearch for data storage                            |
+| `multitenancy`      | Multi-tenant configuration                                              |
+| `qa-elasticsearch`  | QA-specific configuration with custom image tags                        |
+| `qa-opensearch`     | QA-specific OpenSearch configuration                                    |
 
 Scenario files can reference environment variables (e.g., `$CAMUNDA_HOSTNAME`, `$E2E_TESTS_ZEEBE_IMAGE_TAG`) that are substituted at deployment time.
 
@@ -222,6 +219,7 @@ go build -o deploy-camunda .
 ```
 
 Or with make:
+
 ```bash
 make install.dx-tooling
 ```
@@ -250,23 +248,23 @@ deploy-camunda --chart-path ./charts/camunda-platform-8.6 \
 
 #### Key Flags
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--chart-path` | | Path to the Camunda chart directory |
-| `--chart` | `-c` | Chart name (for remote charts) |
-| `--version` | `-v` | Chart version (requires `--chart`) |
-| `--namespace` | `-n` | Kubernetes namespace |
-| `--release` | `-r` | Helm release name |
-| `--scenario` | `-s` | Scenario name(s), comma-separated for parallel deployment |
-| `--scenario-path` | | Custom path to scenario files |
-| `--auth` | | Auth scenario (default: `keycloak`) |
-| `--platform` | | Target platform: `gke`, `rosa`, `eks` (default: `gke`) |
-| `--timeout` | | Helm deployment timeout in minutes (default: 5) |
-| `--delete-namespace` | | Delete namespace before deploying |
-| `--auto-generate-secrets` | | Generate random test secrets |
-| `--render-templates` | | Render manifests without installing |
-| `--extra-values` | | Additional values files to apply |
-| `--config` | `-F` | Path to config file |
+|           Flag            | Short |                        Description                        |
+|---------------------------|-------|-----------------------------------------------------------|
+| `--chart-path`            |       | Path to the Camunda chart directory                       |
+| `--chart`                 | `-c`  | Chart name (for remote charts)                            |
+| `--version`               | `-v`  | Chart version (requires `--chart`)                        |
+| `--namespace`             | `-n`  | Kubernetes namespace                                      |
+| `--release`               | `-r`  | Helm release name                                         |
+| `--scenario`              | `-s`  | Scenario name(s), comma-separated for parallel deployment |
+| `--scenario-path`         |       | Custom path to scenario files                             |
+| `--auth`                  |       | Auth scenario (default: `keycloak`)                       |
+| `--platform`              |       | Target platform: `gke`, `rosa`, `eks` (default: `gke`)    |
+| `--timeout`               |       | Helm deployment timeout in minutes (default: 5)           |
+| `--delete-namespace`      |       | Delete namespace before deploying                         |
+| `--auto-generate-secrets` |       | Generate random test secrets                              |
+| `--render-templates`      |       | Render manifests without installing                       |
+| `--extra-values`          |       | Additional values files to apply                          |
+| `--config`                | `-F`  | Path to config file                                       |
 
 #### Configuration File
 
@@ -324,14 +322,14 @@ deploy-camunda
 
 The CLI supports environment variable overrides with the `CAMUNDA_` prefix:
 
-| Variable | Description |
-|----------|-------------|
-| `CAMUNDA_CURRENT` | Active deployment profile |
-| `CAMUNDA_REPO_ROOT` | Repository root path |
-| `CAMUNDA_PLATFORM` | Target platform |
-| `CAMUNDA_HOSTNAME` | Ingress hostname |
-| `CAMUNDA_KEYCLOAK_HOST` | External Keycloak host |
-| `CAMUNDA_KEYCLOAK_REALM` | Keycloak realm name |
+|         Variable         |        Description        |
+|--------------------------|---------------------------|
+| `CAMUNDA_CURRENT`        | Active deployment profile |
+| `CAMUNDA_REPO_ROOT`      | Repository root path      |
+| `CAMUNDA_PLATFORM`       | Target platform           |
+| `CAMUNDA_HOSTNAME`       | Ingress hostname          |
+| `CAMUNDA_KEYCLOAK_HOST`  | External Keycloak host    |
+| `CAMUNDA_KEYCLOAK_REALM` | Keycloak realm name       |
 
 You can also use a `.env` file (loaded automatically or via `--env-file`):
 
@@ -430,3 +428,4 @@ Use `--render-templates` to inspect what would be deployed:
 ```bash
 deploy-camunda --render-templates --render-output-dir ./rendered ...
 ```
+

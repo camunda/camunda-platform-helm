@@ -17,7 +17,6 @@ A Go-based tool to identify values defined in values.yaml that are not used in H
    - `yq` - YAML processor
    - `jq` - JSON processor
    - `ripgrep` (optional, but recommended for faster searches)
-
 3. Build the project:
 
 ```

@@ -7,7 +7,7 @@ PostgreSQL (Postgres) is an open source object-relational database known for rel
 [Overview of PostgreSQL](http://www.postgresql.org)
 
 Trademarks: This software listing is packaged by Bitnami. The respective trademarks mentioned in the offering are owned by the respective companies, and use of them does not imply any affiliation or endorsement.
-                           
+
 ## TL;DR
 
 ```bash
@@ -63,8 +63,8 @@ kubectl delete pvc -l release=my-release
 
 ### Global parameters
 
-| Name                                                       | Description                                                                                                                                                                           | Value |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+|                            Name                            |                                                                                      Description                                                                                      | Value |
+|------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
 | `global.imageRegistry`                                     | Global Docker image registry                                                                                                                                                          | `""`  |
 | `global.imagePullSecrets`                                  | Global Docker registry secret names as an array                                                                                                                                       | `[]`  |
 | `global.storageClass`                                      | Global StorageClass for Persistent Volume(s)                                                                                                                                          | `""`  |
@@ -80,8 +80,8 @@ kubectl delete pvc -l release=my-release
 
 ### Common parameters
 
-| Name                     | Description                                                                                  | Value           |
-| ------------------------ | -------------------------------------------------------------------------------------------- | --------------- |
+|           Name           |                                         Description                                          |      Value      |
+|--------------------------|----------------------------------------------------------------------------------------------|-----------------|
 | `kubeVersion`            | Override Kubernetes version                                                                  | `""`            |
 | `nameOverride`           | String to partially override common.names.fullname template (will maintain the release name) | `""`            |
 | `fullnameOverride`       | String to fully override common.names.fullname template                                      | `""`            |
@@ -95,8 +95,8 @@ kubectl delete pvc -l release=my-release
 
 ### PostgreSQL common parameters
 
-| Name                                     | Description                                                                                                                                                                                                                                                                                                                                   | Value                      |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+|                   Name                   |                                                                                                                                                                  Description                                                                                                                                                                  |           Value            |
+|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
 | `image.registry`                         | PostgreSQL image registry                                                                                                                                                                                                                                                                                                                     | `docker.io`                |
 | `image.repository`                       | PostgreSQL image repository                                                                                                                                                                                                                                                                                                                   | `bitnamilegacy/postgresql` |
 | `image.tag`                              | PostgreSQL image tag (immutable tags are recommended)                                                                                                                                                                                                                                                                                         | `14.18.0-debian-12-r0`     |
@@ -157,8 +157,8 @@ kubectl delete pvc -l release=my-release
 
 ### PostgreSQL Primary parameters
 
-| Name                                         | Description                                                                                                              | Value                 |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------- |
+|                     Name                     |                                                       Description                                                        |         Value         |
+|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | `primary.name`                               | Name of the primary database (eg primary, master, leader, ...)                                                           | `primary`             |
 | `primary.configuration`                      | PostgreSQL Primary main configuration to be injected as ConfigMap                                                        | `""`                  |
 | `primary.pgHbaConfiguration`                 | PostgreSQL Primary client authentication configuration                                                                   | `""`                  |
@@ -260,8 +260,8 @@ kubectl delete pvc -l release=my-release
 
 ### PostgreSQL read only replica parameters (only used when `architecture` is set to `replication`)
 
-| Name                                              | Description                                                                                                              | Value                 |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------- |
+|                       Name                        |                                                       Description                                                        |         Value         |
+|---------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | `readReplicas.name`                               | Name of the read replicas database (eg secondary, slave, ...)                                                            | `read`                |
 | `readReplicas.replicaCount`                       | Number of PostgreSQL read only replicas                                                                                  | `1`                   |
 | `readReplicas.extendedConfiguration`              | Extended PostgreSQL read only replicas configuration (appended to main or default configuration)                         | `""`                  |
@@ -350,8 +350,8 @@ kubectl delete pvc -l release=my-release
 
 ### NetworkPolicy parameters
 
-| Name                                                                      | Description                                                                                                                                        | Value   |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+|                                   Name                                    |                                                                    Description                                                                     |  Value  |
+|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|---------|
 | `networkPolicy.enabled`                                                   | Enable network policies                                                                                                                            | `false` |
 | `networkPolicy.metrics.enabled`                                           | Enable network policies for metrics (prometheus)                                                                                                   | `false` |
 | `networkPolicy.metrics.namespaceSelector`                                 | Monitoring namespace selector labels. These labels will be used to identify the prometheus' namespace.                                             | `{}`    |
@@ -369,8 +369,8 @@ kubectl delete pvc -l release=my-release
 
 ### Volume Permissions parameters
 
-| Name                                                   | Description                                                                                                                       | Value                    |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+|                          Name                          |                                                            Description                                                            |          Value           |
+|--------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|--------------------------|
 | `volumePermissions.enabled`                            | Enable init container that changes the owner and group of the persistent volume                                                   | `false`                  |
 | `volumePermissions.image.registry`                     | Init container volume-permissions image registry                                                                                  | `docker.io`              |
 | `volumePermissions.image.repository`                   | Init container volume-permissions image repository                                                                                | `bitnamilegacy/os-shell` |
@@ -384,8 +384,8 @@ kubectl delete pvc -l release=my-release
 
 ### Other Parameters
 
-| Name                                          | Description                                                                                                                                 | Value   |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+|                     Name                      |                                                                 Description                                                                 |  Value  |
+|-----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|---------|
 | `serviceAccount.create`                       | Enable creation of ServiceAccount for PostgreSQL pod                                                                                        | `false` |
 | `serviceAccount.name`                         | The name of the ServiceAccount to use.                                                                                                      | `""`    |
 | `serviceAccount.automountServiceAccountToken` | Allows auto mount of ServiceAccountToken on the serviceAccount created                                                                      | `true`  |
@@ -396,8 +396,8 @@ kubectl delete pvc -l release=my-release
 
 ### Metrics Parameters
 
-| Name                                            | Description                                                                                                | Value                             |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------- |
+|                      Name                       |                                                Description                                                 |               Value               |
+|-------------------------------------------------|------------------------------------------------------------------------------------------------------------|-----------------------------------|
 | `metrics.enabled`                               | Start a prometheus exporter                                                                                | `false`                           |
 | `metrics.image.registry`                        | PostgreSQL Prometheus Exporter image registry                                                              | `docker.io`                       |
 | `metrics.image.repository`                      | PostgreSQL Prometheus Exporter image repository                                                            | `bitnamilegacy/postgres-exporter` |
@@ -453,7 +453,6 @@ kubectl delete pvc -l release=my-release
 | `metrics.prometheusRule.labels`                 | Additional labels that can be used so PrometheusRule will be discovered by Prometheus                      | `{}`                              |
 | `metrics.prometheusRule.rules`                  | PrometheusRule definitions                                                                                 | `[]`                              |
 
-
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```bash
@@ -465,7 +464,7 @@ $ helm install my-release \
 The above command sets the PostgreSQL `postgres` account password to `secretpassword`.
 
 > NOTE: Once this chart is deployed, it is not possible to change the application's access credentials, such as usernames or passwords, using Helm. To change these application credentials after deployment, delete any persistent volumes (PVs) used by the chart and re-deploy it, or use the application's built-in administrative tools if available.
-
+>
 > **Warning** Setting a password will be ignored on new installation in case when previous Posgresql release was deleted through the helm command. In that case, old PVC will have an old password, and setting it through helm won't take effect. Deleting persistent volumes (PVs) will solve the issue. Refer to [issue 2061](https://github.com/bitnami/charts/issues/2061) for more details
 
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
@@ -521,19 +520,18 @@ For example:
 
 - First, create the secret with the cetificates files:
 
-    ```console
-    kubectl create secret generic certificates-tls-secret --from-file=./cert.crt --from-file=./cert.key --from-file=./ca.crt
-    ```
-
+  ```console
+  kubectl create secret generic certificates-tls-secret --from-file=./cert.crt --from-file=./cert.key --from-file=./ca.crt
+  ```
 - Then, use the following parameters:
 
-    ```console
-    volumePermissions.enabled=true
-    tls.enabled=true
-    tls.certificatesSecret="certificates-tls-secret"
-    tls.certFilename="cert.crt"
-    tls.certKeyFilename="cert.key"
-    ```
+  ```console
+  volumePermissions.enabled=true
+  tls.enabled=true
+  tls.certificatesSecret="certificates-tls-secret"
+  tls.certFilename="cert.crt"
+  tls.certKeyFilename="cert.key"
+  ```
 
   > Note TLS and VolumePermissions: PostgreSQL requires certain permissions on sensitive files (such as certificate keys) to start up. Due to an on-going [issue](https://github.com/kubernetes/kubernetes/issues/57923) regarding kubernetes permissions and the use of `containerSecurityContext.runAsUser`, you must enable `volumePermissions` to ensure everything works as expected.
 
@@ -666,7 +664,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

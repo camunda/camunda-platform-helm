@@ -2,12 +2,10 @@
 
 ## [10.11.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.5-10.11.2...camunda-platform-8.5-10.11.3) (2025-10-07)
 
-
 ### Bug Fixes
 
 * correct sysctlImage structure in values-enterprise.yaml ([#4339](https://github.com/camunda/camunda-platform-helm/issues/4339)) ([8dd44f2](https://github.com/camunda/camunda-platform-helm/commit/8dd44f23f750569253c4a8ea57b98d19bb365879))
 * web modeler extraConfiguration uses subcomponent subkey ([#4097](https://github.com/camunda/camunda-platform-helm/issues/4097)) ([72b7978](https://github.com/camunda/camunda-platform-helm/commit/72b7978b00ccdb29fcf61f8c636acc82103449a4))
-
 
 ### Dependencies
 
@@ -20,3 +18,4 @@
 * update module github.com/gruntwork-io/terratest to v0.51.0 ([#4268](https://github.com/camunda/camunda-platform-helm/issues/4268)) ([a47c21c](https://github.com/camunda/camunda-platform-helm/commit/a47c21ce6205cde4521840b7b1eb41294a5c005f))
 * update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.4 ([#4231](https://github.com/camunda/camunda-platform-helm/issues/4231)) ([38bd4b6](https://github.com/camunda/camunda-platform-helm/commit/38bd4b6b6285eccaf525640bb9e336b1f35d6add))
 * update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.5 ([#4384](https://github.com/camunda/camunda-platform-helm/issues/4384)) ([1011240](https://github.com/camunda/camunda-platform-helm/commit/10112408a342a9c89438505144a935ca2cd6e2e3))
+

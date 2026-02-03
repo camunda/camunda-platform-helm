@@ -5,8 +5,8 @@
 ### What's in this PR?
 
 <!--
-  Explain the contents of the PR.
-  Give an overview of the implementation, which decisions were made, and why.
+Explain the contents of the PR.
+Give an overview of the implementation, which decisions were made, and why.
 -->
 
 ### Checklist
@@ -31,5 +31,5 @@ Please make sure to follow our [Contributing Guide](../blob/main/docs/contributi
 ### To-Do
 
 - [ ] If the PR is not complete but you want to discuss the approach,
-  list what remains to be done here.
+list what remains to be done here.
 -->

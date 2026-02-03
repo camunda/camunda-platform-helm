@@ -126,11 +126,11 @@ The core Camunda applications have a unified fixed release schedule (minor relea
 every month). However, some of the applications have their own schedule. The following compatibility matrix gives
 an overview of the different versions.
 
-| Release Cycle | Helm chart | Zeebe, Operate, Tasklist | Optimize | Web Modeler  | Connectors |
-| ---           | ---        | ---                      | ---      | ---          | ---        |
-| Apr 2023      | 8.2.x      | 8.2.x                    | 3.10.x   | 8.2.x        | >= 0.18.0  |
-| Oct 2022      | 8.1.x      | 8.1.x                    | 3.9.x    | N/A          | N/A        |
-| Apr 2022      | 8.0.x      | 8.0.x                    | 3.9.x    | N/A          | N/A        |
+| Release Cycle | Helm chart | Zeebe, Operate, Tasklist | Optimize | Web Modeler | Connectors |
+|---------------|------------|--------------------------|----------|-------------|------------|
+| Apr 2023      | 8.2.x      | 8.2.x                    | 3.10.x   | 8.2.x       | >= 0.18.0  |
+| Oct 2022      | 8.1.x      | 8.1.x                    | 3.9.x    | N/A         | N/A        |
+| Apr 2022      | 8.0.x      | 8.0.x                    | 3.9.x    | N/A         | N/A        |
 
 ## Installation
 
@@ -165,7 +165,7 @@ For more details, follow the Camunda 8
 
 ### OpenShift
 
-Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift. 
+Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift.
 
 ## Backporting
 
@@ -231,29 +231,34 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 > :information_source: Web Modeler Self-Managed is available to Camunda enterprise customers only.
 
 #### Docker registry
+
 The Docker images for Web Modeler are available in a private registry.
 Enterprise customers either already have credentials to this registry, or they can request access to this registry through their CSM contact at Camunda.
 To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
 - [create an image pull secret](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) using the provided credentials
 - configure the Web Modeler pods to use the secret:
-  ```yaml
-  webModeler:
-    image:
-      pullSecrets:
-        - name: <MY_SECRET_NAME>
-   ```
+
+```yaml
+webModeler:
+  image:
+    pullSecrets:
+      - name: <MY_SECRET_NAME>
+```
 
 #### Database
+
 Web Modeler requires a PostgreSQL database to store the data.
 You can either:
 - deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the [`postgresql` chart dependency](#postgresql-for-web-modeler))
 - configure a connection to an (existing) external database by setting `postgresql.enabled` to `false` and providing the values under `restapi.externalDatabase`
 
 #### SMTP server
+
 Web Modeler requires an SMTP server to send (notification) emails to users.
 The SMTP connection can be configured with the values under `restapi.mail`.
 
 #### Updating Environment Variables
+
 When configuring the `env` options in the settings listed above, the environment variables you specify in values.yaml may show up twice when running `kubectl describe deployment <deployment>`. However, the environment variable specified in values.yaml will have precedence when the pod actually runs. To verify this, you can check the output from the following command:
 
 ```bash
@@ -367,16 +372,16 @@ For development purposes, you might want to deploy and test the charts without c
 To do this you can run the following:
 
 ```sh
- helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
+helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
 ```
 
- * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
+* `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
 
- * `--debug enable verbose output`
+* `--debug enable verbose output`
 
-To generate the resources/manifests without really installing them, you can use: 
+To generate the resources/manifests without really installing them, you can use:
 
- * `--dry-run simulate an install`
+* `--dry-run simulate an install`
 
 If you see errors like:
 
@@ -395,6 +400,7 @@ make helm.repos-add
 After this, you can run: `make helm.dependency-update`, which will update and download the dependencies for all charts.
 
 The execution should look like this:
+
 ```
 $ make helm.dependency-update
 helm dependency update charts/camunda-platform
@@ -427,8 +433,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Global parameters
 
-| Name                                                | Description                                                                                                                                                                                                                                           | Value                                                 |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+|                        Name                         |                                                                                                                      Description                                                                                                                      |                         Value                         |
+|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
 | `global`                                            |                                                                                                                                                                                                                                                       |                                                       |
 | `global.secrets`                                    | configuration for auto-generated secrets which is only used during the installation.                                                                                                                                                                  |                                                       |
 | `global.secrets.autoGenerated`                      | if true, a secret object will be generated with auto-generated passwords. This secret object is NOT managed with corresponding releases and NOR part of Helm deployment/upgrade! It's generated once, and if it's deleted, you will lose the secrets. | `false`                                               |
@@ -494,8 +500,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Zeebe Parameters
 
-| Name                                                      | Description                                                                                                                                                                                                                   | Value                                                                                                                                                      |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|                           Name                            |                                                                                                          Description                                                                                                          |                                                                           Value                                                                            |
+|-----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `zeebe`                                                   | configuration for the Zeebe sub chart. Contains configuration for the Zeebe broker and related resources.                                                                                                                     |                                                                                                                                                            |
 | `zeebe.enabled`                                           | if true, all zeebe related resources are deployed via the helm release                                                                                                                                                        | `true`                                                                                                                                                     |
 | `zeebe.debug`                                             | if true, extra info is printed.                                                                                                                                                                                               | `false`                                                                                                                                                    |
@@ -601,8 +607,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Zeebe Gateway Parameters
 
-| Name                                                              | Description                                                                                                                                                                  | Value                            |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+|                               Name                                |                                                                                 Description                                                                                  |              Value               |
+|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
 | `Gateway`                                                         | configuration to define properties related to the standalone gateway                                                                                                         |                                  |
 | `zeebe-gateway.replicas`                                          | defines how many standalone gateways are deployed                                                                                                                            | `2`                              |
 | `zeebe-gateway.image`                                             | configuration to configure the zeebe-gateway image specifics                                                                                                                 |                                  |
@@ -700,8 +706,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Operate Parameters
 
-| Name                                                        | Description                                                                                                                                                                  | Value                        |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+|                            Name                             |                                                                                 Description                                                                                  |            Value             |
+|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|
 | `.operate`                                                  | configuration for the Operate sub chart.                                                                                                                                     |                              |
 | `operate.enabled`                                           | if true, the Operate deployment and its related resources are deployed via a helm release                                                                                    | `true`                       |
 | `operate.image`                                             | configuration to configure the Operate image specifics                                                                                                                       |                              |
@@ -787,8 +793,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Tasklist Parameters
 
-| Name                                                         | Description                                                                                                                                                                  | Value                        |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+|                             Name                             |                                                                                 Description                                                                                  |            Value             |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|
 | `tasklist.enabled`                                           | if true, the tasklist deployment and its related resources are deployed via a helm release                                                                                   | `true`                       |
 | `tasklist.image`                                             | configuration to configure the tasklist image specifics                                                                                                                      |                              |
 | `tasklist.image.registry`                                    | can be used to set container image registry.                                                                                                                                 | `""`                         |
@@ -872,8 +878,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Optimize Parameters
 
-| Name                                                         | Description                                                                                                                                                                  | Value                       |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+|                             Name                             |                                                                                 Description                                                                                  |            Value            |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
 | `optimize.enabled`                                           | if true, the Optimize deployment and its related resources are deployed via a helm release                                                                                   | `true`                      |
 | `optimize.image`                                             | configuration to configure the Optimize image specifics                                                                                                                      |                             |
 | `optimize.image.registry`                                    | can be used to set container image registry                                                                                                                                  | `""`                        |
@@ -956,8 +962,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Identity Parameters
 
-| Name                                                         | Description                                                                                                                                                                                               | Value                             |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+|                             Name                             |                                                                                                Description                                                                                                |               Value               |
+|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------|
 | `identity.enabled`                                           | if true, the identity deployment and its related resources are deployed via a helm release                                                                                                                | `true`                            |
 | `identity.fullnameOverride`                                  | can be used to override the full name of the Identity resources                                                                                                                                           | `""`                              |
 | `identity.nameOverride`                                      | can be used to partly override the name of the Identity resources (names will still be prefixed with the release name)                                                                                    | `""`                              |
@@ -1066,8 +1072,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Identity - Keycloak Parameters
 
-| Name                                                                                     | Description                                                                                                                   | Value                                                                                                                                                                |
-| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|                                           Name                                           |                                                          Description                                                          |                                                                                Value                                                                                 |
+|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `identity.keycloak`                                                                      | configuration, for the keycloak dependency chart which is used by identity.                                                   |                                                                                                                                                                      |
 | `identity.keycloak.postgresql`                                                           | configuration.                                                                                                                |                                                                                                                                                                      |
 | `identity.keycloak.postgresql.image.repository`                                          | image repo                                                                                                                    | `bitnamilegacy/postgresql`                                                                                                                                           |
@@ -1156,8 +1162,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### WebModeler Parameters
 
-| Name                           | Description                                                                                                                                    | Value                    |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+|              Name              |                                                                  Description                                                                   |          Value           |
+|--------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
 | `webModeler.enabled`           | if true, the Web Modeler deployment and its related resources are deployed via a helm release                                                  | `false`                  |
 | `webModeler.fullnameOverride`  | can be used to override the full name of the Web Modeler resources                                                                             | `""`                     |
 | `webModeler.nameOverride`      | can be used to partly override the name of the Web Modeler resources (names will still be prefixed with the release name)                      | `""`                     |
@@ -1169,8 +1175,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### WebModeler - RestAPI Parameters
 
-| Name                                                                   | Description                                                                                                                                                                  | Value                            |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+|                                  Name                                  |                                                                                 Description                                                                                  |              Value               |
+|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
 | `webModeler.restapi`                                                   | configuration of the Web Modeler restapi component                                                                                                                           |                                  |
 | `webModeler.restapi.image`                                             | configuration of the restapi Docker image                                                                                                                                    |                                  |
 | `webModeler.restapi.image.repository`                                  | defines which image repository to use for the restapi Docker image                                                                                                           | `web-modeler-ee/modeler-restapi` |
@@ -1246,8 +1252,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### WebModeler - WebApp Parameters
 
-| Name                                                                  | Description                                                                                                                                                                  | Value                           |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+|                                 Name                                  |                                                                                 Description                                                                                  |              Value              |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------|
 | `webModeler.webapp.`                                                  | configuration of the Web Modeler webapp component                                                                                                                            |                                 |
 | `webModeler.webapp.image`                                             | configuration of the webapp Docker image                                                                                                                                     |                                 |
 | `webModeler.webapp.image.repository`                                  | defines which image repository to use for the webapp Docker image                                                                                                            | `web-modeler-ee/modeler-webapp` |
@@ -1311,8 +1317,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### WebModeler - WebSockets Parameters
 
-| Name                                                                      | Description                                                                                                                                                                                                                        | Value                                    |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+|                                   Name                                    |                                                                                                            Description                                                                                                             |                  Value                   |
+|---------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
 | `webModeler.websockets`                                                   | configuration of the Web Modeler websockets component                                                                                                                                                                              |                                          |
 | `webModeler.websockets.image`                                             | configuration of the websockets Docker image                                                                                                                                                                                       |                                          |
 | `webModeler.websockets.image.repository`                                  | defines which image repository to use for the websockets Docker image                                                                                                                                                              | `web-modeler-ee/modeler-websockets`      |
@@ -1394,8 +1400,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### WebModeler - PostgreSQL Parameters
 
-| Name                                                                   | Description                                                                                                                                                                                      | Value                          |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+|                                  Name                                  |                                                                                           Description                                                                                            |             Value              |
+|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
 | `postgresql`                                                           | configuration for the postgresql dependency chart used by Web Modeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details. |                                |
 | `postgresql.enabled`                                                   | if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart                                                                                        | `false`                        |
 | `postgresql.nameOverride`                                              | defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters                  | `postgresql-web-modeler`       |
@@ -1430,8 +1436,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Connectors Parameters
 
-| Name                                                           | Description                                                                                                                                                                  | Value                         |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+|                              Name                              |                                                                                 Description                                                                                  |             Value             |
+|----------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
 | `connectors`                                                   | configuration for the Connectors.                                                                                                                                            |                               |
 | `connectors.enabled`                                           | if true, the Connectors deployment and its related resources are deployed via a helm release                                                                                 | `true`                        |
 | `connectors.inbound`                                           | Switch for inbound mode (e.g., for webhook or polling)                                                                                                                       |                               |
@@ -1519,8 +1525,8 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Elasticsearch Parameters
 
-| Name                                               | Description  | Value                                  |
-| -------------------------------------------------- | ------------ | -------------------------------------- |
+|                        Name                        | Description  |                 Value                  |
+|----------------------------------------------------|--------------|----------------------------------------|
 | `elasticsearch`                                    |              |                                        |
 | `elasticsearch.enabled`                            |              | `true`                                 |
 | `elasticsearch.image.repository`                   |              | `bitnamilegacy/elasticsearch`          |
@@ -1557,10 +1563,11 @@ Please see the corresponding [release guide](../../RELEASE.md) to find out how t
 
 ### Prometheus Parameters
 
-| Name                                      | Description                                                                                                                                                    | Value     |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+|                   Name                    |                                                                          Description                                                                           |   Value   |
+|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
 | `PrometheusServiceMonitor`                | configuration to configure a prometheus service monitor                                                                                                        |           |
 | `prometheusServiceMonitor.enabled`        | if true then a service monitor will be deployed, which allows an installed prometheus controller to scrape metrics from the deployed pods                      | `false`   |
 | `promotheuServiceMonitor.labels`          | can be set to configure extra labels, which will be added to the servicemonitor and can be used on the prometheus controller for selecting the servicemonitors |           |
 | `prometheusServiceMonitor.labels.release` |                                                                                                                                                                | `metrics` |
 | `prometheusServiceMonitor.scrapeInterval` | can be set to configure the interval at which metrics should be scraped                                                                                        | `10s`     |
+

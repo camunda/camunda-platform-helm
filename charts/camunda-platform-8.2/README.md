@@ -124,11 +124,11 @@ The core Camunda applications have a unified fixed release schedule (minor relea
 every month). However, some of the applications have their own schedule. The following compatibility matrix gives
 an overview of the different versions.
 
-| Release Cycle | Helm chart | Zeebe, Operate, Tasklist | Optimize | Web Modeler  | Connectors |
-| ---           | ---        | ---                      | ---      | ---          | ---        |
-| Apr 2023      | 8.2.x      | 8.2.x                    | 3.10.x   | 8.2.x        | >= 0.18.0  |
-| Oct 2022      | 8.1.x      | 8.1.x                    | 3.9.x    | N/A          | N/A        |
-| Apr 2022      | 8.0.x      | 8.0.x                    | 3.9.x    | N/A          | N/A        |
+| Release Cycle | Helm chart | Zeebe, Operate, Tasklist | Optimize | Web Modeler | Connectors |
+|---------------|------------|--------------------------|----------|-------------|------------|
+| Apr 2023      | 8.2.x      | 8.2.x                    | 3.10.x   | 8.2.x       | >= 0.18.0  |
+| Oct 2022      | 8.1.x      | 8.1.x                    | 3.9.x    | N/A         | N/A        |
+| Apr 2022      | 8.0.x      | 8.0.x                    | 3.9.x    | N/A         | N/A        |
 
 ## Installation
 
@@ -163,7 +163,7 @@ For more details, follow the Camunda Platform 8
 
 ### OpenShift
 
-Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift. 
+Check out [OpenShift Support](openshift/README.md) to get started with deploying the charts on Red Hat OpenShift.
 
 ## Backporting
 
@@ -222,7 +222,7 @@ Check out the default [values.yaml](values.yaml) file, which contains the same c
 > For more details about deploying Camunda Platform 8 on Kubernetes, please visit the
 > [Helm/Kubernetes installation instructions docs](https://docs.camunda.io/docs/self-managed/setup/install/).
 
-### Global 
+### Global
 
 | Section | Parameter | Description | Default |
 |-|-|-|-|
@@ -443,7 +443,7 @@ For more information about Zeebe Gateway, visit
 | | `service.httpName` | Defines the name of the HTTP endpoint, where for example metrics are provided | `http` |
 | | `service.gatewayPort` | Defines the port of the gateway endpoint, where client commands (gRPC) are sent to | `26500` |
 | | `service.gatewayName` | Defines the name of the gateway endpoint, where client commands (gRPC) are sent to | `gateway` |
-| | `service.annotations` | Defines annotations for the zeebe gateway service | `{ }` | 
+| | `service.annotations` | Defines annotations for the zeebe gateway service | `{ }` |
 | | `service.internalPort` | Defines the port of the Internal API endpoint, which is used for internal communication | `26502` |
 | | `service.internalName` | Defines the name of the Internal API endpoint, which is used for internal communication | `internal` |
 | | `serviceAccount` | Configuration for the service account where the gateway pods are assigned to | |
@@ -482,7 +482,7 @@ For more information about Operate, visit
 | | `service` | Configuration to configure the Operate service. | |
 | | `service.type` | Defines the [type of the service](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) | `ClusterIP` |
 | | `service.port` | Defines the port of the service, where the Operate web application will be available | `80` |
-| | `service.annotations` | Defines annotations for the Operate service | `{ }` | 
+| | `service.annotations` | Defines annotations for the Operate service | `{ }` |
 | | `resources` | Configuration to set [request and limit configuration for the container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) | `requests:`<br>`  cpu: 600m`<br> `  memory: 400Mi`<br>`limits:`<br> ` cpu: 2000m`<br> ` memory: 2Gi` |
 | | `env` | Can be used to set extra environment variables in each Operate container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence. | `[ ]` |
 | | `configMap.defaultMode` | Can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. See [Api docs](https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623) for more details. It is useful to configure it if you want to run the helm charts in OpenShift. | [`0744`](https://chmodcommand.com/chmod-744/) |
@@ -760,29 +760,34 @@ For more information, visit [Identity Overview](https://docs.camunda.io/docs/sel
 > :information_source: Web Modeler Self-Managed is available to Camunda enterprise customers only.
 
 #### Docker registry
+
 The Docker images for Web Modeler are available in a private registry.
 Enterprise customers either already have credentials to this registry, or they can request access to this registry through their CSM contact at Camunda.
 To enable Kubernetes to pull the images from Camunda's registry, you'll need to:
 - [create an image pull secret](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod) using the provided credentials
 - configure the Web Modeler pods to use the secret:
-  ```yaml
-  webModeler:
-    image:
-      pullSecrets:
-        - name: <MY_SECRET_NAME>
-   ```
+
+```yaml
+webModeler:
+  image:
+    pullSecrets:
+      - name: <MY_SECRET_NAME>
+```
 
 #### Database
+
 Web Modeler requires a PostgreSQL database to store the data.
 You can either:
 - deploy a PostgreSQL instance as part of the Helm release by setting `postgresql.enabled` to `true` (which will enable the [`postgresql` chart dependency](#postgresql-for-web-modeler))
 - configure a connection to an (existing) external database by setting `postgresql.enabled` to `false` and providing the values under `restapi.externalDatabase`
 
 #### SMTP server
+
 Web Modeler requires an SMTP server to send (notification) emails to users.
 The SMTP connection can be configured with the values under `restapi.mail`.
 
 #### Configuration values
+
 | Section | Parameter | Description | Default |
 |-|-|-|-|
 | `webModeler` | | Configuration of the Web Modeler deployment | |
@@ -966,6 +971,7 @@ The SMTP connection can be configured with the values under `restapi.mail`.
 | | `ingress.websockets.tls.secretName` | Defines the secret name which contains the TLS private key and certificate | |
 
 ### PostgreSQL for Web Modeler
+
 The Camunda Platform 8 Helm chart has a dependency on the [Bitnami PostgreSQL chart](https://github.com/bitnami/charts/tree/main/bitnami/postgresql). All variables related to PostgreSQL can be found in [bitnami/postgresql/values.yaml](https://github.com/bitnami/charts/blob/main/bitnami/postgresql/values.yaml) and can be set under `postgresql`.
 
 | Section | Parameter | Description | Default |
@@ -982,24 +988,24 @@ The Camunda Platform 8 Helm chart has a dependency on the [Bitnami PostgreSQL ch
 
 For more information, visit [Introduction to Connectors](https://docs.camunda.io/docs/components/connectors/introduction-to-connectors/).
 
-| Section      | Parameter                            | Description                                                                                                                                                                                                                                       | Default                                                                                               |
+|   Section    |              Parameter               |                                                                                                                    Description                                                                                                                    |                                                Default                                                |
 |--------------|--------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | `connectors` |                                      | Configuration for the Connectors.                                                                                                                                                                                                                 |                                                                                                       |
-|              | `enabled`                            | If true, the Connectors deployment and its related resources are deployed via a helm release                                                                                                                                                      | `true`                                                                                               |
+|              | `enabled`                            | If true, the Connectors deployment and its related resources are deployed via a helm release                                                                                                                                                      | `true`                                                                                                |
 |              | `inbound`                            | (Experimental) Configuration for the inbound capabilities, e.g. webhook                                                                                                                                                                           |                                                                                                       |
 |              | `inbound.mode`                       | Controls inbound mode for webhook or polling. Acceptable values are `disabled`, `credentials`, or `oauth`                                                                                                                                         | `disabled`                                                                                            |
 |              | `inbound.auth`                       | Authentication configurations                                                                                                                                                                                                                     |                                                                                                       |
 |              | `image`                              | Configuration for the Connectors image specifics                                                                                                                                                                                                  |                                                                                                       |
 |              | `image.registry`                     | Can be used to set container image registry.                                                                                                                                                                                                      | `""`                                                                                                  |
 |              | `image.repository`                   | Defines which image repository to use                                                                                                                                                                                                             | `camunda/connectors-bundle`                                                                           |
-|              | `image.tag`                          | Can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                        | `Check the values file`                                                                                              |
+|              | `image.tag`                          | Can be set to overwrite the global tag, which should be used in that chart                                                                                                                                                                        | `Check the values file`                                                                               |
 |              | `image.pullSecrets`                  | Can be set to overwrite the global.image.pullSecrets                                                                                                                                                                                              | `{{ global.image.pullSecrets }}`                                                                      |
-|              | `sidecars`                           | Can be used to deploy extra containers in the same pod                                                                                                                                                                                             | `[]`                                                                                                  |
+|              | `sidecars`                           | Can be used to deploy extra containers in the same pod                                                                                                                                                                                            | `[]`                                                                                                  |
 |              | `replicas`                           | Number of replicas                                                                                                                                                                                                                                | `1`                                                                                                   |
 |              | `podAnnotations`                     | Can be used to define extra Connectors pod annotations                                                                                                                                                                                            | `{ }`                                                                                                 |
 |              | `podLabels`                          | Can be used to define extra Connectors pod labels                                                                                                                                                                                                 | `{ }`                                                                                                 |
 |              | `logging.level`                      | Allows to fine tune logging output for Connectors                                                                                                                                                                                                 | `io.camunda.connector: ERROR`                                                                         |
-|              | `env`                                | Can be used to set extra environment variables in each Connectors container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence.                                                                                                                                                      | `[]`                                                                                                  |
+|              | `env`                                | Can be used to set extra environment variables in each Connectors container. Environment variables listed here may appear twice in `kubectl describe` but the variable listed in this option will have precedence.                                | `[]`                                                                                                  |
 |              | `extraVolumes`                       | Can be used to define extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                          | `[]`                                                                                                  |
 |              | `extraVolumeMounts`                  | Can be used to mount extra volumes for the Connectors pods, useful for TLS and self-signed certificates                                                                                                                                           | `[]`                                                                                                  |
 |              | `command`                            | Can be used to [override the default command provided by the container image](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/)                                                                        | `[]`                                                                                                  |
@@ -1053,6 +1059,7 @@ For more information, visit [Introduction to Connectors](https://docs.camunda.io
 |              | `livenessProbe.timeoutSeconds`       | Defines the seconds after the probe times out                                                                                                                                                                                                     | `1`                                                                                                   |
 
 #### Updating Environment Variables
+
 When configuring the `env` options in the settings listed above, the environment variables you specify in values.yaml may show up twice when running `kubectl describe deployment <deployment>`. However, the environment variable specified in values.yaml will have precedence when the pod actually runs. To verify this, you can check the output from the following command:
 
 ```bash
@@ -1196,16 +1203,16 @@ For development purposes, you might want to deploy and test the charts without c
 To do this you can run the following:
 
 ```sh
- helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
+helm install YOUR_RELEASE_NAME --atomic --debug ./charts/camunda-platform
 ```
 
- * `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
+* `--atomic if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used`
 
- * `--debug enable verbose output`
+* `--debug enable verbose output`
 
-To generate the resources/manifests without really installing them, you can use: 
+To generate the resources/manifests without really installing them, you can use:
 
- * `--dry-run simulate an install`
+* `--dry-run simulate an install`
 
 If you see errors like:
 
@@ -1224,6 +1231,7 @@ make helm.repos-add
 After this, you can run: `make helm.dependency-update`, which will update and download the dependencies for all charts.
 
 The execution should look like this:
+
 ```
 $ make helm.dependency-update
 helm dependency update charts/camunda-platform

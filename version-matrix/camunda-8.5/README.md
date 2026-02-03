@@ -1,5 +1,5 @@
 <!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT IT MANUALLY! -->
-🔙 [Back to version matrix index](../)
+🔙 [Back to version matrix index](.-->
 
 # Camunda 8.5 Helm Chart Version Matrix
 
@@ -69,7 +69,6 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.11.2
 
 Supported versions:
@@ -99,7 +98,6 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/os-shell:12-debian-12-r18
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.11.1
 
@@ -131,7 +129,6 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.11.0
 
 Supported versions:
@@ -161,7 +158,6 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/os-shell:12-debian-12-r18
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.10.0
 
@@ -193,7 +189,6 @@ Non-Camunda images:
 - docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.9.0
 
 Supported versions:
@@ -223,7 +218,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.8.0
 
@@ -255,7 +249,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.7.1
 
 Supported versions:
@@ -285,7 +278,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.18.0-debian-12-r0
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.7.0
 
@@ -317,7 +309,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.17.0-debian-12-r18
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.6.0
 
 Supported versions:
@@ -347,7 +338,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.17.0-debian-12-r9
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.5.2
 
@@ -379,7 +369,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.17.0-debian-12-r3
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.5.1
 
 Supported versions:
@@ -409,7 +398,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r14
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.5.0
 
@@ -441,7 +429,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r12
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.4.8
 
 Supported versions:
@@ -471,7 +458,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r8
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.4.7
 
@@ -503,7 +489,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r8
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
 
-
 ## Helm chart 10.4.6
 
 Supported versions:
@@ -533,7 +518,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.15.0-debian-12-r2
 - docker.io/bitnami/postgresql:15.10.0-debian-12-r2
-
 
 ## Helm chart 10.4.5
 
@@ -565,7 +549,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0-debian-12-r22
 - docker.io/bitnami/postgresql:15.8.0-debian-12-r23
 
-
 ## Helm chart 10.4.4
 
 Supported versions:
@@ -595,7 +578,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
-
 
 ## Helm chart 10.4.3
 
@@ -627,7 +609,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
 
-
 ## Helm chart 10.4.2
 
 Supported versions:
@@ -658,7 +639,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
 
-
 ## Helm chart 10.4.1
 
 Supported versions:
@@ -688,7 +668,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
-
 
 ## Helm chart 10.4.0
 
@@ -721,7 +700,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.13.0
 - docker.io/bitnami/postgresql:15.8.0
 
-
 ## Helm chart 10.3.2
 
 Supported versions:
@@ -752,7 +730,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
-
 
 ## Helm chart 10.3.1
 
@@ -785,7 +762,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
 
-
 ## Helm chart 10.3.0
 
 Supported versions:
@@ -816,7 +792,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
-
 
 ## Helm chart 10.2.1
 
@@ -849,7 +824,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
 
-
 ## Helm chart 10.2.0
 
 Supported versions:
@@ -880,7 +854,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r18
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
-
 
 ## Helm chart 10.1.1
 
@@ -913,7 +886,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
 
-
 ## Helm chart 10.1.0
 
 Supported versions:
@@ -944,7 +916,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r16
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
-
 
 ## Helm chart 10.0.5
 
@@ -977,7 +948,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.12.0
 - docker.io/bitnami/postgresql:15.7.0
 
-
 ## Helm chart 10.0.4
 
 Supported versions:
@@ -1008,7 +978,6 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r16
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 - docker.io/bitnami/postgresql:15.6.0
-
 
 ## Helm chart 10.0.3
 
@@ -1041,7 +1010,6 @@ Non-Camunda images:
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 - docker.io/bitnami/postgresql:15.6.0
 
-
 ## Helm chart 10.0.2
 
 Supported versions:
@@ -1072,3 +1040,4 @@ Non-Camunda images:
 - docker.io/bitnami/os-shell:12-debian-12-r16
 - docker.io/bitnami/postgresql:14.5.0-debian-11-r35
 - docker.io/bitnami/postgresql:15.6.0
+

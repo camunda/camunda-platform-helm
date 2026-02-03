@@ -2,16 +2,13 @@
 
 ## [11.3.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-11.2.2...camunda-platform-11.3.0) (2025-03-19)
 
-
 ### Features
 
 * add global.extraManifests support for injecting arbitrary YAML ([#3050](https://github.com/camunda/camunda-platform-helm/issues/3050)) ([b22c596](https://github.com/camunda/camunda-platform-helm/commit/b22c59629a7e7e87f34a3c41cb05d53934ba18c4))
 
-
 ### Bug Fixes
 
 * changing helper function for identityURL ([#3084](https://github.com/camunda/camunda-platform-helm/issues/3084)) ([722b95e](https://github.com/camunda/camunda-platform-helm/commit/722b95ed70a8463fd90f170a25668a249c8fb492))
-
 
 ### Dependencies
 
@@ -31,7 +28,7 @@
 * update module github.com/burntsushi/toml to v1.5.0 ([#3194](https://github.com/camunda/camunda-platform-helm/issues/3194)) ([9409d2a](https://github.com/camunda/camunda-platform-helm/commit/9409d2ab9ed62e657c48036a354fbf5970ab71c7))
 * update tool-versions (patch) ([#3181](https://github.com/camunda/camunda-platform-helm/issues/3181)) ([515a03a](https://github.com/camunda/camunda-platform-helm/commit/515a03a8aaa3385c78c128d493a959f23704d1da))
 
-
 ### Refactors
 
 * renamed archiver to history for camunda exporter settings ([#3169](https://github.com/camunda/camunda-platform-helm/issues/3169)) ([35f52ef](https://github.com/camunda/camunda-platform-helm/commit/35f52efb074782a294cbe52140203efcdb5fa423))
+

@@ -2,7 +2,6 @@
 
 ## [14.0.0-alpha3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.0.0-alpha2...camunda-platform-8.9-14.0.0-alpha3) (2026-01-09)
 
-
 ### ⚠ BREAKING CHANGES
 
 * no default secondaryStorage ([#4820](https://github.com/camunda/camunda-platform-helm/issues/4820))
@@ -10,7 +9,6 @@
 ### Features
 
 * **connectors:** use issuer uri preferably if available ([#4904](https://github.com/camunda/camunda-platform-helm/issues/4904)) ([b26ea13](https://github.com/camunda/camunda-platform-helm/commit/b26ea13407f2db1317cc5a49badbd4a15a70fd3d))
-
 
 ### Bug Fixes
 
@@ -21,11 +19,9 @@
 * no default secondaryStorage ([#4820](https://github.com/camunda/camunda-platform-helm/issues/4820)) ([759c072](https://github.com/camunda/camunda-platform-helm/commit/759c0726068b8b4ae625e2cb35aa2de532c420c9))
 * remove constraint of identity.enabled=false and optimize.enabled=true ([#4910](https://github.com/camunda/camunda-platform-helm/issues/4910)) ([0753d6f](https://github.com/camunda/camunda-platform-helm/commit/0753d6fc58336e9538856c9dd88aca52777a40ac))
 
-
 ### Documentation
 
 * update readme dependency section ([#4960](https://github.com/camunda/camunda-platform-helm/issues/4960)) ([3ddfb86](https://github.com/camunda/camunda-platform-helm/commit/3ddfb860ff8c4355a3ef2c0f2a5f71195f929e40))
-
 
 ### Dependencies
 
@@ -49,13 +45,11 @@
 * update patch-updates (patch) ([#4860](https://github.com/camunda/camunda-platform-helm/issues/4860)) ([b059be6](https://github.com/camunda/camunda-platform-helm/commit/b059be61080ee33c8d8ee9cfa5f0f4d2f4cdaf35))
 * update patch-updates (patch) ([#4924](https://github.com/camunda/camunda-platform-helm/issues/4924)) ([8814e76](https://github.com/camunda/camunda-platform-helm/commit/8814e76c6fa71cc4db57051db959b4cec20ef9a1))
 
-
 ### Refactors
 
 * remove unused identity redirect-url ([#4853](https://github.com/camunda/camunda-platform-helm/issues/4853)) ([90c61e6](https://github.com/camunda/camunda-platform-helm/commit/90c61e66d4676b4ccadee71e6a593ab69df7f6d9))
 
 ## [14.0.0-alpha2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.0.0-alpha1...camunda-platform-8.9-14.0.0-alpha2) (2025-12-05)
-
 
 ### Features
 
@@ -63,7 +57,6 @@
 * backport custom client creation to 8.6 and 8.9 ([#4710](https://github.com/camunda/camunda-platform-helm/issues/4710)) ([68bec54](https://github.com/camunda/camunda-platform-helm/commit/68bec54d8f2e7147c2f75ff20c3314533ce0c3a7))
 * define custom users through values.yaml ([#4670](https://github.com/camunda/camunda-platform-helm/issues/4670)) ([19ab9eb](https://github.com/camunda/camunda-platform-helm/commit/19ab9eb7e42fe84b76118a1930dd72bb6d302cdf))
 * enhance Keycloak integration with realm support and additional client configurations ([911ad7a](https://github.com/camunda/camunda-platform-helm/commit/911ad7a93f41a5b5be6ffffc6e182d55ab867f8c))
-
 
 ### Bug Fixes
 
@@ -84,7 +77,6 @@
 * typo lower case values ([#4737](https://github.com/camunda/camunda-platform-helm/issues/4737)) ([2ec2710](https://github.com/camunda/camunda-platform-helm/commit/2ec2710830d669e53a709bbb176c58ba064e12f2))
 * **web-modeler:** align pusher secret usage across components ([#4769](https://github.com/camunda/camunda-platform-helm/issues/4769)) ([bf225b1](https://github.com/camunda/camunda-platform-helm/commit/bf225b13a2c54aa64841e7f421131260a1ef2098))
 
-
 ### Dependencies
 
 * update camunda-platform-digests ([#4704](https://github.com/camunda/camunda-platform-helm/issues/4704)) ([9c31cdc](https://github.com/camunda/camunda-platform-helm/commit/9c31cdc697a4cf9e60fda4c392b8213e9101537d))
@@ -101,8 +93,9 @@
 * update camunda-platform-images (patch) ([#4792](https://github.com/camunda/camunda-platform-helm/issues/4792)) ([fd7294c](https://github.com/camunda/camunda-platform-helm/commit/fd7294c95d621b4d7d1c1d290b703d6209e61b44))
 * update minor-updates (minor) ([#4712](https://github.com/camunda/camunda-platform-helm/issues/4712)) ([4cf435c](https://github.com/camunda/camunda-platform-helm/commit/4cf435c5aa989eaab1b0dde9cbc75fb694774854))
 * update minor-updates (minor) ([#4765](https://github.com/camunda/camunda-platform-helm/issues/4765)) ([54dc74d](https://github.com/camunda/camunda-platform-helm/commit/54dc74d5fed86702a26a63f247d7ccc25424946a))
-* update module golang.org/x/crypto to v0.45.0 [security] ([#4745](https://github.com/camunda/camunda-platform-helm/issues/4745)) ([1b31ade](https://github.com/camunda/camunda-platform-helm/commit/1b31aded5d1e7297e9648ad2e225b86f716a3b3e))
-* update module golang.org/x/oauth2 to v0.27.0 [security] ([#4731](https://github.com/camunda/camunda-platform-helm/issues/4731)) ([ee2f502](https://github.com/camunda/camunda-platform-helm/commit/ee2f5024283bc4ab1992ead7755387435e3bfcc3))
+* update module golang.org/x/crypto to v0.45.0 [security]([#4745](https://github.com/camunda/camunda-platform-helm/issues/4745)) ([1b31ade](https://github.com/camunda/camunda-platform-helm/commit/1b31aded5d1e7297e9648ad2e225b86f716a3b3e))
+* update module golang.org/x/oauth2 to v0.27.0 [security]([#4731](https://github.com/camunda/camunda-platform-helm/issues/4731)) ([ee2f502](https://github.com/camunda/camunda-platform-helm/commit/ee2f5024283bc4ab1992ead7755387435e3bfcc3))
 * update patch-updates ([#4761](https://github.com/camunda/camunda-platform-helm/issues/4761)) ([89f5551](https://github.com/camunda/camunda-platform-helm/commit/89f55518ddeaeec8fb0423afd173cd39e631ea95))
 * update patch-updates (patch) ([#4762](https://github.com/camunda/camunda-platform-helm/issues/4762)) ([f8e7bbd](https://github.com/camunda/camunda-platform-helm/commit/f8e7bbd242097bb2c7c7bfde54aa53b3a5077af2))
 * update patch-updates (patch) ([#4831](https://github.com/camunda/camunda-platform-helm/issues/4831)) ([c77bbe5](https://github.com/camunda/camunda-platform-helm/commit/c77bbe52c428f1a22597a76c19c0b26a40d6a8b7))
+

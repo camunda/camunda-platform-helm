@@ -127,19 +127,18 @@ For example:
 
 - First, create the secret with the cetificates files:
 
-    ```console
-    kubectl create secret generic certificates-tls-secret --from-file=./cert.crt --from-file=./cert.key --from-file=./ca.crt
-    ```
-
+  ```console
+  kubectl create secret generic certificates-tls-secret --from-file=./cert.crt --from-file=./cert.key --from-file=./ca.crt
+  ```
 - Then, use the following parameters:
 
-    ```console
-    volumePermissions.enabled=true
-    tls.enabled=true
-    tls.certificatesSecret="certificates-tls-secret"
-    tls.certFilename="cert.crt"
-    tls.certKeyFilename="cert.key"
-    ```
+  ```console
+  volumePermissions.enabled=true
+  tls.enabled=true
+  tls.certificatesSecret="certificates-tls-secret"
+  tls.certFilename="cert.crt"
+  tls.certKeyFilename="cert.key"
+  ```
 
   > Note TLS and VolumePermissions: PostgreSQL requires certain permissions on sensitive files (such as certificate keys) to start up. Due to an on-going [issue](https://github.com/kubernetes/kubernetes/issues/57923) regarding kubernetes permissions and the use of `containerSecurityContext.runAsUser`, you must enable `volumePermissions` to ensure everything works as expected.
 
@@ -254,7 +253,7 @@ This label will be displayed in the output of a successful install.
 - The Bitnami PostgreSQL image is non-root by default. This requires that you run the pod with `securityContext` and updates the permissions of the volume with an `initContainer`. A key benefit of this configuration is that the pod follows security best practices and is prepared to run on Kubernetes distributions with hard security constraints like OpenShift.
 - For OpenShift up to 4.10, let set the volume permissions, security context, runAsUser and fsGroup automatically by OpenShift and disable the predefined settings of the helm chart: primary.securityContext.enabled=false,primary.containerSecurityContext.enabled=false,volumePermissions.enabled=false,shmVolume.enabled=false
 - For OpenShift 4.11 and higher, let set OpenShift the runAsUser and fsGroup automatically. Configure the pod and container security context to restrictive defaults and disable the volume permissions setup: primary.
-    podSecurityContext.fsGroup=null,primary.podSecurityContext.seccompProfile.type=RuntimeDefault,primary.containerSecurityContext.runAsUser=null,primary.containerSecurityContext.allowPrivilegeEscalation=false,primary.containerSecurityContext.runAsNonRoot=true,primary.containerSecurityContext.seccompProfile.type=RuntimeDefault,primary.containerSecurityContext.capabilities.drop=['ALL'],volumePermissions.enabled=false,shmVolume.enabled=false
+  podSecurityContext.fsGroup=null,primary.podSecurityContext.seccompProfile.type=RuntimeDefault,primary.containerSecurityContext.runAsUser=null,primary.containerSecurityContext.allowPrivilegeEscalation=false,primary.containerSecurityContext.runAsNonRoot=true,primary.containerSecurityContext.seccompProfile.type=RuntimeDefault,primary.containerSecurityContext.capabilities.drop=['ALL'],volumePermissions.enabled=false,shmVolume.enabled=false
 
 ### Setting Pod's affinity
 
@@ -275,8 +274,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### Global parameters
 
-| Name                                                       | Description                                                                                                                                                                                                                                                                                                                                                         | Value  |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+|                            Name                            |                                                                                                                                                                             Description                                                                                                                                                                             | Value  |
+|------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
 | `global.imageRegistry`                                     | Global Docker image registry                                                                                                                                                                                                                                                                                                                                        | `""`   |
 | `global.imagePullSecrets`                                  | Global Docker registry secret names as an array                                                                                                                                                                                                                                                                                                                     | `[]`   |
 | `global.defaultStorageClass`                               | Global default StorageClass for Persistent Volume(s)                                                                                                                                                                                                                                                                                                                | `""`   |
@@ -294,8 +293,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### Common parameters
 
-| Name                     | Description                                                                                  | Value           |
-| ------------------------ | -------------------------------------------------------------------------------------------- | --------------- |
+|           Name           |                                         Description                                          |      Value      |
+|--------------------------|----------------------------------------------------------------------------------------------|-----------------|
 | `kubeVersion`            | Override Kubernetes version                                                                  | `""`            |
 | `nameOverride`           | String to partially override common.names.fullname template (will maintain the release name) | `""`            |
 | `fullnameOverride`       | String to fully override common.names.fullname template                                      | `""`            |
@@ -309,8 +308,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### PostgreSQL common parameters
 
-| Name                                     | Description                                                                                                                                                                                                                                                                                                                                   | Value                        |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+|                   Name                   |                                                                                                                                                                  Description                                                                                                                                                                  |            Value             |
+|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|
 | `image.registry`                         | PostgreSQL image registry                                                                                                                                                                                                                                                                                                                     | `REGISTRY_NAME`              |
 | `image.repository`                       | PostgreSQL image repository                                                                                                                                                                                                                                                                                                                   | `REPOSITORY_NAME/postgresql` |
 | `image.digest`                           | PostgreSQL image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag                                                                                                                                                                                                                                    | `""`                         |
@@ -370,8 +369,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### PostgreSQL Primary parameters
 
-| Name                                                        | Description                                                                                                                                                                                                                       | Value                 |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+|                            Name                             |                                                                                                            Description                                                                                                            |         Value         |
+|-------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | `primary.name`                                              | Name of the primary database (eg primary, master, leader, ...)                                                                                                                                                                    | `primary`             |
 | `primary.configuration`                                     | PostgreSQL Primary main configuration to be injected as ConfigMap                                                                                                                                                                 | `""`                  |
 | `primary.pgHbaConfiguration`                                | PostgreSQL Primary client authentication configuration                                                                                                                                                                            | `""`                  |
@@ -503,8 +502,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### PostgreSQL read only replica parameters (only used when `architecture` is set to `replication`)
 
-| Name                                                             | Description                                                                                                                                                                                                                                 | Value                 |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+|                               Name                               |                                                                                                                 Description                                                                                                                 |         Value         |
+|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | `readReplicas.name`                                              | Name of the read replicas database (eg secondary, slave, ...)                                                                                                                                                                               | `read`                |
 | `readReplicas.replicaCount`                                      | Number of PostgreSQL read only replicas                                                                                                                                                                                                     | `1`                   |
 | `readReplicas.extendedConfiguration`                             | Extended PostgreSQL read only replicas configuration (appended to main or default configuration)                                                                                                                                            | `""`                  |
@@ -619,8 +618,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### Backup parameters
 
-| Name                                                               | Description                                                                                                                                                                                                                                     | Value                                                                                                                                                                                |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|                                Name                                |                                                                                                                   Description                                                                                                                   |                                                                                        Value                                                                                         |
+|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `backup.enabled`                                                   | Enable the logical dump of the database "regularly"                                                                                                                                                                                             | `false`                                                                                                                                                                              |
 | `backup.cronjob.schedule`                                          | Set the cronjob parameter schedule                                                                                                                                                                                                              | `@daily`                                                                                                                                                                             |
 | `backup.cronjob.timeZone`                                          | Set the cronjob parameter timeZone                                                                                                                                                                                                              | `""`                                                                                                                                                                                 |
@@ -668,8 +667,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### Volume Permissions parameters
 
-| Name                                                             | Description                                                                                                                                                                                                                                           | Value                      |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+|                               Name                               |                                                                                                                      Description                                                                                                                      |           Value            |
+|------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
 | `volumePermissions.enabled`                                      | Enable init container that changes the owner and group of the persistent volume                                                                                                                                                                       | `false`                    |
 | `volumePermissions.image.registry`                               | Init container volume-permissions image registry                                                                                                                                                                                                      | `REGISTRY_NAME`            |
 | `volumePermissions.image.repository`                             | Init container volume-permissions image repository                                                                                                                                                                                                    | `REPOSITORY_NAME/os-shell` |
@@ -686,8 +685,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### Other Parameters
 
-| Name                                          | Description                                                                                                                                 | Value   |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+|                     Name                      |                                                                 Description                                                                 |  Value  |
+|-----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|---------|
 | `serviceBindings.enabled`                     | Create secret for service binding (Experimental)                                                                                            | `false` |
 | `serviceAccount.create`                       | Enable creation of ServiceAccount for PostgreSQL pod                                                                                        | `true`  |
 | `serviceAccount.name`                         | The name of the ServiceAccount to use.                                                                                                      | `""`    |
@@ -699,8 +698,8 @@ If you already have data in it, you will fail to sync to standby nodes for all c
 
 ### Metrics Parameters
 
-| Name                                                        | Description                                                                                                                                                                                                                       | Value                               |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+|                            Name                             |                                                                                                            Description                                                                                                            |                Value                |
+|-------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
 | `metrics.enabled`                                           | Start a prometheus exporter                                                                                                                                                                                                       | `false`                             |
 | `metrics.image.registry`                                    | PostgreSQL Prometheus Exporter image registry                                                                                                                                                                                     | `REGISTRY_NAME`                     |
 | `metrics.image.repository`                                  | PostgreSQL Prometheus Exporter image repository                                                                                                                                                                                   | `REPOSITORY_NAME/postgres-exporter` |

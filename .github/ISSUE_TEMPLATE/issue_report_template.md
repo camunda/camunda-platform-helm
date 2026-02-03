@@ -1,9 +1,10 @@
 ---
+
 name: Issue report
 about: "Create an issue report"
 title: "[ISSUE] <issue title>"
 labels: kind/bug
----
+----------------
 
 **Describe the issue:**
 
@@ -57,3 +58,4 @@ If possible add a minimal reproducer code sample in a new repo/branch.
 - Helm CLI version: <!-- [e.g. 3.10.0] -->
 - Chart version: <!-- [e.g. 8.x.x]. Please set the affects label accordingly -->
 - Values file: <!-- [e.g. include or link to your values file] -->
+

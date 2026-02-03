@@ -1,23 +1,22 @@
-
 ## PR instructions
 
 - Title format: <type>[optional scope]: <description>
 - Commit format: <type>[optional scope]: <description>
 - valid types:
-    feat
-    fix
-    refactor
-    revert
-    test
-    docs
-    style
-    build
-    ci
-    cd
-    chore
-    chore(deps)
-    chore(release)
-    deps
+  feat
+  fix
+  refactor
+  revert
+  test
+  docs
+  style
+  build
+  ci
+  cd
+  chore
+  chore(deps)
+  chore(release)
+  deps
 
 ## Development tips
 
