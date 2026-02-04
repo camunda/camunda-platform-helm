@@ -290,7 +290,7 @@ Get the external url for keycloak
     {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
   {{ else if .Values.identityKeycloak.enabled -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto (.Values.global.ingress.host | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+    {{- printf "%s://%s%s" $proto (.Values.global.gateway.hostname | default .Values.global.ingress.host | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
 {{- end -}}
 
@@ -340,7 +340,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
   {{- if (index .context.Values .component "enabled") -}}
     {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values .component "contextPath") -}}
+      {{- printf "%s://%s%s" $proto (.context.Values.global.gateway.hostname | default .context.Values.global.ingress.host) (index .context.Values .component "contextPath") -}}
     {{- else -}}
       {{- $portMapping := (dict
       "operate" "8081"
@@ -432,9 +432,9 @@ Web Modeler templates.
     {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- if eq .component "websockets" }}
-        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (include "webModeler.websocketContextPath" .context) -}}
+        {{- printf "%s://%s%s" $proto (.context.Values.global.gateway.hostname | default .context.Values.global.ingress.host) (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
-        {{- printf "%s://%s%s" $proto .context.Values.global.ingress.host (index .context.Values.webModeler "contextPath") -}}
+        {{- printf "%s://%s%s" $proto (.context.Values.global.gateway.hostname | default .context.Values.global.ingress.host) (index .context.Values.webModeler "contextPath") -}}
       {{- end -}}
     {{- else -}}
       {{- if eq .component "websockets" -}}
@@ -566,7 +566,7 @@ Zeebe templates.
 {{- define "camundaPlatform.orchestrationExternalURL" }}
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto .Values.global.ingress.host (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+    {{- printf "%s://%s%s" $proto (.Values.global.gateway.host | default .Values.global.ingress.host) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
     {{- printf "http://localhost:8080" -}}
   {{- end -}}
@@ -621,7 +621,7 @@ Release templates.
   custom-properties: []
   components:
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-  {{- $baseURL := printf "%s://%s" $proto .Values.global.ingress.host }}
+  {{- $baseURL := printf "%s://%s" $proto (.Values.global.gateway.hostname | default .Values.global.ingress.host) }}
 
   {{- if .Values.console.enabled }}
   {{-  $proto := (lower .Values.console.readinessProbe.scheme) -}}

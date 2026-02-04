@@ -68,6 +68,12 @@ integration:
           shortname: keyc
           auth: keycloak
           flow: upgrade-minor
+        - name: gateway-keycloak
+          enabled: true
+          exclude: []
+          shortname: gatkc
+          auth: keycloak
+          flow: install
     nightly:
       scenario:
         - name: elasticsearch
