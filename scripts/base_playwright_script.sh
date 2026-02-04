@@ -18,7 +18,7 @@
 #      exports it for the tests as TEST_INGRESS_HOST.
 #   4. Builds a temporary .env file populated with service client secrets and
 #      Playwright variables, removing it automatically on exit.
-#   5. Installs Node dependencies with `npm ci` and finally executes the
+#   5. Installs Node dependencies with `npm install` and finally executes the
 #      Playwright test runner.
 #
 # Expected environment / assumptions
@@ -115,15 +115,66 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Force fresh install to always get the latest dependencies
-  # shellcheck disable=SC2086
-  rm -rf node_modules package-lock.json && npm i $npm_flags
+  # Check if we should skip npm install (node_modules exists and package-lock.json hasn't changed)
+  if [[ -d "node_modules" ]] && [[ -f "package-lock.json" ]]; then
+    # In CI with pre-configured containers, prefer using existing node_modules if available
+    if [[ "${CI:-false}" == "true" ]] && [[ -f "node_modules/.package-lock.json" ]]; then
+      log "node_modules exists in CI environment, checking if up to date..."
+      # Compare package-lock.json hash with cached version
+      local current_hash cached_hash
+      current_hash=$(md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 || echo "none")
+      cached_hash=$(cat node_modules/.package-lock-hash 2>/dev/null || echo "")
+      if [[ "$current_hash" == "$cached_hash" ]]; then
+        log "node_modules is up to date, skipping npm install"
+        mkdir -p "$test_suite_path/test-results"
+        return 0
+      fi
+    fi
+  fi
+
+  # Use npm install in CI to handle package.json/lock file mismatches gracefully
+  if [[ "${CI:-false}" == "true" ]]; then
+    log "Running npm install (CI mode)..."
+    # shellcheck disable=SC2086
+    npm install $npm_flags
+    # Store hash for future comparison
+    md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 > node_modules/.package-lock-hash || true
+  else
+    # Force fresh install locally to always get the latest dependencies
+    log "Running npm install (local mode)..."
+    # shellcheck disable=SC2086
+    rm -rf node_modules package-lock.json && npm i $npm_flags
+  fi
 
   mkdir -p "$test_suite_path/test-results"
 }
 
 # Install Playwright browsers (with deps on Linux)
+# Skips installation if browsers are already present (e.g., in pre-built container image)
 _install_playwright_browsers() {
+  # Check if we're running in a container with pre-installed browsers
+  # The official Playwright Docker image sets PLAYWRIGHT_BROWSERS_PATH
+  if [[ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]] && [[ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]]; then
+    local browser_count
+    browser_count=$(find "${PLAYWRIGHT_BROWSERS_PATH}" -maxdepth 1 -type d | wc -l)
+    if [[ "$browser_count" -gt 1 ]]; then
+      log "Playwright browsers already installed at ${PLAYWRIGHT_BROWSERS_PATH}, skipping installation"
+      return 0
+    fi
+  fi
+
+  # Also check common Playwright browser locations
+  local ms_playwright_path="/ms-playwright"
+  if [[ -d "$ms_playwright_path" ]]; then
+    local browser_count
+    browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
+    if [[ "$browser_count" -gt 1 ]]; then
+      log "Playwright browsers already installed at ${ms_playwright_path}, skipping installation"
+      return 0
+    fi
+  fi
+
+  log "Installing Playwright browsers..."
   if [[ "$(uname -s)" == "Linux" ]]; then
     npx playwright install --with-deps || exit 1
   else
@@ -168,6 +219,9 @@ _get_reporter() {
 
 # Check if all pods in namespace are Ready
 # Returns 0 if all pods ready, 1 otherwise
+# For pods to be considered ready:
+#   - Completed/Succeeded pods (Jobs) are always considered ready
+#   - Running pods must have all containers ready (e.g., 1/1, 2/2)
 # Args: namespace
 _check_all_pods_ready() {
   local namespace="$1"
@@ -177,22 +231,42 @@ _check_all_pods_ready() {
     return 0
   fi
   
-  local not_ready
-  not_ready=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || true)
+  # Get pods that are NOT completed jobs AND are not fully ready
+  # kubectl get pods output: NAME READY STATUS RESTARTS AGE
+  # READY column (field 2) shows "X/Y" - we need X==Y for ready
+  # STATUS column (field 3) shows Running, Completed, Succeeded, etc.
+  local not_ready_pods
+  not_ready_pods=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | awk '
+    # Skip completed jobs - they are always considered ready
+    $3 == "Completed" || $3 == "Succeeded" { next }
+    # For other pods, check if READY column shows all containers ready AND status is Running
+    {
+      split($2, ready, "/")
+      if (ready[1] != ready[2] || $3 != "Running") {
+        print $0
+      }
+    }
+  ')
   
-  if [[ "$not_ready" -eq 0 ]]; then
+  if [[ -z "$not_ready_pods" ]]; then
     return 0
   else
-    log "WARNING: $not_ready pod(s) not in Running/Completed state in namespace $namespace"
+    local count
+    count=$(echo "$not_ready_pods" | wc -l | tr -d ' ')
+    log "WARNING: $count pod(s) not ready in namespace $namespace:"
+    while IFS= read -r line; do
+      log "  $line"
+    done <<< "$not_ready_pods"
     return 1
   fi
 }
 
 # Wait for all pods in namespace to be Ready
-# Args: namespace, [timeout_seconds=300]
+# Excludes completed Job pods (they use Succeeded status, not Ready condition)
+# Args: namespace, [timeout_seconds=420]
 _wait_for_pods_ready() {
   local namespace="$1"
-  local timeout="${2:-300}"
+  local timeout="${2:-420}"
   
   if [[ -z "$namespace" ]]; then
     log "WARNING: No namespace provided for pod wait, skipping"
@@ -201,21 +275,50 @@ _wait_for_pods_ready() {
   
   log "Waiting up to ${timeout}s for all pods in namespace $namespace to be Ready..."
   
-  if kubectl wait --for=condition=Ready pods --all -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
+  # Exclude completed Jobs (status.phase=Succeeded) - they don't have Ready condition
+  if kubectl wait --for=condition=Ready pods --all \
+       --field-selector=status.phase!=Succeeded \
+       -n "$namespace" \
+       --timeout="${timeout}s" 2>/dev/null; then
     log "All pods in namespace $namespace are Ready"
     return 0
   else
+    # kubectl wait failed - this can happen if:
+    # 1. Actual timeout (pods not ready)
+    # 2. A pod was deleted during the wait (e.g., Error pod removed by controller)
+    # 
+    # Re-check if all current pods are now ready. If they are, the failed pod
+    # was likely deleted and we can proceed.
+    log "kubectl wait failed, verifying current pod state..."
+    if _check_all_pods_ready "$namespace"; then
+      log "All current pods in namespace $namespace are Ready (previous failure may have been due to pod deletion)"
+      return 0
+    fi
+    
     log "ERROR: Timeout waiting for pods to be Ready in namespace $namespace"
+    _dump_pod_status "$namespace"
     return 1
   fi
 }
 
+# Helper to dump pod status for diagnostics
+_dump_pod_status() {
+  local namespace="$1"
+  log "Current pod status in namespace $namespace:"
+  kubectl get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
+    log "  $line"
+  done
+}
+
 # Configuration for pod failure retry logic
 _POD_RETRY_MAX_ATTEMPTS=2
-_POD_RETRY_TIMEOUT=300  # 5 minutes
+_POD_RETRY_TIMEOUT=420  # 7 minutes
 
 # Run a playwright command with retry logic for pod failures (spot instance preemption)
-# This function will retry the test if pods go down during execution
+# This function will retry the test if:
+#   1. Pods are detected as not ready after test failure
+#   2. Connection errors (ECONNREFUSED, etc.) are detected in test output
+#      (handles race condition where pods recovered quickly after disruption)
 # Args: namespace, playwright_command...
 # Returns: playwright exit code (0 = success, non-zero = failure)
 _run_playwright_with_retry() {
@@ -225,6 +328,10 @@ _run_playwright_with_retry() {
   
   local attempt=0
   local playwright_rc=0
+  local output_file=""
+  
+  # Cleanup temp file on function exit
+  trap 'rm -f "$output_file"' RETURN
   
   while [[ $attempt -le $_POD_RETRY_MAX_ATTEMPTS ]]; do
     attempt=$((attempt + 1))
@@ -235,7 +342,12 @@ _run_playwright_with_retry() {
         log "WARNING: Pods not ready before test attempt $attempt, waiting for recovery..."
         if ! _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT"; then
           log "ERROR: Pods did not recover before test attempt $attempt"
-          return 1
+          if [[ $attempt -ge $_POD_RETRY_MAX_ATTEMPTS ]]; then
+            log "ERROR: Max retry attempts reached, pods never recovered"
+            return 1
+          fi
+          log "Will continue to next attempt..."
+          continue
         fi
       fi
     fi
@@ -244,19 +356,42 @@ _run_playwright_with_retry() {
       log "Retry attempt $attempt/$_POD_RETRY_MAX_ATTEMPTS after pod recovery..."
     fi
     
-    # Run the playwright command
-    "${playwright_cmd[@]}"
-    playwright_rc=$?
+    # Create temp file to capture output for connection error analysis
+    # Clean up any previous iteration's file first
+    rm -f "$output_file"
+    output_file=$(mktemp)
+    
+    # Run the playwright command, tee output to file for analysis
+    # Use pipefail to capture the actual playwright exit code
+    set -o pipefail
+    "${playwright_cmd[@]}" 2>&1 | tee "$output_file"
+    playwright_rc=${PIPESTATUS[0]}
+    set +o pipefail
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then
       return 0
     fi
     
-    # Tests failed - check if it's due to pod failure
+    # Tests failed - analyze why
+    log "Tests failed with exit code $playwright_rc"
+    
+    # Check for connection-related errors in output (infrastructure issues)
+    local has_connection_error=false
+    if grep -qiE "ECONNREFUSED|ECONNRESET|ETIMEDOUT|connection refused|connection reset|transport error|dial tcp.*connect:|Unavailable desc = connection error" "$output_file" 2>/dev/null; then
+      has_connection_error=true
+      log "WARNING: Detected connection error in test output (likely infrastructure issue)"
+    fi
+    
     if [[ -n "$namespace" ]]; then
+      log "Checking pod health after test failure..."
+      local pods_ready=true
       if ! _check_all_pods_ready "$namespace"; then
-        # Pods are not ready - this was likely a spot instance preemption
+        pods_ready=false
+      fi
+      
+      if [[ "$pods_ready" == "false" ]]; then
+        # Pods are not ready - clear infrastructure issue
         log "WARNING: Test failed and pods are not ready (possible spot instance preemption)"
         
         if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
@@ -272,9 +407,26 @@ _run_playwright_with_retry() {
           log "ERROR: Max retry attempts reached, pods still not ready"
           return $playwright_rc
         fi
+      elif [[ "$has_connection_error" == "true" ]]; then
+        # Pods are ready NOW, but we saw connection errors - likely recovered mid-test
+        log "WARNING: Pods are ready now, but connection errors occurred during test"
+        log "This suggests infrastructure disruption during test execution (pods may have recovered after failure)"
+        
+        if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
+          log "Will retry due to connection errors..."
+          # Brief pause to ensure stability after recovery
+          log "Pausing 10s to ensure pod stability..."
+          sleep 10
+          continue
+        else
+          log "ERROR: Max retry attempts reached"
+          _dump_pod_status "$namespace"
+          return $playwright_rc
+        fi
       else
-        # Pods are ready - this is a legitimate test failure
-        log "Pods are healthy, test failure is not due to pod issues"
+        # Pods are ready and no connection errors - legitimate test failure
+        log "Pods are healthy and no connection errors detected - this appears to be a legitimate test failure"
+        _dump_pod_status "$namespace"
         return $playwright_rc
       fi
     else

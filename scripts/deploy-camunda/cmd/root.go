@@ -19,6 +19,9 @@ var (
 	// Global flags
 	configFile string
 	flags      config.RuntimeFlags
+
+	// Raw debug flags (parsed into flags.DebugComponents in PreRunE)
+	debugFlagsRaw []string
 )
 
 // NewRootCommand creates the root command.
@@ -39,17 +42,26 @@ func NewRootCommand() *cobra.Command {
 				}
 			}
 
-			// Load .env file
-			if flags.EnvFile != "" {
-				_ = env.Load(flags.EnvFile)
-			} else {
-				_ = env.Load(".env")
-			}
-
-			// Load config and merge with flags
+			// Load config and merge with flags first to get envFile from config
 			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {
 				return err
 			}
+
+			// Load .env file - use config value if set, otherwise default to .env
+			envFileToLoad := flags.EnvFile
+			if envFileToLoad == "" {
+				envFileToLoad = ".env"
+			}
+			logging.Logger.Debug().
+				Str("envFile", envFileToLoad).
+				Str("source", func() string {
+					if flags.EnvFile != "" {
+						return "config/flag"
+					}
+					return "default"
+				}()).
+				Msg("Loading environment file")
+			_ = env.Load(envFileToLoad)
 
 			// Validate merged configuration
 			if err := config.Validate(&flags); err != nil {
@@ -60,6 +72,18 @@ func NewRootCommand() *cobra.Command {
 			if strings.TrimSpace(flags.ChartPath) != "" {
 				if fi, err := os.Stat(flags.ChartPath); err != nil || !fi.IsDir() {
 					return fmt.Errorf("resolved chart path %q does not exist or is not a directory; set --repo-root/--chart/--version or --chart-path explicitly", flags.ChartPath)
+				}
+			}
+
+			// Parse debug flags into the DebugComponents map
+			if len(debugFlagsRaw) > 0 {
+				flags.DebugComponents = make(map[string]config.DebugConfig)
+				for _, raw := range debugFlagsRaw {
+					component, port, err := config.ParseDebugFlag(raw, flags.DebugPort)
+					if err != nil {
+						return fmt.Errorf("invalid --debug flag %q: %w", raw, err)
+					}
+					flags.DebugComponents[component] = config.DebugConfig{Port: port}
 				}
 			}
 
@@ -123,6 +147,16 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (appended to ."+config.DefaultIngressBaseDomain+")")
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
 	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
+	f.StringSliceVar(&debugFlagsRaw, "debug", nil, "Enable JVM remote debugging for component (repeatable, e.g., --debug orchestration:5005 --debug connectors:5006)")
+	f.IntVar(&flags.DebugPort, "debug-port", 5005, "Default JVM debug port (used when no port specified in --debug)")
+	f.BoolVar(&flags.DebugSuspend, "debug-suspend", false, "Suspend JVM on startup until debugger attaches")
+	f.BoolVar(&flags.OutputTestEnv, "output-test-env", false, "Generate a .env file for E2E tests after deployment")
+	f.StringVar(&flags.OutputTestEnvPath, "output-test-env-path", ".env.test", "Path for the test .env file output (for multi-scenario: used as base, e.g., .env.test.{scenario})")
+
+	// Test execution flags
+	f.BoolVar(&flags.RunIntegrationTests, "test-it", false, "Run integration tests after deployment")
+	f.BoolVar(&flags.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
+	f.BoolVar(&flags.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
 
 	// Register completions using config-aware completion function
 	registerScenarioCompletion(rootCmd, "scenario")

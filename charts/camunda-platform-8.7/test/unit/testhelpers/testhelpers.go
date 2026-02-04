@@ -83,20 +83,37 @@ func renderTemplateE(t *testing.T, chartPath, release string, namespace string, 
 
 func RunTestCasesE(t *testing.T, chartPath, release, namespace string, templates []string, testCases []TestCase) {
 	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
-			var caseTemplates []string
-			if tc.CaseTemplates != nil {
-				caseTemplates = tc.CaseTemplates.Templates
-			} else {
-				caseTemplates = templates
-			}
-			output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
-			if tc.Verifier != nil {
-				tc.Verifier(t, output, err)
-			} else {
-				require.ErrorContains(t, err, tc.Expected["ERROR"])
-			}
+		t.Run(tc.Name, func(tct *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					tct.Errorf("Panic in test case %q: %v", tc.Name, r)
+				}
+			}()
+			runTestCaseE(tct, chartPath, release, namespace, templates, tc)
 		})
+	}
+}
+
+func runTestCaseE(t *testing.T, chartPath, release, namespace string, templates []string, tc TestCase) {
+	var caseTemplates []string
+	if tc.CaseTemplates != nil {
+		caseTemplates = tc.CaseTemplates.Templates
+	} else {
+		caseTemplates = templates
+	}
+	output, err := renderTemplateE(t, chartPath, release, namespace, caseTemplates, tc.Values, tc.HelmOptionsExtraArgs, tc.RenderTemplateExtraArgs)
+	if err != nil {
+		t.Logf("Error during rendering: %v", err)
+	}
+	if tc.Verifier != nil {
+		tc.Verifier(t, output, err)
+		return
+	}
+
+	if expectedErr, ok := tc.Expected["ERROR"]; ok {
+		require.ErrorContains(t, err, expectedErr)
+	} else if err != nil {
+		t.Fatalf("Unexpected error during rendering: %v", err)
 	}
 }
 

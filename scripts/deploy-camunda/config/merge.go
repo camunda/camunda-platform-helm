@@ -2,8 +2,14 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+// DebugConfig holds debug configuration for a component.
+type DebugConfig struct {
+	Port int
+}
 
 // RuntimeFlags holds all CLI flag values that can be merged with config.
 type RuntimeFlags struct {
@@ -43,7 +49,40 @@ type RuntimeFlags struct {
 	RenderOutputDir          string
 	ExtraValues              []string
 	ValuesPreset             string
-	Timeout                  int // Timeout in minutes for Helm deployment
+	Timeout                  int                    // Timeout in minutes for Helm deployment
+	DebugComponents          map[string]DebugConfig // Components to enable JVM debugging for, with their ports
+	DebugPort                int                    // Default JVM debug port (used when no port specified)
+	DebugSuspend             bool                   // Suspend JVM on startup until debugger attaches
+	OutputTestEnv            bool                   // Generate .env file for E2E tests after deployment
+	OutputTestEnvPath        string                 // Path for the test .env file output
+	// Test execution flags
+	RunIntegrationTests bool // Run integration tests after deployment
+	RunE2ETests         bool // Run e2e tests after deployment
+	RunAllTests         bool // Run both integration and e2e tests after deployment
+}
+
+// ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
+// Returns the component name and port (using defaultPort if not specified).
+func ParseDebugFlag(value string, defaultPort int) (string, int, error) {
+	parts := strings.SplitN(value, ":", 2)
+	component := strings.ToLower(strings.TrimSpace(parts[0]))
+	if component == "" {
+		return "", 0, fmt.Errorf("empty component name")
+	}
+
+	port := defaultPort
+	if len(parts) == 2 {
+		var err error
+		port, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return "", 0, fmt.Errorf("invalid port %q: %w", parts[1], err)
+		}
+		if port < 1 || port > 65535 {
+			return "", 0, fmt.Errorf("port %d out of range (1-65535)", port)
+		}
+	}
+
+	return component, port, nil
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -106,6 +145,10 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry)
 	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates)
 
+	// Test execution flags
+	MergeBoolField(&flags.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests)
+	MergeBoolField(&flags.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests)
+
 	// Slice fields
 	MergeStringSliceField(&flags.ExtraValues, dep.ExtraValues, rc.ExtraValues)
 
@@ -158,6 +201,10 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst)
 	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry)
 	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates)
+
+	// Test execution flags
+	MergeBoolField(&flags.RunIntegrationTests, nil, rc.RunIntegrationTests)
+	MergeBoolField(&flags.RunE2ETests, nil, rc.RunE2ETests)
 
 	MergeStringSliceField(&flags.ExtraValues, nil, rc.ExtraValues)
 

@@ -1,0 +1,6 @@
+# Ignore everything by default
+*
+
+# Include only the files needed for the build
+!.tool-versions
+
