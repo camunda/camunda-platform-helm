@@ -631,7 +631,6 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 
 	// Print single deployment summary
 	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix, result.Namespace, result.Release, result.TestEnvFile, flags)
-	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix)
 
 	// Phase 3: Run tests if requested
 	if err := RunTests(ctx, flags, result.Namespace); err != nil {

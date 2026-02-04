@@ -55,6 +55,10 @@ type RuntimeFlags struct {
 	DebugSuspend             bool                   // Suspend JVM on startup until debugger attaches
 	OutputTestEnv            bool                   // Generate .env file for E2E tests after deployment
 	OutputTestEnvPath        string                 // Path for the test .env file output
+	// Test execution flags
+	RunIntegrationTests bool // Run integration tests after deployment
+	RunE2ETests         bool // Run e2e tests after deployment
+	RunAllTests         bool // Run both integration and e2e tests after deployment
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
@@ -79,12 +83,6 @@ func ParseDebugFlag(value string, defaultPort int) (string, int, error) {
 	}
 
 	return component, port, nil
-	Timeout                  int // Timeout in minutes for Helm deployment
-
-	// Test execution flags
-	RunIntegrationTests bool // Run integration tests after deployment
-	RunE2ETests         bool // Run e2e tests after deployment
-	RunAllTests         bool // Run both integration and e2e tests after deployment
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
