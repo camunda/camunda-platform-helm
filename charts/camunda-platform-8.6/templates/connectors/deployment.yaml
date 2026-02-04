@@ -89,6 +89,10 @@ spec:
               value: {{ include "zeebe.authTokenScope" . | quote }}
             {{- end }}
           {{- end }}
+          {{- if .Values.connectors.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.connectors.springConfigImport | quote }}
+          {{- end }}
           {{- if .Values.connectors.env}}
             {{ .Values.connectors.env | toYaml | nindent 12 }}
           {{- end }}

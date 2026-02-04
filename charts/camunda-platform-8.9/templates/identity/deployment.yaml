@@ -148,6 +148,10 @@ spec:
             {{- end }}
             {{- end }}
           {{- end }}
+          {{- if .Values.identity.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.identity.springConfigImport | quote }}
+          {{- end }}
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}

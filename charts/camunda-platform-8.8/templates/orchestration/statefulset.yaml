@@ -118,6 +118,10 @@ spec:
                 "config" .Values.global.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
+            {{- if .Values.orchestration.springConfigImport }}
+            - name: SPRING_CONFIG_IMPORT
+              value: {{ .Values.orchestration.springConfigImport | quote }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
