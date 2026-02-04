@@ -55,6 +55,10 @@ type RuntimeFlags struct {
 	DebugSuspend             bool                   // Suspend JVM on startup until debugger attaches
 	OutputTestEnv            bool                   // Generate .env file for E2E tests after deployment
 	OutputTestEnvPath        string                 // Path for the test .env file output
+	// Test execution flags
+	RunIntegrationTests bool // Run integration tests after deployment
+	RunE2ETests         bool // Run e2e tests after deployment
+	RunAllTests         bool // Run both integration and e2e tests after deployment
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
@@ -141,6 +145,10 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry)
 	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates)
 
+	// Test execution flags
+	MergeBoolField(&flags.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests)
+	MergeBoolField(&flags.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests)
+
 	// Slice fields
 	MergeStringSliceField(&flags.ExtraValues, dep.ExtraValues, rc.ExtraValues)
 
@@ -193,6 +201,10 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst)
 	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry)
 	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates)
+
+	// Test execution flags
+	MergeBoolField(&flags.RunIntegrationTests, nil, rc.RunIntegrationTests)
+	MergeBoolField(&flags.RunE2ETests, nil, rc.RunE2ETests)
 
 	MergeStringSliceField(&flags.ExtraValues, nil, rc.ExtraValues)
 
