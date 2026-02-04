@@ -17,6 +17,7 @@ permissions:
   contents: read
   id-token: write
   deployments: write
+  packages: read
 
 jobs:
   init:

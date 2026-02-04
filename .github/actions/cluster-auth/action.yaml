@@ -20,6 +20,7 @@ env:
   ROSA_USER:        {}
   ROSA_PASS:        {}
   CLUSTER_NAME:     {}
+  TELEPORT_TOKEN:   {}
 
 runs:
   using: "composite"
@@ -54,21 +55,113 @@ runs:
       with:
         version: 17.2.2
 
-    - name: Authenticate with Teleport
+    # Authenticate with Teleport for EKS clusters using tbot with retry logic.
+    # 
+    # Why retry logic is needed:
+    # The teleport-actions/auth-k8s GitHub Action occasionally fails with intermittent
+    # errors like "invalid character 'u' looking for beginning of value" due to transient
+    # issues with the Teleport service. These failures are not configuration problems but
+    # rather infrastructure hiccups that resolve on retry.
+    #
+    # Instead of using the teleport-actions/auth-k8s action directly (which doesn't support
+    # retries), we use tbot directly with a config file to authenticate. This gives us
+    # control over retry behavior with exponential backoff (30s, 60s, 120s delays).
+    - name: Authenticate with Teleport (with retry)
       if: inputs.platform == 'eks' && inputs.auth-data == ''
-      uses: teleport-actions/auth-k8s@171cc0ad4b6b7cebcb33c672defe3f6dc58967ba # v2
-      with:
-        proxy: camunda.teleport.sh:443
-        token: ${{ env.TELEPORT_TOKEN }}
-        kubernetes-cluster: ${{ env.CLUSTER_NAME }}
+      id: teleport-auth
+      shell: bash
+      env:
+        TELEPORT_PROXY: "camunda.teleport.sh:443"
+        TELEPORT_TOKEN: ${{ env.TELEPORT_TOKEN }}
+        KUBERNETES_CLUSTER: ${{ env.CLUSTER_NAME }}
+      run: |
+        set -euo pipefail
+
+        MAX_RETRIES=3
+        RETRY_DELAY=30
+        TBOT_CONFIG="/tmp/tbot-config.yaml"
+
+        # Cleanup temporary files on exit
+        cleanup() {
+          rm -f "${TBOT_CONFIG}"
+        }
+        trap cleanup EXIT
+
+        teleport_auth() {
+          echo "Authenticating with Teleport..."
+          
+          # Create destination directory for tbot output
+          DEST_DIR="${HOME}/.tbot-output"
+          mkdir -p "${DEST_DIR}"
+
+          # Generate tbot config file for kubernetes output.
+          # This is equivalent to what teleport-actions/auth-k8s does internally.
+          # Using printf to avoid heredoc indentation issues in YAML.
+          printf '%s\n' \
+            "version: v2" \
+            "proxy_server: \"${TELEPORT_PROXY}\"" \
+            "onboarding:" \
+            "  join_method: github" \
+            "  token: \"${TELEPORT_TOKEN}\"" \
+            "storage:" \
+            "  type: memory" \
+            "outputs:" \
+            "  - type: kubernetes" \
+            "    kubernetes_cluster: \"${KUBERNETES_CLUSTER}\"" \
+            "    destination:" \
+            "      type: directory" \
+            "      path: \"${DEST_DIR}\"" \
+            > "${TBOT_CONFIG}"
+
+          # Run tbot in oneshot mode to generate credentials and exit
+          tbot start -c "${TBOT_CONFIG}" --oneshot
+
+          # Set KUBECONFIG environment variable for subsequent steps.
+          # Note: tbot outputs the file as "kubeconfig.yaml" (not "kubeconfig")
+          KUBECONFIG_PATH="${DEST_DIR}/kubeconfig.yaml"
+          if [[ -f "${KUBECONFIG_PATH}" ]]; then
+            echo "KUBECONFIG=${KUBECONFIG_PATH}" >> "$GITHUB_ENV"
+            echo "Teleport authentication successful"
+          else
+            echo "ERROR: kubeconfig not found at ${KUBECONFIG_PATH}"
+            echo "Contents of ${DEST_DIR}:"
+            ls -la "${DEST_DIR}" || true
+            return 1
+          fi
+        }
+
+        # Retry loop with exponential backoff
+        for attempt in $(seq 1 ${MAX_RETRIES}); do
+          echo "=== Teleport authentication attempt ${attempt}/${MAX_RETRIES} ==="
+          
+          if teleport_auth; then
+            echo "✅ Teleport authentication succeeded on attempt ${attempt}"
+            exit 0
+          else
+            EXIT_CODE=$?
+            echo "❌ Teleport authentication failed on attempt ${attempt} with exit code ${EXIT_CODE}"
+            
+            if [[ ${attempt} -lt ${MAX_RETRIES} ]]; then
+              echo "Waiting ${RETRY_DELAY} seconds before retry..."
+              sleep ${RETRY_DELAY}
+              # Exponential backoff: 30s -> 60s -> 120s
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            fi
+          fi
+        done
+
+        echo "❌ Teleport authentication failed after ${MAX_RETRIES} attempts"
+        exit 1
 
     - name: Authenticate via var
       if: inputs.auth-data != ''
       shell: bash
       run: |
+        ENC_FILE="$(mktemp)"
+        trap 'rm -f "${ENC_FILE}"' EXIT
+        
         mkdir -p "$HOME/.kube"
-        echo "${{ inputs.auth-data }}" | base64 -d > enc.cfg
-        openssl enc -aes-256-cbc -d -in enc.cfg -out "$HOME/.kube/config" \
+        echo "${{ inputs.auth-data }}" | base64 -d > "${ENC_FILE}"
+        openssl enc -aes-256-cbc -d -in "${ENC_FILE}" -out "$HOME/.kube/config" \
                -pass pass:"${{ steps.generate-github-token.outputs.token }}" -pbkdf2
-        rm enc.cfg
         chmod 600 "$HOME/.kube/config"

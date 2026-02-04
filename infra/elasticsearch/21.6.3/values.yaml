@@ -37,7 +37,7 @@ data:
     size: 20Gi
   pdb:
     create: true
-    minAvailable: 2
+    minAvailable: 4
 
 coordinating:
   replicaCount: 2
@@ -171,7 +171,7 @@ esConfig:
     indices.recovery.max_bytes_per_sec: 100mb
     # Index defaults to reduce shard proliferation
     index.number_of_shards: 1
-    index.number_of_replicas: 0
+    index.number_of_replicas: 1
   jvm.options: |
     -Xms1.5g
     -Xmx1.5g
