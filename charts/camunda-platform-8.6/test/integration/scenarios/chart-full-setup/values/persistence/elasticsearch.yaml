@@ -1,0 +1,14 @@
+# =============================================================================
+# Elasticsearch Backend
+# =============================================================================
+# Layer 3: Data backend - Elasticsearch
+# Used with: TEST_VALUES_BACKEND=elasticsearch (default)
+# =============================================================================
+
+global:
+  elasticsearch:
+    enabled: true
+
+elasticsearch:
+  enabled: true
+  maxUnavailable: 0
