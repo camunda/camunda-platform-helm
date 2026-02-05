@@ -304,17 +304,64 @@ jobs:
           echo "CHART_MAJOR_VERSION=${CHART_MAJOR_VERSION}" | tee -a $GITHUB_ENV
           echo "::notice::Dev tag: ${DEV_TAG}, Rolling tag: ${CHART_MAJOR_VERSION}-dev-latest"
 
+      - name: Check for image override inputs
+        id: check-overrides
+        run: |
+          # Detect if any image override inputs were provided via workflow_dispatch
+          # When overrides are present, we must rebuild even if artifact exists
+          HAS_IMAGE_OVERRIDES=false
+          OVERRIDES_YAML=""
+
+          declare -A OVERRIDE_INPUTS=(
+            ["orchestration"]="${{ inputs.orchestration-image-tag }}"
+            ["zeebe"]="${{ inputs.zeebe-image-tag }}"
+            ["zeebe-gateway"]="${{ inputs.zeebe-gateway-image-tag }}"
+            ["operate"]="${{ inputs.operate-image-tag }}"
+            ["tasklist"]="${{ inputs.tasklist-image-tag }}"
+            ["console"]="${{ inputs.console-image-tag }}"
+            ["modeler"]="${{ inputs.modeler-image-tag }}"
+            ["connectors"]="${{ inputs.connectors-image-tag }}"
+            ["optimize"]="${{ inputs.optimize-image-tag }}"
+            ["identity"]="${{ inputs.identity-image-tag }}"
+          )
+
+          for key in "${!OVERRIDE_INPUTS[@]}"; do
+            value="${OVERRIDE_INPUTS[$key]}"
+            if [[ -n "${value}" ]]; then
+              HAS_IMAGE_OVERRIDES=true
+              OVERRIDES_YAML+="${key}: ${value}\n"
+            fi
+          done
+
+          echo "HAS_IMAGE_OVERRIDES=${HAS_IMAGE_OVERRIDES}" | tee -a $GITHUB_ENV
+
+          if [[ "${HAS_IMAGE_OVERRIDES}" == "true" ]]; then
+            echo -e "${OVERRIDES_YAML}" > /tmp/image-overrides.yaml
+            echo "::notice::Image override inputs detected - will force rebuild if artifact exists"
+            echo "Overrides:"
+            cat /tmp/image-overrides.yaml
+          fi
+
       - name: Check if artifact already exists
         id: check-artifact
         run: |
           # Dev packages are immutable - skip if already exists
+          # Exception: when image overrides are provided, delete and rebuild
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
           helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
             --version "${DEV_TAG}" 2>/dev/null && EXIT_CODE=0 || EXIT_CODE=1
 
           if [[ ${EXIT_CODE} -eq 0 ]]; then
-            echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
-            echo "::notice::Dev package ${DEV_TAG} already exists, skipping build"
+            if [[ "${HAS_IMAGE_OVERRIDES}" == "true" ]]; then
+              # Image overrides provided - delete existing artifact to allow rebuild
+              echo "::notice::Dev package ${DEV_TAG} exists but image overrides provided - deleting to rebuild"
+              curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+                -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DEV_TAG}/tags/${DEV_TAG}" || true
+              echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+            else
+              echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
+              echo "::notice::Dev package ${DEV_TAG} already exists, skipping build"
+            fi
           else
             echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
           fi
@@ -409,6 +456,16 @@ jobs:
 
           echo "Added camunda.io/component-image-versions annotation:"
           yq '.annotations."camunda.io/component-image-versions"' Chart.yaml
+
+      - name: Add image overrides annotation to Chart.yaml
+        if: env.SKIP_BUILD == 'false' && env.HAS_IMAGE_OVERRIDES == 'true'
+        run: |
+          # Document which images were manually overridden via workflow_dispatch
+          # This indicates the artifact cannot be traced to a standard commit's image set
+          yq -i '.annotations."camunda.io/imageOverrides" = load_str("/tmp/image-overrides.yaml")' Chart.yaml
+
+          echo "Added camunda.io/imageOverrides annotation:"
+          yq '.annotations."camunda.io/imageOverrides"' Chart.yaml
 
       - name: Show computed version info
         if: env.SKIP_BUILD == 'false'
