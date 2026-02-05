@@ -505,6 +505,11 @@ jobs:
           echo "Applied release transformations:"
           git --no-pager diff --stat
 
+      - name: Add Helm repos
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          make -C ../.. helm.repos-add
+
       #
       # Generate release notes
       #
@@ -512,20 +517,25 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         working-directory: ${{ github.workspace }}
         run: |
+          set -euo pipefail
+
           # Generate release notes using the same script as the release process
           bash scripts/generate-release-notes.sh --main ${{ matrix.chart.directory }}
           bash scripts/generate-release-notes.sh --footer ${{ matrix.chart.directory }}
-          
+
+          # Verify release notes contain actual version matrix content 
+          if ! grep -q "Camunda images:" "${{ matrix.chart.directory }}/RELEASE-NOTES.md"; then
+            echo "::error::RELEASE-NOTES.md is missing version matrix content - generation failed"
+            cat ${{ matrix.chart.directory }}/RELEASE-NOTES.md
+            exit 1
+          fi
+
           echo "Generated RELEASE-NOTES.md:"
           cat ${{ matrix.chart.directory }}/RELEASE-NOTES.md
 
       #
       # Package and publish
       #
-      - name: Add Helm repos
-        if: env.SKIP_BUILD == 'false'
-        run: |
-          make -C ../.. helm.repos-add
 
       - name: Helm dependency update
         if: env.SKIP_BUILD == 'false'
