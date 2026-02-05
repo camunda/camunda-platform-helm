@@ -79,7 +79,7 @@ The Cluster itself is not exposed as a service which means that you can use `kub
 > kubectl port-forward svc/{{ include "orchestration.serviceName" . }} 26500:26500 -n {{ .Release.Namespace }}
 > kubectl port-forward svc/{{ include "orchestration.serviceName" . }} 8080:8080 -n {{ .Release.Namespace }}
 
-Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:26500` for REST API usage.
+Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:8080` for REST API usage.
 
 {{ if or (.Values.orchestration.enabled) (.Values.identity.enabled) }}
 ### Connecting to Web apps

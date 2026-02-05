@@ -54,7 +54,20 @@ runs:
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
 
+    - name: Check if tools are pre-installed
+      id: check-tools
+      shell: bash
+      run: |
+        if command -v helm &> /dev/null && command -v kubectl &> /dev/null && command -v task &> /dev/null; then
+          echo "Tools are pre-installed in container, skipping installation"
+          echo "skip-install=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Tools not found, will install"
+          echo "skip-install=false" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Install tools
+      if: steps.check-tools.outputs.skip-install != 'true'
       uses: ./.github/actions/install-tool-versions
       with:
         tools: |
@@ -70,6 +83,13 @@ runs:
     - name: Install CLI deps (envsubst)
       shell: bash
       run: |
+        # Skip if envsubst is already installed (pre-configured container)
+        if command -v envsubst &> /dev/null; then
+          echo "envsubst already available, skipping installation"
+          envsubst --version
+          exit 0
+        fi
+        
         install_packages() {
           apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y gettext-base
         }

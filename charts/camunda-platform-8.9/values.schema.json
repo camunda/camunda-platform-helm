@@ -6460,7 +6460,7 @@
                 },
                 "upgradeLogLevel": {
                     "type": "string",
-                    "description": "sets the logging level for the Optimize update log. https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/logging/",
+                    "description": "sets the logging level for the Optimize update log. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
                     "default": "info"
                 },
                 "esLogLevel": {
