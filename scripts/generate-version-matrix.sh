@@ -87,7 +87,9 @@ get_chart_images () {
 # Get Helm CLI version based on the asdf .tool-versions file.
 # Falls back to HEAD if the specified git ref doesn't exist (e.g., unreleased version tags).
 get_helm_cli_version () {
-    chart_ref_name="${CHART_REF_NAME:-$1}"
+    # Always use the argument, never CHART_REF_NAME env var which may be set by
+    # generate_version_matrix_unreleased and incorrectly override released version lookups.
+    chart_ref_name="${1}"
     # Try the specified ref first, fall back to HEAD if it doesn't exist
     version=$(git show ${chart_ref_name}:.tool-versions 2>/dev/null | awk '/helm /{printf $2}' || true)
     if [[ -z "${version}" ]]; then
