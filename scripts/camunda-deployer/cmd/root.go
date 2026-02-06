@@ -47,6 +47,7 @@ var (
 	skipDependencyUpdate   bool
 	applyIntegrationCreds  bool
 	externalSecretsEnabled bool
+	externalSecretsStore   string
 	ttl                    string
 	loadKeycloakRealm      bool
 	keycloakRealmName      string
@@ -113,6 +114,7 @@ Examples:
 			SkipDependencyUpdate:   skipDependencyUpdate,
 			ApplyIntegrationCreds:  applyIntegrationCreds,
 			ExternalSecretsEnabled: externalSecretsEnabled,
+			ExternalSecretsStore:   externalSecretsStore,
 			DockerRegistryUsername: dockerUsername,
 			DockerRegistryPassword: dockerPassword,
 			Platform:               platform,
@@ -186,6 +188,7 @@ func init() {
 	rootCmd.Flags().StringVar(&dockerUsername, "docker-username", "", "Docker registry username (defaults to TEST_DOCKER_USERNAME_CAMUNDA_CLOUD or NEXUS_USERNAME)")
 	rootCmd.Flags().StringVar(&dockerPassword, "docker-password", "", "Docker registry password (defaults to TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD or NEXUS_PASSWORD)")
 	rootCmd.Flags().BoolVar(&externalSecretsEnabled, "external-secrets-enabled", true, "enable external secrets configuration")
+	rootCmd.Flags().StringVar(&externalSecretsStore, "external-secrets-store", "", "external secrets store type (e.g., vault-backend)")
 	rootCmd.Flags().StringVar(&ttl, "ttl", "1h", "time-to-live label for namespace cleanup (e.g., 1h, 12h, 24h)")
 
 	// Keycloak configuration
