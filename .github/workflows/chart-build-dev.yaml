@@ -348,8 +348,9 @@ jobs:
           # Dev packages are immutable - skip if already exists
           # Exception: when image overrides are provided, delete and rebuild
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
+          # Use --destination /tmp to avoid polluting the chart directory with downloaded .tgz
           helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
-            --version "${DEV_TAG}" 2>/dev/null && EXIT_CODE=0 || EXIT_CODE=1
+            --version "${DEV_TAG}" --destination /tmp 2>/dev/null && EXIT_CODE=0 || EXIT_CODE=1
 
           if [[ ${EXIT_CODE} -eq 0 ]]; then
             if [[ "${HAS_IMAGE_OVERRIDES}" == "true" ]]; then
