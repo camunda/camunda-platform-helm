@@ -43,7 +43,6 @@ spec:
         []
       initContainers:
         []
-      runtimeClassName: gvisor
       containers:
         - name: orchestration
           image: camunda/camunda:8.9.0-alpha4

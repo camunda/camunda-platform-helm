@@ -47,7 +47,6 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      runtimeClassName: gvisor
       containers:
         - name: camunda-platform
           image: camunda/console:8.9.0-alpha4
