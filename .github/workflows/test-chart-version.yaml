@@ -17,6 +17,7 @@ on:
       - "!charts/camunda-platform-8*/*.md"
       - "!charts/camunda-platform-8*/*.MD"
       - "!charts/camunda-platform-8*/*.txt"
+      - "!.github/workflows/chart-build-dev.yaml"
   workflow_dispatch:
     inputs:
       manual-trigger:
