@@ -1036,6 +1036,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-install
           shard-index: ${{ matrix.shardIndex }}
+          scenario: ${{ inputs.scenario }}
 
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
@@ -1099,6 +1100,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-upgrade
           shard-index: ${{ matrix.shardIndex }}
+          scenario: ${{ inputs.scenario }}
 
   merge-e2e-reports:
     name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
