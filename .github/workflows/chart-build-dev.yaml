@@ -511,6 +511,12 @@ jobs:
         run: |
           make -C ../.. helm.repos-add
 
+      - name: Helm dependency update
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          make -C ../.. helm.dependency-update \
+            chartPath=${{ matrix.chart.directory }}
+
       #
       # Generate release notes
       #
@@ -537,12 +543,6 @@ jobs:
       #
       # Package and publish
       #
-
-      - name: Helm dependency update
-        if: env.SKIP_BUILD == 'false'
-        run: |
-          make -C ../.. helm.dependency-update \
-            chartPath=${{ matrix.chart.directory }}
 
       - name: Package Helm chart
         if: env.SKIP_BUILD == 'false'
