@@ -192,7 +192,7 @@ RUN echo "=== Compressed binary sizes ===" && ls -lh /tools/
 # ==============================================================================
 # Stage 2: Final optimized image
 # ==============================================================================
-FROM node:22-slim
+FROM node:24-slim
 
 LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-platform-helm"
 LABEL org.opencontainers.image.description="Playwright Runner (Ultra-optimized, Chromium headless-shell only) for Camunda Platform Helm integration tests"
