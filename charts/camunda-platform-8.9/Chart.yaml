@@ -73,17 +73,11 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Remove unused identity redirect-url"
+    - kind: added
+      description: "Add property for authorization initialization"
+    - kind: added
+      description: "Support new restore arguments"
     - kind: fixed
-      description: "Apply tpl to issuerBackendUrl"
+      description: "Support lower helm cli versions by conditionally using toYamlPretty"
     - kind: fixed
-      description: "Remove constraint of identity.enabled=false and optimize.enabled=true"
-    - kind: fixed
-      description: "Add rdbms type option to values.yaml"
-    - kind: fixed
-      description: "Asdf installation cache passes in an env var that doesn't get rendered"
-    - kind: fixed
-      description: "Do not redundantly set zeebe exporter options when set in secondary-storage"
-    - kind: fixed
-      description: "Add missing breaking change to RELEASE-NOTES.md"
+      description: "Unify default REST port to 8080 in helm chart 8.9"
