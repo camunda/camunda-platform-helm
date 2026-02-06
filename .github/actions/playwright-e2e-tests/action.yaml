@@ -52,6 +52,10 @@ inputs:
     description: Shard index for parallel test execution
     required: false
     default: "1"
+  scenario:
+    description: The scenario being tested (e.g., opensearch, keycloak-rba, keycloak-mt, multitenancy)
+    required: false
+    default: "elasticsearch"
 runs:
   using: composite
   steps:
@@ -186,7 +190,18 @@ runs:
         cd "$GITHUB_WORKSPACE/scripts"
         # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
         unset KEYCLOAK_REALM
-        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests --verbose
+
+        # Build scenario-specific flags
+        EXTRA_FLAGS=""
+        if [[ "${{ inputs.scenario }}" == "opensearch" ]]; then
+          EXTRA_FLAGS="--opensearch"
+        elif [[ "${{ inputs.scenario }}" == "keycloak-rba" ]]; then
+          EXTRA_FLAGS="--rba"
+        elif [[ "${{ inputs.scenario }}" == "keycloak-mt" ]] || [[ "${{ inputs.scenario }}" == "multitenancy" ]]; then
+          EXTRA_FLAGS="--mt"
+        fi
+
+        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests --verbose ${EXTRA_FLAGS}
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
