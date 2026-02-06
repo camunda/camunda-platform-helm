@@ -1,5 +1,21 @@
 # Changelog
 
+## [13.4.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.4.1...camunda-platform-8.8-13.4.2) (2026-02-05)
+
+
+### Bug Fixes
+
+* support lower helm cli versions by conditionally using toYamlPretty ([#4978](https://github.com/camunda/camunda-platform-helm/issues/4978)) ([c0e1340](https://github.com/camunda/camunda-platform-helm/commit/c0e13407cd1ed6e1d4a3c2980cd3e43f6e1a473b))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5055](https://github.com/camunda/camunda-platform-helm/issues/5055)) ([96301d9](https://github.com/camunda/camunda-platform-helm/commit/96301d9e0b19506e8543af902cebe78bb6f6ac2a))
+* update camunda-platform-digests ([#5068](https://github.com/camunda/camunda-platform-helm/issues/5068)) ([32b6f45](https://github.com/camunda/camunda-platform-helm/commit/32b6f453a9fd01b4c5033ce53bb72a3e0e0cbf53))
+* update camunda-platform-images (patch) ([#5053](https://github.com/camunda/camunda-platform-helm/issues/5053)) ([586ee9b](https://github.com/camunda/camunda-platform-helm/commit/586ee9b0ccb8414f9b57d474bb440c528719a2f0))
+* update camunda-platform-images (patch) ([#5062](https://github.com/camunda/camunda-platform-helm/issues/5062)) ([3c81c8e](https://github.com/camunda/camunda-platform-helm/commit/3c81c8ee602ce924d0446e12ab03efe6440738f7))
+* update camunda-platform-images (patch) ([#5081](https://github.com/camunda/camunda-platform-helm/issues/5081)) ([b95a4c6](https://github.com/camunda/camunda-platform-helm/commit/b95a4c660abce02da7f7cf14457a955bfef826fc))
+
 ## [13.4.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.4.0...camunda-platform-8.8-13.4.1) (2026-01-16)
 
 
