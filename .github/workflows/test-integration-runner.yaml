@@ -859,7 +859,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 5
+    timeout-minutes: 20
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
@@ -923,7 +923,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 5
+    timeout-minutes: 20
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
@@ -988,7 +988,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -1052,7 +1052,7 @@ jobs:
       run:
         shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
