@@ -17,37 +17,37 @@ elasticsearch:
 zeebe:
   env:
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: custom-zeebe
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 operate:
   env:
     - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
-      value: custom-operate
+      value: $OPERATE_INDEX_PREFIX-$FLOW
     - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
-      value: custom-zeebe
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   migration:
     env:
       - name: CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX
-        value: custom-operate
+        value: $OPERATE_INDEX_PREFIX-$FLOW
       - name: CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX
-        value: custom-zeebe
+        value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 tasklist:
   env:
     - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX
-      value: custom-tasklist
+      value: $TASKLIST_INDEX_PREFIX-$FLOW
     - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX
-      value: custom-zeebe
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 optimize:
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: custom-optimize
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-      value: custom-zeebe
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   migration:
     env:
       - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-        value: custom-optimize
+        value: $OPTIMIZE_INDEX_PREFIX-$FLOW
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-        value: custom-zeebe
+        value: $ORCHESTRATION_INDEX_PREFIX-$FLOW

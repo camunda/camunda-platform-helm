@@ -15,23 +15,23 @@ global:
       protocol: $OPENSEARCH_PROTOCOL
       host: "$OPENSEARCH_HOST"
       port: $OPENSEARCH_PORT
-    prefix: "custom-zeebe"
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 elasticsearch:
   enabled: false
 
 orchestration:
   index:
-    prefix: "custom-zeebe"
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   env:
     # group1
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
-      value: custom
+      value: $OPERATE_INDEX_PREFIX-$FLOW
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
-      value: custom
+      value: $OPERATE_INDEX_PREFIX-$FLOW
     # group2
     - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
-      value: custom-zeebe
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
     #################### Only needed for keycloak auth
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "demo-user-mapping-rule"
@@ -63,12 +63,12 @@ optimize:
   enabled: false
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: custom-optimize
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-      value: custom-zeebe
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   migration:
     env:
       - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-        value: custom-optimize
+        value: $OPTIMIZE_INDEX_PREFIX-$FLOW
       - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
-        value: custom-zeebe
+        value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
