@@ -2749,24 +2749,25 @@ orchestration:
         processing: "2GB"
         ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         replication: "1GB"
-    ## @extra orchestration.data.backup configuration for configuring Zeebe continuous backups
-    backup:
-      ## @param orchestration.data.backup.required if true, broker startup will be blocked until a backup storage is configured and available
-      required: false
-      ## @param orchestration.data.backup.continuous if true, enables continuous backups for primary storage
-      continuous: false
-      ## @param orchestration.data.backup.schedule defines the schedule for continuous backups, supports CRON, ISO8601, "none"
-      schedule: ""
-      ## @param orchestration.data.backup.checkpointInterval defines the schedule for injecting checkpoints in the logstream, ISO8601 format
-      checkpointInterval: ""
-      ## @param orchestration.data.backup.offset defines an optional offset for the generated backup ids to ensure continuation from existing backups
-      offset: 0
-      ## @param orchestration.data.backup.retention defines the retention policy for the backups
-      retention:
-        ## @param orchestration.data.backup.retention.window defines the time window for which the backups should be retained, ISO8601 format
-        window: ""
-        ## @param orchestration.data.backup.retention.cleanupSchedule defines the schedule for running backup cleanup, supports CRON, ISO8601, "none"
-        cleanupSchedule: ""
+    primaryStorage:
+      ## @extra orchestration.data.backup configuration for configuring Zeebe continuous backups
+      backup:
+        ## @param orchestration.data.backup.required if true, broker startup will be blocked until a backup storage is configured and available
+        required: false
+        ## @param orchestration.data.backup.continuous if true, enables continuous backups for primary storage
+        continuous: false
+        ## @param orchestration.data.backup.schedule defines the schedule for continuous backups, supports CRON, ISO8601, "none"
+        schedule: ""
+        ## @param orchestration.data.backup.checkpointInterval defines the schedule for injecting checkpoints in the logstream, ISO8601 format
+        checkpointInterval: ""
+        ## @param orchestration.data.backup.offset defines an optional offset for the generated backup ids to ensure continuation from existing backups
+        offset: 0
+        ## @param orchestration.data.backup.retention defines the retention policy for the backups
+        retention:
+          ## @param orchestration.data.backup.retention.window defines the time window for which the backups should be retained, ISO8601 format
+          window: ""
+          ## @param orchestration.data.backup.retention.cleanupSchedule defines the schedule for running backup cleanup, supports CRON, ISO8601, "none"
+          cleanupSchedule: ""
     ## @extra orchestration.data.secondaryStorage configuration for secondary storage backend used by the orchestration cluster
     secondaryStorage:
       ## @param orchestration.data.secondaryStorage.type the type of secondary storage (rdbms, elasticsearch, opensearch)
