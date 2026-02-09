@@ -4,6 +4,98 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Add property for authorization initialization"
+        - kind: added
+          description: "Support new restore arguments"
+        - kind: fixed
+          description: "Support lower helm cli versions by conditionally using toYamlPretty"
+        - kind: fixed
+          description: "Unify default REST port to 8080 in helm chart 8.9"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/component-image-versions: |
+        camunda: 8.9.0-alpha4
+        managementIdentity: 8.9.0-alpha4
+        optimize: 8.9.0-alpha4
+        webModeler: 8.9.0-alpha4
+        connectors: 8.9.0-alpha4
+        console: 8.9.0-alpha3
+      camunda.io/helmCLIVersion: 3.19.4
+      camunda.io/imageOverrides: |+
+        console: 8.9.0-alpha3
+
+    apiVersion: v2
+    appVersion: 8.9.x
+    created: "2026-02-09T18:15:24.832367419Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 16.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 21.6.3
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: c852317b23508cdae8d003d0bb7c3b29ee4b96954b612ed8479a709f820575d0
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.9-14.0.0-alpha4/camunda-platform-14.0.0-alpha4.tgz
+    version: 14.0.0-alpha4
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Backport custom client creation to 8.6 and 8.9"
         - kind: added
           description: "Define custom users through values.yaml"
@@ -25067,4 +25159,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-02-06T16:07:18.697771028Z"
+generated: "2026-02-09T18:15:24.833405003Z"
