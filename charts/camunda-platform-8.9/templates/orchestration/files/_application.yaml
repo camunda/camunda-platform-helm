@@ -89,7 +89,7 @@ camunda:
         continuous: {{ .Values.orchestration.data.backup.continuous | quote }}
         schedule: {{ .Values.orchestration.data.backup.schedule | quote }}
         checkpoint-interval: {{ .Values.orchestration.data.backup.checkpointInterval | quote }}
-        offset: {{ .Values.orchestration.data.backup.offset | quote }}
+        offset: {{ .Values.orchestration.data.backup.offset | int64 }}
         retention:
           window: {{ .Values.orchestration.data.backup.retention.window | quote }}
           cleanup-schedule: {{ .Values.orchestration.data.backup.retention.cleanupSchedule | quote }}

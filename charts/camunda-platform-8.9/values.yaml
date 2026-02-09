@@ -2760,7 +2760,7 @@ orchestration:
       ## @param orchestration.data.backup.checkpointInterval defines the schedule for injecting checkpoints in the logstream, ISO8601 format
       checkpointInterval: ""
       ## @param orchestration.data.backup.offset defines an optional offset for the generated backup ids to ensure continuation from existing backups
-      offset: ""
+      offset: 0
       ## @param orchestration.data.backup.retention defines the retention policy for the backups
       retention:
         ## @param orchestration.data.backup.retention.window defines the time window for which the backups should be retained, ISO8601 format
