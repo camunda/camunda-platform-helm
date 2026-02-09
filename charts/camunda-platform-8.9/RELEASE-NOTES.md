@@ -30,7 +30,7 @@ Camunda images:
 
 - docker.io/camunda/camunda:8.9.0-alpha4
 - docker.io/camunda/connectors-bundle:8.9.0-alpha4
-- docker.io/camunda/console:8.9.0-alpha4
+- docker.io/camunda/console:8.9.0-alpha3
 - docker.io/camunda/identity:8.9.0-alpha4
 - docker.io/camunda/keycloak:26.3.3
 - docker.io/camunda/optimize:8.9.0-alpha4
