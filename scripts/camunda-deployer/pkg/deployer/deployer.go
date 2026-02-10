@@ -58,13 +58,16 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if o.ExternalSecretsEnabled {
-		if err := kube.ApplyExternalSecretsAndCerts(ctx, o.Kubeconfig, o.KubeContext, o.Platform, o.RepoRoot, o.ChartPath, o.Namespace, o.NamespacePrefix); err != nil {
+		if err := kube.ApplyExternalSecretsAndCerts(ctx, o.Kubeconfig, o.KubeContext, o.Platform, o.RepoRoot, o.ChartPath, o.Namespace, o.NamespacePrefix, o.ExternalSecretsStore); err != nil {
 			return err
 		}
 	}
 
 	if o.ApplyIntegrationCreds {
 		if err := applyIntegrationTestCredentials(ctx, kubeClient, o.Namespace); err != nil {
+			return err
+		}
+		if err := applyInfraTestCredentials(ctx, kubeClient, o.Namespace); err != nil {
 			return err
 		}
 	}
