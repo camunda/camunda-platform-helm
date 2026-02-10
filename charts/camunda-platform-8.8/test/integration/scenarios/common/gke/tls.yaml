@@ -6,4 +6,4 @@ orchestration:
   ingress:
     grpc:
       tls:
-        secretName: camunda-platform
+        secretName: camunda-platform-gateway
