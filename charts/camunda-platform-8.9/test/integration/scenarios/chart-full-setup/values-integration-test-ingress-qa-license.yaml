@@ -6,8 +6,7 @@ global:
   identity:
     auth:
       enabled: true
-  license:
-    key:
+  license: {}
 orchestration:
   security:
     authentication:

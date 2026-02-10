@@ -38,9 +38,9 @@ global:
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
-        existingSecret:
-          name: integration-test-credentials
-        existingSecretKey: entra-child-app-client-secret
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: entra-child-app-client-secret
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.optimize.contextPath }}"
       webModeler:
         clientId: $ENTRA_APP_CLIENT_ID
@@ -52,9 +52,9 @@ global:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
-        existingSecret:
-          name: integration-test-credentials
-        existingSecretKey: entra-child-app-client-secret
+        secret:
+          existingSecret: integration-test-credentials
+          existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
 orchestration:

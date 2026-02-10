@@ -34,18 +34,21 @@ global:
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
       admin:
         enabled: true
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
       webModeler:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
       console:
         redirectUrl: "https://{{ .Values.global.ingress.host }}"
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-console-client-token"
       optimize:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-optimize-client-token"
       # NOTE: No orchestration or connectors auth config here since they use basic auth
 
 # -----------------------------------------------------------------------------
@@ -55,8 +58,9 @@ identity:
   enabled: true
   contextPath: "/identity"
   firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
+    secret:
+      existingSecret: "integration-test-credentials"
+      existingSecretKey: "identity-user-password"
 
 identityKeycloak:
   enabled: true
