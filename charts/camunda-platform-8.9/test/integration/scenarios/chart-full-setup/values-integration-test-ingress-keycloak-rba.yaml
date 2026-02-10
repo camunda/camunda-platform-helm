@@ -26,8 +26,9 @@ orchestration:
           - tasklist-api
           - zeebe-api
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
   env:
     - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
       value: 'false'
@@ -76,8 +77,9 @@ console:
 identity:
   enabled: true
   firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
+    secret:
+      existingSecret: "integration-test-credentials"
+      existingSecretKey: "identity-user-password"
   contextPath: "/identity"
   clients:
     - id: venom
@@ -124,8 +126,9 @@ connectors:
   security:
     authentication:
       oidc:
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
   env:
     - name: username
       value: username

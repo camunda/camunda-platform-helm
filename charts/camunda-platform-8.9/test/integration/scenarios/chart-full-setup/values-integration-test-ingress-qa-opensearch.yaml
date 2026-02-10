@@ -10,7 +10,8 @@ global:
     enabled: true
     auth:
       username: "$OPENSEARCH_USERNAME"
-      password: "$OPENSEARCH_PASSWORD"
+      secret:
+        inlineSecret: "$OPENSEARCH_PASSWORD"
     url:
       protocol: https
       host: "$AWS_HOST_URL"

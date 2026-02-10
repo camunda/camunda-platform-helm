@@ -10,7 +10,8 @@ global:
       enabled: false
     auth:
       username: "$OPENSEARCH_USERNAME"
-      password: "$OPENSEARCH_PASSWORD"
+      secret:
+        inlineSecret: "$OPENSEARCH_PASSWORD"
     url:
       protocol: $OPENSEARCH_PROTOCOL
       host: "$OPENSEARCH_HOST"
