@@ -5248,6 +5248,12 @@
                                     "description": "defines the mapping rules when connected to an OIDC provider.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "authorizations": {
+                                    "type": "array",
+                                    "description": "define authorizations.",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         }
