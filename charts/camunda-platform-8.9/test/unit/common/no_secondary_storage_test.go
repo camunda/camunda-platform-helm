@@ -53,7 +53,7 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 			Name:                 "TestGlobalNoSecondaryStorageTogglesAllExpectedValues",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.noSecondaryStorage":                     "true",
+				"global.noSecondaryStorage":                    "true",
 				"global.elasticsearch.enabled":                 "false",
 				"global.opensearch.enabled":                    "false",
 				"elasticsearch.enabled":                        "false",
@@ -64,7 +64,7 @@ func (s *NoSecondaryStorageTemplateTest) TestNoSecondaryStorageGlobalValue() {
 				// Secondary storage type should be none
 				require.Contains(t, output, "secondary-storage:\n          autoconfigure-camunda-exporter: true\n          type: \"none\"")
 				// Persistent sessions should be disabled
-				require.Contains(t, output, "persistentSessionsEnabled: false")
+				require.Contains(t, output, "persistent:\n        sessions:\n          enabled: false")
 				// Agentic AI and inbound connectors should be disabled
 				require.Contains(t, output, "webhook:\n          enabled: false")
 				require.Contains(t, output, "polling:\n          enabled: false")

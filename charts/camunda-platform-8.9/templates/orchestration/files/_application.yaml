@@ -244,6 +244,10 @@ camunda:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
 
+  persistent:
+    sessions:
+      enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
+
   {{- if eq (include "orchestration.authMethod" .) "oidc" }}
   identity:
     clientId: {{ include "orchestration.authClientId" . | quote }}
@@ -255,8 +259,6 @@ camunda:
   #
   # Camunda Operate Configuration - Separated syntax.
   #
-  operate:
-    persistentSessionsEnabled: {{ include "orchestration.persistentSessionsEnabled" . }}
     multiTenancy:
       enabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
     {{- if eq (include "orchestration.authMethod" .) "oidc" }}
