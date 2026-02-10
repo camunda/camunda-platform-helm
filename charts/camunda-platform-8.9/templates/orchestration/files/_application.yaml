@@ -240,6 +240,11 @@ camunda:
       authorizations:
         {{- .Values.orchestration.security.initialization.authorizations | toYaml | nindent 8 }}
       {{- end }}
+      {{- if .Values.orchestration.security.initialization.tenants }}
+      tenants:
+        {{- .Values.orchestration.security.initialization.tenants | toYaml | nindent 8 }}
+      {{- end }}
+
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
