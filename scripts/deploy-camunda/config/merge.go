@@ -267,6 +267,10 @@ func Validate(flags *RuntimeFlags) error {
 	}
 
 	// Validate ingress configuration
+	// --ingress-hostname is mutually exclusive with --ingress-subdomain and --ingress-base-domain
+	if flags.IngressHostname != "" && (flags.IngressSubdomain != "" || flags.IngressBaseDomain != "") {
+		return fmt.Errorf("--ingress-hostname cannot be used with --ingress-subdomain or --ingress-base-domain; use either --ingress-hostname OR --ingress-subdomain with --ingress-base-domain")
+	}
 	if flags.IngressSubdomain != "" && flags.IngressBaseDomain == "" {
 		return fmt.Errorf("--ingress-base-domain is required when using --ingress-subdomain; valid values: %s", strings.Join(ValidIngressBaseDomains, ", "))
 	}
