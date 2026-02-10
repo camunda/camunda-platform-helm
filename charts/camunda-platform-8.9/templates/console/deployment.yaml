@@ -50,7 +50,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             - name: NODE_EXTRA_CA_CERTS
               value: {{ printf "/usr/local/console/certificates/%s" .Values.console.tls.certKeyFilename | quote }}
