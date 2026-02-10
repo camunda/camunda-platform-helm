@@ -37,7 +37,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             - name: JAVA_OPTIONS
               value: {{ .Values.webModeler.restapi.javaOpts | default "-XX:MaxRAMPercentage=80.0" | quote }}
@@ -45,7 +44,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "SPRING_DATASOURCE_PASSWORD"
                 "config" .Values.webModeler.restapi.externalDatabase
-                "legacyKeyField" "existingSecretPasswordKey"
             ) | nindent 12 }}
             {{- else }}
             - name: SPRING_DATASOURCE_PASSWORD
@@ -57,8 +55,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_MAIL_PASSWORD"
                 "config" .Values.webModeler.restapi.mail
-                "plaintextKey" "smtpPassword"
-                "legacyKeyField" "existingSecretPasswordKey"
             ) | nindent 12 }}
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:

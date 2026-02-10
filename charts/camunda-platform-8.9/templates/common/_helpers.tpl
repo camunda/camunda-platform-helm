@@ -849,13 +849,6 @@ Usage:
 {{- if $root.Values.global.documentStore.type.aws.enabled -}}
 {{- $awsConfig := $root.Values.global.documentStore.type.aws -}}
 {{- $secretType := .secretType -}}
-{{- $legacyKey := "" -}}
-{{- if eq $secretType "accessKeyId" -}}
-  {{- $legacyKey = $awsConfig.accessKeyIdKey -}}
-{{- else if eq $secretType "secretAccessKey" -}}
-  {{- $legacyKey = $awsConfig.secretAccessKeyKey -}}
-{{- end -}}
-{{/* New pattern - prioritize over legacy */}}
 {{- $secretConfig := (index $awsConfig $secretType) | default dict -}}
 {{- if and $secretConfig.secret (or $secretConfig.secret.existingSecret $secretConfig.secret.inlineSecret) -}}
 {{- if and $secretConfig.secret.existingSecret $secretConfig.secret.existingSecretKey -}}
@@ -866,12 +859,6 @@ valueFrom:
 {{- else if $secretConfig.secret.inlineSecret -}}
 value: {{ $secretConfig.secret.inlineSecret | quote }}
 {{- end -}}
-{{/* Legacy pattern - fallback */}}
-{{- else if and $awsConfig.existingSecret $legacyKey -}}
-valueFrom:
-  secretKeyRef:
-    name: {{ $awsConfig.existingSecret | quote }}
-    key: {{ $legacyKey | quote }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
