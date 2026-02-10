@@ -74,30 +74,6 @@ func (s *normalizeSecretConfigTest) TestSecretHelperFunctionsWithOpenSearch() {
 			},
 		},
 		{
-			Name: "opensearch legacy secret format creates env vars",
-			Values: map[string]string{
-				"orchestration.enabled":                      "true",
-				"global.opensearch.enabled":         "true",
-				"global.opensearch.auth.existingSecret":    "legacy-secret",
-				"global.opensearch.auth.existingSecretKey": "legacy-key",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.name": "legacy-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].valueFrom.secretKeyRef.key":  "legacy-key",
-			},
-		},
-		{
-			Name: "opensearch plaintext password creates env vars",
-			Values: map[string]string{
-				"orchestration.enabled":                   "true",
-				"global.opensearch.enabled":      "true",
-				"global.opensearch.auth.password": "plain-password",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='CAMUNDA_OPERATE_ZEEBE_OPENSEARCH_PASSWORD')].value": "plain-password",
-			},
-		},
-		{
 			Name: "no opensearch config means no env vars",
 			Values: map[string]string{
 				"orchestration.enabled":              "true",
@@ -158,44 +134,6 @@ func (s *normalizeSecretConfigTest) TestAwsDocumentStoreSecretHelperFunctions() 
 			},
 		},
 		{
-			Name: "aws document store legacy secret format creates env vars",
-			Values: map[string]string{
-				"orchestration.enabled":                               "true",
-				"global.documentStore.type.aws.enabled":              "true",
-				"global.documentStore.type.aws.existingSecret":       "legacy-aws-secret",
-				"global.documentStore.type.aws.accessKeyIdKey":       "legacy-access-key",
-				"global.documentStore.type.aws.secretAccessKeyKey":   "legacy-secret-key",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.name":     "legacy-aws-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.key":      "legacy-access-key",
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.name": "legacy-aws-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.key":  "legacy-secret-key",
-			},
-		},
-		{
-			Name: "aws document store mixed configuration - new takes precedence",
-			Values: map[string]string{
-				"orchestration.enabled":                                                  "true",
-				"global.documentStore.type.aws.enabled":                                 "true",
-				// Legacy configuration (should be ignored)
-				"global.documentStore.type.aws.existingSecret":                          "legacy-aws-secret",
-				"global.documentStore.type.aws.accessKeyIdKey":                          "legacy-access-key",
-				"global.documentStore.type.aws.secretAccessKeyKey":                      "legacy-secret-key",
-				// New configuration (should take precedence)
-				"global.documentStore.type.aws.accessKeyId.secret.existingSecret":       "new-aws-secret",
-				"global.documentStore.type.aws.accessKeyId.secret.existingSecretKey":    "new-access-key",
-				"global.documentStore.type.aws.secretAccessKey.secret.existingSecret":   "new-aws-secret",
-				"global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey": "new-secret-key",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.name":     "new-aws-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_ACCESS_KEY_ID')].valueFrom.secretKeyRef.key":      "new-access-key",
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.name": "new-aws-secret",
-				"spec.template.spec.containers[0].env[?(@.name=='AWS_SECRET_ACCESS_KEY')].valueFrom.secretKeyRef.key":  "new-secret-key",
-			},
-		},
-		{
 			Name: "no aws document store config means no env vars",
 			Values: map[string]string{
 				"orchestration.enabled":                  "true",
@@ -242,38 +180,6 @@ func (s *normalizeSecretConfigTest) TestEmitVolumeFromSecretConfig() {
 			Expected: map[string]string{
 				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.secretName":         "my-gcp-secret",
 				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].key":       "credentials.json",
-				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].path":      "service-account.json",
-			},
-		},
-		{
-			Name: "gcp document store legacy secret format creates volume",
-			Values: map[string]string{
-				"connectors.enabled":                         "true",
-				"global.documentStore.type.gcp.enabled":     "true",
-				"global.documentStore.type.gcp.existingSecret": "legacy-gcp-secret",
-				"global.documentStore.type.gcp.credentialsKey": "legacy-credentials.json",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.secretName":         "legacy-gcp-secret",
-				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].key":       "legacy-credentials.json",
-				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].path":      "service-account.json",
-			},
-		},
-		{
-			Name: "gcp document store mixed configuration - new takes precedence",
-			Values: map[string]string{
-				"connectors.enabled":                                     "true",
-				"global.documentStore.type.gcp.enabled":                 "true",
-				// Legacy configuration (should be ignored)
-				"global.documentStore.type.gcp.existingSecret":          "legacy-gcp-secret",
-				"global.documentStore.type.gcp.credentialsKey":          "legacy-credentials.json",
-				// New configuration (should take precedence)
-				"global.documentStore.type.gcp.secret.existingSecret":   "new-gcp-secret",
-				"global.documentStore.type.gcp.secret.existingSecretKey": "new-credentials.json",
-			},
-			Expected: map[string]string{
-				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.secretName":         "new-gcp-secret",
-				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].key":       "new-credentials.json",
 				"spec.template.spec.volumes[?(@.name=='gcp-credentials-volume')].secret.items[0].path":      "service-account.json",
 			},
 		},

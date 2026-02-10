@@ -91,7 +91,8 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModelerPostgresql.enabled":                            "false",
 				"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 				"webModeler.restapi.externalDatabase.user":                "modeler-user",
-				"webModeler.restapi.externalDatabase.existingSecret.name": "my-secret",
+				"webModeler.restapi.externalDatabase.secret.existingSecret": "my-secret",
+				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -119,8 +120,8 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModelerPostgresql.enabled":                                  "false",
 				"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 				"webModeler.restapi.externalDatabase.user":                      "modeler-user",
-				"webModeler.restapi.externalDatabase.existingSecret.name":       "my-secret",
-				"webModeler.restapi.externalDatabase.existingSecretPasswordKey": "my-database-password-key",
+				"webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
+				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "my-database-password-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -256,7 +257,8 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                          "true",
 				"webModeler.restapi.mail.fromAddress":         "example@example.com",
 				"webModeler.restapi.mail.smtpUser":            "modeler-user",
-				"webModeler.restapi.mail.existingSecret.name": "my-secret",
+				"webModeler.restapi.mail.secret.existingSecret":    "my-secret",
+				"webModeler.restapi.mail.secret.existingSecretKey": "smtp-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -282,8 +284,8 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                                "true",
 				"webModeler.restapi.mail.fromAddress":               "example@example.com",
 				"webModeler.restapi.mail.smtpUser":                  "modeler-user",
-				"webModeler.restapi.mail.existingSecret.name":       "my-secret",
-				"webModeler.restapi.mail.existingSecretPasswordKey": "my-smtp-password-key",
+				"webModeler.restapi.mail.secret.existingSecret":       "my-secret",
+				"webModeler.restapi.mail.secret.existingSecretKey": "my-smtp-password-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

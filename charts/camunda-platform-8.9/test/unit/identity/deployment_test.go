@@ -560,7 +560,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"global.identity.auth.enabled":                 "true",
-				"global.identity.auth.optimize.existingSecret": "secretValue",
+				"global.identity.auth.optimize.secret.existingSecret": "secretValue",
 				"identity.enabled":                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -587,7 +587,7 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":                                  "true",
 				"global.identity.auth.enabled":                      "true",
-				"global.identity.auth.optimize.existingSecret.name": "ownExistingSecret",
+				"global.identity.auth.optimize.secret.existingSecret": "ownExistingSecret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -795,8 +795,8 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                    "true",
 				"identityPostgresql.enabled":                          "false",
 				"identity.externalDatabase.enabled":                   "true",
-				"identity.externalDatabase.existingSecret":            "postgres-secret-ext",
-				"identity.externalDatabase.existingSecretPasswordKey": "identity-password-ext",
+				"identity.externalDatabase.secret.existingSecret":            "postgres-secret-ext",
+				"identity.externalDatabase.secret.existingSecretKey": "identity-password-ext",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -918,8 +918,10 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.enabled":                                   "true",
 				"global.security.authentication.method":                          "oidc",
 				"connectors.enabled":                                             "true",
-				"connectors.security.authentication.oidc.existingSecret.name":    "connectors-oidc-secret",
-				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "connectors-oidc-secret",
+				"connectors.security.authentication.oidc.secret.existingSecretKey":    "identity-connectors-client-token",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -956,7 +958,8 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.enabled":                                   "true",
 				"global.security.authentication.method":                          "oidc",
 				"connectors.security.authentication.method":                      "basic",
-				"orchestration.security.authentication.oidc.existingSecret.name": "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
 				"connectors.enabled":                                             "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

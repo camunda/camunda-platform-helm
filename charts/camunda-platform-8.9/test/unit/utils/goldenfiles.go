@@ -42,17 +42,23 @@ type TemplateGoldenTest struct {
 func (s *TemplateGoldenTest) TestContainerGoldenTestDefaults() {
 	if s.SetValues == nil {
 		s.SetValues = map[string]string{
-			"connectors.security.authentication.oidc.existingSecret.name":    "camunda-credentials",
-			"orchestration.security.authentication.oidc.existingSecret.name": "camunda-credentials",
-			"global.identity.auth.console.existingSecret.name":               "camunda-credentials",
-			"global.identity.auth.optimize.existingSecret.name":              "camunda-credentials",
+			"connectors.security.authentication.oidc.secret.existingSecret":    "camunda-credentials",
+			"connectors.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			"orchestration.security.authentication.oidc.secret.existingSecret":    "camunda-credentials",
+			"orchestration.security.authentication.oidc.secret.existingSecretKey": "client-secret",
+			"global.identity.auth.console.existingSecret.name":                   "camunda-credentials",
+			"global.identity.auth.optimize.secret.existingSecret":                "camunda-credentials",
+			"global.identity.auth.optimize.secret.existingSecretKey":             "identity-optimize-client-token",
 		}
 	}
 	values := s.SetValues
-	values["connectors.security.authentication.oidc.existingSecret.name"] = "camunda-credentials"
-	values["orchestration.security.authentication.oidc.existingSecret.name"] = "camunda-credentials"
+	values["connectors.security.authentication.oidc.secret.existingSecret"] = "camunda-credentials"
+	values["connectors.security.authentication.oidc.secret.existingSecretKey"] = "client-secret"
+	values["orchestration.security.authentication.oidc.secret.existingSecret"] = "camunda-credentials"
+	values["orchestration.security.authentication.oidc.secret.existingSecretKey"] = "client-secret"
 	values["global.identity.auth.console.existingSecret.name"] = "camunda-credentials"
-	values["global.identity.auth.optimize.existingSecret.name"] = "camunda-credentials"
+	values["global.identity.auth.optimize.secret.existingSecret"] = "camunda-credentials"
+	values["global.identity.auth.optimize.secret.existingSecretKey"] = "identity-optimize-client-token"
 	values["global.elasticsearch.enabled"] = "true"
 	values["elasticsearch.enabled"] = "true"
 	options := &helm.Options{

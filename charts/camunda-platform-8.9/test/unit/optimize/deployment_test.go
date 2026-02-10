@@ -516,7 +516,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                  "true",
 				"optimize.enabled":                                  "true",
 				"global.identity.auth.enabled":                      "true",
-				"global.identity.auth.optimize.existingSecret.name": "ownExistingSecret",
+				"global.identity.auth.optimize.secret.existingSecret": "ownExistingSecret",
+				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

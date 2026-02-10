@@ -57,8 +57,10 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.auth.enabled":                                    "true",
 				"global.identity.auth.issuerBackendUrl":                           "http://keycloak:80/auth/realms/camunda-platform",
 				"identity.enabled":                                                "true",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
-				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
+				"connectors.security.authentication.oidc.secret.existingSecret":             "foo",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "identity-connectors-client-token",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -77,8 +79,10 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"global.identity.keycloak.contextPath":                            "/auth/realms/",
 				"global.identity.keycloak.realm":                                  "camunda-platform",
 				"identity.enabled":                                                "true",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
-				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
+				"connectors.security.authentication.oidc.secret.existingSecret":             "foo",
+				"connectors.security.authentication.oidc.secret.existingSecretKey": "identity-connectors-client-token",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
