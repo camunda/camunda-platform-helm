@@ -19,7 +19,7 @@ metadata:
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
-  type: {{ .Values.orchestration.service.type }}
+  type: {{ .Values.orchestration.service.headless.type }}
   ports:
     - port: {{ .Values.orchestration.service.managementPort }}
       protocol: TCP

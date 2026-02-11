@@ -5423,6 +5423,11 @@
                                     "type": "object",
                                     "description": "can be used to define annotations, which will be applied to the headless service",
                                     "default": {}
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "defines the type of the headless service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
+                                    "default": "ClusterIP"
                                 }
                             }
                         },
@@ -5572,7 +5577,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "description": "defines the secret name which contains the TLS private key and certificate",
-                                            "default": "camunda-platform-orchestration-grpc"
+                                            "default": "camunda-platform-zeebe-gateway"
                                         }
                                     }
                                 }

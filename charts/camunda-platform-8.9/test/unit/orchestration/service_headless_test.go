@@ -81,9 +81,9 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 				expectedTargetPort := int32(5701)
 				ports := service.Spec.Ports
 
-				s.Require().Equal(expectedPort, ports[3].Port)
-				s.Require().Equal(expectedName, ports[3].Name)
-				s.Require().Equal(expectedTargetPort, ports[3].TargetPort.IntVal)
+				s.Require().Equal(expectedPort, ports[5].Port)
+				s.Require().Equal(expectedName, ports[5].Name)
+				s.Require().Equal(expectedTargetPort, ports[5].TargetPort.IntVal)
 			},
 		}, {
 			Name: "TestContainerServiceAnnotations",
@@ -96,6 +96,18 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 
 				// then
 				s.Require().Equal("bar-service-annotation", service.ObjectMeta.Annotations["foo"])
+			},
+		}, {
+			Name: "TestHeadlessServiceType",
+			Values: map[string]string{
+				"orchestration.service.headless.type": "ClusterIP",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().Equal(coreV1.ServiceTypeClusterIP, service.Spec.Type)
 			},
 		},
 	}

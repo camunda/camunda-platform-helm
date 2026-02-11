@@ -1,0 +1,9 @@
+global:
+  ingress:
+    tls:
+      secretName: camunda-platform
+orchestration:
+  ingress:
+    grpc:
+      tls:
+        secretName: camunda-platform-zeebe-gateway

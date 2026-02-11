@@ -1,4 +1,6 @@
 name: "Chart - Release - Pipeline - 1 - Build Dev"
+run-name: >-
+  Chart - Release - Pipeline - 1 - Build Dev${{ inputs.chart-version != '' && format(' [{0}]', inputs.chart-version) || '' }}
 
 # Builds immutable dev packages for all active chart versions.
 # These packages are release-ready (transformations applied) and stored in Harbor
@@ -64,6 +66,9 @@ on:
         type: string
         required: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.chart-version || 'push' }}
+  cancel-in-progress: false
 
 env:
   CHART_NAME: "camunda-platform"
