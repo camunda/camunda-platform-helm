@@ -23,10 +23,23 @@ spec:
       certificateRefs:
       - kind: Secret
         name: {{ .Values.global.gateway.tls.secretName }}
+  - name: grpcs
+    port: 443
+    protocol: HTTPS
+    hostname: grpc-{{ tpl .Values.global.gateway.hostname $ }}
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: {{ .Values.global.gateway.tls.secretName }}
   {{- else }}
   - name: http
     port: 80
     protocol: HTTP
     hostname: {{ tpl .Values.global.gateway.hostname $ }}
+  - name: grpc
+    port: 80
+    protocol: HTTP
+    hostname: grpc-{{ tpl .Values.global.gateway.hostname $ }}
   {{- end }}
 {{- end }}
