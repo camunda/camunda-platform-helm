@@ -81,9 +81,9 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 				expectedTargetPort := int32(5701)
 				ports := service.Spec.Ports
 
-				s.Require().Equal(expectedPort, ports[3].Port)
-				s.Require().Equal(expectedName, ports[3].Name)
-				s.Require().Equal(expectedTargetPort, ports[3].TargetPort.IntVal)
+				s.Require().Equal(expectedPort, ports[5].Port)
+				s.Require().Equal(expectedName, ports[5].Name)
+				s.Require().Equal(expectedTargetPort, ports[5].TargetPort.IntVal)
 			},
 		}, {
 			Name: "TestContainerServiceAnnotations",
