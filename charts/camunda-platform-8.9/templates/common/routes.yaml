@@ -200,6 +200,8 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
+  parentRefs:
+  - name: {{ include "camundaPlatform.fullname" . }}
   hostnames:
   - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
 {{- end }}
