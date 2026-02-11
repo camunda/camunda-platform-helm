@@ -130,11 +130,13 @@ data:
           checksEnabled: false
           apiEnabled: true
     
+      persistent:
+        sessions:
+          enabled: true
+    
       #
       # Camunda Operate Configuration - Separated syntax.
       #
-      operate:
-        persistentSessionsEnabled: true
         multiTenancy:
           enabled: false
         # Zeebe instance
