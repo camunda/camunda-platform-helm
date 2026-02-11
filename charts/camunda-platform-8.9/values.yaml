@@ -2660,7 +2660,7 @@ orchestration:
         ## @param orchestration.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
         enabled: false
         ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-orchestration-grpc
+        secretName: camunda-platform-zeebe-gateway
 
   # contextPath: "/orchestration"
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.

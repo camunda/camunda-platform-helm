@@ -5864,7 +5864,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "description": "defines the secret name which contains the TLS private key and certificate",
-                                            "default": "camunda-platform-orchestration-grpc"
+                                            "default": "camunda-platform-zeebe-gateway"
                                         }
                                     }
                                 }
