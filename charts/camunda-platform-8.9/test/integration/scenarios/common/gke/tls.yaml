@@ -6,4 +6,4 @@ orchestration:
   ingress:
     grpc:
       tls:
-        secretName: camunda-platform-gateway
+        secretName: camunda-platform-zeebe-gateway
