@@ -57,7 +57,7 @@ We value all feedback and contributions. To start contributing to this project, 
 - **Don't create a PR without opening [an issue](https://github.com/camunda/camunda-platform-helm/issues/new/choose)
   and discussing it first.**
 - Familiarize yourself with the
-[contribution guide](./docs/contributing.md).
+[contribution guide](https://github.com/camunda/camunda-platform-helm/wiki/contribution-and-collaboration).
 - Find more information about the Camunda 8 [Helm charts](./charts).
 
 ## Releasing
