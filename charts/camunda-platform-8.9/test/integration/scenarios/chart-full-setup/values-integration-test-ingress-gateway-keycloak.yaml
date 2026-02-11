@@ -8,7 +8,7 @@ global:
     enabled: true
     className: nginx
     # The Ingress host will be added via CLI.
-    host: "$CAMUNDA_HOSTNAME"
+    hostname: "$CAMUNDA_HOSTNAME"
     tls:
       enabled: true
       # A wildcard certificate will be used.
