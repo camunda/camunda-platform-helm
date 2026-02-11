@@ -411,6 +411,20 @@ global:
         redirectUrl: "http://localhost:8070"
 
       #####################
+      # Camunda Hub (Experimental)
+      #####################
+
+      ## @skip global.identity.auth.camundaHub
+      ## Camunda Hub authentication configuration (Experimental).
+      camundaHub:
+        ## @skip global.identity.auth.camundaHub.clientId
+        clientId: camunda-hub
+        ## @skip global.identity.auth.camundaHub.audience
+        audience: camunda-hub-api
+        ## @skip global.identity.auth.camundaHub.redirectUrl
+        redirectUrl: "http://localhost:8088"
+
+      #####################
       # Optimize
       #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
@@ -2117,6 +2131,269 @@ webModelerPostgresql:
       enabled: true
       runAsNonRoot: true
       fsGroup: 1001
+
+#####################################################################
+ #####
+#     #    ##   #    # #    # #    # #####    ##   #    # #    # #####
+#         #  #  ##  ## #    # ##   # #    #  #  #  #    # #    # #    #
+#        #    # # ## # #    # # #  # #    # #    # ###### #    # #####
+#        ###### #    # #    # #  # # #    # ###### #    # #    # #    #
+#     # #    # #    # #    # #   ## #    # #    # #    # #    # #    #
+ #####  #    # #    #  ####  #    # #####  #    # #    #  ####  #####
+#####################################################################
+## @skip camundaHub
+## Camunda Hub (Experimental) - Unified application replacing Console and Web Modeler.
+## WARNING: This is an experimental feature available for preview only in Camunda 8.9.
+## This feature may change without notice and is not recommended for production use.
+camundaHub:
+  ## @skip camundaHub.enabled
+  ## If true, the Camunda Hub deployment and its related resources are deployed via a helm release.
+  enabled: false
+
+  ## @skip camundaHub.experimental
+  ## Experimental feature configuration.
+  experimental:
+    ## @skip camundaHub.experimental.acknowledged
+    ## Must be set to true to enable this experimental feature.
+    ## This ensures users explicitly acknowledge that they are using an experimental feature.
+    acknowledged: false
+
+  ## @skip camundaHub.configuration
+  ## Configuration passed directly to Camunda Hub as YAML file.
+  configuration: ""
+
+  ## @skip camundaHub.overrideConfiguration
+  ## When populated, it will override the configuration passed to Camunda Hub.
+  overrideConfiguration: ""
+
+  ## @skip camundaHub.image
+  ## Camunda Hub image configuration.
+  # https://hub.docker.com/r/camunda/camunda-hub/tags
+  image:
+    ## @skip camundaHub.image.registry
+    registry: ""
+    ## @skip camundaHub.image.repository
+    repository: camunda/camunda-hub
+    ## @skip camundaHub.image.tag
+    tag: 8.9.0-alpha4
+    ## @skip camundaHub.image.digest
+    digest: ""
+    ## @skip camundaHub.image.pullSecrets
+    pullSecrets: []
+
+  ## @skip camundaHub.sidecars
+  sidecars: []
+
+  ## @skip camundaHub.replicas
+  replicas: 1
+
+  ## @skip camundaHub.tls
+  ## Configure the Camunda Hub TLS options.
+  tls:
+    ## @skip camundaHub.tls.enabled
+    enabled: false
+    ## @skip camundaHub.tls.existingSecret
+    existingSecret: ""
+    ## @skip camundaHub.tls.certKeyFilename
+    certKeyFilename: ""
+    ## @skip camundaHub.tls.secret
+    secret:
+      ## @skip camundaHub.tls.secret.existingSecret
+      existingSecret: ""
+
+  ## @skip camundaHub.keycloak
+  ## Configuration to configure Keycloak authentication settings.
+  keycloak:
+    ## @skip camundaHub.keycloak.realm
+    realm: "camunda-platform"
+
+  ## @skip camundaHub.contextPath
+  ## Can be used to make Camunda Hub work on a custom sub-path.
+  contextPath: ""
+
+  ## @skip camundaHub.initContainers
+  initContainers: []
+
+  ## @skip camundaHub.podAnnotations
+  podAnnotations: {}
+
+  ## @skip camundaHub.podLabels
+  podLabels: {}
+
+  ## @skip camundaHub.logging
+  logging: {}
+
+  ## @skip camundaHub.service
+  service:
+    ## @skip camundaHub.service.annotations
+    annotations: {}
+    ## @skip camundaHub.service.type
+    type: ClusterIP
+    ## @skip camundaHub.service.port
+    port: 80
+    ## @skip camundaHub.service.serverName
+    serverName: http
+    ## @skip camundaHub.service.managementPort
+    managementPort: 9100
+
+  ## @skip camundaHub.resources
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: 1Gi
+    limits:
+      cpu: "2000m"
+      memory: 2Gi
+
+  ## @skip camundaHub.env
+  env: []
+
+  ## @skip camundaHub.envFrom
+  envFrom: []
+
+  ## @skip camundaHub.command
+  command: []
+
+  ## @skip camundaHub.extraVolumes
+  extraVolumes: []
+
+  ## @skip camundaHub.extraVolumeMounts
+  extraVolumeMounts: []
+
+  ## @skip camundaHub.startupProbe
+  startupProbe:
+    ## @skip camundaHub.startupProbe.enabled
+    enabled: false
+    ## @skip camundaHub.startupProbe.scheme
+    scheme: HTTP
+    ## @skip camundaHub.startupProbe.probePath
+    probePath: /health/readiness
+    ## @skip camundaHub.startupProbe.initialDelaySeconds
+    initialDelaySeconds: 30
+    ## @skip camundaHub.startupProbe.periodSeconds
+    periodSeconds: 30
+    ## @skip camundaHub.startupProbe.successThreshold
+    successThreshold: 1
+    ## @skip camundaHub.startupProbe.failureThreshold
+    failureThreshold: 5
+    ## @skip camundaHub.startupProbe.timeoutSeconds
+    timeoutSeconds: 1
+
+  ## @skip camundaHub.readinessProbe
+  readinessProbe:
+    ## @skip camundaHub.readinessProbe.enabled
+    enabled: true
+    ## @skip camundaHub.readinessProbe.scheme
+    scheme: HTTP
+    ## @skip camundaHub.readinessProbe.probePath
+    probePath: /health/readiness
+    ## @skip camundaHub.readinessProbe.initialDelaySeconds
+    initialDelaySeconds: 30
+    ## @skip camundaHub.readinessProbe.periodSeconds
+    periodSeconds: 30
+    ## @skip camundaHub.readinessProbe.successThreshold
+    successThreshold: 1
+    ## @skip camundaHub.readinessProbe.failureThreshold
+    failureThreshold: 5
+    ## @skip camundaHub.readinessProbe.timeoutSeconds
+    timeoutSeconds: 1
+
+  ## @skip camundaHub.livenessProbe
+  livenessProbe:
+    ## @skip camundaHub.livenessProbe.enabled
+    enabled: false
+    ## @skip camundaHub.livenessProbe.scheme
+    scheme: HTTP
+    ## @skip camundaHub.livenessProbe.probePath
+    probePath: /health/liveness
+    ## @skip camundaHub.livenessProbe.initialDelaySeconds
+    initialDelaySeconds: 30
+    ## @skip camundaHub.livenessProbe.periodSeconds
+    periodSeconds: 30
+    ## @skip camundaHub.livenessProbe.successThreshold
+    successThreshold: 1
+    ## @skip camundaHub.livenessProbe.failureThreshold
+    failureThreshold: 5
+    ## @skip camundaHub.livenessProbe.timeoutSeconds
+    timeoutSeconds: 1
+
+  ## @skip camundaHub.metrics
+  metrics:
+    ## @skip camundaHub.metrics.prometheus
+    prometheus: /prometheus
+
+  ## @skip camundaHub.serviceAccount
+  serviceAccount:
+    ## @skip camundaHub.serviceAccount.enabled
+    enabled: true
+    ## @skip camundaHub.serviceAccount.name
+    name: ""
+    ## @skip camundaHub.serviceAccount.annotations
+    annotations: {}
+    ## @skip camundaHub.serviceAccount.automountServiceAccountToken
+    automountServiceAccountToken: false
+
+  ## @skip camundaHub.podSecurityContext
+  podSecurityContext:
+    ## @skip camundaHub.podSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @skip camundaHub.podSecurityContext.fsGroup
+    fsGroup: 1001
+    ## @skip camundaHub.podSecurityContext.seccompProfile
+    seccompProfile:
+      ## @skip camundaHub.podSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+
+  ## @skip camundaHub.containerSecurityContext
+  containerSecurityContext:
+    ## @skip camundaHub.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: false
+    ## @skip camundaHub.containerSecurityContext.privileged
+    privileged: false
+    ## @skip camundaHub.containerSecurityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @skip camundaHub.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @skip camundaHub.containerSecurityContext.runAsUser
+    runAsUser: 1001
+    ## @skip camundaHub.containerSecurityContext.seccompProfile
+    seccompProfile:
+      ## @skip camundaHub.containerSecurityContext.seccompProfile.type
+      type: RuntimeDefault
+
+  ## @skip camundaHub.nodeSelector
+  nodeSelector: {}
+
+  ## @skip camundaHub.tolerations
+  tolerations: []
+
+  ## @skip camundaHub.affinity
+  affinity: {}
+
+  ## @skip camundaHub.dnsPolicy
+  dnsPolicy: ""
+
+  ## @skip camundaHub.dnsConfig
+  dnsConfig: {}
+
+  ## @skip camundaHub.externalDatabase
+  ## External database configuration for Camunda Hub.
+  ## Required when camundaHub.enabled is true.
+  externalDatabase:
+    ## @skip camundaHub.externalDatabase.host
+    host: ""
+    ## @skip camundaHub.externalDatabase.port
+    port: 5432
+    ## @skip camundaHub.externalDatabase.database
+    database: "camunda-hub"
+    ## @skip camundaHub.externalDatabase.user
+    user: "camunda-hub"
+    ## @skip camundaHub.externalDatabase.password
+    password: ""
+    ## @skip camundaHub.externalDatabase.existingSecret
+    existingSecret: ""
+    ## @skip camundaHub.externalDatabase.existingSecretPasswordKey
+    existingSecretPasswordKey: ""
 
 #####################################################################
  #####

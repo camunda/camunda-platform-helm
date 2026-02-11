@@ -1,0 +1,28 @@
+{{- if .Values.camundaHub.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "camundaHub.fullname" . }}
+  labels:
+    {{- include "camundaHub.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.camundaHub.service.annotations}}
+      {{- toYaml .Values.camundaHub.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.camundaHub.service.type }}
+  ports:
+    - port: {{ .Values.camundaHub.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.camundaHub.service.managementPort }}
+      name: management
+      targetPort: management
+      protocol: TCP
+  selector:
+    {{- include "camundaHub.matchLabels" . | nindent 4 }}
+{{- end }}

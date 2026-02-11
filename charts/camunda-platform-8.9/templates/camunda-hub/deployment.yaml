@@ -1,0 +1,224 @@
+{{- if .Values.camundaHub.enabled -}}
+{{/*
+Validate experimental acknowledgement - will fail if not acknowledged
+*/}}
+{{- include "camundaHub.validateExperimental" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "camundaHub.fullname" . }}
+  labels:
+    {{- include "camundaHub.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.camundaHub.replicas }}
+  selector:
+    matchLabels:
+      {{- include "camundaHub.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/camunda-hub/configmap.yaml") . | sha256sum }}
+      {{- with .Values.camundaHub.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "camundaHub.matchLabels" . | nindent 8 }}
+        {{- if .Values.camundaHub.podLabels }}
+          {{- toYaml .Values.camundaHub.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "camundaHub.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.camundaHub.initContainers | default list | toYaml | nindent 8) $ }}
+      serviceAccountName: {{ include "camundaHub.serviceAccountName" . }}
+      {{- if .Values.camundaHub.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.camundaHub.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.camundaHub.dnsPolicy }}
+      dnsPolicy: {{ .Values.camundaHub.dnsPolicy | quote }}
+      {{- end }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.camundaHub.podSecurityContext "context" $) | nindent 8 }}
+      containers:
+        - name: camunda-hub
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.camundaHub) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.camundaHub.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.camundaHub.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            {{- if .Values.camundaHub.tls.enabled }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: {{ printf "/usr/local/camunda-hub/certificates/%s" .Values.camundaHub.tls.certKeyFilename | quote }}
+            {{- end }}
+            - name: NODE_ENV
+              value: prod
+            {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
+            - name: KEYCLOAK_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrlWithFallback" .) "" | quote }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.camundaHub.keycloak.realm | quote }}
+            {{- end }}
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ .Values.global.identity.auth.camundaHub.audience | default "camunda-hub-api" }}
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ .Values.global.identity.auth.camundaHub.clientId | default "camunda-hub" }}
+            - name: CAMUNDA_HUB_CONTEXT_PATH
+              value: {{ .Values.camundaHub.contextPath | quote }}
+            {{- if .Values.camundaHub.externalDatabase.host }}
+            - name: DATABASE_HOST
+              value: {{ .Values.camundaHub.externalDatabase.host | quote }}
+            - name: DATABASE_PORT
+              value: {{ .Values.camundaHub.externalDatabase.port | quote }}
+            - name: DATABASE_NAME
+              value: {{ .Values.camundaHub.externalDatabase.database | quote }}
+            - name: DATABASE_USER
+              value: {{ .Values.camundaHub.externalDatabase.user | quote }}
+            {{- if .Values.camundaHub.externalDatabase.existingSecret }}
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.camundaHub.externalDatabase.existingSecret }}
+                  key: {{ .Values.camundaHub.externalDatabase.existingSecretPasswordKey | default "password" }}
+            {{- else if .Values.camundaHub.externalDatabase.password }}
+            - name: DATABASE_PASSWORD
+              value: {{ .Values.camundaHub.externalDatabase.password | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
+            - name: AWS_SECRET_ACCESS_KEY
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
+            {{- end }}
+          {{- if .Values.camundaHub.env}}
+            {{ .Values.camundaHub.env | toYaml | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.camundaHub.envFrom }}
+            {{- .Values.camundaHub.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: management
+              containerPort: 9100
+              protocol: TCP
+          {{- if .Values.camundaHub.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.camundaHub.startupProbe.probePath }}
+              scheme: {{ .Values.camundaHub.startupProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.camundaHub.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.camundaHub.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.camundaHub.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.camundaHub.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.camundaHub.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.camundaHub.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.camundaHub.readinessProbe.probePath }}
+              scheme: {{ .Values.camundaHub.readinessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.camundaHub.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.camundaHub.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.camundaHub.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.camundaHub.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.camundaHub.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.camundaHub.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.camundaHub.livenessProbe.probePath }}
+              scheme: {{ .Values.camundaHub.livenessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.camundaHub.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.camundaHub.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.camundaHub.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.camundaHub.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.camundaHub.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.camundaHub.command}}
+          command: {{ toYaml .Values.camundaHub.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.camundaHub.resources | nindent 12 }}
+          volumeMounts:
+            - name: camunda-hub-configuration
+              mountPath: /var/run/config
+          {{- if .Values.camundaHub.tls.enabled }}
+            - name: camunda-hub-certificates
+              mountPath: /usr/local/camunda-hub/certificates
+              readOnly: true
+          {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
+              readOnly: true
+            {{- end }}
+          {{- if .Values.camundaHub.extraVolumeMounts }}
+            {{- .Values.camundaHub.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+      {{- if .Values.camundaHub.sidecars }}
+        {{- .Values.camundaHub.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: camunda-hub-configuration
+          configMap:
+            name: {{ include "camundaHub.fullname" . }}-configuration
+        {{- if .Values.camundaHub.tls.enabled }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "camunda-hub-certificates"
+            "config" .Values.camundaHub.tls
+        ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
+        {{- end }}
+      {{- if .Values.camundaHub.extraVolumes }}
+        {{- .Values.camundaHub.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.camundaHub.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.camundaHub.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.camundaHub.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
