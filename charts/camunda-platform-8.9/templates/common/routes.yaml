@@ -204,4 +204,9 @@ spec:
   - name: {{ include "camundaPlatform.fullname" . }}
   hostnames:
   - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
+  rules:
+  - backendRefs:
+    - name: {{ include "orchestration.serviceName" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.orchestration.service.grpcPort }}
 {{- end }}
