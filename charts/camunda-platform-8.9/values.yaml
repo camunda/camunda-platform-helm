@@ -2583,6 +2583,8 @@ orchestration:
     headless:
       ## @param orchestration.service.headless.annotations can be used to define annotations, which will be applied to the headless service
       annotations: {}
+      ## @param orchestration.service.headless.type defines the type of the headless service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
     ## @param orchestration.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param orchestration.service.loadBalancerIP defines public IP of the load balancer if the type is LoadBalancer
