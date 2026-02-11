@@ -72,9 +72,15 @@ log() {
 
 get_ingress_hostname() {
   local namespace="$1"
+  local kube_context="${2:-}"
   local hostname
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
 
-  hostname=$(kubectl -n "$namespace" get ingress -o json | jq -r '
+  hostname=$($kubectl_cmd -n "$namespace" get ingress -o json | jq -r '
     .items[]
     | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
     | ([.spec.rules[].host] | join(","))')
@@ -183,11 +189,12 @@ _install_playwright_browsers() {
 }
 
 # Handle playwright test result and exit appropriately
-# Args: playwright_rc, test_description, [should_exit=true]
+# Args: playwright_rc, test_description, rerun_command, [should_exit=true]
 _handle_playwright_result() {
   local playwright_rc="$1"
   local test_description="$2"
-  local should_exit="${3:-true}"
+  local rerun_command="$3"
+  local should_exit="${4:-true}"
 
   if [[ $playwright_rc -eq 0 ]]; then
     log "✅  $test_description passed"
@@ -196,6 +203,14 @@ _handle_playwright_result() {
     fi
   else
     log "❌  $test_description failed with code $playwright_rc"
+    echo ""
+    echo "========================================"
+    echo "To rerun this test locally, run:"
+    echo "========================================"
+    echo ""
+    echo "  $rerun_command"
+    echo ""
+    echo "========================================"
     exit $playwright_rc
   fi
 }
@@ -223,8 +238,15 @@ _get_reporter() {
 #   - Completed/Succeeded pods (Jobs) are always considered ready
 #   - Running pods must have all containers ready (e.g., 1/1, 2/2)
 # Args: namespace
+# Args: namespace, [kube_context]
 _check_all_pods_ready() {
   local namespace="$1"
+  local kube_context="${2:-}"
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   if [[ -z "$namespace" ]]; then
     log "WARNING: No namespace provided for pod check, skipping"
@@ -247,6 +269,8 @@ _check_all_pods_ready() {
       }
     }
   ')
+  local not_ready
+  not_ready=$($kubectl_cmd get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || true)
   
   if [[ -z "$not_ready_pods" ]]; then
     return 0
@@ -263,10 +287,16 @@ _check_all_pods_ready() {
 
 # Wait for all pods in namespace to be Ready
 # Excludes completed Job pods (they use Succeeded status, not Ready condition)
-# Args: namespace, [timeout_seconds=420]
+# Args: namespace, [timeout_seconds=300], [kube_context]
 _wait_for_pods_ready() {
   local namespace="$1"
-  local timeout="${2:-420}"
+  local timeout="${2:-300}"
+  local kube_context="${3:-}"
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   if [[ -z "$namespace" ]]; then
     log "WARNING: No namespace provided for pod wait, skipping"
@@ -276,7 +306,7 @@ _wait_for_pods_ready() {
   log "Waiting up to ${timeout}s for all pods in namespace $namespace to be Ready..."
   
   # Exclude completed Jobs (status.phase=Succeeded) - they don't have Ready condition
-  if kubectl wait --for=condition=Ready pods --all \
+  if $kubectl_cmd wait --for=condition=Ready pods --all \
        --field-selector=status.phase!=Succeeded \
        -n "$namespace" \
        --timeout="${timeout}s" 2>/dev/null; then
@@ -290,7 +320,7 @@ _wait_for_pods_ready() {
     # Re-check if all current pods are now ready. If they are, the failed pod
     # was likely deleted and we can proceed.
     log "kubectl wait failed, verifying current pod state..."
-    if _check_all_pods_ready "$namespace"; then
+    if _check_all_pods_ready "$namespace" "$kube_context"; then
       log "All current pods in namespace $namespace are Ready (previous failure may have been due to pod deletion)"
       return 0
     fi
@@ -319,11 +349,12 @@ _POD_RETRY_TIMEOUT=420  # 7 minutes
 #   1. Pods are detected as not ready after test failure
 #   2. Connection errors (ECONNREFUSED, etc.) are detected in test output
 #      (handles race condition where pods recovered quickly after disruption)
-# Args: namespace, playwright_command...
+# Args: namespace, kube_context, playwright_command...
 # Returns: playwright exit code (0 = success, non-zero = failure)
 _run_playwright_with_retry() {
   local namespace="$1"
-  shift
+  local kube_context="$2"
+  shift 2
   local playwright_cmd=("$@")
   
   local attempt=0
@@ -338,9 +369,9 @@ _run_playwright_with_retry() {
     
     # Check pods are ready before running
     if [[ -n "$namespace" ]]; then
-      if ! _check_all_pods_ready "$namespace"; then
+      if ! _check_all_pods_ready "$namespace" "$kube_context"; then
         log "WARNING: Pods not ready before test attempt $attempt, waiting for recovery..."
-        if ! _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT"; then
+        if ! _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT" "$kube_context"; then
           log "ERROR: Pods did not recover before test attempt $attempt"
           if [[ $attempt -ge $_POD_RETRY_MAX_ATTEMPTS ]]; then
             log "ERROR: Max retry attempts reached, pods never recovered"
@@ -385,18 +416,14 @@ _run_playwright_with_retry() {
     
     if [[ -n "$namespace" ]]; then
       log "Checking pod health after test failure..."
-      local pods_ready=true
-      if ! _check_all_pods_ready "$namespace"; then
-        pods_ready=false
-      fi
       
-      if [[ "$pods_ready" == "false" ]]; then
-        # Pods are not ready - clear infrastructure issue
+      if ! _check_all_pods_ready "$namespace" "$kube_context"; then
+        # Pods are not ready - this was likely a spot instance preemption
         log "WARNING: Test failed and pods are not ready (possible spot instance preemption)"
         
         if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
           log "Waiting for pods to recover before retry..."
-          if _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT"; then
+          if _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT" "$kube_context"; then
             log "Pods recovered, will retry tests..."
             continue
           else
@@ -452,10 +479,13 @@ run_playwright_tests() {
   local run_smoke_tests="$7"
   local enable_debug="$8"
   local namespace="${9:-}"  # Optional: namespace for pod health checks
+  local kube_context="${10:-}"  # Optional: kubernetes context
+  local rerun_cmd="${11:-}"  # Optional: command to rerun tests locally
 
   log "Smoke tests: $run_smoke_tests"
   log "Reporter: $reporter"
   [[ -n "$namespace" ]] && log "Namespace for pod checks: $namespace"
+  [[ -n "$kube_context" ]] && log "Kube context: $kube_context"
 
   _setup_playwright_environment "$test_suite_path" "false"
   _install_playwright_browsers
@@ -484,7 +514,7 @@ run_playwright_tests() {
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
 
   # Run with retry logic for pod failures (spot instance preemption)
-  _run_playwright_with_retry "$namespace" "${playwright_args[@]}"
+  _run_playwright_with_retry "$namespace" "$kube_context" "${playwright_args[@]}"
   local playwright_rc=$?
 
   # Only show HTML report locally, never in CI (it blocks waiting for Ctrl+C)
@@ -492,7 +522,7 @@ run_playwright_tests() {
     npx playwright show-report
   fi
 
-  _handle_playwright_result "$playwright_rc" "All Playwright tests" "true"
+  _handle_playwright_result "$playwright_rc" "All Playwright tests" "$rerun_cmd" "true"
 }
 
 # Run playwright tests for hybrid auth - runs specific test files with a specific auth type
@@ -504,9 +534,12 @@ run_playwright_tests_hybrid() {
   local test_files="$4"
   local test_exclude="$5"
   local namespace="${6:-}"  # Optional: namespace for pod health checks
+  local kube_context="${7:-}"  # Optional: kubernetes context
+  local rerun_cmd="${8:-}"  # Optional: command to rerun tests locally
 
   log "Running hybrid tests: auth_type='$auth_type' test_files='$test_files'"
   [[ -n "$namespace" ]] && log "Namespace for pod checks: $namespace"
+  [[ -n "$kube_context" ]] && log "Kube context: $kube_context"
 
   _setup_playwright_environment "$test_suite_path" "true"
 
@@ -521,8 +554,8 @@ run_playwright_tests_hybrid() {
   # Run specific test files with the auth type set as environment variable
   # This overrides any TEST_AUTH_TYPE in .env file
   # Run with retry logic for pod failures (spot instance preemption)
-  TEST_AUTH_TYPE="$auth_type" _run_playwright_with_retry "$namespace" "${playwright_args[@]}"
+  TEST_AUTH_TYPE="$auth_type" _run_playwright_with_retry "$namespace" "$kube_context" "${playwright_args[@]}"
   local playwright_rc=$?
 
-  _handle_playwright_result "$playwright_rc" "Hybrid Playwright tests ($auth_type)" "false"
+  _handle_playwright_result "$playwright_rc" "Hybrid Playwright tests ($auth_type)" "$rerun_cmd" "false"
 }

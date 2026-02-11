@@ -10,6 +10,12 @@ source "$(dirname "$0")/render-e2e-env.sh"
 validate_args() {
   local chart_path="$1"
   local namespace="$2"
+  local kube_context="${3:-}"
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   log "DEBUG: Validating arguments"
 
@@ -28,7 +34,7 @@ validate_args() {
     exit 1
   fi
 
-  if ! kubectl get namespace "$namespace" > /dev/null 2>&1; then
+  if ! $kubectl_cmd get namespace "$namespace" > /dev/null 2>&1; then
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
     exit 1
   fi
@@ -46,6 +52,7 @@ Usage:
 Options:
   --absolute-chart-path ABSOLUTE_CHART_PATH   The absolute path to the chart directory.
   --namespace NAMESPACE                       The namespace c8 is deployed into
+  --kube-context KUBE_CONTEXT                 The Kubernetes context to use (optional).
   --show-html-report                          Show the HTML report after the tests have run.
   --shard-index SHARD_INDEX                   The shard index to run.
   --shard-total SHARD_TOTAL                   The total number of shards.
@@ -68,6 +75,7 @@ EOF
 # Default values
 ABSOLUTE_CHART_PATH=""
 NAMESPACE=""
+KUBE_CONTEXT=""
 SHOW_HTML_REPORT=false
 VERBOSE=false
 SHARD_INDEX=1
@@ -91,6 +99,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --namespace)
       NAMESPACE="$2"
+      shift 2
+      ;;
+    --kube-context)
+      KUBE_CONTEXT="$2"
       shift 2
       ;;
     --show-html-report)
@@ -150,12 +162,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 log "DEBUG: Starting run-e2e-tests.sh"
-log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE"
+log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, KubeContext: $KUBE_CONTEXT"
 
-validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE"
+validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
-hostname=$(get_ingress_hostname "$NAMESPACE")
+hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
 log "DEBUG: Hostname: $hostname"
 log "DEBUG: Test suite path: $TEST_SUITE_PATH"
@@ -163,12 +175,21 @@ log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 [[ "$IS_RBA" == "true" ]] && log "IS_RBA is set to true"
 [[ "$IS_MT" == "true" ]] && log "IS_MT is set to true"
 
-render_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS"
+render_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
 log "DEBUG: Shard: $SHARD_INDEX/$SHARD_TOTAL, Exclude: $TEST_EXCLUDE, Debug: $PLAYWRIGHT_DEBUG"
 
-run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE"
+# Build the rerun command for display on failure
+RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
+[[ -n "$KUBE_CONTEXT" ]] && RERUN_CMD+=" --kube-context ${KUBE_CONTEXT}"
+[[ -n "$TEST_EXCLUDE" ]] && RERUN_CMD+=" --test-exclude \"${TEST_EXCLUDE}\""
+[[ "$RUN_SMOKE_TESTS" == "true" ]] && RERUN_CMD+=" --run-smoke-tests"
+[[ "$IS_OPENSEARCH" == "true" ]] && RERUN_CMD+=" --opensearch"
+[[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
+[[ "$IS_MT" == "true" ]] && RERUN_CMD+=" --mt"
+
+run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD"
 
 log "DEBUG: E2E tests completed"

@@ -45,14 +45,20 @@ check_env_required_cmds() {
 
 resolve_minor_version_from_identity() {
   local namespace="$1"
+  local kube_context="${2:-}"
   local version_label=""
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   log "DEBUG: Resolving minor version for namespace $namespace"
   
   # Prefer Zeebe component, then Orchestration component
-  version_label="$(kubectl -n "$namespace" get sts -l app.kubernetes.io/component=zeebe-broker -o jsonpath='{.items[0].metadata.labels.app\.kubernetes\.io/version}' 2>/dev/null || true)"
+  version_label="$($kubectl_cmd -n "$namespace" get sts -l app.kubernetes.io/component=zeebe-broker -o jsonpath='{.items[0].metadata.labels.app\.kubernetes\.io/version}' 2>/dev/null || true)"
   if [[ -z "$version_label" ]]; then
-    version_label="$(kubectl -n "$namespace" get sts -l app.kubernetes.io/component=orchestration -o jsonpath='{.items[0].metadata.labels.app\.kubernetes\.io/version}' 2>/dev/null || true)"
+    version_label="$($kubectl_cmd -n "$namespace" get sts -l app.kubernetes.io/component=orchestration -o jsonpath='{.items[0].metadata.labels.app\.kubernetes\.io/version}' 2>/dev/null || true)"
   fi
   
   if [[ -n "$version_label" ]]; then
@@ -79,12 +85,18 @@ resolve_minor_version_from_identity() {
 resolve_env_password() {
   local namespace="$1"
   local env_var_name="$2"
+  local kube_context="${3:-}"
   local password=""
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   log "DEBUG: Resolving $env_var_name"
   
   # Try direct value
-  password="$(kubectl -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].spec.template.spec.containers[0].env[?(@.name==\"${env_var_name}\")].value}" 2>/dev/null || true)"
+  password="$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].spec.template.spec.containers[0].env[?(@.name==\"${env_var_name}\")].value}" 2>/dev/null || true)"
   if [[ -n "$password" ]]; then
     log "DEBUG: Found $env_var_name from direct env value"
     printf "%s" "$password"
@@ -94,12 +106,12 @@ resolve_env_password() {
   # Try valueFrom secretKeyRef
   log "DEBUG: Trying secret reference for $env_var_name"
   local secret_name secret_key
-  secret_name="$(kubectl -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].spec.template.spec.containers[0].env[?(@.name==\"${env_var_name}\")].valueFrom.secretKeyRef.name}" 2>/dev/null || true)"
-  secret_key="$(kubectl -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].spec.template.spec.containers[0].env[?(@.name==\"${env_var_name}\")].valueFrom.secretKeyRef.key}" 2>/dev/null || true)"
+  secret_name="$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].spec.template.spec.containers[0].env[?(@.name==\"${env_var_name}\")].valueFrom.secretKeyRef.name}" 2>/dev/null || true)"
+  secret_key="$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].spec.template.spec.containers[0].env[?(@.name==\"${env_var_name}\")].valueFrom.secretKeyRef.key}" 2>/dev/null || true)"
   
   if [[ -n "$secret_name" && -n "$secret_key" ]]; then
     log "DEBUG: Retrieving $env_var_name from secret $secret_name/$secret_key"
-    password="$(kubectl -n "$namespace" get secret "$secret_name" -o jsonpath="{.data['$secret_key']}" 2>/dev/null | base64 -d || true)"
+    password="$($kubectl_cmd -n "$namespace" get secret "$secret_name" -o jsonpath="{.data['$secret_key']}" 2>/dev/null | base64 -d || true)"
     if [[ -n "$password" ]]; then
       log "DEBUG: Successfully retrieved $env_var_name from secret"
       printf "%s" "$password"
@@ -113,19 +125,25 @@ resolve_env_password() {
 
 resolve_keycloak_setup_password() {
   local namespace="$1"
+  local kube_context="${2:-}"
   local password=""
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   log "DEBUG: Resolving Keycloak setup password"
   
   # Try KEYCLOAK_SETUP_PASSWORD
-  password="$(resolve_env_password "$namespace" "KEYCLOAK_SETUP_PASSWORD")"
+  password="$(resolve_env_password "$namespace" "KEYCLOAK_SETUP_PASSWORD" "$kube_context")"
   if [[ -n "$password" ]]; then
     printf "%s" "$password"
     return 0
   fi
 
   # Try VALUES_KEYCLOAK_SETUP_PASSWORD
-  password="$(resolve_env_password "$namespace" "VALUES_KEYCLOAK_SETUP_PASSWORD")"
+  password="$(resolve_env_password "$namespace" "VALUES_KEYCLOAK_SETUP_PASSWORD" "$kube_context")"
   if [[ -n "$password" ]]; then
     printf "%s" "$password"
     return 0
@@ -133,7 +151,7 @@ resolve_keycloak_setup_password() {
 
   # Fallback to legacy secret
   log "DEBUG: Trying legacy vault-mapped-secrets for Keycloak password"
-  password="$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET}' 2>/dev/null | base64 -d || true)"
+  password="$($kubectl_cmd -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET}' 2>/dev/null | base64 -d || true)"
   if [[ -n "$password" ]]; then
     log "DEBUG: Found Keycloak password from legacy secret"
     printf "%s" "$password"
@@ -146,17 +164,23 @@ resolve_keycloak_setup_password() {
 
 resolve_identity_passwords() {
   local namespace="$1"
+  local kube_context="${2:-}"
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   log "DEBUG: Resolving identity user passwords"
   
   # Check if vault-mapped-secrets has the identity password key
   local vault_firstuser_pw
-  vault_firstuser_pw=$(kubectl -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
+  vault_firstuser_pw=$($kubectl_cmd -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' 2>/dev/null | base64 -d || true)
   log "DEBUG: Using identity deployment env vars"
-  DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_FIRSTUSER_PASSWORD")"
-  DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_SECONDUSER_PASSWORD")"
-  DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_THIRDUSER_PASSWORD")"
-  DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET="$(resolve_env_password "$namespace" "VALUES_TEST_CLIENT_SECRET")"
+  DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_FIRSTUSER_PASSWORD" "$kube_context")"
+  DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_SECONDUSER_PASSWORD" "$kube_context")"
+  DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_THIRDUSER_PASSWORD" "$kube_context")"
+  DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET="$(resolve_env_password "$namespace" "VALUES_TEST_CLIENT_SECRET" "$kube_context")"
   
   # Mask sensitive values in CI logs (these should go to stdout for GitHub Actions)
   mask_secret "$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
@@ -175,6 +199,12 @@ render_env_file() {
   local is_rba="$7"
   local is_mt="$8"
   local run_smoke_tests="$9"
+  local kube_context="${10:-}"
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   log "DEBUG: Setting up env file: $env_file"
 
@@ -183,18 +213,18 @@ render_env_file() {
   envsubst < "$test_suite_path"/.env.template > "$env_file"
 
   # Resolve credentials from cluster
-  KEYCLOAK_SETUP_PASSWORD="$(resolve_keycloak_setup_password "$namespace")" || exit 1
+  KEYCLOAK_SETUP_PASSWORD="$(resolve_keycloak_setup_password "$namespace" "$kube_context")" || exit 1
   mask_secret "$KEYCLOAK_SETUP_PASSWORD"
   
-  resolve_identity_passwords "$namespace"
+  resolve_identity_passwords "$namespace" "$kube_context"
 
   # Resolve minor version
   local minor_version_value
-  if ! minor_version_value="$(resolve_minor_version_from_identity "$namespace")"; then
+  if ! minor_version_value="$(resolve_minor_version_from_identity "$namespace" "$kube_context")"; then
     echo "Error: Could not determine minor version from Zeebe or Orchestration deployments." >&2
     exit 12
   fi
-  keycloakUrl=$(kubectl -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
+  keycloakUrl=$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
   host=""
   tokenUrl=""
   echo "::group::Keycloak URL parsing"
@@ -260,6 +290,7 @@ Options:
   --absolute-chart-path ABSOLUTE_CHART_PATH   The absolute path to the chart directory.
   --namespace NAMESPACE                       The namespace c8 is deployed into
   --output OUTPUT_PATH                        The path where to write the .env file
+  --kube-context KUBE_CONTEXT                 The Kubernetes context to use (optional).
   --not-ci                                    Don't set the CI env var to true
   --run-smoke-tests                           Set IS_SMOKE to true
   --opensearch                                Set IS_OPENSEARCH to true
@@ -274,6 +305,12 @@ render_env_validate_args() {
   local chart_path="$1"
   local namespace="$2"
   local output="$3"
+  local kube_context="${4:-}"
+  local kubectl_cmd="kubectl"
+  
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
   
   log "DEBUG: Validating arguments"
 
@@ -292,7 +329,7 @@ render_env_validate_args() {
     exit 1
   fi
 
-  if ! kubectl get namespace "$namespace" > /dev/null 2>&1; then
+  if ! $kubectl_cmd get namespace "$namespace" > /dev/null 2>&1; then
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
     exit 1
   fi
@@ -311,6 +348,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   ABSOLUTE_CHART_PATH=""
   NAMESPACE=""
   OUTPUT_PATH=""
+  KUBE_CONTEXT=""
   VERBOSE=false
   IS_CI=true
   RUN_SMOKE_TESTS=false
@@ -333,6 +371,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         ;;
       --output)
         OUTPUT_PATH="$2"
+        shift 2
+        ;;
+      --kube-context)
+        KUBE_CONTEXT="$2"
         shift 2
         ;;
       --not-ci)
@@ -372,12 +414,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   done
 
   log "DEBUG: Starting render-e2e-env.sh"
-  log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, Output: $OUTPUT_PATH"
+  log "DEBUG: Chart: $ABSOLUTE_CHART_PATH, Namespace: $NAMESPACE, Output: $OUTPUT_PATH, KubeContext: $KUBE_CONTEXT"
 
-  render_env_validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$OUTPUT_PATH"
+  render_env_validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$OUTPUT_PATH" "$KUBE_CONTEXT"
 
   TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
-  hostname=$(get_ingress_hostname "$NAMESPACE")
+  hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
   log "DEBUG: Hostname: $hostname"
   log "DEBUG: Test suite path: $TEST_SUITE_PATH"
@@ -385,7 +427,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   [[ "$IS_RBA" == "true" ]] && log "IS_RBA is set to true"
   [[ "$IS_MT" == "true" ]] && log "IS_MT is set to true"
 
-  render_env_file "$OUTPUT_PATH" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS"
+  render_env_file "$OUTPUT_PATH" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
 
   log "DEBUG: Env file rendered to $OUTPUT_PATH"
 fi

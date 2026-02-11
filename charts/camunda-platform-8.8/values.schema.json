@@ -2281,7 +2281,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.87"
+                            "default": "8.8.90"
                         },
                         "digest": {
                             "type": "string",
@@ -5864,7 +5864,7 @@
                                         "secretName": {
                                             "type": "string",
                                             "description": "defines the secret name which contains the TLS private key and certificate",
-                                            "default": "camunda-platform-orchestration-grpc"
+                                            "default": "camunda-platform-zeebe-gateway"
                                         }
                                     }
                                 }
