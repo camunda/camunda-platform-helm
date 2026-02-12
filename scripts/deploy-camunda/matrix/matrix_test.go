@@ -164,10 +164,12 @@ func TestFilterFlows(t *testing.T) {
 
 func TestFilter(t *testing.T) {
 	entries := []Entry{
-		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Platforms: []string{"gke", "eks"}, Enabled: true},
-		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eshy", Auth: "hybrid", Flow: "install", Platforms: nil, Enabled: true},
+		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Platform: "gke", Enabled: true},
+		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Platform: "eks", Enabled: true},
+		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eshy", Auth: "hybrid", Flow: "install", Platform: "", Enabled: true},
 		{Version: "8.8", Scenario: "oidc", Shortname: "esoi", Auth: "oidc", Flow: "upgrade-minor", Enabled: true},
-		{Version: "8.9", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Platforms: []string{"gke", "eks"}, Enabled: true},
+		{Version: "8.9", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Platform: "gke", Enabled: true},
+		{Version: "8.9", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Platform: "eks", Enabled: true},
 	}
 
 	t.Run("no filter returns all", func(t *testing.T) {
@@ -193,15 +195,23 @@ func TestFilter(t *testing.T) {
 
 	t.Run("platform filter gke", func(t *testing.T) {
 		got := Filter(entries, FilterOptions{Platform: "gke"})
-		// Entries with platforms=[gke,eks] match, entries with nil platforms also match (no restriction)
+		// Entries with platform="gke" match, entries with platform="" also match (no restriction)
 		if len(got) != 4 {
 			t.Errorf("Filter(platform=gke): got %d entries, want 4", len(got))
 		}
 	})
 
+	t.Run("platform filter eks", func(t *testing.T) {
+		got := Filter(entries, FilterOptions{Platform: "eks"})
+		// Entries with platform="eks" match, entries with platform="" also match (no restriction)
+		if len(got) != 4 {
+			t.Errorf("Filter(platform=eks): got %d entries, want 4", len(got))
+		}
+	})
+
 	t.Run("platform filter rosa", func(t *testing.T) {
 		got := Filter(entries, FilterOptions{Platform: "rosa"})
-		// Only entries with nil platforms (no restriction) match, entries with [gke,eks] don't
+		// Only entries with platform="" (no restriction) match
 		if len(got) != 2 {
 			t.Errorf("Filter(platform=rosa): got %d entries, want 2 (entries with no platform restriction)", len(got))
 		}
@@ -456,16 +466,28 @@ func TestBuildNamespace(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "standard entry",
+			name:   "standard entry without platform",
 			prefix: "matrix",
 			entry:  Entry{Version: "8.8", Shortname: "eske"},
 			want:   "matrix-88-eske",
 		},
 		{
-			name:   "alpha version",
+			name:   "entry with platform gets platform suffix",
 			prefix: "matrix",
-			entry:  Entry{Version: "8.9", Shortname: "oske"},
-			want:   "matrix-89-oske",
+			entry:  Entry{Version: "8.8", Shortname: "eske", Platform: "gke"},
+			want:   "matrix-88-eske-gke",
+		},
+		{
+			name:   "entry with eks platform",
+			prefix: "matrix",
+			entry:  Entry{Version: "8.8", Shortname: "eske", Platform: "eks"},
+			want:   "matrix-88-eske-eks",
+		},
+		{
+			name:   "alpha version with platform",
+			prefix: "matrix",
+			entry:  Entry{Version: "8.9", Shortname: "oske", Platform: "gke"},
+			want:   "matrix-89-oske-gke",
 		},
 		{
 			name:   "custom prefix",
@@ -605,13 +627,13 @@ func TestResolvePlatform(t *testing.T) {
 		{
 			name:  "opts.Platform overrides entry",
 			opts:  RunOptions{Platform: "eks"},
-			entry: Entry{Platforms: []string{"gke"}},
+			entry: Entry{Platform: "gke"},
 			want:  "eks",
 		},
 		{
-			name:  "uses first entry platform when no override",
+			name:  "uses entry platform when no override",
 			opts:  RunOptions{},
-			entry: Entry{Platforms: []string{"eks", "gke"}},
+			entry: Entry{Platform: "eks"},
 			want:  "eks",
 		},
 		{
@@ -621,9 +643,9 @@ func TestResolvePlatform(t *testing.T) {
 			want:  "gke",
 		},
 		{
-			name:  "defaults to gke when entry platforms empty",
+			name:  "defaults to gke when entry platform empty",
 			opts:  RunOptions{},
-			entry: Entry{Platforms: []string{}},
+			entry: Entry{Platform: ""},
 			want:  "gke",
 		},
 	}
@@ -684,6 +706,69 @@ func TestResolveEnvFile(t *testing.T) {
 			got := resolveEnvFile(tt.opts, tt.version)
 			if got != tt.want {
 				t.Errorf("resolveEnvFile(opts, %q) = %q, want %q", tt.version, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- resolveUseVaultBackedSecrets tests ---
+
+func TestResolveUseVaultBackedSecrets(t *testing.T) {
+	tests := []struct {
+		name     string
+		opts     RunOptions
+		platform string
+		want     bool
+	}{
+		{
+			name:     "returns platform-specific value for eks (true)",
+			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"eks": true, "gke": false}},
+			platform: "eks",
+			want:     true,
+		},
+		{
+			name:     "returns platform-specific value for gke (false)",
+			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"eks": true, "gke": false}},
+			platform: "gke",
+			want:     false,
+		},
+		{
+			name:     "falls back to UseVaultBackedSecrets when platform not in map",
+			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"gke": false}, UseVaultBackedSecrets: true},
+			platform: "eks",
+			want:     true,
+		},
+		{
+			name:     "falls back to UseVaultBackedSecrets when map is nil",
+			opts:     RunOptions{UseVaultBackedSecrets: true},
+			platform: "gke",
+			want:     true,
+		},
+		{
+			name:     "returns false when nothing configured",
+			opts:     RunOptions{},
+			platform: "gke",
+			want:     false,
+		},
+		{
+			name:     "platform-specific false overrides fallback true",
+			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"gke": false}, UseVaultBackedSecrets: true},
+			platform: "gke",
+			want:     false,
+		},
+		{
+			name:     "platform-specific true overrides fallback false",
+			opts:     RunOptions{VaultBackedSecrets: map[string]bool{"eks": true}, UseVaultBackedSecrets: false},
+			platform: "eks",
+			want:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveUseVaultBackedSecrets(tt.opts, tt.platform)
+			if got != tt.want {
+				t.Errorf("resolveUseVaultBackedSecrets(opts, %q) = %v, want %v", tt.platform, got, tt.want)
 			}
 		})
 	}
