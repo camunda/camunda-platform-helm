@@ -150,6 +150,10 @@ camunda:
       authorizations:
         {{- .Values.orchestration.security.initialization.authorizations | toYaml | nindent 8 }}
       {{- end }}
+      {{- if .Values.orchestration.security.initialization.groups }}
+      groups:
+        {{- .Values.orchestration.security.initialization.groups | toYaml | nindent 8 }}
+      {{- end }}
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
