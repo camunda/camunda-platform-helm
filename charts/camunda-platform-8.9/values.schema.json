@@ -1834,7 +1834,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "Enable Management Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
+                    "description": "Enable Management Identity Keycloak Helm chart (Bitnami Keycloak subchart).",
                     "default": false
                 },
                 "global": {
