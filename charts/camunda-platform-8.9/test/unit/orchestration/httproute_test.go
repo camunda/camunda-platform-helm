@@ -63,7 +63,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
 				"global.gateway.external": "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: HTTPRoute")
@@ -73,7 +73,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteNotRenderedWhenOrchestrationDisabled",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"orchestration.enabled":   "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -84,7 +84,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteRenderedWithDefaults",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"orchestration.enabled":   "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -103,7 +103,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithTLSSectionName",
 			Values: map[string]string{
 				"global.gateway.enabled":     "true",
-				"global.gateway.hostname":    "camunda.example.com",
+				"global.host":    "camunda.example.com",
 				"global.gateway.tls.enabled": "true",
 				"orchestration.enabled":      "true",
 			},
@@ -116,7 +116,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithContextPath",
 			Values: map[string]string{
 				"global.gateway.enabled":    "true",
-				"global.gateway.hostname":   "camunda.example.com",
+				"global.host":   "camunda.example.com",
 				"orchestration.enabled":     "true",
 				"orchestration.contextPath": "/orchestration",
 			},
@@ -129,7 +129,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithGlobalAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":        "true",
-				"global.gateway.hostname":       "camunda.example.com",
+				"global.host":       "camunda.example.com",
 				"orchestration.enabled":         "true",
 				"global.annotations.global-key": "global-value",
 			},
@@ -142,7 +142,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithGatewayAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"orchestration.enabled":                  "true",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},

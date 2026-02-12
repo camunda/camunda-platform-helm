@@ -63,7 +63,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":          "true",
 				"global.gateway.external":         "true",
-				"global.gateway.hostname":         "camunda.example.com",
+				"global.host":         "camunda.example.com",
 				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -74,7 +74,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteNotRenderedWhenOrchestrationDisabled",
 			Values: map[string]string{
 				"global.gateway.enabled":          "true",
-				"global.gateway.hostname":         "camunda.example.com",
+				"global.host":         "camunda.example.com",
 				"orchestration.enabled":           "false",
 				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
 			},
@@ -86,7 +86,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteRendered",
 			Values: map[string]string{
 				"global.gateway.enabled":          "true",
-				"global.gateway.hostname":         "camunda.example.com",
+				"global.host":         "camunda.example.com",
 				"orchestration.enabled":           "true",
 				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
 			},
@@ -103,7 +103,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteParentRef",
 			Values: map[string]string{
 				"global.gateway.enabled":          "true",
-				"global.gateway.hostname":         "camunda.example.com",
+				"global.host":         "camunda.example.com",
 				"orchestration.enabled":           "true",
 				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
 			},
@@ -117,7 +117,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteWithGlobalAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":          "true",
-				"global.gateway.hostname":         "camunda.example.com",
+				"global.host":         "camunda.example.com",
 				"orchestration.enabled":           "true",
 				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
 				"global.annotations.global-key":   "global-value",
@@ -131,7 +131,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteWithGatewayAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"orchestration.enabled":                  "true",
 				"orchestration.ingress.grpc.host":        "grpc-camunda.example.com",
 				"global.gateway.annotations.gateway-key": "gateway-value",
@@ -145,7 +145,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteWithBothAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"orchestration.enabled":                  "true",
 				"orchestration.ingress.grpc.host":        "grpc-camunda.example.com",
 				"global.annotations.global-key":          "global-value",
@@ -161,7 +161,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteCustomHost",
 			Values: map[string]string{
 				"global.gateway.enabled":          "true",
-				"global.gateway.hostname":         "camunda.example.com",
+				"global.host":         "camunda.example.com",
 				"orchestration.enabled":           "true",
 				"orchestration.ingress.grpc.host": "custom-grpc.example.com",
 			},
@@ -174,7 +174,7 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteBackendRefPort",
 			Values: map[string]string{
 				"global.gateway.enabled":          "true",
-				"global.gateway.hostname":         "camunda.example.com",
+				"global.host":         "camunda.example.com",
 				"orchestration.enabled":           "true",
 				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
 				"orchestration.service.grpcPort":  "9090",

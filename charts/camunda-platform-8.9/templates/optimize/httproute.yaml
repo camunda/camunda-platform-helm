@@ -16,7 +16,7 @@ spec:
   - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
   hostnames:
-  - {{ tpl .Values.global.gateway.hostname $ | quote }}
+  - {{ tpl .Values.global.host $ | quote }}
   rules:
   - matches:
     - path:

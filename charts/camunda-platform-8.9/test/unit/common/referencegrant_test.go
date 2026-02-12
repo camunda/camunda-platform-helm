@@ -63,7 +63,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
 				"global.gateway.external": "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: ReferenceGrant")
@@ -73,7 +73,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestReferenceGrantRendered",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -86,7 +86,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestReferenceGrantFromHTTPRoute",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -98,7 +98,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestReferenceGrantToService",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -109,7 +109,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestReferenceGrantUsesControllerNamespace",
 			Values: map[string]string{
 				"global.gateway.enabled":             "true",
-				"global.gateway.hostname":            "camunda.example.com",
+				"global.host":            "camunda.example.com",
 				"global.gateway.controllerNamespace": "gateway-system",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -121,7 +121,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestReferenceGrantDefaultsControllerNamespaceToReleaseNamespace",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)

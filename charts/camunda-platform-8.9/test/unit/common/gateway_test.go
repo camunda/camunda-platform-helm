@@ -64,7 +64,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				"global.gateway.enabled":               "true",
 				"global.gateway.external":              "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: Gateway")
@@ -76,7 +76,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				"global.gateway.enabled":               "true",
 				"global.gateway.external":              "false",
 				"global.gateway.createGatewayResource": "false",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: Gateway")
@@ -87,7 +87,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 				"global.gateway.tls.enabled":           "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -116,7 +116,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 				"global.gateway.tls.enabled":           "true",
 				"global.gateway.tls.secretName":        "my-tls-secret",
 			},
@@ -143,7 +143,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 				"global.gateway.className":             "istio",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -156,7 +156,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 				"global.annotations.global-key":        "global-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -169,7 +169,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
 				"global.gateway.createGatewayResource":   "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -182,7 +182,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
 				"global.gateway.createGatewayResource":   "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"global.annotations.global-key":          "global-value",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},
@@ -197,7 +197,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 				"global.ingress.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -209,7 +209,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.gateway.hostname":              "camunda.example.com",
+				"global.host":              "camunda.example.com",
 				"global.gateway.tls.enabled":           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
