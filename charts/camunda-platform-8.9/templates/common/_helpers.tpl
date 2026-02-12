@@ -227,15 +227,16 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- if .Values.global.identity.keycloak.url -}}
       {{-
-        printf "%s://%s:%v%s%s"
+        printf "%s://%s:%v%s"
           .Values.global.identity.keycloak.url.protocol
           .Values.global.identity.keycloak.url.host
           .Values.global.identity.keycloak.url.port
-          .Values.global.identity.keycloak.contextPath
-          .Values.global.identity.keycloak.realm
+          (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
       -}}
     {{- else -}}
-      {{- include "identity.keycloak.url" . -}}{{- .Values.global.identity.keycloak.realm -}}
+      {{- $url := include "identity.keycloak.url" . | trimSuffix "/" -}}
+      {{- $realm := .Values.global.identity.keycloak.realm | trimPrefix "/" -}}
+      {{- printf "%s/%s" $url $realm -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
