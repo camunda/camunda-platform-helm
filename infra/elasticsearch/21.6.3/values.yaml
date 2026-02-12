@@ -17,9 +17,15 @@ master:
     minAvailable: 2
   service:
     type: ClusterIP
-  extraEnvVars:
-    - name: ELASTICSEARCH_ACTION_DESTRUCTIVE_REQUIRES_NAME
-      value: "false"
+  podAntiAffinityPreset: "soft"
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 45
+    periodSeconds: 10
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 90
+    periodSeconds: 20
 
 data:
   replicaCount: 6
@@ -38,6 +44,15 @@ data:
   pdb:
     create: true
     minAvailable: 4
+  podAntiAffinityPreset: "soft"
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 45
+    periodSeconds: 10
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 90
+    periodSeconds: 20
 
 coordinating:
   replicaCount: 2
@@ -59,9 +74,21 @@ coordinating:
       - name: https
         port: 9200
         targetPort: 9200
+  pdb:
+    create: true
+    minAvailable: 1
+  podAntiAffinityPreset: "soft"
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 45
+    periodSeconds: 10
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 90
+    periodSeconds: 20
 
 ingest:
-  replicaCount: 1
+  replicaCount: 2
   heapSize: 2g
   resources:
     requests: { cpu: "1000m", memory: "2Gi" }
@@ -73,16 +100,18 @@ ingest:
     coordinating: false
   persistence:
     enabled: false
-
-antiAffinity: "soft"
-podAntiAffinityPreset: "soft"
-
-readinessProbe:
-  initialDelaySeconds: 45
-  periodSeconds: 10
-livenessProbe:
-  initialDelaySeconds: 90
-  periodSeconds: 20
+  pdb:
+    create: true
+    minAvailable: 1
+  podAntiAffinityPreset: "soft"
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 45
+    periodSeconds: 10
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 90
+    periodSeconds: 20
 
 global:
   security:
@@ -153,32 +182,21 @@ image:
 
 extraConfig:
   logger.org.elasticsearch.deprecation: "OFF"
+  cluster.max_shards_per_node: 3500
+  cluster.routing.allocation.disk.threshold_enabled: true
+  cluster.routing.allocation.disk.watermark.low: 70%
+  cluster.routing.allocation.disk.watermark.high: 85%
+  cluster.routing.allocation.disk.watermark.flood_stage: 90%
+  action.auto_create_index: true
+  action.destructive_requires_name: false
+  cluster.routing.allocation.enable: all
+  cluster.routing.rebalance.enable: all
+  cluster.routing.allocation.same_shard.host: true
+  indices.recovery.max_bytes_per_sec: 100mb
 
-esConfig:
-  elasticsearch.yml: |
-    cluster.max_shards_per_node: 3500
-    cluster.routing.allocation.disk.threshold_enabled: true
-    cluster.routing.allocation.disk.watermark.low: 70%
-    cluster.routing.allocation.disk.watermark.high: 85%
-    cluster.routing.allocation.disk.watermark.flood_stage: 90%
-    xpack.security.enabled: true
-    action.auto_create_index: true
-    cluster.routing.allocation.enable: all
-    action.destructive_requires_name: false
-    cluster.routing.rebalance.enable: all
-    # Shard optimization for high shard count environments
-    cluster.routing.allocation.same_shard.host: true
-    indices.recovery.max_bytes_per_sec: 100mb
-    # Index defaults to reduce shard proliferation
-    index.number_of_shards: 1
-    index.number_of_replicas: 1
-  jvm.options: |
-    -Xms1.5g
-    -Xmx1.5g
-    -XX:+UseG1GC
-    -XX:G1HeapRegionSize=4m
-    -XX:+HeapDumpOnOutOfMemoryError
-    -XX:HeapDumpPath=/tmp
+extraEnvVars:
+  - name: ES_JAVA_OPTS
+    value: "-XX:G1HeapRegionSize=4m -XX:HeapDumpPath=/tmp"
 
 updateStrategy:
   type: RollingUpdate
@@ -195,9 +213,6 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-body-size: "20m"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-  service:
-    name: elasticsearch-coordinating
-    port: 9200
   extraTls:
     - hosts:
         - elasticsearch-21-6-3.ci.distro.ultrawombat.com
