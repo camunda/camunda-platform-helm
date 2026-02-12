@@ -2508,8 +2508,8 @@ orchestration:
       mappingRules: []
       ## @param orchestration.security.initialization.authorizations define authorizations.
       authorizations: []
-      ## @param orchestration.security.initialization.tenants define tenants.
-      tenants: []
+      ## @param orchestration.security.initialization.tenants define groups.
+      groups: []
   ## @extra orchestration.image configuration to configure the image specifics
   image:
     ## @param orchestration.image.registry can be used to set container image registry.
