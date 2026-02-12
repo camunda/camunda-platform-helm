@@ -920,6 +920,17 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		Str("scenario", scenarioCtx.ScenarioName).
 		Msg("✅ [prepareScenarioValues] environment mutex acquired")
 
+	// Load the .env file under the mutex so that version-specific env vars
+	// are available to values.Process(). This is safe for parallel execution
+	// because the mutex serialises all environment manipulation.
+	if flags.EnvFile != "" {
+		logging.Logger.Debug().
+			Str("envFile", flags.EnvFile).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("📂 [prepareScenarioValues] loading .env file")
+		_ = env.Load(flags.EnvFile)
+	}
+
 	// Set environment variables for prepare-helm-values
 	envVarsToCapture := []string{
 		"KEYCLOAK_REALM",
@@ -1013,20 +1024,77 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		return nil, fmt.Errorf("failed to process common values: %w", err)
 	}
 
-	// Process auth scenario if different from main scenario
-	if flags.Auth != "" && flags.Auth != scenarioCtx.ScenarioName {
-		logging.Logger.Info().Str("auth", flags.Auth).Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing auth scenario")
-		if err := processValues(flags.Auth); err != nil {
-			os.RemoveAll(tempDir) // Cleanup on error
-			return nil, fmt.Errorf("failed to prepare auth scenario: %w", err)
-		}
+	// Determine the effective scenario directory for resolution.
+	effectiveScenarioDir := flags.ScenarioPath
+	if effectiveScenarioDir == "" {
+		effectiveScenarioDir = filepath.Join(flags.ChartPath, "test/integration/scenarios/chart-full-setup")
 	}
+	isLayered := scenarios.HasLayeredValues(effectiveScenarioDir)
 
-	// Process main scenario
-	logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing main scenario")
-	if err := processValues(scenarioCtx.ScenarioName); err != nil {
-		os.RemoveAll(tempDir) // Cleanup on error
-		return nil, fmt.Errorf("failed to prepare main scenario: %w", err)
+	// Process and resolve scenario values.
+	// For layered values, we resolve all layer files from the original scenario directory,
+	// process each one into tempDir, and build the values list directly.
+	// For legacy values, we use the existing processValues + BuildValuesList flow.
+	var scenarioValueFiles []string
+	if isLayered {
+		logging.Logger.Debug().
+			Str("scenarioDir", effectiveScenarioDir).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("📋 [prepareScenarioValues] layered values detected; resolving all layer files")
+
+		// Derive deployment config from scenario name
+		deployConfig := scenarios.MapScenarioToConfig(scenarioCtx.ScenarioName)
+		// Set flow for migrator detection
+		deployConfig.Flow = flags.Flow
+
+		layeredFiles, err := deployConfig.ResolvePaths(effectiveScenarioDir)
+		if err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to resolve layered values for scenario %q: %w", scenarioCtx.ScenarioName, err)
+		}
+
+		logging.Logger.Debug().
+			Strs("layeredFiles", layeredFiles).
+			Int("count", len(layeredFiles)).
+			Msg("📋 [prepareScenarioValues] processing layered values files")
+
+		// Process each layered file (env var substitution) into tempDir
+		for _, srcFile := range layeredFiles {
+			opts := values.Options{
+				ChartPath:   flags.ChartPath,
+				ScenarioDir: effectiveScenarioDir,
+				OutputDir:   tempDir,
+				Interactive: flags.Interactive,
+				EnvFile:     flags.EnvFile,
+			}
+			outputPath, _, procErr := values.Process(srcFile, opts)
+			if procErr != nil {
+				os.RemoveAll(tempDir)
+				return nil, fmt.Errorf("failed to process layered values file %q: %w", srcFile, procErr)
+			}
+			scenarioValueFiles = append(scenarioValueFiles, outputPath)
+		}
+
+		logging.Logger.Debug().
+			Strs("processedFiles", scenarioValueFiles).
+			Msg("📋 [prepareScenarioValues] layered values files processed")
+	} else {
+		// Legacy path: process auth and main scenario, then let BuildValuesList resolve
+		effectiveAuth := flags.Auth
+		if effectiveAuth != "" && effectiveAuth != scenarioCtx.ScenarioName {
+			logging.Logger.Info().Str("auth", effectiveAuth).Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing auth scenario")
+			if err := processValues(effectiveAuth); err != nil {
+				os.RemoveAll(tempDir)
+				return nil, fmt.Errorf("failed to prepare auth scenario: %w", err)
+			}
+		}
+
+		// Process main scenario
+		logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing main scenario")
+		if err := processValues(scenarioCtx.ScenarioName); err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to prepare main scenario: %w", err)
+		}
 	}
 
 	// Auto-generate secrets if requested
@@ -1055,9 +1123,6 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		}
 	}
 
-	// Build deployment config for layered values resolution (includes ChartVersion and Flow for migrator)
-	deployConfig := buildDeploymentConfigFromFlags(flags, scenarioCtx.ScenarioName)
-
 	// Build values files list
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
@@ -1071,10 +1136,20 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		return nil, fmt.Errorf("failed to generate debug values: %w", err)
 	}
 
-	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
-	if err != nil {
-		os.RemoveAll(tempDir) // Cleanup on error
-		return nil, fmt.Errorf("failed to build values list: %w", err)
+	var vals []string
+	if isLayered {
+		// For layered values, we already have the processed scenario files.
+		// Build the values list directly: common + scenario layers + overlays + user values.
+		vals = append(vals, processedCommonFiles...)
+		vals = append(vals, scenarioValueFiles...)
+		vals = append(vals, flags.ExtraValues...)
+	} else {
+		// Legacy path: let BuildValuesList resolve scenario files from tempDir.
+		vals, err = deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
+		if err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to build values list: %w", err)
+		}
 	}
 
 	// Append debug values file last to ensure it overrides other values
@@ -1755,7 +1830,7 @@ func runTests(ctx context.Context, flags *config.RuntimeFlags, results []*Scenar
 				Str("namespace", result.Namespace).
 				Msg("Running integration tests")
 
-			err := executeIntegrationTests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.Platform, flags.KubeContext)
+			err := executeIntegrationTests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.Platform, flags.KubeContext, flags.TestExclude)
 			testResults = append(testResults, &ScenarioTestResult{
 				Scenario:  result.Scenario,
 				Namespace: result.Namespace,
@@ -1784,7 +1859,7 @@ func runTests(ctx context.Context, flags *config.RuntimeFlags, results []*Scenar
 				Str("namespace", result.Namespace).
 				Msg("Running e2e tests")
 
-			err := executeE2ETests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.KubeContext)
+			err := executeE2ETests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.KubeContext, flags.TestExclude)
 			testResults = append(testResults, &ScenarioTestResult{
 				Scenario:  result.Scenario,
 				Namespace: result.Namespace,
@@ -1875,7 +1950,7 @@ func resolveScriptsDir(flags *config.RuntimeFlags) (string, error) {
 }
 
 // executeIntegrationTests runs the integration test script against a deployment.
-func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespace, platform, kubeContext string) error {
+func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespace, platform, kubeContext, testExclude string) error {
 	scriptPath := filepath.Join(scriptsDir, "run-integration-tests.sh")
 
 	// Verify script exists
@@ -1909,6 +1984,11 @@ func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespa
 		args = append(args, "--kube-context", kubeContext)
 	}
 
+	// Add test-exclude if specified
+	if testExclude != "" {
+		args = append(args, "--test-exclude", testExclude)
+	}
+
 	// Build command
 	cmd := exec.CommandContext(ctx, scriptPath, args...)
 
@@ -1931,7 +2011,7 @@ func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespa
 }
 
 // executeE2ETests runs the e2e test script against a deployment.
-func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace, kubeContext string) error {
+func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace, kubeContext, testExclude string) error {
 	scriptPath := filepath.Join(scriptsDir, "run-e2e-tests.sh")
 
 	// Verify script exists
@@ -1961,6 +2041,11 @@ func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace, kube
 	// Add kube-context if specified
 	if kubeContext != "" {
 		args = append(args, "--kube-context", kubeContext)
+	}
+
+	// Add test-exclude if specified
+	if testExclude != "" {
+		args = append(args, "--test-exclude", testExclude)
 	}
 
 	// Build command
