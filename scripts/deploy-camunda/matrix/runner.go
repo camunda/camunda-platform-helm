@@ -60,6 +60,18 @@ type RunOptions struct {
 	// LogLevel controls the log verbosity for each entry's deployment.
 	// Valid values: debug, info, warn, error. Defaults to "info" if empty.
 	LogLevel string
+	// SkipDependencyUpdate skips running "helm dependency update" before deploying.
+	// Default is false, meaning dependency update runs for every entry.
+	SkipDependencyUpdate bool
+	// VaultBackedSecrets maps platform names to whether vault-backed secrets should be used, e.g.,
+	// {"eks": true, "gke": false}
+	// When an entry's platform matches a key, the corresponding value controls whether
+	// the vault-backend ClusterSecretStore and -vault.yaml manifest variants are selected.
+	VaultBackedSecrets map[string]bool
+	// UseVaultBackedSecrets is a fallback for platforms not in VaultBackedSecrets.
+	// If both VaultBackedSecrets and UseVaultBackedSecrets are set, the platform-specific
+	// value takes priority.
+	UseVaultBackedSecrets bool
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -131,6 +143,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 			platform := resolvePlatform(opts, entry)
 			kubeCtx := resolveKubeContext(opts, platform)
 			envFile := resolveEnvFile(opts, entry.Version)
+			useVault := resolveUseVaultBackedSecrets(opts, platform)
 			logging.Logger.Info().
 				Str("version", entry.Version).
 				Str("scenario", entry.Scenario).
@@ -142,10 +155,11 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				Str("kubeContext", kubeCtx).
 				Str("envFile", envFile).
 				Str("ingressHost", ingressHost).
-				Strs("platforms", entry.Platforms).
+				Str("entryPlatform", entry.Platform).
 				Strs("exclude", entry.Exclude).
 				Bool("enabled", entry.Enabled).
 				Bool("cleanup", opts.Cleanup).
+				Bool("vaultBackedSecrets", useVault).
 				Int("maxParallel", opts.MaxParallel).
 				Msg("[DRY-RUN] Would deploy")
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
@@ -287,12 +301,17 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 }
 
 // buildNamespace constructs the namespace for a matrix entry.
-// Pattern: <prefix>-<version-compact>-<shortname>, e.g., matrix-88-eske.
+// Pattern: <prefix>-<version-compact>-<shortname> when no platform is set (e.g., matrix-88-eske),
+// or <prefix>-<version-compact>-<shortname>-<platform> when a platform is set (e.g., matrix-88-eske-eks).
+// The platform suffix prevents namespace collisions for scenarios that deploy to multiple platforms.
 func buildNamespace(prefix string, entry Entry) string {
 	versionCompact := strings.ReplaceAll(entry.Version, ".", "")
 	shortname := entry.Shortname
 	if shortname == "" {
 		shortname = entry.Scenario
+	}
+	if entry.Platform != "" {
+		return fmt.Sprintf("%s-%s-%s-%s", prefix, versionCompact, shortname, entry.Platform)
 	}
 	return fmt.Sprintf("%s-%s-%s", prefix, versionCompact, shortname)
 }
@@ -329,10 +348,19 @@ func resolvePlatform(opts RunOptions, entry Entry) string {
 	if opts.Platform != "" {
 		return opts.Platform
 	}
-	if len(entry.Platforms) > 0 {
-		return entry.Platforms[0]
+	if entry.Platform != "" {
+		return entry.Platform
 	}
 	return "gke"
+}
+
+// resolveUseVaultBackedSecrets returns whether vault-backed secrets should be used for a given platform.
+// It checks VaultBackedSecrets (platform-specific map) first, then falls back to UseVaultBackedSecrets.
+func resolveUseVaultBackedSecrets(opts RunOptions, platform string) bool {
+	if v, ok := opts.VaultBackedSecrets[platform]; ok {
+		return v
+	}
+	return opts.UseVaultBackedSecrets
 }
 
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
@@ -343,6 +371,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	platform := resolvePlatform(opts, entry)
 	kubeCtx := resolveKubeContext(opts, platform)
 	envFile := resolveEnvFile(opts, entry.Version)
+	useVault := resolveUseVaultBackedSecrets(opts, platform)
 
 	// Compute the scenario directory. deploy.Execute uses this to resolve
 	// values files — both layered and legacy formats are handled there.
@@ -362,29 +391,30 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	}
 
 	flags := &config.RuntimeFlags{
-		ChartPath:            entry.ChartPath,
-		ScenarioPath:         scenarioDir,
-		Namespace:            namespace,
-		Release:              "integration",
-		Scenario:             entry.Scenario,
-		Scenarios:            []string{entry.Scenario},
-		Auth:                 entry.Auth,
-		Platform:             platform,
-		Flow:                 entry.Flow,
-		LogLevel:             logLevel,
-		SkipDependencyUpdate: true,
-		ExternalSecrets:      true,
-		Interactive:          false,
-		AutoGenerateSecrets:  true,
-		KeycloakHost:         "keycloak-24-9-0.ci.distro.ultrawombat.com",
-		KeycloakProtocol:     "https",
-		RepoRoot:             opts.RepoRoot,
-		KubeContext:          kubeCtx,
-		EnvFile:              envFile,
-		TestExclude:          testExclude,
-		RunIntegrationTests:  opts.TestIT || opts.TestAll,
-		RunE2ETests:          opts.TestE2E || opts.TestAll,
-		RunAllTests:          opts.TestAll,
+		ChartPath:             entry.ChartPath,
+		ScenarioPath:          scenarioDir,
+		Namespace:             namespace,
+		Release:               "integration",
+		Scenario:              entry.Scenario,
+		Scenarios:             []string{entry.Scenario},
+		Auth:                  entry.Auth,
+		Platform:              platform,
+		Flow:                  entry.Flow,
+		LogLevel:              logLevel,
+		SkipDependencyUpdate:  opts.SkipDependencyUpdate,
+		ExternalSecrets:       true,
+		Interactive:           false,
+		AutoGenerateSecrets:   true,
+		UseVaultBackedSecrets: useVault,
+		KeycloakHost:          "keycloak-24-9-0.ci.distro.ultrawombat.com",
+		KeycloakProtocol:      "https",
+		RepoRoot:              opts.RepoRoot,
+		KubeContext:           kubeCtx,
+		EnvFile:               envFile,
+		TestExclude:           testExclude,
+		RunIntegrationTests:   opts.TestIT || opts.TestAll,
+		RunE2ETests:           opts.TestE2E || opts.TestAll,
+		RunAllTests:           opts.TestAll,
 		// Ingress: use the namespace as subdomain so each entry gets a unique hostname.
 		// e.g., namespace "matrix-89-eske" + base "ci.distro.ultrawombat.com"
 		//     → hostname "matrix-89-eske.ci.distro.ultrawombat.com"
@@ -404,6 +434,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Str("envFile", envFile).
 		Str("chartPath", entry.ChartPath).
 		Str("ingressHost", flags.ResolveIngressHostname()).
+		Bool("vaultBackedSecrets", useVault).
 		Msg("Deploying matrix entry")
 
 	if err := deploy.Execute(ctx, flags); err != nil {
