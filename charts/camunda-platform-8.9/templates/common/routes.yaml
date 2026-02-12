@@ -1,4 +1,5 @@
 {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
+{{- if .Values.orchestration.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -26,6 +27,8 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.orchestration.service.httpPort }}
 ---
+{{- end }}
+{{- if .Values.identityKeycloak.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -53,6 +56,8 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ include "identity.keycloak.port" . }}
 ---
+{{- end }}
+{{- if .Values.identity.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -80,6 +85,8 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.identity.service.port }}
 ---
+{{- end }}
+{{- if .Values.optimize.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -107,6 +114,8 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.optimize.service.port }}
 ---
+{{- end }}
+{{- if .Values.webModeler.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -134,6 +143,8 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.webModeler.webapp.service.port }}
 ---
+{{- end }}
+{{- if .Values.connectors.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -161,6 +172,8 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.connectors.service.serverPort }}
 ---
+{{- end }}
+{{- if .Values.console.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -188,6 +201,8 @@ spec:
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.console.service.port }}
 ---
+{{- end }}
+{{- if .Values.orchestration.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: GRPCRoute
 metadata:
@@ -209,4 +224,5 @@ spec:
     - name: {{ include "orchestration.serviceName" . }}
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.orchestration.service.grpcPort }}
+{{- end }}
 {{- end }}
