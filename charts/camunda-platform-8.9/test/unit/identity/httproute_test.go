@@ -62,7 +62,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestKeycloakHTTPRouteRendered",
 			Values: map[string]string{
 				"global.gateway.enabled":   "true",
-				"global.gateway.hostname":  "camunda.example.com",
+				"global.host":  "camunda.example.com",
 				"identityKeycloak.enabled": "true",
 				"identity.enabled":         "true",
 			},
@@ -77,7 +77,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestIdentityHTTPRouteRendered",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"identity.enabled":        "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -92,7 +92,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestKeycloakHTTPRouteNotRenderedWhenKeycloakDisabled",
 			Values: map[string]string{
 				"global.gateway.enabled":   "true",
-				"global.gateway.hostname":  "camunda.example.com",
+				"global.host":  "camunda.example.com",
 				"identityKeycloak.enabled": "false",
 				"identity.enabled":         "true",
 			},
@@ -107,7 +107,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestIdentityHTTPRouteNotRenderedWhenIdentityDisabled",
 			Values: map[string]string{
 				"global.gateway.enabled":   "true",
-				"global.gateway.hostname":  "camunda.example.com",
+				"global.host":  "camunda.example.com",
 				"identity.enabled":         "false",
 				"identityKeycloak.enabled": "false",
 			},
@@ -119,7 +119,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithTLSSectionName",
 			Values: map[string]string{
 				"global.gateway.enabled":     "true",
-				"global.gateway.hostname":    "camunda.example.com",
+				"global.host":    "camunda.example.com",
 				"global.gateway.tls.enabled": "true",
 				"identity.enabled":           "true",
 			},
@@ -132,7 +132,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestIdentityHTTPRouteWithContextPath",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"identity.enabled":        "true",
 				"identity.contextPath":    "/identity",
 			},
@@ -145,7 +145,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"identity.enabled":                       "true",
 				"global.annotations.global-key":          "global-value",
 				"global.gateway.annotations.gateway-key": "gateway-value",

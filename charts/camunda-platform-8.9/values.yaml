@@ -138,6 +138,8 @@ global:
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+  ## @param global.host can be used to define the hostname of the gateway or ingress resource.
+  host: ""
   ## Gateway configuration to configure the gateway resource
   ## @extra global.gateway
   gateway:
@@ -153,8 +155,6 @@ global:
     labels: {}
     ## @param global.gateway.annotations [object] defines the gateway related annotations, consumed mostly by the gateway controller
     annotations: {}
-    ## @param global.gateway.hostname can be used to define the hostname of the gateway resource
-    hostname: ""
     ## @extra global.gateway.tls configuration for tls on the gateway resource https://kubernetes.io/docs/concepts/services-networking/gateway/#tls
     tls:
       ## @param global.gateway.tls.enabled if true, then tls is configured on the gateway resource. If enabled the Ingress.host need to be defined.
@@ -183,7 +183,7 @@ global:
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).
+    ## @param global.ingress.host (DEPRECATED - use global.host instead) If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).
     host: ""
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix

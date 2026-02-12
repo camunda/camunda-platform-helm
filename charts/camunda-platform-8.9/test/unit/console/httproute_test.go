@@ -62,7 +62,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteNotRenderedWhenConsoleDisabled",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"console.enabled":         "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -73,7 +73,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteRendered",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"console.enabled":         "true",
 				"identity.enabled":        "true",
 			},
@@ -90,7 +90,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithTLSSectionName",
 			Values: map[string]string{
 				"global.gateway.enabled":     "true",
-				"global.gateway.hostname":    "camunda.example.com",
+				"global.host":    "camunda.example.com",
 				"global.gateway.tls.enabled": "true",
 				"console.enabled":            "true",
 				"identity.enabled":           "true",
@@ -104,7 +104,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithContextPath",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"console.enabled":         "true",
 				"identity.enabled":        "true",
 				"console.contextPath":     "/console",
@@ -118,7 +118,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"console.enabled":                        "true",
 				"identity.enabled":                       "true",
 				"global.annotations.global-key":          "global-value",

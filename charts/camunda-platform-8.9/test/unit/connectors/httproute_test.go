@@ -63,7 +63,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
 				"global.gateway.external": "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: HTTPRoute")
@@ -73,7 +73,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteNotRenderedWhenConnectorsDisabled",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"connectors.enabled":      "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -84,7 +84,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteRendered",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"connectors.enabled":      "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -100,7 +100,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithTLSSectionName",
 			Values: map[string]string{
 				"global.gateway.enabled":     "true",
-				"global.gateway.hostname":    "camunda.example.com",
+				"global.host":    "camunda.example.com",
 				"global.gateway.tls.enabled": "true",
 				"connectors.enabled":         "true",
 			},
@@ -113,7 +113,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithContextPath",
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
-				"global.gateway.hostname": "camunda.example.com",
+				"global.host": "camunda.example.com",
 				"connectors.enabled":      "true",
 				"connectors.contextPath":  "/connectors",
 			},
@@ -126,7 +126,7 @@ func (s *HTTPRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestHTTPRouteWithAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.gateway.hostname":                "camunda.example.com",
+				"global.host":                "camunda.example.com",
 				"connectors.enabled":                     "true",
 				"global.annotations.global-key":          "global-value",
 				"global.gateway.annotations.gateway-key": "gateway-value",

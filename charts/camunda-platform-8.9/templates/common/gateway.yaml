@@ -17,7 +17,7 @@ spec:
   - name: https
     port: 443
     protocol: HTTPS
-    hostname: {{ tpl .Values.global.gateway.hostname $ }}
+    hostname: {{ tpl .Values.global.host $ }}
     tls:
       mode: Terminate
       certificateRefs:
@@ -26,7 +26,7 @@ spec:
   - name: grpcs
     port: 443
     protocol: HTTPS
-    hostname: grpc-{{ tpl .Values.global.gateway.hostname $ }}
+    hostname: grpc-{{ tpl .Values.global.host $ }}
     tls:
       mode: Terminate
       certificateRefs:
@@ -36,10 +36,10 @@ spec:
   - name: http
     port: 80
     protocol: HTTP
-    hostname: {{ tpl .Values.global.gateway.hostname $ }}
+    hostname: {{ tpl .Values.global.host $ }}
   - name: grpc
     port: 80
     protocol: HTTP
-    hostname: grpc-{{ tpl .Values.global.gateway.hostname $ }}
+    hostname: grpc-{{ tpl .Values.global.host $ }}
   {{- end }}
 {{- end }}

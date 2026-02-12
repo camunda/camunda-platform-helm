@@ -241,7 +241,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 */}}
 {{- define "webModeler.publicWebsocketHost" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-    {{- tpl .Values.global.gateway.hostname $ | default (tpl .Values.global.ingress.host $) }}
+    {{- tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $) }}
   {{- else -}}
     {{- .Values.webModeler.websockets.publicHost }}
   {{- end }}
