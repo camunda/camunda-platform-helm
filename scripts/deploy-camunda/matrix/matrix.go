@@ -9,7 +9,7 @@ import (
 	"scripts/camunda-core/pkg/logging"
 )
 
-// Entry represents a single matrix entry — one scenario + one flow combination.
+// Entry represents a single matrix entry — one scenario + one flow + one platform combination.
 type Entry struct {
 	Version   string   `json:"version"`
 	ChartPath string   `json:"chartPath"`
@@ -17,7 +17,7 @@ type Entry struct {
 	Shortname string   `json:"shortname"`
 	Auth      string   `json:"auth"`
 	Flow      string   `json:"flow"`
-	Platforms []string `json:"platforms,omitempty"`
+	Platform  string   `json:"platform,omitempty"`
 	Exclude   []string `json:"exclude,omitempty"`
 	Enabled   bool     `json:"enabled"`
 }
@@ -36,7 +36,7 @@ type FilterOptions struct {
 	ScenarioFilter string
 	// FlowFilter limits output to entries with this specific flow.
 	FlowFilter string
-	// Platform limits output to entries whose platforms list contains this value.
+	// Platform limits output to entries targeting this platform.
 	Platform string
 }
 
@@ -124,19 +124,28 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 				continue
 			}
 
-			// Create one entry per permitted flow
+			// Create one entry per permitted flow per platform.
+			// If no platforms are specified, create one entry with an empty platform
+			// (defaults to "gke" at execution time via resolvePlatform).
+			platforms := scenario.Platforms
+			if len(platforms) == 0 {
+				platforms = []string{""}
+			}
+
 			for _, flow := range permittedFlows {
-				entries = append(entries, Entry{
-					Version:   version,
-					ChartPath: chartDir,
-					Scenario:  scenario.Name,
-					Shortname: scenario.Shortname,
-					Auth:      scenario.Auth,
-					Flow:      flow,
-					Platforms: scenario.Platforms,
-					Exclude:   scenario.Exclude,
-					Enabled:   scenario.Enabled,
-				})
+				for _, platform := range platforms {
+					entries = append(entries, Entry{
+						Version:   version,
+						ChartPath: chartDir,
+						Scenario:  scenario.Name,
+						Shortname: scenario.Shortname,
+						Auth:      scenario.Auth,
+						Flow:      flow,
+						Platform:  platform,
+						Exclude:   scenario.Exclude,
+						Enabled:   scenario.Enabled,
+					})
+				}
 			}
 		}
 	}
@@ -159,23 +168,13 @@ func Filter(entries []Entry, opts FilterOptions) []Entry {
 			continue
 		}
 		if opts.Platform != "" {
-			if len(e.Platforms) > 0 && !containsString(e.Platforms, opts.Platform) {
+			if e.Platform != "" && e.Platform != opts.Platform {
 				continue
 			}
 		}
 		filtered = append(filtered, e)
 	}
 	return filtered
-}
-
-// containsString checks if a slice contains a specific string.
-func containsString(slice []string, s string) bool {
-	for _, v := range slice {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 // Print outputs the matrix entries in the requested format.
@@ -209,25 +208,25 @@ func printTable(entries []Entry) string {
 
 	// Header
 	fmt.Fprintf(&b, "%-8s %-6s %-25s %-10s %-10s %-16s %-12s %-8s\n",
-		"ENABLED", "VER", "SCENARIO", "SHORT", "AUTH", "FLOW", "PLATFORMS", "EXCLUDE")
+		"ENABLED", "VER", "SCENARIO", "SHORT", "AUTH", "FLOW", "PLATFORM", "EXCLUDE")
 	fmt.Fprintf(&b, "%-8s %-6s %-25s %-10s %-10s %-16s %-12s %-8s\n",
-		"-------", "---", "--------", "-----", "----", "----", "---------", "-------")
+		"-------", "---", "--------", "-----", "----", "----", "--------", "-------")
 
 	for _, e := range entries {
 		enabled := "yes"
 		if !e.Enabled {
 			enabled = "no"
 		}
-		platforms := strings.Join(e.Platforms, ",")
-		if platforms == "" {
-			platforms = "-"
+		platform := e.Platform
+		if platform == "" {
+			platform = "-"
 		}
 		exclude := strings.Join(e.Exclude, ",")
 		if exclude == "" {
 			exclude = "-"
 		}
 		fmt.Fprintf(&b, "%-8s %-6s %-25s %-10s %-10s %-16s %-12s %s\n",
-			enabled, e.Version, e.Scenario, e.Shortname, e.Auth, e.Flow, platforms, exclude)
+			enabled, e.Version, e.Scenario, e.Shortname, e.Auth, e.Flow, platform, exclude)
 	}
 
 	fmt.Fprintf(&b, "\nTotal: %d entries\n", len(entries))
