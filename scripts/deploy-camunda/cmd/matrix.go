@@ -89,30 +89,34 @@ This command does not require cluster access.`,
 // newMatrixRunCommand creates the "matrix run" subcommand.
 func newMatrixRunCommand() *cobra.Command {
 	var (
-		versions          []string
-		includeDisabled   bool
-		scenarioFilter    string
-		flowFilter        string
-		platform          string
-		repoRoot          string
-		dryRun            bool
-		testIT            bool
-		testE2E           bool
-		testAll           bool
-		stopOnFailure     bool
-		namespacePrefix   string
-		cleanup           bool
-		kubeContext       string
-		kubeContextGKE    string
-		kubeContextEKS    string
-		ingressBaseDomain string
-		maxParallel       int
-		envFile           string
-		envFile86         string
-		envFile87         string
-		envFile88         string
-		envFile89         string
-		logLevel          string
+		versions                 []string
+		includeDisabled          bool
+		scenarioFilter           string
+		flowFilter               string
+		platform                 string
+		repoRoot                 string
+		dryRun                   bool
+		testIT                   bool
+		testE2E                  bool
+		testAll                  bool
+		stopOnFailure            bool
+		namespacePrefix          string
+		cleanup                  bool
+		kubeContext              string
+		kubeContextGKE           string
+		kubeContextEKS           string
+		ingressBaseDomain        string
+		maxParallel              int
+		envFile                  string
+		envFile86                string
+		envFile87                string
+		envFile88                string
+		envFile89                string
+		logLevel                 string
+		skipDependencyUpdate     bool
+		useVaultBackedSecrets    bool
+		useVaultBackedSecretsGKE bool
+		useVaultBackedSecretsEKS bool
 	)
 
 	cmd := &cobra.Command{
@@ -209,23 +213,36 @@ This command calls deploy.Execute() for each matrix entry.`,
 				}
 			}
 
+			// Build platform-to-vault-backed-secrets map from per-platform flags.
+			// Only platforms explicitly set via --use-vault-backed-secrets-<platform> are included.
+			vaultBackedSecrets := make(map[string]bool)
+			if cmd.Flags().Changed("use-vault-backed-secrets-gke") {
+				vaultBackedSecrets["gke"] = useVaultBackedSecretsGKE
+			}
+			if cmd.Flags().Changed("use-vault-backed-secrets-eks") {
+				vaultBackedSecrets["eks"] = useVaultBackedSecretsEKS
+			}
+
 			results, err := matrix.Run(context.Background(), entries, matrix.RunOptions{
-				DryRun:            dryRun,
-				StopOnFailure:     stopOnFailure,
-				Cleanup:           cleanup,
-				KubeContexts:      kubeContexts,
-				KubeContext:       kubeContext,
-				NamespacePrefix:   namespacePrefix,
-				Platform:          platform,
-				MaxParallel:       maxParallel,
-				TestIT:            testIT,
-				TestE2E:           testE2E,
-				TestAll:           testAll,
-				RepoRoot:          repoRoot,
-				EnvFiles:          envFiles,
-				EnvFile:           envFile,
-				IngressBaseDomain: ingressBaseDomain,
-				LogLevel:          logLevel,
+				DryRun:                dryRun,
+				StopOnFailure:         stopOnFailure,
+				Cleanup:               cleanup,
+				KubeContexts:          kubeContexts,
+				KubeContext:           kubeContext,
+				NamespacePrefix:       namespacePrefix,
+				Platform:              platform,
+				MaxParallel:           maxParallel,
+				TestIT:                testIT,
+				TestE2E:               testE2E,
+				TestAll:               testAll,
+				RepoRoot:              repoRoot,
+				EnvFiles:              envFiles,
+				EnvFile:               envFile,
+				IngressBaseDomain:     ingressBaseDomain,
+				LogLevel:              logLevel,
+				SkipDependencyUpdate:  skipDependencyUpdate,
+				VaultBackedSecrets:    vaultBackedSecrets,
+				UseVaultBackedSecrets: useVaultBackedSecrets,
 			})
 
 			fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results))
@@ -259,6 +276,10 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&envFile88, "env-file-8.8", "", "Path to .env file for 8.8 entries")
 	f.StringVar(&envFile89, "env-file-8.9", "", "Path to .env file for 8.9 entries")
 	f.StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
+	f.BoolVar(&skipDependencyUpdate, "skip-dependency-update", false, "Skip helm dependency update before deploying")
+	f.BoolVar(&useVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets for all platforms (overridden by --use-vault-backed-secrets-gke/--use-vault-backed-secrets-eks)")
+	f.BoolVar(&useVaultBackedSecretsGKE, "use-vault-backed-secrets-gke", false, "Use vault-backed external secrets for GKE entries")
+	f.BoolVar(&useVaultBackedSecretsEKS, "use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
 
 	registerIngressBaseDomainCompletion(cmd)
 	registerKubeContextCompletion(cmd)
