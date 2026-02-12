@@ -44,7 +44,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             {{- if .Values.global.elasticsearch.external }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -132,7 +131,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             {{- if .Values.global.elasticsearch.external }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -351,7 +349,6 @@ spec:
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"
             "config" .Values.global.documentStore.type.gcp
-            "legacyKeyField" "credentialsKey"
             "fileName" (.Values.global.documentStore.type.gcp.fileName | default "service-account.json")
         ) | nindent 8 }}
         {{- end }}

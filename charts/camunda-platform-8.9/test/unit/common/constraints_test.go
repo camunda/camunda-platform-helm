@@ -55,8 +55,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                              "true",
 				"global.identity.auth.enabled":                                  "true",
 				"global.security.authentication.method":                         "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":           "foo",
-				"orchestration.security.authentication.oidc.existingSecret":     "",
+				"connectors.security.authentication.oidc.secret.existingSecret": "foo",
 				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet":          "error",
 			},
@@ -67,27 +66,27 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
 			Values: map[string]string{
-				"identity.enabled":                                                   "true",
-				"global.identity.auth.enabled":                                       "true",
-				"global.security.authentication.method":                              "oidc",
-				"orchestration.security.authentication.oidc.existingSecret.name":    "bar",
-				"global.identity.auth.issuerBackendUrl":                              "http://keycloak:80/auth/realms/camunda-platform",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":               "error",
+				"identity.enabled":                                                       "true",
+				"global.identity.auth.enabled":                                           "true",
+				"global.security.authentication.method":                                  "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret":       "bar",
+				"global.identity.auth.issuerBackendUrl":                                  "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":                   "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
 				requiredComponentsNotSet := strings.Split(err.Error(), "The following values inside your values.yaml need to be set but were not")[1]
-				s.Require().NotContains(requiredComponentsNotSet, "orchestration.security.authentication.oidc.existingSecret")
+				s.Require().NotContains(requiredComponentsNotSet, "orchestration.security.authentication.oidc.secret.existingSecret")
 			},
 		}, {
 			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
 			Values: map[string]string{
-				"identity.enabled":                                                "true",
-				"global.security.authentication.method":                           "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
-				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
-				"global.identity.auth.issuerBackendUrl":                           "http://keycloak:80/auth/realms/camunda-platform",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":            "warning",
+				"identity.enabled":                                                    "true",
+				"global.security.authentication.method":                               "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret":       "foo",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "bar",
+				"global.identity.auth.issuerBackendUrl":                               "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":                "warning",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then

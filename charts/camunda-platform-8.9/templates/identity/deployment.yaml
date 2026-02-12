@@ -39,7 +39,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -68,7 +67,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
               "config" .Values.identity.firstUser
-              "plaintextKey" "password"
             ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.identity.auth.admin.enabled }}
@@ -95,7 +93,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "IDENTITY_DATABASE_PASSWORD"
               "config" .Values.identity.externalDatabase
-              "legacyKeyField" "existingSecretPasswordKey"
             ) | nindent 12 }}
             {{- else if .Values.identityPostgresql.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
@@ -249,7 +246,6 @@ spec:
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"
             "config" .Values.global.documentStore.type.gcp
-            "legacyKeyField" "credentialsKey"
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}
