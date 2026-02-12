@@ -63,6 +63,9 @@ func NewRootCommand() *cobra.Command {
 				if cmd.Name() == "config" || (cmd.Parent() != nil && cmd.Parent().Name() == "config") {
 					return nil
 				}
+				if cmd.Name() == "matrix" || (cmd.Parent() != nil && cmd.Parent().Name() == "matrix") {
+					return nil
+				}
 				if cmd.Name() == "completion" ||
 					cmd.Name() == cobra.ShellCompRequestCmd ||
 					cmd.Name() == cobra.ShellCompNoDescRequestCmd {
@@ -342,6 +345,8 @@ func getKubeContexts() ([]string, error) {
 		}
 	}
 	return contexts, nil
+}
+
 // registerSelectionCompletion adds tab completion for the new selection + composition flags.
 func registerSelectionCompletion(cmd *cobra.Command) {
 	// Identity completion
@@ -526,6 +531,7 @@ func Execute() error {
 	rootCmd := NewRootCommand()
 	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 	rootCmd.AddCommand(newConfigCommand())
+	rootCmd.AddCommand(newMatrixCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {
