@@ -15,11 +15,11 @@ spec:
     metadata:
       labels: {{- include "webModeler.websockets.labels" . | nindent 8 }}
       {{- if .Values.webModeler.websockets.podLabels }}
-      {{- toYaml .Values.webModeler.websockets.podLabels | nindent 8 }}
+      {{- tpl (toYaml .Values.webModeler.websockets.podLabels) $ | nindent 8 }}
       {{- end }}
       {{- if .Values.webModeler.websockets.podAnnotations }}
       annotations:
-        {{- toYaml .Values.webModeler.websockets.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.webModeler.websockets.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:

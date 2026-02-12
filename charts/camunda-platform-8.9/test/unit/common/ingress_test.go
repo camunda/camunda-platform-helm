@@ -260,6 +260,20 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Contains(ingress.Labels, "app.kubernetes.io/name")
 			},
 		},
+		{
+			Name:                 "TestIngressHostWithTemplatingAndTLS",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-templated-ingress-host-tls.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - verify templating is evaluated in both rules and TLS hosts
+				s.Require().Equal("camunda-platform-test.example.com", ingress.Spec.Rules[0].Host)
+				s.Require().Equal("camunda-platform-test.example.com", ingress.Spec.TLS[0].Hosts[0])
+				s.Require().Equal("tls-secret", ingress.Spec.TLS[0].SecretName)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

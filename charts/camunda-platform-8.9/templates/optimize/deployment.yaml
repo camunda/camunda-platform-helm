@@ -19,12 +19,12 @@ spec:
       labels: 
         {{- include "optimize.labels" . | nindent 8 }}
         {{- if .Values.optimize.podLabels }}
-        {{- toYaml .Values.optimize.podLabels | nindent 8 }}
+        {{- tpl (toYaml .Values.optimize.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/optimize/configmap.yaml") . | sha256sum }}
       {{- if .Values.optimize.podAnnotations }}
-        {{- toYaml .Values.optimize.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.optimize.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:

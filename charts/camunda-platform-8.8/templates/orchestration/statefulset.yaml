@@ -23,12 +23,12 @@ spec:
       labels:
         {{- include "orchestration.labels" . | nindent 8 }}
         {{- if .Values.orchestration.podLabels }}
-        {{- toYaml .Values.orchestration.podLabels | nindent 8 }}
+        {{- tpl (toYaml .Values.orchestration.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
-        {{- range $key, $value := .Values.orchestration.podAnnotations }}
-        {{ $key }}: {{ $value | quote }}
+        {{- if .Values.orchestration.podAnnotations }}
+        {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}
         {{- end }}
     spec:
       {{- if .Values.orchestration.priorityClassName }}

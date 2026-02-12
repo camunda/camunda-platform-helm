@@ -15,11 +15,11 @@ spec:
     metadata:
       labels: {{- include "webModeler.restapi.labels" . | nindent 8 }}
       {{- if .Values.webModeler.restapi.podLabels }}
-      {{- toYaml .Values.webModeler.restapi.podLabels | nindent 8 }}
+      {{- tpl (toYaml .Values.webModeler.restapi.podLabels) $ | nindent 8 }}
       {{- end }}
       {{- if .Values.webModeler.restapi.podAnnotations }}
       annotations:
-        {{- toYaml .Values.webModeler.restapi.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.webModeler.restapi.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:

@@ -196,7 +196,7 @@
                         },
                         "host": {
                             "type": "string",
-                            "description": "If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.",
+                            "description": "If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).",
                             "default": ""
                         },
                         "pathType": {
@@ -1124,12 +1124,12 @@
                 },
                 "podAnnotations": {
                     "type": "object",
-                    "description": "can be used to define extra Management Identity pod annotations",
+                    "description": "can be used to define extra Management Identity pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra Management Identity pod labels",
+                    "description": "can be used to define extra Management Identity pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "logging": {
@@ -2340,12 +2340,12 @@
                 },
                 "podAnnotations": {
                     "type": "object",
-                    "description": "can be used to define extra Console pod annotations",
+                    "description": "can be used to define extra Console pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra Console pod labels",
+                    "description": "can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "logging": {
@@ -2976,12 +2976,12 @@
                         },
                         "podAnnotations": {
                             "type": "object",
-                            "description": "can be used to define extra restapi pod annotations",
+                            "description": "can be used to define extra restapi pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                             "default": {}
                         },
                         "podLabels": {
                             "type": "object",
-                            "description": "can be used to define extra restapi pod labels",
+                            "description": "can be used to define extra restapi pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                             "default": {}
                         },
                         "env": {
@@ -3359,12 +3359,12 @@
                         },
                         "podAnnotations": {
                             "type": "object",
-                            "description": "can be used to define extra webapp pod annotations",
+                            "description": "can be used to define extra webapp pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                             "default": {}
                         },
                         "podLabels": {
                             "type": "object",
-                            "description": "can be used to define extra webapp pod labels",
+                            "description": "can be used to define extra webapp pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                             "default": {}
                         },
                         "env": {
@@ -3752,12 +3752,12 @@
                         },
                         "podAnnotations": {
                             "type": "object",
-                            "description": "can be used to define extra websockets pod annotations",
+                            "description": "can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                             "default": {}
                         },
                         "podLabels": {
                             "type": "object",
-                            "description": "can be used to define extra websockets pod labels",
+                            "description": "can be used to define extra websockets pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                             "default": {}
                         },
                         "env": {
@@ -4561,12 +4561,12 @@
                 },
                 "podAnnotations": {
                     "type": "object",
-                    "description": "can be used to define extra Connectors pod annotations",
+                    "description": "can be used to define extra Connectors pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra Connectors pod labels",
+                    "description": "can be used to define extra Connectors pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "service": {
@@ -5910,12 +5910,12 @@
                 },
                 "podAnnotations": {
                     "type": "object",
-                    "description": "can be used to define extra broker pod annotations",
+                    "description": "can be used to define extra broker pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra broker pod labels",
+                    "description": "can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "podDisruptionBudget": {
@@ -6450,12 +6450,12 @@
                 },
                 "podAnnotations": {
                     "type": "object",
-                    "description": "can be used to define extra Optimize pod annotations",
+                    "description": "can be used to define extra Optimize pod annotations. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "podLabels": {
                     "type": "object",
-                    "description": "can be used to define extra Optimize pod labels",
+                    "description": "can be used to define extra Optimize pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
                 "logLevel": {

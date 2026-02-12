@@ -77,6 +77,17 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				s.Require().Equal("bar", statefulSet.Spec.Template.Annotations["foo"])
 			},
 		}, {
+			Name:        "TestContainerSetPodLabelsAndAnnotationsWithTemplating",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/orchestration/testdata/values-templated-labels.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then - verify templating is evaluated for both labels and annotations
+				s.Require().Equal("camunda-platform-test", statefulSet.Spec.Template.Labels["release"])
+				s.Require().Equal("camunda-platform-test", statefulSet.Spec.Template.Annotations["release"])
+			},
+		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"global.annotations.foo": "bar",

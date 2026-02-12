@@ -314,3 +314,53 @@ func (s *configmapWebAppTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *configmapWebAppTemplateTest) TestGlobalIngressHostTemplating() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestWebModelerURLsWithTemplatedIngressHost",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-templated-ingress-host.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerWebAppTOML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := toml.Unmarshal([]byte(configmap.Data["application.toml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// Verify templated global.ingress.host is resolved
+				// The release name is "camunda-platform-test" so host should resolve to "camunda-platform-test.example.com"
+				s.Require().Equal("camunda-platform-test.example.com", configmapApplication.Client.Pusher.Host, "Pusher host should contain resolved templated host")
+			},
+		},
+		{
+			Name: "TestWebModelerURLsWithLiteralIngressHost",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.contextPath":              "/modeler",
+				"global.ingress.enabled":              "true",
+				"global.ingress.host":                 "literal.example.com",
+				"global.ingress.tls.enabled":          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerWebAppTOML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := toml.Unmarshal([]byte(configmap.Data["application.toml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// Verify literal host values still work (backward compatibility)
+				s.Require().Equal("literal.example.com", configmapApplication.Client.Pusher.Host, "Pusher host should contain literal host")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

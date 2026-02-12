@@ -1,0 +1,34 @@
+global:
+  elasticsearch:
+    enabled: true
+
+elasticsearch:
+  enabled: true
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+
+identity:
+  enabled: true
+
+webModeler:
+  enabled: true
+  restapi:
+    mail:
+      fromAddress: "example@example.com"
+    podLabels:
+      release: "{{ .Release.Name }}"
+    podAnnotations:
+      release: "{{ .Release.Name }}"
+  webapp:
+    podLabels:
+      release: "{{ .Release.Name }}"
+    podAnnotations:
+      release: "{{ .Release.Name }}"
+  websockets:
+    podLabels:
+      release: "{{ .Release.Name }}"
+    podAnnotations:
+      release: "{{ .Release.Name }}"

@@ -158,7 +158,7 @@ global:
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com)
     host: ""
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
@@ -663,9 +663,9 @@ identity:
   # contextPath: "/identity"
   contextPath: ""
 
-  ## @param identity.podAnnotations can be used to define extra Management Identity pod annotations
+  ## @param identity.podAnnotations can be used to define extra Management Identity pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param identity.podLabels can be used to define extra Management Identity pod labels
+  ## @param identity.podLabels can be used to define extra Management Identity pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @extra identity.logging configuration for the Management Identity logging. This template will be directly included in the Management Identity configuration YAML file
@@ -1207,9 +1207,9 @@ console:
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @param console.podAnnotations can be used to define extra Console pod annotations
+  ## @param console.podAnnotations can be used to define extra Console pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param console.podLabels can be used to define extra Console pod labels
+  ## @param console.podLabels can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @param console.logging configuration for the Console logging. This template will be directly included in the configuration YAML file
@@ -1517,9 +1517,9 @@ webModeler:
     #      rest: "http://camunda-platform-orchestration:8080"
     #      web-app: "http://localhost:8088"
 
-    ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
+    ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations. Supports templating (e.g., {{ .Release.Name }})
     podAnnotations: {}
-    ## @param webModeler.restapi.podLabels can be used to define extra restapi pod labels
+    ## @param webModeler.restapi.podLabels can be used to define extra restapi pod labels. Supports templating (e.g., {{ .Release.Name }})
     podLabels: {}
 
     ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
@@ -1695,9 +1695,9 @@ webModeler:
     ## @param webModeler.webapp.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations
+    ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations. Supports templating (e.g., {{ .Release.Name }})
     podAnnotations: {}
-    ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels
+    ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels. Supports templating (e.g., {{ .Release.Name }})
     podLabels: {}
 
     ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.
@@ -1874,9 +1874,9 @@ webModeler:
     # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
     publicPort: 8085
 
-    ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations
+    ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }})
     podAnnotations: {}
-    ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels
+    ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels. Supports templating (e.g., {{ .Release.Name }})
     podLabels: {}
 
     ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.
@@ -2187,9 +2187,9 @@ connectors:
   ## @param connectors.contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
+  ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param connectors.podLabels can be used to define extra Connectors pod labels
+  ## @param connectors.podLabels can be used to define extra Connectors pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the connector configuration YAML file
@@ -2858,9 +2858,9 @@ orchestration:
   ## @param orchestration.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @param orchestration.podAnnotations can be used to define extra broker pod annotations
+  ## @param orchestration.podAnnotations can be used to define extra broker pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param orchestration.podLabels can be used to define extra broker pod labels
+  ## @param orchestration.podLabels can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
   ## @extra orchestration.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
@@ -3121,9 +3121,9 @@ optimize:
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
 
-  ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations
+  ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param optimize.podLabels can be used to define extra Optimize pod labels
+  ## @param optimize.podLabels can be used to define extra Optimize pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/

@@ -1,0 +1,6 @@
+identity:
+  enabled: true
+  podLabels:
+    release: "{{ .Release.Name }}"
+  podAnnotations:
+    release: "{{ .Release.Name }}"
