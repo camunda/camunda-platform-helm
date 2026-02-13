@@ -72,5 +72,11 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Add configuration for initializing authorization in 8.8"
+    - kind: added
+      description: "Add tpl support to podLabels, podAnnotations, and global.ingress.host"
     - kind: fixed
-      description: "Support lower helm cli versions by conditionally using toYamlPretty"
+      description: "Add type to headless orchestration cluster service"
+    - kind: fixed
+      description: "Normalize authIssuerBackendUrl to prevent double-slash when contextPath is root"
