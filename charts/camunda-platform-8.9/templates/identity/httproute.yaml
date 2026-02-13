@@ -3,7 +3,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: keycloak
+  name: {{ include "camundaPlatform.fullname" . }}-keycloak
   annotations:
     {{- with .Values.global.annotations }}
     {{- toYaml . | nindent 4 }}
@@ -40,7 +40,7 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: identity
+  name: {{ include "camundaPlatform.fullname" . }}-identity
   annotations:
     {{- with .Values.global.annotations }}
     {{- toYaml . | nindent 4 }}
