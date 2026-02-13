@@ -75,6 +75,11 @@ get_ingress_hostname() {
   local kube_context="${2:-}"
   local hostname
   local kubectl_cmd="kubectl"
+
+  if [[ -n "$TEST_INGRESS_HOST" ]]; then
+    echo "$TEST_INGRESS_HOST"
+    return 0
+  fi
   
   if [[ -n "$kube_context" ]]; then
     kubectl_cmd="kubectl --context=$kube_context"
