@@ -86,3 +86,17 @@ Usage:
   {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
   {{- printf "/%s" $pathsSanitized -}}
 {{- end -}}
+
+{{/*
+camundaPlatform.renderExtraConfiguration
+Renders extraConfiguration entries as ConfigMap data keys.
+
+Usage:
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.connectors.extraConfiguration) }}
+*/}}
+{{- define "camundaPlatform.renderExtraConfiguration" -}}
+  {{- range $key, $val := .extraConfig }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end -}}
