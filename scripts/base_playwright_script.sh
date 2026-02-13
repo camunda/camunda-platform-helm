@@ -89,6 +89,10 @@ get_ingress_hostname() {
     .items[]
     | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
     | ([.spec.rules[].host] | join(","))')
+  if [[ -z "$hostname" ]]; then
+    # might be using the Gateway api
+    hostname=$($kubectl_cmd -n "$namespace" get gateway -o json | jq -r '.items[].spec.listeners[].hostname')
+  fi
 
   if [[ -z "$hostname" || "$hostname" == "null" ]]; then
     echo "Error: unable to determine ingress hostname in namespace '$namespace'" >&2
