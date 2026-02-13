@@ -5589,6 +5589,26 @@
                         }
                     }
                 },
+                "gateway": {
+                    "type": "object",
+                    "properties": {
+                        "grpc": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the GRPCRoute will be created to expose the orchestration grpc service.",
+                                    "default": false
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "defines the url for the GRPC k8s Gateway resources",
+                                    "default": "grpc-{{ .Values.global.host }}"
+                                }
+                            }
+                        }
+                    }
+                },
                 "ingress": {
                     "type": "object",
                     "properties": {
