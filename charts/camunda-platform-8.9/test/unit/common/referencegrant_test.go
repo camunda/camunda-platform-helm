@@ -63,7 +63,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":  "true",
 				"global.gateway.external": "true",
-				"global.host": "camunda.example.com",
+				"global.host":             "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: ReferenceGrant")
@@ -72,8 +72,8 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestReferenceGrantRendered",
 			Values: map[string]string{
-				"global.gateway.enabled":  "true",
-				"global.host": "camunda.example.com",
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -85,8 +85,8 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestReferenceGrantFromHTTPRoute",
 			Values: map[string]string{
-				"global.gateway.enabled":  "true",
-				"global.host": "camunda.example.com",
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -95,10 +95,48 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestReferenceGrantNoGRPCRouteByDefault",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// GRPCRoute from-reference should NOT be present when grpc.enabled is false (default)
+				require.NotContains(t, output, "kind: GRPCRoute")
+			},
+		},
+		{
+			Name: "TestReferenceGrantContainsGRPCRouteWhenEnabled",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.gateway.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "kind: GRPCRoute")
+				require.Contains(t, output, "kind: HTTPRoute")
+			},
+		},
+		{
+			Name: "TestReferenceGrantNoGRPCRouteWhenDisabled",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.gateway.grpc.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "kind: HTTPRoute")
+				require.NotContains(t, output, "kind: GRPCRoute")
+			},
+		},
+		{
 			Name: "TestReferenceGrantToService",
 			Values: map[string]string{
-				"global.gateway.enabled":  "true",
-				"global.host": "camunda.example.com",
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -109,7 +147,7 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestReferenceGrantUsesControllerNamespace",
 			Values: map[string]string{
 				"global.gateway.enabled":             "true",
-				"global.host":            "camunda.example.com",
+				"global.host":                        "camunda.example.com",
 				"global.gateway.controllerNamespace": "gateway-system",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -120,8 +158,8 @@ func (s *ReferenceGrantTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestReferenceGrantDefaultsControllerNamespaceToReleaseNamespace",
 			Values: map[string]string{
-				"global.gateway.enabled":  "true",
-				"global.host": "camunda.example.com",
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
