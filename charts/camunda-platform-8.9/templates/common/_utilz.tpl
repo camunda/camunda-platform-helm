@@ -86,3 +86,25 @@ Usage:
   {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
   {{- printf "/%s" $pathsSanitized -}}
 {{- end -}}
+
+{{/*
+camundaPlatform.renderExtraConfiguration
+Renders extraConfiguration entries as ConfigMap data keys.
+Supports both list format [{file, content}] and map format {filename: content}.
+
+Usage:
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.connectors.extraConfiguration) }}
+*/}}
+{{- define "camundaPlatform.renderExtraConfiguration" -}}
+  {{- if kindIs "slice" .extraConfig }}
+  {{- range .extraConfig }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
+  {{- end }}
+  {{- else }}
+  {{- range $key, $val := .extraConfig }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+  {{- end }}
+{{- end -}}
