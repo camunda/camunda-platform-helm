@@ -64,7 +64,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				"global.gateway.enabled":               "true",
 				"global.gateway.external":              "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: Gateway")
@@ -76,18 +76,18 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				"global.gateway.enabled":               "true",
 				"global.gateway.external":              "false",
 				"global.gateway.createGatewayResource": "false",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: Gateway")
 			},
 		},
 		{
-			Name: "TestGatewayRenderedWithHTTPListeners",
+			Name: "TestGatewayRenderedWithHTTPListenersNoGRPC",
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
 				"global.gateway.tls.enabled":           "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -101,9 +101,8 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "port: 80")
 				require.Contains(t, output, "protocol: HTTP")
 				require.Contains(t, output, "hostname: camunda.example.com")
-				// gRPC listener
-				require.Contains(t, output, "name: grpc")
-				require.Contains(t, output, "hostname: grpc-camunda.example.com")
+				// gRPC listener should NOT be present when grpc.enabled is false (default)
+				require.NotContains(t, output, "name: grpc")
 				// Should NOT contain HTTPS-related config
 				require.NotContains(t, output, "name: https")
 				require.NotContains(t, output, "name: grpcs")
@@ -112,11 +111,33 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name: "TestGatewayRenderedWithHTTPSListeners",
+			Name: "TestGatewayRenderedWithHTTPListenersAndGRPC",
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
+				"global.gateway.tls.enabled":           "false",
+				"orchestration.gateway.grpc.enabled":   "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "kind: Gateway")
+				// HTTP listener
+				require.Contains(t, output, "name: http")
+				require.Contains(t, output, "port: 80")
+				require.Contains(t, output, "protocol: HTTP")
+				require.Contains(t, output, "hostname: camunda.example.com")
+				// gRPC listener should be present when grpc.enabled is true
+				require.Contains(t, output, "name: grpc")
+				require.Contains(t, output, "hostname: grpc-camunda.example.com")
+			},
+		},
+		{
+			Name: "TestGatewayRenderedWithHTTPSListenersNoGRPC",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
 				"global.gateway.tls.enabled":           "true",
 				"global.gateway.tls.secretName":        "my-tls-secret",
 			},
@@ -130,7 +151,34 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 				require.Contains(t, output, "hostname: camunda.example.com")
 				require.Contains(t, output, "mode: Terminate")
 				require.Contains(t, output, "name: my-tls-secret")
-				// gRPCs listener
+				// gRPCs listener should NOT be present when grpc.enabled is false (default)
+				require.NotContains(t, output, "name: grpcs")
+				// Should NOT contain HTTP-only listener config
+				require.NotContains(t, output, "port: 80")
+				require.NotContains(t, output, "protocol: HTTP\n")
+			},
+		},
+		{
+			Name: "TestGatewayRenderedWithHTTPSListenersAndGRPC",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
+				"global.gateway.tls.enabled":           "true",
+				"global.gateway.tls.secretName":        "my-tls-secret",
+				"orchestration.gateway.grpc.enabled":   "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "kind: Gateway")
+				// HTTPS listener
+				require.Contains(t, output, "name: https")
+				require.Contains(t, output, "port: 443")
+				require.Contains(t, output, "protocol: HTTPS")
+				require.Contains(t, output, "hostname: camunda.example.com")
+				require.Contains(t, output, "mode: Terminate")
+				require.Contains(t, output, "name: my-tls-secret")
+				// gRPCs listener should be present when grpc.enabled is true
 				require.Contains(t, output, "name: grpcs")
 				require.Contains(t, output, "hostname: grpc-camunda.example.com")
 				// Should NOT contain HTTP-only listener config
@@ -139,11 +187,27 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestGatewayGRPCListenerCustomHost",
+			Values: map[string]string{
+				"global.gateway.enabled":               "true",
+				"global.gateway.createGatewayResource": "true",
+				"global.host":                          "camunda.example.com",
+				"global.gateway.tls.enabled":           "false",
+				"orchestration.gateway.grpc.enabled":   "true",
+				"orchestration.gateway.grpc.host":      "custom-grpc.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "name: grpc")
+				require.Contains(t, output, "hostname: custom-grpc.example.com")
+			},
+		},
+		{
 			Name: "TestGatewayCustomClassName",
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
 				"global.gateway.className":             "istio",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -156,7 +220,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
 				"global.annotations.global-key":        "global-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -169,7 +233,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
 				"global.gateway.createGatewayResource":   "true",
-				"global.host":                "camunda.example.com",
+				"global.host":                            "camunda.example.com",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -182,7 +246,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
 				"global.gateway.createGatewayResource":   "true",
-				"global.host":                "camunda.example.com",
+				"global.host":                            "camunda.example.com",
 				"global.annotations.global-key":          "global-value",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},
@@ -197,7 +261,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
 				"global.ingress.enabled":               "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -209,7 +273,7 @@ func (s *GatewayTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"global.gateway.enabled":               "true",
 				"global.gateway.createGatewayResource": "true",
-				"global.host":              "camunda.example.com",
+				"global.host":                          "camunda.example.com",
 				"global.gateway.tls.enabled":           "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

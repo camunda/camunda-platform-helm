@@ -52,7 +52,8 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestGRPCRouteNotRenderedWhenGatewayDisabled",
 			Values: map[string]string{
-				"global.gateway.enabled": "false",
+				"global.gateway.enabled":             "false",
+				"orchestration.gateway.grpc.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: GRPCRoute")
@@ -61,10 +62,11 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestGRPCRouteNotRenderedWhenGatewayExternal",
 			Values: map[string]string{
-				"global.gateway.enabled":          "true",
-				"global.gateway.external":         "true",
-				"global.host":         "camunda.example.com",
-				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
+				"global.gateway.enabled":             "true",
+				"global.gateway.external":            "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: GRPCRoute")
@@ -73,22 +75,48 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestGRPCRouteNotRenderedWhenOrchestrationDisabled",
 			Values: map[string]string{
-				"global.gateway.enabled":          "true",
-				"global.host":         "camunda.example.com",
-				"orchestration.enabled":           "false",
-				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "false",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NotContains(t, output, "kind: GRPCRoute")
 			},
 		},
 		{
+			Name: "TestGRPCRouteNotRenderedWhenGRPCDisabled",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NotContains(t, output, "kind: GRPCRoute")
+			},
+		},
+		{
+			Name: "TestGRPCRouteNotRenderedByDefault",
+			Values: map[string]string{
+				"global.gateway.enabled": "true",
+				"global.host":            "camunda.example.com",
+				"orchestration.enabled":  "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				// orchestration.gateway.grpc.enabled defaults to false
+				require.NotContains(t, output, "kind: GRPCRoute")
+			},
+		},
+		{
 			Name: "TestGRPCRouteRendered",
 			Values: map[string]string{
-				"global.gateway.enabled":          "true",
-				"global.host":         "camunda.example.com",
-				"orchestration.enabled":           "true",
-				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -102,10 +130,11 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestGRPCRouteParentRef",
 			Values: map[string]string{
-				"global.gateway.enabled":          "true",
-				"global.host":         "camunda.example.com",
-				"orchestration.enabled":           "true",
-				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -116,11 +145,12 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestGRPCRouteWithGlobalAnnotations",
 			Values: map[string]string{
-				"global.gateway.enabled":          "true",
-				"global.host":         "camunda.example.com",
-				"orchestration.enabled":           "true",
-				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
-				"global.annotations.global-key":   "global-value",
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+				"global.annotations.global-key":      "global-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -131,9 +161,10 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteWithGatewayAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.host":                "camunda.example.com",
+				"global.host":                            "camunda.example.com",
 				"orchestration.enabled":                  "true",
-				"orchestration.ingress.grpc.host":        "grpc-camunda.example.com",
+				"orchestration.gateway.grpc.enabled":     "true",
+				"orchestration.gateway.grpc.host":        "grpc-camunda.example.com",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -145,9 +176,10 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestGRPCRouteWithBothAnnotations",
 			Values: map[string]string{
 				"global.gateway.enabled":                 "true",
-				"global.host":                "camunda.example.com",
+				"global.host":                            "camunda.example.com",
 				"orchestration.enabled":                  "true",
-				"orchestration.ingress.grpc.host":        "grpc-camunda.example.com",
+				"orchestration.gateway.grpc.enabled":     "true",
+				"orchestration.gateway.grpc.host":        "grpc-camunda.example.com",
 				"global.annotations.global-key":          "global-value",
 				"global.gateway.annotations.gateway-key": "gateway-value",
 			},
@@ -160,10 +192,11 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestGRPCRouteCustomHost",
 			Values: map[string]string{
-				"global.gateway.enabled":          "true",
-				"global.host":         "camunda.example.com",
-				"orchestration.enabled":           "true",
-				"orchestration.ingress.grpc.host": "custom-grpc.example.com",
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "custom-grpc.example.com",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -171,13 +204,28 @@ func (s *GRPCRouteTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
+			Name: "TestGRPCRouteDefaultHostDerivedFromGlobalHost",
+			Values: map[string]string{
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Default host template is "grpc-{{ .Values.global.host }}"
+				require.Contains(t, output, "grpc-camunda.example.com")
+			},
+		},
+		{
 			Name: "TestGRPCRouteBackendRefPort",
 			Values: map[string]string{
-				"global.gateway.enabled":          "true",
-				"global.host":         "camunda.example.com",
-				"orchestration.enabled":           "true",
-				"orchestration.ingress.grpc.host": "grpc-camunda.example.com",
-				"orchestration.service.grpcPort":  "9090",
+				"global.gateway.enabled":             "true",
+				"global.host":                        "camunda.example.com",
+				"orchestration.enabled":              "true",
+				"orchestration.gateway.grpc.enabled": "true",
+				"orchestration.gateway.grpc.host":    "grpc-camunda.example.com",
+				"orchestration.service.grpcPort":     "9090",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
