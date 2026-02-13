@@ -179,6 +179,18 @@ After that, a Modeler user can set in their BPMN diagram a value `secrets.SLACK_
 
 Visit [using secrets in manual installation](https://docs.camunda.io/docs/8.0/self-managed/connectors-deployment/connectors-configuration/#secrets-in-manual-installations) to learn more.
 
+### Index Prefix Configuration
+
+> [!WARNING]
+>
+> The values of `orchestration.index.prefix` and `global.elasticsearch.prefix` or `global.opensearch.prefix` **must be distinct from each other**.
+> In particular, `orchestration.index.prefix` must not be set to `zeebe-record` (the default value of the global prefixes that are used for ElasticsearchExporter and OpenSearchExporter indices).
+>
+> Additionally, make sure one prefix is not a substring of the other.
+> For example, `custom` and `custom-zeebe` can still conflict because wildcard patterns like `custom*` match both.
+>
+> Reusing a shared prefix can cause Zeebe ILM/ISM policies and wildcard index patterns (for example, `custom*`) to also match unified indices, which may lead to **unexpected data loss**.
+
 ### Elasticsearch
 
 Camunda 8 Helm chart has a dependency on the [Elasticsearch 8 Helm Chart](https://artifacthub.io/packages/helm/bitnami/elasticsearch). All variables related to Elasticsearch can be set under `elasticsearch`.
