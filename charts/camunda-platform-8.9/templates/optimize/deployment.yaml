@@ -109,10 +109,8 @@ spec:
               subPath: application-ccsm.yaml
               name: environment-config
             {{- end }}
-            {{- range .Values.optimize.extraConfiguration }}
-            - name: environment-config
-              mountPath: /optimize/config/{{ .file }}
-              subPath: {{ .file }}
+            {{- with .Values.optimize.extraConfiguration }}
+            {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "environment-config" "basePath" "/optimize/config") | trim | nindent 12 }}
             {{- end }}
             {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: keystore
@@ -294,10 +292,8 @@ spec:
               subPath: application-ccsm.yaml
               name: environment-config
             {{- end }}
-            {{- range .Values.optimize.extraConfiguration }}
-            - name: environment-config
-              mountPath: /optimize/config/{{ .file }}
-              subPath: {{ .file }}
+            {{- with .Values.optimize.extraConfiguration }}
+            {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "environment-config" "basePath" "/optimize/config") | trim | nindent 12 }}
             {{- end }}
             {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: keystore
