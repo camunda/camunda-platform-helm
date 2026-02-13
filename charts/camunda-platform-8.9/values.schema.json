@@ -176,6 +176,11 @@
                         }
                     }
                 },
+                "host": {
+                    "type": "string",
+                    "description": "can be used to define the hostname of the gateway or ingress resource.",
+                    "default": ""
+                },
                 "gateway": {
                     "type": "object",
                     "properties": {
@@ -198,11 +203,6 @@
                             "type": "string",
                             "description": "Gateway.className defines the class or configuration of gateway which should be used by the controller",
                             "default": "nginx"
-                        },
-                        "hostname": {
-                            "type": "string",
-                            "description": "can be used to define the hostname of the gateway resource",
-                            "default": ""
                         },
                         "tls": {
                             "type": "object",
@@ -246,7 +246,7 @@
                         },
                         "host": {
                             "type": "string",
-                            "description": "If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).",
+                            "description": "(DEPRECATED - use global.host instead) If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).",
                             "default": ""
                         },
                         "pathType": {
