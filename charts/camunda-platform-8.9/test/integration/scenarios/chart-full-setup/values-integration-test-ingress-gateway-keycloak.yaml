@@ -6,6 +6,16 @@ global:
   host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: false
+  elasticsearch:
+    enabled: true
+    external: true
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    auth:
+      username: elastic
+      secret:
+        existingSecret: infra-credentials
+        existingSecretKey: elasticsearch-password
+
   gateway:
     createGatewayResource: true
     enabled: true
@@ -152,7 +162,7 @@ console:
       - name: registry-camunda-cloud
 
 elasticsearch:
-  maxUnavailable: 0
+  enabled: false
 
 prometheusServiceMonitor:
   enabled: true
