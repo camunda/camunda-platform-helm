@@ -34,5 +34,13 @@ spec:
     - name: {{ template "webModeler.webapp.fullname" . }}
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.webModeler.webapp.service.port }}
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ template "webModeler.websocketContextPath" . }}
+    backendRefs:
+    - name: {{ template "webModeler.websockets.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.webModeler.websockets.service.port }}
 {{- end }}
 {{- end }}

@@ -10,6 +10,14 @@ metadata:
     {{- with .Values.global.gateway.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  labels:
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "camundaPlatform.labels" .)
+        .Values.global.gateway.labels
+      )
+      "context" .
+    ) | nindent 4 }}
 spec:
   gatewayClassName: {{ .Values.global.gateway.className }}
   listeners:
