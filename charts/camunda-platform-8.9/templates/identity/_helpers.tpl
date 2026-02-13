@@ -26,29 +26,16 @@
     {{- end -}}
 {{- end -}}
 
-{{/*
-Defines extra labels for identity.
-*/}}
 {{- define "identity.extraLabels" -}}
-app.kubernetes.io/component: identity
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.identity "chart" .Chart) | quote }}
+    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "identity" "componentValuesKey" "identity" "context" $) -}}
 {{- end -}}
 
-{{/*
-Define common labels for identity, combining the match labels and transient labels, which might change on updating
-(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
-*/}}
 {{- define "identity.labels" -}}
-{{- template "camundaPlatform.labels" . }}
-{{ template "identity.extraLabels" . }}
+    {{- include "camundaPlatform.componentLabels" (dict "componentName" "identity" "componentValuesKey" "identity" "context" $) -}}
 {{- end -}}
 
-{{/*
-Defines match labels for identity, which are extended by sub-charts and should be used in matchLabels selectors.
-*/}}
 {{- define "identity.matchLabels" -}}
-{{- template "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: identity
+    {{- include "camundaPlatform.componentMatchLabels" (dict "componentName" "identity" "context" $) -}}
 {{- end -}}
 
 {{/*

@@ -76,6 +76,42 @@ app.kubernetes.io/part-of: camunda-platform
 {{- end -}}
 
 {{/*
+[camunda-platform] Defines extra labels for a component (component name + version).
+
+Usage:
+{{ include "camundaPlatform.componentExtraLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentExtraLabels" -}}
+app.kubernetes.io/component: {{ .componentName }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .context.Values.global "overlay" (index .context.Values .componentValuesKey) "chart" .context.Chart) | quote }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Define common labels for a component, combining the platform labels and component extra labels.
+These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+
+Usage:
+{{ include "camundaPlatform.componentLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentLabels" -}}
+    {{- include "camundaPlatform.labels" .context }}
+    {{- "\n" }}
+    {{- include "camundaPlatform.componentExtraLabels" . }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Defines match labels for a component, which should be used in matchLabels selectors.
+
+Usage:
+{{ include "camundaPlatform.componentMatchLabels" (dict "componentName" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentMatchLabels" -}}
+    {{- include "camundaPlatform.matchLabels" .context }}
+    {{- "\n" -}}
+app.kubernetes.io/component: {{ .componentName }}
+{{- end -}}
+
+{{/*
 Get image tag according the values of "base" or "overlay" values.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
 Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
