@@ -1,5 +1,12 @@
 # Changelog
 
+## [12.7.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.7.6...camunda-platform-8.7-12.7.7) (2026-02-13)
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5071](https://github.com/camunda/camunda-platform-helm/issues/5071)) ([5a64ccb](https://github.com/camunda/camunda-platform-helm/commit/5a64ccb2059f8d77ea8b14d37a3c40ab0c7dd6fe))
+
 ## [12.7.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.7.5...camunda-platform-8.7-12.7.6) (2026-02-04)
 
 
