@@ -24,9 +24,11 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     namespace: {{ .Values.global.gateway.controllerNamespace | default .Release.Namespace }}
+  {{- if .Values.orchestration.gateway.grpc.enabled }}
   - group: gateway.networking.k8s.io
     kind: GRPCRoute
     namespace: {{ .Values.global.gateway.controllerNamespace | default .Release.Namespace }}
+  {{- end }}
   to:
   - group: ""
     kind: Service

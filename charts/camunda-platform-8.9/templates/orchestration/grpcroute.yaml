@@ -1,4 +1,4 @@
-{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
+{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) (.Values.orchestration.gateway.grpc.enabled ) -}}
 {{- if .Values.orchestration.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: GRPCRoute
@@ -24,7 +24,7 @@ spec:
   - name: {{ include "camundaPlatform.fullname" . }}
     sectionName: {{ if .Values.global.gateway.tls.enabled }}grpcs{{ else }}grpc{{ end }}
   hostnames:
-  - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
+  - {{ tpl .Values.orchestration.gateway.grpc.host $ }}
   rules:
   - backendRefs:
     - name: {{ include "orchestration.serviceName" . }}
