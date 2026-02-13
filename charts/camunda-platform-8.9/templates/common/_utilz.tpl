@@ -108,3 +108,30 @@ Usage:
   {{- end }}
   {{- end }}
 {{- end -}}
+
+{{/*
+camundaPlatform.extraConfigurationVolumeMounts
+Renders volumeMounts for extraConfiguration entries.
+
+Usage:
+  {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict
+      "extraConfig" .Values.connectors.extraConfiguration
+      "volumeName" "config"
+      "basePath" "/config"
+  ) | nindent 12 }}
+*/}}
+{{- define "camundaPlatform.extraConfigurationVolumeMounts" -}}
+{{- if kindIs "slice" .extraConfig }}
+{{- range .extraConfig }}
+- name: {{ $.volumeName }}
+  mountPath: {{ $.basePath }}/{{ .file }}
+  subPath: {{ .file }}
+{{- end }}
+{{- else }}
+{{- range $key, $val := .extraConfig }}
+- name: {{ $.volumeName }}
+  mountPath: {{ $.basePath }}/{{ $key }}
+  subPath: {{ $key }}
+{{- end }}
+{{- end }}
+{{- end -}}
