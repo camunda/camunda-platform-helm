@@ -1,5 +1,27 @@
 # Changelog
 
+## [13.5.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.4.2...camunda-platform-8.8-13.5.0) (2026-02-13)
+
+
+### Features
+
+* add configuration for initializing authorization in 8.8 ([#5096](https://github.com/camunda/camunda-platform-helm/issues/5096)) ([1d65af1](https://github.com/camunda/camunda-platform-helm/commit/1d65af1c688817b871f729e264ce8b8d73bf34b6))
+* add tpl support to podLabels, podAnnotations, and global.ingress.host ([#5064](https://github.com/camunda/camunda-platform-helm/issues/5064)) ([b1d64aa](https://github.com/camunda/camunda-platform-helm/commit/b1d64aaa2a9d633e2b266a2abae9b7b07b0db6b0))
+
+
+### Bug Fixes
+
+* add type to headless orchestration cluster service ([#5107](https://github.com/camunda/camunda-platform-helm/issues/5107)) ([5c57502](https://github.com/camunda/camunda-platform-helm/commit/5c5750232ccf29d39bb68b1509d9131603536429))
+* normalize authIssuerBackendUrl to prevent double-slash when contextPath is root ([#5114](https://github.com/camunda/camunda-platform-helm/issues/5114)) ([8525c94](https://github.com/camunda/camunda-platform-helm/commit/8525c942bbaf881200bb58aaca20042f305dea07))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5087](https://github.com/camunda/camunda-platform-helm/issues/5087)) ([16b1eb7](https://github.com/camunda/camunda-platform-helm/commit/16b1eb7877fd61a160b76d730e6b60e8f32847b9))
+* update camunda-platform-digests ([#5094](https://github.com/camunda/camunda-platform-helm/issues/5094)) ([4f6dc63](https://github.com/camunda/camunda-platform-helm/commit/4f6dc634c9465737d6f286c9f3182174fc4868cf))
+* update camunda-platform-digests ([#5106](https://github.com/camunda/camunda-platform-helm/issues/5106)) ([d1cadd3](https://github.com/camunda/camunda-platform-helm/commit/d1cadd3cbb695287c2ffec7c1f43811681cef29d))
+* update camunda/console docker tag to v8.8.90 ([#5089](https://github.com/camunda/camunda-platform-helm/issues/5089)) ([ef783f0](https://github.com/camunda/camunda-platform-helm/commit/ef783f0757ab374bde65957b059c9f3fee59e379))
+
 ## [13.4.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.4.1...camunda-platform-8.8-13.4.2) (2026-02-05)
 
 
