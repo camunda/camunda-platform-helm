@@ -14,6 +14,7 @@ metadata:
 spec:
   parentRefs:
   - name: {{ include "camundaPlatform.fullname" . }}
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}grpcs{{ else }}grpc{{ end }}
   hostnames:
   - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
   rules:
