@@ -127,6 +127,8 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 orchestration:
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   contextPath: "/orchestration"
   gateway:
     grpc:
