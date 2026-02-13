@@ -116,10 +116,8 @@ spec:
             - name: config
               mountPath: /home/webapp/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
-            - name: config
-              mountPath: /home/webapp/config/{{ $key }}
-              subPath: {{ $key }}
+          {{- with .Values.webModeler.websockets.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.websockets.extraVolumeMounts }}
           {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 12 }}
