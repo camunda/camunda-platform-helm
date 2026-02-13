@@ -157,10 +157,8 @@ spec:
             - name: config
               mountPath: /home/runner/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
-            - name: config
-              mountPath: /home/runner/config/{{ $key }}
-              subPath: {{ $key }}
+          {{- with .Values.webModeler.restapi.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/runner/config") | trim | nindent 12 }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume

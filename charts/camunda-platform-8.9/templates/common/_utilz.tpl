@@ -100,3 +100,22 @@ Usage:
     {{ $val | indent 4 | trim }}
   {{- end }}
 {{- end -}}
+
+{{/*
+camundaPlatform.extraConfigurationVolumeMounts
+Renders volumeMounts for extraConfiguration entries.
+
+Usage:
+  {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict
+      "extraConfig" .Values.connectors.extraConfiguration
+      "volumeName" "config"
+      "basePath" "/config"
+  ) | nindent 12 }}
+*/}}
+{{- define "camundaPlatform.extraConfigurationVolumeMounts" -}}
+{{- range $key, $val := .extraConfig }}
+- name: {{ $.volumeName }}
+  mountPath: {{ $.basePath }}/{{ $key }}
+  subPath: {{ $key }}
+{{- end }}
+{{- end -}}
