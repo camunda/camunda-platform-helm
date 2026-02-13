@@ -106,8 +106,5 @@ data:
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
-  {{- range .Values.webModeler.restapi.extraConfiguration }}
-  {{ .file }}: |
-    {{ .content | indent 4 | trim }}
-  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.webModeler.restapi.extraConfiguration) }}
 {{- end }}
