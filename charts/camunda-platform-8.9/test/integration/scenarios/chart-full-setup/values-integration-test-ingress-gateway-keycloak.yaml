@@ -83,6 +83,11 @@ identityKeycloak:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 connectors:
   contextPath: "/connectors"
