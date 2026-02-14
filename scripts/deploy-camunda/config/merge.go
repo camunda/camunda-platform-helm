@@ -58,14 +58,31 @@ type RuntimeFlags struct {
 	DebugSuspend             bool                   // Suspend JVM on startup until debugger attaches
 	OutputTestEnv            bool                   // Generate .env file for E2E tests after deployment
 	OutputTestEnvPath        string                 // Path for the test .env file output
+	// Selection + composition flags (new model)
+	Identity     string   // Identity selection: keycloak, keycloak-external, oidc, basic, hybrid
+	Persistence  string   // Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle
+	TestPlatform string   // Test platform selection: gke, eks, openshift
+	Features     []string // Feature selections: multitenancy, rba, documentstore
+	QA           bool     // Enable QA configuration (test users, etc.)
+	ImageTags    bool     // Enable image tag overrides from env vars
+	UpgradeFlow  bool     // Enable upgrade flow configuration
+
+	// Deprecated layered values flags (backward compat)
+	ValuesAuth     string   // DEPRECATED: use Identity instead
+	ValuesBackend  string   // DEPRECATED: use Persistence instead
+	ValuesFeatures []string // DEPRECATED: use Features instead
+	ValuesQA       bool     // DEPRECATED: use QA instead
+	ValuesInfra    string   // DEPRECATED: use TestPlatform instead
+
 	// Test execution flags
 	RunIntegrationTests   bool // Run integration tests after deployment
 	RunE2ETests           bool // Run e2e tests after deployment
 	RunAllTests           bool // Run both integration and e2e tests after deployment
 	KubeContext           string
 	UseVaultBackedSecrets bool
-	RunTestsIT            bool // Alias for RunIntegrationTests (backward compat)
-	RunTestsE2E           bool // Alias for RunE2ETests (backward compat)
+	RunTestsIT            bool   // Alias for RunIntegrationTests (backward compat)
+	RunTestsE2E           bool   // Alias for RunE2ETests (backward compat)
+	TestExclude           string // Comma-separated test suites to exclude (passed as --test-exclude to test scripts)
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
@@ -303,6 +320,52 @@ func isValidIngressBaseDomain(domain string) bool {
 		}
 	}
 	return false
+}
+
+// HasExplicitSelectionConfig returns true if any selection + composition flags were explicitly set.
+func (f *RuntimeFlags) HasExplicitSelectionConfig() bool {
+	return f.Identity != "" || f.Persistence != "" || f.TestPlatform != "" || len(f.Features) > 0 || f.QA || f.ImageTags || f.UpgradeFlow
+}
+
+// HasExplicitLayeredConfig returns true if any deprecated layered values flags were explicitly set.
+// Deprecated: Use HasExplicitSelectionConfig instead.
+func (f *RuntimeFlags) HasExplicitLayeredConfig() bool {
+	return f.ValuesAuth != "" || f.ValuesBackend != "" || len(f.ValuesFeatures) > 0 || f.ValuesQA || f.ValuesInfra != ""
+}
+
+// MigrateDeprecatedFlags copies deprecated layered values flags to the new selection fields.
+// This is called during validation to ensure backward compatibility.
+func (f *RuntimeFlags) MigrateDeprecatedFlags() {
+	// Only migrate if new fields are not already set
+	if f.Identity == "" && f.ValuesAuth != "" {
+		f.Identity = f.ValuesAuth
+	}
+	if f.Persistence == "" && f.ValuesBackend != "" {
+		f.Persistence = f.ValuesBackend
+	}
+	if f.TestPlatform == "" && f.ValuesInfra != "" {
+		f.TestPlatform = f.ValuesInfra
+	}
+	if len(f.Features) == 0 && len(f.ValuesFeatures) > 0 {
+		// Filter out features that are now in other categories
+		for _, feature := range f.ValuesFeatures {
+			switch feature {
+			case "rdbms", "rdbms-oracle":
+				// These moved to persistence - only set if persistence not already set
+				if f.Persistence == "" {
+					f.Persistence = feature
+				}
+			case "upgrade":
+				// This is now a separate flag
+				f.UpgradeFlow = true
+			default:
+				f.Features = append(f.Features, feature)
+			}
+		}
+	}
+	if !f.QA && f.ValuesQA {
+		f.QA = true
+	}
 }
 
 // ResolveIngressHostname returns the resolved ingress hostname.
