@@ -75,6 +75,11 @@ get_ingress_hostname() {
   local kube_context="${2:-}"
   local hostname
   local kubectl_cmd="kubectl"
+
+  if [[ -n "$TEST_INGRESS_HOST" ]]; then
+    echo "$TEST_INGRESS_HOST"
+    return 0
+  fi
   
   if [[ -n "$kube_context" ]]; then
     kubectl_cmd="kubectl --context=$kube_context"
@@ -84,6 +89,10 @@ get_ingress_hostname() {
     .items[]
     | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
     | ([.spec.rules[].host] | join(","))')
+  if [[ -z "$hostname" ]]; then
+    # might be using the Gateway api
+    hostname=$($kubectl_cmd -n "$namespace" get gateway -o json | jq -r '.items[].spec.listeners[].hostname')
+  fi
 
   if [[ -z "$hostname" || "$hostname" == "null" ]]; then
     echo "Error: unable to determine ingress hostname in namespace '$namespace'" >&2
