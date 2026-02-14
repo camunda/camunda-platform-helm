@@ -126,6 +126,7 @@ data:
               name: Demo User
               password: demo
               username: demo
+    
         multiTenancy:
           checksEnabled: false
           apiEnabled: true

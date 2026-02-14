@@ -5254,6 +5254,12 @@
                                     "description": "define authorizations.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "tenants": {
+                                    "type": "array",
+                                    "description": "define tenants.",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         }
