@@ -353,8 +353,5 @@ data:
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
-  {{- range $key, $val := .Values.identity.extraConfiguration }}
-  {{ $key }}: |
-    {{ $val | indent 4 | trim }}
-  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.identity.extraConfiguration) }}
 {{- end }}
