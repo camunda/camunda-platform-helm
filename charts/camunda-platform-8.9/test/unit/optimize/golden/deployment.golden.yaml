@@ -92,7 +92,7 @@ spec:
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
             - name: SPRING_PROFILES_ACTIVE
-              value: ccsm
+              value: "ccsm"
             - name: OPTIMIZE_LOG_LEVEL
               value: "info"
             - name: UPGRADE_LOG_LEVEL

@@ -40,11 +40,11 @@ spec:
                 "plaintextKey" "key"
             ) | nindent 12 }}
             - name: NODE_ENV
-              value: "production"
+              value: {{ .Values.webModeler.webapp.nodeEnv | default "production" | quote }}
             - name: PLAY_ENABLED
               value: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
             - name: NODE_OPTIONS
-              value: "--max-old-space-size=128"
+              value: {{ .Values.webModeler.webapp.nodeOptions | default "--max-old-space-size=128" | quote }}
             - name: PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:
