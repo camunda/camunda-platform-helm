@@ -5232,6 +5232,12 @@
                                     "description": "define authorizations.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "roles": {
+                                    "type": "array",
+                                    "description": "define roles.",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         }
