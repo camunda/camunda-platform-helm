@@ -329,6 +329,18 @@ jobs:
             secret/data/products/distribution/ci NEXUS_PASSWORD;
           exportEnv: true
 
+      - name: DEBUG - print GH App ID used for env management
+        shell: bash
+        env:
+          GH_APP_ID: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+        run: |
+          if [[ -z "${GH_APP_ID:-}" ]]; then
+            echo "GH_APP_ID is empty/unset"
+            exit 0
+          fi
+          echo "::add-mask::${GH_APP_ID}"
+          echo "GH App ID (env management) = ${GH_APP_ID}"
+
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
         uses: ./.github/actions/cluster-auth
@@ -346,6 +358,14 @@ jobs:
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
+      - name: DEBUG - who is the minted token?
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.cluster-auth.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh api /user --jq '{login: .login, id: .id, type: .type}'
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
