@@ -329,20 +329,10 @@ jobs:
             secret/data/products/distribution/ci NEXUS_PASSWORD;
           exportEnv: true
 
-      - name: DEBUG - print GH App ID used for env management
-        shell: bash
-        env:
-          GH_APP_ID: ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-        run: |
-          if [[ -z "${GH_APP_ID:-}" ]]; then
-            echo "GH_APP_ID is empty/unset"
-            exit 0
-          fi
-          echo "::add-mask::${GH_APP_ID}"
-          echo "GH App ID (env management) = ${GH_APP_ID}"
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
+        continue-on-error: true
         uses: ./.github/actions/cluster-auth
         with:
           platform: ${{ inputs.distro-platform }}
@@ -358,14 +348,33 @@ jobs:
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-      - name: DEBUG - who is the minted token?
+      
+      - name: DEBUG - token identity (runs even if cluster-auth failed)
+        if: always()
         shell: bash
         env:
-          GH_TOKEN: ${{ steps.cluster-auth.outputs.token }}
+          TOKEN: ${{ steps.cluster-auth.outputs.token }}
         run: |
           set -euo pipefail
-          gh api /user --jq '{login: .login, id: .id, type: .type}'
+          echo "cluster-auth outcome: ${{ steps.cluster-auth.outcome }}"
+          echo "cluster-auth conclusion: ${{ steps.cluster-auth.conclusion }}"
+
+          if [[ -z "${TOKEN:-}" ]]; then
+            echo "No token output produced by cluster-auth."
+            exit 0
+          fi
+
+          curl -sS \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/user \
+            | jq '{login,id,type}'
+
+          curl -sS \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/installation \
+            | jq '{id,app_id,account:.account.login}' || true
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
