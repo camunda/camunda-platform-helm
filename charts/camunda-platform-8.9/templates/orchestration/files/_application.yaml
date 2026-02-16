@@ -448,6 +448,20 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
+      {{- if .Values.orchestration.exporters.appIntegrations.enabled }}
+        appIntegrations:
+          className: "io.camunda.exporter.appint.AppIntegrationsExporter"
+          args:
+            url: {{ .Values.orchestration.exporters.appIntegrations.apiKey | quote }}
+            apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"
+            continueOnError: {{ .Values.orchestration.exporters.appIntegrations.continueOnError }}
+            maxRetries: {{ .Values.orchestration.exporters.appIntegrations.maxRetries }}
+            retryDelayMs: {{ .Values.orchestration.exporters.appIntegrations.retryDelayMs }}
+            requestTimeoutMs: {{ .Values.orchestration.exporters.appIntegrations.requestTimeoutMs }}
+            batchSize: {{ .Values.orchestration.exporters.appIntegrations.batchSize }}
+            batchIntervalMs: {{ .Values.orchestration.exporters.appIntegrations.batchIntervalMs }}
+            maxBatchesInFlight: {{ .Values.orchestration.exporters.appIntegrations.maxBatchesInFlight }}
+      {{- end }}
     {{- else -}}
       {{ " {}" }}
     {{- end }}

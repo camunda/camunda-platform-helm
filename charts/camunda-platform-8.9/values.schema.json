@@ -6355,6 +6355,61 @@
                                     "default": false
                                 }
                             }
+                        },
+                        "appIntegrations": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables the App Integrations exporter.",
+                                    "default": false
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "description": "the URL of the App Integrations service, required if the exporter is enabled",
+                                    "default": ""
+                                },
+                                "apiKey": {
+                                    "type": "string",
+                                    "description": "the API key for authenticating with the App Integrations service",
+                                    "default": ""
+                                },
+                                "continueOnError": {
+                                    "type": "boolean",
+                                    "description": "if true, the exporter will continue exporting even if there are errors when calling the App Integrations service. If false, the exporter will stop exporting and retry until the call is successful.",
+                                    "default": true
+                                },
+                                "maxRetries": {
+                                    "type": "number",
+                                    "description": "the maximum number of retries for failed calls to the App Integrations service.",
+                                    "default": 2
+                                },
+                                "retryDelayMs": {
+                                    "type": "number",
+                                    "description": "the delay in milliseconds between retries when calling the App Integrations service.",
+                                    "default": 1500
+                                },
+                                "requestTimeoutMs": {
+                                    "type": "number",
+                                    "description": "the timeout in milliseconds for calls to the App Integrations service.",
+                                    "default": 5000
+                                },
+                                "batchSize": {
+                                    "type": "number",
+                                    "description": "the number of records to batch together when calling the App Integrations service.",
+                                    "default": 50
+                                },
+                                "batchIntervalMs": {
+                                    "type": "number",
+                                    "description": "the interval in milliseconds to wait before sending a batch to the App Integrations service, even if the batch size has not been reached.",
+                                    "default": 2000
+                                },
+                                "maxBatchesInFlight": {
+                                    "type": "number",
+                                    "description": "the maximum number of batches that can be in flight. This can be used to apply backpressure and prevent overwhelming the service with too many requests at once.",
+                                    "default": 2
+                                }
+                            }
                         }
                     }
                 },

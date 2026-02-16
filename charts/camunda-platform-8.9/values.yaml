@@ -3005,6 +3005,18 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
+    ## @param orchestration.exporters.appIntegrations.enabled if true, enables the App Integrations exporter.
+    appIntegrations:
+      enabled: false
+      url: ""
+      apiKey: ""
+      continueOnError: true
+      maxRetries: 2
+      retryDelayMs: 1500
+      requestTimeoutMs: 5000
+      batchSize: 50
+      batchIntervalMs: 2000
+      maxBatchesInFlight: 2
 
   index:
     ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for the new exporter and Orchestration Cluster. For old exporter or Optimize use the "global.elasticsearch.prefix" or OpenSearch equivalent.
