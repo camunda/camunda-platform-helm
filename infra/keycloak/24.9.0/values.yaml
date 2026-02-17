@@ -53,6 +53,11 @@ global:
 httpRelativePath: /auth/
 
 postgresql:
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 512Mi
   image:
     repository: bitnamilegacy/postgresql
 
