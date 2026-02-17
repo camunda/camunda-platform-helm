@@ -2762,7 +2762,7 @@ orchestration:
         checkpointInterval: ""
         ## @param orchestration.data.primaryStorage.backup.offset defines an optional offset for the generated backup ids to ensure continuation from existing backups
         offset: 0
-        ## @param orchestration.data.primaryStorage.backup.retention defines the retention policy for the backups
+        ## @extra orchestration.data.primaryStorage.backup.retention defines the retention policy for the backups
         retention:
           ## @param orchestration.data.primaryStorage.backup.retention.window defines the time window for which the backups should be retained, ISO8601 format
           window: ""
