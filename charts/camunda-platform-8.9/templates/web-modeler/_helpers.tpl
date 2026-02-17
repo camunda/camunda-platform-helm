@@ -206,7 +206,11 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 [web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUser" -}}
-  {{- .Values.webModelerPostgresql.enabled | ternary .Values.webModelerPostgresql.auth.username .Values.webModeler.restapi.externalDatabase.user -}}
+  {{- if .Values.webModelerPostgresql.enabled -}}
+    {{- .Values.webModelerPostgresql.auth.username -}}
+  {{- else -}}
+    {{- .Values.webModeler.restapi.externalDatabase.username | default .Values.webModeler.restapi.externalDatabase.user -}}
+  {{- end -}}
 {{- end -}}
 
 {{/*
