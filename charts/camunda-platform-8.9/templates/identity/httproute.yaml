@@ -65,6 +65,21 @@ spec:
   rules:
   - matches:
     - path:
+        type: Exact
+        value: {{ trimSuffix "/" .Values.identity.contextPath }}
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        hostname: {{ .Values.global.host }}
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: {{ trimSuffix "/" .Values.identity.contextPath }}/
+    backendRefs:
+      - name: {{ template "identity.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        port: {{ .Values.identity.service.port }}
+  - matches:
+    - path:
         type: PathPrefix
         value: {{ .Values.identity.contextPath }}
     backendRefs:
