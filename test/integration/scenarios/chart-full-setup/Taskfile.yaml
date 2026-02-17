@@ -216,6 +216,8 @@ tasks:
         {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
 
   setup.post:
+    env:
+      TEST_VALUES_BASE_DIR: "{{ .TEST_VALUES_BASE_DIR }}"
     cmds:
     - |
       if [ "{{ .TEST_VALUES_SCENARIO }}" = "gateway-keycloak" ]; then
