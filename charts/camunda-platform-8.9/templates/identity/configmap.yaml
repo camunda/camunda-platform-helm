@@ -316,6 +316,13 @@ data:
       {{- end }}
 
     spring:
+    {{- if .Values.identity.extraConfiguration }}
+      config:
+        import:
+        {{- range .Values.identity.extraConfiguration }}
+          - optional:file:/app/config/{{ .file }}
+        {{- end }}
+    {{- end }}
       servlet:
         multipart:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
@@ -353,8 +360,8 @@ data:
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
-  {{- range $key, $val := .Values.identity.extraConfiguration }}
-  {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+  {{- range .Values.identity.extraConfiguration }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
   {{- end }}
 {{- end }}

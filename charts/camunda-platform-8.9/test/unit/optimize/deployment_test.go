@@ -778,11 +778,10 @@ es:
 		}, {
 			Name: "TestOptimizeWithLog4j2Configuration",
 			Values: map[string]string{
-				"identity.enabled": "true",
-				"optimize.enabled": "true",
-				"optimize.extraConfiguration.environment-logbackxml": `
-<configuration></configuration>
-			`,
+				"identity.enabled":                            "true",
+				"optimize.enabled":                            "true",
+				"optimize.extraConfiguration[0].file":         "environment-logbackxml",
+				"optimize.extraConfiguration[0].content":      "<configuration></configuration>",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

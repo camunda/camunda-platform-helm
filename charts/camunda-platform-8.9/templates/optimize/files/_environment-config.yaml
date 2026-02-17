@@ -1,0 +1,56 @@
+{{/*
+This file name should start with an underscore to avoid rendering it as a template.
+It is included (imported) in the ConfigMap.
+*/}}
+{{- define "optimize.defaultConfig" -}}
+{{- if .Values.optimize.contextPath }}
+container:
+  contextPath: {{ .Values.optimize.contextPath | quote }}
+{{- end }}
+
+zeebe:
+  enabled: true
+  partitionCount: {{ .Values.optimize.partitionCount }}
+  {{- if .Values.global.elasticsearch.enabled }}
+  name: {{ .Values.global.elasticsearch.prefix | quote }}
+  {{- else if .Values.global.opensearch.enabled }}
+  name: {{ .Values.global.opensearch.prefix | quote }}
+  {{- end }}
+
+{{- if .Values.global.elasticsearch.enabled }}
+es:
+  connection:
+    nodes:
+      - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+        httpPort: {{ .Values.global.elasticsearch.url.port }}
+  {{- if .Values.global.elasticsearch.external }}
+  security:
+    username: {{ .Values.global.elasticsearch.auth.username | quote }}
+    {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
+    ssl:
+      enabled: "true"
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+      max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+  profiles:
+    active: "ccsm"
+
+security:
+  auth:
+    cookie:
+      same-site:
+        enabled: false
+{{- if .Values.global.identity.auth.enabled }}
+    ccsm:
+      redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+api:
+  audience: {{ include "optimize.authAudience" . | quote }}
+  jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+{{- end }}
+{{- end -}}

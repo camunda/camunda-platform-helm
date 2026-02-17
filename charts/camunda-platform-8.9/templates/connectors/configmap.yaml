@@ -13,8 +13,8 @@ data:
   application.yaml: |
     {{- (include (print $.Template.BasePath "/connectors/files/_application.yaml") $) | indent 4 }}
   {{- end }}
-  {{- range $key, $val := .Values.connectors.extraConfiguration }}
-  {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+  {{- range .Values.connectors.extraConfiguration }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
   {{- end }}
 {{- end }}

@@ -157,10 +157,10 @@ spec:
             - name: config
               mountPath: /home/runner/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
+          {{- range .Values.webModeler.restapi.extraConfiguration }}
             - name: config
-              mountPath: /home/runner/config/{{ $key }}
-              subPath: {{ $key }}
+              mountPath: /home/runner/config/{{ .file }}
+              subPath: {{ .file }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume

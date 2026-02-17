@@ -14,27 +14,24 @@ metadata:
 apiVersion: v1
 data:
   environment-config.yaml: |
-
-    zeebe:
-      enabled: true
-      partitionCount: 3
-      name: "zeebe-record"
     es:
       connection:
         nodes:
-          - host: "camunda-platform-test-elasticsearch"
-            httpPort: 9200
-
-    spring:
-      servlet:
-        multipart:
-          max-file-size: "10MB"
-          max-request-size: "10MB"
-      profiles:
-        active: "ccsm"
-
+        - host: camunda-platform-test-elasticsearch
+          httpPort: 9200
     security:
       auth:
         cookie:
           same-site:
             enabled: false
+    spring:
+      profiles:
+        active: ccsm
+      servlet:
+        multipart:
+          max-file-size: 10MB
+          max-request-size: 10MB
+    zeebe:
+      enabled: true
+      name: zeebe-record
+      partitionCount: 3

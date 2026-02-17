@@ -36,8 +36,8 @@ data:
     {{ .Values.orchestration.log4j2 | indent 4 | trim }}
   {{- end }}
 
-  {{- range $key, $val := .Values.orchestration.extraConfiguration }}
-  {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+  {{- range .Values.orchestration.extraConfiguration }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
   {{- end }}
 {{- end }}

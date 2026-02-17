@@ -1592,9 +1592,10 @@
                     "default": ""
                 },
                 "extraConfiguration": {
-                    "type": "object",
+                    "type": "array",
                     "description": "if specified, contents will be used for any extra configuration files such as the log4j2.xml",
-                    "default": {}
+                    "default": [],
+                    "items": {}
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -2242,8 +2243,14 @@
                 },
                 "overrideConfiguration": {
                     "type": "string",
-                    "description": "When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`",
+                    "description": "DEPRECATED Use console.extraConfiguration instead. When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`",
                     "default": ""
+                },
+                "extraConfiguration": {
+                    "type": "array",
+                    "description": "if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.",
+                    "default": [],
+                    "items": {}
                 },
                 "image": {
                     "type": "object",
@@ -3311,9 +3318,10 @@
                             "default": ""
                         },
                         "extraConfiguration": {
-                            "type": "object",
+                            "type": "array",
                             "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                            "default": {}
+                            "default": [],
+                            "items": {}
                         },
                         "dnsPolicy": {
                             "type": "string",
@@ -4934,9 +4942,10 @@
                     "default": ""
                 },
                 "extraConfiguration": {
-                    "type": "object",
+                    "type": "array",
                     "description": "if specified, contents will be used for any extra configuration files such as the log4j2.xml",
-                    "default": {}
+                    "default": [],
+                    "items": {}
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -6305,9 +6314,10 @@
                     "default": ""
                 },
                 "extraConfiguration": {
-                    "type": "object",
+                    "type": "array",
                     "description": "if specified, contents will be used for any extra configuration files such as log4j2.xml",
-                    "default": {}
+                    "default": [],
+                    "items": {}
                 },
                 "dnsPolicy": {
                     "type": "string",
@@ -6859,9 +6869,10 @@
                     "default": ""
                 },
                 "extraConfiguration": {
-                    "type": "object",
+                    "type": "array",
                     "description": "if specified, contents will be used for any extra configuration files such as environment-logback.xml",
-                    "default": {}
+                    "default": [],
+                    "items": {}
                 },
                 "dnsPolicy": {
                     "type": "string",

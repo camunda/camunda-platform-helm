@@ -847,7 +847,7 @@ identity:
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration: []
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param identity.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -1157,8 +1157,10 @@ console:
 
   ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
   configuration: ""
-  ##@param console.overrideConfiguration When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`
+  ##@param console.overrideConfiguration DEPRECATED Use console.extraConfiguration instead. When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`
   overrideConfiguration: ""
+  ## @param console.extraConfiguration if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.
+  extraConfiguration: []
 
   ## console.image configuration to configure the Console image specifics
   # https://hub.docker.com/r/camunda/console/tags
@@ -1664,7 +1666,7 @@ webModeler:
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-    extraConfiguration: {}
+    extraConfiguration: []
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -2344,7 +2346,7 @@ connectors:
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration: []
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param connectors.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -2986,7 +2988,7 @@ orchestration:
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-  extraConfiguration: {}
+  extraConfiguration: []
   ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param orchestration.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
@@ -3226,7 +3228,7 @@ optimize:
   ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
   configuration: ""
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
-  extraConfiguration: {}
+  extraConfiguration: []
   ## @param optimize.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
   ## @param optimize.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
