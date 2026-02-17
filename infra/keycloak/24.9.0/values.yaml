@@ -15,6 +15,12 @@ ingress:
 # --- CI-oriented Keycloak setup (non-production) ---
 replicaCount: 1
 
+resources:
+  requests:
+    memory: 1Gi
+  limits:
+    memory: 2Gi
+
 service:
   type: ClusterIP
   ports:
