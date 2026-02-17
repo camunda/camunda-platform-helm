@@ -558,6 +558,8 @@ jobs:
 
       - name: Helm - Execute after install lifecycle tasks
         timeout-minutes: 5
+        env:
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
