@@ -214,10 +214,10 @@ spec:
             - name: config
               mountPath: /app/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.identity.extraConfiguration }}
+          {{- range .Values.identity.extraConfiguration }}
             - name: config
-              mountPath: /app/config/{{ $key }}
-              subPath: {{ $key }}
+              mountPath: /app/config/{{ .file }}
+              subPath: {{ .file }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume

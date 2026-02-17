@@ -3,6 +3,13 @@ This file name should start with an underscore to avoid rendering it as a templa
 It is included (imported) in the ConfigMap.
 */}}
 spring:
+  {{- if .Values.orchestration.extraConfiguration }}
+  config:
+    import:
+    {{- range .Values.orchestration.extraConfiguration }}
+      - optional:file:/usr/local/camunda/config/{{ .file }}
+    {{- end }}
+  {{- end }}
   profiles:
     active: {{ include "orchestration.enabledProfilesWithIdentity" . | quote }}
   servlet:

@@ -63,6 +63,13 @@ data:
         {{- end }}
 
     spring:
+      {{- if .Values.webModeler.restapi.extraConfiguration }}
+      config:
+        import:
+        {{- range .Values.webModeler.restapi.extraConfiguration }}
+          - optional:file:/home/runner/config/{{ .file }}
+        {{- end }}
+      {{- end }}
       datasource:
         url: {{ include "webModeler.restapi.databaseUrl" . | quote }}
         username: {{ include "webModeler.restapi.databaseUser" . | quote }}
@@ -99,8 +106,8 @@ data:
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
-  {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
-  {{ $key }}: |
-    {{ $val | indent 4 | trim }}
+  {{- range .Values.webModeler.restapi.extraConfiguration }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
   {{- end }}
 {{- end }}
