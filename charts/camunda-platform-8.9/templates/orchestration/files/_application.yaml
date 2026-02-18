@@ -448,7 +448,7 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-    {{- else -}}
+    {{- else if not .Values.orchestration.exporters.zeebe.enabled -}}
       {{ " {}" }}
     {{- end }}
 {{ end -}}
