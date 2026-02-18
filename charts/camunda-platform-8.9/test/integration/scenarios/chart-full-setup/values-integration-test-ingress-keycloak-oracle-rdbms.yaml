@@ -3,8 +3,6 @@ orchestration:
   data:
     secondaryStorage:
       rdbms:
-        url: jdbc:oracle:thin:@//${ORACLEDB_HOSTNAME}:${ORACLEDB_PORT}/${ORACLEDB_DATABASE}
-        username: ${ORACLEDB_USERNAME}
         secret:
           inlineSecret: ${ORACLEDB_PASSWORD}
   security:
