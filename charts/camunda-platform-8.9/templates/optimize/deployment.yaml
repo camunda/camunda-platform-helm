@@ -74,7 +74,7 @@ spec:
             {{- end }}
             {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }} {{ .Values.optimize.javaOpts }}
+              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s %s" (include "camundaPlatform.getTlsSecretKey" .) .Values.optimize.javaOpts | trim | quote }}
             {{- else if .Values.optimize.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.optimize.javaOpts | quote }}
@@ -165,7 +165,7 @@ spec:
             {{- end }}
             {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }} {{ .Values.optimize.javaOpts }}
+              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s %s" (include "camundaPlatform.getTlsSecretKey" .) .Values.optimize.javaOpts | trim | quote }}
             {{- else if .Values.optimize.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.optimize.javaOpts | quote }}

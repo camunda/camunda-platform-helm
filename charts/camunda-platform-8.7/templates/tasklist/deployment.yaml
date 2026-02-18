@@ -84,7 +84,7 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks {{ .Values.tasklist.javaOpts }}
+              value: {{ printf "-Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks %s" .Values.tasklist.javaOpts | trim | quote }}
             {{- else if .Values.tasklist.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.tasklist.javaOpts | quote }}

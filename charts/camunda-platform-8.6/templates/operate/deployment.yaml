@@ -67,10 +67,10 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks {{ .Values.operate.javaOpts }}
+              value: {{ printf "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks %s" .Values.operate.javaOpts | trim | quote }}
             {{- else if .Values.operate.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.operate.javaOpts }}
+              value: {{ .Values.operate.javaOpts | quote }}
             {{- end }}
             {{- with .Values.operate.env }}
             {{- toYaml . | nindent 12 }}
@@ -151,10 +151,10 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks {{ .Values.operate.javaOpts }}
+              value: {{ printf "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks %s" .Values.operate.javaOpts | trim | quote }}
             {{- else if .Values.operate.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ .Values.operate.javaOpts }}
+              value: {{ .Values.operate.javaOpts | quote }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
