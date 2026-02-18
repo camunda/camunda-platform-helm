@@ -11,6 +11,16 @@ orchestration:
     authentication:
       unprotectedApi: true
 
+  extraConfiguration:
+    - file: rdbms-configuration.yaml
+      content: |
+        camunda:
+          data:
+            secondary-storage:
+              rdbms:
+                url: jdbc:oracle:thin:@//${ORACLEDB_HOSTNAME}:${ORACLEDB_PORT}/${ORACLEDB_DATABASE}
+                username: ${ORACLEDB_USERNAME}
+
   exporters:
     rdbms:
       enabled: true
