@@ -83,6 +83,17 @@ camunda:
         free-space:
           processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
           replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
+      {{- if .Values.orchestration.data.primaryStorage.backup.continuous }}
+      backup:
+        required: {{ .Values.orchestration.data.primaryStorage.backup.required | quote }}
+        continuous: {{ .Values.orchestration.data.primaryStorage.backup.continuous | quote }}
+        schedule: {{ .Values.orchestration.data.primaryStorage.backup.schedule | quote }}
+        checkpoint-interval: {{ .Values.orchestration.data.primaryStorage.backup.checkpointInterval | quote }}
+        offset: {{ .Values.orchestration.data.primaryStorage.backup.offset | int64 }}
+        retention:
+          window: {{ .Values.orchestration.data.primaryStorage.backup.retention.window | quote }}
+          cleanup-schedule: {{ .Values.orchestration.data.primaryStorage.backup.retention.cleanupSchedule | quote }}
+      {{- end }}
     secondary-storage:
       autoconfigure-camunda-exporter: {{ .Values.orchestration.exporters.camunda.enabled }}
       type: {{ include "orchestration.secondaryStorage" . | quote -}}
