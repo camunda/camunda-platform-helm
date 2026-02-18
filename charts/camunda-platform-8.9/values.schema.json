@@ -176,6 +176,56 @@
                         }
                     }
                 },
+                "host": {
+                    "type": "string",
+                    "description": "can be used to define the hostname of the gateway or ingress resource.",
+                    "default": ""
+                },
+                "gateway": {
+                    "type": "object",
+                    "properties": {
+                        "createGatewayResource": {
+                            "type": "boolean",
+                            "description": "if true, the Gateway resource is created. This is dependent on whether you have a separate network administrator installing your Gateway or if you are installing it as part of the helm chart.",
+                            "default": false
+                        },
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, a gateway resource is deployed. Only useful if a gateway controller is available, like Ingress-NGINX or Gateway API.",
+                            "default": false
+                        },
+                        "external": {
+                            "type": "boolean",
+                            "description": "if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.",
+                            "default": false
+                        },
+                        "className": {
+                            "type": "string",
+                            "description": "Gateway.className defines the class or configuration of gateway which should be used by the controller",
+                            "default": "nginx"
+                        },
+                        "tls": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, then tls is configured on the gateway resource. If enabled the Ingress.host need to be defined.",
+                                    "default": false
+                                },
+                                "secretName": {
+                                    "type": "string",
+                                    "description": "defines the secret name which contains the TLS private key and certificate",
+                                    "default": "camunda-platform"
+                                }
+                            }
+                        },
+                        "controllerNamespace": {
+                            "type": "string",
+                            "description": "defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.",
+                            "default": ""
+                        }
+                    }
+                },
                 "ingress": {
                     "type": "object",
                     "properties": {
@@ -196,7 +246,7 @@
                         },
                         "host": {
                             "type": "string",
-                            "description": "If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).",
+                            "description": "(DEPRECATED - use global.host instead) If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).",
                             "default": ""
                         },
                         "pathType": {
@@ -5536,6 +5586,26 @@
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
+                        }
+                    }
+                },
+                "gateway": {
+                    "type": "object",
+                    "properties": {
+                        "grpc": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, the GRPCRoute will be created to expose the orchestration grpc service.",
+                                    "default": false
+                                },
+                                "host": {
+                                    "type": "string",
+                                    "description": "defines the url for the GRPC k8s Gateway resources",
+                                    "default": "grpc-{{ .Values.global.host }}"
+                                }
+                            }
                         }
                     }
                 },

@@ -611,3 +611,16 @@ The keys moved in the 8.8 Alpha 8 version.
     "newName" "orchestration.security.initialization"
   ) }}
 {{- end }}
+
+{{/*
+*******************************************************************************
+Ingress and Gateway API should not be enabled at the same time.
+*******************************************************************************
+*/}}
+{{- if and .Values.global.gateway.enabled .Values.global.ingress.enabled }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Gateway API and Ingress cannot both be enabled at the same time."
+      "Please ensure that either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\" is set, but not both."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}

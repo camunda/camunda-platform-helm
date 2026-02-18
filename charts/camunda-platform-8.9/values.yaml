@@ -138,6 +138,31 @@ global:
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+  ## @param global.host can be used to define the hostname of the gateway or ingress resource.
+  host: ""
+  ## Gateway configuration to configure the gateway resource
+  ## @extra global.gateway
+  gateway:
+    ## @param global.gateway.createGatewayResource if true, the Gateway resource is created. This is dependent on whether you have a separate network administrator installing your Gateway or if you are installing it as part of the helm chart.
+    createGatewayResource: false
+    ## @param global.gateway.enabled if true, a gateway resource is deployed. Only useful if a gateway controller is available, like Ingress-NGINX or Gateway API.
+    enabled: false
+    ## @param global.gateway.external if true, the Ingress object will not be rendered. This setting is used when a non-Ingress resource, like a service mesh, is used to access the cluster.
+    external: false
+    ## @param global.gateway.className Gateway.className defines the class or configuration of gateway which should be used by the controller
+    className: nginx
+    ## @param global.gateway.labels [object] can be used to define labels which will be applied to the global HTTP gateway resource
+    labels: {}
+    ## @param global.gateway.annotations [object] defines the gateway related annotations, consumed mostly by the gateway controller
+    annotations: {}
+    ## @extra global.gateway.tls configuration for tls on the gateway resource https://kubernetes.io/docs/concepts/services-networking/gateway/#tls
+    tls:
+      ## @param global.gateway.tls.enabled if true, then tls is configured on the gateway resource. If enabled the Ingress.host need to be defined.
+      enabled: false
+      ## @param global.gateway.tls.secretName defines the secret name which contains the TLS private key and certificate
+      secretName: camunda-platform
+    ## @param global.gateway.controllerNamespace defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.
+    controllerNamespace: ""
   ## Ingress configuration to configure the ingress resource
   ## @extra global.ingress
   ingress:
@@ -158,7 +183,7 @@ global:
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).
+    ## @param global.ingress.host (DEPRECATED - use global.host instead) If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).
     host: ""
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
@@ -2631,6 +2656,13 @@ orchestration:
     annotations: {}
     ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
+
+  gateway:
+    grpc:
+      ## @param orchestration.gateway.grpc.enabled if true, the GRPCRoute will be created to expose the orchestration grpc service.
+      enabled: false
+      ## @param orchestration.gateway.grpc.host defines the url for the GRPC k8s Gateway resources
+      host: "grpc-{{ .Values.global.host }}"
 
   ingress:
     grpc:

@@ -1143,6 +1143,17 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Dur("deployDuration", deployDuration).
 		Msg("✅ [executeDeployment] helm deployment completed successfully")
 
+	// Apply post-deploy resources (e.g., Gateway API ProxySettingsPolicy)
+	if err := applyPostDeployResources(ctx, scenarioCtx, flags.ChartPath, flags.KubeContext); err != nil {
+		logging.Logger.Error().
+			Err(err).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("namespace", scenarioCtx.Namespace).
+			Msg("❌ [executeDeployment] failed to apply post-deploy resources")
+		result.Error = fmt.Errorf("post-deploy resources failed: %w", err)
+		return result
+	}
+
 	// Capture credentials from environment
 	result.FirstUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")
 	result.SecondUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")

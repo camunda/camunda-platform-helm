@@ -216,8 +216,27 @@ tasks:
         {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
 
   setup.post:
+    env:
+      TEST_VALUES_BASE_DIR: "{{ .TEST_VALUES_BASE_DIR }}"
     cmds:
-    - echo "No post task for this test."
+    - |
+      if [ "{{ .TEST_VALUES_SCENARIO }}" = "gateway-keycloak" ]; then
+        echo "Applying post-deploy resources for gateway-keycloak scenario"
+        RESOURCES_DIR="{{ .TEST_VALUES_BASE_DIR }}/common/resources"
+        if [ -d "$RESOURCES_DIR" ]; then
+          for f in "$RESOURCES_DIR"/*.yaml "$RESOURCES_DIR"/*.yml; do
+            [ -f "$f" ] || continue
+            echo "Applying resource: $f"
+            export NAMESPACE="{{ .TEST_NAMESPACE }}"
+            export RELEASE_NAME="integration"
+            envsubst '$NAMESPACE $RELEASE_NAME' < "$f" | kubectl apply -f -
+          done
+        else
+          echo "Resources directory not found: $RESOURCES_DIR"
+        fi
+      else
+        echo "No post task for this test."
+      fi
 
   setup.clean:
     cmds:
