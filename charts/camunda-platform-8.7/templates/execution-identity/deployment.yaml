@@ -54,7 +54,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "camundaPlatform.licenseSecretName" . }}
                   key: {{ include "camundaPlatform.licenseSecretKey" . }}
-            {{- if .Values.global.documentStore.type.aws.enabled }}
+            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
