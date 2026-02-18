@@ -6367,17 +6367,17 @@
                                             "properties": {
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the apiKey as a plain-text value for non-production usage",
+                                                    "description": "can be used to provide the apiKey as a plain-text value for non-production usage.",
                                                     "default": ""
                                                 },
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password.",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "defines the key within the existing Kubernetes Secret",
+                                                    "description": "defines the key within the existing Kubernetes Secret.",
                                                     "default": ""
                                                 }
                                             }
