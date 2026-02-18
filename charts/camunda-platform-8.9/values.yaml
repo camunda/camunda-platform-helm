@@ -3008,11 +3008,11 @@ orchestration:
     appIntegrations:
       apiKey:
         secret:
-          ## @param orchestration.exporters.appIntegrations.apiKey.secret.inlineSecret can be used to provide the apiKey as a plain-text value for non-production usage
+          ## @param orchestration.exporters.appIntegrations.apiKey.secret.inlineSecret can be used to provide the apiKey as a plain-text value for non-production usage.
           inlineSecret: ""
-          ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password.
           existingSecret: ""
-          ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+          ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret.
           existingSecretKey: ""
   index:
     ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for the new exporter and Orchestration Cluster. For old exporter or Optimize use the "global.elasticsearch.prefix" or OpenSearch equivalent.
