@@ -57,8 +57,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.8.11
-    digest: "sha256:f7d4c60ebdc58b6b4e4fd497807540833eb1e01e3aafffa249eabc4cf52326ad"
+    tag: 8.8.12
+    digest: "sha256:b2ef7d2a690491ef8b5b6f8acb97ee284309fd94b8c7ea605cf8005f998014aa"
 
 #
 # Identity
