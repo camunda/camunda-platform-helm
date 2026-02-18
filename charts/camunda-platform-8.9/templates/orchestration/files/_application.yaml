@@ -448,7 +448,7 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-      {{- if .Values.orchestration.exporters.appIntegrations.enabled }}
+      {{- if .Values.orchestration.exporters.appIntegrations.apiKey }}
         appIntegrations:
           args:
             apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"

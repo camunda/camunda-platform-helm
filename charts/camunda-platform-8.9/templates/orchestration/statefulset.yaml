@@ -124,7 +124,6 @@ spec:
                 "envName" "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"
                 "config" .Values.orchestration.data.secondaryStorage.rdbms
             ) | nindent 12 }}
-            {{- if and .Values.orchestration.exporters.appIntegrations.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY"
                 "config" .Values.orchestration.exporters.appIntegrations.apiKey
