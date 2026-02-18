@@ -3005,7 +3005,6 @@ orchestration:
     ## @param orchestration.exporters.zeebe.enabled if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.
     zeebe:
       enabled: false
-    ## @param orchestration.exporters.appIntegrations.enabled if true, enables the App Integrations exporter.
     appIntegrations:
       apiKey:
         secret:
