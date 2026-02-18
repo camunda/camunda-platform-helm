@@ -199,9 +199,6 @@ data:
                 waitPeriodBeforeArchiving: "1h"
                 delayBetweenRuns: 2000
                 maxDelayBetweenRuns: 60000
-          appIntegrations:
-            args:
-              apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"
     
   log4j2.xml: |
     <xml>
