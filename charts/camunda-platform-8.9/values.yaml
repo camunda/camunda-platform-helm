@@ -3007,17 +3007,14 @@ orchestration:
       enabled: false
     ## @param orchestration.exporters.appIntegrations.enabled if true, enables the App Integrations exporter.
     appIntegrations:
-      enabled: false
-      url: ""
-      apiKey: ""
-      continueOnError: true
-      maxRetries: 2
-      retryDelayMs: 1500
-      requestTimeoutMs: 5000
-      batchSize: 50
-      batchIntervalMs: 2000
-      maxBatchesInFlight: 2
-
+      apiKey:
+        secret:
+          ## @param orchestration.exporters.appIntegrations.apiKey.secret.inlineSecret can be used to provide the apiKey as a plain-text value for non-production usage
+          inlineSecret: ""
+          ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          existingSecret: ""
+          ## @param orchestration.exporters.appIntegrations.apiKey.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+          existingSecretKey: ""
   index:
     ## @param orchestration.index.prefix if specified, defines an index prefix in Elasticsearch/OpenSearch for the new exporter and Orchestration Cluster. For old exporter or Optimize use the "global.elasticsearch.prefix" or OpenSearch equivalent.
     prefix: ""
