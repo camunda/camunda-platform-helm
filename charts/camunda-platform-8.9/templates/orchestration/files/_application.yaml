@@ -448,7 +448,7 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-    {{- if .Values.orchestration.exporters.appIntegrations.apiKey }}
+    {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey)) "true" }}
       appIntegrations:
         args:
           apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"
