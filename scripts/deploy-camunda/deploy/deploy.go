@@ -1042,8 +1042,15 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Str("scenario", scenarioCtx.ScenarioName).
 			Msg("📋 [prepareScenarioValues] layered values detected; resolving all layer files")
 
-		// Derive deployment config from scenario name
+		// Derive deployment config from scenario name, then apply any explicit
+		// flag overrides so that --platform / --test-platform propagates to the
+		// layered values resolution (e.g. selecting eks.yaml instead of gke.yaml).
 		deployConfig := scenarios.MapScenarioToConfig(scenarioCtx.ScenarioName)
+		if flags.TestPlatform != "" {
+			deployConfig.Platform = flags.TestPlatform
+		} else if flags.Platform != "" {
+			deployConfig.Platform = flags.Platform
+		}
 		// Set flow for migrator detection
 		deployConfig.Flow = flags.Flow
 
