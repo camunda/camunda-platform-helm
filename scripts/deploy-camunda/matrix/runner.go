@@ -305,15 +305,23 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 // or <prefix>-<version-compact>-<shortname>-<platform> when a platform is set (e.g., matrix-88-eske-eks).
 // The platform suffix prevents namespace collisions for scenarios that deploy to multiple platforms.
 func buildNamespace(prefix string, entry Entry) string {
+	base := buildBaseNamespace(entry)
+	return prefix + "-" + base
+}
+
+// buildBaseNamespace constructs the namespace suffix for a matrix entry without the prefix.
+// Pattern: <version-compact>-<shortname> when no platform is set (e.g., 88-eske),
+// or <version-compact>-<shortname>-<platform> when a platform is set (e.g., 88-eske-eks).
+func buildBaseNamespace(entry Entry) string {
 	versionCompact := strings.ReplaceAll(entry.Version, ".", "")
 	shortname := entry.Shortname
 	if shortname == "" {
 		shortname = entry.Scenario
 	}
 	if entry.Platform != "" {
-		return fmt.Sprintf("%s-%s-%s-%s", prefix, versionCompact, shortname, entry.Platform)
+		return fmt.Sprintf("%s-%s-%s", versionCompact, shortname, entry.Platform)
 	}
-	return fmt.Sprintf("%s-%s-%s", prefix, versionCompact, shortname)
+	return fmt.Sprintf("%s-%s", versionCompact, shortname)
 }
 
 // ingressSubdomain returns the namespace as the ingress subdomain when a base
@@ -366,6 +374,7 @@ func resolveUseVaultBackedSecrets(opts RunOptions, platform string) bool {
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
 func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	namespace := buildNamespace(opts.NamespacePrefix, entry)
+	baseNamespace := buildBaseNamespace(entry)
 
 	// Determine platform and kube context
 	platform := resolvePlatform(opts, entry)
@@ -393,7 +402,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	flags := &config.RuntimeFlags{
 		ChartPath:             entry.ChartPath,
 		ScenarioPath:          scenarioDir,
-		Namespace:             namespace,
+		Namespace:             baseNamespace,
+		NamespacePrefix:       opts.NamespacePrefix,
 		Release:               "integration",
 		Scenario:              entry.Scenario,
 		Scenarios:             []string{entry.Scenario},
