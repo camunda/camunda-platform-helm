@@ -74,5 +74,3 @@ data:
                 http: http://localhost:8080
               readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
-  application-override.yaml: |
-    {}
