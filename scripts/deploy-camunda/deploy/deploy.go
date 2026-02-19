@@ -963,7 +963,13 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		return nil, fmt.Errorf("failed to generate debug values: %w", err)
 	}
 
-	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
+	// When auth equals the main scenario, don't pass it separately to BuildValuesList
+	// to avoid duplicate values files (the main scenario already includes the same file).
+	authForBuild := flags.Auth
+	if flags.Auth == scenarioCtx.ScenarioName {
+		authForBuild = ""
+	}
+	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, authForBuild, false, false, flags.ExtraValues, processedCommonFiles)
 	if err != nil {
 		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to build values list: %w", err)
@@ -1077,6 +1083,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Atomic:                 true,
 		Timeout:                time.Duration(timeoutMinutes) * time.Minute,
 		ValuesFiles:            prepared.ValuesFiles,
+		IngressHost:            scenarioCtx.IngressHost,
 		EnsureDockerRegistry:   flags.EnsureDockerRegistry,
 		SkipDockerLogin:        flags.SkipDockerLogin,
 		SkipDependencyUpdate:   flags.SkipDependencyUpdate,

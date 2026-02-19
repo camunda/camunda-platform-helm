@@ -27,6 +27,16 @@ build.prepare-helm-values:
 build.deploy-camunda:
 	cd scripts/deploy-camunda && go mod tidy && go build .
 
+.PHONY: build.deploy-camunda.local
+build.deploy-camunda.local:
+	cd scripts/deploy-camunda && go mod tidy && go build -o ../../deploy-camunda .
+	@echo
+	@echo "Binary built: ./deploy-camunda"
+	@echo "Run this to enable completions in your current shell:"
+	@echo
+	@echo '  source <(./deploy-camunda completion zsh)'
+	@echo
+
 .PHONY: install.deployer
 install.deployer:
 	cd scripts/camunda-deployer && go mod tidy && go install .

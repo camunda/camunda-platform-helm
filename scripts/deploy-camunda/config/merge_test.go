@@ -586,7 +586,7 @@ func TestMergeBoolField(t *testing.T) {
 
 	t.Run("nil pointers leave target unchanged", func(t *testing.T) {
 		target := false
-		MergeBoolField(&target, nil, nil)
+		MergeBoolField(&target, nil, nil, "", nil)
 		if target != false {
 			t.Errorf("target = %v, want false", target)
 		}
@@ -594,7 +594,7 @@ func TestMergeBoolField(t *testing.T) {
 
 	t.Run("dep value applied", func(t *testing.T) {
 		target := false
-		MergeBoolField(&target, boolPtr(true), nil)
+		MergeBoolField(&target, boolPtr(true), nil, "", nil)
 		if target != true {
 			t.Errorf("target = %v, want true", target)
 		}
@@ -602,9 +602,35 @@ func TestMergeBoolField(t *testing.T) {
 
 	t.Run("root value applied when dep nil", func(t *testing.T) {
 		target := false
-		MergeBoolField(&target, nil, boolPtr(true))
+		MergeBoolField(&target, nil, boolPtr(true), "", nil)
 		if target != true {
 			t.Errorf("target = %v, want true", target)
+		}
+	})
+
+	t.Run("CLI flag takes precedence over config when changed", func(t *testing.T) {
+		target := false // user passed --skip-dependency-update=false
+		changed := map[string]bool{"skip-dependency-update": true}
+		MergeBoolField(&target, boolPtr(true), boolPtr(true), "skip-dependency-update", changed)
+		if target != false {
+			t.Errorf("target = %v, want false (CLI should take precedence)", target)
+		}
+	})
+
+	t.Run("config applies when flag not changed", func(t *testing.T) {
+		target := true               // cobra default
+		changed := map[string]bool{} // user did NOT pass the flag
+		MergeBoolField(&target, boolPtr(false), nil, "skip-dependency-update", changed)
+		if target != false {
+			t.Errorf("target = %v, want false (config should apply)", target)
+		}
+	})
+
+	t.Run("nil changedFlags treats all as not changed", func(t *testing.T) {
+		target := true
+		MergeBoolField(&target, boolPtr(false), nil, "skip-dependency-update", nil)
+		if target != false {
+			t.Errorf("target = %v, want false (nil changedFlags = no CLI override)", target)
 		}
 	})
 }

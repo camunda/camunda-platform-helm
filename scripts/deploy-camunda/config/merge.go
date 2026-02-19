@@ -67,6 +67,11 @@ type RuntimeFlags struct {
 	UseVaultBackedSecrets bool
 	RunTestsIT            bool // Alias for RunIntegrationTests (backward compat)
 	RunTestsE2E           bool // Alias for RunE2ETests (backward compat)
+
+	// ChangedFlags tracks which flags were explicitly set on the CLI.
+	// Populated from cobra's cmd.Flags().Visit() before config merging.
+	// When set, MergeBoolField will not overwrite these flags with config values.
+	ChangedFlags map[string]bool
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
@@ -148,18 +153,18 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 		flags.ScenarioPath = firstNonEmpty(dep.ScenarioPath, dep.ScenarioRoot, rc.ScenarioPath, rc.ScenarioRoot)
 	}
 
-	// Boolean fields - apply if flag wasn't explicitly set
-	MergeBoolField(&flags.ExternalSecrets, dep.ExternalSecrets, boolPtr(rc.ExternalSecrets))
-	MergeBoolField(&flags.SkipDependencyUpdate, dep.SkipDependencyUpdate, boolPtr(rc.SkipDependencyUpdate))
-	MergeBoolField(&flags.Interactive, dep.Interactive, rc.Interactive)
-	MergeBoolField(&flags.AutoGenerateSecrets, dep.AutoGenerateSecrets, rc.AutoGenerateSecrets)
-	MergeBoolField(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst)
-	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry)
-	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates)
+	// Boolean fields - only apply config value when CLI flag was NOT explicitly set
+	MergeBoolField(&flags.ExternalSecrets, dep.ExternalSecrets, boolPtr(rc.ExternalSecrets), "external-secrets", flags.ChangedFlags)
+	MergeBoolField(&flags.SkipDependencyUpdate, dep.SkipDependencyUpdate, boolPtr(rc.SkipDependencyUpdate), "skip-dependency-update", flags.ChangedFlags)
+	MergeBoolField(&flags.Interactive, dep.Interactive, rc.Interactive, "interactive", flags.ChangedFlags)
+	MergeBoolField(&flags.AutoGenerateSecrets, dep.AutoGenerateSecrets, rc.AutoGenerateSecrets, "auto-generate-secrets", flags.ChangedFlags)
+	MergeBoolField(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst, "delete-namespace", flags.ChangedFlags)
+	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry, "ensure-docker-registry", flags.ChangedFlags)
+	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates, "render-templates", flags.ChangedFlags)
 
 	// Test execution flags
-	MergeBoolField(&flags.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests)
-	MergeBoolField(&flags.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests)
+	MergeBoolField(&flags.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests, "test-it", flags.ChangedFlags)
+	MergeBoolField(&flags.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests, "test-e2e", flags.ChangedFlags)
 
 	// Slice fields
 	MergeStringSliceField(&flags.ExtraValues, dep.ExtraValues, rc.ExtraValues)
@@ -205,22 +210,22 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.IngressBaseDomain, "", rc.IngressBaseDomain)
 	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
-	if rc.ExternalSecrets {
+	if rc.ExternalSecrets && !(flags.ChangedFlags != nil && flags.ChangedFlags["external-secrets"]) {
 		flags.ExternalSecrets = true
 	}
-	if rc.SkipDependencyUpdate {
+	if rc.SkipDependencyUpdate && !(flags.ChangedFlags != nil && flags.ChangedFlags["skip-dependency-update"]) {
 		flags.SkipDependencyUpdate = true
 	}
 
-	MergeBoolField(&flags.Interactive, nil, rc.Interactive)
-	MergeBoolField(&flags.AutoGenerateSecrets, nil, rc.AutoGenerateSecrets)
-	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst)
-	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry)
-	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates)
+	MergeBoolField(&flags.Interactive, nil, rc.Interactive, "interactive", flags.ChangedFlags)
+	MergeBoolField(&flags.AutoGenerateSecrets, nil, rc.AutoGenerateSecrets, "auto-generate-secrets", flags.ChangedFlags)
+	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst, "delete-namespace", flags.ChangedFlags)
+	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry, "ensure-docker-registry", flags.ChangedFlags)
+	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates, "render-templates", flags.ChangedFlags)
 
 	// Test execution flags
-	MergeBoolField(&flags.RunIntegrationTests, nil, rc.RunIntegrationTests)
-	MergeBoolField(&flags.RunE2ETests, nil, rc.RunE2ETests)
+	MergeBoolField(&flags.RunIntegrationTests, nil, rc.RunIntegrationTests, "test-it", flags.ChangedFlags)
+	MergeBoolField(&flags.RunE2ETests, nil, rc.RunE2ETests, "test-e2e", flags.ChangedFlags)
 
 	MergeStringSliceField(&flags.ExtraValues, nil, rc.ExtraValues)
 

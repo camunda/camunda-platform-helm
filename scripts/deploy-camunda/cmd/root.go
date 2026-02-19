@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -69,6 +70,13 @@ func NewRootCommand() *cobra.Command {
 					return nil
 				}
 			}
+
+			// Record which flags were explicitly set on the CLI so config
+			// merging can respect them (CLI takes precedence over config file).
+			flags.ChangedFlags = make(map[string]bool)
+			cmd.Flags().Visit(func(f *pflag.Flag) {
+				flags.ChangedFlags[f.Name] = true
+			})
 
 			// Load config and merge with flags first to get envFile from config
 			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {

@@ -560,6 +560,32 @@ func TestGenerateScenarioContext(t *testing.T) {
 		}
 	})
 
+	t.Run("ingress host from direct hostname flag for single scenario", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Namespace:       "my-ns",
+			Scenarios:       []string{"oidc"},
+			Release:         "integration",
+			IngressHostname: "8f97af-gke-5148.ci.distro.ultrawombat.com",
+		}
+		ctx := generateScenarioContext("oidc", flags)
+		if ctx.IngressHost != "8f97af-gke-5148.ci.distro.ultrawombat.com" {
+			t.Errorf("IngressHost = %q, want 8f97af-gke-5148.ci.distro.ultrawombat.com", ctx.IngressHost)
+		}
+	})
+
+	t.Run("ingress host from direct hostname flag for multi scenario", func(t *testing.T) {
+		flags := &config.RuntimeFlags{
+			Namespace:       "my-ns",
+			Scenarios:       []string{"oidc", "keycloak"},
+			Release:         "integration",
+			IngressHostname: "8f97af-gke-5148.ci.distro.ultrawombat.com",
+		}
+		ctx := generateScenarioContext("oidc", flags)
+		if ctx.IngressHost != "oidc-8f97af-gke-5148.ci.distro.ultrawombat.com" {
+			t.Errorf("IngressHost = %q, want oidc-8f97af-gke-5148.ci.distro.ultrawombat.com", ctx.IngressHost)
+		}
+	})
+
 	t.Run("release is always integration", func(t *testing.T) {
 		flags := &config.RuntimeFlags{
 			Namespace: "my-ns",
@@ -991,6 +1017,170 @@ func TestBackwardCompatibilityScenarioPathFromConfig(t *testing.T) {
 
 	if prepared.TempDir != "" {
 		os.RemoveAll(prepared.TempDir)
+	}
+}
+
+// --- auth == scenario deduplication tests ---
+
+func TestPrepareScenarioValuesAuthEqualToScenarioNoDuplicates(t *testing.T) {
+	// When auth == scenario (e.g., both are "oidc"), the values file should appear
+	// only once in the final list, not twice.
+	chartPath := t.TempDir()
+	scenarioDir := filepath.Join(chartPath, "test", "integration", "scenarios", "chart-full-setup")
+	commonDir := filepath.Join(chartPath, "test", "integration", "scenarios", "common")
+
+	if err := os.MkdirAll(scenarioDir, 0755); err != nil {
+		t.Fatalf("failed to create scenario dir: %v", err)
+	}
+	if err := os.MkdirAll(commonDir, 0755); err != nil {
+		t.Fatalf("failed to create common dir: %v", err)
+	}
+
+	// Create scenario file for "oidc"
+	oidcFile := filepath.Join(scenarioDir, "values-integration-test-ingress-oidc.yaml")
+	if err := os.WriteFile(oidcFile, []byte("global:\n  auth: oidc\n"), 0644); err != nil {
+		t.Fatalf("failed to create oidc scenario file: %v", err)
+	}
+
+	// Common values
+	commonFile := filepath.Join(commonDir, "values-integration-test.yaml")
+	if err := os.WriteFile(commonFile, []byte("global:\n  common: true\n"), 0644); err != nil {
+		t.Fatalf("failed to create common file: %v", err)
+	}
+
+	scenarioCtx := &ScenarioContext{
+		ScenarioName:             "oidc",
+		Namespace:                "test-ns",
+		Release:                  "integration",
+		KeycloakRealm:            "test-realm",
+		OptimizeIndexPrefix:      "opt-test",
+		OrchestrationIndexPrefix: "orch-test",
+	}
+
+	flags := &config.RuntimeFlags{
+		ChartPath:    chartPath,
+		ScenarioPath: "",
+		Auth:         "oidc", // same as scenario name
+		Platform:     "",
+		Interactive:  false,
+	}
+
+	prepared, err := prepareScenarioValues(scenarioCtx, flags)
+	if err != nil {
+		t.Fatalf("prepareScenarioValues() failed: %v", err)
+	}
+	defer func() {
+		if prepared.TempDir != "" {
+			os.RemoveAll(prepared.TempDir)
+		}
+	}()
+
+	// Count how many times the oidc file appears
+	oidcCount := 0
+	for _, f := range prepared.ValuesFiles {
+		if strings.Contains(f, "ingress-oidc") {
+			oidcCount++
+		}
+	}
+
+	if oidcCount != 1 {
+		t.Errorf("expected oidc values file to appear exactly once, but found %d times in: %v",
+			oidcCount, prepared.ValuesFiles)
+	}
+}
+
+func TestPrepareScenarioValuesAuthDifferentFromScenario(t *testing.T) {
+	// When auth != scenario (e.g., auth=keycloak, scenario=elasticsearch),
+	// both should appear in the values list.
+	chartPath := t.TempDir()
+	scenarioDir := filepath.Join(chartPath, "test", "integration", "scenarios", "chart-full-setup")
+	commonDir := filepath.Join(chartPath, "test", "integration", "scenarios", "common")
+
+	if err := os.MkdirAll(scenarioDir, 0755); err != nil {
+		t.Fatalf("failed to create scenario dir: %v", err)
+	}
+	if err := os.MkdirAll(commonDir, 0755); err != nil {
+		t.Fatalf("failed to create common dir: %v", err)
+	}
+
+	// Auth scenario file
+	if err := os.WriteFile(filepath.Join(scenarioDir, "values-integration-test-ingress-keycloak.yaml"),
+		[]byte("global:\n  auth: keycloak\n"), 0644); err != nil {
+		t.Fatalf("failed to create keycloak file: %v", err)
+	}
+
+	// Main scenario file
+	if err := os.WriteFile(filepath.Join(scenarioDir, "values-integration-test-ingress-elasticsearch.yaml"),
+		[]byte("global:\n  search: elasticsearch\n"), 0644); err != nil {
+		t.Fatalf("failed to create elasticsearch file: %v", err)
+	}
+
+	// Common values
+	if err := os.WriteFile(filepath.Join(commonDir, "values-integration-test.yaml"),
+		[]byte("global:\n  common: true\n"), 0644); err != nil {
+		t.Fatalf("failed to create common file: %v", err)
+	}
+
+	scenarioCtx := &ScenarioContext{
+		ScenarioName:             "elasticsearch",
+		Namespace:                "test-ns",
+		Release:                  "integration",
+		KeycloakRealm:            "test-realm",
+		OptimizeIndexPrefix:      "opt-test",
+		OrchestrationIndexPrefix: "orch-test",
+	}
+
+	flags := &config.RuntimeFlags{
+		ChartPath:    chartPath,
+		ScenarioPath: "",
+		Auth:         "keycloak", // different from scenario
+		Platform:     "",
+		Interactive:  false,
+	}
+
+	prepared, err := prepareScenarioValues(scenarioCtx, flags)
+	if err != nil {
+		t.Fatalf("prepareScenarioValues() failed: %v", err)
+	}
+	defer func() {
+		if prepared.TempDir != "" {
+			os.RemoveAll(prepared.TempDir)
+		}
+	}()
+
+	// Both auth and main scenario should be present
+	var foundAuth, foundMain bool
+	for _, f := range prepared.ValuesFiles {
+		if strings.Contains(f, "ingress-keycloak") {
+			foundAuth = true
+		}
+		if strings.Contains(f, "ingress-elasticsearch") {
+			foundMain = true
+		}
+	}
+	if !foundAuth {
+		t.Errorf("auth scenario 'keycloak' not found in values files: %v", prepared.ValuesFiles)
+	}
+	if !foundMain {
+		t.Errorf("main scenario 'elasticsearch' not found in values files: %v", prepared.ValuesFiles)
+	}
+
+	// No duplicates — each should appear exactly once
+	keycloakCount := 0
+	elasticsearchCount := 0
+	for _, f := range prepared.ValuesFiles {
+		if strings.Contains(f, "ingress-keycloak") {
+			keycloakCount++
+		}
+		if strings.Contains(f, "ingress-elasticsearch") {
+			elasticsearchCount++
+		}
+	}
+	if keycloakCount != 1 {
+		t.Errorf("keycloak values appeared %d times, want 1", keycloakCount)
+	}
+	if elasticsearchCount != 1 {
+		t.Errorf("elasticsearch values appeared %d times, want 1", elasticsearchCount)
 	}
 }
 
