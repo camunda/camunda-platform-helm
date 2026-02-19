@@ -509,11 +509,12 @@ jobs:
             --flow "${{ inputs.flow }}" \
             --ingress-hostname "${{ steps.vars.outputs.ingress-host }}" \
             --ensure-docker-registry \
+            --skip-docker-login \
             --docker-username "${TEST_DOCKER_USERNAME}" \
             --docker-password "${TEST_DOCKER_PASSWORD}" \
             --skip-dependency-update=false \
             --interactive=false \
-            --log-level info \
+            --log-level debug \
             ${EXTRA_VALUES_ARGS}
 
       - name: Display Docker Image Git Commits
@@ -770,11 +771,12 @@ jobs:
             --flow "${{ inputs.flow }}" \
             --ingress-hostname "${{ steps.vars.outputs.ingress-host }}" \
             --ensure-docker-registry \
+            --skip-docker-login \
             --docker-username "${TEST_DOCKER_USERNAME}" \
             --docker-password "${TEST_DOCKER_PASSWORD}" \
             --skip-dependency-update=false \
             --interactive=false \
-            --log-level info \
+            --log-level debug \
             ${EXTRA_VALUES_ARGS}
 
       - name: Display Docker Image Git Commits (Upgrade)

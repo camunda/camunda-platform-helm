@@ -48,6 +48,7 @@ type RuntimeFlags struct {
 	DockerUsername           string
 	DockerPassword           string
 	EnsureDockerRegistry     bool
+	SkipDockerLogin          bool
 	RenderTemplates          bool
 	RenderOutputDir          string
 	ExtraValues              []string
