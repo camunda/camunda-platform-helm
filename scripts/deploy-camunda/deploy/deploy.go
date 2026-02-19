@@ -775,6 +775,14 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		Str("namespace", scenarioCtx.Namespace).
 		Msg("Preparing scenario values")
 
+	// Default scenario path to chart-full-setup inside the chart directory
+	if flags.ScenarioPath == "" {
+		flags.ScenarioPath = filepath.Join(flags.ChartPath, "test/integration/scenarios/chart-full-setup")
+		logging.Logger.Debug().
+			Str("scenarioPath", flags.ScenarioPath).
+			Msg("ScenarioPath was empty, defaulting to chart-full-setup directory")
+	}
+
 	// Generate identifiers
 	realmName := scenarioCtx.KeycloakRealm
 	optimizePrefix := scenarioCtx.OptimizeIndexPrefix
