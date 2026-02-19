@@ -24,10 +24,10 @@ type configmapRestAPITemplateTest struct {
 }
 
 var requiredValues = map[string]string{
-	"webModeler.enabled":                                             "true",
-	"webModeler.restapi.mail.fromAddress":                            "example@example.com",
-	"connectors.security.authentication.oidc.existingSecret.name":    "foo",
-	"orchestration.security.authentication.oidc.existingSecret.name": "foo",
+	"webModeler.enabled":                                              "true",
+	"webModeler.restapi.mail.fromAddress":                             "example@example.com",
+	"connectors.security.authentication.oidc.secret.existingSecret":   "foo",
+	"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
 }
 
 func TestRestAPIConfigmapTemplate(t *testing.T) {
@@ -170,7 +170,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 		"identity.enabled":                             "true",
 		"global.identity.auth.enabled":                 "true",
 		"global.identity.auth.type":                    "MICROSOFT",
-		"global.identity.auth.identity.existingSecret": "foo",
+		"global.identity.auth.identity.secret.existingSecret": "foo",
 		"global.identity.auth.issuer":                  "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
 		"global.identity.auth.issuerBackendUrl":        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
 		"global.identity.auth.authUrl":                 "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
@@ -268,8 +268,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	// given
 	values := map[string]string{
 		"identity.enabled":                     "true",
-		"webModeler.restapi.mail.smtpUser":     "modeler-user",
-		"webModeler.restapi.mail.smtpPassword": "modeler-password",
+		"webModeler.restapi.mail.smtpUser": "modeler-user",
 		"global.elasticsearch.enabled":         "true",
 		"elasticsearch.enabled":                "true",
 	}
@@ -299,9 +298,8 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	values := map[string]string{
 		"identity.enabled":                             "true",
 		"webModelerPostgresql.enabled":                 "false",
-		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.user":     "modeler-user",
-		"webModeler.restapi.externalDatabase.password": "modeler-password",
+		"webModeler.restapi.externalDatabase.url":  "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.user": "modeler-user",
 		"global.elasticsearch.enabled":                 "true",
 		"elasticsearch.enabled":                        "true",
 	}
@@ -330,13 +328,13 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfigurationWithUsername() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                 "true",
-		"webModelerPostgresql.enabled":                     "false",
-		"webModeler.restapi.externalDatabase.url":          "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.username":     "modeler-user-new",
-		"webModeler.restapi.externalDatabase.password":     "modeler-password",
-		"global.elasticsearch.enabled":                     "true",
-		"elasticsearch.enabled":                            "true",
+		"identity.enabled":                                              "true",
+		"webModelerPostgresql.enabled":                                  "false",
+		"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username":                  "modeler-user-new",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret":       "modeler-password",
+		"global.elasticsearch.enabled":                                  "true",
+		"elasticsearch.enabled":                                         "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -363,14 +361,14 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldPrioritizeUsernameOverUser() {
 	// given - test that username takes precedence when both are set
 	values := map[string]string{
-		"identity.enabled":                                 "true",
-		"webModelerPostgresql.enabled":                     "false",
-		"webModeler.restapi.externalDatabase.url":          "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.user":         "old-user",
-		"webModeler.restapi.externalDatabase.username":     "new-username",
-		"webModeler.restapi.externalDatabase.password":     "modeler-password",
-		"global.elasticsearch.enabled":                     "true",
-		"elasticsearch.enabled":                            "true",
+		"identity.enabled":                                              "true",
+		"webModelerPostgresql.enabled":                                  "false",
+		"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.user":                      "old-user",
+		"webModeler.restapi.externalDatabase.username":                  "new-username",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret":       "modeler-password",
+		"global.elasticsearch.enabled":                                  "true",
+		"elasticsearch.enabled":                                         "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{

@@ -262,20 +262,15 @@ https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords
 {{- define "identity.postgresql.secretName" -}}
     {{- $defaultExistingSecret := (include "identity.postgresql.id" .) -}}
     {{- $autExistingSecret := (.Values.identityPostgresql.auth.existingSecret | default $defaultExistingSecret) -}}
-    {{- $externalDatabaseExistingSecret := (.Values.identity.externalDatabase.existingSecret | default $defaultExistingSecret) -}}
+    {{- $externalDatabaseExistingSecret := (.Values.identity.externalDatabase.secret.existingSecret | default $defaultExistingSecret) -}}
     {{- .Values.identity.externalDatabase.enabled | ternary $externalDatabaseExistingSecret $autExistingSecret }}
 {{- end -}}
 
 {{- define "identity.postgresql.secretKey" -}}
     {{- $defaultSecretKey := "password" -}}
     {{- $authExistingSecretKey := (.Values.identityPostgresql.auth.secretKeys.userPasswordKey | default $defaultSecretKey) -}}
-    {{- $externalDatabaseSecretKey := (.Values.identity.externalDatabase.existingSecretPasswordKey | default $defaultSecretKey) -}}
+    {{- $externalDatabaseSecretKey := (.Values.identity.externalDatabase.secret.existingSecretKey | default $defaultSecretKey) -}}
     {{- .Values.identity.externalDatabase.enabled | ternary $externalDatabaseSecretKey $authExistingSecretKey }}
-{{- end -}}
-
-{{- define "identity.postgresql.secretPassword" -}}
-    {{- $authPassword := .Values.identityPostgresql.auth.password -}}
-    {{- .Values.identity.externalDatabase.enabled | ternary .Values.identity.externalDatabase.password $authPassword }}
 {{- end -}}
 
 {{- define "identity.postgresql.host" -}}
