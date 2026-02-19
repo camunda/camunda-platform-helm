@@ -4,6 +4,8 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
+        url: jdbc:oracle:thin:@//${ORACLEDB_HOSTNAME}:${ORACLEDB_PORT}/${ORACLEDB_DATABASE}
+        username: ${ORACLEDB_USERNAME}
         secret:
           inlineSecret: ${ORACLEDB_PASSWORD}
   security:
@@ -11,16 +13,6 @@ orchestration:
       enabled: false
     authentication:
       unprotectedApi: true
-
-  extraConfiguration:
-    - file: rdbms-configuration.yaml
-      content: |
-        camunda:
-          data:
-            secondary-storage:
-              rdbms:
-                url: jdbc:oracle:thin:@//${ORACLEDB_HOSTNAME}:${ORACLEDB_PORT}/${ORACLEDB_DATABASE}
-                username: ${ORACLEDB_USERNAME}
 
   exporters:
     rdbms:
