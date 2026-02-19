@@ -328,13 +328,13 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfigurationWithUsername() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                 "true",
-		"webModelerPostgresql.enabled":                     "false",
-		"webModeler.restapi.externalDatabase.url":          "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.username":     "modeler-user-new",
-		"webModeler.restapi.externalDatabase.password":     "modeler-password",
-		"global.elasticsearch.enabled":                     "true",
-		"elasticsearch.enabled":                            "true",
+		"identity.enabled":                                              "true",
+		"webModelerPostgresql.enabled":                                  "false",
+		"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username":                  "modeler-user-new",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret":       "modeler-password",
+		"global.elasticsearch.enabled":                                  "true",
+		"elasticsearch.enabled":                                         "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -361,14 +361,14 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldPrioritizeUsernameOverUser() {
 	// given - test that username takes precedence when both are set
 	values := map[string]string{
-		"identity.enabled":                                 "true",
-		"webModelerPostgresql.enabled":                     "false",
-		"webModeler.restapi.externalDatabase.url":          "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.user":         "old-user",
-		"webModeler.restapi.externalDatabase.username":     "new-username",
-		"webModeler.restapi.externalDatabase.password":     "modeler-password",
-		"global.elasticsearch.enabled":                     "true",
-		"elasticsearch.enabled":                            "true",
+		"identity.enabled":                                              "true",
+		"webModelerPostgresql.enabled":                                  "false",
+		"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.user":                      "old-user",
+		"webModeler.restapi.externalDatabase.username":                  "new-username",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret":       "modeler-password",
+		"global.elasticsearch.enabled":                                  "true",
+		"elasticsearch.enabled":                                         "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
