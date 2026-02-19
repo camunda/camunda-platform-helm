@@ -67,7 +67,10 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
+              value: {{ printf "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks %s" .Values.operate.javaOpts | trim | quote }}
+            {{- else if .Values.operate.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.operate.javaOpts | quote }}
             {{- end }}
             {{- with .Values.operate.env }}
             {{- toYaml . | nindent 12 }}
@@ -148,7 +151,10 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks
+              value: {{ printf "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks %s" .Values.operate.javaOpts | trim | quote }}
+            {{- else if .Values.operate.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.operate.javaOpts | quote }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
@@ -197,7 +203,7 @@ spec:
             {{- end }}
             {{- end }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: /tmp/zeebe_auth_cache
+              value: {{ .Values.operate.zeebeClientConfigPath | default "/tmp/zeebe_auth_cache" }}
             # the host name of Operate that is used when connecting with the Zeebe cluster
             # via atomix-cluster (SWIM)
             - name: ZEEBE_GATEWAY_CLUSTER_HOST

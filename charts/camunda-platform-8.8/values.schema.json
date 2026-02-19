@@ -2281,7 +2281,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.90"
+                            "default": "8.8.96"
                         },
                         "digest": {
                             "type": "string",
@@ -2295,6 +2295,11 @@
                             "items": {}
                         }
                     }
+                },
+                "nodeEnv": {
+                    "type": "string",
+                    "description": "can be used to set the node environment.",
+                    "default": "prod"
                 },
                 "sidecars": {
                     "type": "array",
@@ -3334,6 +3339,16 @@
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                             "default": {}
+                        },
+                        "javaOpts": {
+                            "type": "string",
+                            "description": "can be used to set extra Java options for the restapi container",
+                            "default": "-XX:MaxRAMPercentage=80.0"
+                        },
+                        "zeebeClientConfigPath": {
+                            "type": "string",
+                            "description": "can be used to set a custom path for the Zeebe client configuration file",
+                            "default": "/tmp/zeebe_client_cache.txt"
                         }
                     }
                 },
@@ -3717,6 +3732,16 @@
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                             "default": {}
+                        },
+                        "nodeEnv": {
+                            "type": "string",
+                            "description": "can be used to set the node environment.",
+                            "default": "production"
+                        },
+                        "nodeOptions": {
+                            "type": "string",
+                            "description": "can be used to set the NODE_OPTIONS env var.",
+                            "default": "--max-old-space-size=128"
                         }
                     }
                 },
@@ -7019,6 +7044,46 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        }
+                    }
+                },
+                "profiles": {
+                    "type": "string",
+                    "description": "defines SPRING_ACTIVE_PROFILES",
+                    "default": "\"\""
+                },
+                "javaOpts": {
+                    "type": "string",
+                    "description": "can be used to set java options for optimize",
+                    "default": ""
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables multitenancy in Optimize",
+                            "default": false
+                        }
+                    }
+                },
+                "caches": {
+                    "type": "object",
+                    "properties": {
+                        "cloudTenantAuthorizations": {
+                            "type": "object",
+                            "properties": {
+                                "maxSize": {
+                                    "type": "number",
+                                    "description": "defines the maximum number of entries in the cache",
+                                    "default": 10000
+                                },
+                                "minFetchIntervalSeconds": {
+                                    "type": "number",
+                                    "description": "defines the minimum interval between fetches from the database for the cache",
+                                    "default": 600000
+                                }
+                            }
                         }
                     }
                 }

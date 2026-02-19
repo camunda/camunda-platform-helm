@@ -74,7 +74,10 @@ spec:
             {{- end }}
             {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
+              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s %s" (include "camundaPlatform.getTlsSecretKey" .) .Values.optimize.javaOpts | trim | quote }}
+            {{- else if .Values.optimize.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.optimize.javaOpts | quote }}
             {{- end }}
             {{- if .Values.global.elasticsearch.enabled }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
@@ -162,7 +165,10 @@ spec:
             {{- end }}
             {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
             - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
+              value: {{ printf "-Djavax.net.ssl.trustStore=/optimize/certificates/%s %s" (include "camundaPlatform.getTlsSecretKey" .) .Values.optimize.javaOpts | trim | quote }}
+            {{- else if .Values.optimize.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.optimize.javaOpts | quote }}
             {{- end }}
             {{- if .Values.optimize.contextPath }}
             - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
@@ -175,20 +181,20 @@ spec:
               value: {{ .Values.global.elasticsearch.url.port | quote }}
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
-              value: ccsm
+              value: {{ .Values.optimize.profiles | default "ccsm" | quote }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_IDENTITY_CLIENT_SECRET"
                 "config" .Values.global.identity.auth.optimize
             ) | nindent 12 }}
             {{- end }}
-            {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled }}
+            {{- if or .Values.identity.multitenancy.enabled .Values.global.multitenancy.enabled .Values.optimize.multitenancy.enabled }}
             - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
               value: "true"
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
-              value: "10000"
+              value: {{ .Values.optimize.caches.cloudTenantAuthorizations.maxSize | default "10000" | quote }}
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
-              value: "600000"
+              value: {{ .Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | default "600000" | quote }}
             {{- end }}
             {{- if .Values.global.opensearch.aws.enabled }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
