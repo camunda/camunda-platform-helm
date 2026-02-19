@@ -327,6 +327,73 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	s.Require().Equal("modeler-user", configmapApplication.Spring.Datasource.Username)
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfigurationWithUsername() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                                 "true",
+		"webModelerPostgresql.enabled":                     "false",
+		"webModeler.restapi.externalDatabase.url":          "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username":     "modeler-user-new",
+		"webModeler.restapi.externalDatabase.password":     "modeler-password",
+		"global.elasticsearch.enabled":                     "true",
+		"elasticsearch.enabled":                            "true",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("jdbc:postgresql://postgres.example.com:65432/modeler-database", configmapApplication.Spring.Datasource.Url)
+	s.Require().Equal("modeler-user-new", configmapApplication.Spring.Datasource.Username)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldPrioritizeUsernameOverUser() {
+	// given - test that username takes precedence when both are set
+	values := map[string]string{
+		"identity.enabled":                                 "true",
+		"webModelerPostgresql.enabled":                     "false",
+		"webModeler.restapi.externalDatabase.url":          "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.user":         "old-user",
+		"webModeler.restapi.externalDatabase.username":     "new-username",
+		"webModeler.restapi.externalDatabase.password":     "modeler-password",
+		"global.elasticsearch.enabled":                     "true",
+		"elasticsearch.enabled":                            "true",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then - should use username, not user
+	s.Require().Equal("jdbc:postgresql://postgres.example.com:65432/modeler-database", configmapApplication.Spring.Datasource.Url)
+	s.Require().Equal("new-username", configmapApplication.Spring.Datasource.Username)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
 	// given
 	testCases := []struct {

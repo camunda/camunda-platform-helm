@@ -2903,9 +2903,14 @@
                                     "description": "The database name (used when url is not provided)",
                                     "default": "web-modeler"
                                 },
-                                "user": {
+                                "username": {
                                     "type": "string",
                                     "description": "defines the database user",
+                                    "default": ""
+                                },
+                                "user": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED - use webModeler.restapi.externalDatabase.username instead) defines the database user",
                                     "default": ""
                                 },
                                 "password": {
