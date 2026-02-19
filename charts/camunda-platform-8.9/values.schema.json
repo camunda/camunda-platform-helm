@@ -2203,6 +2203,11 @@
                         }
                     }
                 },
+                "nodeEnv": {
+                    "type": "string",
+                    "description": "can be used to set the node environment.",
+                    "default": "prod"
+                },
                 "sidecars": {
                     "type": "array",
                     "description": "can be used to attach extra containers to the console deployment",
@@ -2768,9 +2773,14 @@
                                     "description": "The database name (used when url is not provided)",
                                     "default": "web-modeler"
                                 },
-                                "user": {
+                                "username": {
                                     "type": "string",
                                     "description": "defines the database user",
+                                    "default": ""
+                                },
+                                "user": {
+                                    "type": "string",
+                                    "description": "(DEPRECATED - use webModeler.restapi.externalDatabase.username instead) defines the database user",
                                     "default": ""
                                 },
                                 "secret": {
@@ -3232,6 +3242,16 @@
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                             "default": {}
+                        },
+                        "javaOpts": {
+                            "type": "string",
+                            "description": "can be used to set extra Java options for the restapi container",
+                            "default": "-XX:MaxRAMPercentage=80.0"
+                        },
+                        "zeebeClientConfigPath": {
+                            "type": "string",
+                            "description": "can be used to set a custom path for the Zeebe client configuration file",
+                            "default": "/tmp/zeebe_client_cache.txt"
                         }
                     }
                 },
@@ -3615,6 +3635,16 @@
                             "type": "object",
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                             "default": {}
+                        },
+                        "nodeEnv": {
+                            "type": "string",
+                            "description": "can be used to set the node environment.",
+                            "default": "production"
+                        },
+                        "nodeOptions": {
+                            "type": "string",
+                            "description": "can be used to set the NODE_OPTIONS env var.",
+                            "default": "--max-old-space-size=128"
                         }
                     }
                 },
@@ -5617,6 +5647,56 @@
                                 }
                             }
                         },
+                        "primaryStorage": {
+                            "type": "object",
+                            "properties": {
+                                "backup": {
+                                    "type": "object",
+                                    "properties": {
+                                        "required": {
+                                            "type": "boolean",
+                                            "description": "if true, broker startup will be blocked until a backup storage is configured and available",
+                                            "default": false
+                                        },
+                                        "continuous": {
+                                            "type": "boolean",
+                                            "description": "if true, enables continuous backups for primary storage",
+                                            "default": false
+                                        },
+                                        "schedule": {
+                                            "type": "string",
+                                            "description": "defines the schedule for continuous backups, supports CRON, ISO8601, \"none\"",
+                                            "default": ""
+                                        },
+                                        "checkpointInterval": {
+                                            "type": "string",
+                                            "description": "defines the schedule for injecting checkpoints in the logstream, ISO8601 format",
+                                            "default": ""
+                                        },
+                                        "offset": {
+                                            "type": "number",
+                                            "description": "defines an optional offset for the generated backup ids to ensure continuation from existing backups",
+                                            "default": 0
+                                        },
+                                        "retention": {
+                                            "type": "object",
+                                            "properties": {
+                                                "window": {
+                                                    "type": "string",
+                                                    "description": "defines the time window for which the backups should be retained, ISO8601 format",
+                                                    "default": ""
+                                                },
+                                                "cleanupSchedule": {
+                                                    "type": "string",
+                                                    "description": "defines the schedule for running backup cleanup, supports CRON, ISO8601, \"none\"",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         "secondaryStorage": {
                             "type": "object",
                             "properties": {
@@ -6113,6 +6193,36 @@
                                     "type": "boolean",
                                     "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
                                     "default": false
+                                }
+                            }
+                        },
+                        "appIntegrations": {
+                            "type": "object",
+                            "properties": {
+                                "apiKey": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the apiKey as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing Kubernetes Secret.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -6836,6 +6946,46 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        }
+                    }
+                },
+                "profiles": {
+                    "type": "string",
+                    "description": "defines SPRING_ACTIVE_PROFILES",
+                    "default": "\"\""
+                },
+                "javaOpts": {
+                    "type": "string",
+                    "description": "can be used to set java options for optimize",
+                    "default": ""
+                },
+                "multitenancy": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, enables multitenancy in Optimize",
+                            "default": false
+                        }
+                    }
+                },
+                "caches": {
+                    "type": "object",
+                    "properties": {
+                        "cloudTenantAuthorizations": {
+                            "type": "object",
+                            "properties": {
+                                "maxSize": {
+                                    "type": "number",
+                                    "description": "defines the maximum number of entries in the cache",
+                                    "default": 10000
+                                },
+                                "minFetchIntervalSeconds": {
+                                    "type": "number",
+                                    "description": "defines the minimum interval between fetches from the database for the cache",
+                                    "default": 600000
+                                }
+                            }
                         }
                     }
                 }
