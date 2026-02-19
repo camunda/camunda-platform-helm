@@ -2,6 +2,8 @@ orchestration:
   data:
     secondaryStorage:
       rdbms:
+        url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
+        username: ${POSTGRESQL_USERNAME}
         secret:
           inlineSecret: ${POSTGRESQL_PASSWORD}
         #url: jdbc:oracle:thin:@//${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
@@ -13,16 +15,6 @@ orchestration:
       enabled: false
     authentication:
       unprotectedApi: true
-
-  extraConfiguration:
-    - file: rdbms-configuration.yaml
-      content: |
-        camunda:
-          data:
-            secondary-storage:
-              rdbms:
-                url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
-                username: ${POSTGRESQL_USERNAME}
 
   exporters:
     rdbms:

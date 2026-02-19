@@ -130,7 +130,11 @@ camunda:
       {{- end }}
       {{- if or .Values.orchestration.data.secondaryStorage.rdbms.secret.existingSecret .Values.orchestration.data.secondaryStorage.rdbms.secret.inlineSecret }}
       rdbms:
+        {{- with .Values.orchestration.data.secondaryStorage.rdbms }}
+        url: {{ .url | quote }}
+        username: {{ .username | quote }}
         password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
+        {{- end }}
       {{- end }}
 
   # Security configuration - Separated syntax.

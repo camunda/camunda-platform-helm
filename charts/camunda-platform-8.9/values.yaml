@@ -2697,6 +2697,10 @@ orchestration:
     secondaryStorage:
       ## @extra orchestration.data.secondaryStorage.rdbms configuration for RDBMS (Relational Database Management System) as secondary storage
       rdbms:
+        ## @param orchestration.data.secondaryStorage.rdbms.url the JDBC connection URL for the RDBMS database
+        url: ""
+        ## @param orchestration.data.secondaryStorage.rdbms.username the JDBMC username for authenticating with the RDBMS database
+        username: ""
         ## @extra orchestration.data.secondaryStorage.rdbms.secret configuration to provide the RDBMS password secret
         secret:
           ## @param orchestration.data.secondaryStorage.rdbms.secret.inlineSecret can be used to provide the JDBC password as a plain-text value for non-production usage
