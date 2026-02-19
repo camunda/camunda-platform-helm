@@ -25,12 +25,6 @@ Create a fully qualified name for the restapi objects.
   {{- (include "webModeler.fullname" .) | trunc 55 | trimSuffix "-" -}}-restapi
 {{- end -}}
 
-{{/*
-Create a fully qualified name for the webapp objects.
-*/}}
-{{- define "webModeler.webapp.fullname" -}}
-  {{- (include "webModeler.fullname" .) | trunc 56 | trimSuffix "-" -}}-webapp
-{{- end -}}
 
 {{/*
 Create a fully qualified name for the websockets objects.
@@ -52,13 +46,6 @@ Define extra labels for Web Modeler restapi.
 */}}
 {{- define "webModeler.restapi.extraLabels" -}}
 app.kubernetes.io/component: restapi
-{{- end -}}
-
-{{/*
-Define extra labels for Web Modeler webapp.
-*/}}
-{{- define "webModeler.webapp.extraLabels" -}}
-app.kubernetes.io/component: webapp
 {{- end -}}
 
 {{/*
@@ -103,15 +90,6 @@ Define common labels for Web Modeler restapi, combining the match labels and tra
 {{- end -}}
 
 {{/*
-Define common labels for Web Modeler webapp, combining the match labels and transient labels, which might change on updating
-(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
-*/}}
-{{- define "webModeler.webapp.labels" -}}
-{{ template "webModeler.commonLabels" . }}
-{{ template "webModeler.webapp.extraLabels" . }}
-{{- end -}}
-
-{{/*
 Define common labels for Web Modeler websockets, combining the match labels and transient labels, which might change on updating
 (version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
 */}}
@@ -126,14 +104,6 @@ Define match labels for Web Modeler restapi to be used in matchLabels selectors.
 {{- define "webModeler.restapi.matchLabels" -}}
 {{ template "webModeler.commonMatchLabels" . }}
 {{ template "webModeler.restapi.extraLabels" . }}
-{{- end -}}
-
-{{/*
-Define match labels for Web Modeler webapp to be used in matchLabels selectors.
-*/}}
-{{- define "webModeler.webapp.matchLabels" -}}
-{{ template "webModeler.commonMatchLabels" . }}
-{{ template "webModeler.webapp.extraLabels" . }}
 {{- end -}}
 
 {{/*
@@ -156,13 +126,6 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 */}}
 {{- define "webModeler.restapi.image" -}}
   {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.restapi.image))) }}
-{{- end }}
-
-{{/*
-[web-modeler] Get the full name (<registry>/<repository>:<tag>) of the webapp Docker image
-*/}}
-{{- define "webModeler.webapp.image" -}}
-  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy .Values.webModeler.image | merge .Values.webModeler.webapp.image))) }}
 {{- end }}
 
 {{/*
@@ -234,7 +197,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{/*
-[web-modeler] Create the context path for the WebSocket app (= configured context path for the webapp + suffix "-ws").
+[web-modeler] Create the context path for the WebSocket app (= configured context path + suffix "-ws").
 */}}
 {{- define "webModeler.websocketContextPath" -}}
   {{- .Values.webModeler.contextPath }}-ws

@@ -23,9 +23,19 @@ data:
       {{- end }}
 
       modeler:
+        feature:
+          play-enabled: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
+
         pusher:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
           port: {{ .Values.webModeler.websockets.service.port }}
+          client:
+            host: {{ include "webModeler.publicWebsocketHost" . | quote }}
+            port: {{ include "webModeler.publicWebsocketPort" . | quote }}
+            {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+            path: {{ include "webModeler.websocketContextPath" . | quote }}
+            {{- end }}
+            force-tls: {{ include "webModeler.websocketTlsEnabled" . }}
 
         {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
         security:
@@ -41,8 +51,14 @@ data:
           from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" .Values.webModeler.restapi.mail.fromAddress | quote }}
           from-name: {{ .Values.webModeler.restapi.mail.fromName | quote }}
 
+        oauth2:
+          client-id: {{ include "webModeler.authClientId" . | quote }}
+          token:
+            username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
+
         server:
           url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+          https-only: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
 
         {{- if or .Values.orchestration.enabled .Values.webModeler.restapi.clusters }}
         clusters:
@@ -100,6 +116,15 @@ data:
         multipart:
           max-file-size: {{ .Values.global.config.requestBodySize | quote }}
           max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+
+    {{- if .Values.webModeler.contextPath }}
+    server:
+      servlet:
+        context-path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath) | quote }}
+    management:
+      server:
+        base-path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath) | quote }}
+    {{- end }}
 
     logging:
 {{- with .Values.webModeler.restapi.logging }}
