@@ -88,14 +88,6 @@ webModeler:
       key: workload
       operator: Equal
       value: distroci
-  webapp:
-    nodeSelector:
-      workload: distroci
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: distroci
   websockets:
     nodeSelector:
       workload: distroci

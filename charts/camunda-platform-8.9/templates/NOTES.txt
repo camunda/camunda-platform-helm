@@ -63,7 +63,6 @@
   {{- if .Values.webModeler.enabled }}
   - Docker images used for Web Modeler:
     - {{ include "webModeler.restapi.image" . }}
-    - {{ include "webModeler.webapp.image" . }}
     - {{ include "webModeler.websockets.image" . }}
   {{- end }}
 - Elasticsearch:
@@ -98,7 +97,7 @@ Optimize:
 {{- end }}
 {{ if .Values.webModeler.enabled -}}
 Web Modeler:
-> kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8070:80
+> kubectl port-forward svc/{{ include "webModeler.restapi.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
 {{ if .Values.connectors.enabled -}}

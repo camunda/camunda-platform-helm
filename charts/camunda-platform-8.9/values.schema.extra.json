@@ -253,42 +253,6 @@
                     }
                 }
             },
-            "webapp": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
-                                },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "nullable": true
-                                },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
-                                }
-                            },
-                            "required": [
-                                "name"
-                            ],
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
             "websockets": {
                 "properties": {
                     "env": {

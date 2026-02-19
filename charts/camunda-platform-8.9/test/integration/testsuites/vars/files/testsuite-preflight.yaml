@@ -64,8 +64,6 @@ testcases:
   #  range:
   #  - component: RESTAPI
   #    url: "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/readiness"
-  #  - component: WebApp
-  #    url: "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/readiness"
   #  method: GET
   #  url: "{{ .value.url }}"
   #  retry: 3
@@ -130,8 +128,6 @@ testcases:
   #  range:
   #  - component: RESTAPI
   #    url:  "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/liveness"
-  #  - component: WebApp
-  #    url:  "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/liveness"
   #  method: GET
   #  url: "{{ .value.url }}"
   #  retry: 3

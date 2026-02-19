@@ -650,14 +650,14 @@ Release templates.
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
-  {{-  $proto := (lower .Values.webModeler.webapp.readinessProbe.scheme) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
+  {{-  $proto := (lower .Values.webModeler.restapi.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace .Values.webModeler.restapi.service.managementPort }}
   - name: WebModeler WebApp
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
     url: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.metrics.prometheus)) }}
   {{- end }}
 
   {{- if .Values.optimize.enabled }}
