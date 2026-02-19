@@ -76,7 +76,8 @@ var envMutex sync.Mutex
 // Returns the list of processed file paths in the output directory.
 func processCommonValues(scenarioPath, outputDir, envFile, platform string) ([]string, error) {
 	// Common directory is a sibling to the scenario directory
-	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
+	// e.g., if scenarioPath is "scenarios/chart-full-setup", common is "scenarios/common"
+	commonDir := filepath.Join(filepath.Dir(scenarioPath), "common")
 
 	logging.Logger.Debug().
 		Str("scenarioPath", scenarioPath).
