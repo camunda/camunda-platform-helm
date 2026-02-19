@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.19.4"
+  camunda.io/helmCLIVersion: "3.20.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -72,5 +72,13 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Add configuration for initializing authorization in 8.8"
+    - kind: added
+      description: "Add tpl support to podLabels, podAnnotations, and global.ingress.host"
+    - kind: added
+      description: "Expose options in values.yaml for helm v4 support"
     - kind: fixed
-      description: "Support lower helm cli versions by conditionally using toYamlPretty"
+      description: "Add type to headless orchestration cluster service"
+    - kind: fixed
+      description: "Normalize authIssuerBackendUrl to prevent double-slash when contextPath is root"
