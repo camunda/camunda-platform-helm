@@ -150,7 +150,7 @@ var validConfigKeys = []string{
 	"scenarioPath", "auth", "platform", "logLevel", "externalSecrets",
 	"skipDependencyUpdate", "keycloakRealm", "optimizeIndexPrefix",
 	"orchestrationIndexPrefix", "tasklistIndexPrefix", "operateIndexPrefix",
-	"ingressHost", "flow", "envFile", "interactive", "vaultSecretMapping",
+	"ingressHost", "ingressSubdomain", "flow", "envFile", "interactive", "vaultSecretMapping",
 	"autoGenerateSecrets", "deleteNamespace", "dockerUsername", "dockerPassword",
 	"ensureDockerRegistry", "renderTemplates", "renderOutputDir", "extraValues",
 	"repoRoot", "scenarioRoot", "valuesPreset", "kubeContext", "ingressBaseDomain",

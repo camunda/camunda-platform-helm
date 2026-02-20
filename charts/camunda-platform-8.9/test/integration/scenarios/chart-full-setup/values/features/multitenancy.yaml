@@ -6,6 +6,8 @@ global:
     enabled: true
     checksEnabled: true
     apiEnabled: true
+
+orchestration:
   security:
     authorization:
       enabled: true

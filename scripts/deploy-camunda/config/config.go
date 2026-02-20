@@ -58,6 +58,7 @@ type DeploymentConfig struct {
 	TasklistIndexPrefix      string   `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string   `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
 	IngressHost              string   `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressSubdomain         string   `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
 	IngressBaseDomain        string   `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	Flow                     string   `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string   `mapstructure:"envFile" yaml:"envFile,omitempty"`
@@ -104,6 +105,7 @@ type RootConfig struct {
 	TasklistIndexPrefix      string                      `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string                      `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
 	IngressHost              string                      `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressSubdomain         string                      `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
 	IngressBaseDomain        string                      `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	Flow                     string                      `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string                      `mapstructure:"envFile" yaml:"envFile,omitempty"`
