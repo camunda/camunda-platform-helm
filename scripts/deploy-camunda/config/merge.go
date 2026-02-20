@@ -162,6 +162,8 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix, changed, "tasklist-index-prefix")
 	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix, changed, "operate-index-prefix")
 	MergeStringField(&flags.KubeContext, dep.KubeContext, rc.KubeContext, changed, "kube-context")
+	MergeStringField(&flags.IngressHostname, dep.IngressHost, rc.IngressHost, changed, "ingress-hostname")
+	MergeStringField(&flags.IngressSubdomain, dep.IngressSubdomain, rc.IngressSubdomain, changed, "ingress-subdomain")
 	MergeStringField(&flags.IngressBaseDomain, dep.IngressBaseDomain, rc.IngressBaseDomain, changed, "ingress-base-domain")
 	MergeStringField(&flags.ExternalSecretsStore, "", "", changed, "external-secrets-store") // No config file support yet
 
@@ -225,6 +227,8 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix, changed, "tasklist-index-prefix")
 	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix, changed, "operate-index-prefix")
 	MergeStringField(&flags.KubeContext, "", rc.KubeContext, changed, "kube-context")
+	MergeStringField(&flags.IngressHostname, "", rc.IngressHost, changed, "ingress-hostname")
+	MergeStringField(&flags.IngressSubdomain, "", rc.IngressSubdomain, changed, "ingress-subdomain")
 	MergeStringField(&flags.IngressBaseDomain, "", rc.IngressBaseDomain, changed, "ingress-base-domain")
 	MergeStringField(&flags.ExternalSecretsStore, "", "", changed, "external-secrets-store") // No config file support yet
 
