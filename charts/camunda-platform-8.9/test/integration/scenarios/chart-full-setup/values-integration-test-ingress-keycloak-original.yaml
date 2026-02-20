@@ -35,9 +35,8 @@ global:
       realm: "/realms/$KEYCLOAK_REALM"
       auth:
         adminUser: "admin"
-        secret:
-          existingSecret: "infra-credentials"
-          existingSecretKey: "keycloak-admin-password"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
     auth:
       enabled: true
       publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
