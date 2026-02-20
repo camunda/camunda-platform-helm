@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: orchestration-migration
-    app.kubernetes.io/version: "8.8.11"
+    app.kubernetes.io/version: "8.8.13"
   annotations:
     {}
 spec:
@@ -25,7 +25,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/part-of: camunda-platform
         app.kubernetes.io/component: orchestration-migration
-        app.kubernetes.io/version: "8.8.11"
+        app.kubernetes.io/version: "8.8.13"
       annotations:
     spec:
       restartPolicy: OnFailure
@@ -56,7 +56,7 @@ spec:
               done
       containers:
         - name: camunda-migration
-          image: camunda/camunda:8.8.11
+          image: camunda/camunda:8.8.13
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
