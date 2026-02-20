@@ -27,7 +27,7 @@ jobs:
     name: Local cluster - KIND
     # This job needs to run on self-hosted runners because it requires more resources
     # than the default GitHub runners provide.
-    runs-on: gcp-core-8-default
+    runs-on: gcp-core-32-longrunning-big-ssd
     env:
       TEST_NAMESPACE: camunda-platform
     steps:
