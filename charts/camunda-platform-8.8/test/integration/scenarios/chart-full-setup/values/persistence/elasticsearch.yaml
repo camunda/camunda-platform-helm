@@ -1,0 +1,10 @@
+# Elasticsearch backend configuration for 8.8
+# Layer 3: Backend - Elasticsearch (internal)
+
+global:
+  elasticsearch:
+    enabled: true
+
+elasticsearch:
+  enabled: true
+  maxUnavailable: 0

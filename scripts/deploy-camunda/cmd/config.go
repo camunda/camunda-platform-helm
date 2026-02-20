@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/format"
 	"sort"
@@ -151,7 +150,7 @@ var validConfigKeys = []string{
 	"scenarioPath", "auth", "platform", "logLevel", "externalSecrets",
 	"skipDependencyUpdate", "keycloakRealm", "optimizeIndexPrefix",
 	"orchestrationIndexPrefix", "tasklistIndexPrefix", "operateIndexPrefix",
-	"ingressHost", "flow", "envFile", "interactive", "vaultSecretMapping",
+	"ingressHost", "ingressSubdomain", "flow", "envFile", "interactive", "vaultSecretMapping",
 	"autoGenerateSecrets", "deleteNamespace", "dockerUsername", "dockerPassword",
 	"ensureDockerRegistry", "renderTemplates", "renderOutputDir", "extraValues",
 	"repoRoot", "scenarioRoot", "valuesPreset", "kubeContext", "ingressBaseDomain",
@@ -343,28 +342,25 @@ func completeConfigValue(key, toComplete string) ([]string, cobra.ShellCompDirec
 	}
 }
 
-// completeKubeContexts returns available kubectl contexts.
+// completeKubeContexts returns available kubectl contexts filtered by prefix.
 func completeKubeContexts(toComplete string) ([]string, cobra.ShellCompDirective) {
-	// Run kubectl config get-contexts to get available contexts
-	out, err := exec.Command("kubectl", "config", "get-contexts", "-o", "name").Output()
+	contexts, err := getKubeContexts()
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	var contexts []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		ctx := strings.TrimSpace(line)
-		if ctx != "" && (toComplete == "" || strings.HasPrefix(ctx, toComplete)) {
-			contexts = append(contexts, ctx)
+	var completions []string
+	for _, ctx := range contexts {
+		if toComplete == "" || strings.HasPrefix(ctx, toComplete) {
+			completions = append(completions, ctx)
 		}
 	}
-
-	return contexts, cobra.ShellCompDirectiveNoFileComp
+	return completions, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completePlatforms returns available platform values.
 func completePlatforms(toComplete string) ([]string, cobra.ShellCompDirective) {
-	platforms := []string{"gke", "eks", "rosa"}
+	platforms := config.DeployPlatforms
 	var completions []string
 	for _, p := range platforms {
 		if toComplete == "" || strings.HasPrefix(p, toComplete) {

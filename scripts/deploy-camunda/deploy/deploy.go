@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"hash/fnv"
 	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/camunda-deployer/pkg/types"
 	"scripts/deploy-camunda/config"
@@ -22,6 +24,16 @@ import (
 	"time"
 
 	"github.com/jwalton/gchalk"
+)
+
+// Style helpers for terminal output.
+var (
+	styleKey  = func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
+	styleVal  = func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
+	styleOk   = func(s string) string { return logging.Emphasize(s, gchalk.Green) }
+	styleErr  = func(s string) string { return logging.Emphasize(s, gchalk.Red) }
+	styleHead = func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+	styleWarn = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
 )
 
 // ScenarioContext holds scenario-specific deployment configuration.
@@ -377,7 +389,10 @@ func generateRandomSuffix() string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, 8)
 	for i := range result {
-		num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			panic(fmt.Sprintf("crypto/rand failed: %v", err))
+		}
 		result[i] = chars[num.Int64()]
 	}
 	return string(result)
@@ -405,10 +420,9 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 
 	// Create a short hash from the full identifier for uniqueness
 	fullId := fmt.Sprintf("%s-%s-%s", namespace, scenario, suffix)
-	hash := fmt.Sprintf("%x", big.NewInt(0).SetBytes([]byte(fullId)).Int64())
-	if len(hash) > 8 {
-		hash = hash[:8]
-	}
+	h := fnv.New32a()
+	h.Write([]byte(fullId))
+	hash := fmt.Sprintf("%08x", h.Sum32())
 
 	result := fmt.Sprintf("%s-%s", scenario, hash)
 
@@ -440,7 +454,53 @@ func restoreEnv(envVars map[string]string) {
 	}
 }
 
+// buildDeploymentConfigFromFlags creates a DeploymentConfig from RuntimeFlags.
+// It prefers the new selection flags (--identity, --persistence, etc.) over deprecated flags.
+// Returns nil if no explicit flags are set (use auto-detection from scenario name).
+func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) *scenarios.DeploymentConfig {
+	// Migrate deprecated flags to new fields first
+	flags.MigrateDeprecatedFlags()
+
+	// Check if we have any explicit configuration
+	if !flags.HasExplicitSelectionConfig() && !flags.HasExplicitLayeredConfig() {
+		return nil
+	}
+
+	// Start with derived config from scenario name, then override with explicit flags
+	config := scenarios.MapScenarioToConfig(scenarioName)
+
+	// Apply new selection flags (preferred)
+	if flags.Identity != "" {
+		config.Identity = flags.Identity
+	}
+	if flags.Persistence != "" {
+		config.Persistence = flags.Persistence
+	}
+	if flags.TestPlatform != "" {
+		config.Platform = flags.TestPlatform
+	}
+	if len(flags.Features) > 0 {
+		config.Features = flags.Features
+	}
+	if flags.QA {
+		config.QA = true
+	}
+	if flags.ImageTags {
+		config.ImageTags = true
+	}
+	if flags.UpgradeFlow {
+		config.Upgrade = true
+	}
+
+	// Set chart version and flow for migrator detection
+	config.ChartVersion = flags.ChartVersion
+	config.Flow = flags.Flow
+
+	return config
+}
+
 // enhanceScenarioError wraps scenario resolution errors with helpful context.
+// Supports both layered values (values/ directory) and legacy single-file approach.
 func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) error {
 	if err == nil {
 		return nil
@@ -460,44 +520,111 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 	}
 
 	var helpMsg strings.Builder
-	fmt.Fprintf(&helpMsg, "❌ Scenario %q not found\n\n", scenario)
-	fmt.Fprintf(&helpMsg, "Searched in: %s\n", scenarioDir)
-	fmt.Fprintf(&helpMsg, "Expected file: values-integration-test-ingress-%s.yaml\n\n", scenario)
+	fmt.Fprintf(&helpMsg, "Scenario %q not found\n\n", scenario)
+	fmt.Fprintf(&helpMsg, "Searched in: %s\n\n", scenarioDir)
 
-	// Try to list available scenarios
-	entries, readErr := os.ReadDir(scenarioDir)
-	if readErr != nil {
-		fmt.Fprintf(&helpMsg, "⚠️  Could not list available scenarios: %v\n\n", readErr)
-		fmt.Fprintf(&helpMsg, "Please check:\n")
-		fmt.Fprintf(&helpMsg, "  1. The scenario directory exists: %s\n", scenarioDir)
-		fmt.Fprintf(&helpMsg, "  2. You have permission to read it\n")
-		fmt.Fprintf(&helpMsg, "  3. The --chart-path or --scenario-path flags are set correctly\n")
-	} else {
-		var availableScenarios []string
-		for _, e := range entries {
-			name := e.Name()
-			if !e.IsDir() && strings.HasPrefix(name, "values-integration-test-ingress-") && strings.HasSuffix(name, ".yaml") {
-				// Extract scenario name
-				scenarioName := strings.TrimPrefix(name, "values-integration-test-ingress-")
-				scenarioName = strings.TrimSuffix(scenarioName, ".yaml")
-				availableScenarios = append(availableScenarios, scenarioName)
+	// Check if this directory uses layered values (new structure)
+	valuesDir := filepath.Join(scenarioDir, "values")
+	if _, statErr := os.Stat(valuesDir); statErr == nil {
+		// Layered values structure
+		fmt.Fprintf(&helpMsg, "This scenario directory uses SELECTION + COMPOSITION model.\n")
+		fmt.Fprintf(&helpMsg, "Scenario names are derived from layer combinations.\n\n")
+
+		// List available identity types
+		identityDir := filepath.Join(valuesDir, "identity")
+		if identityEntries, err := os.ReadDir(identityDir); err == nil && len(identityEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available identity types (--identity):\n")
+			for _, e := range identityEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
 			}
+			fmt.Fprintf(&helpMsg, "\n")
 		}
 
-		if len(availableScenarios) == 0 {
-			fmt.Fprintf(&helpMsg, "⚠️  No scenario files found in: %s\n\n", scenarioDir)
-			fmt.Fprintf(&helpMsg, "Expected files matching pattern: values-integration-test-ingress-*.yaml\n")
-		} else {
-			fmt.Fprintf(&helpMsg, "✅ Available scenarios (%d found):\n", len(availableScenarios))
-			for _, s := range availableScenarios {
-				fmt.Fprintf(&helpMsg, "  • %s\n", s)
+		// List available persistence types
+		persistenceDir := filepath.Join(valuesDir, "persistence")
+		if persistenceEntries, err := os.ReadDir(persistenceDir); err == nil && len(persistenceEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available persistence types (--persistence):\n")
+			for _, e := range persistenceEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
 			}
-			fmt.Fprintf(&helpMsg, "\n💡 Hint: Use --scenario <name> or --scenario <name1>,<name2> for multiple scenarios\n")
+			fmt.Fprintf(&helpMsg, "\n")
+		}
+
+		// List available platform types
+		platformDir := filepath.Join(valuesDir, "platform")
+		if platformEntries, err := os.ReadDir(platformDir); err == nil && len(platformEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available platforms (--test-platform):\n")
+			for _, e := range platformEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
+			}
+			fmt.Fprintf(&helpMsg, "\n")
+		}
+
+		// List available features
+		featuresDir := filepath.Join(valuesDir, "features")
+		if featureEntries, err := os.ReadDir(featuresDir); err == nil && len(featureEntries) > 0 {
+			fmt.Fprintf(&helpMsg, "Available features (--features):\n")
+			for _, e := range featureEntries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".yaml") {
+					name := strings.TrimSuffix(e.Name(), ".yaml")
+					fmt.Fprintf(&helpMsg, "  - %s\n", name)
+				}
+			}
+			fmt.Fprintf(&helpMsg, "\n")
+		}
+
+		fmt.Fprintf(&helpMsg, "Hint: Use the new flags directly. Examples:\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak-external --persistence opensearch --test-platform gke --features multitenancy\n")
+		fmt.Fprintf(&helpMsg, "  --identity keycloak --persistence elasticsearch --test-platform gke --qa --image-tags\n")
+	} else {
+		// Legacy single-file structure
+		fmt.Fprintf(&helpMsg, "Expected file: values-integration-test-ingress-%s.yaml\n\n", scenario)
+
+		// Try to list available scenarios
+		entries, readErr := os.ReadDir(scenarioDir)
+		if readErr != nil {
+			fmt.Fprintf(&helpMsg, "Could not list available scenarios: %v\n\n", readErr)
+			fmt.Fprintf(&helpMsg, "Please check:\n")
+			fmt.Fprintf(&helpMsg, "  1. The scenario directory exists: %s\n", scenarioDir)
+			fmt.Fprintf(&helpMsg, "  2. You have permission to read it\n")
+			fmt.Fprintf(&helpMsg, "  3. The --chart-path or --scenario-path flags are set correctly\n")
+		} else {
+			var availableScenarios []string
+			for _, e := range entries {
+				name := e.Name()
+				if !e.IsDir() && strings.HasPrefix(name, "values-integration-test-ingress-") && strings.HasSuffix(name, ".yaml") {
+					// Extract scenario name
+					scenarioName := strings.TrimPrefix(name, "values-integration-test-ingress-")
+					scenarioName = strings.TrimSuffix(scenarioName, ".yaml")
+					availableScenarios = append(availableScenarios, scenarioName)
+				}
+			}
+
+			if len(availableScenarios) == 0 {
+				fmt.Fprintf(&helpMsg, "No scenario files found in: %s\n\n", scenarioDir)
+				fmt.Fprintf(&helpMsg, "Expected files matching pattern: values-integration-test-ingress-*.yaml\n")
+			} else {
+				fmt.Fprintf(&helpMsg, "Available scenarios (%d found):\n", len(availableScenarios))
+				for _, s := range availableScenarios {
+					fmt.Fprintf(&helpMsg, "  - %s\n", s)
+				}
+				fmt.Fprintf(&helpMsg, "\nHint: Use --scenario <name> or --scenario <name1>,<name2> for multiple scenarios\n")
+			}
 		}
 	}
 
-	fmt.Fprintf(&helpMsg, "\n📚 Documentation: Check the chart's test/integration/scenarios/ directory\n")
-	fmt.Fprintf(&helpMsg, "   for available scenario configurations.\n")
+	fmt.Fprintf(&helpMsg, "\nDocumentation: Check the chart's test/integration/scenarios/ directory\n")
+	fmt.Fprintf(&helpMsg, "for available scenario configurations.\n")
 
 	return fmt.Errorf("%s\n%s", helpMsg.String(), err)
 }
@@ -528,16 +655,9 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 	}
 
 	for _, scenario := range flags.Scenarios {
-		// Try to resolve the scenario file
-		var filename string
-		if strings.HasPrefix(scenario, "values-integration-test-ingress-") && strings.HasSuffix(scenario, ".yaml") {
-			filename = scenario
-		} else {
-			filename = fmt.Sprintf("values-integration-test-ingress-%s.yaml", scenario)
-		}
-
-		sourceValuesFile := filepath.Join(scenarioDir, filename)
-		if _, err := os.Stat(sourceValuesFile); err != nil {
+		// Use the scenarios package to resolve paths - this supports both layered and legacy values
+		_, err := scenarios.ResolvePath(scenarioDir, scenario)
+		if err != nil {
 			// Enhance error with helpful context
 			return enhanceScenarioError(err, scenario, flags.ScenarioPath, flags.ChartPath)
 		}
@@ -806,6 +926,17 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		Str("scenario", scenarioCtx.ScenarioName).
 		Msg("✅ [prepareScenarioValues] environment mutex acquired")
 
+	// Load the .env file under the mutex so that version-specific env vars
+	// are available to values.Process(). This is safe for parallel execution
+	// because the mutex serialises all environment manipulation.
+	if flags.EnvFile != "" {
+		logging.Logger.Debug().
+			Str("envFile", flags.EnvFile).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("📂 [prepareScenarioValues] loading .env file")
+		_ = env.Load(flags.EnvFile)
+	}
+
 	// Set environment variables for prepare-helm-values
 	envVarsToCapture := []string{
 		"KEYCLOAK_REALM",
@@ -844,7 +975,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 
 	// Set Keycloak environment variables
 	if flags.KeycloakHost != "" {
-		kcVersionSafe := "24_9_0"
+		kcVersionSafe := keycloakVersionSuffix(flags.KeycloakHost)
 		kcHostVar := fmt.Sprintf("KEYCLOAK_EXT_HOST_%s", kcVersionSafe)
 		kcProtoVar := fmt.Sprintf("KEYCLOAK_EXT_PROTOCOL_%s", kcVersionSafe)
 		os.Setenv(kcHostVar, flags.KeycloakHost)
@@ -899,20 +1030,84 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		return nil, fmt.Errorf("failed to process common values: %w", err)
 	}
 
-	// Process auth scenario if different from main scenario
-	if flags.Auth != "" && flags.Auth != scenarioCtx.ScenarioName {
-		logging.Logger.Info().Str("auth", flags.Auth).Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing auth scenario")
-		if err := processValues(flags.Auth); err != nil {
-			os.RemoveAll(tempDir) // Cleanup on error
-			return nil, fmt.Errorf("failed to prepare auth scenario: %w", err)
-		}
+	// Determine the effective scenario directory for resolution.
+	effectiveScenarioDir := flags.ScenarioPath
+	if effectiveScenarioDir == "" {
+		effectiveScenarioDir = filepath.Join(flags.ChartPath, "test/integration/scenarios/chart-full-setup")
 	}
+	isLayered := scenarios.HasLayeredValues(effectiveScenarioDir)
 
-	// Process main scenario
-	logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing main scenario")
-	if err := processValues(scenarioCtx.ScenarioName); err != nil {
-		os.RemoveAll(tempDir) // Cleanup on error
-		return nil, fmt.Errorf("failed to prepare main scenario: %w", err)
+	// Process and resolve scenario values.
+	// For layered values, we resolve all layer files from the original scenario directory,
+	// process each one into tempDir, and build the values list directly.
+	// For legacy values, we use the existing processValues + BuildValuesList flow.
+	var scenarioValueFiles []string
+	if isLayered {
+		logging.Logger.Debug().
+			Str("scenarioDir", effectiveScenarioDir).
+			Str("scenario", scenarioCtx.ScenarioName).
+			Msg("📋 [prepareScenarioValues] layered values detected; resolving all layer files")
+
+		// Derive deployment config from scenario name, then apply any explicit
+		// flag overrides so that --platform / --test-platform propagates to the
+		// layered values resolution (e.g. selecting eks.yaml instead of gke.yaml).
+		deployConfig := scenarios.MapScenarioToConfig(scenarioCtx.ScenarioName)
+		if flags.TestPlatform != "" {
+			deployConfig.Platform = flags.TestPlatform
+		} else if flags.Platform != "" {
+			deployConfig.Platform = flags.Platform
+		}
+		// Set flow for migrator detection
+		deployConfig.Flow = flags.Flow
+
+		layeredFiles, err := deployConfig.ResolvePaths(effectiveScenarioDir)
+		if err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to resolve layered values for scenario %q: %w", scenarioCtx.ScenarioName, err)
+		}
+
+		logging.Logger.Debug().
+			Strs("layeredFiles", layeredFiles).
+			Int("count", len(layeredFiles)).
+			Msg("📋 [prepareScenarioValues] processing layered values files")
+
+		// Process each layered file (env var substitution) into tempDir
+		for _, srcFile := range layeredFiles {
+			opts := values.Options{
+				ChartPath:   flags.ChartPath,
+				ScenarioDir: effectiveScenarioDir,
+				OutputDir:   tempDir,
+				Interactive: flags.Interactive,
+				EnvFile:     flags.EnvFile,
+			}
+			outputPath, _, procErr := values.Process(srcFile, opts)
+			if procErr != nil {
+				os.RemoveAll(tempDir)
+				return nil, fmt.Errorf("failed to process layered values file %q: %w", srcFile, procErr)
+			}
+			scenarioValueFiles = append(scenarioValueFiles, outputPath)
+		}
+
+		logging.Logger.Debug().
+			Strs("processedFiles", scenarioValueFiles).
+			Msg("📋 [prepareScenarioValues] layered values files processed")
+	} else {
+		// Legacy path: process auth and main scenario, then let BuildValuesList resolve
+		effectiveAuth := flags.Auth
+		if effectiveAuth != "" && effectiveAuth != scenarioCtx.ScenarioName {
+			logging.Logger.Info().Str("auth", effectiveAuth).Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing auth scenario")
+			if err := processValues(effectiveAuth); err != nil {
+				os.RemoveAll(tempDir)
+				return nil, fmt.Errorf("failed to prepare auth scenario: %w", err)
+			}
+		}
+
+		// Process main scenario
+		logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Preparing main scenario")
+		if err := processValues(scenarioCtx.ScenarioName); err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to prepare main scenario: %w", err)
+		}
 	}
 
 	// Auto-generate secrets if requested
@@ -954,10 +1149,20 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		return nil, fmt.Errorf("failed to generate debug values: %w", err)
 	}
 
-	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
-	if err != nil {
-		os.RemoveAll(tempDir) // Cleanup on error
-		return nil, fmt.Errorf("failed to build values list: %w", err)
+	var vals []string
+	if isLayered {
+		// For layered values, we already have the processed scenario files.
+		// Build the values list directly: common + scenario layers + overlays + user values.
+		vals = append(vals, processedCommonFiles...)
+		vals = append(vals, scenarioValueFiles...)
+		vals = append(vals, flags.ExtraValues...)
+	} else {
+		// Legacy path: let BuildValuesList resolve scenario files from tempDir.
+		vals, err = deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
+		if err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to build values list: %w", err)
+		}
 	}
 
 	// Append debug values file last to ensure it overrides other values
@@ -1195,7 +1400,10 @@ func generateTestSecrets(envFile string) error {
 		const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		result := make([]byte, 32)
 		for i := range result {
-			num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+			num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+			if err != nil {
+				panic(fmt.Sprintf("crypto/rand failed: %v", err))
+			}
 			result[i] = chars[num.Int64()]
 		}
 		return string(result)
@@ -1356,11 +1564,6 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 	}
 
 	// Pretty, human-friendly output
-	styleKey := func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleOk := func(s string) string { return logging.Emphasize(s, gchalk.Green) }
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-
 	var out strings.Builder
 	out.WriteString(styleOk("🎉 Deployment completed successfully"))
 	out.WriteString("\n\n")
@@ -1488,13 +1691,6 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 	}
 
 	// Pretty, human-friendly output
-	styleKey := func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleOk := func(s string) string { return logging.Emphasize(s, gchalk.Green) }
-	styleErr := func(s string) string { return logging.Emphasize(s, gchalk.Red) }
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-	styleWarn := func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
-
 	var out strings.Builder
 	if failureCount == 0 {
 		out.WriteString(styleOk("🎉 All scenarios deployed successfully!"))
@@ -1586,365 +1782,20 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 	logging.Logger.Info().Msg(out.String())
 }
 
-// ScenarioTestResult holds the result of a test execution for a scenario.
-type ScenarioTestResult struct {
-	Scenario  string
-	Namespace string
-	TestType  string // "integration" or "e2e"
-	Error     error
-}
-
-// runTests executes integration and/or e2e tests against all successful deployments.
-// Tests run sequentially against each deployment to avoid resource contention.
-func runTests(ctx context.Context, flags *config.RuntimeFlags, results []*ScenarioResult) error {
-	// Filter to only successful deployments
-	var successfulResults []*ScenarioResult
-	for _, r := range results {
-		if r.Error == nil {
-			successfulResults = append(successfulResults, r)
-		}
+// keycloakVersionSuffix extracts a version suffix from a Keycloak hostname.
+// For example, "keycloak-24-9-0.ci.distro.ultrawombat.com" → "24_9_0".
+// The hostname is expected to have the form "keycloak-<version>.<domain>",
+// where <version> uses hyphens that are replaced with underscores.
+// If the hostname does not match this pattern, the full hostname (with
+// dots and hyphens replaced by underscores) is returned as a safe fallback.
+func keycloakVersionSuffix(host string) string {
+	// Take everything before the first dot (the subdomain).
+	subdomain := host
+	if idx := strings.Index(host, "."); idx >= 0 {
+		subdomain = host[:idx]
 	}
-
-	if len(successfulResults) == 0 {
-		logging.Logger.Warn().Msg("No successful deployments to run tests against")
-		return nil
-	}
-
-	logging.Logger.Info().
-		Int("count", len(successfulResults)).
-		Bool("runIT", flags.RunTestsIT).
-		Bool("runE2E", flags.RunTestsE2E).
-		Msg("Starting test execution against deployed scenarios")
-
-	// Resolve the scripts directory
-	scriptsDir, err := resolveScriptsDir(flags)
-	if err != nil {
-		return fmt.Errorf("failed to resolve scripts directory: %w", err)
-	}
-
-	var testResults []*ScenarioTestResult
-
-	// Run tests sequentially against each deployment
-	for _, result := range successfulResults {
-		logging.Logger.Info().
-			Str("scenario", result.Scenario).
-			Str("namespace", result.Namespace).
-			Msg("Running tests against deployment")
-
-		// Run integration tests if requested
-		if flags.RunTestsIT {
-			logging.Logger.Info().
-				Str("scenario", result.Scenario).
-				Str("namespace", result.Namespace).
-				Msg("Running integration tests")
-
-			err := executeIntegrationTests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.Platform, flags.KubeContext)
-			testResults = append(testResults, &ScenarioTestResult{
-				Scenario:  result.Scenario,
-				Namespace: result.Namespace,
-				TestType:  "integration",
-				Error:     err,
-			})
-
-			if err != nil {
-				logging.Logger.Error().
-					Err(err).
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("Integration tests failed")
-			} else {
-				logging.Logger.Info().
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("Integration tests passed")
-			}
-		}
-
-		// Run e2e tests if requested
-		if flags.RunTestsE2E {
-			logging.Logger.Info().
-				Str("scenario", result.Scenario).
-				Str("namespace", result.Namespace).
-				Msg("Running e2e tests")
-
-			err := executeE2ETests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.KubeContext)
-			testResults = append(testResults, &ScenarioTestResult{
-				Scenario:  result.Scenario,
-				Namespace: result.Namespace,
-				TestType:  "e2e",
-				Error:     err,
-			})
-
-			if err != nil {
-				logging.Logger.Error().
-					Err(err).
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("E2E tests failed")
-			} else {
-				logging.Logger.Info().
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("E2E tests passed")
-			}
-		}
-	}
-
-	// Print test summary
-	printTestSummary(testResults)
-
-	// Check if any tests failed
-	var failedTests []string
-	for _, tr := range testResults {
-		if tr.Error != nil {
-			failedTests = append(failedTests, fmt.Sprintf("%s/%s (%s)", tr.Scenario, tr.Namespace, tr.TestType))
-		}
-	}
-
-	if len(failedTests) > 0 {
-		return fmt.Errorf("tests failed for: %s", strings.Join(failedTests, ", "))
-	}
-
-	return nil
-}
-
-// resolveScriptsDir determines the path to the scripts directory.
-func resolveScriptsDir(flags *config.RuntimeFlags) (string, error) {
-	// If repoRoot is set, use it directly
-	if flags.RepoRoot != "" {
-		scriptsDir := filepath.Join(flags.RepoRoot, "scripts")
-		if _, err := os.Stat(scriptsDir); err == nil {
-			return scriptsDir, nil
-		}
-	}
-
-	// Try to find scripts relative to chart path
-	// Charts are typically at <repo>/charts/<chart-name> or just <repo>/<chart-name>
-	chartPath := flags.ChartPath
-	if chartPath != "" {
-		// Try going up from chart path to find scripts directory
-		// e.g., /path/to/repo/charts/camunda-platform-8.7 -> /path/to/repo/scripts
-		for i := 0; i < 4; i++ {
-			parentDir := chartPath
-			for j := 0; j < i; j++ {
-				parentDir = filepath.Dir(parentDir)
-			}
-			scriptsDir := filepath.Join(parentDir, "scripts")
-			if _, err := os.Stat(scriptsDir); err == nil {
-				// Verify it's the right scripts directory by checking for our test scripts
-				itScript := filepath.Join(scriptsDir, "run-integration-tests.sh")
-				e2eScript := filepath.Join(scriptsDir, "run-e2e-tests.sh")
-				if _, err := os.Stat(itScript); err == nil {
-					if _, err := os.Stat(e2eScript); err == nil {
-						return scriptsDir, nil
-					}
-				}
-			}
-		}
-	}
-
-	// Fall back to current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
-	scriptsDir := filepath.Join(cwd, "scripts")
-	if _, err := os.Stat(scriptsDir); err == nil {
-		return scriptsDir, nil
-	}
-
-	return "", fmt.Errorf("could not find scripts directory; set --repo-root or run from repository root")
-}
-
-// executeIntegrationTests runs the integration test script against a deployment.
-func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespace, platform, kubeContext string) error {
-	scriptPath := filepath.Join(scriptsDir, "run-integration-tests.sh")
-
-	// Verify script exists
-	if _, err := os.Stat(scriptPath); err != nil {
-		return fmt.Errorf("integration test script not found at %s: %w", scriptPath, err)
-	}
-
-	// Resolve absolute chart path
-	absChartPath, err := filepath.Abs(chartPath)
-	if err != nil {
-		return fmt.Errorf("failed to resolve absolute chart path: %w", err)
-	}
-
-	logging.Logger.Debug().
-		Str("script", scriptPath).
-		Str("chartPath", absChartPath).
-		Str("namespace", namespace).
-		Str("platform", platform).
-		Str("kubeContext", kubeContext).
-		Msg("Executing integration tests")
-
-	// Build command arguments
-	args := []string{
-		"--absolute-chart-path", absChartPath,
-		"--namespace", namespace,
-		"--platform", platform,
-	}
-
-	// Add kube-context if specified
-	if kubeContext != "" {
-		args = append(args, "--kube-context", kubeContext)
-	}
-
-	// Build command
-	cmd := exec.CommandContext(ctx, scriptPath, args...)
-
-	// Set working directory to scripts dir
-	cmd.Dir = scriptsDir
-
-	// Stream output to logger
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// Run the command
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("integration tests exited with code %d", exitErr.ExitCode())
-		}
-		return fmt.Errorf("failed to run integration tests: %w", err)
-	}
-
-	return nil
-}
-
-// executeE2ETests runs the e2e test script against a deployment.
-func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace, kubeContext string) error {
-	scriptPath := filepath.Join(scriptsDir, "run-e2e-tests.sh")
-
-	// Verify script exists
-	if _, err := os.Stat(scriptPath); err != nil {
-		return fmt.Errorf("e2e test script not found at %s: %w", scriptPath, err)
-	}
-
-	// Resolve absolute chart path
-	absChartPath, err := filepath.Abs(chartPath)
-	if err != nil {
-		return fmt.Errorf("failed to resolve absolute chart path: %w", err)
-	}
-
-	logging.Logger.Debug().
-		Str("script", scriptPath).
-		Str("chartPath", absChartPath).
-		Str("namespace", namespace).
-		Str("kubeContext", kubeContext).
-		Msg("Executing e2e tests")
-
-	// Build command arguments
-	args := []string{
-		"--absolute-chart-path", absChartPath,
-		"--namespace", namespace,
-	}
-
-	// Add kube-context if specified
-	if kubeContext != "" {
-		args = append(args, "--kube-context", kubeContext)
-	}
-
-	// Build command
-	cmd := exec.CommandContext(ctx, scriptPath, args...)
-
-	// Set working directory to scripts dir
-	cmd.Dir = scriptsDir
-
-	// Stream output to logger
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// Run the command
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("e2e tests exited with code %d", exitErr.ExitCode())
-		}
-		return fmt.Errorf("failed to run e2e tests: %w", err)
-	}
-
-	return nil
-}
-
-// printTestSummary outputs a summary of all test results.
-func printTestSummary(results []*ScenarioTestResult) {
-	if len(results) == 0 {
-		return
-	}
-
-	passCount := 0
-	failCount := 0
-	for _, r := range results {
-		if r.Error == nil {
-			passCount++
-		} else {
-			failCount++
-		}
-	}
-
-	if !logging.IsTerminal(os.Stdout.Fd()) {
-		// Plain, machine-friendly output
-		var out strings.Builder
-		fmt.Fprintf(&out, "\ntest execution: completed\n")
-		fmt.Fprintf(&out, "total tests: %d\n", len(results))
-		fmt.Fprintf(&out, "passed: %d\n", passCount)
-		fmt.Fprintf(&out, "failed: %d\n", failCount)
-		fmt.Fprintf(&out, "\ntest results:\n")
-		for _, r := range results {
-			status := "passed"
-			if r.Error != nil {
-				status = "failed"
-			}
-			fmt.Fprintf(&out, "- scenario: %s\n", r.Scenario)
-			fmt.Fprintf(&out, "  namespace: %s\n", r.Namespace)
-			fmt.Fprintf(&out, "  type: %s\n", r.TestType)
-			fmt.Fprintf(&out, "  status: %s\n", status)
-			if r.Error != nil {
-				fmt.Fprintf(&out, "  error: %v\n", r.Error)
-			}
-		}
-		logging.Logger.Info().Msg(out.String())
-		return
-	}
-
-	// Pretty, human-friendly output
-	styleOk := func(s string) string { return logging.Emphasize(s, gchalk.Green) }
-	styleErr := func(s string) string { return logging.Emphasize(s, gchalk.Red) }
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleWarn := func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
-
-	var out strings.Builder
-	out.WriteString("\n")
-
-	if failCount == 0 {
-		out.WriteString(styleOk("✅ All tests passed!"))
-	} else if passCount == 0 {
-		out.WriteString(styleErr("❌ All tests failed"))
-	} else {
-		out.WriteString(styleWarn(fmt.Sprintf("⚠️  Partial success: %d/%d tests passed", passCount, len(results))))
-	}
-	out.WriteString("\n\n")
-
-	out.WriteString(styleHead("Test Summary"))
-	out.WriteString("\n")
-	fmt.Fprintf(&out, "  Total: %s\n", styleVal(fmt.Sprintf("%d", len(results))))
-	fmt.Fprintf(&out, "  Passed: %s\n", styleOk(fmt.Sprintf("%d", passCount)))
-	if failCount > 0 {
-		fmt.Fprintf(&out, "  Failed: %s\n", styleErr(fmt.Sprintf("%d", failCount)))
-	}
-	out.WriteString("\n")
-
-	// Details per test
-	for _, r := range results {
-		if r.Error != nil {
-			fmt.Fprintf(&out, "  %s %s/%s (%s)\n", styleErr("❌"), r.Scenario, r.Namespace, r.TestType)
-			fmt.Fprintf(&out, "     Error: %s\n", styleErr(r.Error.Error()))
-		} else {
-			fmt.Fprintf(&out, "  %s %s/%s (%s)\n", styleOk("✓"), r.Scenario, r.Namespace, r.TestType)
-		}
-	}
-
-	logging.Logger.Info().Msg(out.String())
+	// Strip the "keycloak-" prefix if present.
+	version := strings.TrimPrefix(subdomain, "keycloak-")
+	// Replace hyphens with underscores for env var safety.
+	return strings.ReplaceAll(version, "-", "_")
 }

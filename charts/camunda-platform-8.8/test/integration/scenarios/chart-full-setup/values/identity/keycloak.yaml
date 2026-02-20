@@ -1,0 +1,93 @@
+# Keycloak auth configuration for 8.8
+# Layer 2: Auth method - Internal Keycloak
+
+global:
+  identity:
+    auth:
+      enabled: true
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        existingSecret:
+          name: "integration-test-credentials"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        existingSecret:
+          name: "integration-test-credentials"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        existingSecret:
+          name: "integration-test-credentials"
+
+identity:
+  firstUser:
+    existingSecret: "integration-test-credentials"
+    existingSecretKey: "identity-user-password"
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+
+identityKeycloak:
+  enabled: true
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
+
+connectors:
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        existingSecret:
+          name: "integration-test-credentials"
+
+webModeler:
+  security:
+    authentication:
+      method: oidc
+
+orchestration:
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        existingSecret:
+          name: "integration-test-credentials"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
