@@ -1,4 +1,4 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if (and .Values.webModeler.enabled (not .Values.webModeler.simplifiedDeploymentEnabled)) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -1345,6 +1345,8 @@ console:
 webModeler:
   ## @param webModeler.enabled if true, the WebModeler deployment and its related resources are deployed via a helm release
   enabled: false
+  ## @param webModeler.simplifiedDeploymentEnabled if true, the new simplified deployment without a separate webapp component will be used
+  simplifiedDeploymentEnabled: false
 
   ## @param webModeler.fullnameOverride can be used to override the full name of the WebModeler resources
   fullnameOverride: ""

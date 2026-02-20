@@ -31,9 +31,15 @@ spec:
         type: PathPrefix
         value: {{ .Values.webModeler.contextPath }}
     backendRefs:
+    {{- if .Values.webModeler.simplifiedDeploymentEnabled }}
+    - name: {{ template "webModeler.restapi.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.webModeler.restapi.service.port }}
+    {{- else }}
     - name: {{ template "webModeler.webapp.fullname" . }}
       namespace: {{ .Release.Namespace }}
       port: {{ .Values.webModeler.webapp.service.port }}
+    {{- end }}
   - matches:
     - path:
         type: PathPrefix

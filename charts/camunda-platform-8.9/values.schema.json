@@ -2669,6 +2669,11 @@
                     "description": "if true, the WebModeler deployment and its related resources are deployed via a helm release",
                     "default": false
                 },
+                "simplifiedDeploymentEnabled": {
+                    "type": "boolean",
+                    "description": "if true, the new simplified deployment without a separate webapp component will be used",
+                    "default": false
+                },
                 "fullnameOverride": {
                     "type": "string",
                     "description": "can be used to override the full name of the WebModeler resources",

@@ -1,4 +1,4 @@
-{{- if (and .Values.webModeler.enabled (not .Values.webModeler.simplifiedDeploymentEnabled)) -}}
+{{- if (and .Values.webModeler.enabled .Values.webModeler.simplifiedDeploymentEnabled) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -114,7 +114,7 @@ spec:
           {{- if .Values.webModeler.restapi.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.webModeler.restapi.startupProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.startupProbe.probePath) }}
               scheme: {{ .Values.webModeler.restapi.startupProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
@@ -126,7 +126,7 @@ spec:
           {{- if .Values.webModeler.restapi.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.webModeler.restapi.readinessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.readinessProbe.probePath) }}
               scheme: {{ .Values.webModeler.restapi.readinessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
@@ -138,7 +138,7 @@ spec:
           {{- if .Values.webModeler.restapi.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.webModeler.restapi.livenessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.livenessProbe.probePath) }}
               scheme: {{ .Values.webModeler.restapi.livenessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}

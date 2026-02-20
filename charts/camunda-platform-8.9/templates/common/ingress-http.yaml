@@ -58,9 +58,15 @@ spec:
           {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
           - backend:
               service:
+                {{- if .Values.webModeler.simplifiedDeploymentEnabled }}
+                name: {{ template "webModeler.restapi.fullname" . }}
+                port:
+                  number: {{ .Values.webModeler.restapi.service.port }}
+                {{- else }}
                 name: {{ template "webModeler.webapp.fullname" . }}
                 port:
                   number: {{ .Values.webModeler.webapp.service.port }}
+                {{- end }}
             path: {{ .Values.webModeler.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           - backend:

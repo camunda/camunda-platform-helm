@@ -15,6 +15,7 @@ spec:
       path: {{ .Values.webModeler.restapi.metrics.prometheus }}
       port: http-management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{ if (not .Values.webModeler.simplifiedDeploymentEnabled) -}}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -32,4 +33,5 @@ spec:
       path: {{ .Values.webModeler.webapp.metrics.prometheus }}
       port: http-management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}
 {{- end }}
