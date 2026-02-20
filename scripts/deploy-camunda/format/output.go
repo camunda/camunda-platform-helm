@@ -12,10 +12,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Style helpers for terminal output.
+var (
+	styleKey  = func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
+	styleVal  = func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
+	styleHead = func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+)
+
 // PrintFlags logs all CLI flags in a formatted, colored style.
 func PrintFlags(flags *pflag.FlagSet) {
-	styleKey := func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
 	stylePwd := func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
 	styleBool := func(s string) string {
 		if strings.EqualFold(s, "true") || s == "1" {
@@ -23,8 +28,6 @@ func PrintFlags(flags *pflag.FlagSet) {
 		}
 		return logging.Emphasize("false", gchalk.Red)
 	}
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-
 	var b strings.Builder
 	b.WriteString(styleHead("Starting deployment with flags:"))
 	b.WriteString("\n")
@@ -70,12 +73,12 @@ func maskIfSet(val string) string {
 
 // PrintDeploymentConfig displays a deployment configuration.
 func PrintDeploymentConfig(name string, dep config.DeploymentConfig, root config.RootConfig) error {
-	chartStr := firstNonEmpty(dep.Chart, "")
-	versionStr := firstNonEmpty(dep.Version, "")
-	scenarioStr := firstNonEmpty(dep.Scenario, "")
-	repoRootStr := firstNonEmpty(dep.RepoRoot, root.RepoRoot)
-	scenarioRootStr := firstNonEmpty(dep.ScenarioRoot, root.ScenarioRoot)
-	valuesPresetStr := firstNonEmpty(dep.ValuesPreset, root.ValuesPreset)
+	chartStr := config.FirstNonEmpty(dep.Chart, "")
+	versionStr := config.FirstNonEmpty(dep.Version, "")
+	scenarioStr := config.FirstNonEmpty(dep.Scenario, "")
+	repoRootStr := config.FirstNonEmpty(dep.RepoRoot, root.RepoRoot)
+	scenarioRootStr := config.FirstNonEmpty(dep.ScenarioRoot, root.ScenarioRoot)
+	valuesPresetStr := config.FirstNonEmpty(dep.ValuesPreset, root.ValuesPreset)
 	platformStr := root.Platform
 	logLevelStr := root.LogLevel
 
@@ -101,10 +104,6 @@ func PrintDeploymentConfig(name string, dep config.DeploymentConfig, root config
 	}
 
 	// Pretty, colored terminal output
-	styleKey := func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-
 	type kv struct{ k, v string }
 	rows := []kv{
 		{"name", name},
@@ -132,14 +131,4 @@ func PrintDeploymentConfig(name string, dep config.DeploymentConfig, root config
 	}
 	fmt.Fprint(os.Stdout, b.String())
 	return nil
-}
-
-// firstNonEmpty returns the first non-empty string.
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
 }

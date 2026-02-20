@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -73,6 +74,23 @@ func NewRootCommand() *cobra.Command {
 				}
 			}
 
+			// Setup logging early so that config loading and validation can use it.
+			if err := logging.Setup(logging.Options{
+				LevelString:  flags.LogLevel,
+				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
+			}); err != nil {
+				return err
+			}
+
+			// Record which flags the user explicitly set on the CLI, so that
+			// config-file merging does not overwrite them. This is critical for
+			// boolean flags like --skip-dependency-update where the zero value
+			// (false) is a valid explicit choice.
+			flags.ChangedFlags = make(map[string]bool)
+			cmd.Flags().Visit(func(f *pflag.Flag) {
+				flags.ChangedFlags[f.Name] = true
+			})
+
 			// Load config and merge with flags first to get envFile from config
 			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {
 				return err
@@ -121,14 +139,6 @@ func NewRootCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Setup logging
-			if err := logging.Setup(logging.Options{
-				LevelString:  flags.LogLevel,
-				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
-			}); err != nil {
-				return err
-			}
-
 			// Log flags
 			format.PrintFlags(cmd.Flags())
 
@@ -156,8 +166,8 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.SkipDependencyUpdate, "skip-dependency-update", true, "Skip Helm dependency update")
 	f.BoolVar(&flags.ExternalSecrets, "external-secrets", true, "Enable external secrets")
 	f.StringVar(&flags.ExternalSecretsStore, "external-secrets-store", "", "External secrets store type (e.g., vault-backend)")
-	f.StringVar(&flags.KeycloakHost, "keycloak-host", "keycloak-24-9-0.ci.distro.ultrawombat.com", "Keycloak external host")
-	f.StringVar(&flags.KeycloakProtocol, "keycloak-protocol", "https", "Keycloak protocol")
+	f.StringVar(&flags.KeycloakHost, "keycloak-host", config.DefaultKeycloakHost, "Keycloak external host")
+	f.StringVar(&flags.KeycloakProtocol, "keycloak-protocol", config.DefaultKeycloakProtocol, "Keycloak protocol")
 	f.StringVar(&flags.KeycloakRealm, "keycloak-realm", "", "Keycloak realm name (auto-generated if not specified)")
 	f.StringVar(&flags.OptimizeIndexPrefix, "optimize-index-prefix", "", "Optimize Elasticsearch index prefix (auto-generated if not specified)")
 	f.StringVar(&flags.OrchestrationIndexPrefix, "orchestration-index-prefix", "", "Orchestration Elasticsearch index prefix (auto-generated if not specified)")
@@ -193,8 +203,6 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
 	f.StringVar(&flags.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
 	f.BoolVar(&flags.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
-	f.BoolVar(&flags.RunTestsIT, "run-tests-it", false, "Run integration tests after deployment (runs against each deployed scenario)")
-	f.BoolVar(&flags.RunTestsE2E, "run-tests-e2e", false, "Run e2e tests after deployment (runs against each deployed scenario)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
 	f.StringVar(&flags.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
 	f.StringVar(&flags.Persistence, "persistence", "", "Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle")
@@ -257,56 +265,19 @@ func registerScenarioCompletion(cmd *cobra.Command, flagName string) {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		// Handle comma-separated multi-select
-		// Parse already selected scenarios and filter them out
-		var prefix string
-		var alreadySelected []string
-		if idx := strings.LastIndex(toComplete, ","); idx >= 0 {
-			prefix = toComplete[:idx+1]
-			alreadySelected = strings.Split(toComplete[:idx], ",")
-		}
-
-		// Build set of already selected scenarios for fast lookup
-		selected := make(map[string]bool)
-		for _, s := range alreadySelected {
-			selected[strings.TrimSpace(s)] = true
-		}
-
-		// Filter out already selected and prepend prefix
-		var completions []string
-		for _, s := range list {
-			if !selected[s] {
-				completions = append(completions, prefix+s)
-			}
-		}
-
-		// Use NoSpace directive to allow continuing with comma for multi-select
-		return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+		return completeMultiSelect(toComplete, list)
 	})
 }
 
 // registerKubeContextCompletion adds tab completion for the --kube-context flag.
 func registerKubeContextCompletion(cmd *cobra.Command) {
-	_ = cmd.RegisterFlagCompletionFunc("kube-context", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		contexts, err := getKubeContexts()
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		var completions []string
-		for _, ctx := range contexts {
-			if toComplete == "" || strings.HasPrefix(ctx, toComplete) {
-				completions = append(completions, ctx)
-			}
-		}
-		return completions, cobra.ShellCompDirectiveNoFileComp
-	})
+	registerKubeContextCompletionForFlag(cmd, "kube-context")
 }
 
 // registerPlatformCompletion adds tab completion for the --platform flag.
 func registerPlatformCompletion(cmd *cobra.Command) {
 	_ = cmd.RegisterFlagCompletionFunc("platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		platforms := []string{"gke", "eks", "rosa"}
+		platforms := config.DeployPlatforms
 		var completions []string
 		for _, p := range platforms {
 			if toComplete == "" || strings.HasPrefix(p, toComplete) {
@@ -347,6 +318,32 @@ func getKubeContexts() ([]string, error) {
 	return contexts, nil
 }
 
+// completeMultiSelect handles comma-separated multi-select tab completion.
+// It parses already-selected items from toComplete, filters them from the
+// available list, and prepends the existing prefix so the shell appends correctly.
+func completeMultiSelect(toComplete string, available []string) ([]string, cobra.ShellCompDirective) {
+	var prefix string
+	var alreadySelected []string
+	if idx := strings.LastIndex(toComplete, ","); idx >= 0 {
+		prefix = toComplete[:idx+1]
+		alreadySelected = strings.Split(toComplete[:idx], ",")
+	}
+
+	selected := make(map[string]bool)
+	for _, s := range alreadySelected {
+		selected[strings.TrimSpace(s)] = true
+	}
+
+	var completions []string
+	for _, item := range available {
+		if !selected[item] {
+			completions = append(completions, prefix+item)
+		}
+	}
+
+	return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+}
+
 // registerSelectionCompletion adds tab completion for the new selection + composition flags.
 func registerSelectionCompletion(cmd *cobra.Command) {
 	// Identity completion
@@ -384,7 +381,7 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Test platform completion
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPlatforms := []string{"gke", "eks", "openshift"}
+		defaultPlatforms := config.TestPlatforms
 
 		if scenarioPath == "" {
 			return defaultPlatforms, cobra.ShellCompDirectiveNoFileComp
@@ -413,27 +410,7 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 			features = defaultFeatures
 		}
 
-		// Handle comma-separated multi-select
-		var prefix string
-		var alreadySelected []string
-		if idx := strings.LastIndex(toComplete, ","); idx >= 0 {
-			prefix = toComplete[:idx+1]
-			alreadySelected = strings.Split(toComplete[:idx], ",")
-		}
-
-		selected := make(map[string]bool)
-		for _, s := range alreadySelected {
-			selected[strings.TrimSpace(s)] = true
-		}
-
-		var completions []string
-		for _, f := range features {
-			if !selected[f] {
-				completions = append(completions, prefix+f)
-			}
-		}
-
-		return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+		return completeMultiSelect(toComplete, features)
 	})
 }
 
@@ -482,27 +459,7 @@ func registerLayeredValuesCompletion(cmd *cobra.Command) {
 			return defaultFeatures, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		// Handle comma-separated multi-select
-		var prefix string
-		var alreadySelected []string
-		if idx := strings.LastIndex(toComplete, ","); idx >= 0 {
-			prefix = toComplete[:idx+1]
-			alreadySelected = strings.Split(toComplete[:idx], ",")
-		}
-
-		selected := make(map[string]bool)
-		for _, s := range alreadySelected {
-			selected[strings.TrimSpace(s)] = true
-		}
-
-		var completions []string
-		for _, f := range features {
-			if !selected[f] {
-				completions = append(completions, prefix+f)
-			}
-		}
-
-		return completions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+		return completeMultiSelect(toComplete, features)
 	})
 
 	// Infra types completion

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"hash/fnv"
 	"math/big"
 	"os"
 	"os/exec"
@@ -23,6 +24,16 @@ import (
 	"time"
 
 	"github.com/jwalton/gchalk"
+)
+
+// Style helpers for terminal output.
+var (
+	styleKey  = func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
+	styleVal  = func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
+	styleOk   = func(s string) string { return logging.Emphasize(s, gchalk.Green) }
+	styleErr  = func(s string) string { return logging.Emphasize(s, gchalk.Red) }
+	styleHead = func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+	styleWarn = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
 )
 
 // ScenarioContext holds scenario-specific deployment configuration.
@@ -378,7 +389,10 @@ func generateRandomSuffix() string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, 8)
 	for i := range result {
-		num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			panic(fmt.Sprintf("crypto/rand failed: %v", err))
+		}
 		result[i] = chars[num.Int64()]
 	}
 	return string(result)
@@ -406,10 +420,9 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 
 	// Create a short hash from the full identifier for uniqueness
 	fullId := fmt.Sprintf("%s-%s-%s", namespace, scenario, suffix)
-	hash := fmt.Sprintf("%x", big.NewInt(0).SetBytes([]byte(fullId)).Int64())
-	if len(hash) > 8 {
-		hash = hash[:8]
-	}
+	h := fnv.New32a()
+	h.Write([]byte(fullId))
+	hash := fmt.Sprintf("%08x", h.Sum32())
 
 	result := fmt.Sprintf("%s-%s", scenario, hash)
 
@@ -484,13 +497,6 @@ func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName str
 	config.Flow = flags.Flow
 
 	return config
-}
-
-// buildLayeredConfigFromFlags creates a LayeredConfig from RuntimeFlags if explicit flags are set.
-// Deprecated: Use buildDeploymentConfigFromFlags instead.
-// Returns nil if no explicit layered flags are set (use auto-detection from scenario name).
-func buildLayeredConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) *scenarios.LayeredConfig {
-	return buildDeploymentConfigFromFlags(flags, scenarioName)
 }
 
 // enhanceScenarioError wraps scenario resolution errors with helpful context.
@@ -969,7 +975,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 
 	// Set Keycloak environment variables
 	if flags.KeycloakHost != "" {
-		kcVersionSafe := "24_9_0"
+		kcVersionSafe := keycloakVersionSuffix(flags.KeycloakHost)
 		kcHostVar := fmt.Sprintf("KEYCLOAK_EXT_HOST_%s", kcVersionSafe)
 		kcProtoVar := fmt.Sprintf("KEYCLOAK_EXT_PROTOCOL_%s", kcVersionSafe)
 		os.Setenv(kcHostVar, flags.KeycloakHost)
@@ -1394,7 +1400,10 @@ func generateTestSecrets(envFile string) error {
 		const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		result := make([]byte, 32)
 		for i := range result {
-			num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+			num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+			if err != nil {
+				panic(fmt.Sprintf("crypto/rand failed: %v", err))
+			}
 			result[i] = chars[num.Int64()]
 		}
 		return string(result)
@@ -1555,11 +1564,6 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 	}
 
 	// Pretty, human-friendly output
-	styleKey := func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleOk := func(s string) string { return logging.Emphasize(s, gchalk.Green) }
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-
 	var out strings.Builder
 	out.WriteString(styleOk("🎉 Deployment completed successfully"))
 	out.WriteString("\n\n")
@@ -1687,13 +1691,6 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 	}
 
 	// Pretty, human-friendly output
-	styleKey := func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleOk := func(s string) string { return logging.Emphasize(s, gchalk.Green) }
-	styleErr := func(s string) string { return logging.Emphasize(s, gchalk.Red) }
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-	styleWarn := func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
-
 	var out strings.Builder
 	if failureCount == 0 {
 		out.WriteString(styleOk("🎉 All scenarios deployed successfully!"))
@@ -1785,375 +1782,20 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 	logging.Logger.Info().Msg(out.String())
 }
 
-// ScenarioTestResult holds the result of a test execution for a scenario.
-type ScenarioTestResult struct {
-	Scenario  string
-	Namespace string
-	TestType  string // "integration" or "e2e"
-	Error     error
-}
-
-// runTests executes integration and/or e2e tests against all successful deployments.
-// Tests run sequentially against each deployment to avoid resource contention.
-func runTests(ctx context.Context, flags *config.RuntimeFlags, results []*ScenarioResult) error {
-	// Filter to only successful deployments
-	var successfulResults []*ScenarioResult
-	for _, r := range results {
-		if r.Error == nil {
-			successfulResults = append(successfulResults, r)
-		}
+// keycloakVersionSuffix extracts a version suffix from a Keycloak hostname.
+// For example, "keycloak-24-9-0.ci.distro.ultrawombat.com" → "24_9_0".
+// The hostname is expected to have the form "keycloak-<version>.<domain>",
+// where <version> uses hyphens that are replaced with underscores.
+// If the hostname does not match this pattern, the full hostname (with
+// dots and hyphens replaced by underscores) is returned as a safe fallback.
+func keycloakVersionSuffix(host string) string {
+	// Take everything before the first dot (the subdomain).
+	subdomain := host
+	if idx := strings.Index(host, "."); idx >= 0 {
+		subdomain = host[:idx]
 	}
-
-	if len(successfulResults) == 0 {
-		logging.Logger.Warn().Msg("No successful deployments to run tests against")
-		return nil
-	}
-
-	logging.Logger.Info().
-		Int("count", len(successfulResults)).
-		Bool("runIT", flags.RunTestsIT).
-		Bool("runE2E", flags.RunTestsE2E).
-		Msg("Starting test execution against deployed scenarios")
-
-	// Resolve the scripts directory
-	scriptsDir, err := resolveScriptsDir(flags)
-	if err != nil {
-		return fmt.Errorf("failed to resolve scripts directory: %w", err)
-	}
-
-	var testResults []*ScenarioTestResult
-
-	// Run tests sequentially against each deployment
-	for _, result := range successfulResults {
-		logging.Logger.Info().
-			Str("scenario", result.Scenario).
-			Str("namespace", result.Namespace).
-			Msg("Running tests against deployment")
-
-		// Run integration tests if requested
-		if flags.RunTestsIT {
-			logging.Logger.Info().
-				Str("scenario", result.Scenario).
-				Str("namespace", result.Namespace).
-				Msg("Running integration tests")
-
-			err := executeIntegrationTests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.Platform, flags.KubeContext, flags.TestExclude)
-			testResults = append(testResults, &ScenarioTestResult{
-				Scenario:  result.Scenario,
-				Namespace: result.Namespace,
-				TestType:  "integration",
-				Error:     err,
-			})
-
-			if err != nil {
-				logging.Logger.Error().
-					Err(err).
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("Integration tests failed")
-			} else {
-				logging.Logger.Info().
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("Integration tests passed")
-			}
-		}
-
-		// Run e2e tests if requested
-		if flags.RunTestsE2E {
-			logging.Logger.Info().
-				Str("scenario", result.Scenario).
-				Str("namespace", result.Namespace).
-				Msg("Running e2e tests")
-
-			err := executeE2ETests(ctx, scriptsDir, flags.ChartPath, result.Namespace, flags.KubeContext, flags.TestExclude)
-			testResults = append(testResults, &ScenarioTestResult{
-				Scenario:  result.Scenario,
-				Namespace: result.Namespace,
-				TestType:  "e2e",
-				Error:     err,
-			})
-
-			if err != nil {
-				logging.Logger.Error().
-					Err(err).
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("E2E tests failed")
-			} else {
-				logging.Logger.Info().
-					Str("scenario", result.Scenario).
-					Str("namespace", result.Namespace).
-					Msg("E2E tests passed")
-			}
-		}
-	}
-
-	// Print test summary
-	printTestSummary(testResults)
-
-	// Check if any tests failed
-	var failedTests []string
-	for _, tr := range testResults {
-		if tr.Error != nil {
-			failedTests = append(failedTests, fmt.Sprintf("%s/%s (%s)", tr.Scenario, tr.Namespace, tr.TestType))
-		}
-	}
-
-	if len(failedTests) > 0 {
-		return fmt.Errorf("tests failed for: %s", strings.Join(failedTests, ", "))
-	}
-
-	return nil
-}
-
-// resolveScriptsDir determines the path to the scripts directory.
-func resolveScriptsDir(flags *config.RuntimeFlags) (string, error) {
-	// If repoRoot is set, use it directly
-	if flags.RepoRoot != "" {
-		scriptsDir := filepath.Join(flags.RepoRoot, "scripts")
-		if _, err := os.Stat(scriptsDir); err == nil {
-			return scriptsDir, nil
-		}
-	}
-
-	// Try to find scripts relative to chart path
-	// Charts are typically at <repo>/charts/<chart-name> or just <repo>/<chart-name>
-	chartPath := flags.ChartPath
-	if chartPath != "" {
-		// Try going up from chart path to find scripts directory
-		// e.g., /path/to/repo/charts/camunda-platform-8.7 -> /path/to/repo/scripts
-		for i := 0; i < 4; i++ {
-			parentDir := chartPath
-			for j := 0; j < i; j++ {
-				parentDir = filepath.Dir(parentDir)
-			}
-			scriptsDir := filepath.Join(parentDir, "scripts")
-			if _, err := os.Stat(scriptsDir); err == nil {
-				// Verify it's the right scripts directory by checking for our test scripts
-				itScript := filepath.Join(scriptsDir, "run-integration-tests.sh")
-				e2eScript := filepath.Join(scriptsDir, "run-e2e-tests.sh")
-				if _, err := os.Stat(itScript); err == nil {
-					if _, err := os.Stat(e2eScript); err == nil {
-						return scriptsDir, nil
-					}
-				}
-			}
-		}
-	}
-
-	// Fall back to current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
-	scriptsDir := filepath.Join(cwd, "scripts")
-	if _, err := os.Stat(scriptsDir); err == nil {
-		return scriptsDir, nil
-	}
-
-	return "", fmt.Errorf("could not find scripts directory; set --repo-root or run from repository root")
-}
-
-// executeIntegrationTests runs the integration test script against a deployment.
-func executeIntegrationTests(ctx context.Context, scriptsDir, chartPath, namespace, platform, kubeContext, testExclude string) error {
-	scriptPath := filepath.Join(scriptsDir, "run-integration-tests.sh")
-
-	// Verify script exists
-	if _, err := os.Stat(scriptPath); err != nil {
-		return fmt.Errorf("integration test script not found at %s: %w", scriptPath, err)
-	}
-
-	// Resolve absolute chart path
-	absChartPath, err := filepath.Abs(chartPath)
-	if err != nil {
-		return fmt.Errorf("failed to resolve absolute chart path: %w", err)
-	}
-
-	logging.Logger.Debug().
-		Str("script", scriptPath).
-		Str("chartPath", absChartPath).
-		Str("namespace", namespace).
-		Str("platform", platform).
-		Str("kubeContext", kubeContext).
-		Msg("Executing integration tests")
-
-	// Build command arguments
-	args := []string{
-		"--absolute-chart-path", absChartPath,
-		"--namespace", namespace,
-		"--platform", platform,
-	}
-
-	// Add kube-context if specified
-	if kubeContext != "" {
-		args = append(args, "--kube-context", kubeContext)
-	}
-
-	// Add test-exclude if specified
-	if testExclude != "" {
-		args = append(args, "--test-exclude", testExclude)
-	}
-
-	// Build command
-	cmd := exec.CommandContext(ctx, scriptPath, args...)
-
-	// Set working directory to scripts dir
-	cmd.Dir = scriptsDir
-
-	// Stream output to logger
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// Run the command
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("integration tests exited with code %d", exitErr.ExitCode())
-		}
-		return fmt.Errorf("failed to run integration tests: %w", err)
-	}
-
-	return nil
-}
-
-// executeE2ETests runs the e2e test script against a deployment.
-func executeE2ETests(ctx context.Context, scriptsDir, chartPath, namespace, kubeContext, testExclude string) error {
-	scriptPath := filepath.Join(scriptsDir, "run-e2e-tests.sh")
-
-	// Verify script exists
-	if _, err := os.Stat(scriptPath); err != nil {
-		return fmt.Errorf("e2e test script not found at %s: %w", scriptPath, err)
-	}
-
-	// Resolve absolute chart path
-	absChartPath, err := filepath.Abs(chartPath)
-	if err != nil {
-		return fmt.Errorf("failed to resolve absolute chart path: %w", err)
-	}
-
-	logging.Logger.Debug().
-		Str("script", scriptPath).
-		Str("chartPath", absChartPath).
-		Str("namespace", namespace).
-		Str("kubeContext", kubeContext).
-		Msg("Executing e2e tests")
-
-	// Build command arguments
-	args := []string{
-		"--absolute-chart-path", absChartPath,
-		"--namespace", namespace,
-	}
-
-	// Add kube-context if specified
-	if kubeContext != "" {
-		args = append(args, "--kube-context", kubeContext)
-	}
-
-	// Add test-exclude if specified
-	if testExclude != "" {
-		args = append(args, "--test-exclude", testExclude)
-	}
-
-	// Build command
-	cmd := exec.CommandContext(ctx, scriptPath, args...)
-
-	// Set working directory to scripts dir
-	cmd.Dir = scriptsDir
-
-	// Stream output to logger
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// Run the command
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("e2e tests exited with code %d", exitErr.ExitCode())
-		}
-		return fmt.Errorf("failed to run e2e tests: %w", err)
-	}
-
-	return nil
-}
-
-// printTestSummary outputs a summary of all test results.
-func printTestSummary(results []*ScenarioTestResult) {
-	if len(results) == 0 {
-		return
-	}
-
-	passCount := 0
-	failCount := 0
-	for _, r := range results {
-		if r.Error == nil {
-			passCount++
-		} else {
-			failCount++
-		}
-	}
-
-	if !logging.IsTerminal(os.Stdout.Fd()) {
-		// Plain, machine-friendly output
-		var out strings.Builder
-		fmt.Fprintf(&out, "\ntest execution: completed\n")
-		fmt.Fprintf(&out, "total tests: %d\n", len(results))
-		fmt.Fprintf(&out, "passed: %d\n", passCount)
-		fmt.Fprintf(&out, "failed: %d\n", failCount)
-		fmt.Fprintf(&out, "\ntest results:\n")
-		for _, r := range results {
-			status := "passed"
-			if r.Error != nil {
-				status = "failed"
-			}
-			fmt.Fprintf(&out, "- scenario: %s\n", r.Scenario)
-			fmt.Fprintf(&out, "  namespace: %s\n", r.Namespace)
-			fmt.Fprintf(&out, "  type: %s\n", r.TestType)
-			fmt.Fprintf(&out, "  status: %s\n", status)
-			if r.Error != nil {
-				fmt.Fprintf(&out, "  error: %v\n", r.Error)
-			}
-		}
-		logging.Logger.Info().Msg(out.String())
-		return
-	}
-
-	// Pretty, human-friendly output
-	styleOk := func(s string) string { return logging.Emphasize(s, gchalk.Green) }
-	styleErr := func(s string) string { return logging.Emphasize(s, gchalk.Red) }
-	styleHead := func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
-	styleVal := func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
-	styleWarn := func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
-
-	var out strings.Builder
-	out.WriteString("\n")
-
-	if failCount == 0 {
-		out.WriteString(styleOk("✅ All tests passed!"))
-	} else if passCount == 0 {
-		out.WriteString(styleErr("❌ All tests failed"))
-	} else {
-		out.WriteString(styleWarn(fmt.Sprintf("⚠️  Partial success: %d/%d tests passed", passCount, len(results))))
-	}
-	out.WriteString("\n\n")
-
-	out.WriteString(styleHead("Test Summary"))
-	out.WriteString("\n")
-	fmt.Fprintf(&out, "  Total: %s\n", styleVal(fmt.Sprintf("%d", len(results))))
-	fmt.Fprintf(&out, "  Passed: %s\n", styleOk(fmt.Sprintf("%d", passCount)))
-	if failCount > 0 {
-		fmt.Fprintf(&out, "  Failed: %s\n", styleErr(fmt.Sprintf("%d", failCount)))
-	}
-	out.WriteString("\n")
-
-	// Details per test
-	for _, r := range results {
-		if r.Error != nil {
-			fmt.Fprintf(&out, "  %s %s/%s (%s)\n", styleErr("❌"), r.Scenario, r.Namespace, r.TestType)
-			fmt.Fprintf(&out, "     Error: %s\n", styleErr(r.Error.Error()))
-		} else {
-			fmt.Fprintf(&out, "  %s %s/%s (%s)\n", styleOk("✓"), r.Scenario, r.Namespace, r.TestType)
-		}
-	}
-
-	logging.Logger.Info().Msg(out.String())
+	// Strip the "keycloak-" prefix if present.
+	version := strings.TrimPrefix(subdomain, "keycloak-")
+	// Replace hyphens with underscores for env var safety.
+	return strings.ReplaceAll(version, "-", "_")
 }
