@@ -53,6 +53,12 @@ type RunOptions struct {
 	// EnvFile is a fallback .env file used when no version-specific file is configured.
 	// If both EnvFiles and EnvFile are set, the version-specific file takes priority.
 	EnvFile string
+	// KeycloakHost is the external Keycloak hostname.
+	// Defaults to config.DefaultKeycloakHost when empty.
+	KeycloakHost string
+	// KeycloakProtocol is the protocol for the external Keycloak (e.g., "https").
+	// Defaults to config.DefaultKeycloakProtocol when empty.
+	KeycloakProtocol string
 	// IngressBaseDomain is the base domain for ingress hosts.
 	// When set, each entry gets <namespace>.<base-domain> as its hostname.
 	// Valid values: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
@@ -399,6 +405,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		logLevel = "info"
 	}
 
+	// Default Keycloak host/protocol if not set.
+	keycloakHost := config.FirstNonEmpty(opts.KeycloakHost, config.DefaultKeycloakHost)
+	keycloakProtocol := config.FirstNonEmpty(opts.KeycloakProtocol, config.DefaultKeycloakProtocol)
+
 	flags := &config.RuntimeFlags{
 		ChartPath:             entry.ChartPath,
 		ScenarioPath:          scenarioDir,
@@ -416,8 +426,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Interactive:           false,
 		AutoGenerateSecrets:   true,
 		UseVaultBackedSecrets: useVault,
-		KeycloakHost:          "keycloak-24-9-0.ci.distro.ultrawombat.com",
-		KeycloakProtocol:      "https",
+		KeycloakHost:          keycloakHost,
+		KeycloakProtocol:      keycloakProtocol,
 		RepoRoot:              opts.RepoRoot,
 		KubeContext:           kubeCtx,
 		EnvFile:               envFile,

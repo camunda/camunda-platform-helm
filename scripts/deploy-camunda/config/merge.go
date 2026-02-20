@@ -80,9 +80,13 @@ type RuntimeFlags struct {
 	RunAllTests           bool // Run both integration and e2e tests after deployment
 	KubeContext           string
 	UseVaultBackedSecrets bool
-	RunTestsIT            bool   // Alias for RunIntegrationTests (backward compat)
-	RunTestsE2E           bool   // Alias for RunE2ETests (backward compat)
 	TestExclude           string // Comma-separated test suites to exclude (passed as --test-exclude to test scripts)
+
+	// ChangedFlags tracks which CLI flags were explicitly set by the user.
+	// When populated, merge functions will not overwrite these flags with
+	// config-file values. This is essential for boolean flags whose zero
+	// value (false) is a valid explicit choice (e.g., --skip-dependency-update=false).
+	ChangedFlags map[string]bool
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
@@ -131,58 +135,60 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 		return fmt.Errorf("active deployment %q not found in config", active)
 	}
 
-	// Apply deployment-specific values
-	MergeStringField(&flags.ChartPath, dep.ChartPath, rc.ChartPath)
-	MergeStringField(&flags.Chart, dep.Chart, rc.Chart)
-	MergeStringField(&flags.ChartVersion, dep.Version, rc.Version)
-	MergeStringField(&flags.Namespace, dep.Namespace, rc.Namespace)
-	MergeStringField(&flags.NamespacePrefix, dep.NamespacePrefix, rc.NamespacePrefix)
-	MergeStringField(&flags.Release, dep.Release, rc.Release)
-	MergeStringField(&flags.Scenario, dep.Scenario, rc.Scenario)
-	MergeStringField(&flags.Auth, dep.Auth, rc.Auth)
-	MergeStringField(&flags.Platform, dep.Platform, rc.Platform)
-	MergeStringField(&flags.LogLevel, dep.LogLevel, rc.LogLevel)
-	MergeStringField(&flags.Flow, dep.Flow, rc.Flow)
-	MergeStringField(&flags.EnvFile, dep.EnvFile, rc.EnvFile)
-	MergeStringField(&flags.VaultSecretMapping, dep.VaultSecretMapping, rc.VaultSecretMapping)
-	MergeStringField(&flags.DockerUsername, dep.DockerUsername, rc.DockerUsername)
-	MergeStringField(&flags.DockerPassword, dep.DockerPassword, rc.DockerPassword)
-	MergeStringField(&flags.RenderOutputDir, dep.RenderOutputDir, rc.RenderOutputDir)
-	MergeStringField(&flags.RepoRoot, dep.RepoRoot, rc.RepoRoot)
-	MergeStringField(&flags.ValuesPreset, dep.ValuesPreset, rc.ValuesPreset)
-	MergeStringField(&flags.KeycloakRealm, dep.KeycloakRealm, rc.KeycloakRealm)
-	MergeStringField(&flags.OptimizeIndexPrefix, dep.OptimizeIndexPrefix, rc.OptimizeIndexPrefix)
-	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix)
-	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix)
-	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix)
-	MergeStringField(&flags.KubeContext, dep.KubeContext, rc.KubeContext)
-	MergeStringField(&flags.IngressBaseDomain, dep.IngressBaseDomain, rc.IngressBaseDomain)
-	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
+	// Apply deployment-specific values — string fields are skipped if the
+	// user explicitly set the corresponding flag on the CLI.
+	changed := flags.ChangedFlags
+	MergeStringField(&flags.ChartPath, dep.ChartPath, rc.ChartPath, changed, "chart-path")
+	MergeStringField(&flags.Chart, dep.Chart, rc.Chart, changed, "chart")
+	MergeStringField(&flags.ChartVersion, dep.Version, rc.Version, changed, "version")
+	MergeStringField(&flags.Namespace, dep.Namespace, rc.Namespace, changed, "namespace")
+	MergeStringField(&flags.NamespacePrefix, dep.NamespacePrefix, rc.NamespacePrefix, changed, "namespace-prefix")
+	MergeStringField(&flags.Release, dep.Release, rc.Release, changed, "release")
+	MergeStringField(&flags.Scenario, dep.Scenario, rc.Scenario, changed, "scenario")
+	MergeStringField(&flags.Auth, dep.Auth, rc.Auth, changed, "auth")
+	MergeStringField(&flags.Platform, dep.Platform, rc.Platform, changed, "platform")
+	MergeStringField(&flags.LogLevel, dep.LogLevel, rc.LogLevel, changed, "log-level")
+	MergeStringField(&flags.Flow, dep.Flow, rc.Flow, changed, "flow")
+	MergeStringField(&flags.EnvFile, dep.EnvFile, rc.EnvFile, changed, "env-file")
+	MergeStringField(&flags.VaultSecretMapping, dep.VaultSecretMapping, rc.VaultSecretMapping, changed, "vault-secret-mapping")
+	MergeStringField(&flags.DockerUsername, dep.DockerUsername, rc.DockerUsername, changed, "docker-username")
+	MergeStringField(&flags.DockerPassword, dep.DockerPassword, rc.DockerPassword, changed, "docker-password")
+	MergeStringField(&flags.RenderOutputDir, dep.RenderOutputDir, rc.RenderOutputDir, changed, "render-output-dir")
+	MergeStringField(&flags.RepoRoot, dep.RepoRoot, rc.RepoRoot, changed, "repo-root")
+	MergeStringField(&flags.ValuesPreset, dep.ValuesPreset, rc.ValuesPreset, changed, "values-preset")
+	MergeStringField(&flags.KeycloakRealm, dep.KeycloakRealm, rc.KeycloakRealm, changed, "keycloak-realm")
+	MergeStringField(&flags.OptimizeIndexPrefix, dep.OptimizeIndexPrefix, rc.OptimizeIndexPrefix, changed, "optimize-index-prefix")
+	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix, changed, "orchestration-index-prefix")
+	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix, changed, "tasklist-index-prefix")
+	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix, changed, "operate-index-prefix")
+	MergeStringField(&flags.KubeContext, dep.KubeContext, rc.KubeContext, changed, "kube-context")
+	MergeStringField(&flags.IngressBaseDomain, dep.IngressBaseDomain, rc.IngressBaseDomain, changed, "ingress-base-domain")
+	MergeStringField(&flags.ExternalSecretsStore, "", "", changed, "external-secrets-store") // No config file support yet
 
-	// ScenarioPath special handling
-	if strings.TrimSpace(flags.ScenarioPath) == "" {
-		flags.ScenarioPath = firstNonEmpty(dep.ScenarioPath, dep.ScenarioRoot, rc.ScenarioPath, rc.ScenarioRoot)
+	// ScenarioPath special handling — has multiple config sources
+	if !(changed != nil && changed["scenario-path"]) && strings.TrimSpace(flags.ScenarioPath) == "" {
+		flags.ScenarioPath = FirstNonEmpty(dep.ScenarioPath, dep.ScenarioRoot, rc.ScenarioPath, rc.ScenarioRoot)
 	}
 
-	// Boolean fields - apply if flag wasn't explicitly set
-	MergeBoolField(&flags.ExternalSecrets, dep.ExternalSecrets, boolPtr(rc.ExternalSecrets))
-	MergeBoolField(&flags.SkipDependencyUpdate, dep.SkipDependencyUpdate, boolPtr(rc.SkipDependencyUpdate))
-	MergeBoolField(&flags.Interactive, dep.Interactive, rc.Interactive)
-	MergeBoolField(&flags.AutoGenerateSecrets, dep.AutoGenerateSecrets, rc.AutoGenerateSecrets)
-	MergeBoolField(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst)
-	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry)
-	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates)
+	// Boolean fields - skip if the user explicitly set the flag on the CLI
+	MergeBoolField(&flags.ExternalSecrets, dep.ExternalSecrets, boolPtr(rc.ExternalSecrets), changed, "external-secrets")
+	MergeBoolField(&flags.SkipDependencyUpdate, dep.SkipDependencyUpdate, boolPtr(rc.SkipDependencyUpdate), changed, "skip-dependency-update")
+	MergeBoolField(&flags.Interactive, dep.Interactive, rc.Interactive, changed, "interactive")
+	MergeBoolField(&flags.AutoGenerateSecrets, dep.AutoGenerateSecrets, rc.AutoGenerateSecrets, changed, "auto-generate-secrets")
+	MergeBoolField(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst, changed, "delete-namespace")
+	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry, changed, "ensure-docker-registry")
+	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates, changed, "render-templates")
 
 	// Test execution flags
-	MergeBoolField(&flags.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests)
-	MergeBoolField(&flags.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests)
+	MergeBoolField(&flags.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests, changed, "test-it")
+	MergeBoolField(&flags.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests, changed, "test-e2e")
 
 	// Slice fields
 	MergeStringSliceField(&flags.ExtraValues, dep.ExtraValues, rc.ExtraValues)
 
 	// Keycloak
-	MergeStringField(&flags.KeycloakHost, "", rc.Keycloak.Host)
-	MergeStringField(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol)
+	MergeStringField(&flags.KeycloakHost, "", rc.Keycloak.Host, changed, "keycloak-host")
+	MergeStringField(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol, changed, "keycloak-protocol")
 
 	return nil
 }
@@ -193,55 +199,52 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 		return nil
 	}
 
-	MergeStringField(&flags.ChartPath, "", rc.ChartPath)
-	MergeStringField(&flags.Chart, "", rc.Chart)
-	MergeStringField(&flags.ChartVersion, "", rc.Version)
-	MergeStringField(&flags.Namespace, "", rc.Namespace)
-	MergeStringField(&flags.NamespacePrefix, "", rc.NamespacePrefix)
-	MergeStringField(&flags.Release, "", rc.Release)
-	MergeStringField(&flags.Scenario, "", rc.Scenario)
-	MergeStringField(&flags.ScenarioPath, "", firstNonEmpty(rc.ScenarioPath, rc.ScenarioRoot))
-	MergeStringField(&flags.Auth, "", rc.Auth)
-	MergeStringField(&flags.Platform, "", rc.Platform)
-	MergeStringField(&flags.LogLevel, "", rc.LogLevel)
-	MergeStringField(&flags.Flow, "", rc.Flow)
-	MergeStringField(&flags.EnvFile, "", rc.EnvFile)
-	MergeStringField(&flags.VaultSecretMapping, "", rc.VaultSecretMapping)
-	MergeStringField(&flags.DockerUsername, "", rc.DockerUsername)
-	MergeStringField(&flags.DockerPassword, "", rc.DockerPassword)
-	MergeStringField(&flags.RenderOutputDir, "", rc.RenderOutputDir)
-	MergeStringField(&flags.RepoRoot, "", rc.RepoRoot)
-	MergeStringField(&flags.ValuesPreset, "", rc.ValuesPreset)
-	MergeStringField(&flags.KeycloakRealm, "", rc.KeycloakRealm)
-	MergeStringField(&flags.OptimizeIndexPrefix, "", rc.OptimizeIndexPrefix)
-	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix)
-	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix)
-	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix)
-	MergeStringField(&flags.KubeContext, "", rc.KubeContext)
-	MergeStringField(&flags.IngressBaseDomain, "", rc.IngressBaseDomain)
-	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
+	changed := flags.ChangedFlags
+	MergeStringField(&flags.ChartPath, "", rc.ChartPath, changed, "chart-path")
+	MergeStringField(&flags.Chart, "", rc.Chart, changed, "chart")
+	MergeStringField(&flags.ChartVersion, "", rc.Version, changed, "version")
+	MergeStringField(&flags.Namespace, "", rc.Namespace, changed, "namespace")
+	MergeStringField(&flags.NamespacePrefix, "", rc.NamespacePrefix, changed, "namespace-prefix")
+	MergeStringField(&flags.Release, "", rc.Release, changed, "release")
+	MergeStringField(&flags.Scenario, "", rc.Scenario, changed, "scenario")
+	MergeStringField(&flags.ScenarioPath, "", FirstNonEmpty(rc.ScenarioPath, rc.ScenarioRoot), changed, "scenario-path")
+	MergeStringField(&flags.Auth, "", rc.Auth, changed, "auth")
+	MergeStringField(&flags.Platform, "", rc.Platform, changed, "platform")
+	MergeStringField(&flags.LogLevel, "", rc.LogLevel, changed, "log-level")
+	MergeStringField(&flags.Flow, "", rc.Flow, changed, "flow")
+	MergeStringField(&flags.EnvFile, "", rc.EnvFile, changed, "env-file")
+	MergeStringField(&flags.VaultSecretMapping, "", rc.VaultSecretMapping, changed, "vault-secret-mapping")
+	MergeStringField(&flags.DockerUsername, "", rc.DockerUsername, changed, "docker-username")
+	MergeStringField(&flags.DockerPassword, "", rc.DockerPassword, changed, "docker-password")
+	MergeStringField(&flags.RenderOutputDir, "", rc.RenderOutputDir, changed, "render-output-dir")
+	MergeStringField(&flags.RepoRoot, "", rc.RepoRoot, changed, "repo-root")
+	MergeStringField(&flags.ValuesPreset, "", rc.ValuesPreset, changed, "values-preset")
+	MergeStringField(&flags.KeycloakRealm, "", rc.KeycloakRealm, changed, "keycloak-realm")
+	MergeStringField(&flags.OptimizeIndexPrefix, "", rc.OptimizeIndexPrefix, changed, "optimize-index-prefix")
+	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix, changed, "orchestration-index-prefix")
+	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix, changed, "tasklist-index-prefix")
+	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix, changed, "operate-index-prefix")
+	MergeStringField(&flags.KubeContext, "", rc.KubeContext, changed, "kube-context")
+	MergeStringField(&flags.IngressBaseDomain, "", rc.IngressBaseDomain, changed, "ingress-base-domain")
+	MergeStringField(&flags.ExternalSecretsStore, "", "", changed, "external-secrets-store") // No config file support yet
 
-	if rc.ExternalSecrets {
-		flags.ExternalSecrets = true
-	}
-	if rc.SkipDependencyUpdate {
-		flags.SkipDependencyUpdate = true
-	}
+	MergeBoolField(&flags.ExternalSecrets, nil, boolPtr(rc.ExternalSecrets), changed, "external-secrets")
+	MergeBoolField(&flags.SkipDependencyUpdate, nil, boolPtr(rc.SkipDependencyUpdate), changed, "skip-dependency-update")
 
-	MergeBoolField(&flags.Interactive, nil, rc.Interactive)
-	MergeBoolField(&flags.AutoGenerateSecrets, nil, rc.AutoGenerateSecrets)
-	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst)
-	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry)
-	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates)
+	MergeBoolField(&flags.Interactive, nil, rc.Interactive, changed, "interactive")
+	MergeBoolField(&flags.AutoGenerateSecrets, nil, rc.AutoGenerateSecrets, changed, "auto-generate-secrets")
+	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst, changed, "delete-namespace")
+	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry, changed, "ensure-docker-registry")
+	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates, changed, "render-templates")
 
 	// Test execution flags
-	MergeBoolField(&flags.RunIntegrationTests, nil, rc.RunIntegrationTests)
-	MergeBoolField(&flags.RunE2ETests, nil, rc.RunE2ETests)
+	MergeBoolField(&flags.RunIntegrationTests, nil, rc.RunIntegrationTests, changed, "test-it")
+	MergeBoolField(&flags.RunE2ETests, nil, rc.RunE2ETests, changed, "test-e2e")
 
 	MergeStringSliceField(&flags.ExtraValues, nil, rc.ExtraValues)
 
-	MergeStringField(&flags.KeycloakHost, "", rc.Keycloak.Host)
-	MergeStringField(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol)
+	MergeStringField(&flags.KeycloakHost, "", rc.Keycloak.Host, changed, "keycloak-host")
+	MergeStringField(&flags.KeycloakProtocol, "", rc.Keycloak.Protocol, changed, "keycloak-protocol")
 
 	return nil
 }
@@ -292,7 +295,7 @@ func Validate(flags *RuntimeFlags) error {
 		return fmt.Errorf("--ingress-base-domain is required when using --ingress-subdomain; valid values: %s", strings.Join(ValidIngressBaseDomains, ", "))
 	}
 	if flags.IngressBaseDomain != "" {
-		if !isValidIngressBaseDomain(flags.IngressBaseDomain) {
+		if !IsValidIngressBaseDomain(flags.IngressBaseDomain) {
 			return fmt.Errorf("--ingress-base-domain must be one of: %s", strings.Join(ValidIngressBaseDomains, ", "))
 		}
 	}
@@ -312,8 +315,8 @@ func parseScenarios(scenario string) []string {
 	return scenarios
 }
 
-// isValidIngressBaseDomain checks if the given domain is in the allowed list.
-func isValidIngressBaseDomain(domain string) bool {
+// IsValidIngressBaseDomain checks if the given domain is in the allowed list.
+func IsValidIngressBaseDomain(domain string) bool {
 	for _, valid := range ValidIngressBaseDomains {
 		if domain == valid {
 			return true
