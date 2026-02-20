@@ -3,6 +3,7 @@ package deploy
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -120,7 +121,7 @@ spec:
 			"namespace: my-ns",
 		}
 		for _, want := range wantContains {
-			if !contains(got, want) {
+			if !strings.Contains(got, want) {
 				t.Errorf("manifest does not contain %q.\nGot:\n%s", want, got)
 			}
 		}
@@ -128,7 +129,7 @@ spec:
 		// Should NOT contain unsubstituted placeholders
 		unwanted := []string{"$NAMESPACE", "$RELEASE_NAME"}
 		for _, u := range unwanted {
-			if contains(got, u) {
+			if strings.Contains(got, u) {
 				t.Errorf("manifest should not contain placeholder %q.\nGot:\n%s", u, got)
 			}
 		}
@@ -229,17 +230,4 @@ func TestScenariosRequiringPostDeploy(t *testing.T) {
 			}
 		}
 	})
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsString(s, substr))
-}
-
-func containsString(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

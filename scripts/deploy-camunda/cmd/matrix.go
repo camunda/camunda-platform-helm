@@ -77,7 +77,7 @@ This command does not require cluster access.`,
 	f := cmd.Flags()
 	f.StringSliceVar(&versions, "versions", nil, "Limit to specific chart versions (comma-separated, e.g., 8.8,8.9)")
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
-	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match")
+	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&outputFormat, "format", "table", "Output format: table, json")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform")
@@ -117,6 +117,8 @@ func newMatrixRunCommand() *cobra.Command {
 		useVaultBackedSecrets    bool
 		useVaultBackedSecretsGKE bool
 		useVaultBackedSecretsEKS bool
+		keycloakHost             string
+		keycloakProtocol         string
 	)
 
 	cmd := &cobra.Command{
@@ -156,14 +158,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 
 			// Validate ingress base domain early so the user gets immediate feedback.
 			if ingressBaseDomain != "" {
-				valid := false
-				for _, d := range config.ValidIngressBaseDomains {
-					if d == ingressBaseDomain {
-						valid = true
-						break
-					}
-				}
-				if !valid {
+				if !config.IsValidIngressBaseDomain(ingressBaseDomain) {
 					return fmt.Errorf("--ingress-base-domain must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
 				}
 			}
@@ -243,6 +238,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 				SkipDependencyUpdate:  skipDependencyUpdate,
 				VaultBackedSecrets:    vaultBackedSecrets,
 				UseVaultBackedSecrets: useVaultBackedSecrets,
+				KeycloakHost:          keycloakHost,
+				KeycloakProtocol:      keycloakProtocol,
 			})
 
 			fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results))
@@ -254,7 +251,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f := cmd.Flags()
 	f.StringSliceVar(&versions, "versions", nil, "Limit to specific chart versions (comma-separated, e.g., 8.8,8.9)")
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
-	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match")
+	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
@@ -280,6 +277,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&useVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets for all platforms (overridden by --use-vault-backed-secrets-gke/--use-vault-backed-secrets-eks)")
 	f.BoolVar(&useVaultBackedSecretsGKE, "use-vault-backed-secrets-gke", false, "Use vault-backed external secrets for GKE entries")
 	f.BoolVar(&useVaultBackedSecretsEKS, "use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
+	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host (defaults to "+config.DefaultKeycloakHost+")")
+	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 
 	registerIngressBaseDomainCompletion(cmd)
 	registerKubeContextCompletion(cmd)
