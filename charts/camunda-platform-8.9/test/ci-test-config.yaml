@@ -68,6 +68,12 @@ integration:
           shortname: keyc
           auth: keycloak
           flow: upgrade-minor
+        - name: keycloak-original
+          enabled: true
+          exclude: []
+          shortname: keorg
+          auth: keycloak
+          flow: install
         - name: gateway-keycloak
           enabled: true
           exclude: []
