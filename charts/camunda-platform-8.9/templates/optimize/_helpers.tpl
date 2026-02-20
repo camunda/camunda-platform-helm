@@ -12,30 +12,16 @@ Create a default fully qualified app name.
     ) -}}
 {{- end -}}
 
-{{/*
-Defines extra labels for optimize.
-*/}}
-{{ define "optimize.extraLabels" -}}
-app.kubernetes.io/component: optimize
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.optimize "chart" .Chart) | quote }}
-{{- end }}
-
-{{/*
-Define common labels for optimize, combining the match labels and transient labels, which might change on updating
-(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
-*/}}
-{{- define "optimize.labels" -}}
-    {{- include "camundaPlatform.labels" . }}
-    {{- "\n" }}
-    {{- include "optimize.extraLabels" . }}
+{{- define "optimize.extraLabels" -}}
+    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "optimize" "componentValuesKey" "optimize" "context" $) -}}
 {{- end -}}
 
-{{/*
-Defines match labels for optimize, which are extended by sub-charts and should be used in matchLabels selectors.
-*/}}
+{{- define "optimize.labels" -}}
+    {{- include "camundaPlatform.componentLabels" (dict "componentName" "optimize" "componentValuesKey" "optimize" "context" $) -}}
+{{- end -}}
+
 {{- define "optimize.matchLabels" -}}
-    {{- include "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: optimize
+    {{- include "camundaPlatform.componentMatchLabels" (dict "componentName" "optimize" "context" $) -}}
 {{- end -}}
 
 {{/*

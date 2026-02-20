@@ -12,8 +12,5 @@ data:
   {{- else }}
   application.yaml: |
   {{- end }}
-  {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
-  {{ $key }}: |
-    {{ $val | indent 4 | trim }}
-  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.webModeler.websockets.extraConfiguration) }}
 {{- end }}

@@ -208,10 +208,8 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
-            {{- range .Values.orchestration.extraConfiguration }}
-            - name: config
-              mountPath: /usr/local/camunda/config/{{ .file }}
-              subPath: {{ .file }}
+            {{- with .Values.orchestration.extraConfiguration }}
+            {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/usr/local/camunda/config") | trim | nindent 12 }}
             {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
