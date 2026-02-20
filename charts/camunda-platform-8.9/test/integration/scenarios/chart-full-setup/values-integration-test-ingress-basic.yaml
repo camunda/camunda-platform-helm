@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   exporter:
     zeebe:
       enabled: false
@@ -18,6 +16,9 @@ global:
       external-dns.alpha.kubernetes.io/ttl: "60"
 
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
   contextPath: "/orchestration"
   security:
     authentication:

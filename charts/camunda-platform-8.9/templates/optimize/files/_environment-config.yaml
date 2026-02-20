@@ -11,27 +11,21 @@ container:
 zeebe:
   enabled: true
   partitionCount: {{ .Values.optimize.partitionCount }}
-  {{- if .Values.global.elasticsearch.enabled }}
-  name: {{ .Values.global.elasticsearch.prefix | quote }}
-  {{- else if .Values.global.opensearch.enabled }}
-  name: {{ .Values.global.opensearch.prefix | quote }}
-  {{- end }}
+  name: {{ include "optimize.indexPrefix" . | quote }}
 
-{{- if .Values.global.elasticsearch.enabled }}
 es:
   connection:
     nodes:
       - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
-        httpPort: {{ .Values.global.elasticsearch.url.port }}
-  {{- if .Values.global.elasticsearch.external }}
+        httpPort: {{ .Values.optimize.database.elasticsearch.url.port | default .Values.global.elasticsearch.url.port }}
+  {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
   security:
-    username: {{ .Values.global.elasticsearch.auth.username | quote }}
-    {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
+    username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
+    {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
     ssl:
       enabled: "true"
     {{- end }}
   {{- end }}
-{{- end }}
 
 spring:
   servlet:

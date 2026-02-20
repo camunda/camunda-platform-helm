@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   image:
     pullPolicy: Always
   ingress:
@@ -56,6 +54,9 @@ global:
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
   security:
     authentication:
       method: oidc
@@ -80,6 +81,9 @@ identityKeycloak:
   enabled: false
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
 webModeler:
   enabled: true
   security:
