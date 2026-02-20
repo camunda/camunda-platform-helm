@@ -32,7 +32,7 @@ type GenerateOptions struct {
 
 // FilterOptions controls post-generation filtering.
 type FilterOptions struct {
-	// ScenarioFilter limits output to scenarios matching this substring.
+	// ScenarioFilter limits output to scenarios matching one or more substrings (comma-separated).
 	ScenarioFilter string
 	// FlowFilter limits output to entries with this specific flow.
 	FlowFilter string
@@ -159,9 +159,19 @@ func Filter(entries []Entry, opts FilterOptions) []Entry {
 		return entries
 	}
 
+	// Parse comma-separated scenario filters into individual substrings.
+	var scenarioFilters []string
+	if opts.ScenarioFilter != "" {
+		for _, f := range strings.Split(opts.ScenarioFilter, ",") {
+			if t := strings.TrimSpace(f); t != "" {
+				scenarioFilters = append(scenarioFilters, t)
+			}
+		}
+	}
+
 	var filtered []Entry
 	for _, e := range entries {
-		if opts.ScenarioFilter != "" && !strings.Contains(e.Scenario, opts.ScenarioFilter) {
+		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {
 			continue
 		}
 		if opts.FlowFilter != "" && e.Flow != opts.FlowFilter {
@@ -175,6 +185,16 @@ func Filter(entries []Entry, opts FilterOptions) []Entry {
 		filtered = append(filtered, e)
 	}
 	return filtered
+}
+
+// matchesAny reports whether s contains any of the given substrings.
+func matchesAny(s string, substrings []string) bool {
+	for _, sub := range substrings {
+		if strings.Contains(s, sub) {
+			return true
+		}
+	}
+	return false
 }
 
 // Print outputs the matrix entries in the requested format.
@@ -191,6 +211,9 @@ func Print(entries []Entry, format string) (string, error) {
 
 // printJSON returns the entries as a JSON array.
 func printJSON(entries []Entry) (string, error) {
+	if entries == nil {
+		entries = []Entry{}
+	}
 	data, err := json.MarshalIndent(entries, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal matrix to JSON: %w", err)

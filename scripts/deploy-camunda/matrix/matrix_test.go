@@ -3,6 +3,7 @@ package matrix
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -186,6 +187,26 @@ func TestFilter(t *testing.T) {
 		}
 	})
 
+	t.Run("scenario filter multiple comma-separated", func(t *testing.T) {
+		got := Filter(entries, FilterOptions{ScenarioFilter: "oidc,elasticsearch"})
+		// Should match 1 oidc + 5 elasticsearch entries = 6 total
+		if len(got) != 6 {
+			t.Errorf("Filter(scenario=oidc,elasticsearch): got %d entries, want 6", len(got))
+		}
+		for _, e := range got {
+			if e.Scenario != "oidc" && e.Scenario != "elasticsearch" {
+				t.Errorf("Filter(scenario=oidc,elasticsearch): unexpected scenario %q", e.Scenario)
+			}
+		}
+	})
+
+	t.Run("scenario filter with spaces around commas", func(t *testing.T) {
+		got := Filter(entries, FilterOptions{ScenarioFilter: " oidc , elasticsearch "})
+		if len(got) != 6 {
+			t.Errorf("Filter(scenario=' oidc , elasticsearch '): got %d entries, want 6", len(got))
+		}
+	})
+
 	t.Run("flow filter", func(t *testing.T) {
 		got := Filter(entries, FilterOptions{FlowFilter: "upgrade-minor"})
 		if len(got) != 1 || got[0].Flow != "upgrade-minor" {
@@ -255,7 +276,7 @@ func TestPrintTable(t *testing.T) {
 	if output == "" {
 		t.Error("Print(table): empty output")
 	}
-	if !contains(output, "elasticsearch") || !contains(output, "8.8") || !contains(output, "Total: 1") {
+	if !strings.Contains(output, "elasticsearch") || !strings.Contains(output, "8.8") || !strings.Contains(output, "Total: 1") {
 		t.Errorf("Print(table): missing expected content in output: %s", output)
 	}
 }
@@ -268,7 +289,7 @@ func TestPrintJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Print(json): %v", err)
 	}
-	if !contains(output, `"version": "8.8"`) || !contains(output, `"scenario": "elasticsearch"`) {
+	if !strings.Contains(output, `"version": "8.8"`) || !strings.Contains(output, `"scenario": "elasticsearch"`) {
 		t.Errorf("Print(json): missing expected JSON content in output: %s", output)
 	}
 }
@@ -285,7 +306,7 @@ func TestPrintTableEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Print(table, empty): %v", err)
 	}
-	if !contains(output, "No matrix entries found") {
+	if !strings.Contains(output, "No matrix entries found") {
 		t.Errorf("Print(table, empty): expected 'No matrix entries found', got: %s", output)
 	}
 }
@@ -358,8 +379,11 @@ func TestGenerateWithIncludeDisabled(t *testing.T) {
 		t.Fatalf("Generate(no includeDisabled): %v", err)
 	}
 
-	if len(withDisabled) <= len(withoutDisabled) {
-		t.Logf("Generate: withDisabled=%d, withoutDisabled=%d (may be equal if all scenarios are enabled)",
+	if len(withDisabled) < len(withoutDisabled) {
+		t.Errorf("Generate: withDisabled (%d) < withoutDisabled (%d); including disabled should never reduce entries",
+			len(withDisabled), len(withoutDisabled))
+	} else if len(withDisabled) == len(withoutDisabled) {
+		t.Logf("Generate: withDisabled=%d == withoutDisabled=%d (all scenarios may be enabled)",
 			len(withDisabled), len(withoutDisabled))
 	}
 }
@@ -441,17 +465,17 @@ func TestPrintRunSummary(t *testing.T) {
 	}
 
 	summary := PrintRunSummary(results)
-	if !contains(summary, "Total:   2") || !contains(summary, "Success: 1") || !contains(summary, "Failed:  1") {
+	if !strings.Contains(summary, "Total:   2") || !strings.Contains(summary, "Success: 1") || !strings.Contains(summary, "Failed:  1") {
 		t.Errorf("PrintRunSummary: unexpected output: %s", summary)
 	}
-	if !contains(summary, "oidc") {
+	if !strings.Contains(summary, "oidc") {
 		t.Errorf("PrintRunSummary: expected failed entry in output: %s", summary)
 	}
 }
 
 func TestPrintRunSummaryEmpty(t *testing.T) {
 	summary := PrintRunSummary(nil)
-	if !contains(summary, "No entries executed") {
+	if !strings.Contains(summary, "No entries executed") {
 		t.Errorf("PrintRunSummary(nil): expected 'No entries executed', got: %s", summary)
 	}
 }
@@ -789,19 +813,6 @@ func sliceEqual(a, b []string) bool {
 		}
 	}
 	return true
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsStr(s, substr))
-}
-
-func containsStr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 // findRepoRoot walks up from the current working directory to find the repo root.
