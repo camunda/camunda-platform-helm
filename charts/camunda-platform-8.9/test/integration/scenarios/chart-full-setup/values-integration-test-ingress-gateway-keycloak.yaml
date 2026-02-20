@@ -4,19 +4,6 @@ global:
   host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: false
-  elasticsearch:
-    enabled: true
-    external: true
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-    auth:
-      username: elastic
-      secret:
-        existingSecret: infra-credentials
-        existingSecretKey: elasticsearch-password
-    url:
-      protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-      port: 443
 
   gateway:
     createGatewayResource: true
@@ -91,6 +78,20 @@ identityKeycloak:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      auth:
+        username: elastic
+        secret:
+          existingSecret: infra-credentials
+          existingSecretKey: elasticsearch-password
+      url:
+        protocol: https
+        host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+        port: 443
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX-$FLOW
@@ -132,6 +133,10 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   contextPath: "/orchestration"

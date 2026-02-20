@@ -513,10 +513,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretViaReference",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                  "true",
-				"optimize.enabled":                                  "true",
-				"global.identity.auth.enabled":                      "true",
-				"global.identity.auth.optimize.secret.existingSecret": "ownExistingSecret",
+				"identity.enabled":                                       "true",
+				"optimize.enabled":                                       "true",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.auth.optimize.secret.existingSecret":    "ownExistingSecret",
 				"global.identity.auth.optimize.secret.existingSecretKey": "identity-optimize-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -779,10 +779,10 @@ es:
 		}, {
 			Name: "TestOptimizeWithLog4j2Configuration",
 			Values: map[string]string{
-				"identity.enabled":                            "true",
-				"optimize.enabled":                            "true",
-				"optimize.extraConfiguration[0].file":         "environment-logbackxml",
-				"optimize.extraConfiguration[0].content":      "<configuration></configuration>",
+				"identity.enabled":                       "true",
+				"optimize.enabled":                       "true",
+				"optimize.extraConfiguration[0].file":    "environment-logbackxml",
+				"optimize.extraConfiguration[0].content": "<configuration></configuration>",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -842,6 +842,479 @@ es:
 				}
 
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
+	testCases := []testhelpers.TestCase{
+		// ---- Elasticsearch overrides ----
+		{
+			Name: "TestElasticsearchPortUsesGlobalDefault",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "OPTIMIZE_ELASTICSEARCH_HTTP_PORT", Value: "9200"})
+			},
+		},
+		{
+			Name: "TestElasticsearchPortOverriddenByOptimizeDatabase",
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"optimize.enabled":                         "true",
+				"optimize.database.elasticsearch.url.port": "9201",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "OPTIMIZE_ELASTICSEARCH_HTTP_PORT", Value: "9201"})
+			},
+		},
+		{
+			Name: "TestElasticsearchExternalAuthFromOptimizeDatabaseConfig",
+			Values: map[string]string{
+				"identity.enabled":              "true",
+				"optimize.enabled":              "true",
+				"global.elasticsearch.external": "true",
+				"optimize.database.elasticsearch.auth.secret.existingSecret":    "my-es-secret",
+				"optimize.database.elasticsearch.auth.secret.existingSecretKey": "es-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "my-es-secret"},
+							Key:                  "es-password",
+						},
+					},
+				})
+			},
+		},
+		{
+			Name: "TestElasticsearchExternalAuthSetAtOptimizeLevelOnly",
+			Values: map[string]string{
+				"identity.enabled":              "true",
+				"optimize.enabled":              "true",
+				"global.elasticsearch.external": "true",
+				"optimize.database.elasticsearch.auth.secret.existingSecret":    "optimize-es-secret",
+				"optimize.database.elasticsearch.auth.secret.existingSecretKey": "optimize-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "optimize-es-secret"},
+							Key:                  "optimize-password",
+						},
+					},
+				})
+			},
+		},
+		{
+			Name: "TestElasticsearchPortInMigrationInitContainer",
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"optimize.enabled":                         "true",
+				"optimize.database.elasticsearch.url.port": "9300",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// The migration init container should also use the overridden port
+				initContainers := deployment.Spec.Template.Spec.InitContainers
+				s.Require().GreaterOrEqual(len(initContainers), 1)
+				var migrationContainer corev1.Container
+				for _, c := range initContainers {
+					if c.Name == "migration" {
+						migrationContainer = c
+						break
+					}
+				}
+				s.Require().Equal("migration", migrationContainer.Name)
+				s.Require().Contains(migrationContainer.Env,
+					corev1.EnvVar{Name: "OPTIMIZE_ELASTICSEARCH_HTTP_PORT", Value: "9300"})
+			},
+		},
+		// ---- OpenSearch overrides ----
+		{
+			Name: "TestOpensearchPortUsesGlobalDefault",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
+				"global.opensearch.url.host":   "opensearch-host",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", Value: "443"})
+			},
+		},
+		{
+			Name: "TestOpensearchPortOverriddenByOptimizeDatabase",
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"optimize.enabled":                      "true",
+				"global.elasticsearch.enabled":          "false",
+				"elasticsearch.enabled":                 "false",
+				"global.opensearch.enabled":             "true",
+				"global.opensearch.url.host":            "opensearch-host",
+				"optimize.database.opensearch.url.port": "9200",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", Value: "9200"})
+			},
+		},
+		{
+			Name: "TestOpensearchUsernameUsesGlobalDefault",
+			Values: map[string]string{
+				"identity.enabled":                "true",
+				"optimize.enabled":                "true",
+				"global.elasticsearch.enabled":    "false",
+				"elasticsearch.enabled":           "false",
+				"global.opensearch.enabled":       "true",
+				"global.opensearch.url.host":      "opensearch-host",
+				"global.opensearch.auth.username": "globaluser",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME", Value: "globaluser"})
+			},
+		},
+		{
+			Name: "TestOpensearchUsernameOverriddenByOptimizeDatabase",
+			Values: map[string]string{
+				"identity.enabled":                           "true",
+				"optimize.enabled":                           "true",
+				"global.elasticsearch.enabled":               "false",
+				"elasticsearch.enabled":                      "false",
+				"global.opensearch.enabled":                  "true",
+				"global.opensearch.url.host":                 "opensearch-host",
+				"global.opensearch.auth.username":            "globaluser",
+				"optimize.database.opensearch.auth.username": "optimizeuser",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME", Value: "optimizeuser"})
+			},
+		},
+		{
+			Name: "TestOpensearchDatabaseTypeSetWhenHostConfigured",
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"optimize.enabled":             "true",
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
+				"global.opensearch.url.host":   "opensearch-host",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_DATABASE", Value: "opensearch"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_HOST", Value: "opensearch-host"})
+			},
+		},
+		{
+			Name: "TestOpensearchSslEnabledWhenProtocolIsHttps",
+			Values: map[string]string{
+				"identity.enabled":               "true",
+				"optimize.enabled":               "true",
+				"global.elasticsearch.enabled":   "false",
+				"elasticsearch.enabled":          "false",
+				"global.opensearch.enabled":      "true",
+				"global.opensearch.url.host":     "opensearch-host",
+				"global.opensearch.url.protocol": "https",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "TestOpensearchSslNotSetWhenProtocolOverriddenToHttp",
+			Values: map[string]string{
+				"identity.enabled":                          "true",
+				"optimize.enabled":                          "true",
+				"global.elasticsearch.enabled":              "false",
+				"elasticsearch.enabled":                     "false",
+				"global.opensearch.enabled":                 "true",
+				"global.opensearch.url.host":                "opensearch-host",
+				"global.opensearch.url.protocol":            "https",
+				"optimize.database.opensearch.url.protocol": "http",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				for _, e := range env {
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED", e.Name,
+						"SSL should not be enabled when optimize overrides protocol to http")
+				}
+			},
+		},
+		{
+			Name: "TestOpensearchAwsEnabledFromGlobal",
+			Values: map[string]string{
+				"identity.enabled":              "true",
+				"optimize.enabled":              "true",
+				"global.elasticsearch.enabled":  "false",
+				"elasticsearch.enabled":         "false",
+				"global.opensearch.enabled":     "true",
+				"global.opensearch.url.host":    "opensearch-host",
+				"global.opensearch.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "TestOpensearchAwsEnabledOverriddenByOptimizeDatabase",
+			Values: map[string]string{
+				"identity.enabled":                         "true",
+				"optimize.enabled":                         "true",
+				"global.elasticsearch.enabled":             "false",
+				"elasticsearch.enabled":                    "false",
+				"global.opensearch.enabled":                "true",
+				"global.opensearch.url.host":               "opensearch-host",
+				"global.opensearch.aws.enabled":            "false",
+				"optimize.database.opensearch.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", Value: "true"})
+			},
+		},
+		// ---- TLS overrides ----
+		{
+			Name: "TestElasticsearchTlsVolumeFromGlobal",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.elasticsearch.tls.secret.existingSecret":    "my-es-tls-secret",
+				"global.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// Check that the keystore volume exists
+				volumes := deployment.Spec.Template.Spec.Volumes
+				var keystoreVolume *corev1.Volume
+				for i := range volumes {
+					if volumes[i].Name == "keystore" {
+						keystoreVolume = &volumes[i]
+						break
+					}
+				}
+				s.Require().NotNil(keystoreVolume, "keystore volume should be present")
+				s.Require().Equal("my-es-tls-secret", keystoreVolume.Secret.SecretName)
+			},
+		},
+		{
+			Name: "TestElasticsearchTlsVolumeOverriddenByOptimizeDatabase",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.elasticsearch.tls.secret.existingSecret":               "global-es-tls-secret",
+				"global.elasticsearch.tls.secret.existingSecretKey":            "externaldb.jks",
+				"optimize.database.elasticsearch.tls.secret.existingSecret":    "optimize-es-tls-secret",
+				"optimize.database.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// Check that the keystore volume uses the optimize override
+				volumes := deployment.Spec.Template.Spec.Volumes
+				var keystoreVolume *corev1.Volume
+				for i := range volumes {
+					if volumes[i].Name == "keystore" {
+						keystoreVolume = &volumes[i]
+						break
+					}
+				}
+				s.Require().NotNil(keystoreVolume, "keystore volume should be present")
+				s.Require().Equal("optimize-es-tls-secret", keystoreVolume.Secret.SecretName)
+			},
+		},
+		{
+			Name: "TestElasticsearchTlsJavaOptsInContainerFromGlobal",
+			Values: map[string]string{
+				"identity.enabled": "true",
+				"optimize.enabled": "true",
+				"global.elasticsearch.tls.secret.existingSecret":    "my-es-tls-secret",
+				"global.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+						break
+					}
+				}
+				s.Require().NotNil(javaToolOptions, "JAVA_TOOL_OPTIONS should be set when TLS is configured")
+				s.Require().Contains(javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+			},
+		},
+		{
+			Name: "TestOpensearchTlsVolumeFromGlobal",
+			Values: map[string]string{
+				"identity.enabled":                               "true",
+				"optimize.enabled":                               "true",
+				"global.elasticsearch.enabled":                   "false",
+				"elasticsearch.enabled":                          "false",
+				"global.opensearch.enabled":                      "true",
+				"global.opensearch.url.host":                     "opensearch-host",
+				"global.opensearch.tls.secret.existingSecret":    "my-os-tls-secret",
+				"global.opensearch.tls.secret.existingSecretKey": "externaldb.jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				volumes := deployment.Spec.Template.Spec.Volumes
+				var keystoreVolume *corev1.Volume
+				for i := range volumes {
+					if volumes[i].Name == "keystore" {
+						keystoreVolume = &volumes[i]
+						break
+					}
+				}
+				s.Require().NotNil(keystoreVolume, "keystore volume should be present for opensearch TLS")
+				s.Require().Equal("my-os-tls-secret", keystoreVolume.Secret.SecretName)
+			},
+		},
+		{
+			Name: "TestOpensearchSecretPasswordFromGlobal",
+			Values: map[string]string{
+				"identity.enabled":                                "true",
+				"optimize.enabled":                                "true",
+				"global.elasticsearch.enabled":                    "false",
+				"elasticsearch.enabled":                           "false",
+				"global.opensearch.enabled":                       "true",
+				"global.opensearch.url.host":                      "opensearch-host",
+				"global.opensearch.auth.secret.existingSecret":    "my-os-auth-secret",
+				"global.opensearch.auth.secret.existingSecretKey": "os-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "my-os-auth-secret"},
+							Key:                  "os-password",
+						},
+					},
+				})
+			},
+		},
+		{
+			Name: "TestOpensearchSecretPasswordOverriddenByOptimizeDatabase",
+			Values: map[string]string{
+				"identity.enabled":                                           "true",
+				"optimize.enabled":                                           "true",
+				"global.elasticsearch.enabled":                               "false",
+				"elasticsearch.enabled":                                      "false",
+				"global.opensearch.enabled":                                  "true",
+				"global.opensearch.url.host":                                 "opensearch-host",
+				"global.opensearch.auth.secret.existingSecret":               "global-os-auth-secret",
+				"global.opensearch.auth.secret.existingSecretKey":            "global-password",
+				"optimize.database.opensearch.auth.secret.existingSecret":    "optimize-os-auth-secret",
+				"optimize.database.opensearch.auth.secret.existingSecretKey": "optimize-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{
+					Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "optimize-os-auth-secret"},
+							Key:                  "optimize-password",
+						},
+					},
+				})
 			},
 		},
 	}

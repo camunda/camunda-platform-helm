@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   multitenancy:
     checksEnabled: true
     apiEnabled: true
@@ -39,3 +37,18 @@ identityPostgresql:
 
 elasticsearch:
   enabled: true
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  extraConfiguration:
+    - file: "orchestration-extra-configuration.yaml"
+      content: |-
+        camunda:
+          data:
+            secondary-storage:
+              autoconfigure-camunda-exporter: true
+              type: elasticsearch
+              elasticsearch:
+                url: "http://integration-elasticsearch:9200"

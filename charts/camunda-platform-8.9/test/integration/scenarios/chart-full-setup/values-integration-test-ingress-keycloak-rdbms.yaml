@@ -1,6 +1,7 @@
 orchestration:
   data:
     secondaryStorage:
+      type: rdbms
       rdbms:
         url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
         username: ${POSTGRESQL_USERNAME}
@@ -43,4 +44,10 @@ orchestration:
 
 
 optimize:
-  enabled: false
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: true
+
+elasticsearch:
+  enabled: true

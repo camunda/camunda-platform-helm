@@ -4,19 +4,6 @@ global:
   identity:
     auth:
       enabled: true
-  elasticsearch:
-    enabled: false
-  opensearch:
-    enabled: true
-    auth:
-      username: "$OPENSEARCH_USERNAME"
-      secret:
-        inlineSecret: "$OPENSEARCH_PASSWORD"
-    url:
-      protocol: https
-      host: "$AWS_HOST_URL"
-      port: 443
-    prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
 orchestration:
   data:
     secondaryStorage:
@@ -60,6 +47,18 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
+  database:
+    opensearch:
+      enabled: true
+      auth:
+        username: "$OPENSEARCH_USERNAME"
+        secret:
+          inlineSecret: "$OPENSEARCH_PASSWORD"
+      url:
+        protocol: https
+        host: "$AWS_HOST_URL"
+        port: 443
+      prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
