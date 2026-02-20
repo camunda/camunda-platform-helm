@@ -2281,7 +2281,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.96"
+                            "default": "8.8.99"
                         },
                         "digest": {
                             "type": "string",
@@ -2773,7 +2773,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.7"
+                            "default": "8.8.8"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -5300,7 +5300,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.11"
+                            "default": "8.8.13"
                         },
                         "digest": {
                             "type": "string",
@@ -6490,7 +6490,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.5"
+                            "default": "8.8.6"
                         },
                         "digest": {
                             "type": "string",
