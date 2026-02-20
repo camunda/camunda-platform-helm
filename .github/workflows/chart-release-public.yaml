@@ -43,11 +43,11 @@ jobs:
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
       - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         id: generate-github-token
         with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app-id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Import Vault secrets for Harbor
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -370,11 +370,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         id: generate-github-token
         with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app-id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
