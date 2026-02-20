@@ -18,10 +18,10 @@ es:
     nodes:
       - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
         httpPort: {{ .Values.optimize.database.elasticsearch.url.port | default .Values.global.elasticsearch.url.port }}
-  {{- if .Values.optimize.database.elasticsearch.external | default .Values.global.elasticsearch.external }}
+  {{- if .Values.global.elasticsearch.external }}
   security:
     username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
-    {{- if eq .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol "https" }}
+    {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
     ssl:
       enabled: "true"
     {{- end }}

@@ -3018,14 +3018,12 @@ optimize:
   database:
     # Elasticsearch configuration which is shared between the sub charts
     ## @extra optimize.database.elasticsearch
-    ## @param optimize.database.elasticsearch.external if true, tries to connect to an external elasticsearch
     ## @extra optimize.database.elasticsearch.tls
     ## @param optimize.database.elasticsearch.tls.enabled if true, enable tls for external elasticsearch
     ## @param optimize.database.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch
     ## @extra optimize.database.elasticsearch.auth
     ## @param optimize.database.elasticsearch.auth.username the username for external elasticsearch
     elasticsearch:
-      external: false
       tls:
         enabled: false
         existingSecret: ""
@@ -3048,17 +3046,17 @@ optimize:
       ## @param  optimize.database.elasticsearch.disableExporter (DEPRECATED - use global.elasticsearch.enabled instead) this value is not needed anymore.
       disableExporter: false
       ## @extra optimize.database.elasticsearch.url Configuration to configure elasticsearch url
-      ## @param optimize.database.elasticsearch.url.protocol defines the elasticsearch access protocol.
-      ## @param optimize.database.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace
-      ## @param optimize.database.elasticsearch.url.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed
+      ## @param optimize.database.elasticsearch.url.protocol defines the elasticsearch access protocol. Falls back to global.elasticsearch.url.protocol.
+      ## @param optimize.database.elasticsearch.url.host Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace. Falls back to global.elasticsearch.url.host.
+      ## @param optimize.database.elasticsearch.url.port Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed. Falls back to global.elasticsearch.url.port.
       url:
-        protocol: http
-        host: "{{ .Release.Name }}-elasticsearch"
-        port: 9200
+        protocol: ""
+        host: ""
+        port: 0
       ## @param optimize.database.elasticsearch.clusterName defines the name of the Elasticsearch cluster.
       clusterName: "elasticsearch"
-      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
-      prefix: zeebe-record
+      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize. Falls back to global.elasticsearch.prefix.
+      prefix: ""
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
     ## @param optimize.database.opensearch.aws.enabled Enabling AWS IRSA
@@ -3090,17 +3088,17 @@ optimize:
           ## @param optimize.database.opensearch.auth.secret.existingSecretKey defines the key within the existing secret object.
           existingSecretKey: ""
       ## @extra optimize.database.opensearch.url Configuration to configure opensearch url
-      ## @param optimize.database.opensearch.url.protocol defines the external opensearch access protocol
-      ## @param optimize.database.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace
-      ## @param optimize.database.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed
+      ## @param optimize.database.opensearch.url.protocol defines the external opensearch access protocol. Falls back to global.opensearch.url.protocol.
+      ## @param optimize.database.opensearch.url.host defines the external opensearch host, ideally the service name inside the namespace. Falls back to global.opensearch.url.host.
+      ## @param optimize.database.opensearch.url.port defines the external opensearch port, under which opensearch can be accessed. Falls back to global.opensearch.url.port.
       url:
-        protocol: https
+        protocol: ""
         host: ""
-        port: 443
+        port: 0
       ## @param optimize.database.opensearch.clusterName defines the name of the OpenSearch cluster.
       clusterName: "opensearch"
-      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
-      prefix: zeebe-record
+      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize. Falls back to global.opensearch.prefix.
+      prefix: ""
 
 
 
