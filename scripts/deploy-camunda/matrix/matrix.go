@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jwalton/gchalk"
+
 	"scripts/camunda-core/pkg/logging"
 )
 
@@ -20,6 +22,11 @@ type Entry struct {
 	Platform  string   `json:"platform,omitempty"`
 	Exclude   []string `json:"exclude,omitempty"`
 	Enabled   bool     `json:"enabled"`
+
+	// Selection + Composition fields (explicit layer overrides from ci-test-config.yaml).
+	Identity    string   `json:"identity,omitempty"`
+	Persistence string   `json:"persistence,omitempty"`
+	Features    []string `json:"features,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -135,15 +142,18 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 			for _, flow := range permittedFlows {
 				for _, platform := range platforms {
 					entries = append(entries, Entry{
-						Version:   version,
-						ChartPath: chartDir,
-						Scenario:  scenario.Name,
-						Shortname: scenario.Shortname,
-						Auth:      scenario.Auth,
-						Flow:      flow,
-						Platform:  platform,
-						Exclude:   scenario.Exclude,
-						Enabled:   scenario.Enabled,
+						Version:     version,
+						ChartPath:   chartDir,
+						Scenario:    scenario.Name,
+						Shortname:   scenario.Shortname,
+						Auth:        scenario.Auth,
+						Flow:        flow,
+						Platform:    platform,
+						Exclude:     scenario.Exclude,
+						Enabled:     scenario.Enabled,
+						Identity:    scenario.Identity,
+						Persistence: scenario.Persistence,
+						Features:    scenario.Features,
 					})
 				}
 			}
@@ -221,6 +231,12 @@ func printJSON(entries []Entry) (string, error) {
 	return string(data), nil
 }
 
+// Style helpers for table output.
+var (
+	tblHead = func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+	tblWarn = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
+)
+
 // printTable returns the entries formatted as an ASCII table.
 func printTable(entries []Entry) string {
 	if len(entries) == 0 {
@@ -229,30 +245,43 @@ func printTable(entries []Entry) string {
 
 	var b strings.Builder
 
-	// Header
-	fmt.Fprintf(&b, "%-8s %-6s %-25s %-10s %-10s %-16s %-12s %-8s\n",
-		"ENABLED", "VER", "SCENARIO", "SHORT", "AUTH", "FLOW", "PLATFORM", "EXCLUDE")
-	fmt.Fprintf(&b, "%-8s %-6s %-25s %-10s %-10s %-16s %-12s %-8s\n",
-		"-------", "---", "--------", "-----", "----", "----", "--------", "-------")
+	// Header — pad text first, then apply style (ANSI codes break %-Ns padding).
+	fmt.Fprintf(&b, "%-4s %s %s %s %s %s %s %s %s\n",
+		"",
+		tblHead(fmt.Sprintf("%-6s", "VER")),
+		tblHead(fmt.Sprintf("%-25s", "SCENARIO")),
+		tblHead(fmt.Sprintf("%-10s", "SHORT")),
+		tblHead(fmt.Sprintf("%-16s", "FLOW")),
+		tblHead(fmt.Sprintf("%-12s", "PLATFORM")),
+		tblHead(fmt.Sprintf("%-18s", "IDENTITY")),
+		tblHead(fmt.Sprintf("%-20s", "PERSISTENCE")),
+		tblHead("FEATURES"))
+	fmt.Fprintf(&b, "%-4s %-6s %-25s %-10s %-16s %-12s %-18s %-20s %s\n",
+		"", "---", "--------", "-----", "----", "--------", "--------", "-----------", "--------")
 
 	for _, e := range entries {
-		enabled := "yes"
-		if !e.Enabled {
-			enabled = "no"
-		}
 		platform := e.Platform
 		if platform == "" {
 			platform = "-"
 		}
-		exclude := strings.Join(e.Exclude, ",")
-		if exclude == "" {
-			exclude = "-"
+		// Pad identity/persistence before applying color to preserve alignment.
+		identity := fmt.Sprintf("%-18s", e.Identity)
+		if e.Identity == "" {
+			identity = tblWarn(fmt.Sprintf("%-18s", "(derived)"))
 		}
-		fmt.Fprintf(&b, "%-8s %-6s %-25s %-10s %-10s %-16s %-12s %s\n",
-			enabled, e.Version, e.Scenario, e.Shortname, e.Auth, e.Flow, platform, exclude)
+		persistence := fmt.Sprintf("%-20s", e.Persistence)
+		if e.Persistence == "" {
+			persistence = tblWarn(fmt.Sprintf("%-20s", "(derived)"))
+		}
+		features := strings.Join(e.Features, ",")
+		if features == "" {
+			features = "-"
+		}
+		fmt.Fprintf(&b, "  %-2s %-6s %-25s %-10s %-16s %-12s %s %s %s\n",
+			"", e.Version, e.Scenario, e.Shortname, e.Flow, platform, identity, persistence, features)
 	}
 
-	fmt.Fprintf(&b, "\nTotal: %d entries\n", len(entries))
+	fmt.Fprintf(&b, "\n%s: %d entries\n", tblHead("Total"), len(entries))
 	return b.String()
 }
 

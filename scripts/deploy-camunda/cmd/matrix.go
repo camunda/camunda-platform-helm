@@ -106,6 +106,8 @@ func newMatrixRunCommand() *cobra.Command {
 		kubeContextGKE           string
 		kubeContextEKS           string
 		ingressBaseDomain        string
+		ingressBaseDomainGKE     string
+		ingressBaseDomainEKS     string
 		maxParallel              int
 		envFile                  string
 		envFile86                string
@@ -156,10 +158,20 @@ This command calls deploy.Execute() for each matrix entry.`,
 				return fmt.Errorf("--repo-root is required (or set repoRoot in config)")
 			}
 
-			// Validate ingress base domain early so the user gets immediate feedback.
+			// Validate ingress base domains early so the user gets immediate feedback.
 			if ingressBaseDomain != "" {
 				if !config.IsValidIngressBaseDomain(ingressBaseDomain) {
 					return fmt.Errorf("--ingress-base-domain must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
+				}
+			}
+			if ingressBaseDomainGKE != "" {
+				if !config.IsValidIngressBaseDomain(ingressBaseDomainGKE) {
+					return fmt.Errorf("--ingress-base-domain-gke must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
+				}
+			}
+			if ingressBaseDomainEKS != "" {
+				if !config.IsValidIngressBaseDomain(ingressBaseDomainEKS) {
+					return fmt.Errorf("--ingress-base-domain-eks must be one of: %s", strings.Join(config.ValidIngressBaseDomains, ", "))
 				}
 			}
 
@@ -182,9 +194,11 @@ This command calls deploy.Execute() for each matrix entry.`,
 				return nil
 			}
 
-			// Show what will be run
-			output, _ := matrix.Print(entries, "table")
-			fmt.Fprintln(os.Stdout, output)
+			// Show what will be run (only for non-dry-run; dry-run prints its own detailed output)
+			if !dryRun {
+				output, _ := matrix.Print(entries, "table")
+				fmt.Fprintln(os.Stdout, output)
+			}
 
 			// Build platform-to-context map from per-platform flags
 			kubeContexts := make(map[string]string)
@@ -218,6 +232,15 @@ This command calls deploy.Execute() for each matrix entry.`,
 				vaultBackedSecrets["eks"] = useVaultBackedSecretsEKS
 			}
 
+			// Build platform-to-ingress-domain map from per-platform flags
+			ingressBaseDomains := make(map[string]string)
+			if ingressBaseDomainGKE != "" {
+				ingressBaseDomains["gke"] = ingressBaseDomainGKE
+			}
+			if ingressBaseDomainEKS != "" {
+				ingressBaseDomains["eks"] = ingressBaseDomainEKS
+			}
+
 			results, err := matrix.Run(context.Background(), entries, matrix.RunOptions{
 				DryRun:                dryRun,
 				StopOnFailure:         stopOnFailure,
@@ -233,6 +256,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				RepoRoot:              repoRoot,
 				EnvFiles:              envFiles,
 				EnvFile:               envFile,
+				IngressBaseDomains:    ingressBaseDomains,
 				IngressBaseDomain:     ingressBaseDomain,
 				LogLevel:              logLevel,
 				SkipDependencyUpdate:  skipDependencyUpdate,
@@ -242,7 +266,10 @@ This command calls deploy.Execute() for each matrix entry.`,
 				KeycloakProtocol:      keycloakProtocol,
 			})
 
-			fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results))
+			// Print summary (skip for dry-run since it prints its own output)
+			if !dryRun {
+				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results))
+			}
 
 			return err
 		},
@@ -265,7 +292,9 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&kubeContext, "kube-context", "", "Default Kubernetes context for all platforms (overridden by --kube-context-gke/--kube-context-eks)")
 	f.StringVar(&kubeContextGKE, "kube-context-gke", "", "Kubernetes context for GKE entries")
 	f.StringVar(&kubeContextEKS, "kube-context-eks", "", "Kubernetes context for EKS entries")
-	f.StringVar(&ingressBaseDomain, "ingress-base-domain", "", "Base domain for ingress hosts; each entry gets <namespace>.<base-domain>")
+	f.StringVar(&ingressBaseDomain, "ingress-base-domain", "", "Fallback base domain for ingress hosts (overridden by --ingress-base-domain-gke/--ingress-base-domain-eks)")
+	f.StringVar(&ingressBaseDomainGKE, "ingress-base-domain-gke", "", "Ingress base domain for GKE entries (e.g., ci.distro.ultrawombat.com)")
+	f.StringVar(&ingressBaseDomainEKS, "ingress-base-domain-eks", "", "Ingress base domain for EKS entries (e.g., distribution.aws.camunda.cloud)")
 	f.IntVar(&maxParallel, "max-parallel", 1, "Maximum number of entries to run concurrently (1 = sequential)")
 	f.StringVar(&envFile, "env-file", "", "Default .env file for all versions (overridden by --env-file-X.Y)")
 	f.StringVar(&envFile86, "env-file-8.6", "", "Path to .env file for 8.6 entries")
@@ -281,6 +310,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 
 	registerIngressBaseDomainCompletion(cmd)
+	registerIngressBaseDomainCompletionForFlag(cmd, "ingress-base-domain-gke")
+	registerIngressBaseDomainCompletionForFlag(cmd, "ingress-base-domain-eks")
 	registerKubeContextCompletion(cmd)
 	registerKubeContextCompletionForFlag(cmd, "kube-context-gke")
 	registerKubeContextCompletionForFlag(cmd, "kube-context-eks")

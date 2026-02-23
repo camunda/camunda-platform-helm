@@ -490,40 +490,58 @@ func TestBuildNamespace(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "standard entry without platform",
+			name:   "install flow without platform",
 			prefix: "matrix",
-			entry:  Entry{Version: "8.8", Shortname: "eske"},
-			want:   "matrix-88-eske",
+			entry:  Entry{Version: "8.8", Shortname: "eske", Flow: "install"},
+			want:   "matrix-88-eske-inst",
 		},
 		{
-			name:   "entry with platform gets platform suffix",
+			name:   "install flow with gke platform",
 			prefix: "matrix",
-			entry:  Entry{Version: "8.8", Shortname: "eske", Platform: "gke"},
-			want:   "matrix-88-eske-gke",
+			entry:  Entry{Version: "8.8", Shortname: "eske", Flow: "install", Platform: "gke"},
+			want:   "matrix-88-eske-inst-gke",
 		},
 		{
-			name:   "entry with eks platform",
+			name:   "install flow with eks platform",
 			prefix: "matrix",
-			entry:  Entry{Version: "8.8", Shortname: "eske", Platform: "eks"},
-			want:   "matrix-88-eske-eks",
+			entry:  Entry{Version: "8.8", Shortname: "eske", Flow: "install", Platform: "eks"},
+			want:   "matrix-88-eske-inst-eks",
+		},
+		{
+			name:   "upgrade-patch flow with gke platform",
+			prefix: "matrix",
+			entry:  Entry{Version: "8.7", Shortname: "es", Flow: "upgrade-patch", Platform: "gke"},
+			want:   "matrix-87-es-upgp-gke",
+		},
+		{
+			name:   "upgrade-minor flow without platform",
+			prefix: "matrix",
+			entry:  Entry{Version: "8.8", Shortname: "kemt", Flow: "upgrade-minor"},
+			want:   "matrix-88-kemt-upgm",
 		},
 		{
 			name:   "alpha version with platform",
 			prefix: "matrix",
-			entry:  Entry{Version: "8.9", Shortname: "oske", Platform: "gke"},
-			want:   "matrix-89-oske-gke",
+			entry:  Entry{Version: "8.9", Shortname: "oske", Flow: "install", Platform: "gke"},
+			want:   "matrix-89-oske-inst-gke",
 		},
 		{
 			name:   "custom prefix",
 			prefix: "ci",
-			entry:  Entry{Version: "8.6", Shortname: "kemt"},
-			want:   "ci-86-kemt",
+			entry:  Entry{Version: "8.6", Shortname: "kemt", Flow: "install"},
+			want:   "ci-86-kemt-inst",
 		},
 		{
 			name:   "falls back to scenario when shortname empty",
 			prefix: "matrix",
-			entry:  Entry{Version: "8.8", Scenario: "elasticsearch", Shortname: ""},
-			want:   "matrix-88-elasticsearch",
+			entry:  Entry{Version: "8.8", Scenario: "elasticsearch", Shortname: "", Flow: "install"},
+			want:   "matrix-88-elasticsearch-inst",
+		},
+		{
+			name:   "empty flow defaults to inst",
+			prefix: "matrix",
+			entry:  Entry{Version: "8.8", Shortname: "eske"},
+			want:   "matrix-88-eske-inst",
 		},
 	}
 
@@ -532,6 +550,31 @@ func TestBuildNamespace(t *testing.T) {
 			got := buildNamespace(tt.prefix, tt.entry)
 			if got != tt.want {
 				t.Errorf("buildNamespace(%q, entry) = %q, want %q", tt.prefix, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- flowAbbrev tests ---
+
+func TestFlowAbbrev(t *testing.T) {
+	tests := []struct {
+		flow string
+		want string
+	}{
+		{"install", "inst"},
+		{"upgrade-patch", "upgp"},
+		{"upgrade-minor", "upgm"},
+		{"", "inst"},
+		{"custom-flow-long", "cust"},
+		{"abc", "abc"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.flow, func(t *testing.T) {
+			got := flowAbbrev(tt.flow)
+			if got != tt.want {
+				t.Errorf("flowAbbrev(%q) = %q, want %q", tt.flow, got, tt.want)
 			}
 		})
 	}
@@ -793,6 +836,69 @@ func TestResolveUseVaultBackedSecrets(t *testing.T) {
 			got := resolveUseVaultBackedSecrets(tt.opts, tt.platform)
 			if got != tt.want {
 				t.Errorf("resolveUseVaultBackedSecrets(opts, %q) = %v, want %v", tt.platform, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- resolveIngressBaseDomain tests ---
+
+func TestResolveIngressBaseDomain(t *testing.T) {
+	tests := []struct {
+		name     string
+		opts     RunOptions
+		platform string
+		want     string
+	}{
+		{
+			name:     "returns platform-specific domain for gke",
+			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}},
+			platform: "gke",
+			want:     "ci.distro.ultrawombat.com",
+		},
+		{
+			name:     "returns platform-specific domain for eks",
+			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}},
+			platform: "eks",
+			want:     "distribution.aws.camunda.cloud",
+		},
+		{
+			name:     "falls back to IngressBaseDomain when platform not in map",
+			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}, IngressBaseDomain: "fallback.example.com"},
+			platform: "eks",
+			want:     "fallback.example.com",
+		},
+		{
+			name:     "falls back to IngressBaseDomain when map is nil",
+			opts:     RunOptions{IngressBaseDomain: "fallback.example.com"},
+			platform: "gke",
+			want:     "fallback.example.com",
+		},
+		{
+			name:     "returns empty when nothing configured",
+			opts:     RunOptions{},
+			platform: "gke",
+			want:     "",
+		},
+		{
+			name:     "platform-specific takes priority over fallback",
+			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": "ci.distro.ultrawombat.com"}, IngressBaseDomain: "fallback.example.com"},
+			platform: "gke",
+			want:     "ci.distro.ultrawombat.com",
+		},
+		{
+			name:     "skips empty string in map and falls back",
+			opts:     RunOptions{IngressBaseDomains: map[string]string{"gke": ""}, IngressBaseDomain: "fallback.example.com"},
+			platform: "gke",
+			want:     "fallback.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveIngressBaseDomain(tt.opts, tt.platform)
+			if got != tt.want {
+				t.Errorf("resolveIngressBaseDomain(opts, %q) = %q, want %q", tt.platform, got, tt.want)
 			}
 		})
 	}

@@ -59,7 +59,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "opensearch", "rdbms", "rdbms-oracle"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-external", "opensearch", "rdbms", "rdbms-oracle"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -198,6 +198,18 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive QA mode from prefix
 	if strings.HasPrefix(s, "qa-") {
 		config.QA = true
+	}
+
+	// Handle well-known composite scenarios that can't be derived from name parsing alone.
+	// keycloak-original historically means: external Keycloak + external Elasticsearch.
+	// The name is misleading (it refers to the "original" test config format), but
+	// 3rd parties call test-integration-template.yaml with scenario: keycloak-original,
+	// so it must keep working.
+	if s == "keycloak-original" {
+		config.Identity = "keycloak-external"
+		config.Persistence = "elasticsearch-external"
+		config.Platform = "gke"
+		return config
 	}
 
 	// Derive identity

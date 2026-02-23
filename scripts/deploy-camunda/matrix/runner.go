@@ -3,12 +3,16 @@ package matrix
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/jwalton/gchalk"
+
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"scripts/camunda-core/pkg/scenarios"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 )
@@ -59,8 +63,13 @@ type RunOptions struct {
 	// KeycloakProtocol is the protocol for the external Keycloak (e.g., "https").
 	// Defaults to config.DefaultKeycloakProtocol when empty.
 	KeycloakProtocol string
-	// IngressBaseDomain is the base domain for ingress hosts.
-	// When set, each entry gets <namespace>.<base-domain> as its hostname.
+	// IngressBaseDomains maps platform names to ingress base domains, e.g.,
+	// {"gke": "ci.distro.ultrawombat.com", "eks": "distribution.aws.camunda.cloud"}
+	// When an entry's platform matches a key, that domain is used for ingress hostname construction.
+	IngressBaseDomains map[string]string
+	// IngressBaseDomain is a fallback base domain for ingress hosts used when no
+	// platform-specific domain is configured. If both IngressBaseDomains and
+	// IngressBaseDomain are set, the platform-specific domain takes priority.
 	// Valid values: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
 	IngressBaseDomain string
 	// LogLevel controls the log verbosity for each entry's deployment.
@@ -127,51 +136,180 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	return results, retErr
 }
 
-// dryRun logs what would be deployed without executing anything.
+// dryRunEntry holds resolved details for one matrix entry in dry-run mode.
+type dryRunEntry struct {
+	entry       Entry
+	namespace   string
+	kubeCtx     string
+	platform    string
+	ingressHost string
+	envFile     string
+	useVault    bool
+	// Resolved layer config (derived from scenario name + explicit overrides).
+	identity    string
+	persistence string
+	features    []string
+	layerFiles  []string // short relative paths, e.g., "values/identity/keycloak.yaml"
+}
+
+// dryRun resolves what would be deployed and prints a clean summary to stdout.
 func dryRun(entries []Entry, opts RunOptions) []RunResult {
 	var results []RunResult
 	versions := VersionOrder(entries)
 	groups := GroupByVersion(entries)
 
+	// Resolve all entries first.
+	var resolved []dryRunEntry
 	for _, version := range versions {
-		versionEntries := groups[version]
-		logging.Logger.Info().
-			Str("version", version).
-			Int("entries", len(versionEntries)).
-			Msg("Processing version")
-
-		for _, entry := range versionEntries {
+		for _, entry := range groups[version] {
 			namespace := buildNamespace(opts.NamespacePrefix, entry)
-			ingressHost := ""
-			if opts.IngressBaseDomain != "" {
-				ingressHost = namespace + "." + opts.IngressBaseDomain
-			}
 			platform := resolvePlatform(opts, entry)
 			kubeCtx := resolveKubeContext(opts, platform)
 			envFile := resolveEnvFile(opts, entry.Version)
 			useVault := resolveUseVaultBackedSecrets(opts, platform)
-			logging.Logger.Info().
-				Str("version", entry.Version).
-				Str("scenario", entry.Scenario).
-				Str("shortname", entry.Shortname).
-				Str("auth", entry.Auth).
-				Str("flow", entry.Flow).
-				Str("namespace", namespace).
-				Str("platform", platform).
-				Str("kubeContext", kubeCtx).
-				Str("envFile", envFile).
-				Str("ingressHost", ingressHost).
-				Str("entryPlatform", entry.Platform).
-				Strs("exclude", entry.Exclude).
-				Bool("enabled", entry.Enabled).
-				Bool("cleanup", opts.Cleanup).
-				Bool("vaultBackedSecrets", useVault).
-				Int("maxParallel", opts.MaxParallel).
-				Msg("[DRY-RUN] Would deploy")
+			baseDomain := resolveIngressBaseDomain(opts, platform)
+			ingressHost := ""
+			if baseDomain != "" {
+				ingressHost = namespace + "." + baseDomain
+			}
+
+			// Resolve deployment layers (same logic as deploy.go prepareScenarioValues).
+			scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
+			deployConfig := scenarios.MapScenarioToConfig(entry.Scenario)
+			deployConfig.Platform = platform
+			deployConfig.Flow = entry.Flow
+			if entry.Identity != "" {
+				deployConfig.Identity = entry.Identity
+			}
+			if entry.Persistence != "" {
+				deployConfig.Persistence = entry.Persistence
+			}
+			if len(entry.Features) > 0 {
+				deployConfig.Features = entry.Features
+			}
+
+			var layerFiles []string
+			if paths, err := deployConfig.ResolvePaths(scenarioDir); err == nil {
+				for _, p := range paths {
+					if rel, relErr := filepath.Rel(scenarioDir, p); relErr == nil {
+						layerFiles = append(layerFiles, rel)
+					} else {
+						layerFiles = append(layerFiles, filepath.Base(p))
+					}
+				}
+			}
+
+			resolved = append(resolved, dryRunEntry{
+				entry:       entry,
+				namespace:   namespace,
+				kubeCtx:     kubeCtx,
+				platform:    platform,
+				ingressHost: ingressHost,
+				envFile:     envFile,
+				useVault:    useVault,
+				identity:    deployConfig.Identity,
+				persistence: deployConfig.Persistence,
+				features:    deployConfig.Features,
+				layerFiles:  layerFiles,
+			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
 	}
+
+	// Print clean dry-run output.
+	fmt.Fprintln(os.Stdout, formatDryRunOutput(resolved, versions, opts))
 	return results
+}
+
+// Style helpers for dry-run output. These wrap logging.Emphasize so colors
+// are automatically disabled in CI/non-TTY environments.
+var (
+	dryHead = func(s string) string { return logging.Emphasize(s, gchalk.Bold) }
+	dryKey  = func(s string) string { return logging.Emphasize(s, gchalk.Cyan) }
+	dryVal  = func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
+	dryOk   = func(s string) string { return logging.Emphasize(s, gchalk.Green) }
+	dryWarn = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
+	dryDim  = func(s string) string { return logging.Emphasize(s, gchalk.WithBrightBlack().Italic) }
+)
+
+// formatDryRunOutput produces a human-readable dry-run summary grouped by version.
+func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOptions) string {
+	var b strings.Builder
+
+	// Group by version.
+	groups := make(map[string][]dryRunEntry)
+	for _, e := range entries {
+		groups[e.entry.Version] = append(groups[e.entry.Version], e)
+	}
+
+	for i, version := range versions {
+		versionEntries := groups[version]
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		fmt.Fprintf(&b, "%s\n",
+			dryHead(fmt.Sprintf("=== Version %s (%d entries) ===", version, len(versionEntries))))
+
+		for j, e := range versionEntries {
+			b.WriteString("\n")
+
+			// Header line: number, scenario, shortname, flow, platform, auth.
+			scenarioLabel := dryKey(e.entry.Scenario)
+			if e.entry.Shortname != "" {
+				scenarioLabel += " " + dryDim("("+e.entry.Shortname+")")
+			}
+			fmt.Fprintf(&b, "  %s %s | %s | %s | %s\n",
+				dryHead(fmt.Sprintf("[%d]", j+1)),
+				scenarioLabel,
+				dryOk(e.entry.Flow),
+				dryOk(e.platform),
+				dryOk(e.entry.Auth))
+
+			// Layers — the most important info.
+			features := dryDim("-")
+			if len(e.features) > 0 {
+				features = dryWarn(strings.Join(e.features, ", "))
+			}
+			fmt.Fprintf(&b, "      %s %s + %s + %s  %s %s\n",
+				dryKey("layers:"),
+				dryVal(e.identity), dryVal(e.persistence), dryVal(e.platform),
+				dryKey("features:"), features)
+
+			// Namespace.
+			fmt.Fprintf(&b, "      %s %s\n", dryKey("namespace:"), e.namespace)
+
+			// Optional fields — only shown when set.
+			if e.kubeCtx != "" {
+				fmt.Fprintf(&b, "      %s   %s\n", dryKey("context:"), e.kubeCtx)
+			}
+			if e.ingressHost != "" {
+				fmt.Fprintf(&b, "      %s   %s\n", dryKey("ingress:"), e.ingressHost)
+			}
+			if e.envFile != "" {
+				fmt.Fprintf(&b, "      %s   %s\n", dryKey("envFile:"), e.envFile)
+			}
+			if e.useVault {
+				fmt.Fprintf(&b, "      %s     %s\n", dryKey("vault:"), dryWarn("true"))
+			}
+			if len(e.entry.Exclude) > 0 {
+				fmt.Fprintf(&b, "      %s   %s\n", dryKey("exclude:"), dryWarn(strings.Join(e.entry.Exclude, ", ")))
+			}
+
+			// Resolved values files.
+			if len(e.layerFiles) > 0 {
+				fmt.Fprintf(&b, "      %s\n", dryKey("files:"))
+				for _, f := range e.layerFiles {
+					fmt.Fprintf(&b, "        %s %s\n", dryDim("-"), f)
+				}
+			}
+		}
+	}
+
+	// Footer.
+	fmt.Fprintf(&b, "\n%s\n",
+		dryHead(fmt.Sprintf("--- %d entries across %d versions (dry-run, nothing deployed) ---", len(entries), len(versions))))
+
+	return b.String()
 }
 
 // runSequential processes all entries one at a time.
@@ -307,27 +445,50 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 }
 
 // buildNamespace constructs the namespace for a matrix entry.
-// Pattern: <prefix>-<version-compact>-<shortname> when no platform is set (e.g., matrix-88-eske),
-// or <prefix>-<version-compact>-<shortname>-<platform> when a platform is set (e.g., matrix-88-eske-eks).
-// The platform suffix prevents namespace collisions for scenarios that deploy to multiple platforms.
+// Pattern: <prefix>-<version-compact>-<shortname>-<flow>[-<platform>]
+// e.g., matrix-88-eske-inst-gke, matrix-87-es-upgp-eks.
+// The flow suffix prevents namespace collisions when a scenario has multiple flows
+// (e.g., install + upgrade-patch).
 func buildNamespace(prefix string, entry Entry) string {
 	base := buildBaseNamespace(entry)
 	return prefix + "-" + base
 }
 
 // buildBaseNamespace constructs the namespace suffix for a matrix entry without the prefix.
-// Pattern: <version-compact>-<shortname> when no platform is set (e.g., 88-eske),
-// or <version-compact>-<shortname>-<platform> when a platform is set (e.g., 88-eske-eks).
+// Pattern: <version-compact>-<shortname>-<flow>[-<platform>]
+// e.g., 88-eske-inst, 87-es-upgp-gke.
 func buildBaseNamespace(entry Entry) string {
 	versionCompact := strings.ReplaceAll(entry.Version, ".", "")
 	shortname := entry.Shortname
 	if shortname == "" {
 		shortname = entry.Scenario
 	}
+	flow := flowAbbrev(entry.Flow)
 	if entry.Platform != "" {
-		return fmt.Sprintf("%s-%s-%s", versionCompact, shortname, entry.Platform)
+		return fmt.Sprintf("%s-%s-%s-%s", versionCompact, shortname, flow, entry.Platform)
 	}
-	return fmt.Sprintf("%s-%s", versionCompact, shortname)
+	return fmt.Sprintf("%s-%s-%s", versionCompact, shortname, flow)
+}
+
+// flowAbbrev returns a short abbreviation for a flow name, used in namespace construction.
+var flowAbbrevMap = map[string]string{
+	"install":       "inst",
+	"upgrade-patch": "upgp",
+	"upgrade-minor": "upgm",
+}
+
+func flowAbbrev(flow string) string {
+	if abbrev, ok := flowAbbrevMap[flow]; ok {
+		return abbrev
+	}
+	if flow == "" {
+		return "inst"
+	}
+	// Unknown flow: use first 4 chars as fallback.
+	if len(flow) > 4 {
+		return flow[:4]
+	}
+	return flow
 }
 
 // ingressSubdomain returns the namespace as the ingress subdomain when a base
@@ -375,6 +536,15 @@ func resolveUseVaultBackedSecrets(opts RunOptions, platform string) bool {
 		return v
 	}
 	return opts.UseVaultBackedSecrets
+}
+
+// resolveIngressBaseDomain returns the ingress base domain for a given platform.
+// It checks IngressBaseDomains (platform-specific map) first, then falls back to IngressBaseDomain.
+func resolveIngressBaseDomain(opts RunOptions, platform string) string {
+	if d, ok := opts.IngressBaseDomains[platform]; ok && d != "" {
+		return d
+	}
+	return opts.IngressBaseDomain
 }
 
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
@@ -436,10 +606,16 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		RunE2ETests:           opts.TestE2E || opts.TestAll,
 		RunAllTests:           opts.TestAll,
 		// Ingress: use the namespace as subdomain so each entry gets a unique hostname.
-		// e.g., namespace "matrix-89-eske" + base "ci.distro.ultrawombat.com"
-		//     → hostname "matrix-89-eske.ci.distro.ultrawombat.com"
-		IngressSubdomain:  ingressSubdomain(opts.IngressBaseDomain, namespace),
-		IngressBaseDomain: opts.IngressBaseDomain,
+		// e.g., namespace "matrix-89-eske-inst" + base "ci.distro.ultrawombat.com"
+		//     → hostname "matrix-89-eske-inst.ci.distro.ultrawombat.com"
+		// The base domain is resolved per-platform (GKE/EKS may have different domains).
+		IngressSubdomain:  ingressSubdomain(resolveIngressBaseDomain(opts, platform), namespace),
+		IngressBaseDomain: resolveIngressBaseDomain(opts, platform),
+		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.
+		// When set, these override MapScenarioToConfig name-based derivation in deploy.go.
+		Identity:    entry.Identity,
+		Persistence: entry.Persistence,
+		Features:    entry.Features,
 	}
 
 	logging.Logger.Info().
@@ -454,6 +630,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Str("envFile", envFile).
 		Str("chartPath", entry.ChartPath).
 		Str("ingressHost", flags.ResolveIngressHostname()).
+		Str("identity", entry.Identity).
+		Str("persistence", entry.Persistence).
+		Strs("features", entry.Features).
 		Bool("vaultBackedSecrets", useVault).
 		Msg("Deploying matrix entry")
 
