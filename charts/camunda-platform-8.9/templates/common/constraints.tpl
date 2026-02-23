@@ -159,6 +159,16 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
       {{- end }}
     {{- end }}
 
+  {{/* External Keycloak auth secret must be explicitly configured when using external Keycloak */}}
+  {{ if and (.Values.identity.enabled)
+            (not .Values.identityKeycloak.enabled)
+            (.Values.global.identity.keycloak.auth.adminUser)
+            (not .Values.global.identity.keycloak.auth.secret.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append
+        $existingSecretsNotConfigured "global.identity.keycloak.auth.secret.existingSecret"
+    }}
+  {{- end }}
+
   {{ if and (.Values.identityKeycloak.enabled)
             (not .Values.identityKeycloak.auth.existingSecret) }}
     {{- $existingSecretsNotConfigured = append
@@ -247,6 +257,7 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
     (dict "path" "global.elasticsearch.tls" "config" .Values.global.elasticsearch.tls "isTlsConfig" true)
     (dict "path" "global.opensearch.tls" "config" .Values.global.opensearch.tls "isTlsConfig" true)
     (dict "path" "console.tls" "config" .Values.console.tls "isTlsConfig" true)
+    (dict "path" "global.identity.keycloak.auth" "config" .Values.global.identity.keycloak.auth "isSecretConfig" true)
   -}}
 
   {{- range $secretConfigs -}}
@@ -258,8 +269,8 @@ Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
 
     {{/* Check if legacy configuration is used */}}
     {{- $hasLegacyConfig := false -}}
-    {{- if .isTlsConfig -}}
-      {{/* Special handling for TLS configs - only check existingSecret (no plaintextKey) */}}
+    {{- if or .isTlsConfig .isSecretConfig -}}
+      {{/* Check legacy existingSecret key (used by TLS configs and secret configs) */}}
       {{- if and $config (kindOf $config | eq "map") -}}
         {{- if and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "" | toString) "") (ne (get $config $legacySecretKey | toString) "") -}}
           {{- $hasLegacyConfig = true -}}

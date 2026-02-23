@@ -290,17 +290,22 @@ global:
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
       realm: "/realms/camunda-platform"
-      ## @param global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
+      ## @extra global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
       auth:
-        {}
-        # identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
-        # adminUser: ""
-        # identity.keycloak.auth.existingSecret can be used to configure existing Secret object which has admin password
-        # to access existing Keycloak.
-        # existingSecret: ""
-        # identity.keycloak.auth.existingSecretKey can be used to configure the key inside existing Secret object
-        # which has admin password to access existing Keycloak.
-        # existingSecretKey: "admin-password"
+        ## @param global.identity.keycloak.auth.adminUser defines the admin user to access existing Keycloak.
+        adminUser: ""
+        ## @skip global.identity.keycloak.auth.existingSecret (DEPRECATED - use global.identity.keycloak.auth.secret instead) @skip because these are internal legacy keys, not public API.
+        existingSecret: ""
+        ## @skip global.identity.keycloak.auth.existingSecretKey (DEPRECATED - use global.identity.keycloak.auth.secret instead) @skip because these are internal legacy keys, not public API.
+        existingSecretKey: ""
+        ## @extra global.identity.keycloak.auth.secret configuration to provide the Keycloak admin password secret.
+        secret:
+          ## @param global.identity.keycloak.auth.secret.inlineSecret can be used to provide the Keycloak admin password as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.keycloak.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Keycloak admin password.
+          existingSecret: ""
+          ## @param global.identity.keycloak.auth.secret.existingSecretKey defines the key within the existing secret object containing the Keycloak admin password.
+          existingSecretKey: ""
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
     auth:

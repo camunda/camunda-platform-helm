@@ -66,46 +66,6 @@ Keycloak helpers
 */}}
 
 {{/*
-[identity] Fail in case Keycloak chart is disabled and existing Keycloak URL is not configured.
-*/}}
-{{- define "identity.keycloak.isConfigured" -}}
-{{- $failMessageRaw := `
-[identity] To configure Keycloak, you have 3 options:
-
-  - Case 1: If you want to deploy Keycloak chart as it is, then set the following:
-    - keycloak.enabled: true
-
-  - Case 2: If you want to customize the Keycloak chart URL, then set the following:
-    - keycloak.enabled: true
-    - global.identity.keycloak.url.protocol
-    - global.identity.keycloak.url.host
-    - global.identity.keycloak.url.port
-
-  - Case 3: If you want to use already existing Keycloak, then set the following:
-    - keycloak.enabled: false
-    - global.identity.keycloak.url.protocol
-    - global.identity.keycloak.url.host
-    - global.identity.keycloak.url.port
-    - global.identity.keycloak.auth.adminUser
-    - global.identity.keycloak.auth.existingSecret
-
-For more details, please check Camunda Helm chart documentation.
-` -}}
-    {{- $failMessage := printf "\n%s" $failMessageRaw | trimSuffix "\n" -}}
-
-    {{- if .Values.global.identity.keycloak.url -}}
-        {{- $_ := required $failMessage .Values.global.identity.keycloak.url.protocol -}}
-        {{- $_ := required $failMessage .Values.global.identity.keycloak.url.host -}}
-        {{- $_ := required $failMessage .Values.global.identity.keycloak.url.port -}}
-    {{- end -}}
-
-    {{- if .Values.global.identity.keycloak.auth -}}
-        {{- $_ := required $failMessage .Values.global.identity.keycloak.auth.adminUser -}}
-        {{- $_ := required $failMessage .Values.global.identity.keycloak.auth.existingSecret -}}
-    {{- end -}}
-{{- end -}}
-
-{{/*
 [identity] Keycloak default URL.
 */}}
 {{- define "identity.keycloak.hostDefault" -}}
@@ -203,7 +163,6 @@ This is mainly used to access the external Keycloak service in the global Ingres
 [identity] Get Keycloak full URL (protocol, host, port, and contextPath).
 */}}
 {{- define "identity.keycloak.url" -}}
-    {{- include "identity.keycloak.isConfigured" . -}}
     {{-
       printf "%s://%s%s%s"
         (include "identity.keycloak.protocol" .)
@@ -214,41 +173,57 @@ This is mainly used to access the external Keycloak service in the global Ingres
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak auth admin user. For more details:
+[identity] Get Keycloak auth admin user.
+Checks the individual key rather than map truthiness to avoid the bug where
+setting any key in the auth map causes all helpers to switch source.
 */}}
 {{- define "identity.keycloak.authAdminUser" -}}
-    {{- if .Values.global.identity.keycloak.auth }}
+    {{- if .Values.global.identity.keycloak.auth.adminUser -}}
         {{- .Values.global.identity.keycloak.auth.adminUser -}}
-    {{- else }}
+    {{- else -}}
         {{- .Values.identityKeycloak.auth.adminUser -}}
-    {{- end }}
+    {{- end -}}
 {{- end -}}
 
 {{/*
-[identity] Get name of Keycloak auth existing secret. For more details:
-https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/
+[identity] Resolve the default Kubernetes Secret name for keycloak admin password
+from identityKeycloak subchart values.
 */}}
-{{- define "identity.keycloak.authExistingSecret" -}}
-    {{- if .Values.global.identity.keycloak.auth }}
-        {{- .Values.global.identity.keycloak.auth.existingSecret -}}
-    {{- else if .Values.identityKeycloak.auth.existingSecret }}
-        {{- .Values.identityKeycloak.auth.existingSecret }}
-    {{- else -}}
-        {{ .Release.Name }}-keycloak
-    {{- end }}
+{{- define "identity.keycloak.defaultAuthSecretName" -}}
+    {{- .Values.identityKeycloak.auth.existingSecret | default (printf "%s-keycloak" .Release.Name) -}}
 {{- end -}}
 
 {{/*
-[identity] Get Keycloak auth existing secret key.
+[identity] Resolve the default key within the Kubernetes Secret for keycloak admin password
+from identityKeycloak subchart values.
 */}}
-{{- define "identity.keycloak.authExistingSecretKey" -}}
-    {{- if .Values.global.identity.keycloak.auth }}
-        {{- .Values.global.identity.keycloak.auth.existingSecretKey -}}
-    {{- else if .Values.identityKeycloak.auth.passwordSecretKey }}
-        {{- .Values.identityKeycloak.auth.passwordSecretKey }}
-    {{- else -}}
-        admin-password
-    {{- end }}
+{{- define "identity.keycloak.defaultAuthSecretKey" -}}
+    {{- .Values.identityKeycloak.auth.passwordSecretKey | default "admin-password" -}}
+{{- end -}}
+
+{{/*
+[identity] Normalize keycloak auth password configuration into the standard secret config format
+expected by camundaPlatform.normalizeSecretConfiguration.
+Priority: new .secret.* keys > legacy existingSecret/existingSecretKey > identityKeycloak subchart defaults
+*/}}
+{{- define "identity.keycloak.authPasswordConfig" -}}
+{{- $auth := .Values.global.identity.keycloak.auth -}}
+{{- $config := dict -}}
+{{/* New standard keys take priority */}}
+{{- if and $auth.secret (or $auth.secret.existingSecret $auth.secret.inlineSecret) -}}
+  {{- $_ := set $config "secret" $auth.secret -}}
+{{- else if $auth.existingSecret -}}
+  {{- $_ := set $config "secret" (dict
+      "existingSecret" $auth.existingSecret
+      "existingSecretKey" ($auth.existingSecretKey | default "admin-password")
+  ) -}}
+{{- else -}}
+  {{- $_ := set $config "secret" (dict
+      "existingSecret" (include "identity.keycloak.defaultAuthSecretName" .)
+      "existingSecretKey" (include "identity.keycloak.defaultAuthSecretKey" .)
+  ) -}}
+{{- end -}}
+{{- toYaml $config -}}
 {{- end -}}
 
 {{/*
