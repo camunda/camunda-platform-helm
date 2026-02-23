@@ -8,18 +8,21 @@ global:
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
       admin:
         enabled: true
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
       webModeler:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
       console:
         redirectUrl: "https://{{ .Values.global.ingress.host }}"
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-console-client-token"
       optimize:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-optimize-client-token"
 
 identity:
   firstUser:
@@ -63,8 +66,9 @@ connectors:
     authentication:
       method: oidc
       oidc:
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
 
 webModeler:
   security:
@@ -85,8 +89,9 @@ orchestration:
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
         backwardsCompatibleAudiences:
           - operate-api
           - tasklist-api

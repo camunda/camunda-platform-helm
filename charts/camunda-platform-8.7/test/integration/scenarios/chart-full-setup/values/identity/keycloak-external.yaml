@@ -4,18 +4,6 @@
 global:
   annotations:
     keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
-  elasticsearch:
-    enabled: true
-    external: true
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-    auth:
-      username: elastic
-      existingSecret: infra-credentials
-      existingSecretKey: elasticsearch-password
-    url:
-      protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-      port: 443
   identity:
     keycloak:
       url:
@@ -84,40 +72,6 @@ identityPostgresql:
       adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
       userPasswordKey: identity-keycloak-postgresql-user-password
 
-operate:
-  env: 
-    - name: CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX
-      value: $OPERATE_INDEX_PREFIX-$FLOW
-    - name: CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_INDEXPREFIX
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-
-optimize:
-  env:
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
-    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-
-zeebe:
-  broker:
-    exporters:
-      elasticsearch:
-        index:
-          prefix: "$ORCHESTRATION_INDEX_PREFIX-$FLOW"
-  env:
-    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-
-tasklist:
-  env: 
-    - name: CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX
-      value: $TASKLIST_INDEX_PREFIX-$FLOW
-    - name: CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_INDEXPREFIX
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-
 console:
   keycloak:
     realm: $KEYCLOAK_REALM
-
-elasticsearch:
-  enabled: false

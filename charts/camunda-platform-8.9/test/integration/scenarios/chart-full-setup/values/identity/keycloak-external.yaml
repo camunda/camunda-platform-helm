@@ -18,18 +18,6 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-  elasticsearch:
-    external: true
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-    auth:
-      username: elastic
-      secret:
-        existingSecret: infra-credentials
-        existingSecretKey: elasticsearch-password
-    url:
-      protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-      port: 443
   identity:
     keycloak:
       url:
@@ -74,8 +62,6 @@ global:
       #     existingSecret: "integration-test-credentials"
       #     existingSecretKey: "identity-connectors-client-token"
       ## END pre-install-upgrade.sh COMMENT
-        existingSecret:
-          name: "integration-test-credentials"
 
 identity:
   realm:
@@ -105,16 +91,7 @@ connectors:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-connectors-client-token"
 
-optimize:
-  env:
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
-    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-
 orchestration:
-  index:
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   security:
     initialization:
       defaultRoles:
