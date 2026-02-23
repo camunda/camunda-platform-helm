@@ -16,18 +16,6 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-  elasticsearch:
-    external: true
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-    auth:
-      username: elastic
-      secret:
-        existingSecret: infra-credentials
-        existingSecretKey: elasticsearch-password
-    url:
-      protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-      port: 443
   identity:
     keycloak:
       url:
@@ -37,9 +25,8 @@ global:
       realm: "/realms/$KEYCLOAK_REALM"
       auth:
         adminUser: "admin"
-        secret:
-          existingSecret: "infra-credentials"
-          existingSecretKey: "keycloak-admin-password"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
     auth:
       enabled: true
       publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
@@ -73,8 +60,6 @@ global:
       #     existingSecret: "integration-test-credentials"
       #     existingSecretKey: "identity-connectors-client-token"
       ## END pre-install-upgrade.sh COMMENT
-        existingSecret:
-          name: "integration-test-credentials"
 
 identity:
   realm:
@@ -118,19 +103,6 @@ identityPostgresql:
       adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
       userPasswordKey: identity-keycloak-postgresql-user-password
 
-connectors:
-  security:
-    authentication:
-      oidc:
-        existingSecret:
-          name: "integration-test-credentials"
-
-optimize:
-  env:
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
-      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
-    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
-      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 connectors:
   contextPath: "/connectors"
@@ -164,8 +136,6 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 orchestration:
-  index:
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   migration:
     identity:
       backoffLimit: 12
@@ -188,8 +158,6 @@ orchestration:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-orchestration-client-token"
-        existingSecret:
-          name: "integration-test-credentials"
         backwardsCompatibleAudiences:
           - operate-api
           - tasklist-api
@@ -198,6 +166,3 @@ orchestration:
 console:
   keycloak:
     realm: $KEYCLOAK_REALM
-
-elasticsearch:
-  enabled: false

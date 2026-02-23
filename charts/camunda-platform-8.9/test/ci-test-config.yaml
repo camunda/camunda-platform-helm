@@ -70,6 +70,8 @@ integration:
           shortname: esba
           auth: basic
           flow: install
+          identity: basic
+          persistence: elasticsearch
           exclude: [identity,console,orchestration-grpc]
           infra-type:
             gke: distroci
@@ -83,11 +85,15 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: oidc
+          persistence: elasticsearch
         - name: keycloak-mt
           enabled: true
           exclude: []
           shortname: kemt
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch-external
           flow: upgrade-minor
           infra-type:
             gke: distroci
@@ -101,6 +107,9 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
         - name: keycloak-original
           enabled: true
           exclude: []
@@ -110,6 +119,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: keycloak-external
+          persistence: elasticsearch-external
         - name: keycloak-original
           enabled: true
           exclude: []
@@ -119,6 +130,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: keycloak-external
+          persistence: elasticsearch-external
         - name: gateway-keycloak
           enabled: true
           exclude: []
@@ -148,6 +161,8 @@ integration:
           enabled: true
           auth: basic
           shortname: esba
+          identity: basic
+          persistence: elasticsearch
           exclude: [identity,console,orchestration-grpc]
           # deployment should work but integration tests are not passing
         - name: elasticsearch-oidc
@@ -155,11 +170,16 @@ integration:
           exclude: []
           shortname: esoi
           auth: oidc
+          identity: oidc
+          persistence: elasticsearch
         - name: multitenancy
           enabled: true
           shortname: mtke
           exclude: []
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch
+          features: [multitenancy]
           # not supported
         - name: opensearch
           enabled: false
@@ -171,6 +191,8 @@ integration:
           shortname: osba
           exclude: [identity,console,orchestration-grpc]
           auth: basic
+          identity: basic
+          persistence: opensearch
         - name: identity-migration
           enabled: true
           exclude: []
@@ -187,6 +209,9 @@ integration:
           exclude: []
           shortname: docstr
           auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
         - name: keycloak-external-mimic
           enabled: true
           exclude: []

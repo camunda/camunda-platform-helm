@@ -22,9 +22,8 @@ global:
       publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
       admin:
         enabled: true
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-admin-client-token"
+        existingSecret: "integration-test-credentials"
+        existingSecretKey: "identity-admin-client-token"
       webModeler:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
       console:
@@ -50,8 +49,6 @@ global:
       #     existingSecret: "integration-test-credentials"
       #     existingSecretKey: "identity-connectors-client-token"
       ## END pre-install-upgrade.sh COMMENT
-        existingSecret:
-          name: "integration-test-credentials"
 
 identity:
   firstUser:

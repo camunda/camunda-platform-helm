@@ -43,6 +43,9 @@ integration:
           exclude: []
           shortname: mt
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch
+          features: [multitenancy]
         - name: opensearch
           enabled: true
           exclude: []

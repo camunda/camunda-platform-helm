@@ -63,7 +63,8 @@ type ScenarioResult struct {
 	SecondUserPassword       string
 	ThirdUserPassword        string
 	KeycloakClientsSecret    string
-	TestEnvFile              string // Path to generated E2E test .env file
+	TestEnvFile              string   // Path to generated E2E test .env file
+	LayeredFiles             []string // Source values files resolved from layers (pre-processing)
 	Error                    error
 }
 
@@ -72,6 +73,7 @@ type ScenarioResult struct {
 type PreparedScenario struct {
 	ScenarioCtx         *ScenarioContext
 	ValuesFiles         []string
+	LayeredFiles        []string // Source values files resolved from layers (pre-processing)
 	VaultSecretPath     string
 	TempDir             string
 	RealmName           string
@@ -796,7 +798,7 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 	}
 
 	// Print single deployment summary
-	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix, result.Namespace, result.Release, result.TestEnvFile, flags)
+	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix, result.Namespace, result.Release, result.TestEnvFile, result.LayeredFiles, flags)
 
 	// Phase 3: Run tests if requested
 	if err := RunTests(ctx, flags, result.Namespace); err != nil {
@@ -1042,6 +1044,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 	// process each one into tempDir, and build the values list directly.
 	// For legacy values, we use the existing processValues + BuildValuesList flow.
 	var scenarioValueFiles []string
+	var resolvedLayerFiles []string // source layer files before env var processing (for display)
 	if isLayered {
 		logging.Logger.Debug().
 			Str("scenarioDir", effectiveScenarioDir).
@@ -1060,6 +1063,18 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		// Set flow for migrator detection
 		deployConfig.Flow = flags.Flow
 
+		// Apply explicit Selection + Composition overrides from CI config or CLI flags.
+		// These take precedence over name-based derivation from MapScenarioToConfig.
+		if flags.Identity != "" {
+			deployConfig.Identity = flags.Identity
+		}
+		if flags.Persistence != "" {
+			deployConfig.Persistence = flags.Persistence
+		}
+		if len(flags.Features) > 0 {
+			deployConfig.Features = flags.Features
+		}
+
 		layeredFiles, err := deployConfig.ResolvePaths(effectiveScenarioDir)
 		if err != nil {
 			os.RemoveAll(tempDir)
@@ -1070,6 +1085,26 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Strs("layeredFiles", layeredFiles).
 			Int("count", len(layeredFiles)).
 			Msg("📋 [prepareScenarioValues] processing layered values files")
+
+		// Log resolved deployment config and layer files at INFO level for visibility.
+		// Show short relative paths (from scenario dir) instead of absolute paths.
+		shortFiles := make([]string, len(layeredFiles))
+		for i, f := range layeredFiles {
+			if rel, err := filepath.Rel(effectiveScenarioDir, f); err == nil {
+				shortFiles[i] = rel
+			} else {
+				shortFiles[i] = filepath.Base(f)
+			}
+		}
+		logging.Logger.Info().
+			Str("scenario", scenarioCtx.ScenarioName).
+			Str("identity", deployConfig.Identity).
+			Str("persistence", deployConfig.Persistence).
+			Str("platform", deployConfig.Platform).
+			Strs("features", deployConfig.Features).
+			Strs("layerFiles", shortFiles).
+			Msg("Resolved deployment layers")
+		resolvedLayerFiles = shortFiles
 
 		// Process each layered file (env var substitution) into tempDir
 		for _, srcFile := range layeredFiles {
@@ -1184,6 +1219,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 	return &PreparedScenario{
 		ScenarioCtx:         scenarioCtx,
 		ValuesFiles:         vals,
+		LayeredFiles:        resolvedLayerFiles,
 		VaultSecretPath:     vaultSecretPath,
 		TempDir:             tempDir,
 		RealmName:           realmName,
@@ -1215,6 +1251,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		KeycloakRealm:            prepared.RealmName,
 		OptimizeIndexPrefix:      prepared.OptimizePrefix,
 		OrchestrationIndexPrefix: prepared.OrchestrationPrefix,
+		LayeredFiles:             prepared.LayeredFiles,
 	}
 
 	// Ensure temp directory is cleaned up when deployment completes
@@ -1522,7 +1559,7 @@ func renderTestEnvFile(ctx context.Context, flags *config.RuntimeFlags, namespac
 }
 
 // printDeploymentSummary outputs the deployment results.
-func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespace, release, testEnvFile string, flags *config.RuntimeFlags) {
+func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespace, release, testEnvFile string, layeredFiles []string, flags *config.RuntimeFlags) {
 	firstPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")
 	secondPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")
 	thirdPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
@@ -1535,6 +1572,12 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 		fmt.Fprintf(&out, "realm: %s\n", realm)
 		fmt.Fprintf(&out, "optimizeIndexPrefix: %s\n", optimizePrefix)
 		fmt.Fprintf(&out, "orchestrationIndexPrefix: %s\n", orchestrationPrefix)
+		if len(layeredFiles) > 0 {
+			fmt.Fprintf(&out, "layeredFiles:\n")
+			for _, f := range layeredFiles {
+				fmt.Fprintf(&out, "  - %s\n", f)
+			}
+		}
 		fmt.Fprintf(&out, "credentials:\n")
 		fmt.Fprintf(&out, "  firstUserPassword: %s\n", firstPwd)
 		fmt.Fprintf(&out, "  secondUserPassword: %s\n", secondPwd)
@@ -1575,6 +1618,16 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Realm")), styleVal(realm))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize index prefix")), styleVal(optimizePrefix))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration index prefix")), styleVal(orchestrationPrefix))
+
+	// Layered values files
+	if len(layeredFiles) > 0 {
+		out.WriteString("\n")
+		out.WriteString(styleHead("Layered values files"))
+		out.WriteString("\n")
+		for i, f := range layeredFiles {
+			fmt.Fprintf(&out, "  %s %s\n", styleKey(fmt.Sprintf("%d.", i+1)), styleVal(f))
+		}
+	}
 
 	out.WriteString("\n")
 	out.WriteString(styleHead("Test credentials"))
@@ -1657,6 +1710,12 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 				if r.IngressHost != "" {
 					fmt.Fprintf(&out, "  ingressHost: %s\n", r.IngressHost)
 				}
+				if len(r.LayeredFiles) > 0 {
+					fmt.Fprintf(&out, "  layeredFiles:\n")
+					for _, f := range r.LayeredFiles {
+						fmt.Fprintf(&out, "    - %s\n", f)
+					}
+				}
 				if r.TestEnvFile != "" {
 					fmt.Fprintf(&out, "  testEnvFile: %s\n", r.TestEnvFile)
 				}
@@ -1734,6 +1793,13 @@ func printMultiScenarioSummary(results []*ScenarioResult, flags *config.RuntimeF
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Keycloak Realm")), styleVal(r.KeycloakRealm))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize Index Prefix")), styleVal(r.OptimizeIndexPrefix))
 			fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration Index Prefix")), styleVal(r.OrchestrationIndexPrefix))
+			if len(r.LayeredFiles) > 0 {
+				out.WriteString(styleHead("  Layered values files:"))
+				out.WriteString("\n")
+				for j, f := range r.LayeredFiles {
+					fmt.Fprintf(&out, "    %s %s\n", styleKey(fmt.Sprintf("%d.", j+1)), styleVal(f))
+				}
+			}
 			if r.TestEnvFile != "" {
 				fmt.Fprintf(&out, "  %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "E2E env file")), styleVal(r.TestEnvFile))
 			}

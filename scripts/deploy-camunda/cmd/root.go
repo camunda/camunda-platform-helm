@@ -301,6 +301,19 @@ func registerIngressBaseDomainCompletion(cmd *cobra.Command) {
 	})
 }
 
+// registerIngressBaseDomainCompletionForFlag adds tab completion for a named ingress-base-domain flag.
+func registerIngressBaseDomainCompletionForFlag(cmd *cobra.Command, flagName string) {
+	_ = cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var completions []string
+		for _, d := range config.ValidIngressBaseDomains {
+			if toComplete == "" || strings.HasPrefix(d, toComplete) {
+				completions = append(completions, d)
+			}
+		}
+		return completions, cobra.ShellCompDirectiveNoFileComp
+	})
+}
+
 // getKubeContexts returns available kubectl contexts.
 func getKubeContexts() ([]string, error) {
 	out, err := exec.Command("kubectl", "config", "get-contexts", "-o", "name").Output()
