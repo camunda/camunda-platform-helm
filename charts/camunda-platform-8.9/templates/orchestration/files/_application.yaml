@@ -70,6 +70,11 @@ camunda:
       address: 0.0.0.0
       port: {{ .Values.orchestration.service.grpcPort }}
 
+  {{- if .Values.orchestration.mcp.enabled }}
+  mcp:
+    enabled: true
+  {{- end }}
+
   # Database configuration - Separated syntax.
   database:
   {{- if .Values.global.opensearch.enabled }}

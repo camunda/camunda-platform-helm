@@ -105,6 +105,31 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
+		{
+			Name:   "TestApplicationYamlShouldNotContainMcpByDefault",
+			Values: map[string]string{},
+			Expected: map[string]string{
+				"configmapApplication.camunda.mcp.enabled": "",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainMcpWhenDisabled",
+			Values: map[string]string{
+				"orchestration.mcp.enabled": "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.mcp.enabled": "",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainMcpEnabledWhenEnabled",
+			Values: map[string]string{
+				"orchestration.mcp.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.mcp.enabled": "true",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

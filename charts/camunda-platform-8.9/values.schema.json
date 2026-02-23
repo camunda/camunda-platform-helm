@@ -5479,6 +5479,16 @@
                         }
                     }
                 },
+                "mcp": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, the MCP endpoint (/mcp/cluster) is enabled on the orchestration cluster gateway",
+                            "default": false
+                        }
+                    }
+                },
                 "ingress": {
                     "type": "object",
                     "properties": {

@@ -2589,6 +2589,10 @@ orchestration:
       ## @param orchestration.gateway.grpc.host defines the url for the GRPC k8s Gateway resources
       host: "grpc-{{ .Values.global.host }}"
 
+  mcp:
+    ## @param orchestration.mcp.enabled if true, the MCP endpoint (/mcp/cluster) is enabled on the orchestration cluster gateway
+    enabled: false
+
   ingress:
     grpc:
       ## @param orchestration.ingress.grpc.enabled if true, an ingress resource is deployed with the Zeebe gateway deployment. Only useful if an ingress controller is available, like nginx.
