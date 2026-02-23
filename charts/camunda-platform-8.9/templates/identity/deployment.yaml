@@ -58,11 +58,10 @@ spec:
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
             ) | nindent 12 }}
-            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "identity.keycloak.authExistingSecret" . }}
-                  key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"           "VALUES_KEYCLOAK_SETUP_PASSWORD"
+                "config"            (include "identity.keycloak.authPasswordConfig" . | fromYaml)
+            ) | nindent 12 }}
             {{- if .Values.identity.firstUser.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
