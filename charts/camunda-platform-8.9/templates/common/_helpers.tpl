@@ -657,8 +657,8 @@ Release templates.
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
     url: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal .Values.webModeler.restapi.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.restapi.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.metrics.prometheus)) }}
   {{- else }}
   {{-  $proto := (lower .Values.webModeler.webapp.readinessProbe.scheme) -}}
   {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
