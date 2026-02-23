@@ -70,6 +70,12 @@ type CIScenario struct {
 	Flow      string   `yaml:"flow"`
 	Platforms []string `yaml:"platforms"`
 	Exclude   []string `yaml:"exclude"`
+
+	// Selection + Composition fields (explicit layer overrides).
+	// When set, these take precedence over name-based derivation in MapScenarioToConfig.
+	Identity    string   `yaml:"identity,omitempty"`
+	Persistence string   `yaml:"persistence,omitempty"`
+	Features    []string `yaml:"features,omitempty"`
 }
 
 // LoadCITestConfig reads and parses the ci-test-config.yaml for a given chart directory.
