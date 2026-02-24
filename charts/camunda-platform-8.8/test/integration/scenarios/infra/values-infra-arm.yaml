@@ -9,6 +9,10 @@ identity:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 identityKeycloak:
   nodeSelector:
     workload: arm-processor
@@ -17,6 +21,10 @@ identityKeycloak:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
   postgresql:
     primary:
       nodeSelector:
@@ -26,6 +34,10 @@ identityKeycloak:
         key: workload
         operator: Equal
         value: arm-processor
+      - effect: NoSchedule
+        key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
 identityPostgresql:
   primary:
     nodeSelector:
@@ -35,6 +47,10 @@ identityPostgresql:
       key: workload
       operator: Equal
       value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
 
 # Web Apps.
 console:
@@ -45,6 +61,10 @@ console:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 connectors:
   nodeSelector:
     workload: arm-processor
@@ -53,6 +73,10 @@ connectors:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 tasklist:
   nodeSelector:
     workload: arm-processor
@@ -61,6 +85,10 @@ tasklist:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 operate:
   nodeSelector:
     workload: arm-processor
@@ -69,6 +97,10 @@ operate:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 optimize:
   nodeSelector:
     workload: arm-processor
@@ -77,6 +109,10 @@ optimize:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 
 # Web Modeler.
 webModeler:
@@ -88,6 +124,10 @@ webModeler:
       key: workload
       operator: Equal
       value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
   webapp:
     nodeSelector:
       workload: arm-processor
@@ -96,6 +136,10 @@ webModeler:
       key: workload
       operator: Equal
       value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
   websockets:
     nodeSelector:
       workload: arm-processor
@@ -104,6 +148,10 @@ webModeler:
       key: workload
       operator: Equal
       value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
 webModelerPostgresql:
   primary:
     nodeSelector:
@@ -113,6 +161,10 @@ webModelerPostgresql:
       key: workload
       operator: Equal
       value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
 
 # Zeebe.
 orchestration:
@@ -123,6 +175,10 @@ orchestration:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 zeebeGateway:
   nodeSelector:
     workload: arm-processor
@@ -131,6 +187,10 @@ zeebeGateway:
     key: workload
     operator: Equal
     value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
 
 # Elasticsearch.
 elasticsearch:
@@ -142,3 +202,7 @@ elasticsearch:
       key: workload
       operator: Equal
       value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
