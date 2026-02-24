@@ -1,0 +1,144 @@
+# GKE qa-workloads nodes need nodeSelector and tolerations config.
+
+# Auth.
+identity:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+identityKeycloak:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+  postgresql:
+    primary:
+      nodeSelector:
+        workload: qa-workloads
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: qa-workloads
+identityPostgresql:
+  primary:
+    nodeSelector:
+      workload: qa-workloads
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: qa-workloads
+
+# Web Apps.
+console:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+connectors:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+tasklist:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+operate:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+optimize:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+
+# Web Modeler.
+webModeler:
+  restapi:
+    nodeSelector:
+      workload: qa-workloads
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: qa-workloads
+  webapp:
+    nodeSelector:
+      workload: qa-workloads
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: qa-workloads
+  websockets:
+    nodeSelector:
+      workload: qa-workloads
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: qa-workloads
+postgresql:
+  primary:
+    nodeSelector:
+      workload: qa-workloads
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: qa-workloads
+
+# Zeebe.
+zeebe:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+zeebeGateway:
+  nodeSelector:
+    workload: qa-workloads
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: qa-workloads
+
+# Elasticsearch.
+elasticsearch:
+  master:
+    nodeSelector:
+      workload: qa-workloads
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: qa-workloads

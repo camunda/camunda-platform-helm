@@ -71,6 +71,16 @@ on:
         default: false
         type: boolean
         required: false
+      infra-type-gke:
+        description: Define the infrastructure that will be used to run the deployment on GKE (e.g. preemptible, standard, distroci).
+        default: "preemptible"
+        type: string
+        required: false
+      infra-type-eks:
+        description: Define the infrastructure that will be used to run the deployment on EKS (e.g. preemptible, standard).
+        default: "preemptible"
+        type: string
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -127,6 +137,7 @@ jobs:
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
       always-delete-namespace: "${{ inputs.always-delete-namespace }}"
+      infra-type: "${{ matrix.platform == 'eks' && inputs.infra-type-eks || inputs.infra-type-gke }}"
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;

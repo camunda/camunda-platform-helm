@@ -1,0 +1,208 @@
+# GKE ARM nodes need nodeSelector and tolerations config.
+
+# Auth.
+identity:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+identityKeycloak:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+  postgresql:
+    primary:
+      nodeSelector:
+        workload: arm-processor
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: arm-processor
+      - effect: NoSchedule
+        key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
+identityPostgresql:
+  primary:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
+
+# Web Apps.
+console:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+connectors:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+tasklist:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+operate:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+optimize:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+
+# Web Modeler.
+webModeler:
+  restapi:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
+  webapp:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
+  websockets:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
+webModelerPostgresql:
+  primary:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
+
+# Zeebe.
+orchestration:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+zeebeGateway:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  - effect: NoSchedule
+    key: kubernetes.io/arch
+    operator: Equal
+    value: arm64
+
+# Elasticsearch.
+elasticsearch:
+  master:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64

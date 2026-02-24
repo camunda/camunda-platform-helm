@@ -82,12 +82,15 @@ on:
         options:
           - all
           - elasticsearch
-          - upgrade-migration
-          - keycloak-original
+          - elasticsearch-arm
+          - elasticsearch-basic
+          - gateway-keycloak
           - keycloak-mt
+          - keycloak-original
           - keycloak-rba
           - oidc
-          - gateway-keycloak
+          - opensearch
+          - upgrade-migration
       test-enabled:
         description: Whether to run the IT tests
         required: false
@@ -197,3 +200,5 @@ jobs:
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
+      infra-type-gke: ${{ matrix.infraTypeGke || 'preemptible' }}
+      infra-type-eks: ${{ matrix.infraTypeEks || 'preemptible' }}
