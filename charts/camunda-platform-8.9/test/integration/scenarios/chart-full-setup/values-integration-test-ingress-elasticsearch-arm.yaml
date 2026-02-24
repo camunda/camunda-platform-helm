@@ -60,12 +60,12 @@ console:
 orchestration:
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-  pvcStorageClassName: premium-rwo
+  pvcStorageClassName: hyperdisk-balanced
 
 webModelerPostgresql:
   primary:
     persistence:
-      storageClass: premium-rwo
+      storageClass: hyperdisk-balanced
 
 elasticsearch:
   enabled: false
