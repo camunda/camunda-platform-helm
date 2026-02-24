@@ -1,0 +1,6 @@
+global:
+  elasticsearch:
+    enabled: true
+elasticsearch:
+  enabled: true
+  maxUnavailable: 0
