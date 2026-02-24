@@ -7,6 +7,11 @@ orchestration:
   data:
     secondaryStorage:
       type: opensearch
+      opensearch:
+        url: "$OPENSEARCH_PROTOCOL://$OPENSEARCH_HOST:$OPENSEARCH_PORT"
+        username: "$OPENSEARCH_USERNAME"
+        secret:
+          inlineSecret: "$OPENSEARCH_PASSWORD"
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   env:
@@ -46,6 +51,8 @@ orchestration:
 optimize:
   enabled: true
   database:
+    elasticsearch:
+      enabled: false
     opensearch:
       enabled: true
       aws:

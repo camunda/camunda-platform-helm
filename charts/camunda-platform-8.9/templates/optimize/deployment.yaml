@@ -45,8 +45,8 @@ spec:
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
             ) | nindent 12 }}
-            {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
             {{- $esAuth := include "optimize.effectiveEsAuthConfig" . | fromYaml -}}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esAuth)) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
                 "config"        $esAuth
@@ -63,8 +63,10 @@ spec:
               value: {{ .Values.optimize.database.opensearch.url.port | default .Values.global.opensearch.url.port | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
+            {{- if or .Values.optimize.database.opensearch.auth.username .Values.global.opensearch.auth.username }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.optimize.database.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
+            {{- end }}
             {{- $osAuth := include "optimize.effectiveOsAuthConfig" . | fromYaml -}}
             {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osAuth)) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -81,10 +83,18 @@ spec:
               value: {{ .Values.optimize.javaOpts | quote }}
             {{- end }}
             {{- if (include "camundaPlatform.elasticsearchHost" . ) }}
+              {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.optimize.database.elasticsearch.url.port | default .Values.global.elasticsearch.url.port | quote }}
+            {{- if or .Values.optimize.database.elasticsearch.auth.username .Values.global.elasticsearch.auth.username }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
+              value: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
+            {{- end }}
             {{- end }}
             {{- if or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
@@ -137,8 +147,8 @@ spec:
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
             ) | nindent 12 }}
-            {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
             {{- $esAuth := include "optimize.effectiveEsAuthConfig" . | fromYaml -}}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $esAuth)) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD"
                 "config"        $esAuth
@@ -155,8 +165,10 @@ spec:
               value: {{ .Values.optimize.database.opensearch.url.port | default .Values.global.opensearch.url.port | quote }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
               value: {{ include "camundaPlatform.opensearchHost" . | quote }}
+            {{- if or .Values.optimize.database.opensearch.auth.username .Values.global.opensearch.auth.username }}
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME
               value: {{ .Values.optimize.database.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
+            {{- end }}
             {{- $osAuth := include "optimize.effectiveOsAuthConfig" . | fromYaml -}}
             {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" $osAuth)) "true" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -177,10 +189,18 @@ spec:
               value: {{ .Values.optimize.contextPath | quote }}
             {{- end }}
             {{- if (include "camundaPlatform.elasticsearchHost" . ) }}
+              {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
+              value: "true"
+              {{- end }}
             - name: OPTIMIZE_ELASTICSEARCH_HOST
               value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: {{ .Values.optimize.database.elasticsearch.url.port | default .Values.global.elasticsearch.url.port | quote }}
+            {{- if or .Values.optimize.database.elasticsearch.auth.username .Values.global.elasticsearch.auth.username }}
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
+              value: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
+            {{- end }}
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
               value: {{ .Values.optimize.profiles | default "ccsm" | quote }}

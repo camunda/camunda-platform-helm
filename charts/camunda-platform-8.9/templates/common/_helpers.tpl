@@ -322,11 +322,15 @@ Elasticsearch and Opensearch templates.
 {{- end -}}
 
 {{- define "camundaPlatform.elasticsearchURL" -}}
-{{ .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . }}
+{{- if .Values.orchestration.data.secondaryStorage.elasticsearch.url -}}
+  {{ .Values.orchestration.data.secondaryStorage.elasticsearch.url }}
+{{- else -}}
+  {{ .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . }}
+{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.opensearchHost" -}}
-  {{- tpl .Values.global.opensearch.url.host $ -}}
+  {{- tpl .Values.optimize.database.opensearch.url.host $ | default (tpl .Values.global.opensearch.url.host $) -}}
 {{- end -}}
 
 {{/*
@@ -341,7 +345,11 @@ Elasticsearch and Opensearch templates.
 {{- end -}}
 
 {{- define "camundaPlatform.opensearchURL" -}}
-{{ .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . }}
+{{- if .Values.orchestration.data.secondaryStorage.opensearch.url -}}
+  {{ .Values.orchestration.data.secondaryStorage.opensearch.url }}
+{{- else -}}
+  {{ .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . }}
+{{- end -}}
 {{- end -}}
 
 
