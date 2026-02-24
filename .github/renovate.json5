@@ -322,6 +322,7 @@
       matchUpdateTypes: ['patch', 'pin'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
+      prCreation: 'immediate',
     },
     {
       enabled: true,
@@ -343,6 +344,7 @@
       matchUpdateTypes: ['major', 'minor', 'patch'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
+      prCreation: 'immediate',
     },
     {
       description: 'Parse Camunda 8.9 image tags as semver so alpha updates work',
@@ -374,6 +376,7 @@
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],
       addLabels: ['camunda-platform', 'priority-high'],
+      prCreation: 'immediate',
     },
     {
       matchFileNames: [
