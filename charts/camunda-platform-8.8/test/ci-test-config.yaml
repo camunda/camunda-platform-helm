@@ -1,5 +1,4 @@
-# Used in the GitHub Actions unit test CI workflow.
-# auth can be the following values: basic, keycloak, oidc
+# Used in the GitHub Actions unit test CI workflow. auth can be the following values: basic, keycloak, oidc
 unit:
   enabled: true
   matrix:
@@ -67,6 +66,13 @@ integration:
           exclude: [orchestration-grpc]
           shortname: eshy
           auth: hybrid
+          flow: install
+        - name: elasticsearch-arm
+          enabled: false
+          auth: keycloak
+          shortname: esarm
+          exclude: []
+          infra-type: arm
           flow: install
     nightly:
       scenario:

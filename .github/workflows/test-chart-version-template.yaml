@@ -71,6 +71,11 @@ on:
         default: false
         type: boolean
         required: false
+      infra-type:
+        description: Define the infrastructure that will be used to run the deployment (e.g. preemptible, standard, arm).
+        default: "preemptible"
+        type: string
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -127,6 +132,7 @@ jobs:
       camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
       always-delete-namespace: "${{ inputs.always-delete-namespace }}"
+      infra-type: "${{ inputs.infra-type }}"
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;

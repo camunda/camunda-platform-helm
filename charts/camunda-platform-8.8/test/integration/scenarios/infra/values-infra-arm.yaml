@@ -1,0 +1,144 @@
+# GKE ARM nodes need nodeSelector and tolerations config.
+
+# Auth.
+identity:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+identityKeycloak:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+  postgresql:
+    primary:
+      nodeSelector:
+        workload: arm-processor
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: arm-processor
+identityPostgresql:
+  primary:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+
+# Web Apps.
+console:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+connectors:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+tasklist:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+operate:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+optimize:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+
+# Web Modeler.
+webModeler:
+  restapi:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+  webapp:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+  websockets:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+webModelerPostgresql:
+  primary:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+
+# Zeebe.
+orchestration:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+zeebeGateway:
+  nodeSelector:
+    workload: arm-processor
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: arm-processor
+
+# Elasticsearch.
+elasticsearch:
+  master:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor

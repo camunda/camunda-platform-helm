@@ -197,3 +197,4 @@ jobs:
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
+      infra-type: ${{ matrix.infraType || 'preemptible' }}

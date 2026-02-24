@@ -80,6 +80,13 @@ integration:
           shortname: gatkc
           auth: keycloak
           flow: install
+        - name: elasticsearch-arm
+          enabled: false
+          auth: keycloak
+          shortname: esarm
+          exclude: []
+          infra-type: arm
+          flow: install
     nightly:
       scenario:
         - name: elasticsearch

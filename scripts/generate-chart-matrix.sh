@@ -199,6 +199,10 @@ write_matrix_entry() {
         echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
         echo "    flow: ${flow_trimmed}" >> matrix_versions.txt
         echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+        infra_type_value=$(echo "$prScenario" | yq e -r '.infra-type' -)
+        if [ -n "$infra_type_value" ] && [ "$infra_type_value" != "null" ]; then
+          echo "    infraType: ${infra_type_value}" >> matrix_versions.txt
+        fi
       done
     done
     sed -i -e '$s/,$/]\n/' matrix_versions.txt
