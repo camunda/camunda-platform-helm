@@ -1,5 +1,5 @@
 # ARM nodes (c4a-standard-8) don't support pd-balanced disks.
-# Use premium-rwo (pd-ssd) for all StatefulSet PVCs.
+# Use hyperdisk-balanced for all StatefulSet PVCs.
 global:
   annotations:
     keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
