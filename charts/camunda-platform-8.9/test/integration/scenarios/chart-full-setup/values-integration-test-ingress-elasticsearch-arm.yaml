@@ -3,19 +3,6 @@
 global:
   annotations:
     keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
-  elasticsearch:
-    enabled: true
-    external: true
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-    auth:
-      username: elastic
-      secret:
-        existingSecret: infra-credentials
-        existingSecretKey: elasticsearch-password
-    url:
-      protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-      port: 443
   identity:
     keycloak:
       url:
@@ -44,6 +31,20 @@ identity:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      auth:
+        username: elastic
+        secret:
+          existingSecret: infra-credentials
+          existingSecretKey: elasticsearch-password
+      url:
+        protocol: https
+        host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+        port: 443
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX-$FLOW
@@ -60,6 +61,15 @@ console:
 orchestration:
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com:443"
+        username: elastic
+        secret:
+          existingSecret: infra-credentials
+          existingSecretKey: elasticsearch-password
   pvcStorageClassName: hyperdisk-balanced
 
 webModelerPostgresql:

@@ -5878,6 +5878,116 @@
                                             }
                                         }
                                     }
+                                },
+                                "elasticsearch": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "description": "the URL for the elasticsearch cluster",
+                                            "default": ""
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "description": "the username for elasticsearch connection",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the elasticsearch password as a plain-text value for non-production usage",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing Kubernetes Secret",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
+                                        "tls": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "opensearch": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "description": "the URL for the opensearch cluster",
+                                            "default": ""
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "description": "the username for opensearch connection",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the opensearch password as a plain-text value for non-production usage",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing Kubernetes Secret",
+                                                    "default": ""
+                                                }
+                                            }
+                                        },
+                                        "tls": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -6430,11 +6540,6 @@
                                             "description": "if true, enable tls for external elasticsearch",
                                             "default": false
                                         },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch",
-                                            "default": ""
-                                        },
                                         "secret": {
                                             "type": "object",
                                             "properties": {
@@ -6534,11 +6639,6 @@
                                             "type": "boolean",
                                             "description": "if true, enable tls for external opensearch",
                                             "default": false
-                                        },
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch",
-                                            "default": ""
                                         },
                                         "secret": {
                                             "type": "object",

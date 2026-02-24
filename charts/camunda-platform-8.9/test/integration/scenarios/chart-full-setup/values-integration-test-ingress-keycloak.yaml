@@ -134,6 +134,8 @@ orchestration:
   data:
     secondaryStorage:
       type: elasticsearch
+      elasticsearch:
+        url: "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com:443"
   ingress:
     grpc:
       enabled: true

@@ -73,7 +73,12 @@ spec:
                 "config" .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
-            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
+            {{- if or
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true")
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true")
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true")
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)) "true")
+            }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ printf "%s -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/%s" .Values.orchestration.javaOpts (include "camundaPlatform.getTlsSecretKey" .) | trim | quote }}
             {{- else }}
@@ -106,16 +111,28 @@ spec:
             {{/*
             Variable substitution for passwords.
             */}}
-            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
+            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ELASTICSEARCH_PASSWORD"
                 "config" .Values.global.elasticsearch.auth
             ) | nindent 12 }}
             {{- end }}
-            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.orchestration.data.secondaryStorage.elasticsearch
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_OPENSEARCH_PASSWORD"
                 "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.orchestration.data.secondaryStorage.opensearch
             ) | nindent 12 }}
             {{- end }}
             {{- if and .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
@@ -184,7 +201,12 @@ spec:
           resources:
             {{- toYaml .Values.orchestration.resources | nindent 12 }}
           volumeMounts:
-            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
+            {{- if or
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true")
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true")
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true")
+              (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)) "true")
+            }}
             - name: keystore
               mountPath: /usr/local/camunda/certificates/{{ include "camundaPlatform.getTlsSecretKey" . }}
               subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
@@ -234,6 +256,16 @@ spec:
         {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
             "volumeName" "keystore"
             "config" .Values.global.opensearch.tls
+        ) | nindent 8 }}
+        {{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls)) "true" }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "keystore"
+            "config" .Values.orchestration.data.secondaryStorage.elasticsearch.tls
+        ) | nindent 8 }}
+        {{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)) "true" }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "keystore"
+            "config" .Values.orchestration.data.secondaryStorage.opensearch.tls
         ) | nindent 8 }}
         {{- end }}
         {{- if eq .Values.orchestration.persistenceType "memory" }}

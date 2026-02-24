@@ -8,6 +8,11 @@ orchestration:
   data:
     secondaryStorage:
       type: opensearch
+      opensearch:
+        url: "https://$AWS_HOST_URL:443"
+        username: "$OPENSEARCH_USERNAME"
+        secret:
+          inlineSecret: "$OPENSEARCH_PASSWORD"
   security:
     authentication:
       method: oidc

@@ -2767,6 +2767,50 @@ orchestration:
             maxLifetime: ""
             ## @param orchestration.data.secondaryStorage.rdbms.history.connectionPool.connectionTimeout defines the maximum time to wait for a connection from the pool
             connectionTimeout: ""
+      ## @extra orchestration.data.secondaryStorage.elasticsearch configuration for Elasticsearch as secondary storage
+      elasticsearch:
+        ## @param orchestration.data.secondaryStorage.elasticsearch.url the URL for the elasticsearch cluster
+        url: ""
+        ## @param orchestration.data.secondaryStorage.elasticsearch.username the username for elasticsearch connection
+        username: ""
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.secret the password for elasticsearch connection
+        secret:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.inlineSecret can be used to provide the elasticsearch password as a plain-text value for non-production usage
+          inlineSecret: ""
+          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          existingSecret: ""
+          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+          existingSecretKey: ""
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.tls configuration for TLS settings for elasticsearch connection
+        tls:
+          ## @extra orchestration.data.secondaryStorage.elasticsearch.tls.secret secret ref for TLS trust store
+          secret:
+            ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS trust store
+            existingSecret: ""
+            ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey defines the key within the existing Kubernetes Secret for TLS trust store
+            existingSecretKey: ""
+      ## @extra orchestration.data.secondaryStorage.opensearch configuration for Opensearch as secondary storage
+      opensearch:
+        ## @param orchestration.data.secondaryStorage.opensearch.url the URL for the opensearch cluster
+        url: ""
+        ## @param orchestration.data.secondaryStorage.opensearch.username the username for opensearch connection
+        username: ""
+        ## @extra orchestration.data.secondaryStorage.opensearch.secret the password for opensearch connection
+        secret:
+          ## @param orchestration.data.secondaryStorage.opensearch.secret.inlineSecret can be used to provide the opensearch password as a plain-text value for non-production usage
+          inlineSecret: ""
+          ## @param orchestration.data.secondaryStorage.opensearch.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+          existingSecret: ""
+          ## @param orchestration.data.secondaryStorage.opensearch.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+          existingSecretKey: ""
+        ## @extra orchestration.data.secondaryStorage.opensearch.tls configuration for TLS settings for opensearch connection
+        tls:
+          ## @extra orchestration.data.secondaryStorage.opensearch.tls.secret secret ref for TLS trust store
+          secret:
+            ## @param orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS trust store
+            existingSecret: ""
+            ## @param orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey defines the key within the existing Kubernetes Secret for TLS trust store
+            existingSecretKey: ""
   ## @param orchestration.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
   ## @param orchestration.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
@@ -3024,7 +3068,6 @@ optimize:
     ## @param optimize.database.elasticsearch.external if true, tries to connect to an external elasticsearch
     ## @extra optimize.database.elasticsearch.tls
     ## @param optimize.database.elasticsearch.tls.enabled if true, enable tls for external elasticsearch
-    ## @param optimize.database.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch
     ## @extra optimize.database.elasticsearch.auth
     ## @param optimize.database.elasticsearch.auth.username the username for external elasticsearch
     elasticsearch:
@@ -3032,7 +3075,6 @@ optimize:
       external: false
       tls:
         enabled: false
-        existingSecret: ""
         ## @extra optimize.database.elasticsearch.tls.secret configuration for new secret pattern (>= 8.9)
         secret:
           ## @param optimize.database.elasticsearch.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificate
@@ -3065,7 +3107,6 @@ optimize:
     ## @param optimize.database.opensearch.aws.enabled Enabling AWS IRSA
     ## @extra optimize.database.opensearch.tls
     ## @param optimize.database.opensearch.tls.enabled if true, enable tls for external opensearch
-    ## @param optimize.database.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch
     ## @extra optimize.database.opensearch.auth
     ## @param optimize.database.opensearch.auth.username the username for external opensearch
     opensearch:
@@ -3074,7 +3115,6 @@ optimize:
         enabled: false
       tls:
         enabled: false
-        existingSecret: ""
         ## @extra optimize.database.opensearch.tls.secret configuration for new secret pattern (>= 8.9)
         secret:
           ## @param optimize.database.opensearch.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificate
