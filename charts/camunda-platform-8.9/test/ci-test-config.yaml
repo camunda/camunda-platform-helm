@@ -25,12 +25,14 @@ integration:
           auth: keycloak
           shortname: eske
           exclude: []
+          infra-type: distroci
           platforms: [gke,eks]
         - name: opensearch
           enabled: true
           auth: keycloak
           shortname: oske
           exclude: []
+          infra-type: distroci
         - name: upgrade-migration
           # upgrade migrators are only for 8.7 -> 8.8, not for 8.9
           enabled: false
@@ -38,48 +40,56 @@ integration:
           auth: keycloak
           shortname: eske-upgm
           exclude: []
+          infra-type: distroci
         - name: elasticsearch-basic
           enabled: false
           shortname: esba
           auth: basic
           flow: install
           exclude: [identity,console,orchestration-grpc]
+          infra-type: distroci
         - name: oidc
           enabled: true
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
           flow: upgrade-minor
+          infra-type: distroci
         - name: keycloak-mt
           enabled: true
           exclude: []
           shortname: kemt
           auth: keycloak
           flow: upgrade-minor
+          infra-type: distroci
         - name: keycloak-rba
           enabled: true
           exclude: []
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
+          infra-type: distroci
         - name: keycloak-original
           enabled: true
           exclude: []
           shortname: keyc
           auth: keycloak
           flow: upgrade-minor
+          infra-type: distroci
         - name: keycloak-original
           enabled: true
           exclude: []
           shortname: keorg
           auth: keycloak
           flow: install
+          infra-type: distroci
         - name: gateway-keycloak
           enabled: true
           exclude: []
           shortname: gatkc
           auth: keycloak
           flow: install
+          infra-type: distroci
         - name: elasticsearch-arm
           enabled: false
           auth: keycloak

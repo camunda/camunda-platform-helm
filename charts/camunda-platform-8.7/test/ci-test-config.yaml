@@ -27,6 +27,7 @@ integration:
           exclude: []
           auth: keycloak
           flow: install,upgrade-patch
+          infra-type: distroci
           platforms: [gke,eks]
         - name: keycloak-mt
           enabled: false
@@ -34,18 +35,21 @@ integration:
           exclude: []
           auth: keycloak
           flow: install,upgrade-patch
+          infra-type: distroci
         - name: oidc
           enabled: true
           shortname: esoi
           exclude: []
           auth: oidc
           flow: install,upgrade-patch
+          infra-type: distroci
         - name: keycloak-original
           enabled: true
           shortname: keyc
           exclude: []
           auth: keycloak
           flow: install,upgrade-patch
+          infra-type: distroci
     nightly:
       scenario:
         - name: elasticsearch
