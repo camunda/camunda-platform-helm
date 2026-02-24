@@ -27,7 +27,9 @@ integration:
           shortname: es
           auth: keycloak
           flow: install,upgrade-patch
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
           platforms: [gke,eks]
     nightly:
       scenario:

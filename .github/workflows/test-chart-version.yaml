@@ -200,4 +200,5 @@ jobs:
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
-      infra-type: ${{ matrix.infraType || 'preemptible' }}
+      infra-type-gke: ${{ matrix.infraTypeGke || 'preemptible' }}
+      infra-type-eks: ${{ matrix.infraTypeEks || 'preemptible' }}

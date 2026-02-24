@@ -24,7 +24,9 @@ integration:
           auth: keycloak
           shortname: eske
           exclude: []
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
           platforms: [gke,eks]
         - name: upgrade-migration
           enabled: true
@@ -32,49 +34,63 @@ integration:
           auth: keycloak
           shortname: eske-upgm
           exclude: []
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
         - name: elasticsearch-basic
           enabled: false
           shortname: esba
           auth: basic
           flow: install
           exclude: [identity,console,orchestration-grpc]
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
         - name: oidc
           enabled: true
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
           flow: upgrade-minor
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
         - name: keycloak-mt
           enabled: true
           exclude: []
           shortname: kemt
           auth: keycloak
           flow: upgrade-minor
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
         - name: keycloak-rba
           enabled: true
           exclude: []
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
         - name: keycloak-original
           enabled: true
           exclude: []
           shortname: keyc
           auth: keycloak
           flow: upgrade-minor
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
         - name: elasticsearch
           enabled: true
           exclude: [orchestration-grpc]
           shortname: eshy
           auth: hybrid
           flow: install
-          infra-type: distroci
+          infra-type:
+            gke: distroci
+            eks: preemptible
         - name: elasticsearch-arm
           enabled: false
           auth: keycloak
