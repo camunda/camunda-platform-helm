@@ -147,7 +147,7 @@ identity:
         - Web Modeler
         - Web Modeler Admin
         - Console
-        - Orchestratione
+        - Orchestration
 connectors:
   security:
     authentication:

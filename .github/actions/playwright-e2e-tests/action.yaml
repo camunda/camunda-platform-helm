@@ -101,7 +101,7 @@ runs:
         elif command -v apk &> /dev/null; then
           apk add --no-cache gettext
         fi
-        
+
     - name: Check if tools are pre-installed
       id: check-tools
       shell: bash
@@ -210,3 +210,11 @@ runs:
         name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
         retention-days: 1
+
+    - name: Upload json report to GitHub Actions Artifacts
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      with:
+        name: json-report-hc
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/json-report/**
+        retention-days: 60
