@@ -1,2 +1,71 @@
+# ARM nodes (c4a-standard-8) don't support pd-balanced disks.
+# Use premium-rwo (pd-ssd) for all StatefulSet PVCs.
+global:
+  annotations:
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
+  elasticsearch:
+    enabled: true
+    external: true
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    auth:
+      username: elastic
+      secret:
+        existingSecret: infra-credentials
+        existingSecretKey: elasticsearch-password
+    url:
+      protocol: https
+      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+      port: 443
+  identity:
+    keycloak:
+      url:
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
+        port: 443
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
+    auth:
+      enabled: true
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
+      admin:
+        enabled: true
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
+
+identity:
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
+
+optimize:
+  enabled: true
+  contextPath: "/optimize"
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+
+identityKeycloak:
+  enabled: false
+
+console:
+  keycloak:
+    realm: $KEYCLOAK_REALM
+
+orchestration:
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+  pvcStorageClassName: premium-rwo
+
+webModelerPostgresql:
+  primary:
+    persistence:
+      storageClass: premium-rwo
+
 elasticsearch:
-  maxUnavailable: 0
+  enabled: false
