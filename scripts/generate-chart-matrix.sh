@@ -199,20 +199,11 @@ write_matrix_entry() {
         echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
         echo "    flow: ${flow_trimmed}" >> matrix_versions.txt
         echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
-        # infra-type can be a string (applied to all platforms) or a map (per-platform).
-        infra_type_kind=$(echo "$prScenario" | yq e -r '.infra-type | type' -)
-        if [ "$infra_type_kind" = "!!map" ]; then
-          infra_type_gke=$(echo "$prScenario" | yq e -r '.infra-type.gke // "preemptible"' -)
-          infra_type_eks=$(echo "$prScenario" | yq e -r '.infra-type.eks // "preemptible"' -)
-          echo "    infraTypeGke: ${infra_type_gke}" >> matrix_versions.txt
-          echo "    infraTypeEks: ${infra_type_eks}" >> matrix_versions.txt
-        else
-          infra_type_value=$(echo "$prScenario" | yq e -r '.infra-type' -)
-          if [ -n "$infra_type_value" ] && [ "$infra_type_value" != "null" ]; then
-            echo "    infraTypeGke: ${infra_type_value}" >> matrix_versions.txt
-            echo "    infraTypeEks: ${infra_type_value}" >> matrix_versions.txt
-          fi
-        fi
+        # infra-type is a map (per-platform), e.g. {gke: distroci, eks: preemptible}.
+        infra_type_gke=$(echo "$prScenario" | yq e -r '.infra-type.gke // "preemptible"' -)
+        infra_type_eks=$(echo "$prScenario" | yq e -r '.infra-type.eks // "preemptible"' -)
+        echo "    infraTypeGke: ${infra_type_gke}" >> matrix_versions.txt
+        echo "    infraTypeEks: ${infra_type_eks}" >> matrix_versions.txt
       done
     done
     sed -i -e '$s/,$/]\n/' matrix_versions.txt

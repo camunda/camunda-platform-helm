@@ -96,7 +96,8 @@ integration:
           auth: keycloak
           shortname: esarm
           exclude: []
-          infra-type: arm
+          infra-type:
+            gke: arm
           flow: install
     nightly:
       scenario:
