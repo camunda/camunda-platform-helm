@@ -96,6 +96,7 @@ func newMatrixRunCommand() *cobra.Command {
 		platform                 string
 		repoRoot                 string
 		dryRun                   bool
+		coverage                 bool
 		testIT                   bool
 		testE2E                  bool
 		testAll                  bool
@@ -195,8 +196,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 				return nil
 			}
 
-			// Show what will be run (only for non-dry-run; dry-run prints its own detailed output)
-			if !dryRun {
+			// Show what will be run (only for non-dry-run/non-coverage; those modes print their own detailed output)
+			if !dryRun && !coverage {
 				output, _ := matrix.Print(entries, "table")
 				fmt.Fprintln(os.Stdout, output)
 			}
@@ -244,6 +245,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 
 			results, err := matrix.Run(context.Background(), entries, matrix.RunOptions{
 				DryRun:                dryRun,
+				Coverage:              coverage,
 				StopOnFailure:         stopOnFailure,
 				Cleanup:               cleanup,
 				DeleteNamespaceFirst:  deleteNamespace,
@@ -268,8 +270,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 				KeycloakProtocol:      keycloakProtocol,
 			})
 
-			// Print summary (skip for dry-run since it prints its own output)
-			if !dryRun {
+			// Print summary (skip for dry-run/coverage since they print their own output)
+			if !dryRun && !coverage {
 				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results))
 			}
 
@@ -285,6 +287,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
 	f.BoolVar(&dryRun, "dry-run", false, "Log what would be deployed without actually deploying")
+	f.BoolVar(&coverage, "coverage", false, "Show a layer-breakdown report of what is tested in the matrix (no deployment)")
 	f.BoolVar(&testIT, "test-it", false, "Run integration tests after each deployment")
 	f.BoolVar(&testE2E, "test-e2e", false, "Run e2e tests after each deployment")
 	f.BoolVar(&testAll, "test-all", false, "Run both integration and e2e tests after each deployment")

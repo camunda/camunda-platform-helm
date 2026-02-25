@@ -90,6 +90,10 @@ type RunOptions struct {
 	// DeleteNamespaceFirst deletes the namespace before deploying each matrix entry.
 	// This ensures a clean-slate deployment by removing any existing resources in the namespace.
 	DeleteNamespaceFirst bool
+	// Coverage produces a layer-breakdown report showing what IS tested in the matrix.
+	// Behaves like DryRun (no deployment), but outputs a focused table showing each
+	// scenario's resolved layers (identity, persistence, platform, infra-type, features, flow).
+	Coverage bool
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -112,6 +116,11 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 	// Dry-run is always sequential
 	if opts.DryRun {
 		return dryRun(entries, opts), nil
+	}
+
+	// Coverage mode: resolve and display layer breakdown, no deployment
+	if opts.Coverage {
+		return coverageReport(entries, opts), nil
 	}
 
 	parallel := opts.MaxParallel > 1
@@ -320,6 +329,199 @@ func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOption
 		dryHead(fmt.Sprintf("--- %d entries across %d versions (dry-run, nothing deployed) ---", len(entries), len(versions))))
 
 	return b.String()
+}
+
+// coverageEntry holds resolved layer information for one matrix entry in coverage mode.
+type coverageEntry struct {
+	entry       Entry
+	platform    string
+	identity    string
+	persistence string
+	infraType   string
+	features    []string
+	flow        string
+}
+
+// coverageReport resolves all entries and prints a layer-breakdown table to stdout.
+// Like dryRun it performs no deployment — it shows what IS tested in the matrix.
+func coverageReport(entries []Entry, opts RunOptions) []RunResult {
+	var results []RunResult
+	versions := VersionOrder(entries)
+	groups := GroupByVersion(entries)
+
+	var resolved []coverageEntry
+	for _, version := range versions {
+		for _, entry := range groups[version] {
+			platform := resolvePlatform(opts, entry)
+
+			// Resolve deployment layers via the canonical builder.
+			deployConfig := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
+				Identity:    entry.Identity,
+				Persistence: entry.Persistence,
+				Platform:    platform,
+				Features:    entry.Features,
+				InfraType:   entry.InfraType,
+				Flow:        entry.Flow,
+				QA:          entry.QA,
+				ImageTags:   entry.ImageTags,
+				Upgrade:     entry.Upgrade,
+			})
+
+			resolved = append(resolved, coverageEntry{
+				entry:       entry,
+				platform:    platform,
+				identity:    deployConfig.Identity,
+				persistence: deployConfig.Persistence,
+				infraType:   entry.InfraType,
+				features:    deployConfig.Features,
+				flow:        entry.Flow,
+			})
+
+			namespace := buildNamespace(opts.NamespacePrefix, entry)
+			results = append(results, RunResult{Entry: entry, Namespace: namespace})
+		}
+	}
+
+	fmt.Fprintln(os.Stdout, formatCoverageOutput(resolved, versions))
+	return results
+}
+
+// formatCoverageOutput produces a compact table showing what each scenario tests.
+// Columns: VER | SCENARIO | ENABLED | FLOW | PLATFORM | INFRA-TYPE | IDENTITY | PERSISTENCE | FEATURES
+func formatCoverageOutput(entries []coverageEntry, versions []string) string {
+	var b strings.Builder
+
+	// Group by version.
+	groups := make(map[string][]coverageEntry)
+	for _, e := range entries {
+		groups[e.entry.Version] = append(groups[e.entry.Version], e)
+	}
+
+	// Table header — pad text first, then apply style (ANSI codes break %-Ns padding).
+	fmt.Fprintf(&b, "%s\n\n", dryHead("=== Coverage: Layer Breakdown ==="))
+	fmt.Fprintf(&b, "%s %s %s %s %s %s %s %s %s\n",
+		dryHead(fmt.Sprintf("%-6s", "VER")),
+		dryHead(fmt.Sprintf("%-25s", "SCENARIO")),
+		dryHead(fmt.Sprintf("%-8s", "ENABLED")),
+		dryHead(fmt.Sprintf("%-16s", "FLOW")),
+		dryHead(fmt.Sprintf("%-10s", "PLATFORM")),
+		dryHead(fmt.Sprintf("%-14s", "INFRA-TYPE")),
+		dryHead(fmt.Sprintf("%-20s", "IDENTITY")),
+		dryHead(fmt.Sprintf("%-22s", "PERSISTENCE")),
+		dryHead("FEATURES"))
+	fmt.Fprintf(&b, "%-6s %-25s %-8s %-16s %-10s %-14s %-20s %-22s %s\n",
+		"---", "--------", "-------", "----", "--------", "----------", "--------", "-----------", "--------")
+
+	for _, version := range versions {
+		versionEntries := groups[version]
+		for _, e := range versionEntries {
+			// Pad enabled text before applying color so column width is consistent.
+			enabled := fmt.Sprintf("%-8s", "yes")
+			if e.entry.Enabled {
+				enabled = dryOk(enabled)
+			} else {
+				enabled = dryWarn(fmt.Sprintf("%-8s", "no"))
+			}
+
+			platform := e.platform
+			if platform == "" {
+				platform = "-"
+			}
+			infraType := e.infraType
+			if infraType == "" {
+				infraType = "-"
+			}
+			identity := e.identity
+			if identity == "" {
+				identity = "(derived)"
+			}
+			persistence := e.persistence
+			if persistence == "" {
+				persistence = "(derived)"
+			}
+			features := strings.Join(e.features, ",")
+			if features == "" {
+				features = "-"
+			}
+			flow := e.flow
+			if flow == "" {
+				flow = "install"
+			}
+
+			fmt.Fprintf(&b, "%-6s %-25s %s %-16s %-10s %-14s %-20s %-22s %s\n",
+				e.entry.Version,
+				e.entry.Scenario,
+				enabled,
+				flow,
+				platform,
+				infraType,
+				identity,
+				persistence,
+				features)
+		}
+	}
+
+	// Summary.
+	total := len(entries)
+	enabledCount := 0
+	for _, e := range entries {
+		if e.entry.Enabled {
+			enabledCount++
+		}
+	}
+	fmt.Fprintf(&b, "\n%s\n",
+		dryHead(fmt.Sprintf("--- %d entries (%d enabled, %d disabled) across %d versions ---",
+			total, enabledCount, total-enabledCount, len(versions))))
+
+	// Layer summary: unique values per dimension.
+	identities := uniqueStrings(entries, func(e coverageEntry) string { return e.identity })
+	persistences := uniqueStrings(entries, func(e coverageEntry) string { return e.persistence })
+	platforms := uniqueStrings(entries, func(e coverageEntry) string { return e.platform })
+	infraTypes := uniqueStrings(entries, func(e coverageEntry) string { return e.infraType })
+	features := uniqueFeatures(entries)
+	flows := uniqueStrings(entries, func(e coverageEntry) string { return e.flow })
+
+	fmt.Fprintf(&b, "\n%s\n", dryHead("Layer Coverage:"))
+	fmt.Fprintf(&b, "  %s  %s\n", dryKey("identities: "), strings.Join(identities, ", "))
+	fmt.Fprintf(&b, "  %s  %s\n", dryKey("persistence:"), strings.Join(persistences, ", "))
+	fmt.Fprintf(&b, "  %s   %s\n", dryKey("platforms:  "), strings.Join(platforms, ", "))
+	fmt.Fprintf(&b, "  %s  %s\n", dryKey("infra-types:"), strings.Join(infraTypes, ", "))
+	fmt.Fprintf(&b, "  %s    %s\n", dryKey("features:  "), strings.Join(features, ", "))
+	fmt.Fprintf(&b, "  %s       %s\n", dryKey("flows:  "), strings.Join(flows, ", "))
+
+	return b.String()
+}
+
+// uniqueStrings returns unique non-empty values from a field extractor, preserving first-seen order.
+func uniqueStrings(entries []coverageEntry, extract func(coverageEntry) string) []string {
+	seen := make(map[string]bool)
+	var result []string
+	for _, e := range entries {
+		v := extract(e)
+		if v != "" && !seen[v] {
+			seen[v] = true
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+// uniqueFeatures returns all unique feature names across entries, preserving first-seen order.
+func uniqueFeatures(entries []coverageEntry) []string {
+	seen := make(map[string]bool)
+	var result []string
+	for _, e := range entries {
+		for _, f := range e.features {
+			if !seen[f] {
+				seen[f] = true
+				result = append(result, f)
+			}
+		}
+	}
+	if len(result) == 0 {
+		return []string{"-"}
+	}
+	return result
 }
 
 // runSequential processes all entries one at a time.
