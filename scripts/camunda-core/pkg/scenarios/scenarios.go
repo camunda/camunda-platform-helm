@@ -159,14 +159,11 @@ func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 		}
 	}
 
-	// Layer 6: Features (in deterministic order)
-	featureOrder := []string{"multitenancy", "rba", "documentstore"}
-	for _, feature := range featureOrder {
-		if contains(c.Features, feature) {
-			featurePath := filepath.Join(valuesDir, FeaturesDir, feature+".yaml")
-			if _, err := os.Stat(featurePath); err == nil {
-				files = append(files, featurePath)
-			}
+	// Layer 6: Features (in config-declared order)
+	for _, feature := range c.Features {
+		featurePath := filepath.Join(valuesDir, FeaturesDir, feature+".yaml")
+		if _, err := os.Stat(featurePath); err == nil {
+			files = append(files, featurePath)
 		}
 	}
 
@@ -289,6 +286,64 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	}
 
 	return config
+}
+
+// BuilderOverrides holds optional overrides applied on top of name-derived defaults.
+// Zero-value fields are ignored so callers only need to set the dimensions they care about.
+type BuilderOverrides struct {
+	Identity     string   // keycloak, keycloak-external, oidc, basic, hybrid
+	Persistence  string   // elasticsearch, opensearch, rdbms, rdbms-oracle
+	Platform     string   // effective platform (already resolved from TestPlatform/Platform)
+	Features     []string // multitenancy, rba, documentstore
+	InfraType    string   // preemptible, distroci, standard, arm, etc.
+	Flow         string   // install, upgrade-patch, upgrade-minor
+	QA           bool
+	ImageTags    bool
+	Upgrade      bool
+	ChartVersion string
+}
+
+// BuildDeploymentConfig is the single canonical constructor for DeploymentConfig.
+// It derives defaults from the scenario name via MapScenarioToConfig, then applies
+// any non-zero overrides. All call-sites that previously built a DeploymentConfig
+// inline should use this function instead, eliminating drift between the deploy,
+// dry-run, and buildDeploymentConfigFromFlags code paths.
+func BuildDeploymentConfig(scenario string, ov BuilderOverrides) *DeploymentConfig {
+	cfg := MapScenarioToConfig(scenario)
+
+	// Apply non-zero overrides.
+	if ov.Identity != "" {
+		cfg.Identity = ov.Identity
+	}
+	if ov.Persistence != "" {
+		cfg.Persistence = ov.Persistence
+	}
+	if ov.Platform != "" {
+		cfg.Platform = ov.Platform
+	}
+	if len(ov.Features) > 0 {
+		cfg.Features = ov.Features
+	}
+	if ov.InfraType != "" {
+		cfg.InfraType = ov.InfraType
+	}
+	if ov.Flow != "" {
+		cfg.Flow = ov.Flow
+	}
+	if ov.QA {
+		cfg.QA = true
+	}
+	if ov.ImageTags {
+		cfg.ImageTags = true
+	}
+	if ov.Upgrade {
+		cfg.Upgrade = true
+	}
+	if ov.ChartVersion != "" {
+		cfg.ChartVersion = ov.ChartVersion
+	}
+
+	return cfg
 }
 
 // LayeredConfig is deprecated - use DeploymentConfig instead.
