@@ -31,3 +31,7 @@ identityPostgresql:
   enabled: true
   auth:
     existingSecret: "integration-test-credentials"
+
+optimize:
+  livenessProbe:
+    enabled: true

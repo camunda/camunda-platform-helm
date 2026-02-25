@@ -37,13 +37,14 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          persistence: elasticsearch-external
         - name: elasticsearch-basic
           enabled: false
           shortname: esba
           auth: basic
           flow: install
           identity: basic
-          persistence: elasticsearch
+          persistence: elasticsearch-external
           exclude: [identity,console,orchestration-grpc]
           infra-type:
             gke: distroci
@@ -58,7 +59,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: oidc
-          persistence: elasticsearch
+          persistence: elasticsearch-external
         - name: keycloak-mt
           enabled: true
           exclude: []
@@ -80,7 +81,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-external
           features: [rba]
         - name: keycloak-original
           enabled: true
@@ -110,6 +111,7 @@ integration:
           infra-type:
             gke: arm
           flow: install
+          persistence: elasticsearch-external
     nightly:
       scenario:
         - name: elasticsearch
