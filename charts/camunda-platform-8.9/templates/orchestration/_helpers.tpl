@@ -265,7 +265,7 @@ Authentication.
     }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}
-        {{- include "orchestration.enabledProfiles" . | replace "identity" "auth" -}}
+        {{- include "orchestration.enabledProfiles" . | replace "admin" "auth" -}}
     {{- end }}
 {{- end -}}
 

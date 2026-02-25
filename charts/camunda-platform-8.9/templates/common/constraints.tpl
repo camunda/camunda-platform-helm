@@ -877,3 +877,22 @@ Global
   "condition" (and .Values.global.secrets (hasKey .Values.global.secrets "annotations"))
   "oldName" "global.secrets.annotations"
 ) }}
+
+{{/*
+*******************************************************************************
+Orchestration
+*******************************************************************************
+*/}}
+
+{{/*
+- deprecated: orchestration.profiles.identity => orchestration.profiles.admin
+*/}}
+{{- if hasKey .Values.orchestration.profiles "identity" }}
+  {{- $warningMessage := printf "%s %s %s %s"
+      "[camunda][warning]"
+      "DEPRECATION: \"orchestration.profiles.identity\" has been renamed to \"orchestration.profiles.admin\"."
+      "The \"identity\" profile is deprecated and will be removed in a future version."
+      "Please update your values file to use \"orchestration.profiles.admin\" instead."
+  -}}
+  {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+{{- end }}
