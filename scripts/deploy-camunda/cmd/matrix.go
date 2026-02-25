@@ -102,6 +102,7 @@ func newMatrixRunCommand() *cobra.Command {
 		stopOnFailure            bool
 		namespacePrefix          string
 		cleanup                  bool
+		deleteNamespace          bool
 		kubeContext              string
 		kubeContextGKE           string
 		kubeContextEKS           string
@@ -245,6 +246,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				DryRun:                dryRun,
 				StopOnFailure:         stopOnFailure,
 				Cleanup:               cleanup,
+				DeleteNamespaceFirst:  deleteNamespace,
 				KubeContexts:          kubeContexts,
 				KubeContext:           kubeContext,
 				NamespacePrefix:       namespacePrefix,
@@ -289,6 +291,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&stopOnFailure, "stop-on-failure", false, "Stop the run on the first failure")
 	f.StringVar(&namespacePrefix, "namespace-prefix", "matrix", "Prefix for generated namespaces")
 	f.BoolVar(&cleanup, "cleanup", false, "Delete all created namespaces after the run completes")
+	f.BoolVar(&deleteNamespace, "delete-namespace", false, "Delete the namespace before deploying each entry (clean-slate deployment)")
 	f.StringVar(&kubeContext, "kube-context", "", "Default Kubernetes context for all platforms (overridden by --kube-context-gke/--kube-context-eks)")
 	f.StringVar(&kubeContextGKE, "kube-context-gke", "", "Kubernetes context for GKE entries")
 	f.StringVar(&kubeContextEKS, "kube-context-eks", "", "Kubernetes context for EKS entries")

@@ -81,6 +81,11 @@ type CIScenario struct {
 	Identity    string   `yaml:"identity,omitempty"`
 	Persistence string   `yaml:"persistence,omitempty"`
 	Features    []string `yaml:"features,omitempty"`
+
+	// Base modifier flags.
+	QA        bool `yaml:"qa,omitempty"`
+	ImageTags bool `yaml:"image-tags,omitempty"`
+	Upgrade   bool `yaml:"upgrade,omitempty"`
 }
 
 // LoadCITestConfig reads and parses the ci-test-config.yaml for a given chart directory.

@@ -87,6 +87,9 @@ type RunOptions struct {
 	// If both VaultBackedSecrets and UseVaultBackedSecrets are set, the platform-specific
 	// value takes priority.
 	UseVaultBackedSecrets bool
+	// DeleteNamespaceFirst deletes the namespace before deploying each matrix entry.
+	// This ensures a clean-slate deployment by removing any existing resources in the namespace.
+	DeleteNamespaceFirst bool
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -146,6 +149,7 @@ type dryRunEntry struct {
 	ingressHost string
 	envFile     string
 	useVault    bool
+	deleteNS    bool
 	// Resolved layer config (derived from scenario name + explicit overrides).
 	identity    string
 	persistence string
@@ -174,20 +178,19 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				ingressHost = namespace + "." + baseDomain
 			}
 
-			// Resolve deployment layers (same logic as deploy.go prepareScenarioValues).
+			// Resolve deployment layers via the canonical builder (same logic as deploy.go prepareScenarioValues).
 			scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
-			deployConfig := scenarios.MapScenarioToConfig(entry.Scenario)
-			deployConfig.Platform = platform
-			deployConfig.Flow = entry.Flow
-			if entry.Identity != "" {
-				deployConfig.Identity = entry.Identity
-			}
-			if entry.Persistence != "" {
-				deployConfig.Persistence = entry.Persistence
-			}
-			if len(entry.Features) > 0 {
-				deployConfig.Features = entry.Features
-			}
+			deployConfig := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
+				Identity:    entry.Identity,
+				Persistence: entry.Persistence,
+				Platform:    platform,
+				Features:    entry.Features,
+				InfraType:   entry.InfraType,
+				Flow:        entry.Flow,
+				QA:          entry.QA,
+				ImageTags:   entry.ImageTags,
+				Upgrade:     entry.Upgrade,
+			})
 
 			var layerFiles []string
 			if paths, err := deployConfig.ResolvePaths(scenarioDir); err == nil {
@@ -209,6 +212,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				ingressHost: ingressHost,
 				envFile:     envFile,
 				useVault:    useVault,
+				deleteNS:    opts.DeleteNamespaceFirst,
 				identity:    deployConfig.Identity,
 				persistence: deployConfig.Persistence,
 				features:    deployConfig.Features,
@@ -293,6 +297,9 @@ func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOption
 			}
 			if e.useVault {
 				fmt.Fprintf(&b, "      %s     %s\n", dryKey("vault:"), dryWarn("true"))
+			}
+			if e.deleteNS {
+				fmt.Fprintf(&b, "      %s %s\n", dryKey("delete-ns:"), dryWarn("true"))
 			}
 			if len(e.entry.Exclude) > 0 {
 				fmt.Fprintf(&b, "      %s   %s\n", dryKey("exclude:"), dryWarn(strings.Join(e.entry.Exclude, ", ")))
@@ -616,10 +623,14 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		IngressBaseDomain: resolveIngressBaseDomain(opts, platform),
 		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.
 		// When set, these override MapScenarioToConfig name-based derivation in deploy.go.
-		Identity:    entry.Identity,
-		Persistence: entry.Persistence,
-		Features:    entry.Features,
-		InfraType:   entry.InfraType,
+		Identity:             entry.Identity,
+		Persistence:          entry.Persistence,
+		Features:             entry.Features,
+		InfraType:            entry.InfraType,
+		QA:                   entry.QA,
+		ImageTags:            entry.ImageTags,
+		UpgradeFlow:          entry.Upgrade,
+		DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
 	}
 
 	logging.Logger.Info().

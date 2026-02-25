@@ -468,37 +468,17 @@ func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName str
 		return nil
 	}
 
-	// Start with derived config from scenario name, then override with explicit flags
-	config := scenarios.MapScenarioToConfig(scenarioName)
-
-	// Apply new selection flags (preferred)
-	if flags.Identity != "" {
-		config.Identity = flags.Identity
-	}
-	if flags.Persistence != "" {
-		config.Persistence = flags.Persistence
-	}
-	if flags.TestPlatform != "" {
-		config.Platform = flags.TestPlatform
-	}
-	if len(flags.Features) > 0 {
-		config.Features = flags.Features
-	}
-	if flags.QA {
-		config.QA = true
-	}
-	if flags.ImageTags {
-		config.ImageTags = true
-	}
-	if flags.UpgradeFlow {
-		config.Upgrade = true
-	}
-
-	// Set chart version and flow for migrator detection
-	config.ChartVersion = flags.ChartVersion
-	config.Flow = flags.Flow
-
-	return config
+	return scenarios.BuildDeploymentConfig(scenarioName, scenarios.BuilderOverrides{
+		Identity:     flags.Identity,
+		Persistence:  flags.Persistence,
+		Platform:     flags.TestPlatform,
+		Features:     flags.Features,
+		QA:           flags.QA,
+		ImageTags:    flags.ImageTags,
+		Upgrade:      flags.UpgradeFlow,
+		ChartVersion: flags.ChartVersion,
+		Flow:         flags.Flow,
+	})
 }
 
 // enhanceScenarioError wraps scenario resolution errors with helpful context.
@@ -1051,32 +1031,25 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Str("scenario", scenarioCtx.ScenarioName).
 			Msg("📋 [prepareScenarioValues] layered values detected; resolving all layer files")
 
-		// Derive deployment config from scenario name, then apply any explicit
+		// Build deployment config via the canonical builder, applying any explicit
 		// flag overrides so that --platform / --test-platform propagates to the
 		// layered values resolution (e.g. selecting eks.yaml instead of gke.yaml).
-		deployConfig := scenarios.MapScenarioToConfig(scenarioCtx.ScenarioName)
-		if flags.TestPlatform != "" {
-			deployConfig.Platform = flags.TestPlatform
-		} else if flags.Platform != "" {
-			deployConfig.Platform = flags.Platform
+		effectivePlatform := flags.TestPlatform
+		if effectivePlatform == "" {
+			effectivePlatform = flags.Platform
 		}
-		// Set flow for migrator detection
-		deployConfig.Flow = flags.Flow
-
-		// Apply explicit Selection + Composition overrides from CI config or CLI flags.
-		// These take precedence over name-based derivation from MapScenarioToConfig.
-		if flags.Identity != "" {
-			deployConfig.Identity = flags.Identity
-		}
-		if flags.Persistence != "" {
-			deployConfig.Persistence = flags.Persistence
-		}
-		if len(flags.Features) > 0 {
-			deployConfig.Features = flags.Features
-		}
-		if flags.InfraType != "" {
-			deployConfig.InfraType = flags.InfraType
-		}
+		deployConfig := scenarios.BuildDeploymentConfig(scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
+			Identity:     flags.Identity,
+			Persistence:  flags.Persistence,
+			Platform:     effectivePlatform,
+			Features:     flags.Features,
+			InfraType:    flags.InfraType,
+			Flow:         flags.Flow,
+			QA:           flags.QA,
+			ImageTags:    flags.ImageTags,
+			Upgrade:      flags.UpgradeFlow,
+			ChartVersion: flags.ChartVersion,
+		})
 
 		layeredFiles, err := deployConfig.ResolvePaths(effectiveScenarioDir)
 		if err != nil {

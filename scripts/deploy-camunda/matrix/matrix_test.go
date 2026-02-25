@@ -974,8 +974,20 @@ func TestResolveInfraType(t *testing.T) {
 			want:         "preemptible",
 		},
 		{
-			name:         "defaults to preemptible for empty platform",
+			name:         "empty platform defaults to gke lookup",
 			infraTypeMap: map[string]string{"gke": "distroci"},
+			platform:     "",
+			want:         "distroci",
+		},
+		{
+			name:         "empty platform defaults to preemptible when gke not in map",
+			infraTypeMap: map[string]string{"eks": "arm"},
+			platform:     "",
+			want:         "preemptible",
+		},
+		{
+			name:         "empty platform defaults to preemptible when map is nil",
+			infraTypeMap: nil,
 			platform:     "",
 			want:         "preemptible",
 		},
