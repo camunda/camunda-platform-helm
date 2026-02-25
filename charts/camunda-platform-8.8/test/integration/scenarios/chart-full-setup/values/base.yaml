@@ -25,6 +25,9 @@ optimize:
   contextPath: "/optimize"
   livenessProbe:
     enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 8
 
 connectors:
   contextPath: "/connectors"

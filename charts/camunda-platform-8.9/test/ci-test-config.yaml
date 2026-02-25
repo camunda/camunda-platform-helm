@@ -46,12 +46,15 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: keycloak-external
+          persistence: elasticsearch-external
           platforms: [gke,eks]
         - name: opensearch
           enabled: true
           auth: keycloak
           shortname: oske
           exclude: []
+          identity: keycloak-external
           infra-type:
             gke: distroci
             eks: preemptible
@@ -138,6 +141,9 @@ integration:
           shortname: gatkc
           auth: keycloak
           flow: install
+          identity: keycloak-external
+          persistence: elasticsearch-external
+          features: [gateway]
           infra-type:
             gke: distroci
             eks: preemptible
@@ -149,6 +155,9 @@ integration:
           infra-type:
             gke: arm
           flow: install
+          identity: keycloak-external
+          persistence: elasticsearch-external
+          features: [arm]
     nightly:
       scenario:
         - name: elasticsearch

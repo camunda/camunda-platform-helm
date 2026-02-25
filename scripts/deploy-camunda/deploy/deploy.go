@@ -1177,6 +1177,24 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		}
 	}
 
+	// Append chart-root values-digest.yaml when ValuesDigest is enabled.
+	// This file pins exact image SHA256 digests for reproducible deployments.
+	// It is NOT passed through values.Process() — digest strings contain no env-var
+	// placeholders, and the file lives at the chart root, not in the scenario dir.
+	if flags.ValuesDigest && flags.ChartPath != "" {
+		digestPath := filepath.Join(flags.ChartPath, "values-digest.yaml")
+		if _, statErr := os.Stat(digestPath); statErr == nil {
+			vals = append(vals, digestPath)
+			logging.Logger.Info().
+				Str("path", digestPath).
+				Msg("Including chart-root values-digest.yaml (pins image digests)")
+		} else {
+			logging.Logger.Debug().
+				Str("path", digestPath).
+				Msg("values-digest.yaml not found at chart root, skipping")
+		}
+	}
+
 	// Append debug values file last to ensure it overrides other values
 	if debugValuesFile != "" {
 		vals = append(vals, debugValuesFile)
@@ -1308,6 +1326,8 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		},
 		ApplyIntegrationCreds: false,
 		VaultSecretPath:       prepared.VaultSecretPath,
+		ExtraArgs:             flags.ExtraHelmArgs,
+		SetPairs:              flags.ExtraHelmSets,
 	}
 
 	// Log deployment options (redact sensitive fields)

@@ -1,0 +1,15 @@
+global:
+  host: "$CAMUNDA_HOSTNAME"
+  ingress:
+    enabled: false
+  gateway:
+    createGatewayResource: true
+    enabled: true
+    className: nginx
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+      secretName: camunda-platform
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"

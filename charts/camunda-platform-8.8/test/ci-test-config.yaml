@@ -27,6 +27,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: keycloak-external
+          persistence: elasticsearch-external
           platforms: [gke,eks]
         - name: upgrade-migration
           enabled: true
@@ -34,9 +36,11 @@ integration:
           auth: keycloak
           shortname: eske-upgm
           exclude: []
+          features: [migrator]
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: keycloak-external
           persistence: elasticsearch-external
         - name: elasticsearch-basic
           enabled: false
@@ -80,7 +84,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak
+          identity: keycloak-external
           persistence: elasticsearch-external
           features: [rba]
         - name: keycloak-original

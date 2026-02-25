@@ -2,8 +2,6 @@
 # Layer 2: Auth method - External OIDC provider (Microsoft Entra ID)
 
 global:
-  image:
-    pullPolicy: Always
   identity:
     auth:
       enabled: true
@@ -79,26 +77,6 @@ connectors:
       value: $ENTRA_APP_CLIENT_ID/.default
 
 console:
-  overrideConfiguration: |
-    camunda:
-      console:
-        managed:
-          releases:
-            - name: integration
-              namespace: $TEST_NAMESPACE
-              tags:
-                - dev
-                - custom
-                - stage
-                - prod
-                - test
-              custom-properties:
-                - description: "This is the main integration environment for the Camunda Platform."
-                  links:
-                    - name: "Camunda"
-                      url: "https://camunda.com"
-                    - name: "Camunda Docs"
-                      url: "https://docs.camunda.io"
   env:
     - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
       value: 'true'      

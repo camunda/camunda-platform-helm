@@ -26,6 +26,8 @@ integration:
           shortname: es
           exclude: []
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch-external
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
@@ -47,6 +49,7 @@ integration:
           shortname: esoi
           exclude: []
           auth: oidc
+          persistence: elasticsearch-external
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
