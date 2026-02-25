@@ -32,6 +32,7 @@ func newMatrixListCommand() *cobra.Command {
 		versions        []string
 		includeDisabled bool
 		scenarioFilter  string
+		shortnameFilter string
 		flowFilter      string
 		outputFormat    string
 		platform        string
@@ -60,9 +61,10 @@ This command does not require cluster access.`,
 			}
 
 			entries = matrix.Filter(entries, matrix.FilterOptions{
-				ScenarioFilter: scenarioFilter,
-				FlowFilter:     flowFilter,
-				Platform:       platform,
+				ScenarioFilter:  scenarioFilter,
+				ShortnameFilter: shortnameFilter,
+				FlowFilter:      flowFilter,
+				Platform:        platform,
 			})
 
 			output, err := matrix.Print(entries, outputFormat)
@@ -78,10 +80,15 @@ This command does not require cluster access.`,
 	f.StringSliceVar(&versions, "versions", nil, "Limit to specific chart versions (comma-separated, e.g., 8.8,8.9)")
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
+	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&outputFormat, "format", "table", "Output format: table, json")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
+
+	registerMatrixShortnameCompletion(cmd)
+	registerMatrixVersionsCompletion(cmd)
+	registerMatrixFlowCompletion(cmd)
 
 	return cmd
 }
@@ -92,6 +99,7 @@ func newMatrixRunCommand() *cobra.Command {
 		versions                 []string
 		includeDisabled          bool
 		scenarioFilter           string
+		shortnameFilter          string
 		flowFilter               string
 		platform                 string
 		repoRoot                 string
@@ -186,9 +194,10 @@ This command calls deploy.Execute() for each matrix entry.`,
 			}
 
 			entries = matrix.Filter(entries, matrix.FilterOptions{
-				ScenarioFilter: scenarioFilter,
-				FlowFilter:     flowFilter,
-				Platform:       platform,
+				ScenarioFilter:  scenarioFilter,
+				ShortnameFilter: shortnameFilter,
+				FlowFilter:      flowFilter,
+				Platform:        platform,
 			})
 
 			if len(entries) == 0 {
@@ -283,6 +292,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringSliceVar(&versions, "versions", nil, "Limit to specific chart versions (comma-separated, e.g., 8.8,8.9)")
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
+	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
@@ -315,6 +325,9 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host (defaults to "+config.DefaultKeycloakHost+")")
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 
+	registerMatrixShortnameCompletion(cmd)
+	registerMatrixVersionsCompletion(cmd)
+	registerMatrixFlowCompletion(cmd)
 	registerIngressBaseDomainCompletion(cmd)
 	registerIngressBaseDomainCompletionForFlag(cmd, "ingress-base-domain-gke")
 	registerIngressBaseDomainCompletionForFlag(cmd, "ingress-base-domain-eks")
@@ -326,6 +339,74 @@ This command calls deploy.Execute() for each matrix entry.`,
 	})
 
 	return cmd
+}
+
+// registerMatrixShortnameCompletion adds tab completion for the --shortname-filter flag.
+// It generates the matrix from config files and offers unique shortnames, supporting
+// comma-separated multi-select.
+func registerMatrixShortnameCompletion(cmd *cobra.Command) {
+	_ = cmd.RegisterFlagCompletionFunc("shortname-filter", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		repoRoot, _ := cmd.Flags().GetString("repo-root")
+		repoRoot = resolveRepoRoot(repoRoot)
+		if repoRoot == "" {
+			return cobra.AppendActiveHelp(nil, "Please specify --repo-root or configure repoRoot in your deployment config"), cobra.ShellCompDirectiveNoFileComp
+		}
+
+		entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{})
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		// Collect unique shortnames in order of appearance.
+		seen := make(map[string]bool)
+		var shortnames []string
+		for _, e := range entries {
+			if e.Shortname != "" && !seen[e.Shortname] {
+				seen[e.Shortname] = true
+				shortnames = append(shortnames, e.Shortname)
+			}
+		}
+
+		return completeMultiSelect(toComplete, shortnames)
+	})
+}
+
+// registerMatrixVersionsCompletion adds tab completion for the --versions flag.
+// It reads chart-versions.yaml and offers active versions (alpha + supportStandard).
+func registerMatrixVersionsCompletion(cmd *cobra.Command) {
+	_ = cmd.RegisterFlagCompletionFunc("versions", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		repoRoot, _ := cmd.Flags().GetString("repo-root")
+		repoRoot = resolveRepoRoot(repoRoot)
+		if repoRoot == "" {
+			return cobra.AppendActiveHelp(nil, "Please specify --repo-root or configure repoRoot in your deployment config"), cobra.ShellCompDirectiveNoFileComp
+		}
+
+		cv, err := matrix.LoadChartVersions(repoRoot)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		return cv.ActiveVersions(), cobra.ShellCompDirectiveNoFileComp
+	})
+}
+
+// registerMatrixFlowCompletion adds tab completion for the --flow-filter flag.
+// It reads permitted-flows.yaml and offers the default flows list.
+func registerMatrixFlowCompletion(cmd *cobra.Command) {
+	_ = cmd.RegisterFlagCompletionFunc("flow-filter", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		repoRoot, _ := cmd.Flags().GetString("repo-root")
+		repoRoot = resolveRepoRoot(repoRoot)
+		if repoRoot == "" {
+			return cobra.AppendActiveHelp(nil, "Please specify --repo-root or configure repoRoot in your deployment config"), cobra.ShellCompDirectiveNoFileComp
+		}
+
+		pf, err := matrix.LoadPermittedFlows(repoRoot)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		return pf.Defaults.Flows, cobra.ShellCompDirectiveNoFileComp
+	})
 }
 
 // registerKubeContextCompletionForFlag adds tab completion for a named kube-context flag.
