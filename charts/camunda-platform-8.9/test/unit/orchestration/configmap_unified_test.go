@@ -106,7 +106,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 			},
 		},
 		{
-			// Test backward compatibility: using deprecated "identity" profile should map to "admin"
 			Name: "TestApplicationYamlShouldContainEnabledProfilesWithDeprecatedIdentityProfile",
 			Values: map[string]string{
 				"orchestration.profiles.identity": "true",
