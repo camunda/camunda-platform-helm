@@ -267,7 +267,7 @@ func TestGroupByVersionAndOrder(t *testing.T) {
 
 func TestPrintTable(t *testing.T) {
 	entries := []Entry{
-		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Enabled: true},
+		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Platform: "gke", InfraType: "distroci", Enabled: true},
 	}
 	output, err := Print(entries, "table")
 	if err != nil {
@@ -279,11 +279,17 @@ func TestPrintTable(t *testing.T) {
 	if !strings.Contains(output, "elasticsearch") || !strings.Contains(output, "8.8") || !strings.Contains(output, "Total: 1") {
 		t.Errorf("Print(table): missing expected content in output: %s", output)
 	}
+	if !strings.Contains(output, "INFRA-TYPE") {
+		t.Errorf("Print(table): missing INFRA-TYPE header in output: %s", output)
+	}
+	if !strings.Contains(output, "distroci") {
+		t.Errorf("Print(table): missing infra-type value 'distroci' in output: %s", output)
+	}
 }
 
 func TestPrintJSON(t *testing.T) {
 	entries := []Entry{
-		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", Enabled: true},
+		{Version: "8.8", Scenario: "elasticsearch", Shortname: "eske", Auth: "keycloak", Flow: "install", InfraType: "distroci", Enabled: true},
 	}
 	output, err := Print(entries, "json")
 	if err != nil {
@@ -291,6 +297,9 @@ func TestPrintJSON(t *testing.T) {
 	}
 	if !strings.Contains(output, `"version": "8.8"`) || !strings.Contains(output, `"scenario": "elasticsearch"`) {
 		t.Errorf("Print(json): missing expected JSON content in output: %s", output)
+	}
+	if !strings.Contains(output, `"infraType": "distroci"`) {
+		t.Errorf("Print(json): missing infraType in JSON output: %s", output)
 	}
 }
 
@@ -345,6 +354,15 @@ func TestGenerateWithRealConfigs(t *testing.T) {
 	for _, e := range entries {
 		if !e.Enabled {
 			t.Errorf("Generate: entry %s/%s is disabled but should be filtered out by default", e.Version, e.Scenario)
+		}
+	}
+
+	// Verify infra-type is resolved for entries from versions that have it configured (8.8+).
+	// All entries should have a non-empty InfraType (defaulting to "preemptible").
+	for _, e := range entries {
+		if e.InfraType == "" {
+			t.Errorf("Generate: entry %s/%s (platform=%s) has empty InfraType; expected at least 'preemptible'",
+				e.Version, e.Scenario, e.Platform)
 		}
 	}
 }
@@ -899,6 +917,75 @@ func TestResolveIngressBaseDomain(t *testing.T) {
 			got := resolveIngressBaseDomain(tt.opts, tt.platform)
 			if got != tt.want {
 				t.Errorf("resolveIngressBaseDomain(opts, %q) = %q, want %q", tt.platform, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- resolveInfraType tests ---
+
+func TestResolveInfraType(t *testing.T) {
+	tests := []struct {
+		name         string
+		infraTypeMap map[string]string
+		platform     string
+		want         string
+	}{
+		{
+			name:         "returns gke value from map",
+			infraTypeMap: map[string]string{"gke": "distroci", "eks": "preemptible"},
+			platform:     "gke",
+			want:         "distroci",
+		},
+		{
+			name:         "returns eks value from map",
+			infraTypeMap: map[string]string{"gke": "distroci", "eks": "preemptible"},
+			platform:     "eks",
+			want:         "preemptible",
+		},
+		{
+			name:         "returns arm for gke arm scenario",
+			infraTypeMap: map[string]string{"gke": "arm"},
+			platform:     "gke",
+			want:         "arm",
+		},
+		{
+			name:         "defaults to preemptible when platform not in map",
+			infraTypeMap: map[string]string{"gke": "arm"},
+			platform:     "eks",
+			want:         "preemptible",
+		},
+		{
+			name:         "defaults to preemptible when map is nil",
+			infraTypeMap: nil,
+			platform:     "gke",
+			want:         "preemptible",
+		},
+		{
+			name:         "defaults to preemptible when map is empty",
+			infraTypeMap: map[string]string{},
+			platform:     "gke",
+			want:         "preemptible",
+		},
+		{
+			name:         "defaults to preemptible when value is empty string",
+			infraTypeMap: map[string]string{"gke": ""},
+			platform:     "gke",
+			want:         "preemptible",
+		},
+		{
+			name:         "defaults to preemptible for empty platform",
+			infraTypeMap: map[string]string{"gke": "distroci"},
+			platform:     "",
+			want:         "preemptible",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveInfraType(tt.infraTypeMap, tt.platform)
+			if got != tt.want {
+				t.Errorf("resolveInfraType(%v, %q) = %q, want %q", tt.infraTypeMap, tt.platform, got, tt.want)
 			}
 		})
 	}

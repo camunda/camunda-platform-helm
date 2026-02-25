@@ -74,6 +74,9 @@ type RuntimeFlags struct {
 	ValuesQA       bool     // DEPRECATED: use QA instead
 	ValuesInfra    string   // DEPRECATED: use TestPlatform instead
 
+	// Infrastructure
+	InfraType string // Infrastructure pool type (e.g., preemptible, distroci, standard, arm)
+
 	// Test execution flags
 	RunIntegrationTests   bool // Run integration tests after deployment
 	RunE2ETests           bool // Run e2e tests after deployment
