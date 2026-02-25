@@ -1,0 +1,309 @@
+# CronJob: Automated cleanup of ORPHANED CI-created Elasticsearch templates.
+#
+# CI jobs deploy Camunda platform components that each create dozens of ES
+# index templates prefixed with a 6-char hex ID (e.g. "abc123-operate-...").
+# This hex ID corresponds to a suffix in the CI job's K8s namespace (e.g.
+# "camunda-pr-1234-intg-8-9-gke-foo-abc123"). Templates are never deleted
+# when CI jobs finish, so they accumulate and bloat the ES cluster state,
+# causing master node timeouts (process_cluster_event_timeout_exception).
+#
+# Safety mechanism — orphan detection:
+#   The script lists ALL K8s namespaces and extracts the 6-char hex prefix
+#   from each CI template name. It then checks whether that hex prefix
+#   appears as a substring in ANY active namespace name. If a matching
+#   namespace exists, the CI job is still running and its templates are
+#   KEPT. Only templates whose hex prefix has NO matching namespace are
+#   considered orphaned and deleted.
+#
+# This CronJob runs every 2 hours to:
+#   1. List all K8s namespaces to identify active CI jobs
+#   2. List all ES index/component/legacy templates with hex prefixes
+#   3. Delete only ORPHANED templates (hex prefix has no matching namespace)
+#   4. Set all non-system indices to replicas=0 (no value on CI cluster)
+#
+# RBAC: Requires a ServiceAccount with cluster-level namespace list permission.
+#        See the ServiceAccount, ClusterRole, and ClusterRoleBinding below.
+#
+# Deploy: kubectl apply -f ci-template-cleanup-cronjob.yaml
+#
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-template-cleanup
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ci-template-cleanup-ns-reader
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ci-template-cleanup-ns-reader
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+subjects:
+  - kind: ServiceAccount
+    name: ci-template-cleanup
+    namespace: distribution-elasticsearch-21-6-3
+roleRef:
+  kind: ClusterRole
+  name: ci-template-cleanup-ns-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ci-template-cleanup
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+spec:
+  schedule: "0 */2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: ci-template-cleanup
+        spec:
+          serviceAccountName: ci-template-cleanup
+          restartPolicy: OnFailure
+          containers:
+            - name: cleanup
+              image: bitnamilegacy/os-shell:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: ES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: infra-credentials
+                      key: elasticsearch-password
+              command:
+                - /bin/bash
+                - -euo
+                - pipefail
+                - -c
+                - |
+                  ES_URL="https://elasticsearch:9200"
+                  ES_USER="elastic"
+                  ES_CURL="curl -sk -u ${ES_USER}:${ES_PASSWORD}"
+
+                  # K8s API access via mounted service account token
+                  K8S_API="https://kubernetes.default.svc"
+                  K8S_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+                  K8S_CA="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+                  echo "=== CI Template Cleanup - $(date -u '+%Y-%m-%dT%H:%M:%SZ') ==="
+
+                  # --- Verify ES connectivity ---
+                  if ! ${ES_CURL} "${ES_URL}/_cluster/health" >/dev/null 2>&1; then
+                    echo "ERROR: Cannot reach Elasticsearch at ${ES_URL}"
+                    exit 1
+                  fi
+                  echo "Elasticsearch connectivity: OK"
+
+                  # --- Get all K8s namespace names ---
+                  # The service account has ClusterRole permission to list namespaces.
+                  # We use this to determine which CI hex prefixes are still active.
+                  echo ""
+                  echo "--- Fetching active K8s namespaces ---"
+                  NS_FILE=$(mktemp)
+                  curl -s --cacert "${K8S_CA}" -H "Authorization: Bearer ${K8S_TOKEN}" \
+                    "${K8S_API}/api/v1/namespaces" \
+                    | jq -r '.items[].metadata.name' > "${NS_FILE}" 2>/dev/null
+
+                  if [ ! -s "${NS_FILE}" ]; then
+                    echo "ERROR: Cannot list K8s namespaces. Check RBAC."
+                    rm -f "${NS_FILE}"
+                    exit 1
+                  fi
+                  ns_count=$(wc -l < "${NS_FILE}" | tr -d ' ')
+                  echo "  Found ${ns_count} namespaces"
+
+                  # --- Helper: check if a hex prefix belongs to an active CI job ---
+                  # A prefix is "active" if it appears as a substring in any namespace name.
+                  # E.g. prefix "abc123" matches namespace "camunda-pr-42-intg-8-9-gke-foo-abc123".
+                  is_active_prefix() {
+                    grep -qF "$1" "${NS_FILE}"
+                  }
+
+                  # ================================================================
+                  # 1. Delete orphaned CI V2 index templates
+                  # ================================================================
+                  echo ""
+                  echo "--- Cleaning orphaned V2 index templates ---"
+
+                  # Get all hex-prefixed V2 index template names (excluding system templates)
+                  V2_FILE=$(mktemp)
+                  ${ES_CURL} -s "${ES_URL}/_index_template" 2>/dev/null \
+                    | jq -r '.index_templates[].name
+                             | select(test("^[0-9a-f]{6}-"))
+                             | select(startswith(".") | not)' \
+                    > "${V2_FILE}" 2>/dev/null || true
+
+                  v2_deleted=0
+                  v2_skipped=0
+                  if [ -s "${V2_FILE}" ]; then
+                    # Get unique 6-char hex prefixes
+                    prefixes=$(cut -c1-6 "${V2_FILE}" | sort -u)
+                    for prefix in $prefixes; do
+                      count=$(grep -c "^${prefix}-" "${V2_FILE}" || true)
+                      if is_active_prefix "$prefix"; then
+                        echo "  KEEP  '${prefix}': ${count} templates (namespace active)"
+                        v2_skipped=$((v2_skipped + count))
+                      else
+                        echo "  DELETE '${prefix}': ${count} templates (orphaned)"
+                        resp=$(${ES_CURL} -s -XDELETE "${ES_URL}/_index_template/${prefix}-*" 2>/dev/null || true)
+                        if echo "$resp" | grep -q '"acknowledged":true'; then
+                          v2_deleted=$((v2_deleted + count))
+                        else
+                          echo "    WARN: ${resp}"
+                        fi
+                      fi
+                    done
+                  fi
+                  echo "  V2 index templates: deleted=${v2_deleted} kept=${v2_skipped}"
+                  rm -f "${V2_FILE}"
+
+                  # ================================================================
+                  # 2. Delete orphaned CI component templates
+                  # ================================================================
+                  echo ""
+                  echo "--- Cleaning orphaned component templates ---"
+
+                  COMP_FILE=$(mktemp)
+                  ${ES_CURL} -s "${ES_URL}/_component_template" 2>/dev/null \
+                    | jq -r '.component_templates[].name
+                             | select(test("^[0-9a-f]{6}-"))
+                             | select(startswith(".") | not)' \
+                    > "${COMP_FILE}" 2>/dev/null || true
+
+                  comp_deleted=0
+                  comp_skipped=0
+                  if [ -s "${COMP_FILE}" ]; then
+                    prefixes=$(cut -c1-6 "${COMP_FILE}" | sort -u)
+                    for prefix in $prefixes; do
+                      count=$(grep -c "^${prefix}-" "${COMP_FILE}" || true)
+                      if is_active_prefix "$prefix"; then
+                        echo "  KEEP  '${prefix}': ${count} component templates (namespace active)"
+                        comp_skipped=$((comp_skipped + count))
+                      else
+                        echo "  DELETE '${prefix}': ${count} component templates (orphaned)"
+                        resp=$(${ES_CURL} -s -XDELETE "${ES_URL}/_component_template/${prefix}-*" 2>/dev/null || true)
+                        if echo "$resp" | grep -q '"acknowledged":true'; then
+                          comp_deleted=$((comp_deleted + count))
+                        else
+                          echo "    WARN: ${resp}"
+                        fi
+                      fi
+                    done
+                  fi
+                  echo "  Component templates: deleted=${comp_deleted} kept=${comp_skipped}"
+                  rm -f "${COMP_FILE}"
+
+                  # ================================================================
+                  # 3. Delete orphaned CI legacy (v1) templates
+                  # ================================================================
+                  echo ""
+                  echo "--- Cleaning orphaned legacy (v1) templates ---"
+
+                  LEGACY_FILE=$(mktemp)
+                  ${ES_CURL} -s "${ES_URL}/_template" 2>/dev/null \
+                    | jq -r 'keys[]
+                             | select(test("^[0-9a-f]{6}-"))
+                             | select(startswith(".") | not)' \
+                    > "${LEGACY_FILE}" 2>/dev/null || true
+
+                  legacy_deleted=0
+                  legacy_skipped=0
+                  if [ -s "${LEGACY_FILE}" ]; then
+                    prefixes=$(cut -c1-6 "${LEGACY_FILE}" | sort -u)
+                    for prefix in $prefixes; do
+                      count=$(grep -c "^${prefix}-" "${LEGACY_FILE}" || true)
+                      if is_active_prefix "$prefix"; then
+                        echo "  KEEP  '${prefix}': ${count} legacy templates (namespace active)"
+                        legacy_skipped=$((legacy_skipped + count))
+                      else
+                        echo "  DELETE '${prefix}': ${count} legacy templates (orphaned)"
+                        resp=$(${ES_CURL} -s -XDELETE "${ES_URL}/_template/${prefix}-*" 2>/dev/null || true)
+                        if echo "$resp" | grep -q '"acknowledged":true'; then
+                          legacy_deleted=$((legacy_deleted + count))
+                        else
+                          echo "    WARN: ${resp}"
+                        fi
+                      fi
+                    done
+                  fi
+                  echo "  Legacy templates: deleted=${legacy_deleted} kept=${legacy_skipped}"
+                  rm -f "${LEGACY_FILE}"
+
+                  # ================================================================
+                  # 4. Set replicas=0 on all non-system indices
+                  # ================================================================
+                  echo ""
+                  echo "--- Setting replicas=0 on non-system indices ---"
+
+                  indices_to_fix=$(${ES_CURL} -s "${ES_URL}/_cat/indices?h=index,rep&format=json" 2>/dev/null \
+                    | jq -r '.[]
+                             | select(.index | startswith(".") | not)
+                             | select(.rep != "0")
+                             | .index' 2>/dev/null || true)
+
+                  if [ -n "$indices_to_fix" ]; then
+                    idx_count=$(echo "$indices_to_fix" | wc -l | tr -d ' ')
+                    echo "  Found ${idx_count} non-system indices with replicas > 0"
+                    resp=$(${ES_CURL} -s -XPUT "${ES_URL}/*,-.*/_settings" \
+                      -H "Content-Type: application/json" \
+                      -d '{"index":{"number_of_replicas":0}}' 2>/dev/null || true)
+                    if echo "$resp" | grep -q '"acknowledged":true'; then
+                      echo "  Set replicas=0 on all non-system indices"
+                    else
+                      echo "  WARN: Set replicas response: ${resp}"
+                    fi
+                  else
+                    echo "  All non-system indices already have replicas=0"
+                  fi
+
+                  # --- Cleanup ---
+                  rm -f "${NS_FILE}"
+
+                  # --- Summary ---
+                  echo ""
+                  echo "=== Cleanup complete ==="
+                  echo "  V2 index templates:  deleted=${v2_deleted}  kept=${v2_skipped}"
+                  echo "  Component templates: deleted=${comp_deleted}  kept=${comp_skipped}"
+                  echo "  Legacy templates:    deleted=${legacy_deleted}  kept=${legacy_skipped}"
+                  total_deleted=$((v2_deleted + comp_deleted + legacy_deleted))
+                  total_kept=$((v2_skipped + comp_skipped + legacy_skipped))
+                  echo "  Total:               deleted=${total_deleted}  kept=${total_kept}"
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
