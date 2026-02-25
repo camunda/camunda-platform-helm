@@ -1177,21 +1177,26 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		}
 	}
 
-	// Append chart-root values-digest.yaml when ValuesDigest is enabled.
-	// This file pins exact image SHA256 digests for reproducible deployments.
-	// It is NOT passed through values.Process() — digest strings contain no env-var
-	// placeholders, and the file lives at the chart root, not in the scenario dir.
-	if flags.ValuesDigest && flags.ChartPath != "" {
-		digestPath := filepath.Join(flags.ChartPath, "values-digest.yaml")
-		if _, statErr := os.Stat(digestPath); statErr == nil {
-			vals = append(vals, digestPath)
+	// Append chart-root overlay files (e.g., values-enterprise.yaml, values-digest.yaml).
+	// Each name in ChartRootOverlays resolves to <chartPath>/values-<name>.yaml.
+	// Applied after scenario layers + extra values, before debug values.
+	// Not passed through values.Process() — these files contain literal values, no env placeholders.
+	for _, overlay := range flags.ChartRootOverlays {
+		if flags.ChartPath == "" {
+			continue // repo-based installs (upgrade Step 1) have no local chart path
+		}
+		overlayPath := filepath.Join(flags.ChartPath, "values-"+overlay+".yaml")
+		if _, statErr := os.Stat(overlayPath); statErr == nil {
+			vals = append(vals, overlayPath)
 			logging.Logger.Info().
-				Str("path", digestPath).
-				Msg("Including chart-root values-digest.yaml (pins image digests)")
+				Str("overlay", overlay).
+				Str("path", overlayPath).
+				Msg("Including chart-root overlay")
 		} else {
 			logging.Logger.Debug().
-				Str("path", digestPath).
-				Msg("values-digest.yaml not found at chart root, skipping")
+				Str("overlay", overlay).
+				Str("path", overlayPath).
+				Msg("Chart-root overlay not found, skipping")
 		}
 	}
 
