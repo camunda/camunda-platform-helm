@@ -47,6 +47,8 @@ type GenerateOptions struct {
 type FilterOptions struct {
 	// ScenarioFilter limits output to scenarios matching one or more substrings (comma-separated).
 	ScenarioFilter string
+	// ShortnameFilter limits output to entries whose shortname matches one or more substrings (comma-separated).
+	ShortnameFilter string
 	// FlowFilter limits output to entries with this specific flow.
 	FlowFilter string
 	// Platform limits output to entries targeting this platform.
@@ -175,7 +177,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 
 // Filter applies post-generation filtering to the matrix entries.
 func Filter(entries []Entry, opts FilterOptions) []Entry {
-	if opts.ScenarioFilter == "" && opts.FlowFilter == "" && opts.Platform == "" {
+	if opts.ScenarioFilter == "" && opts.ShortnameFilter == "" && opts.FlowFilter == "" && opts.Platform == "" {
 		return entries
 	}
 
@@ -189,9 +191,22 @@ func Filter(entries []Entry, opts FilterOptions) []Entry {
 		}
 	}
 
+	// Parse comma-separated shortname filters into individual substrings.
+	var shortnameFilters []string
+	if opts.ShortnameFilter != "" {
+		for _, f := range strings.Split(opts.ShortnameFilter, ",") {
+			if t := strings.TrimSpace(f); t != "" {
+				shortnameFilters = append(shortnameFilters, t)
+			}
+		}
+	}
+
 	var filtered []Entry
 	for _, e := range entries {
 		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {
+			continue
+		}
+		if len(shortnameFilters) > 0 && !matchesAny(e.Shortname, shortnameFilters) {
 			continue
 		}
 		if opts.FlowFilter != "" && e.Flow != opts.FlowFilter {

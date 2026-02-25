@@ -4,18 +4,6 @@
 global:
   annotations:
     keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
-  ingress:
-    enabled: true
-    className: nginx
-    # The Ingress host will be added via CLI.
-    host: $CAMUNDA_HOSTNAME
-    tls:
-      enabled: true
-      # A wildcard certificate will be used.
-      
-    annotations:
-      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
-      external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
     keycloak:
       url:
@@ -47,19 +35,6 @@ global:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-optimize-client-token"
-      ## This section will be enabled by the pre-install-upgrade.sh for backwards compatibility with alpha8 chart.
-      ## TODO: Remove this section after the 8.8 release.
-      ## START pre-install-upgrade.sh COMMENT
-      # orchestration:
-      #   redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
-      #   secret:
-      #     existingSecret: "integration-test-credentials"
-      #     existingSecretKey: "identity-orchestration-client-token"
-      # connectors:
-      #   secret:
-      #     existingSecret: "integration-test-credentials"
-      #     existingSecretKey: "identity-connectors-client-token"
-      ## END pre-install-upgrade.sh COMMENT
 
 identity:
   realm:

@@ -23,6 +23,8 @@ identity:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  livenessProbe:
+    enabled: true
 
 connectors:
   contextPath: "/connectors"
