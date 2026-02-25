@@ -237,6 +237,69 @@ func TestFilter(t *testing.T) {
 			t.Errorf("Filter(platform=rosa): got %d entries, want 2 (entries with no platform restriction)", len(got))
 		}
 	})
+
+	t.Run("shortname filter single", func(t *testing.T) {
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esoi"})
+		if len(got) != 1 || got[0].Shortname != "esoi" {
+			t.Errorf("Filter(shortname=esoi): got %d entries, want 1 esoi entry", len(got))
+		}
+	})
+
+	t.Run("shortname filter comma-separated", func(t *testing.T) {
+		got := Filter(entries, FilterOptions{ShortnameFilter: "eshy,esoi"})
+		// Should match 1 eshy + 1 esoi = 2 total
+		if len(got) != 2 {
+			t.Errorf("Filter(shortname=eshy,esoi): got %d entries, want 2", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eshy" && e.Shortname != "esoi" {
+				t.Errorf("Filter(shortname=eshy,esoi): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname filter with spaces around commas", func(t *testing.T) {
+		got := Filter(entries, FilterOptions{ShortnameFilter: " eshy , esoi "})
+		if len(got) != 2 {
+			t.Errorf("Filter(shortname=' eshy , esoi '): got %d entries, want 2", len(got))
+		}
+	})
+
+	t.Run("shortname filter substring match", func(t *testing.T) {
+		// "esk" should match all entries with shortname "eske" (4 entries across 8.8 and 8.9)
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esk"})
+		if len(got) != 4 {
+			t.Errorf("Filter(shortname=esk): got %d entries, want 4", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eske" {
+				t.Errorf("Filter(shortname=esk): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname filter combined with scenario filter", func(t *testing.T) {
+		// scenario=elasticsearch AND shortname=eshy → only the eshy entry
+		got := Filter(entries, FilterOptions{ScenarioFilter: "elasticsearch", ShortnameFilter: "eshy"})
+		if len(got) != 1 || got[0].Shortname != "eshy" {
+			t.Errorf("Filter(scenario=elasticsearch,shortname=eshy): got %d entries, want 1 eshy entry", len(got))
+		}
+	})
+
+	t.Run("shortname filter combined with flow filter", func(t *testing.T) {
+		// shortname=esoi AND flow=upgrade-minor → 1 entry
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esoi", FlowFilter: "upgrade-minor"})
+		if len(got) != 1 || got[0].Shortname != "esoi" {
+			t.Errorf("Filter(shortname=esoi,flow=upgrade-minor): got %d entries, want 1", len(got))
+		}
+	})
+
+	t.Run("shortname filter no match", func(t *testing.T) {
+		got := Filter(entries, FilterOptions{ShortnameFilter: "zzzz"})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=zzzz): got %d entries, want 0", len(got))
+		}
+	})
 }
 
 // --- GroupByVersion / VersionOrder tests ---
