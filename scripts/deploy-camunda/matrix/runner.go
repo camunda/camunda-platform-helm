@@ -174,11 +174,11 @@ type dryRunEntry struct {
 	features    []string
 	layerFiles  []string // short relative paths, e.g., "values/identity/keycloak.yaml"
 	// Upgrade flow fields (populated only for upgrade flows).
-	upgradeFromVersion string // The "from" chart version for upgrade flows (e.g., "13.5.0").
-	preUpgradeScript   string // Path to the pre-upgrade script (e.g., "charts/.../pre-upgrade-patch.sh"), or empty.
-	upgradeOnly        bool   // True for modular-upgrade-minor (single-step upgrade, no install).
-	step1ValuesFrom    string // For upgrade-minor Step 1: the previous version whose values are used (e.g., "8.7"), or empty.
-	valuesDigest       bool   // True when chart-root values-digest.yaml exists and will be applied.
+	upgradeFromVersion string   // The "from" chart version for upgrade flows (e.g., "13.5.0").
+	preUpgradeScript   string   // Path to the pre-upgrade script (e.g., "charts/.../pre-upgrade-patch.sh"), or empty.
+	upgradeOnly        bool     // True for modular-upgrade-minor (single-step upgrade, no install).
+	step1ValuesFrom    string   // For upgrade-minor Step 1: the previous version whose values are used (e.g., "8.7"), or empty.
+	chartRootOverlays  []string // Chart-root overlay files that will be applied (e.g., ["enterprise", "digest"]).
 }
 
 // dryRun resolves what would be deployed and prints a clean summary to stdout.
@@ -245,7 +245,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				preUpgradeScript:   resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
 				upgradeOnly:        versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
 				step1ValuesFrom:    resolveStep1ValuesFromQuiet(entry),
-				valuesDigest:       resolveValuesDigestQuiet(entry.ChartPath),
+				chartRootOverlays:  resolveChartRootOverlaysQuiet(entry.ChartPath, entry),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -316,16 +316,26 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 	return prev
 }
 
-// resolveValuesDigestQuiet checks whether the chart-root values-digest.yaml file exists on disk.
-// Returns true if the file is present and will be applied during deployment.
-// This is a dry-run helper — best-effort, no errors surfaced.
-func resolveValuesDigestQuiet(chartPath string) bool {
+// resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
+// This is a dry-run helper — best-effort, silently filters to existing files only.
+func resolveChartRootOverlaysQuiet(chartPath string, entry Entry) []string {
 	if chartPath == "" {
-		return false
+		return nil
 	}
-	digestPath := filepath.Join(chartPath, "values-digest.yaml")
-	_, err := os.Stat(digestPath)
-	return err == nil
+	var overlays []string
+	if entry.Enterprise {
+		overlays = append(overlays, "enterprise")
+	}
+	overlays = append(overlays, "digest")
+	// Filter to only overlays whose files exist on disk.
+	var existing []string
+	for _, name := range overlays {
+		path := filepath.Join(chartPath, "values-"+name+".yaml")
+		if _, err := os.Stat(path); err == nil {
+			existing = append(existing, name)
+		}
+	}
+	return existing
 }
 
 // formatDryRunOutput produces a human-readable dry-run summary grouped by version.
@@ -402,11 +412,11 @@ func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOption
 					dryWarn(scriptDisplay))
 			}
 
-			// Digest overlay — show when values-digest.yaml will be applied.
-			if e.valuesDigest {
+			// Chart-root overlays — show when overlay files will be applied.
+			if len(e.chartRootOverlays) > 0 {
 				fmt.Fprintf(&b, "      %s %s\n",
-					dryKey("digest:"),
-					dryWarn("values-digest.yaml (from chart root)"))
+					dryKey("overlays:"),
+					dryWarn(strings.Join(e.chartRootOverlays, ", ")))
 			}
 
 			// Layers — the most important info.
@@ -984,7 +994,15 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		ImageTags:            entry.ImageTags,
 		UpgradeFlow:          entry.Upgrade,
 		DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
-		ValuesDigest:         true, // CI default: apply chart-root values-digest.yaml (image digests).
+		// Build chart-root overlays: enterprise (if flagged) + digest (always in CI).
+		ChartRootOverlays: func() []string {
+			var overlays []string
+			if entry.Enterprise {
+				overlays = append(overlays, "enterprise")
+			}
+			overlays = append(overlays, "digest") // CI default: always pin image digests.
+			return overlays
+		}(),
 	}
 
 	logging.Logger.Info().
@@ -1095,7 +1113,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	step1Flags.ChartPath = "" // Use repo chart, not local path.
 	step1Flags.Flow = "install"
 	step1Flags.UpgradeFlow = false         // Step 1 is a fresh install, no base-upgrade.yaml.
-	step1Flags.ValuesDigest = false        // Step 1 installs old version from repo — no digest overlay.
+	step1Flags.ChartRootOverlays = nil     // Step 1 installs old version from repo — no chart-root overlays.
 	step1Flags.SkipDependencyUpdate = true // Repo charts don't need local dep update.
 	step1Flags.RunIntegrationTests = false // Don't run tests after Step 1.
 	step1Flags.RunE2ETests = false
