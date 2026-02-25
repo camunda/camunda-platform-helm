@@ -9,24 +9,69 @@ import (
 	"strings"
 )
 
+// HelmError is a structured error for helm command failures that separates
+// the high-level failure reason from the full command details. This allows
+// consumers to display a short summary or the full details as needed.
+type HelmError struct {
+	// Reason is a short description of what failed (e.g. "helm upgrade --install failed")
+	Reason string
+	// Command is the full helm command that was executed
+	Command string
+	// Cause is the underlying error (e.g. exit status 1)
+	Cause error
+}
+
+func (e *HelmError) Error() string {
+	return fmt.Sprintf("%s: %v", e.Reason, e.Cause)
+}
+
+func (e *HelmError) Unwrap() error {
+	return e.Cause
+}
+
+// ShortCommand returns the command with long file paths shortened to just their
+// base filenames for readability. Full paths in -f values file args and chart
+// paths are replaced with just the filename.
+func (e *HelmError) ShortCommand() string {
+	return shortenPaths(e.Command)
+}
+
+// shortenPaths replaces long absolute/relative file paths with just basenames.
+// It handles both -f <path> patterns and standalone long paths.
+func shortenPaths(cmd string) string {
+	parts := strings.Fields(cmd)
+	for i := range parts {
+		// Shorten -f value file paths
+		if i > 0 && parts[i-1] == "-f" && len(parts[i]) > 0 && (parts[i][0] == '/' || strings.Contains(parts[i], "/")) {
+			parts[i] = filepath.Base(parts[i])
+			continue
+		}
+		// Shorten chart path arguments (absolute paths that aren't flags)
+		if len(parts[i]) > 0 && parts[i][0] == '/' && !strings.HasPrefix(parts[i], "--") && strings.Contains(parts[i], "/") {
+			parts[i] = filepath.Base(parts[i])
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
 // upgradeInstall builds and executes helm upgrade --install with deployer's opinionated policies
 func upgradeInstall(ctx context.Context, o types.Options) error {
 	var args []string
 	if o.Chart != "" {
-	args = []string{
-		"upgrade", "--install",
-		o.ReleaseName,
-		o.Chart,
-		"-n", o.Namespace,
-	}
+		args = []string{
+			"upgrade", "--install",
+			o.ReleaseName,
+			o.Chart,
+			"-n", o.Namespace,
+		}
 	} else {
-	args = []string{
-		"upgrade", "--install",
-		o.ReleaseName,
-		filepath.Clean(o.ChartPath),
-		"-n", o.Namespace,
+		args = []string{
+			"upgrade", "--install",
+			o.ReleaseName,
+			filepath.Clean(o.ChartPath),
+			"-n", o.Namespace,
+		}
 	}
-}
 
 	// When using a repository chart name, allow pinning the chart version
 	if o.Chart != "" && strings.TrimSpace(o.Version) != "" {
@@ -86,7 +131,11 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 	// Execute via thin helm wrapper
 	err := helm.Run(ctx, args, "")
 	if err != nil {
-		return fmt.Errorf("helm upgrade --install failed: command: helm %s: %w", formatArgs(args), err)
+		return &HelmError{
+			Reason:  "helm upgrade --install failed",
+			Command: "helm " + formatArgs(args),
+			Cause:   err,
+		}
 	}
 	return nil
 }
@@ -116,4 +165,3 @@ func formatArgs(args []string) string {
 	}
 	return strings.Join(parts, " ")
 }
-
