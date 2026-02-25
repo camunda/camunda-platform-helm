@@ -99,11 +99,11 @@ integration:
           exclude: [orchestration-grpc]
           shortname: eshy
           identity: hybrid
+          persistence: elasticsearch-external
           auth: hybrid
           flow: install
           infra-type:
             gke: distroci
-            eks: preemptible
         - name: elasticsearch-arm
           enabled: true
           auth: keycloak
