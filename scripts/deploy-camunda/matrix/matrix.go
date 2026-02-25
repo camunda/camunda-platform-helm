@@ -20,6 +20,7 @@ type Entry struct {
 	Auth      string   `json:"auth"`
 	Flow      string   `json:"flow"`
 	Platform  string   `json:"platform,omitempty"`
+	InfraType string   `json:"infraType,omitempty"`
 	Exclude   []string `json:"exclude,omitempty"`
 	Enabled   bool     `json:"enabled"`
 
@@ -149,6 +150,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						Auth:        scenario.Auth,
 						Flow:        flow,
 						Platform:    platform,
+						InfraType:   resolveInfraType(scenario.InfraType, platform),
 						Exclude:     scenario.Exclude,
 						Enabled:     scenario.Enabled,
 						Identity:    scenario.Identity,
@@ -207,6 +209,17 @@ func matchesAny(s string, substrings []string) bool {
 	return false
 }
 
+// resolveInfraType returns the infrastructure pool type for a given platform
+// from the per-platform infra-type map. Returns "preemptible" as the default
+// when the platform is not in the map or the map is nil, matching the legacy
+// bash script behavior.
+func resolveInfraType(infraTypeMap map[string]string, platform string) string {
+	if v, ok := infraTypeMap[platform]; ok && v != "" {
+		return v
+	}
+	return "preemptible"
+}
+
 // Print outputs the matrix entries in the requested format.
 func Print(entries []Entry, format string) (string, error) {
 	switch format {
@@ -246,23 +259,28 @@ func printTable(entries []Entry) string {
 	var b strings.Builder
 
 	// Header — pad text first, then apply style (ANSI codes break %-Ns padding).
-	fmt.Fprintf(&b, "%-4s %s %s %s %s %s %s %s %s\n",
+	fmt.Fprintf(&b, "%-4s %s %s %s %s %s %s %s %s %s\n",
 		"",
 		tblHead(fmt.Sprintf("%-6s", "VER")),
 		tblHead(fmt.Sprintf("%-25s", "SCENARIO")),
 		tblHead(fmt.Sprintf("%-10s", "SHORT")),
 		tblHead(fmt.Sprintf("%-16s", "FLOW")),
 		tblHead(fmt.Sprintf("%-12s", "PLATFORM")),
+		tblHead(fmt.Sprintf("%-14s", "INFRA-TYPE")),
 		tblHead(fmt.Sprintf("%-18s", "IDENTITY")),
 		tblHead(fmt.Sprintf("%-20s", "PERSISTENCE")),
 		tblHead("FEATURES"))
-	fmt.Fprintf(&b, "%-4s %-6s %-25s %-10s %-16s %-12s %-18s %-20s %s\n",
-		"", "---", "--------", "-----", "----", "--------", "--------", "-----------", "--------")
+	fmt.Fprintf(&b, "%-4s %-6s %-25s %-10s %-16s %-12s %-14s %-18s %-20s %s\n",
+		"", "---", "--------", "-----", "----", "--------", "----------", "--------", "-----------", "--------")
 
 	for _, e := range entries {
 		platform := e.Platform
 		if platform == "" {
 			platform = "-"
+		}
+		infraType := e.InfraType
+		if infraType == "" {
+			infraType = "-"
 		}
 		// Pad identity/persistence before applying color to preserve alignment.
 		identity := fmt.Sprintf("%-18s", e.Identity)
@@ -277,8 +295,8 @@ func printTable(entries []Entry) string {
 		if features == "" {
 			features = "-"
 		}
-		fmt.Fprintf(&b, "  %-2s %-6s %-25s %-10s %-16s %-12s %s %s %s\n",
-			"", e.Version, e.Scenario, e.Shortname, e.Flow, platform, identity, persistence, features)
+		fmt.Fprintf(&b, "  %-2s %-6s %-25s %-10s %-16s %-12s %-14s %s %s %s\n",
+			"", e.Version, e.Scenario, e.Shortname, e.Flow, platform, infraType, identity, persistence, features)
 	}
 
 	fmt.Fprintf(&b, "\n%s: %d entries\n", tblHead("Total"), len(entries))

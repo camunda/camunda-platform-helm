@@ -1074,6 +1074,9 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		if len(flags.Features) > 0 {
 			deployConfig.Features = flags.Features
 		}
+		if flags.InfraType != "" {
+			deployConfig.InfraType = flags.InfraType
+		}
 
 		layeredFiles, err := deployConfig.ResolvePaths(effectiveScenarioDir)
 		if err != nil {
@@ -1101,6 +1104,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Str("identity", deployConfig.Identity).
 			Str("persistence", deployConfig.Persistence).
 			Str("platform", deployConfig.Platform).
+			Str("infraType", deployConfig.InfraType).
 			Strs("features", deployConfig.Features).
 			Strs("layerFiles", shortFiles).
 			Msg("Resolved deployment layers")
@@ -1537,6 +1541,10 @@ func renderTestEnvFile(ctx context.Context, flags *config.RuntimeFlags, namespac
 		"--output", outputPath,
 	}
 
+	if flags.KubeContext != "" {
+		args = append(args, "--kube-context", flags.KubeContext)
+	}
+
 	logging.Logger.Info().
 		Str("output", outputPath).
 		Str("namespace", namespace).
@@ -1569,6 +1577,7 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 		// Plain, machine-friendly output
 		var out strings.Builder
 		fmt.Fprintf(&out, "deployment: success\n")
+		fmt.Fprintf(&out, "namespace: %s\n", namespace)
 		fmt.Fprintf(&out, "realm: %s\n", realm)
 		fmt.Fprintf(&out, "optimizeIndexPrefix: %s\n", optimizePrefix)
 		fmt.Fprintf(&out, "orchestrationIndexPrefix: %s\n", orchestrationPrefix)
@@ -1615,6 +1624,7 @@ func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespac
 	out.WriteString(styleHead("Identifiers"))
 	out.WriteString("\n")
 	maxKey := 25
+	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Namespace")), styleVal(namespace))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Realm")), styleVal(realm))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Optimize index prefix")), styleVal(optimizePrefix))
 	fmt.Fprintf(&out, "  - %s: %s\n", styleKey(fmt.Sprintf("%-*s", maxKey, "Orchestration index prefix")), styleVal(orchestrationPrefix))

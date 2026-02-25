@@ -17,6 +17,10 @@ const (
 	PersistenceDir = "persistence"
 	PlatformDir    = "platform"
 	FeaturesDir    = "features"
+
+	// InfraDir is the directory (sibling to the scenario dir) that holds
+	// infrastructure pool values files (nodeSelector, tolerations, etc.).
+	InfraDir = "infra"
 )
 
 // DeploymentConfig describes the configuration for a deployment using the
@@ -34,6 +38,9 @@ type DeploymentConfig struct {
 	QA        bool // Enable QA configuration (test users, etc.)
 	ImageTags bool // Enable image tag overrides from env vars
 	Upgrade   bool // Enable upgrade flow configuration
+
+	// Infrastructure
+	InfraType string // Infrastructure pool type (preemptible, distroci, standard, arm, etc.)
 
 	// Migration support (for helm chart schema changes)
 	ChartVersion string // Chart version (e.g., "13.0.0") - used to determine if migrator is needed
@@ -79,7 +86,7 @@ func (c *DeploymentConfig) Validate() error {
 }
 
 // ResolvePaths returns the ordered list of values files based on the configuration.
-// Files are returned in order: base -> base modifiers -> identity -> persistence -> platform -> features -> migrator -> image-tags
+// Files are returned in order: base -> base modifiers -> identity -> persistence -> platform -> infra -> features -> migrator -> image-tags
 func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 	valuesDir := filepath.Join(scenariosDir, ValuesDir)
 
@@ -132,6 +139,23 @@ func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 		platformPath := filepath.Join(valuesDir, PlatformDir, c.Platform+".yaml")
 		if _, err := os.Stat(platformPath); err == nil {
 			files = append(files, platformPath)
+		}
+	}
+
+	// Layer 5b: Infrastructure pool selection (nodeSelector/tolerations)
+	// Infra files live in a sibling "infra/" directory next to the scenario dir
+	// (e.g., ../infra/values-infra-<suffix>.yaml relative to scenariosDir).
+	// The suffix follows the legacy Taskfile convention:
+	//   - For EKS: "eks-<infraType>" (e.g., "eks-preemptible")
+	//   - For other platforms: "<infraType>" (e.g., "preemptible", "distroci")
+	if c.InfraType != "" {
+		infraSuffix := c.InfraType
+		if c.Platform == "eks" {
+			infraSuffix = "eks-" + c.InfraType
+		}
+		infraPath := filepath.Join(scenariosDir, "..", InfraDir, fmt.Sprintf("values-infra-%s.yaml", infraSuffix))
+		if _, err := os.Stat(infraPath); err == nil {
+			files = append(files, infraPath)
 		}
 	}
 

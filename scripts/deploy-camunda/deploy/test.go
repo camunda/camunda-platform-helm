@@ -58,7 +58,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := runIntegrationTests(ctx, repoRoot, chartPath, namespace, flags.Platform)
+			err := runIntegrationTests(ctx, repoRoot, chartPath, namespace, flags.Platform, flags.KubeContext, flags.TestExclude)
 			resultCh <- TestResult{Type: "integration", Error: err}
 		}()
 	}
@@ -67,7 +67,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := runE2ETests(ctx, repoRoot, chartPath, namespace)
+			err := runE2ETests(ctx, repoRoot, chartPath, namespace, flags.KubeContext, flags.TestExclude)
 			resultCh <- TestResult{Type: "e2e", Error: err}
 		}()
 	}
@@ -101,7 +101,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 }
 
 // runIntegrationTests executes the integration test script.
-func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform string) error {
+func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude string) error {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-integration-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
@@ -113,6 +113,7 @@ func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, pl
 		Str("chartPath", chartPath).
 		Str("namespace", namespace).
 		Str("platform", platform).
+		Str("kubeContext", kubeContext).
 		Msg("Running integration tests")
 
 	args := []string{
@@ -121,11 +122,18 @@ func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, pl
 		"--platform", platform,
 	}
 
+	if kubeContext != "" {
+		args = append(args, "--kube-context", kubeContext)
+	}
+	if testExclude != "" {
+		args = append(args, "--test-exclude", testExclude)
+	}
+
 	return executeScript(ctx, scriptPath, args, "integration")
 }
 
 // runE2ETests executes the e2e test script.
-func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace string) error {
+func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude string) error {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-e2e-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
@@ -136,11 +144,19 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace string) err
 		Str("script", scriptPath).
 		Str("chartPath", chartPath).
 		Str("namespace", namespace).
+		Str("kubeContext", kubeContext).
 		Msg("Running e2e tests")
 
 	args := []string{
 		"--absolute-chart-path", chartPath,
 		"--namespace", namespace,
+	}
+
+	if kubeContext != "" {
+		args = append(args, "--kube-context", kubeContext)
+	}
+	if testExclude != "" {
+		args = append(args, "--test-exclude", testExclude)
 	}
 
 	return executeScript(ctx, scriptPath, args, "e2e")
