@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.5.0
+version: 13.5.1
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -71,14 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: added
-      description: "Add configuration for initializing authorization in 8.8"
-    - kind: added
-      description: "Add tpl support to podLabels, podAnnotations, and global.ingress.host"
-    - kind: added
-      description: "Expose options in values.yaml for helm v4 support"
-    - kind: fixed
-      description: "Add type to headless orchestration cluster service"
-    - kind: fixed
-      description: "Normalize authIssuerBackendUrl to prevent double-slash when contextPath is root"
+  artifacthub.io/changes: ""

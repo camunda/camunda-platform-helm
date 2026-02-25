@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.5.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.0...camunda-platform-8.8-13.5.1) (2026-02-25)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#5182](https://github.com/camunda/camunda-platform-helm/issues/5182)) ([3ba8e07](https://github.com/camunda/camunda-platform-helm/commit/3ba8e07b58a5e1ca9239081bf3ba0e2d6a5a85e3))
+
 ## [13.5.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.4.2...camunda-platform-8.8-13.5.0) (2026-02-19)
 
 
