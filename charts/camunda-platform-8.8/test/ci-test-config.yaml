@@ -98,6 +98,7 @@ integration:
           enabled: true
           exclude: [orchestration-grpc]
           shortname: eshy
+          identity: hybrid
           auth: hybrid
           flow: install
           infra-type:
@@ -111,6 +112,8 @@ integration:
           infra-type:
             gke: arm
           flow: install
+          identity: keycloak-external
+          features: [arm]
           persistence: elasticsearch-external
     nightly:
       scenario:

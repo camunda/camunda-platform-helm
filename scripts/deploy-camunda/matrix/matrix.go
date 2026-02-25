@@ -28,6 +28,11 @@ type Entry struct {
 	Identity    string   `json:"identity,omitempty"`
 	Persistence string   `json:"persistence,omitempty"`
 	Features    []string `json:"features,omitempty"`
+
+	// Base modifier flags.
+	QA        bool `json:"qa,omitempty"`
+	ImageTags bool `json:"imageTags,omitempty"`
+	Upgrade   bool `json:"upgrade,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -156,6 +161,9 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						Identity:    scenario.Identity,
 						Persistence: scenario.Persistence,
 						Features:    scenario.Features,
+						QA:          scenario.QA,
+						ImageTags:   scenario.ImageTags,
+						Upgrade:     scenario.Upgrade,
 					})
 				}
 			}
@@ -213,8 +221,17 @@ func matchesAny(s string, substrings []string) bool {
 // from the per-platform infra-type map. Returns "preemptible" as the default
 // when the platform is not in the map or the map is nil, matching the legacy
 // bash script behavior.
+//
+// When platform is empty (scenario has no explicit platforms list), the lookup
+// uses "gke" as the default platform. This matches resolvePlatform which also
+// defaults to "gke" at execution time, ensuring infra-type is consistent with
+// the platform that will actually be used for deployment.
 func resolveInfraType(infraTypeMap map[string]string, platform string) string {
-	if v, ok := infraTypeMap[platform]; ok && v != "" {
+	lookupPlatform := platform
+	if lookupPlatform == "" {
+		lookupPlatform = "gke"
+	}
+	if v, ok := infraTypeMap[lookupPlatform]; ok && v != "" {
 		return v
 	}
 	return "preemptible"
