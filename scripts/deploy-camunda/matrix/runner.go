@@ -2,6 +2,7 @@ package matrix
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,9 +11,13 @@ import (
 
 	"github.com/jwalton/gchalk"
 
+	"scripts/camunda-core/pkg/executil"
+	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
+	"scripts/camunda-core/pkg/versionmatrix"
+	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 )
@@ -94,6 +99,10 @@ type RunOptions struct {
 	// Behaves like DryRun (no deployment), but outputs a focused table showing each
 	// scenario's resolved layers (identity, persistence, platform, infra-type, features, flow).
 	Coverage bool
+	// UpgradeFromVersion overrides the auto-resolved "from" chart version for upgrade flows.
+	// When set, this version is used instead of resolving from version-matrix JSON files.
+	// Only applies to entries with upgrade flows (upgrade-patch, upgrade-minor, modular-upgrade-minor).
+	UpgradeFromVersion string
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -164,6 +173,12 @@ type dryRunEntry struct {
 	persistence string
 	features    []string
 	layerFiles  []string // short relative paths, e.g., "values/identity/keycloak.yaml"
+	// Upgrade flow fields (populated only for upgrade flows).
+	upgradeFromVersion string // The "from" chart version for upgrade flows (e.g., "13.5.0").
+	preUpgradeScript   string // Path to the pre-upgrade script (e.g., "charts/.../pre-upgrade-patch.sh"), or empty.
+	upgradeOnly        bool   // True for modular-upgrade-minor (single-step upgrade, no install).
+	step1ValuesFrom    string // For upgrade-minor Step 1: the previous version whose values are used (e.g., "8.7"), or empty.
+	valuesDigest       bool   // True when chart-root values-digest.yaml exists and will be applied.
 }
 
 // dryRun resolves what would be deployed and prints a clean summary to stdout.
@@ -213,19 +228,24 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 			}
 
 			resolved = append(resolved, dryRunEntry{
-				entry:       entry,
-				namespace:   namespace,
-				kubeCtx:     kubeCtx,
-				platform:    platform,
-				infraType:   entry.InfraType,
-				ingressHost: ingressHost,
-				envFile:     envFile,
-				useVault:    useVault,
-				deleteNS:    opts.DeleteNamespaceFirst,
-				identity:    deployConfig.Identity,
-				persistence: deployConfig.Persistence,
-				features:    deployConfig.Features,
-				layerFiles:  layerFiles,
+				entry:              entry,
+				namespace:          namespace,
+				kubeCtx:            kubeCtx,
+				platform:           platform,
+				infraType:          entry.InfraType,
+				ingressHost:        ingressHost,
+				envFile:            envFile,
+				useVault:           useVault,
+				deleteNS:           opts.DeleteNamespaceFirst,
+				identity:           deployConfig.Identity,
+				persistence:        deployConfig.Persistence,
+				features:           deployConfig.Features,
+				layerFiles:         layerFiles,
+				upgradeFromVersion: resolveUpgradeFromVersionQuiet(opts.RepoRoot, entry, opts.UpgradeFromVersion),
+				preUpgradeScript:   resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
+				upgradeOnly:        versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
+				step1ValuesFrom:    resolveStep1ValuesFromQuiet(entry),
+				valuesDigest:       resolveValuesDigestQuiet(entry.ChartPath),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -246,6 +266,67 @@ var (
 	dryWarn = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
 	dryDim  = func(s string) string { return logging.Emphasize(s, gchalk.WithBrightBlack().Italic) }
 )
+
+// resolveUpgradeFromVersionQuiet resolves the "from" chart version for upgrade flows.
+// Returns empty string for non-upgrade flows or on error (dry-run is best-effort).
+// If overrideVersion is non-empty, it is returned directly for upgrade flows.
+func resolveUpgradeFromVersionQuiet(repoRoot string, entry Entry, overrideVersion string) string {
+	if !versionmatrix.IsUpgradeFlow(entry.Flow) {
+		return ""
+	}
+	if overrideVersion != "" {
+		return overrideVersion
+	}
+	version, err := versionmatrix.ResolveUpgradeFromVersion(repoRoot, entry.Version, entry.Flow)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Str("version", entry.Version).Str("flow", entry.Flow).
+			Msg("dry-run: could not resolve upgrade-from version")
+		return "???"
+	}
+	return version
+}
+
+// resolvePreUpgradeScriptQuiet returns the pre-upgrade script path if one exists on disk.
+// Returns empty string for non-upgrade flows or when no script is found (dry-run is best-effort).
+func resolvePreUpgradeScriptQuiet(repoRoot string, entry Entry) string {
+	if !versionmatrix.IsUpgradeFlow(entry.Flow) {
+		return ""
+	}
+	if versionmatrix.HasPreUpgradeScript(repoRoot, entry.Version, entry.Flow) {
+		return versionmatrix.PreUpgradeScriptPath(repoRoot, entry.Version, entry.Flow)
+	}
+	return ""
+}
+
+// resolveStep1ValuesFromQuiet returns the previous app version whose values files are used
+// for Step 1 of upgrade-minor flows. For upgrade-minor, Step 1 uses the previous app
+// version's chart directory (e.g., "8.7" values for an "8.8" entry). For all other flows
+// (including upgrade-patch, which uses the current version's values), returns empty string.
+// Errors are silently logged — dry-run is best-effort.
+func resolveStep1ValuesFromQuiet(entry Entry) string {
+	if entry.Flow != "upgrade-minor" {
+		return ""
+	}
+	prev, err := versionmatrix.PreviousAppVersion(entry.Version)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Str("version", entry.Version).
+			Msg("dry-run: could not resolve previous app version for Step 1 values")
+		return "???"
+	}
+	return prev
+}
+
+// resolveValuesDigestQuiet checks whether the chart-root values-digest.yaml file exists on disk.
+// Returns true if the file is present and will be applied during deployment.
+// This is a dry-run helper — best-effort, no errors surfaced.
+func resolveValuesDigestQuiet(chartPath string) bool {
+	if chartPath == "" {
+		return false
+	}
+	digestPath := filepath.Join(chartPath, "values-digest.yaml")
+	_, err := os.Stat(digestPath)
+	return err == nil
+}
 
 // formatDryRunOutput produces a human-readable dry-run summary grouped by version.
 func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOptions) string {
@@ -280,6 +361,53 @@ func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOption
 				dryOk(e.platform),
 				dryOk(e.infraType),
 				dryOk(e.entry.Auth))
+
+			// Upgrade plan — show two-step upgrade details for two-step upgrade flows,
+			// or upgrade-only details for modular-upgrade-minor.
+			if e.upgradeOnly && e.upgradeFromVersion != "" {
+				fmt.Fprintf(&b, "      %s %s %s → %s %s\n",
+					dryKey("upgrade:"),
+					dryDim("upgrade-only (no install step), expects"),
+					dryWarn(versionmatrix.DefaultHelmChartRef+"@"+e.upgradeFromVersion),
+					dryDim("already running, upgrading to"),
+					dryWarn("local chart"))
+			} else if !e.upgradeOnly && e.upgradeFromVersion != "" {
+				fmt.Fprintf(&b, "      %s %s %s → %s %s\n",
+					dryKey("upgrade:"),
+					dryDim("Step 1: install"),
+					dryWarn(versionmatrix.DefaultHelmChartRef+"@"+e.upgradeFromVersion),
+					dryDim("Step 2: upgrade to"),
+					dryWarn("local chart"))
+				// For upgrade-minor, Step 1 uses the previous version's values files.
+				// Show this explicitly so operators know values come from a different chart dir.
+				if e.step1ValuesFrom != "" {
+					fmt.Fprintf(&b, "      %s %s %s\n",
+						dryKey("step1-values:"),
+						dryDim("from"),
+						dryWarn("camunda-platform-"+e.step1ValuesFrom))
+				}
+			}
+
+			// Pre-upgrade script — show the script that runs between Step 1 and Step 2.
+			if e.preUpgradeScript != "" {
+				// Show a relative path from the repo root for readability.
+				scriptDisplay := e.preUpgradeScript
+				if opts.RepoRoot != "" {
+					if rel, err := filepath.Rel(opts.RepoRoot, e.preUpgradeScript); err == nil {
+						scriptDisplay = rel
+					}
+				}
+				fmt.Fprintf(&b, "      %s %s\n",
+					dryKey("pre-upgrade:"),
+					dryWarn(scriptDisplay))
+			}
+
+			// Digest overlay — show when values-digest.yaml will be applied.
+			if e.valuesDigest {
+				fmt.Fprintf(&b, "      %s %s\n",
+					dryKey("digest:"),
+					dryWarn("values-digest.yaml (from chart root)"))
+			}
 
 			// Layers — the most important info.
 			features := dryDim("-")
@@ -543,12 +671,16 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 			results = append(results, result)
 
 			if result.Error != nil {
-				logging.Logger.Error().
+				logEvent := logging.Logger.Error().
 					Err(result.Error).
 					Str("version", entry.Version).
 					Str("scenario", entry.Scenario).
-					Str("flow", entry.Flow).
-					Msg("Matrix entry failed")
+					Str("flow", entry.Flow)
+				var helmErr *deployer.HelmError
+				if errors.As(result.Error, &helmErr) {
+					logEvent = logEvent.Str("command", helmErr.ShortCommand())
+				}
+				logEvent.Msg("Matrix entry failed")
 
 				if opts.StopOnFailure {
 					return results, fmt.Errorf("stopping on failure: %w", result.Error)
@@ -616,12 +748,16 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 			results[idx] = result
 
 			if result.Error != nil {
-				logging.Logger.Error().
+				logEvent := logging.Logger.Error().
 					Err(result.Error).
 					Str("version", e.Version).
 					Str("scenario", e.Scenario).
-					Str("flow", e.Flow).
-					Msg("Matrix entry failed")
+					Str("flow", e.Flow)
+				var helmErr *deployer.HelmError
+				if errors.As(result.Error, &helmErr) {
+					logEvent = logEvent.Str("command", helmErr.ShortCommand())
+				}
+				logEvent.Msg("Matrix entry failed")
 
 				if opts.StopOnFailure {
 					errOnce.Do(func() {
@@ -669,6 +805,11 @@ func buildNamespace(prefix string, entry Entry) string {
 // buildBaseNamespace constructs the namespace suffix for a matrix entry without the prefix.
 // Pattern: <version-compact>-<shortname>-<flow>[-<platform>]
 // e.g., 88-eske-inst, 87-es-upgp-gke.
+//
+// Special case: modular-upgrade-minor targets the install flow's namespace (uses "inst"
+// suffix instead of "mugm"). In CI, modular-upgrade-minor reuses the install flow's
+// namespace — it does not create its own. This ensures the upgrade-only step deploys
+// into the same namespace where the prior install run created the deployment.
 func buildBaseNamespace(entry Entry) string {
 	versionCompact := strings.ReplaceAll(entry.Version, ".", "")
 	shortname := entry.Shortname
@@ -676,6 +817,10 @@ func buildBaseNamespace(entry Entry) string {
 		shortname = entry.Scenario
 	}
 	flow := flowAbbrev(entry.Flow)
+	// modular-upgrade-minor targets the install namespace.
+	if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
+		flow = flowAbbrev("install")
+	}
 	if entry.Platform != "" {
 		return fmt.Sprintf("%s-%s-%s-%s", versionCompact, shortname, flow, entry.Platform)
 	}
@@ -684,9 +829,10 @@ func buildBaseNamespace(entry Entry) string {
 
 // flowAbbrev returns a short abbreviation for a flow name, used in namespace construction.
 var flowAbbrevMap = map[string]string{
-	"install":       "inst",
-	"upgrade-patch": "upgp",
-	"upgrade-minor": "upgm",
+	"install":               "inst",
+	"upgrade-patch":         "upgp",
+	"upgrade-minor":         "upgm",
+	"modular-upgrade-minor": "mugm",
 }
 
 func flowAbbrev(flow string) string {
@@ -760,6 +906,10 @@ func resolveIngressBaseDomain(opts RunOptions, platform string) string {
 }
 
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
+// The flow determines the execution strategy:
+//   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
+//   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
+//   - Install (default): Single-step fresh install.
 func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	namespace := buildNamespace(opts.NamespacePrefix, entry)
 	baseNamespace := buildBaseNamespace(entry)
@@ -791,6 +941,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	keycloakHost := config.FirstNonEmpty(opts.KeycloakHost, config.DefaultKeycloakHost)
 	keycloakProtocol := config.FirstNonEmpty(opts.KeycloakProtocol, config.DefaultKeycloakProtocol)
 
+	// Build the base flags (used for single-step install or as Step 2 for upgrades).
 	flags := &config.RuntimeFlags{
 		ChartPath:             entry.ChartPath,
 		ScenarioPath:          scenarioDir,
@@ -833,6 +984,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		ImageTags:            entry.ImageTags,
 		UpgradeFlow:          entry.Upgrade,
 		DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
+		ValuesDigest:         true, // CI default: apply chart-root values-digest.yaml (image digests).
 	}
 
 	logging.Logger.Info().
@@ -854,11 +1006,259 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Bool("vaultBackedSecrets", useVault).
 		Msg("Deploying matrix entry")
 
+	// Two-step upgrade flow: install old version first, then upgrade to current.
+	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
+		if err := executeTwoStepUpgrade(ctx, entry, flags, opts); err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+		}
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
+	}
+
+	// Upgrade-only flow (modular-upgrade-minor): upgrade an already-running deployment.
+	// No Step 1 install — the prior "install" flow must have already deployed the old version.
+	if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
+		if err := executeUpgradeOnly(ctx, entry, flags, opts); err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+		}
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
+	}
+
+	// Single-step install (default flow).
 	if err := deploy.Execute(ctx, flags); err != nil {
 		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
 	}
 
 	return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
+}
+
+// executeTwoStepUpgrade performs a two-step upgrade deployment:
+//
+//	Step 1: Install the previously released chart version from the Helm repository.
+//	Step 2: Upgrade to the current on-disk chart (the branch version) with
+//	        upgrade-specific flags (--force, allowPreReleaseImages).
+//
+// Values file resolution for Step 1 depends on the flow:
+//   - upgrade-patch: uses the CURRENT chart's values files (same app version, older release).
+//   - upgrade-minor: uses the PREVIOUS app version's chart values files (e.g., 8.7 for an 8.8 entry).
+//     This matches CI behavior where test-type-vars sets CHART_PATH to the previous version's
+//     chart directory for upgrade-minor.
+//
+// The "from" chart version is resolved from version-matrix JSON files:
+//   - upgrade-patch: latest stable chart for the SAME app version
+//   - upgrade-minor: latest stable chart for the PREVIOUS app version
+func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.RuntimeFlags, opts RunOptions) error {
+	// Resolve the "from" chart version for the upgrade.
+	// If UpgradeFromVersion is set via CLI flag, use it directly; otherwise auto-resolve.
+	var fromVersion string
+	if opts.UpgradeFromVersion != "" {
+		fromVersion = opts.UpgradeFromVersion
+		logging.Logger.Info().
+			Str("flow", entry.Flow).
+			Str("fromVersion", fromVersion).
+			Str("source", "cli-override").
+			Msg("Two-step upgrade: using CLI-provided from-version")
+	} else {
+		var err error
+		fromVersion, err = versionmatrix.ResolveUpgradeFromVersion(opts.RepoRoot, entry.Version, entry.Flow)
+		if err != nil {
+			return fmt.Errorf("resolve upgrade-from version for %s/%s: %w", entry.Version, entry.Flow, err)
+		}
+	}
+
+	logging.Logger.Info().
+		Str("flow", entry.Flow).
+		Str("fromVersion", fromVersion).
+		Str("toChart", entry.ChartPath).
+		Str("version", entry.Version).
+		Msg("Two-step upgrade: resolved from-version")
+
+	// --- Step 1: Install old version from Helm repo ---
+	logging.Logger.Info().
+		Str("step", "1/2").
+		Str("action", "install").
+		Str("chart", versionmatrix.DefaultHelmChartRef).
+		Str("version", fromVersion).
+		Msg("Step 1: Installing previous chart version from Helm repo")
+
+	// Ensure the Camunda Helm repo is registered and up-to-date.
+	if err := helm.RepoAdd(ctx, versionmatrix.DefaultHelmRepoName, versionmatrix.DefaultHelmRepoURL); err != nil {
+		return fmt.Errorf("step 1: helm repo add: %w", err)
+	}
+	if err := helm.RepoUpdate(ctx); err != nil {
+		return fmt.Errorf("step 1: helm repo update: %w", err)
+	}
+
+	// Clone flags for Step 1: deploy from repo instead of local chart path.
+	step1Flags := *flags
+	step1Flags.Chart = versionmatrix.DefaultHelmChartRef
+	step1Flags.ChartVersion = fromVersion
+	step1Flags.ChartPath = "" // Use repo chart, not local path.
+	step1Flags.Flow = "install"
+	step1Flags.UpgradeFlow = false         // Step 1 is a fresh install, no base-upgrade.yaml.
+	step1Flags.ValuesDigest = false        // Step 1 installs old version from repo — no digest overlay.
+	step1Flags.SkipDependencyUpdate = true // Repo charts don't need local dep update.
+	step1Flags.RunIntegrationTests = false // Don't run tests after Step 1.
+	step1Flags.RunE2ETests = false
+	step1Flags.RunAllTests = false
+	step1Flags.DeleteNamespaceFirst = flags.DeleteNamespaceFirst // Only delete on Step 1.
+
+	// For upgrade-minor, Step 1 uses the PREVIOUS app version's values files.
+	// In CI, test-type-vars sets CHART_PATH to charts/camunda-platform-<previous> for
+	// the install step of upgrade-minor, so values files come from the older chart.
+	// For upgrade-patch, Step 1 uses the current chart's values (same app version).
+	if entry.Flow == "upgrade-minor" {
+		prevVersion, err := versionmatrix.PreviousAppVersion(entry.Version)
+		if err != nil {
+			return fmt.Errorf("step 1: resolve previous app version for %s: %w", entry.Version, err)
+		}
+		prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
+		prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
+		step1Flags.ScenarioPath = prevScenarioDir
+
+		logging.Logger.Info().
+			Str("flow", entry.Flow).
+			Str("previousVersion", prevVersion).
+			Str("scenarioDir", prevScenarioDir).
+			Msg("Step 1: using previous app version's values files (matching CI behavior)")
+	}
+
+	if err := deploy.Execute(ctx, &step1Flags); err != nil {
+		return fmt.Errorf("step 1: install %s@%s failed: %w", versionmatrix.DefaultHelmChartRef, fromVersion, err)
+	}
+
+	logging.Logger.Info().
+		Str("step", "1/2").
+		Str("version", fromVersion).
+		Msg("Step 1 complete: previous version installed successfully")
+
+	// --- Pre-upgrade lifecycle script ---
+	// Run the pre-upgrade script (if it exists) between Step 1 and Step 2.
+	// These scripts perform version-specific cleanup (e.g., deleting StatefulSets/PVCs)
+	// that must happen after the old version is installed but before the upgrade.
+	if scriptPath := versionmatrix.PreUpgradeScriptPath(opts.RepoRoot, entry.Version, entry.Flow); scriptPath != "" {
+		if versionmatrix.HasPreUpgradeScript(opts.RepoRoot, entry.Version, entry.Flow) {
+			namespace := flags.EffectiveNamespace()
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Str("namespace", namespace).
+				Str("flow", entry.Flow).
+				Msg("Running pre-upgrade script")
+
+			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
+			if flags.KubeContext != "" {
+				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.KubeContext)
+			}
+
+			if err := executil.RunCommand(ctx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
+				return fmt.Errorf("pre-upgrade script %s failed: %w", scriptPath, err)
+			}
+
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Msg("Pre-upgrade script completed successfully")
+		} else {
+			logging.Logger.Debug().
+				Str("script", scriptPath).
+				Msg("Pre-upgrade script not found on disk, skipping")
+		}
+	}
+
+	// --- Step 2: Upgrade to current on-disk chart ---
+	logging.Logger.Info().
+		Str("step", "2/2").
+		Str("action", "upgrade").
+		Str("chartPath", entry.ChartPath).
+		Msg("Step 2: Upgrading to current chart version")
+
+	// Clone flags for Step 2: upgrade from installed state to local chart.
+	step2Flags := *flags
+	step2Flags.UpgradeFlow = true           // Ensure base-upgrade.yaml is included.
+	step2Flags.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
+	step2Flags.ExtraHelmArgs = []string{"--force"}
+	step2Flags.ExtraHelmSets = map[string]string{
+		"orchestration.upgrade.allowPreReleaseImages": "true",
+	}
+
+	if err := deploy.Execute(ctx, &step2Flags); err != nil {
+		return fmt.Errorf("step 2: upgrade to local chart failed: %w", err)
+	}
+
+	logging.Logger.Info().
+		Str("step", "2/2").
+		Msg("Step 2 complete: upgrade to current version succeeded")
+
+	return nil
+}
+
+// executeUpgradeOnly performs a single-step upgrade against an already-running deployment.
+// This is used for "modular-upgrade-minor" which, in CI, skips the install job entirely
+// and only runs the upgrade job against the namespace of a prior "install" flow.
+//
+// The sequence is:
+//  1. Run pre-upgrade script (if it exists on disk).
+//  2. Helm upgrade to the current on-disk chart with upgrade-specific flags.
+//
+// Unlike executeTwoStepUpgrade, there is NO Step 1 install from the Helm repo.
+// The previous version must already be deployed (by a prior "install" flow entry).
+func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeFlags, opts RunOptions) error {
+	logging.Logger.Info().
+		Str("flow", entry.Flow).
+		Str("namespace", flags.EffectiveNamespace()).
+		Str("chartPath", entry.ChartPath).
+		Msg("Upgrade-only flow: upgrading existing deployment (no install step)")
+
+	// --- Pre-upgrade lifecycle script ---
+	if scriptPath := versionmatrix.PreUpgradeScriptPath(opts.RepoRoot, entry.Version, entry.Flow); scriptPath != "" {
+		if versionmatrix.HasPreUpgradeScript(opts.RepoRoot, entry.Version, entry.Flow) {
+			namespace := flags.EffectiveNamespace()
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Str("namespace", namespace).
+				Str("flow", entry.Flow).
+				Msg("Running pre-upgrade script")
+
+			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
+			if flags.KubeContext != "" {
+				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.KubeContext)
+			}
+
+			if err := executil.RunCommand(ctx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
+				return fmt.Errorf("pre-upgrade script %s failed: %w", scriptPath, err)
+			}
+
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Msg("Pre-upgrade script completed successfully")
+		} else {
+			logging.Logger.Debug().
+				Str("script", scriptPath).
+				Msg("Pre-upgrade script not found on disk, skipping")
+		}
+	}
+
+	// --- Upgrade to current on-disk chart ---
+	logging.Logger.Info().
+		Str("action", "upgrade").
+		Str("chartPath", entry.ChartPath).
+		Msg("Upgrading to current chart version")
+
+	upgradeFlags := *flags
+	upgradeFlags.UpgradeFlow = true           // Ensure base-upgrade.yaml is included.
+	upgradeFlags.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
+	upgradeFlags.ExtraHelmArgs = []string{"--force"}
+	upgradeFlags.ExtraHelmSets = map[string]string{
+		"orchestration.upgrade.allowPreReleaseImages": "true",
+	}
+
+	if err := deploy.Execute(ctx, &upgradeFlags); err != nil {
+		return fmt.Errorf("upgrade-only: upgrade to local chart failed: %w", err)
+	}
+
+	logging.Logger.Info().
+		Str("flow", entry.Flow).
+		Msg("Upgrade-only flow completed successfully")
+
+	return nil
 }
 
 // cleanupNamespaces deletes all namespaces that were created during the matrix run.
@@ -934,8 +1334,23 @@ func PrintRunSummary(results []RunResult) string {
 		fmt.Fprintf(&b, "\nFailed entries:\n")
 		for _, r := range results {
 			if r.Error != nil {
-				fmt.Fprintf(&b, "  - %s/%s (%s, flow=%s): %v\n",
-					r.Entry.Version, r.Entry.Scenario, r.Entry.Shortname, r.Entry.Flow, r.Error)
+				fmt.Fprintf(&b, "\n  - %s/%s (%s, flow=%s)\n",
+					r.Entry.Version, r.Entry.Scenario, r.Entry.Shortname, r.Entry.Flow)
+
+				var helmErr *deployer.HelmError
+				if errors.As(r.Error, &helmErr) {
+					// Show step context if error is wrapped (e.g. "step 1: install ... failed")
+					fullMsg := r.Error.Error()
+					helmMsg := helmErr.Error()
+					if prefix := strings.TrimSuffix(fullMsg, helmMsg); prefix != "" {
+						prefix = strings.TrimRight(prefix, ": ")
+						fmt.Fprintf(&b, "    Step:    %s\n", prefix)
+					}
+					fmt.Fprintf(&b, "    Reason:  %s: %v\n", helmErr.Reason, helmErr.Cause)
+					fmt.Fprintf(&b, "    Command: %s\n", helmErr.ShortCommand())
+				} else {
+					fmt.Fprintf(&b, "    Error: %v\n", r.Error)
+				}
 			}
 		}
 	}

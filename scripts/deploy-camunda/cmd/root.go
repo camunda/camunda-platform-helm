@@ -211,6 +211,7 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.QA, "qa", false, "Enable QA configuration (test users, etc.)")
 	f.BoolVar(&flags.ImageTags, "image-tags", false, "Enable image tag overrides from env vars")
 	f.BoolVar(&flags.UpgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
+	f.BoolVar(&flags.ValuesDigest, "values-digest", false, "Include chart-root values-digest.yaml overlay (pins image digests)")
 
 	// Deprecated layered values flags (kept for backward compatibility)
 	f.StringVar(&flags.ValuesAuth, "values-auth", "", "DEPRECATED: use --identity instead")

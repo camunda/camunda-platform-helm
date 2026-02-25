@@ -85,6 +85,19 @@ type RuntimeFlags struct {
 	UseVaultBackedSecrets bool
 	TestExclude           string // Comma-separated test suites to exclude (passed as --test-exclude to test scripts)
 
+	// ValuesDigest enables the chart-root values-digest.yaml overlay, which pins
+	// exact image digests for reproducible deployments. The file lives at
+	// charts/camunda-platform-<version>/values-digest.yaml (not in the scenario dir).
+	// In CI, this defaults to true for install flows, upgrade Step 2, and upgrade-only flows.
+	// It is NOT applied for upgrade Step 1 (which installs the old version from the Helm repo).
+	ValuesDigest bool
+
+	// Extra helm arguments for advanced use cases (e.g., upgrade flows).
+	// These are appended to the helm command after all other arguments.
+	ExtraHelmArgs []string
+	// Extra --set pairs for helm (e.g., {"orchestration.upgrade.allowPreReleaseImages": "true"}).
+	ExtraHelmSets map[string]string
+
 	// ChangedFlags tracks which CLI flags were explicitly set by the user.
 	// When populated, merge functions will not overwrite these flags with
 	// config-file values. This is essential for boolean flags whose zero
