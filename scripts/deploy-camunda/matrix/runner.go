@@ -142,6 +142,7 @@ type dryRunEntry struct {
 	namespace   string
 	kubeCtx     string
 	platform    string
+	infraType   string
 	ingressHost string
 	envFile     string
 	useVault    bool
@@ -204,6 +205,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				namespace:   namespace,
 				kubeCtx:     kubeCtx,
 				platform:    platform,
+				infraType:   entry.InfraType,
 				ingressHost: ingressHost,
 				envFile:     envFile,
 				useVault:    useVault,
@@ -253,16 +255,17 @@ func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOption
 		for j, e := range versionEntries {
 			b.WriteString("\n")
 
-			// Header line: number, scenario, shortname, flow, platform, auth.
+			// Header line: number, scenario, shortname, flow, platform, infra-type, auth.
 			scenarioLabel := dryKey(e.entry.Scenario)
 			if e.entry.Shortname != "" {
 				scenarioLabel += " " + dryDim("("+e.entry.Shortname+")")
 			}
-			fmt.Fprintf(&b, "  %s %s | %s | %s | %s\n",
+			fmt.Fprintf(&b, "  %s %s | %s | %s (%s) | %s\n",
 				dryHead(fmt.Sprintf("[%d]", j+1)),
 				scenarioLabel,
 				dryOk(e.entry.Flow),
 				dryOk(e.platform),
+				dryOk(e.infraType),
 				dryOk(e.entry.Auth))
 
 			// Layers — the most important info.
@@ -616,6 +619,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Identity:    entry.Identity,
 		Persistence: entry.Persistence,
 		Features:    entry.Features,
+		InfraType:   entry.InfraType,
 	}
 
 	logging.Logger.Info().
@@ -626,6 +630,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Str("flow", entry.Flow).
 		Str("namespace", namespace).
 		Str("platform", platform).
+		Str("infraType", entry.InfraType).
 		Str("kubeContext", kubeCtx).
 		Str("envFile", envFile).
 		Str("chartPath", entry.ChartPath).

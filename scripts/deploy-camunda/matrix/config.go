@@ -71,6 +71,11 @@ type CIScenario struct {
 	Platforms []string `yaml:"platforms"`
 	Exclude   []string `yaml:"exclude"`
 
+	// InfraType maps platform names to infrastructure pool types, e.g.,
+	// {"gke": "distroci", "eks": "preemptible"}.
+	// The resolved value selects the values-infra-<suffix>.yaml file at deployment time.
+	InfraType map[string]string `yaml:"infra-type,omitempty"`
+
 	// Selection + Composition fields (explicit layer overrides).
 	// When set, these take precedence over name-based derivation in MapScenarioToConfig.
 	Identity    string   `yaml:"identity,omitempty"`
