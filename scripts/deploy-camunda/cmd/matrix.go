@@ -131,6 +131,7 @@ func newMatrixRunCommand() *cobra.Command {
 		useVaultBackedSecretsEKS bool
 		keycloakHost             string
 		keycloakProtocol         string
+		upgradeFromVersion       string
 	)
 
 	cmd := &cobra.Command{
@@ -277,6 +278,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				UseVaultBackedSecrets: useVaultBackedSecrets,
 				KeycloakHost:          keycloakHost,
 				KeycloakProtocol:      keycloakProtocol,
+				UpgradeFromVersion:    upgradeFromVersion,
 			})
 
 			// Print summary (skip for dry-run/coverage since they print their own output)
@@ -324,6 +326,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&useVaultBackedSecretsEKS, "use-vault-backed-secrets-eks", false, "Use vault-backed external secrets for EKS entries")
 	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host (defaults to "+config.DefaultKeycloakHost+")")
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
+	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

@@ -1,10 +1,13 @@
 package matrix
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"scripts/camunda-deployer/pkg/deployer"
 )
 
 // --- Version comparison tests ---
@@ -551,6 +554,64 @@ func TestPrintRunSummary(t *testing.T) {
 	}
 	if !strings.Contains(summary, "oidc") {
 		t.Errorf("PrintRunSummary: expected failed entry in output: %s", summary)
+	}
+	// Non-HelmError should use the fallback "Error:" format
+	if !strings.Contains(summary, "Error: file does not exist") {
+		t.Errorf("PrintRunSummary: expected 'Error:' line for non-HelmError: %s", summary)
+	}
+}
+
+func TestPrintRunSummaryHelmError(t *testing.T) {
+	helmErr := &deployer.HelmError{
+		Reason:  "helm upgrade --install failed",
+		Command: "helm upgrade --install integration /very/long/path/to/charts/camunda-platform-8.9 -n ns --wait -f /tmp/long/path/base.yaml -f /tmp/long/path/gke.yaml",
+		Cause:   fmt.Errorf("exit status 1"),
+	}
+	results := []RunResult{
+		{Entry: Entry{Version: "8.9", Scenario: "elasticsearch-arm", Shortname: "esarm", Flow: "install"}, Namespace: "matrix-89-esarm", Error: helmErr},
+	}
+
+	summary := PrintRunSummary(results)
+
+	// Should contain structured output
+	if !strings.Contains(summary, "8.9/elasticsearch-arm (esarm, flow=install)") {
+		t.Errorf("PrintRunSummary: expected entry header, got: %s", summary)
+	}
+	if !strings.Contains(summary, "Reason:  helm upgrade --install failed: exit status 1") {
+		t.Errorf("PrintRunSummary: expected Reason line, got: %s", summary)
+	}
+	if !strings.Contains(summary, "Command:") {
+		t.Errorf("PrintRunSummary: expected Command line, got: %s", summary)
+	}
+	// Command should have shortened paths
+	if strings.Contains(summary, "/very/long/path/to/charts/") {
+		t.Errorf("PrintRunSummary: expected shortened chart path, got: %s", summary)
+	}
+	if strings.Contains(summary, "/tmp/long/path/") {
+		t.Errorf("PrintRunSummary: expected shortened values file paths, got: %s", summary)
+	}
+}
+
+func TestPrintRunSummaryWrappedHelmError(t *testing.T) {
+	helmErr := &deployer.HelmError{
+		Reason:  "helm upgrade --install failed",
+		Command: "helm upgrade --install integration camunda/camunda-platform -n ns --version 13.5.0 --wait -f /tmp/values.yaml",
+		Cause:   fmt.Errorf("exit status 1"),
+	}
+	// Simulate two-step upgrade wrapping
+	wrappedErr := fmt.Errorf("step 1: install camunda/camunda-platform@13.5.0 failed: %w", helmErr)
+	results := []RunResult{
+		{Entry: Entry{Version: "8.8", Scenario: "es", Shortname: "eske", Flow: "upgrade-patch"}, Namespace: "matrix-88-eske", Error: wrappedErr},
+	}
+
+	summary := PrintRunSummary(results)
+
+	// Should contain step context
+	if !strings.Contains(summary, "Step:") {
+		t.Errorf("PrintRunSummary: expected Step line for wrapped error, got: %s", summary)
+	}
+	if !strings.Contains(summary, "step 1: install camunda/camunda-platform@13.5.0 failed") {
+		t.Errorf("PrintRunSummary: expected step context in output, got: %s", summary)
 	}
 }
 

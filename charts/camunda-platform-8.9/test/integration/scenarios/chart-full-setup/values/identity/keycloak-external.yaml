@@ -86,6 +86,7 @@ identityPostgresql:
 connectors:
   security:
     authentication:
+      method: oidc
       oidc:
         secret:
           existingSecret: "integration-test-credentials"

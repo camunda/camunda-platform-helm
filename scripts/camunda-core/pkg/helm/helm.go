@@ -30,6 +30,25 @@ func DependencyUpdate(ctx context.Context, chartPath string) error {
 	return nil
 }
 
+// RepoAdd registers a Helm chart repository (helm repo add).
+// If the repo already exists, Helm treats this as a no-op update.
+func RepoAdd(ctx context.Context, name, url string) error {
+	args := []string{"repo", "add", name, url}
+	if err := Run(ctx, args, ""); err != nil {
+		return fmt.Errorf("helm repo add %s %s failed: %w", name, url, err)
+	}
+	return nil
+}
+
+// RepoUpdate runs helm repo update to fetch the latest chart index.
+func RepoUpdate(ctx context.Context) error {
+	args := []string{"repo", "update"}
+	if err := Run(ctx, args, ""); err != nil {
+		return fmt.Errorf("helm repo update failed: %w", err)
+	}
+	return nil
+}
+
 func cleanTempCharts(ctx context.Context, chartPath string) error {
 	tmpChartDirArgs := []string{".", "-maxdepth", "1", "-type", "d", "-name", "tmpcharts-*", "-exec", "rm", "-rf", "{}", "+"}
 	if err := executil.RunCommand(ctx, "find", tmpChartDirArgs, nil, chartPath); err != nil {
