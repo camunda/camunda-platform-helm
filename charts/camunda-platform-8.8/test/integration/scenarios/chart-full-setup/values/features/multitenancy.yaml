@@ -22,12 +22,3 @@ orchestration:
         - mappingID: "tenant-b-mapping"
           claimName: "tenant"
           claimValue: "tenant-b"
-
-identity:
-  firstUser:
-    existingSecret: "integration-test-credentials"
-
-identityPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"

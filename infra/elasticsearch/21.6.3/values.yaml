@@ -1,14 +1,17 @@
 master:
   replicaCount: 3
   resources:
-    requests: { cpu: "2000m", memory: "3Gi" }
-    limits: { cpu: "4000m", memory: "3Gi" }
+    requests: { cpu: "3000m", memory: "6Gi" }
+    limits: { cpu: "6000m", memory: "6Gi" }
   roles:
     master: true
     data: false
     ingest: false
     coordinating: false
-  heapSize: 1536m
+  heapSize: 3g
+  extraEnvVars:
+    - name: ES_JAVA_OPTS
+      value: "-XX:G1HeapRegionSize=8m -XX:HeapDumpPath=/tmp"
   persistence:
     enabled: true
     size: 2Gi
@@ -17,7 +20,16 @@ master:
     minAvailable: 2
   service:
     type: ClusterIP
-  podAntiAffinityPreset: "soft"
+  # Schedule master pods on dedicated c2-standard-4 nodes in the 'es-master' pool.
+  # These nodes are tainted to prevent CI workloads from competing for CPU,
+  # which is critical because cluster state computation is single-threaded.
+  nodeSelector:
+    cloud.google.com/gke-nodepool: es-master
+  tolerations:
+    - key: "component"
+      value: "es-master"
+      effect: "NoSchedule"
+  podAntiAffinityPreset: "hard"
   readinessProbe:
     enabled: true
     initialDelaySeconds: 45
@@ -29,10 +41,10 @@ master:
 
 data:
   replicaCount: 6
-  heapSize: 1536m
+  heapSize: 2g
   resources:
-    requests: { cpu: "2000m", memory: "3Gi" }
-    limits: { cpu: "4000m", memory: "3Gi" }
+    requests: { cpu: "2000m", memory: "4Gi" }
+    limits: { cpu: "4000m", memory: "4Gi" }
   roles:
     master: false
     data: true
@@ -193,6 +205,15 @@ extraConfig:
   cluster.routing.rebalance.enable: all
   cluster.routing.allocation.same_shard.host: true
   indices.recovery.max_bytes_per_sec: 100mb
+  cluster.routing.allocation.node_concurrent_recoveries: 4
+  cluster.routing.allocation.node_initial_primaries_recoveries: 8
+  # Give the master more time to process and publish cluster state updates.
+  # After template cleanup, each update takes ~121ms (14ms computation + 42ms
+  # publication + 22ms commit + 38ms completion). ~248 updates can queue before
+  # the 30s client timeout. 180s gives headroom if templates accumulate again.
+  cluster.publish.timeout: 180s
+  # Log cluster state updates that take longer than 10s (default) for diagnostics.
+  cluster.service.slow_task_logging_threshold: 5s
 
 extraEnvVars:
   - name: ES_JAVA_OPTS

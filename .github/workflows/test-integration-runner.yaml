@@ -1360,3 +1360,96 @@ jobs:
               scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
             fi
           fi
+
+      - name: CI Cleanup - Delete Elasticsearch templates for this CI run
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+
+          ES_URL="https://elasticsearch-21-6-3.ci.distro.ultrawombat.com"
+          ES_NS="distribution-elasticsearch-21-6-3"
+
+          # Extract the 6-char hex suffix from the namespace.
+          # Namespace patterns:
+          #   camunda-pr-XXXX-intg-X-X-gke-XXXXX-{hex}
+          #   {prefix}-{hex}-upgm
+          HEX_PREFIX="${TEST_NAMESPACE##*-}"
+          # For upgrade namespaces ending in -upgm, the hex is the second-to-last segment.
+          if [[ "$HEX_PREFIX" == "upgm" ]]; then
+            HEX_PREFIX="$(echo "$TEST_NAMESPACE" | sed 's/-upgm$//' | sed 's/.*-//')"
+          fi
+
+          # Validate it looks like a 6-char hex string.
+          if ! [[ "$HEX_PREFIX" =~ ^[0-9a-f]{6}$ ]]; then
+            echo "Warning: Could not extract a valid 6-char hex prefix from namespace '${TEST_NAMESPACE}' (got '${HEX_PREFIX}'). Skipping ES template cleanup."
+            exit 0
+          fi
+
+          echo "Cleaning up ES templates with hex prefix: ${HEX_PREFIX}"
+
+          # Get ES password from K8s secret.
+          ES_PASS="$(scripts/get-credientials-from-cluster.sh --namespace "$ES_NS")" || {
+            echo "Warning: Failed to retrieve ES credentials. Skipping ES template cleanup."
+            exit 0
+          }
+
+          CURL_AUTH=(-u "elastic:${ES_PASS}")
+          CURL_OPTS=(--silent --show-error --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 2 --retry-connrefused)
+
+          deleted_index=0
+          deleted_component=0
+          deleted_legacy=0
+          failed=0
+
+          # --- Delete V2 (composable) index templates matching the hex prefix ---
+          v2_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_index_template" | jq -r --arg pfx "$HEX_PREFIX" '.index_templates[]?.name // empty | select(startswith($pfx + "-"))') || true
+          if [[ -n "$v2_templates" ]]; then
+            echo "Found $(echo "$v2_templates" | wc -l | tr -d ' ') V2 index templates to delete"
+            # ES DELETE _index_template does not support comma-separated names, but supports wildcards.
+            # Delete using the hex prefix wildcard which matches all templates for this CI run.
+            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_index_template/${HEX_PREFIX}-*") || true
+            if [[ "$http_code" =~ ^2 ]]; then
+              deleted_index=$(echo "$v2_templates" | wc -l | tr -d ' ')
+              echo "Deleted ${deleted_index} V2 index templates"
+            else
+              echo "Warning: Failed to delete V2 index templates (HTTP ${http_code})"
+              ((failed++)) || true
+            fi
+          else
+            echo "No V2 index templates found for prefix ${HEX_PREFIX}"
+          fi
+
+          # --- Delete component templates matching the hex prefix ---
+          comp_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_component_template" | jq -r --arg pfx "$HEX_PREFIX" '.component_templates[]?.name // empty | select(startswith($pfx + "-"))') || true
+          if [[ -n "$comp_templates" ]]; then
+            echo "Found $(echo "$comp_templates" | wc -l | tr -d ' ') component templates to delete"
+            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_component_template/${HEX_PREFIX}-*") || true
+            if [[ "$http_code" =~ ^2 ]]; then
+              deleted_component=$(echo "$comp_templates" | wc -l | tr -d ' ')
+              echo "Deleted ${deleted_component} component templates"
+            else
+              echo "Warning: Failed to delete component templates (HTTP ${http_code})"
+              ((failed++)) || true
+            fi
+          else
+            echo "No component templates found for prefix ${HEX_PREFIX}"
+          fi
+
+          # --- Delete legacy (v1) templates matching the hex prefix ---
+          legacy_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_template" | jq -r --arg pfx "$HEX_PREFIX" 'keys[] | select(startswith($pfx + "-"))') || true
+          if [[ -n "$legacy_templates" ]]; then
+            echo "Found $(echo "$legacy_templates" | wc -l | tr -d ' ') legacy templates to delete"
+            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_template/${HEX_PREFIX}-*") || true
+            if [[ "$http_code" =~ ^2 ]]; then
+              deleted_legacy=$(echo "$legacy_templates" | wc -l | tr -d ' ')
+              echo "Deleted ${deleted_legacy} legacy templates"
+            else
+              echo "Warning: Failed to delete legacy templates (HTTP ${http_code})"
+              ((failed++)) || true
+            fi
+          else
+            echo "No legacy templates found for prefix ${HEX_PREFIX}"
+          fi
+
+          echo "ES template cleanup complete: v2_index=${deleted_index} component=${deleted_component} legacy=${deleted_legacy} failures=${failed}"
