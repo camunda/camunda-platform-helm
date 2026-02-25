@@ -30,9 +30,10 @@ type Entry struct {
 	Features    []string `json:"features,omitempty"`
 
 	// Base modifier flags.
-	QA        bool `json:"qa,omitempty"`
-	ImageTags bool `json:"imageTags,omitempty"`
-	Upgrade   bool `json:"upgrade,omitempty"`
+	QA         bool `json:"qa,omitempty"`
+	ImageTags  bool `json:"imageTags,omitempty"`
+	Upgrade    bool `json:"upgrade,omitempty"`
+	Enterprise bool `json:"enterprise,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -166,6 +167,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						QA:          scenario.QA,
 						ImageTags:   scenario.ImageTags,
 						Upgrade:     scenario.Upgrade,
+						Enterprise:  scenario.Enterprise,
 					})
 				}
 			}

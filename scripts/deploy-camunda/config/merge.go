@@ -51,13 +51,19 @@ type RuntimeFlags struct {
 	RenderTemplates          bool
 	RenderOutputDir          string
 	ExtraValues              []string
-	ValuesPreset             string
-	Timeout                  int                    // Timeout in minutes for Helm deployment
-	DebugComponents          map[string]DebugConfig // Components to enable JVM debugging for, with their ports
-	DebugPort                int                    // Default JVM debug port (used when no port specified)
-	DebugSuspend             bool                   // Suspend JVM on startup until debugger attaches
-	OutputTestEnv            bool                   // Generate .env file for E2E tests after deployment
-	OutputTestEnvPath        string                 // Path for the test .env file output
+	// ChartRootOverlays lists chart-root overlay files to apply, in order.
+	// Each name resolves to <chartPath>/values-<name>.yaml if the file exists.
+	// Common values: "enterprise" (CVE-patched images), "digest" (SHA256 pins),
+	// "latest", "local", "bitnami-legacy".
+	// In the matrix runner, "digest" is always included; "enterprise" is added
+	// when the ci-test-config entry has enterprise: true.
+	ChartRootOverlays []string
+	Timeout           int                    // Timeout in minutes for Helm deployment
+	DebugComponents   map[string]DebugConfig // Components to enable JVM debugging for, with their ports
+	DebugPort         int                    // Default JVM debug port (used when no port specified)
+	DebugSuspend      bool                   // Suspend JVM on startup until debugger attaches
+	OutputTestEnv     bool                   // Generate .env file for E2E tests after deployment
+	OutputTestEnvPath string                 // Path for the test .env file output
 	// Selection + composition flags (new model)
 	Identity     string   // Identity selection: keycloak, keycloak-external, oidc, basic, hybrid
 	Persistence  string   // Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle
@@ -84,13 +90,6 @@ type RuntimeFlags struct {
 	KubeContext           string
 	UseVaultBackedSecrets bool
 	TestExclude           string // Comma-separated test suites to exclude (passed as --test-exclude to test scripts)
-
-	// ValuesDigest enables the chart-root values-digest.yaml overlay, which pins
-	// exact image digests for reproducible deployments. The file lives at
-	// charts/camunda-platform-<version>/values-digest.yaml (not in the scenario dir).
-	// In CI, this defaults to true for install flows, upgrade Step 2, and upgrade-only flows.
-	// It is NOT applied for upgrade Step 1 (which installs the old version from the Helm repo).
-	ValuesDigest bool
 
 	// Extra helm arguments for advanced use cases (e.g., upgrade flows).
 	// These are appended to the helm command after all other arguments.
@@ -171,7 +170,17 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.DockerPassword, dep.DockerPassword, rc.DockerPassword, changed, "docker-password")
 	MergeStringField(&flags.RenderOutputDir, dep.RenderOutputDir, rc.RenderOutputDir, changed, "render-output-dir")
 	MergeStringField(&flags.RepoRoot, dep.RepoRoot, rc.RepoRoot, changed, "repo-root")
-	MergeStringField(&flags.ValuesPreset, dep.ValuesPreset, rc.ValuesPreset, changed, "values-preset")
+	// ChartRootOverlays: merge from config's ValuesPreset (comma-separated string → []string).
+	// CLI --values-preset sets ChartRootOverlays directly; config files provide ValuesPreset as a string.
+	if !(changed != nil && changed["values-preset"]) && len(flags.ChartRootOverlays) == 0 {
+		if presetStr := FirstNonEmpty(dep.ValuesPreset, rc.ValuesPreset); presetStr != "" {
+			for _, p := range strings.Split(presetStr, ",") {
+				if t := strings.TrimSpace(p); t != "" {
+					flags.ChartRootOverlays = append(flags.ChartRootOverlays, t)
+				}
+			}
+		}
+	}
 	MergeStringField(&flags.KeycloakRealm, dep.KeycloakRealm, rc.KeycloakRealm, changed, "keycloak-realm")
 	MergeStringField(&flags.OptimizeIndexPrefix, dep.OptimizeIndexPrefix, rc.OptimizeIndexPrefix, changed, "optimize-index-prefix")
 	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix, changed, "orchestration-index-prefix")
@@ -236,7 +245,16 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.DockerPassword, "", rc.DockerPassword, changed, "docker-password")
 	MergeStringField(&flags.RenderOutputDir, "", rc.RenderOutputDir, changed, "render-output-dir")
 	MergeStringField(&flags.RepoRoot, "", rc.RepoRoot, changed, "repo-root")
-	MergeStringField(&flags.ValuesPreset, "", rc.ValuesPreset, changed, "values-preset")
+	// ChartRootOverlays: merge from root config's ValuesPreset (comma-separated string → []string).
+	if !(changed != nil && changed["values-preset"]) && len(flags.ChartRootOverlays) == 0 {
+		if presetStr := rc.ValuesPreset; presetStr != "" {
+			for _, p := range strings.Split(presetStr, ",") {
+				if t := strings.TrimSpace(p); t != "" {
+					flags.ChartRootOverlays = append(flags.ChartRootOverlays, t)
+				}
+			}
+		}
+	}
 	MergeStringField(&flags.KeycloakRealm, "", rc.KeycloakRealm, changed, "keycloak-realm")
 	MergeStringField(&flags.OptimizeIndexPrefix, "", rc.OptimizeIndexPrefix, changed, "optimize-index-prefix")
 	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix, changed, "orchestration-index-prefix")

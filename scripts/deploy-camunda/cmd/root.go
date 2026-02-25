@@ -186,7 +186,7 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.RenderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
 	f.StringVar(&flags.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
 	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
-	f.StringVar(&flags.ValuesPreset, "values-preset", "", "Shortcut to append values-<preset>.yaml from chartPath if present (e.g. latest, enterprise)")
+	f.StringSliceVar(&flags.ChartRootOverlays, "values-preset", nil, "Chart-root overlay files to apply (comma-separated or repeatable): enterprise, digest, latest, local, bitnami-legacy (resolves to values-{name}.yaml)")
 	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (requires --ingress-base-domain)")
 	f.StringVar(&flags.IngressBaseDomain, "ingress-base-domain", "", "Base domain for ingress (ci.distro.ultrawombat.com or distribution.aws.camunda.cloud)")
 	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
@@ -211,7 +211,6 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.QA, "qa", false, "Enable QA configuration (test users, etc.)")
 	f.BoolVar(&flags.ImageTags, "image-tags", false, "Enable image tag overrides from env vars")
 	f.BoolVar(&flags.UpgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
-	f.BoolVar(&flags.ValuesDigest, "values-digest", false, "Include chart-root values-digest.yaml overlay (pins image digests)")
 
 	// Deprecated layered values flags (kept for backward compatibility)
 	f.StringVar(&flags.ValuesAuth, "values-auth", "", "DEPRECATED: use --identity instead")

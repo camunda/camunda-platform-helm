@@ -83,9 +83,10 @@ type CIScenario struct {
 	Features    []string `yaml:"features,omitempty"`
 
 	// Base modifier flags.
-	QA        bool `yaml:"qa,omitempty"`
-	ImageTags bool `yaml:"image-tags,omitempty"`
-	Upgrade   bool `yaml:"upgrade,omitempty"`
+	QA         bool `yaml:"qa,omitempty"`
+	ImageTags  bool `yaml:"image-tags,omitempty"`
+	Upgrade    bool `yaml:"upgrade,omitempty"`
+	Enterprise bool `yaml:"enterprise,omitempty"`
 }
 
 // LoadCITestConfig reads and parses the ci-test-config.yaml for a given chart directory.

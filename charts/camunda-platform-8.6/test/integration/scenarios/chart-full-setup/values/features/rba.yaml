@@ -29,16 +29,3 @@ identity:
   env:
     - name: RESOURCE_PERMISSIONS_ENABLED
       value: 'true'
-  postgresql:
-    enabled: true
-
-# -----------------------------------------------------------------------------
-# Identity PostgreSQL (required for RBA)
-# -----------------------------------------------------------------------------
-identityPostgresql:
-  enabled: true
-  auth:
-    existingSecret: "integration-test-credentials"
-    secretKeys:
-      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
-      userPasswordKey: "identity-keycloak-postgresql-user-password"
