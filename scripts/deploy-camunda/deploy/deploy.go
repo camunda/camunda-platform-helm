@@ -1103,6 +1103,20 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		logging.Logger.Debug().
 			Strs("processedFiles", scenarioValueFiles).
 			Msg("📋 [prepareScenarioValues] layered values files processed")
+
+		// Deep-merge all layered files into a single YAML file to prevent
+		// Helm's shallow array replacement from silently dropping entries.
+		// Without this, a later layer's array (e.g., rba.yaml's operate.env)
+		// completely replaces an earlier layer's array (e.g., elasticsearch-external.yaml's
+		// operate.env), losing critical env vars like index prefix overrides.
+		scenarioValueFiles, err = MergeLayeredValues(scenarioValueFiles, tempDir)
+		if err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to merge layered values: %w", err)
+		}
+		logging.Logger.Debug().
+			Strs("mergedFiles", scenarioValueFiles).
+			Msg("📋 [prepareScenarioValues] layered values merged")
 	} else {
 		// Legacy path: process auth and main scenario, then let BuildValuesList resolve
 		effectiveAuth := flags.Auth
