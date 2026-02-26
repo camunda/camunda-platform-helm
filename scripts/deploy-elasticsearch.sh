@@ -190,3 +190,15 @@ fi
 "${CMD[@]}"
 
 echo "Elasticsearch Helm release applied."
+
+# Apply the CI template cleanup CronJob if the manifest exists for this chart version.
+# The manifest contains its own namespace metadata and cluster-scoped RBAC resources,
+# so we use a plain 'kubectl apply -f' without a -n flag.
+CRONJOB_FILE="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}/ci-template-cleanup-cronjob.yaml"
+if [[ -f "$CRONJOB_FILE" ]]; then
+  echo "[cronjob] Applying CI template cleanup CronJob from: $CRONJOB_FILE"
+  kubectl apply -f "$CRONJOB_FILE"
+  echo "[cronjob] CI template cleanup CronJob applied."
+else
+  echo "[cronjob] No CronJob manifest found at $CRONJOB_FILE — skipping."
+fi
