@@ -72,7 +72,7 @@ tasks:
         # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
         # This replaces the ~150-line bash layer resolution that was previously inlined here.
         REPO_ROOT="$(git rev-parse --show-toplevel)"
-        SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
+        SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
         
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
@@ -105,7 +105,7 @@ tasks:
       
       # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
       REPO_ROOT="$(git rev-parse --show-toplevel)"
-      SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
+      SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
       
       MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
         --scenario-path "$SCENARIO_DIR" \
@@ -233,7 +233,7 @@ tasks:
         
         # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
         REPO_ROOT="$(git rev-parse --show-toplevel)"
-        SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
+        SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
         
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
@@ -312,7 +312,7 @@ tasks:
       # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
       # This replaces ~180 lines of bash that duplicated the Go layer resolution logic.
       REPO_ROOT="$(git rev-parse --show-toplevel)"
-      SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
+      SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
       
       MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
         --scenario-path "$SCENARIO_DIR" \
