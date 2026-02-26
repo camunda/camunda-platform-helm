@@ -1595,11 +1595,11 @@ webModeler:
     ## @param webModeler.restapi.resources.limits.memory
     resources:
       requests:
-        cpu: 500m
-        memory: 1Gi
+        cpu: 900m
+        memory: 1280Mi
       limits:
-        cpu: 1000m
-        memory: 2Gi
+        cpu: 1800m
+        memory: 2560Mi
 
     ## @extra webModeler.restapi.service configuration of the WebModeler restapi service
     service:
