@@ -30,6 +30,9 @@ type Options struct {
 	UseJSON      bool
 	LevelString  string
 	ColorEnabled bool
+	// Writer overrides the default output destination (os.Stdout).
+	// Set to os.Stderr when stdout must remain clean for machine-readable output.
+	Writer io.Writer
 }
 
 func Setup(opts Options) error {
@@ -55,6 +58,9 @@ func Setup(opts Options) error {
 	}
 
 	var w io.Writer = os.Stdout
+	if opts.Writer != nil {
+		w = opts.Writer
+	}
 	if opts.UseJSON {
 		zerolog.TimeFieldFormat = time.RFC3339
 		Logger = zerolog.New(w).Level(level).With().Timestamp().Logger()
@@ -267,5 +273,3 @@ func compactCmd(cmd string) string {
 		return cmd
 	}
 }
-
-
