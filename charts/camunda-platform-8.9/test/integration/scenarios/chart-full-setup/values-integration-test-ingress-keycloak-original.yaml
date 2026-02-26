@@ -133,10 +133,11 @@ orchestration:
       type: elasticsearch
       elasticsearch:
         url: "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com:443"
-        username: elastic
-        secret:
-          existingSecret: infra-credentials
-          existingSecretKey: elasticsearch-password
+        auth:
+          username: elastic
+          secret:
+            existingSecret: infra-credentials
+            existingSecretKey: elasticsearch-password
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   ingress:
