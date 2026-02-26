@@ -399,6 +399,7 @@ jobs:
           make release.set-prs-version-label
 
       - name: Mark release-please PR as published
+        id: mark-published
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
           CHART_DIR_ID: "${{ needs.release.outputs.chart-dir-id }}"
@@ -414,6 +415,8 @@ jobs:
             exit 1
           fi
 
+          echo "pr_number=${pr_number}" >> $GITHUB_OUTPUT
+
           current_labels="$(gh pr view "${pr_number}" --json labels --jq '.labels[].name')"
           if echo "${current_labels}" | grep -qx "autorelease: pending"; then
             gh pr edit "${pr_number}" --remove-label "autorelease: pending"
@@ -422,24 +425,82 @@ jobs:
             gh pr edit "${pr_number}" --add-label "autorelease: published"
           fi
 
+      - name: Approve and auto-merge release-please PR
+        id: auto-merge
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          pr_number="${{ steps.mark-published.outputs.pr_number }}"
+
+          # Update branch to include latest main.
+          # Required because strict status check policy blocks merge when behind.
+          gh api "repos/${{ github.repository }}/pulls/${pr_number}/update-branch" \
+            -X PUT \
+            -f expected_head_sha="$(gh pr view "${pr_number}" --json headRefOid --jq '.headRefOid')" \
+            || echo "::notice::Branch already up to date"
+
+          gh pr review "${pr_number}" --approve
+          gh pr merge "${pr_number}" --auto --squash
+          echo "enabled=true" >> $GITHUB_OUTPUT
+
       - name: Summary
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
-          # Find the release-please PR for this chart
-          PR_URL=$(gh pr list --state open --head "release-please--branches--main--components--camunda-platform-${{ needs.release.outputs.chart-dir-id }}" --json url --jq '.[0].url' 2>/dev/null || echo "")
-          
+          PR_URL=$(gh pr view "${{ steps.mark-published.outputs.pr_number }}" --json url --jq '.url' 2>/dev/null || echo "")
+
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          
+
           ## Post-Release Complete
-          
+
           ✅ PRs labeled with version \`${{ needs.release.outputs.version }}\`
           ✅ Release-please PR labeled with \`autorelease: published\`
-          
+          EOF
+
+          if [[ "${{ steps.auto-merge.outputs.enabled }}" == "true" ]]; then
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+          ✅ Auto-merge enabled for release-please PR
+          ${PR_URL:+**PR:** ${PR_URL}}
+          EOF
+          else
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+
           ### Manual Step Required
           Merge the release-please PR to complete the release process.
           ${PR_URL:+**PR:** ${PR_URL}}
           EOF
+          fi
+
+      - name: Import Vault secrets for notification
+        id: vault-notification
+        if: steps.auto-merge.outputs.enabled == 'true'
+        continue-on-error: true
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+          exportEnv: false
+
+      - name: Notify Slack of release completion
+        if: steps.auto-merge.outputs.enabled == 'true'
+        continue-on-error: true
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ steps.vault-notification.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    :white_check_mark: *Helm Chart ${{ needs.release.outputs.version }}* released and auto-merge enabled for the release-please PR.
+                    <${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.mark-published.outputs.pr_number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
 
   notify-on-failure:
     name: Notify on Failure
