@@ -29,6 +29,7 @@ includes:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
       TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
       TEST_HELM_EXTRA_ARGS: "{{ .TEST_HELM_EXTRA_ARGS }}"
+      VALUES_CONFIG: "{{ .VALUES_CONFIG }}"
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -64,153 +65,30 @@ tasks:
   # =============================================================================
   
   build-layered-values:
-    desc: "Build helm values arguments from selection + composition configuration"
+    desc: "Build merged helm values file from selection + composition configuration"
     internal: true
     cmds:
       - |
-        # This script maps legacy vars to the new structure and outputs helm --values args
+        # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+        # This replaces the ~150-line bash layer resolution that was previously inlined here.
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+        SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
         
-        VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
-        VALUES_ARGS=""
+        MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+          --scenario-path "$SCENARIO_DIR" \
+          --identity "${TEST_IDENTITY:-keycloak}" \
+          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          --features "${TEST_FEATURES:-}" \
+          --qa="${TEST_QA:-false}" \
+          --image-tags="${TEST_IMAGE_TAGS:-false}" \
+          --upgrade-flow="${TEST_UPGRADE:-false}" \
+          --infra-type "${INFRA_TYPE:-}" \
+          --values-config '{{ .VALUES_CONFIG }}' \
+          --interactive=false \
+          --log-level info)
         
-        # Check if values directory exists for this chart version
-        if [ ! -d "$VALUES_DIR" ]; then
-          echo "WARNING: Values directory not found: $VALUES_DIR" >&2
-          echo "Falling back to legacy values files" >&2
-          exit 1
-        fi
-        
-        # =============================================================================
-        # Layer 1: Base (always included)
-        # =============================================================================
-        if [ -f "$VALUES_DIR/base.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base.yaml"
-        fi
-        
-        # =============================================================================
-        # Layer 2: Base modifiers (QA, Upgrade)
-        # =============================================================================
-        QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-        if [ -z "$QA_MODE" ]; then
-          case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
-        fi
-        if [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-qa.yaml"
-        fi
-        
-        UPGRADE_MODE="${TEST_UPGRADE:-}"
-        if [ -z "$UPGRADE_MODE" ]; then
-          case "${TEST_VALUES_SCENARIO:-}" in *"-upg"*|*"upgrade"*) UPGRADE_MODE="true" ;; esac
-        fi
-        if [ "$UPGRADE_MODE" = "true" ] && [ -f "$VALUES_DIR/base-upgrade.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-upgrade.yaml"
-        fi
-        
-        # =============================================================================
-        # Layer 3: Identity method
-        # Map from TEST_IDENTITY or legacy TEST_VALUES_AUTH/TEST_AUTH_TYPE
-        # =============================================================================
-        IDENTITY="${TEST_IDENTITY:-${TEST_VALUES_AUTH:-${TEST_AUTH_TYPE:-keycloak}}}"
-        
-        # Handle legacy composite auth types
-        case "$IDENTITY" in
-          keycloak-mt)
-            IDENTITY_FILE="keycloak-external"
-            ;;
-          keycloak-rba|keycloak-rdbms|keycloak-oracle-rdbms)
-            IDENTITY_FILE="keycloak"
-            ;;
-          *)
-            IDENTITY_FILE="$IDENTITY"
-            ;;
-        esac
-        
-        if [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
-        else
-          echo "WARNING: Identity file not found: $VALUES_DIR/identity/${IDENTITY_FILE}.yaml" >&2
-        fi
-        
-        # =============================================================================
-        # Layer 4: Persistence (elasticsearch, opensearch, rdbms, rdbms-oracle)
-        # Derived from TEST_PERSISTENCE or legacy TEST_VALUES_BACKEND/TEST_VALUES_SCENARIO
-        # =============================================================================
-        PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
-        
-        # If not explicitly set, derive from scenario or features
-        if [ -z "$PERSISTENCE" ]; then
-          case "${TEST_VALUES_SCENARIO:-}" in
-            *opensearch*)
-              PERSISTENCE="opensearch"
-              ;;
-            *oracle-rdbms*|*rdbms-oracle*)
-              PERSISTENCE="rdbms-oracle"
-              ;;
-            *rdbms*)
-              PERSISTENCE="rdbms"
-              ;;
-            *)
-              PERSISTENCE="elasticsearch"
-              ;;
-          esac
-        fi
-        
-        if [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
-        fi
-        
-        # =============================================================================
-        # Layer 5: Platform (gke, eks, openshift)
-        # =============================================================================
-        PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
-        
-        if [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
-        fi
-        
-        # =============================================================================
-        # Layer 6: Features (can be multiple, comma-separated)
-        # Derived from TEST_FEATURES or legacy TEST_VALUES_FEATURES/TEST_VALUES_SCENARIO
-        # =============================================================================
-        FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
-        
-        # If not explicitly set, derive from scenario and identity type
-        if [ -z "$FEATURES" ]; then
-          SCENARIO="${TEST_VALUES_SCENARIO:-}"
-          
-          # Derive features from scenario name
-          case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
-          [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
-          case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
-          [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
-          case "$SCENARIO" in *"document"*|*"documentstore"*) FEATURES="$FEATURES,documentstore" ;; esac
-          
-          # Remove leading comma
-          FEATURES="${FEATURES#,}"
-        fi
-        
-        # Add feature files (POSIX-compatible using IFS)
-        OLD_IFS="$IFS"
-        IFS=','
-        for feature in $FEATURES; do
-          IFS="$OLD_IFS"
-          feature=$(echo "$feature" | xargs)  # trim whitespace
-          if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
-            VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/features/${feature}.yaml"
-          fi
-        done
-        IFS="$OLD_IFS"
-        
-        # =============================================================================
-        # Layer 7: Image tags (if enabled)
-        # =============================================================================
-        IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
-        if [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-image-tags.yaml"
-        fi
-        
-        # Output the values args
-        echo "$VALUES_ARGS"
+        echo "--values $MERGED_VALUES"
 
   setup.pre:
     env:
@@ -225,99 +103,50 @@ tasks:
       echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
       
-      # Build layered values for merging
-      VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
-      VALUES_FILES=""
+      # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+      REPO_ROOT="$(git rev-parse --show-toplevel)"
+      SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
       
-      # Layer 1: Base
-      [ -f "$VALUES_DIR/base.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base.yaml"
+      MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+        --scenario-path "$SCENARIO_DIR" \
+        --identity "${TEST_IDENTITY:-keycloak}" \
+        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+        --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+        --features "${TEST_FEATURES:-}" \
+        --qa="${TEST_QA:-false}" \
+        --image-tags="${TEST_IMAGE_TAGS:-false}" \
+        --upgrade-flow="${TEST_UPGRADE:-false}" \
+        --infra-type "${INFRA_TYPE:-}" \
+        --values-config '{{ .VALUES_CONFIG }}' \
+        --interactive=false \
+        --log-level info)
       
-      # Layer 2: Base modifiers (QA, Upgrade)
-      QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-      if [ -z "$QA_MODE" ]; then
-        case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
-      fi
-      [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-qa.yaml"
+      echo "Merged values file: $MERGED_VALUES"
       
-      UPGRADE_MODE="${TEST_UPGRADE:-}"
-      if [ -z "$UPGRADE_MODE" ]; then
-        case "${TEST_VALUES_SCENARIO:-}" in *"-upg"*|*"upgrade"*) UPGRADE_MODE="true" ;; esac
-      fi
-      [ "$UPGRADE_MODE" = "true" ] && [ -f "$VALUES_DIR/base-upgrade.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-upgrade.yaml"
-      
-      # Layer 3: Identity
-      IDENTITY="${TEST_IDENTITY:-${TEST_VALUES_AUTH:-${TEST_AUTH_TYPE:-keycloak}}}"
-      case "$IDENTITY" in
-        keycloak-mt) IDENTITY_FILE="keycloak-external" ;;
-        keycloak-rba|keycloak-rdbms|keycloak-oracle-rdbms) IDENTITY_FILE="keycloak" ;;
-        *) IDENTITY_FILE="$IDENTITY" ;;
-      esac
-      [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
-      
-      # Layer 4: Persistence
-      PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
-      if [ -z "$PERSISTENCE" ]; then
-        case "${TEST_VALUES_SCENARIO:-}" in
-          *opensearch*) PERSISTENCE="opensearch" ;;
-          *oracle-rdbms*|*rdbms-oracle*) PERSISTENCE="rdbms-oracle" ;;
-          *rdbms*) PERSISTENCE="rdbms" ;;
-          *) PERSISTENCE="elasticsearch" ;;
-        esac
-      fi
-      [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
-      
-      # Layer 5: Platform
-      PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
-      [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
-      
-      # Layer 6: Features
-      FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
-      if [ -z "$FEATURES" ]; then
-        SCENARIO="${TEST_VALUES_SCENARIO:-}"
-        case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
-        [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
-        case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
-        [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
-        case "$SCENARIO" in *"document"*) FEATURES="$FEATURES,documentstore" ;; esac
-        FEATURES="${FEATURES#,}"
-      fi
-      # Parse comma-separated features (POSIX-compatible using IFS)
-      OLD_IFS="$IFS"
-      IFS=','
-      for feature in $FEATURES; do
-        IFS="$OLD_IFS"
-        feature=$(echo "$feature" | xargs)
-        if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
-          VALUES_FILES="$VALUES_FILES $VALUES_DIR/features/${feature}.yaml"
-        fi
-      done
-      IFS="$OLD_IFS"
-      
-      # Layer 7: Image tags
-      IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
-      [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-image-tags.yaml"
-      
-      # Step 1: Merge all YAMLs
+      # Merge with common values, infra, and extra values to get the full picture
       MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
         "{{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml" \
-        $VALUES_FILES \
+        "$MERGED_VALUES" \
         "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml" \
         /tmp/extra-values-file.yaml)
       
       echo "--- Merged YAML ---"
       echo "$MERGED_YAML"
       echo "-------------------"
-      # Step 2: Extract the Elasticsearch enabled value
+      # Extract the Elasticsearch enabled value
       ES_ENABLED=$(echo "$MERGED_YAML" | yq '.elasticsearch.enabled // false')
       
       echo "Elasticsearch enabled: $ES_ENABLED"
 
-      # Step 3: Determine if we should skip test
+      # Determine if we should skip test
       VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
+      
+      IDENTITY="${TEST_IDENTITY:-keycloak}"
+      PERSISTENCE="${TEST_PERSISTENCE:-elasticsearch}"
       
       echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
       echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "${PERSISTENCE:-elasticsearch}" = "elasticsearch" ] && [ "${IDENTITY:-keycloak}" = "keycloak" ] || echo false )" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "${PERSISTENCE}" = "elasticsearch" ] && [ "${IDENTITY}" = "keycloak" ] || echo false )" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
       echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
       # In case the Zeebe version has not been released officially yet.
@@ -372,7 +201,7 @@ tasks:
       {{ end -}}
 
       echo "infra values:"
-      cat {{ .INFRA_TYPE_VALUES }}
+      cat {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml
       echo ""
 
       echo "extra-values-file.yaml:"
@@ -402,88 +231,42 @@ tasks:
         echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
         
-        # Build values for merging using selection + composition model
-        VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
-        VALUES_FILES=""
+        # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+        SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
         
-        # Layer 1: Base
-        [ -f "$VALUES_DIR/base.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base.yaml"
+        MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+          --scenario-path "$SCENARIO_DIR" \
+          --identity "${TEST_IDENTITY:-keycloak}" \
+          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          --features "${TEST_FEATURES:-}" \
+          --qa="${TEST_QA:-false}" \
+          --image-tags="${TEST_IMAGE_TAGS:-false}" \
+          --upgrade-flow="${TEST_UPGRADE:-false}" \
+          --infra-type "${INFRA_TYPE:-}" \
+          --values-config '{{ .VALUES_CONFIG }}' \
+          --interactive=false \
+          --log-level info)
         
-        # Layer 2: Base modifiers (QA, Upgrade)
-        QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-        if [ -z "$QA_MODE" ]; then
-          case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
-        fi
-        [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-qa.yaml"
+        echo "Merged values file: $MERGED_VALUES"
         
-        # Layer 3: Identity
-        IDENTITY="${TEST_IDENTITY:-${TEST_VALUES_AUTH:-${TEST_AUTH_TYPE:-keycloak}}}"
-        case "$IDENTITY" in
-          keycloak-mt) IDENTITY_FILE="keycloak-external" ;;
-          keycloak-rba|keycloak-rdbms|keycloak-oracle-rdbms) IDENTITY_FILE="keycloak" ;;
-          *) IDENTITY_FILE="$IDENTITY" ;;
-        esac
-        [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
-        
-        # Layer 4: Persistence
-        PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
-        if [ -z "$PERSISTENCE" ]; then
-          case "${TEST_VALUES_SCENARIO:-}" in
-            *opensearch*) PERSISTENCE="opensearch" ;;
-            *oracle-rdbms*|*rdbms-oracle*) PERSISTENCE="rdbms-oracle" ;;
-            *rdbms*) PERSISTENCE="rdbms" ;;
-            *) PERSISTENCE="elasticsearch" ;;
-          esac
-        fi
-        [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
-        
-        # Layer 5: Platform
-        PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
-        [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
-        
-        # Layer 6: Features (simplified for venom env)
-        FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
-        if [ -z "$FEATURES" ]; then
-          SCENARIO="${TEST_VALUES_SCENARIO:-}"
-          case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
-          [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
-          case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
-          [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
-          case "$SCENARIO" in *"document"*) FEATURES="$FEATURES,documentstore" ;; esac
-          FEATURES="${FEATURES#,}"
-        fi
-        # Parse comma-separated features (POSIX-compatible using IFS)
-        OLD_IFS="$IFS"
-        IFS=','
-        for feature in $FEATURES; do
-          IFS="$OLD_IFS"
-          feature=$(echo "$feature" | xargs)
-          if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
-            VALUES_FILES="$VALUES_FILES $VALUES_DIR/features/${feature}.yaml"
-          fi
-        done
-        IFS="$OLD_IFS"
-        
-        # Layer 7: Image tags
-        IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
-        [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ] && VALUES_FILES="$VALUES_FILES $VALUES_DIR/base-image-tags.yaml"
-        
-        # Step 1: Merge all YAMLs
+        # Merge with common values, infra, and extra values to get the full picture
         MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
           "{{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml" \
-          $VALUES_FILES \
+          "$MERGED_VALUES" \
           "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml" \
           /tmp/extra-values-file.yaml)
         
         echo "--- Merged YAML ---"
         echo "$MERGED_YAML"
         echo "-------------------"
-        # Step 2: Extract the Elasticsearch enabled value
+        # Extract the Elasticsearch enabled value
         ES_ENABLED=$(echo "$MERGED_YAML" | yq '.elasticsearch.enabled // false')
         
         echo "Elasticsearch enabled: $ES_ENABLED"
   
-        # Step 3: Determine if we should skip test
+        # Determine if we should skip test
         VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
         
         echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
@@ -526,156 +309,28 @@ tasks:
     - |
       set -o pipefail
       
-      VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
+      # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+      # This replaces ~180 lines of bash that duplicated the Go layer resolution logic.
+      REPO_ROOT="$(git rev-parse --show-toplevel)"
+      SCENARIO_DIR="{{ .LAYERED_VALUES_DIR }}/.."
       
-      # Check if values directory exists
-      if [ ! -d "$VALUES_DIR" ]; then
-        echo "ERROR: Values directory not found: $VALUES_DIR" >&2
-        echo "Please ensure the values structure exists for this chart version" >&2
-        exit 1
-      fi
-      
-      # Build values arguments
-      VALUES_ARGS=""
-      
-      # =============================================================================
-      # Layer 1: Base (always included)
-      # =============================================================================
-      if [ -f "$VALUES_DIR/base.yaml" ]; then
-        VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base.yaml"
-        echo "Layer 1 (base): $VALUES_DIR/base.yaml"
-      fi
-      
-      # =============================================================================
-      # Layer 2: Base modifiers (QA, Upgrade)
-      # =============================================================================
-      QA_MODE="${TEST_QA:-${TEST_VALUES_QA:-}}"
-      if [ -z "$QA_MODE" ]; then
-        case "${TEST_VALUES_SCENARIO:-}" in qa-*) QA_MODE="true" ;; esac
-      fi
-      if [ "$QA_MODE" = "true" ] && [ -f "$VALUES_DIR/base-qa.yaml" ]; then
-        VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-qa.yaml"
-        echo "Layer 2 (qa): $VALUES_DIR/base-qa.yaml"
-      fi
-      
-      UPGRADE_MODE="${TEST_UPGRADE:-}"
-      if [ -z "$UPGRADE_MODE" ]; then
-        case "${TEST_VALUES_SCENARIO:-}" in *"-upg"*|*"upgrade"*) UPGRADE_MODE="true" ;; esac
-      fi
-      if [ "$UPGRADE_MODE" = "true" ] && [ -f "$VALUES_DIR/base-upgrade.yaml" ]; then
-        VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-upgrade.yaml"
-        echo "Layer 2 (upgrade): $VALUES_DIR/base-upgrade.yaml"
-      fi
-      
-      # =============================================================================
-      # Layer 3: Identity method
-      # =============================================================================
-      IDENTITY="${TEST_IDENTITY:-${TEST_VALUES_AUTH:-${TEST_AUTH_TYPE:-keycloak}}}"
-      
-      # Map legacy composite auth types
-      case "$IDENTITY" in
-        keycloak-mt)
-          IDENTITY_FILE="keycloak-external"
-          ;;
-        keycloak-rba|keycloak-rdbms|keycloak-oracle-rdbms)
-          IDENTITY_FILE="keycloak"
-          ;;
-        *)
-          IDENTITY_FILE="$IDENTITY"
-          ;;
-      esac
-      
-      if [ -f "$VALUES_DIR/identity/${IDENTITY_FILE}.yaml" ]; then
-        VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
-        echo "Layer 3 (identity): $VALUES_DIR/identity/${IDENTITY_FILE}.yaml"
-      else
-        echo "WARNING: Identity file not found: $VALUES_DIR/identity/${IDENTITY_FILE}.yaml" >&2
-      fi
-      
-      # =============================================================================
-      # Layer 4: Persistence
-      # =============================================================================
-      PERSISTENCE="${TEST_PERSISTENCE:-${TEST_VALUES_BACKEND:-}}"
-      
-      if [ -z "$PERSISTENCE" ]; then
-        case "${TEST_VALUES_SCENARIO:-}" in
-          *opensearch*)
-            PERSISTENCE="opensearch"
-            ;;
-          *oracle-rdbms*|*rdbms-oracle*)
-            PERSISTENCE="rdbms-oracle"
-            ;;
-          *rdbms*)
-            PERSISTENCE="rdbms"
-            ;;
-          *)
-            PERSISTENCE="elasticsearch"
-            ;;
-        esac
-      fi
-      
-      if [ -f "$VALUES_DIR/persistence/${PERSISTENCE}.yaml" ]; then
-        VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
-        echo "Layer 4 (persistence): $VALUES_DIR/persistence/${PERSISTENCE}.yaml"
-      fi
-      
-      # =============================================================================
-      # Layer 5: Platform
-      # =============================================================================
-      PLATFORM_TYPE="${TEST_PLATFORM:-${TEST_VALUES_INFRA:-${PLATFORM:-gke}}}"
-      
-      if [ -f "$VALUES_DIR/platform/${PLATFORM_TYPE}.yaml" ]; then
-        VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
-        echo "Layer 5 (platform): $VALUES_DIR/platform/${PLATFORM_TYPE}.yaml"
-      fi
-      
-      # =============================================================================
-      # Layer 6: Features
-      # =============================================================================
-      FEATURES="${TEST_FEATURES:-${TEST_VALUES_FEATURES:-}}"
-      
-      if [ -z "$FEATURES" ]; then
-        SCENARIO="${TEST_VALUES_SCENARIO:-}"
-        
-        # Derive features from scenario name
-        case "$SCENARIO" in *"-mt"*|*"multitenancy"*) FEATURES="$FEATURES,multitenancy" ;; esac
-        [ "$IDENTITY" = "keycloak-mt" ] && FEATURES="$FEATURES,multitenancy"
-        case "$SCENARIO" in *"-rba"*) FEATURES="$FEATURES,rba" ;; esac
-        [ "$IDENTITY" = "keycloak-rba" ] && FEATURES="$FEATURES,rba"
-        case "$SCENARIO" in *"document"*|*"documentstore"*) FEATURES="$FEATURES,documentstore" ;; esac
-        
-        FEATURES="${FEATURES#,}"
-      fi
-      
-      # Parse comma-separated features (POSIX-compatible using IFS)
-      OLD_IFS="$IFS"
-      IFS=','
-      for feature in $FEATURES; do
-        IFS="$OLD_IFS"
-        feature=$(echo "$feature" | xargs)
-        if [ -n "$feature" ] && [ -f "$VALUES_DIR/features/${feature}.yaml" ]; then
-          VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/features/${feature}.yaml"
-          echo "Layer 6 (feature): $VALUES_DIR/features/${feature}.yaml"
-        fi
-      done
-      IFS="$OLD_IFS"
-      
-      # =============================================================================
-      # Layer 7: Image tags (if enabled)
-      # =============================================================================
-      IMAGE_TAGS="${TEST_IMAGE_TAGS:-}"
-      IMAGE_TAGS_ARGS=""
-      
-      if [ "$IMAGE_TAGS" = "true" ] && [ -f "$VALUES_DIR/base-image-tags.yaml" ]; then
-        VALUES_ARGS="$VALUES_ARGS --values $VALUES_DIR/base-image-tags.yaml"
-        echo "Layer 7 (image-tags): $VALUES_DIR/base-image-tags.yaml"
-      elif [ -f /tmp/values-image-tags-processed.yaml ]; then
-        IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
-        echo "Including processed image tags file"
-      fi
+      MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+        --scenario-path "$SCENARIO_DIR" \
+        --identity "${TEST_IDENTITY:-keycloak}" \
+        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+        --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+        --features "${TEST_FEATURES:-}" \
+        --qa="${TEST_QA:-false}" \
+        --image-tags="${TEST_IMAGE_TAGS:-false}" \
+        --upgrade-flow="${TEST_UPGRADE:-false}" \
+        --infra-type "${INFRA_TYPE:-}" \
+        --values-config '{{ .VALUES_CONFIG }}' \
+        --interactive=false \
+        --log-level info)
       
       echo ""
       echo "=========================================="
+      echo "Merged values file: $MERGED_VALUES"
       echo "Final helm install command:"
       echo "=========================================="
       
@@ -684,13 +339,12 @@ tasks:
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        $VALUES_ARGS \
+        --values "$MERGED_VALUES" \
         {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
-        $IMAGE_TAGS_ARGS \
         --values /tmp/extra-values-file.yaml \
+        ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
         --timeout 20m0s \
         --wait \
         --wait-for-jobs \
