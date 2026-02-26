@@ -1071,10 +1071,11 @@ identityKeycloak:
     extraTls: []
     ## @param identityKeycloak.ingress.labels (DEPRECATED) [object] can be used to define labels which will be applied to the Keycloak ingress resource
     labels: {}
-    ## @param identityKeycloak.ingress.annotations (DEPRECATED) [object] configures annotations to be applied to the ingress record.
+    ## @extra identityKeycloak.ingress.annotations (DEPRECATED) [object] configures annotations to be applied to the ingress record.
     annotations:
       ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size (DEPRECATED)
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffering (DEPRECATED)
       nginx.ingress.kubernetes.io/proxy-buffering: "on"
     ## @param identityKeycloak.ingress.pathType (DEPRECATED) defines Ingress path type.
     pathType: Prefix
