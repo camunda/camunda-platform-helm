@@ -16,21 +16,25 @@ permissions:
 
 jobs:
   delete-elasticsearch:
-    name: Cleanup CI Elasticsearch - ${{ matrix.version }} on ${{ matrix.distro-platform }}
+    name: Cleanup CI Elasticsearch - ${{ matrix.version }} pool-${{ matrix.pool-index }} on ${{ matrix.distro-platform }}
     strategy:
       matrix:
         distro-platform:
           - gke
         version:
           - 21.6.3
+        pool-index:
+          - "0"
+          - "1"
     uses: ./.github/workflows/delete-elasticsearch.yaml
     with:
       distro-platform: ${{ matrix.distro-platform }}
       chart-version: ${{ matrix.version }}
+      pool-index: ${{ matrix.pool-index }}
     secrets: inherit
 
   deploy-elasticsearch:
-    name: Deploy CI Elasticsearch - ${{ matrix.version }} on ${{ matrix.distro-platform }}
+    name: Deploy CI Elasticsearch - ${{ matrix.version }} pool-${{ matrix.pool-index }} on ${{ matrix.distro-platform }}
     needs: [delete-elasticsearch]
     strategy:
       matrix:
@@ -38,10 +42,14 @@ jobs:
           - gke
         version:
           - 21.6.3
+        pool-index:
+          - "0"
+          - "1"
     uses: ./.github/workflows/deploy-elasticsearch.yaml
     with:
       distro-platform: ${{ matrix.distro-platform }}
       chart-version: ${{ matrix.version }}
+      pool-index: ${{ matrix.pool-index }}
     secrets: inherit
 
   delete-keycloak:

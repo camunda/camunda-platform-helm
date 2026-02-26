@@ -928,6 +928,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		"OPERATE_INDEX_PREFIX",
 		"CAMUNDA_HOSTNAME",
 		"FLOW",
+		"ES_POOL_INDEX",
 	}
 	originalEnv := captureEnv(envVarsToCapture)
 
@@ -954,6 +955,12 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		os.Setenv("CAMUNDA_HOSTNAME", scenarioCtx.IngressHost)
 	}
 	os.Setenv("FLOW", flags.Flow)
+
+	// Default ES pool index to 0 if not set (for local dev / manual runs).
+	// This ensures $ES_POOL_INDEX resolves in elasticsearch-external.yaml values files.
+	if os.Getenv("ES_POOL_INDEX") == "" {
+		os.Setenv("ES_POOL_INDEX", "0")
+	}
 
 	// Set Keycloak environment variables
 	if flags.KeycloakHost != "" {
