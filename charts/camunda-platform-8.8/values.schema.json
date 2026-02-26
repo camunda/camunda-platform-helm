@@ -5115,7 +5115,7 @@
                                         "groupsClaim": {
                                             "type": "string",
                                             "description": "can be used to set group claim.",
-                                            "default": "groups"
+                                            "default": ""
                                         },
                                         "audience": {
                                             "type": "string",
