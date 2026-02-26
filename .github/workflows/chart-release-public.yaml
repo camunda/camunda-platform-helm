@@ -440,3 +440,44 @@ jobs:
           Merge the release-please PR to complete the release process.
           ${PR_URL:+**PR:** ${PR_URL}}
           EOF
+
+  notify-on-failure:
+    name: Notify on Failure
+    needs: [release, post-release]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+          exportEnv: false
+      - name: Send Slack notification
+        continue-on-error: true
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "Chart Public Release Failed"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    The *Chart Public Release* pipeline has failed.
+
+                    *RC tag:* ${{ inputs.rc-tag }}
+
+                    <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View failed workflow>
