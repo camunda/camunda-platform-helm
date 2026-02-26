@@ -34,7 +34,7 @@ integration:
             eks: preemptible
           platforms: [gke,eks]
         - name: keycloak-mt
-          enabled: false
+          enabled: true
           shortname: kemt
           exclude: []
           auth: keycloak
