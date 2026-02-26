@@ -2795,16 +2795,18 @@ orchestration:
       opensearch:
         ## @param orchestration.data.secondaryStorage.opensearch.url the URL for the opensearch cluster
         url: ""
-        ## @param orchestration.data.secondaryStorage.opensearch.username the username for opensearch connection
-        username: ""
-        ## @extra orchestration.data.secondaryStorage.opensearch.secret the password for opensearch connection
-        secret:
-          ## @param orchestration.data.secondaryStorage.opensearch.secret.inlineSecret can be used to provide the opensearch password as a plain-text value for non-production usage
-          inlineSecret: ""
-          ## @param orchestration.data.secondaryStorage.opensearch.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
-          existingSecret: ""
-          ## @param orchestration.data.secondaryStorage.opensearch.secret.existingSecretKey defines the key within the existing Kubernetes Secret
-          existingSecretKey: ""
+        ## @param orchestration.data.secondaryStorage.opensearch.auth defines the authentication configuration for opensearch connection
+        auth:
+          ## @param orchestration.data.secondaryStorage.opensearch.auth.username the username for opensearch connection
+          username: ""
+          ## @extra orchestration.data.secondaryStorage.opensearch.auth.secret the password for opensearch connection
+          secret:
+            ## @param orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret can be used to provide the opensearch password as a plain-text value for non-production usage
+            inlineSecret: ""
+            ## @param orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+            existingSecret: ""
+            ## @param orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+            existingSecretKey: ""
         ## @extra orchestration.data.secondaryStorage.opensearch.tls configuration for TLS settings for opensearch connection
         tls:
           ## @extra orchestration.data.secondaryStorage.opensearch.tls.secret secret ref for TLS trust store
