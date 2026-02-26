@@ -81,6 +81,37 @@ on:
         default: "preemptible"
         type: string
         required: false
+      # =============================================================================
+      # Selection + Composition Model Inputs
+      # These propagate selection fields from the CI matrix through to the
+      # test-integration-template and ultimately to the Taskfile env vars.
+      # =============================================================================
+      test-identity:
+        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        required: false
+        type: string
+      test-persistence:
+        description: "Persistence selection: elasticsearch, elasticsearch-external, opensearch, rdbms"
+        required: false
+        type: string
+      test-platform:
+        description: "Platform selection: gke, eks"
+        required: false
+        type: string
+      test-features:
+        description: "Features (comma-separated): multitenancy, rba, documentstore, arm, migrator"
+        required: false
+        type: string
+      test-qa:
+        description: "Enable QA configuration"
+        required: false
+        default: false
+        type: boolean
+      test-upgrade:
+        description: "Enable upgrade flow configuration"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -138,6 +169,13 @@ jobs:
       camunda-version-previous: "${{ inputs.camunda-version-previous }}"
       always-delete-namespace: "${{ inputs.always-delete-namespace }}"
       infra-type: "${{ matrix.platform == 'eks' && inputs.infra-type-eks || inputs.infra-type-gke }}"
+      # Selection + composition model passthrough
+      test-identity: ${{ inputs.test-identity }}
+      test-persistence: ${{ inputs.test-persistence }}
+      test-platform: ${{ inputs.test-platform }}
+      test-features: ${{ inputs.test-features }}
+      test-qa: ${{ inputs.test-qa }}
+      test-upgrade: ${{ inputs.test-upgrade }}
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
