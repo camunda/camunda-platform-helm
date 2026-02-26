@@ -2771,16 +2771,18 @@ orchestration:
       elasticsearch:
         ## @param orchestration.data.secondaryStorage.elasticsearch.url the URL for the elasticsearch cluster
         url: ""
-        ## @param orchestration.data.secondaryStorage.elasticsearch.username the username for elasticsearch connection
-        username: ""
-        ## @extra orchestration.data.secondaryStorage.elasticsearch.secret the password for elasticsearch connection
-        secret:
-          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.inlineSecret can be used to provide the elasticsearch password as a plain-text value for non-production usage
-          inlineSecret: ""
-          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
-          existingSecret: ""
-          ## @param orchestration.data.secondaryStorage.elasticsearch.secret.existingSecretKey defines the key within the existing Kubernetes Secret
-          existingSecretKey: ""
+        ## @param orchestration.data.secondaryStorage.elasticsearch.auth defines the authentication configuration for elasticsearch connection
+        auth:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.auth.username the username for elasticsearch connection
+          username: ""
+          ## @extra orchestration.data.secondaryStorage.elasticsearch.auth.secret the password for elasticsearch connection
+          secret:
+            ## @param orchestration.data.secondaryStorage.elasticsearch.auth.secret.inlineSecret can be used to provide the elasticsearch password as a plain-text value for non-production usage
+            inlineSecret: ""
+            ## @param orchestration.data.secondaryStorage.elasticsearch.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the password
+            existingSecret: ""
+            ## @param orchestration.data.secondaryStorage.elasticsearch.auth.secret.existingSecretKey defines the key within the existing Kubernetes Secret
+            existingSecretKey: ""
         ## @extra orchestration.data.secondaryStorage.elasticsearch.tls configuration for TLS settings for elasticsearch connection
         tls:
           ## @extra orchestration.data.secondaryStorage.elasticsearch.tls.secret secret ref for TLS trust store

@@ -117,10 +117,10 @@ spec:
                 "config" .Values.global.elasticsearch.auth
             ) | nindent 12 }}
             {{- end }}
-            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch)) "true") }}
+            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.elasticsearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_ELASTICSEARCH_PASSWORD"
-                "config" .Values.orchestration.data.secondaryStorage.elasticsearch
+                "config" .Values.orchestration.data.secondaryStorage.elasticsearch.auth
             ) | nindent 12 }}
             {{- end }}
             {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
@@ -129,10 +129,10 @@ spec:
                 "config" .Values.global.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
-            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch)) "true") }}
+            {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.auth)) "true") }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "VALUES_OPENSEARCH_PASSWORD"
-                "config" .Values.orchestration.data.secondaryStorage.opensearch
+                "config" .Values.orchestration.data.secondaryStorage.opensearch.auth
             ) | nindent 12 }}
             {{- end }}
             {{- if and .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
