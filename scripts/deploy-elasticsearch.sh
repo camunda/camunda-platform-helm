@@ -13,6 +13,7 @@ CHART="bitnami/elasticsearch"
 CHART_VERSION="21.6.3"
 VALUES_FILE=""
 NAMESPACE=""
+POOL_INDEX=""
 
 # ExternalSecret defaults
 EXTERNAL_SECRET_FILE="$REPO_ROOT/.github/config/external-secret/external-secret-infra.yaml"
@@ -42,6 +43,7 @@ Options:
   --skip-external-secret           Do not apply ExternalSecret
   --timeout DURATION               Helm wait timeout (default: ${HELM_TIMEOUT})
   --atomic | --no-atomic           Helm atomic upgrade (default: --atomic)
+  --pool-index N                   ES pool index (e.g. 0 or 1); appends -pool-N to namespace & ingress
   --set KEY=VALUE                  Extra Helm --set (repeatable)
   --set-string KEY=VALUE           Extra Helm --set-string (repeatable)
   -h, --help                       Show this help
@@ -107,6 +109,10 @@ while [[ $# -gt 0 ]]; do
     HELM_SET_STRING_ARGS+=("--set-string" "$2")
     shift 2
     ;;
+  --pool-index)
+    POOL_INDEX="$2"
+    shift 2
+    ;;
   -h | --help)
     usage
     exit 0
@@ -120,11 +126,26 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Derive namespace and default values file from chart version if not provided
+CHART_VERSION_DASHED="$(echo "$CHART_VERSION" | tr '.' '-')"
 if [[ -z "${NAMESPACE}" ]]; then
-  NAMESPACE="distribution-elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
+  NAMESPACE="distribution-elasticsearch-${CHART_VERSION_DASHED}"
+  if [[ -n "${POOL_INDEX}" ]]; then
+    NAMESPACE="${NAMESPACE}-pool-${POOL_INDEX}"
+  fi
 fi
 if [[ -z "$VALUES_FILE" ]]; then
   VALUES_FILE="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}/values.yaml"
+fi
+
+# When a pool index is specified, override ingress hostnames so each pool gets
+# its own DNS entry (ExternalDNS creates the record from the Ingress resource).
+if [[ -n "${POOL_INDEX}" ]]; then
+  HELM_SET_ARGS+=(
+    --set "ingress.hostname=elasticsearch-${CHART_VERSION_DASHED}-pool-${POOL_INDEX}.ci.distro.ultrawombat.com"
+    --set "ingress.extraTls[0].hosts[0]=elasticsearch-${CHART_VERSION_DASHED}-pool-${POOL_INDEX}.ci.distro.ultrawombat.com"
+    --set "kibana.ingress.hostname=kibana-${CHART_VERSION_DASHED}-pool-${POOL_INDEX}.ci.distro.ultrawombat.com"
+    --set "kibana.ingress.extraTls[0].hosts[0]=kibana-${CHART_VERSION_DASHED}-pool-${POOL_INDEX}.ci.distro.ultrawombat.com"
+  )
 fi
 
 echo "[elasticsearch] Namespace: ${NAMESPACE}"
@@ -214,7 +235,13 @@ for CRONJOB_FILE in "${CRONJOB_DIR}"/*-cronjob.yaml; do
   [[ -f "$CRONJOB_FILE" ]] || continue
   cronjob_found=true
   echo "[cronjob] Applying CronJob from: $CRONJOB_FILE"
-  kubectl apply -f "$CRONJOB_FILE"
+  if [[ -n "${POOL_INDEX}" ]]; then
+    # Replace the base namespace with the pool-specific namespace in the manifest
+    sed "s/distribution-elasticsearch-${CHART_VERSION_DASHED}/distribution-elasticsearch-${CHART_VERSION_DASHED}-pool-${POOL_INDEX}/g" \
+      "$CRONJOB_FILE" | kubectl apply -f -
+  else
+    kubectl apply -f "$CRONJOB_FILE"
+  fi
   echo "[cronjob] Applied: $(basename "$CRONJOB_FILE")"
 done
 if [[ "$cronjob_found" == false ]]; then
