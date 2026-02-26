@@ -15,7 +15,7 @@ global:
       existingSecretKey: elasticsearch-password
     url:
       protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+      host: elasticsearch-21-6-3-pool-${ES_POOL_INDEX}.ci.distro.ultrawombat.com
       port: 443
 
 operate:
