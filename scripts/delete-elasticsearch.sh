@@ -10,6 +10,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RELEASE_NAME="elasticsearch"
 CHART_VERSION="21.6.3"
 NAMESPACE="distribution-elasticsearch-21-6-3"
+POOL_INDEX=""
 EXTERNAL_SECRET_FILE="$REPO_ROOT/.github/config/external-secret/external-secret-infra.yaml"
 
 HELM_TIMEOUT="10m0s"
@@ -34,6 +35,7 @@ Options:
   --external-secret-file PATH      ExternalSecret YAML to delete (default: ${EXTERNAL_SECRET_FILE})
   --skip-external-secret           Do not delete ExternalSecret
   --purge-pvcs                     Delete PVCs labeled with app.kubernetes.io/instance=<release>
+  --pool-index N                   ES pool index (e.g. 0 or 1); appends -pool-N to derived namespace
   --delete-namespace               Delete the namespace after uninstall
   --timeout DURATION               Helm uninstall wait timeout (default: ${HELM_TIMEOUT})
   -h, --help                       Show this help
@@ -65,6 +67,10 @@ while [[ $# -gt 0 ]]; do
     PURGE_PVCS=true
     shift 1
     ;;
+  --pool-index)
+    POOL_INDEX="$2"
+    shift 2
+    ;;
   --delete-namespace)
     DELETE_NAMESPACE=true
     shift 1
@@ -87,6 +93,9 @@ done
 
 # Derive namespace from chart version
 NAMESPACE="distribution-elasticsearch-$(echo "$CHART_VERSION" | tr '.' '-')"
+if [[ -n "${POOL_INDEX}" ]]; then
+  NAMESPACE="${NAMESPACE}-pool-${POOL_INDEX}"
+fi
 
 echo "[elasticsearch] Namespace: ${NAMESPACE}"
 echo "[elasticsearch] Release:    ${RELEASE_NAME}"
