@@ -248,7 +248,7 @@ The following values inside your values.yaml need to be set but were not:
         "DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10:"
         (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
         "Please migrate to externally managed services before upgrading to 8.10."
-        "For more details, please check Camunda Helm chart documentation."
+        "For more details: https://docs.camunda.io/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
