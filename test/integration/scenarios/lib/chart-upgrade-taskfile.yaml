@@ -87,6 +87,11 @@ tasks:
         echo "Final helm upgrade command:"
         echo "=========================================="
         
+        EXTRA_VALUES_ARGS=""
+        if [ -f /tmp/extra-values-file.yaml ]; then
+          EXTRA_VALUES_ARGS="--values /tmp/extra-values-file.yaml"
+        fi
+        
         helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
           --namespace {{ .TEST_NAMESPACE }} \
           --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
@@ -95,7 +100,7 @@ tasks:
           {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
           --values {{ .TEST_HELM_DIGEST_VALUES }} \
           {{ end -}}
-          --values /tmp/extra-values-file.yaml \
+          $EXTRA_VALUES_ARGS \
           ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
           --force \
           --timeout 20m0s \
