@@ -2771,7 +2771,7 @@ orchestration:
       elasticsearch:
         ## @param orchestration.data.secondaryStorage.elasticsearch.url the URL for the elasticsearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200
         url: ""
-        ## @param orchestration.data.secondaryStorage.elasticsearch.auth defines the authentication configuration for elasticsearch connection
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.auth defines the authentication configuration for elasticsearch connection
         auth:
           ## @param orchestration.data.secondaryStorage.elasticsearch.auth.username the username for elasticsearch connection
           username: ""
@@ -2795,7 +2795,7 @@ orchestration:
       opensearch:
         ## @param orchestration.data.secondaryStorage.opensearch.url the URL for the opensearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200
         url: ""
-        ## @param orchestration.data.secondaryStorage.opensearch.auth defines the authentication configuration for opensearch connection
+        ## @extra orchestration.data.secondaryStorage.opensearch.auth defines the authentication configuration for opensearch connection
         auth:
           ## @param orchestration.data.secondaryStorage.opensearch.auth.username the username for opensearch connection
           username: ""
