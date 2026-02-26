@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.5.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.1...camunda-platform-8.8-13.5.2) (2026-02-26)
+
+
+### Dependencies
+
+* update camunda/console docker tag to v8.8.104 ([#5189](https://github.com/camunda/camunda-platform-helm/issues/5189)) ([fa1d1b1](https://github.com/camunda/camunda-platform-helm/commit/fa1d1b14503a17f5aa8839c2f78fbc0357a880d6))
+
 ## [13.5.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.0...camunda-platform-8.8-13.5.1) (2026-02-25)
 
 
