@@ -202,3 +202,9 @@ jobs:
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
       infra-type-gke: ${{ matrix.infraTypeGke || 'preemptible' }}
       infra-type-eks: ${{ matrix.infraTypeEks || 'preemptible' }}
+      # Selection + composition model fields from CI matrix
+      test-identity: ${{ matrix.identity }}
+      test-persistence: ${{ matrix.persistence }}
+      test-features: ${{ matrix.features }}
+      test-qa: ${{ matrix.qa == 'true' }}
+      test-upgrade: ${{ matrix.upgrade == 'true' }}
