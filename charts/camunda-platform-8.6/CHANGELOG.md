@@ -1,5 +1,21 @@
 # Changelog
 
+## [11.12.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.5...camunda-platform-8.6-11.12.0) (2026-02-26)
+
+
+### Features
+
+* expose options in values.yaml for helm v4 support ([#4918](https://github.com/camunda/camunda-platform-helm/issues/4918)) ([ec0fb7f](https://github.com/camunda/camunda-platform-helm/commit/ec0fb7f62af76b07b5fb970099781ddb4901ef68))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5071](https://github.com/camunda/camunda-platform-helm/issues/5071)) ([5a64ccb](https://github.com/camunda/camunda-platform-helm/commit/5a64ccb2059f8d77ea8b14d37a3c40ab0c7dd6fe))
+* update camunda-platform-images (patch) ([#5125](https://github.com/camunda/camunda-platform-helm/issues/5125)) ([131d2b5](https://github.com/camunda/camunda-platform-helm/commit/131d2b5efc2189a593f466eddee7f15f9400994b))
+* update camunda-platform-images (patch) ([#5182](https://github.com/camunda/camunda-platform-helm/issues/5182)) ([3ba8e07](https://github.com/camunda/camunda-platform-helm/commit/3ba8e07b58a5e1ca9239081bf3ba0e2d6a5a85e3))
+* update minor-updates (minor) ([#5031](https://github.com/camunda/camunda-platform-helm/issues/5031)) ([8febe72](https://github.com/camunda/camunda-platform-helm/commit/8febe72311516c68444470bd08c9c59fff1db08f))
+* update patch-updates (patch) ([#5033](https://github.com/camunda/camunda-platform-helm/issues/5033)) ([246572c](https://github.com/camunda/camunda-platform-helm/commit/246572c06b3508731446b0402aabb8d12b29f512))
+
 ## [11.11.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.4...camunda-platform-8.6-11.11.5) (2026-02-04)
 
 

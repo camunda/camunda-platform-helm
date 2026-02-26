@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 11.11.5
+version: 11.12.0
 appVersion: 8.6.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.19.4"
+  camunda.io/helmCLIVersion: "3.20.0"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -71,4 +71,6 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Expose options in values.yaml for helm v4 support"
