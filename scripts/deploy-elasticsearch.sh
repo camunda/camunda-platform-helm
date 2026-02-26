@@ -191,14 +191,32 @@ fi
 
 echo "Elasticsearch Helm release applied."
 
-# Apply the CI template cleanup CronJob if the manifest exists for this chart version.
-# The manifest contains its own namespace metadata and cluster-scoped RBAC resources,
-# so we use a plain 'kubectl apply -f' without a -n flag.
-CRONJOB_FILE="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}/ci-template-cleanup-cronjob.yaml"
-if [[ -f "$CRONJOB_FILE" ]]; then
-  echo "[cronjob] Applying CI template cleanup CronJob from: $CRONJOB_FILE"
-  kubectl apply -f "$CRONJOB_FILE"
-  echo "[cronjob] CI template cleanup CronJob applied."
+# Create ConfigMap from the cleanup script so CronJobs can mount it.
+# The ci-template-cleanup CronJob expects the script at /scripts/ci-cleanup-elasticsearch.sh.
+CLEANUP_SCRIPT="$REPO_ROOT/scripts/ci-cleanup-elasticsearch.sh"
+if [[ -f "$CLEANUP_SCRIPT" ]]; then
+  echo "[configmap] Creating/updating ci-cleanup-script ConfigMap from: $CLEANUP_SCRIPT"
+  kubectl create configmap ci-cleanup-script \
+    --from-file=ci-cleanup-elasticsearch.sh="$CLEANUP_SCRIPT" \
+    --namespace "$NAMESPACE" \
+    --dry-run=client -o yaml | kubectl apply -f -
+  echo "[configmap] ci-cleanup-script ConfigMap applied."
 else
-  echo "[cronjob] No CronJob manifest found at $CRONJOB_FILE — skipping."
+  echo "[configmap] WARN: $CLEANUP_SCRIPT not found — skipping ConfigMap creation."
+fi
+
+# Apply all CronJob manifests (*-cronjob.yaml) from the infra directory for this chart version.
+# Each manifest contains its own namespace metadata and RBAC resources,
+# so we use a plain 'kubectl apply -f' without a -n flag.
+CRONJOB_DIR="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}"
+cronjob_found=false
+for CRONJOB_FILE in "${CRONJOB_DIR}"/*-cronjob.yaml; do
+  [[ -f "$CRONJOB_FILE" ]] || continue
+  cronjob_found=true
+  echo "[cronjob] Applying CronJob from: $CRONJOB_FILE"
+  kubectl apply -f "$CRONJOB_FILE"
+  echo "[cronjob] Applied: $(basename "$CRONJOB_FILE")"
+done
+if [[ "$cronjob_found" == false ]]; then
+  echo "[cronjob] No CronJob manifests found in $CRONJOB_DIR — skipping."
 fi

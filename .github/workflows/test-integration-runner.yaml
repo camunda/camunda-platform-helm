@@ -517,6 +517,8 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
@@ -564,26 +566,10 @@ jobs:
 
           echo "TEST_CHART_VERSION=${HELM_CHART_VERSION}" >> "$GITHUB_ENV"
 
-      - name: Helm – prepare values from values-config
-        shell: bash
-        env:
-          VALS_CONFIG: ${{ inputs.values-config }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
-        run: |
-          IMAGE_TAGS_ARG=""
-          if [[ "${{ inputs.include-image-tags }}" == "true" ]]; then
-            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
-          fi
-
-          ./scripts/prepare-helm-values.sh \
-            --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
-            --scenario "${{ inputs.scenario }}" \
-            --values-config '${{ inputs.values-config }}' \
-            $IMAGE_TAGS_ARG \
-            --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --log-level debug \
-            --interactive false
+      # NOTE: The old "prepare-helm-values.sh" step has been removed.
+      # Env var substitution, image-tags inclusion, and deep-merge are now handled by
+      # "deploy-camunda prepare-values" called from the Taskfile's setup.exec task.
+      # License key is injected via --set in TEST_HELM_EXTRA_ARGS below.
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -594,6 +580,10 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           VALUES_CONFIG: ${{ inputs.values-config }}
+          # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          # License key for Camunda Platform (injected via --set in helm install)
+          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY }}
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
@@ -839,26 +829,10 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
-      - name: Helm – prepare values from values-config
-        shell: bash
-        env:
-          VALS_CONFIG: ${{ inputs.values-config }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
-        run: |
-          IMAGE_TAGS_ARG=""
-          if [[ "${{ inputs.include-image-tags }}" == "true" ]]; then
-            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
-          fi
-
-          ./scripts/prepare-helm-values.sh \
-            --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
-            --scenario "${{ inputs.scenario }}" \
-            --values-config '${{ inputs.values-config }}' \
-            $IMAGE_TAGS_ARG \
-            --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --log-level debug \
-            --interactive false
+      # NOTE: The old "prepare-helm-values.sh" step has been removed.
+      # Env var substitution, image-tags inclusion, and deep-merge are now handled by
+      # "deploy-camunda prepare-values" called from the Taskfile's upgrade.exec task.
+      # License key is injected via --set in TEST_HELM_EXTRA_ARGS below.
 
       - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets
@@ -887,6 +861,11 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
+          # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          # License key for Camunda Platform (injected via --set in helm install)
+          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY }}
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
