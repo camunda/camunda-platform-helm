@@ -44,6 +44,16 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+        - name: keycloak-rba
+          enabled: true
+          shortname: kerba
+          exclude: []
+          auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch-external
+          flow: install
+          infra-type:
+            gke: distroci
         - name: oidc
           enabled: true
           shortname: esoi
