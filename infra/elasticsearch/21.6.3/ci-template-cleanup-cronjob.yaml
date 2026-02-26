@@ -122,7 +122,7 @@ spec:
                 # Max age in hours for component-prefixed CI resources.
                 # Indices/templates older than this are deleted unconditionally.
                 - name: MAX_INDEX_AGE_HOURS
-                  value: "4"
+                  value: "1"
               volumeMounts:
                 - name: cleanup-script
                   mountPath: /scripts
