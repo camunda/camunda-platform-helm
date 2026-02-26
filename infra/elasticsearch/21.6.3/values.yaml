@@ -140,9 +140,19 @@ kibana:
   extraEnvVars:
     - name: NODE_OPTIONS
       value: "--max-old-space-size=3072"
-  extraConfig:
+  extraConfiguration:
     xpack.reporting.enabled: false
     xpack.fleet.enabled: true
+    # Required by Kibana alerting, connectors, and saved object encryption.
+    # Without this key Kibana refuses to create alerting rules or actions.
+    xpack.encryptedSavedObjects.encryptionKey: "5470b74cd2be8ca2a9d6f0dbc0d34e89"
+    # --- Stack Monitoring ---
+    # Enables the Stack Monitoring UI in Kibana so you can view cluster health,
+    # node metrics, index performance, and shard allocation over time.
+    monitoring.ui.enabled: true
+    # Use the self-monitoring data written by ES to local .monitoring-* indices
+    # (collection is enabled via xpack.monitoring.collection.enabled on the ES side).
+    monitoring.ui.ccs.enabled: false
   elasticsearch:
     security:
       auth:
@@ -214,6 +224,24 @@ extraConfig:
   cluster.publish.timeout: 180s
   # Log cluster state updates that take longer than 10s (default) for diagnostics.
   cluster.service.slow_task_logging_threshold: 5s
+  # --- Self-monitoring for Kibana Stack Monitoring ---
+  # Enables ES to collect its own metrics (node stats, index stats, cluster stats)
+  # and write them to local .monitoring-* indices. Kibana reads these indices to
+  # power the Stack Monitoring UI (cluster health, node performance, shard allocation, etc.).
+  # NOTE: Must use nested YAML (not flat dotted keys) because the Bitnami chart
+  # generates its own nested xpack.security block. Flat "xpack.monitoring.*" keys
+  # get clobbered during the YAML merge; nested keys merge correctly.
+  xpack:
+    monitoring:
+      collection:
+        enabled: true
+        # Collect metrics every 30s (default: 10s). Reduced frequency to limit
+        # monitoring index overhead on a CI cluster with many transient indices.
+        interval: 30s
+      history:
+        # Retain monitoring data for 3 days (default: 7d). Keeps disk usage in
+        # check while still providing enough history to diagnose multi-hour issues.
+        duration: 3d
 
 extraEnvVars:
   - name: ES_JAVA_OPTS
