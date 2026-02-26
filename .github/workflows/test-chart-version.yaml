@@ -176,7 +176,16 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration-tests:
-    if: ${{ !contains(github.head_ref, 'release-please--branches--') }}
+    # Skip integration tests for Renovate image/digest PRs - these images are already
+    # validated by AlwaysGreen before publishing. Only golden file updates are needed.
+    if: >-
+      ${{
+        !contains(github.head_ref, 'release-please--branches--') &&
+        !(startsWith(github.head_ref, 'renovate/') && (
+          contains(github.head_ref, 'camunda-platform-images') ||
+          contains(github.head_ref, 'camunda-platform-digests')
+        ))
+      }}
     name: ${{ matrix.version }} - ${{ matrix.shortname }} - ${{ matrix.flow }} - ${{ matrix.case }} - ${{ inputs.platforms || 'gke' }}
     needs: [init]
     strategy:
