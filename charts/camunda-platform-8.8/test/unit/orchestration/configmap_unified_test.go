@@ -272,3 +272,41 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenDefault",
+			Values: map[string]string{
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "groups-claim")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenExplicitlyEmpty",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.oidc.groupsClaim": "",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "groups-claim")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainGroupsClaimWhenSet",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.groups-claim": "custom-groups",
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
