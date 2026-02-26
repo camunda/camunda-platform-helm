@@ -839,13 +839,13 @@ identity:
 #####  #    #      #   #   #  ### #####  #           # #  # # #
 #      #    # #    #   #   #    # #   #  #      #    # #   #  #
 #       ####   ####    #    ####  #    # ######  ####   ### # ######
-## @section Management Identity - PostgreSQL Parameters
-## @extra identityPostgresql configuration for the PostgreSQL dependency chart used by Management Identity. For more details, check [Bitnami package for PostgreSQL](https://artifacthub.io/packages/helm/bitnami/postgresql#parameters) documentation.
+## @section Management Identity - PostgreSQL Parameters (DEPRECATED)
+## @extra identityPostgresql (DEPRECATED) configuration for the PostgreSQL dependency chart used by Management Identity. For more details, check [Bitnami package for PostgreSQL](https://artifacthub.io/packages/helm/bitnami/postgresql#parameters) documentation.
 identityPostgresql:
-  ## @param identityPostgresql.enabled Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
+  ## @param identityPostgresql.enabled (DEPRECATED) Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
   ##
   enabled: false
-  ## @extra identityPostgresql.global.compatibility Compatibility adaptations for Kubernetes platforms
+  ## @extra identityPostgresql.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
     ##
@@ -853,46 +853,46 @@ identityPostgresql:
       ## Compatibility adaptations for Openshift
       ##
       openshift:
-        ## @param identityPostgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param identityPostgresql.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
         adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
   # https://hub.docker.com/r/bitnami/postgresql/tags
-  ## @param identityPostgresql.image.repository PostgreSQL repo
-  ## @param identityPostgresql.image.tag PostgreSQL image tag
-  ## @param identityPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+  ## @param identityPostgresql.image.repository (DEPRECATED) PostgreSQL repo
+  ## @param identityPostgresql.image.tag (DEPRECATED) PostgreSQL image tag
+  ## @param identityPostgresql.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   ##
   image:
     repository: bitnamilegacy/postgresql
     tag: 15.10.0-debian-12-r2
     digest: ""
-  ## @param identityPostgresql.nameOverride the name used for Management Identity PostgreSQL.
+  ## @param identityPostgresql.nameOverride (DEPRECATED) the name used for Management Identity PostgreSQL.
   ##
   nameOverride: identity-postgresql
   auth:
-    ## @param identityPostgresql.auth.username Non-root username
+    ## @param identityPostgresql.auth.username (DEPRECATED) Non-root username
     ##
     username: identity
-    ## @param identityPostgresql.auth.database The database name
+    ## @param identityPostgresql.auth.database (DEPRECATED) The database name
     ##
     database: identity
-    ## @param identityPostgresql.auth.password Password for the non-root username
+    ## @param identityPostgresql.auth.password (DEPRECATED) Password for the non-root username
     ##
     password: ""
-    ## @param identityPostgresql.auth.existingSecret Name of an existing secret resource containing the database credentials
+    ## @param identityPostgresql.auth.existingSecret (DEPRECATED) Name of an existing secret resource containing the database credentials
     ##
     existingSecret: ""
     secretKeys:
-      ## @param identityPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
+      ## @param identityPostgresql.auth.secretKeys.adminPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.
       adminPasswordKey: "identity-postgresql-admin-password"
-      ## @param identityPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
+      ## @param identityPostgresql.auth.secretKeys.userPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL user.
       userPasswordKey: "identity-postgresql-user-password"
   volumePermissions:
     image:
-      ## @param identityPostgresql.volumePermissions.image.repository
+      ## @param identityPostgresql.volumePermissions.image.repository (DEPRECATED)
       repository: bitnamilegacy/os-shell
   metrics:
     image:
-      ## @param identityPostgresql.metrics.image.repository
+      ## @param identityPostgresql.metrics.image.repository (DEPRECATED)
       repository: bitnamilegacy/postgres-exporter
 
 # Management Identity.
@@ -902,12 +902,12 @@ identityPostgresql:
 #  #   #        #   #      #      #    # ###### #  #
 #   #  #        #   #    # #      #    # #    # #   #
 #    # ######   #    ####  ######  ####  #    # #    #
-## @section Management Identity - Keycloak Parameters
-## @extra identityKeycloak configuration, for the Keycloak dependency chart which is used by Management Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
+## @section Management Identity - Keycloak Parameters (DEPRECATED)
+## @extra identityKeycloak (DEPRECATED) configuration, for the Keycloak dependency chart which is used by Management Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
 identityKeycloak:
-  ## @param identityKeycloak.enabled Enable Management Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
+  ## @param identityKeycloak.enabled (DEPRECATED) Enable Management Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
   enabled: false
-  ## @extra identityKeycloak.global.compatibility Compatibility adaptations for Kubernetes platforms
+  ## @extra identityKeycloak.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
     ##
@@ -915,31 +915,31 @@ identityKeycloak:
       ## Compatibility adaptations for Openshift
       ##
       openshift:
-        ## @param identityKeycloak.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param identityKeycloak.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
         adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
     security:
-      ## @param identityKeycloak.global.security.allowInsecureImages Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)
+      ## @param identityKeycloak.global.security.allowInsecureImages (DEPRECATED) Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)
       allowInsecureImages: true
 
-  ## @param identityKeycloak.nameOverride the name used for Keycloak.
+  ## @param identityKeycloak.nameOverride (DEPRECATED) the name used for Keycloak.
   nameOverride: "keycloak"
 
-  ## @extra identityKeycloak.image configuration.
+  ## @extra identityKeycloak.image (DEPRECATED) configuration.
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
-    ## @param identityKeycloak.image.repository image repo
+    ## @param identityKeycloak.image.repository (DEPRECATED) image repo
     repository: camunda/keycloak
-    ## @param identityKeycloak.image.tag image tag
+    ## @param identityKeycloak.image.tag (DEPRECATED) image tag
     tag: 26.3.3
-    ## @param identityKeycloak.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+    ## @param identityKeycloak.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
 
-  ## @extra identityKeycloak.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  ## @param identityKeycloak.resources.requests.cpu
-  ## @param identityKeycloak.resources.requests.memory
-  ## @param identityKeycloak.resources.limits.cpu
-  ## @param identityKeycloak.resources.limits.memory
+  ## @extra identityKeycloak.resources (DEPRECATED) configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  ## @param identityKeycloak.resources.requests.cpu (DEPRECATED)
+  ## @param identityKeycloak.resources.requests.memory (DEPRECATED)
+  ## @param identityKeycloak.resources.limits.cpu (DEPRECATED)
+  ## @param identityKeycloak.resources.limits.memory (DEPRECATED)
   resources:
     requests:
       cpu: 1000m
@@ -948,33 +948,33 @@ identityKeycloak:
       cpu: 2000m
       memory: 2Gi
 
-  ## @extra identityKeycloak.postgresql configuration.
+  ## @extra identityKeycloak.postgresql (DEPRECATED) configuration.
   postgresql:
     # https://hub.docker.com/r/bitnami/postgresql/tags
     image:
-      ## @param identityKeycloak.postgresql.image.repository image repo
+      ## @param identityKeycloak.postgresql.image.repository (DEPRECATED) image repo
       repository: bitnamilegacy/postgresql
-      ## @param identityKeycloak.postgresql.image.tag image tag
+      ## @param identityKeycloak.postgresql.image.tag (DEPRECATED) image tag
       tag: 15.10.0-debian-12-r2
-      ## @param identityKeycloak.postgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+      ## @param identityKeycloak.postgresql.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
       digest: ""
     auth:
-      ## @param identityKeycloak.postgresql.auth.existingSecret defines the existing secret resource containing the database credentials
+      ## @param identityKeycloak.postgresql.auth.existingSecret (DEPRECATED) defines the existing secret resource containing the database credentials
       existingSecret: camunda-credentials
       secretKeys:
-        ## @param identityKeycloak.postgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
+        ## @param identityKeycloak.postgresql.auth.secretKeys.adminPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.
         adminPasswordKey: "identity-keycloak-postgresql-admin-password"
-        ## @param identityKeycloak.postgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
+        ## @param identityKeycloak.postgresql.auth.secretKeys.userPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL user.
         userPasswordKey: "identity-keycloak-postgresql-user-password"
     primary:
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsNonRoot
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsUser
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.capabilities.drop
-      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.seccompProfile.type
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.enabled (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.privileged (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.allowPrivilegeEscalation (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsNonRoot (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.runAsUser (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.capabilities.drop (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.containerSecurityContext.seccompProfile.type (DEPRECATED)
       containerSecurityContext:
         enabled: true
         privileged: false
@@ -986,54 +986,54 @@ identityKeycloak:
           drop: ["ALL"]
         seccompProfile:
           type: RuntimeDefault
-      ## @param identityKeycloak.postgresql.primary.podSecurityContext.enabled
-      ## @param identityKeycloak.postgresql.primary.podSecurityContext.runAsNonRoot
-      ## @param identityKeycloak.postgresql.primary.podSecurityContext.fsGroup
+      ## @param identityKeycloak.postgresql.primary.podSecurityContext.enabled (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.podSecurityContext.runAsNonRoot (DEPRECATED)
+      ## @param identityKeycloak.postgresql.primary.podSecurityContext.fsGroup (DEPRECATED)
       podSecurityContext:
         enabled: true
         runAsNonRoot: true
         fsGroup: 1001
     volumePermissions:
       image:
-        ## @param identityKeycloak.postgresql.volumePermissions.image.repository
+        ## @param identityKeycloak.postgresql.volumePermissions.image.repository (DEPRECATED)
         repository: bitnamilegacy/os-shell
     metrics:
       image:
-        ## @param identityKeycloak.postgresql.metrics.image.repository
+        ## @param identityKeycloak.postgresql.metrics.image.repository (DEPRECATED)
         repository: bitnamilegacy/postgres-exporter
   # Keycloak.proxy defines the proxy mode depends on the TLS termination in your environment.
   # Docs: https://www.keycloak.org/server/reverseproxy
-  ## @param identityKeycloak.proxy keycloak proxy
+  ## @param identityKeycloak.proxy (DEPRECATED) keycloak proxy
   proxy: edge
 
-  ## @extra identityKeycloak.tls can be used to enable TLS encryption. Required for HTTPs traffic.
+  ## @extra identityKeycloak.tls (DEPRECATED) can be used to enable TLS encryption. Required for HTTPs traffic.
   tls:
-    ## @param identityKeycloak.tls.enabled enabling tls
+    ## @param identityKeycloak.tls.enabled (DEPRECATED) enabling tls
     enabled: false
 
   # NOTE: Since Helm v3 (latest checked 3.10.x) doesn't merge lists with custom values files, then you will need to
   # add this to your own values file if you override any of "extraVolumes", "initContainers", or "extraVolumeMounts".
-  ## @skip identityKeycloak.extraVolumes [object] Extra volumes for keycloak
-  ## @skip identityKeycloak.extraVolumes[0].name
-  ## @skip identityKeycloak.extraVolumes[0].emptyDir
-  ## @skip identityKeycloak.extraVolumes[1].name
-  ## @skip identityKeycloak.extraVolumes[1].emptyDir
+  ## @skip identityKeycloak.extraVolumes (DEPRECATED) [object] Extra volumes for keycloak
+  ## @skip identityKeycloak.extraVolumes[0].name (DEPRECATED)
+  ## @skip identityKeycloak.extraVolumes[0].emptyDir (DEPRECATED)
+  ## @skip identityKeycloak.extraVolumes[1].name (DEPRECATED)
+  ## @skip identityKeycloak.extraVolumes[1].emptyDir (DEPRECATED)
   extraVolumes:
     - name: data-tmp
       emptyDir: {}
-  ## @param identityKeycloak.extraVolumeMounts[0].name
-  ## @param identityKeycloak.extraVolumeMounts[0].mountPath
+  ## @param identityKeycloak.extraVolumeMounts[0].name (DEPRECATED)
+  ## @param identityKeycloak.extraVolumeMounts[0].mountPath (DEPRECATED)
   extraVolumeMounts:
     - name: data-tmp
       mountPath: /opt/bitnami/keycloak/data/tmp
 
-  ## @param identityKeycloak.containerSecurityContext.privileged
-  ## @param identityKeycloak.containerSecurityContext.readOnlyRootFilesystem
-  ## @param identityKeycloak.containerSecurityContext.allowPrivilegeEscalation
-  ## @param identityKeycloak.containerSecurityContext.runAsNonRoot
-  ## @param identityKeycloak.containerSecurityContext.runAsUser
-  ## @param identityKeycloak.containerSecurityContext.capabilities.drop
-  ## @param identityKeycloak.containerSecurityContext.seccompProfile.type
+  ## @param identityKeycloak.containerSecurityContext.privileged (DEPRECATED)
+  ## @param identityKeycloak.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
+  ## @param identityKeycloak.containerSecurityContext.allowPrivilegeEscalation (DEPRECATED)
+  ## @param identityKeycloak.containerSecurityContext.runAsNonRoot (DEPRECATED)
+  ## @param identityKeycloak.containerSecurityContext.runAsUser (DEPRECATED)
+  ## @param identityKeycloak.containerSecurityContext.capabilities.drop (DEPRECATED)
+  ## @param identityKeycloak.containerSecurityContext.seccompProfile.type (DEPRECATED)
   containerSecurityContext:
     privileged: false
     readOnlyRootFilesystem: true
@@ -1044,60 +1044,60 @@ identityKeycloak:
       drop: ["ALL"]
     seccompProfile:
       type: RuntimeDefault
-  ## @param identityKeycloak.podSecurityContext.runAsNonRoot
-  ## @param identityKeycloak.podSecurityContext.fsGroup
+  ## @param identityKeycloak.podSecurityContext.runAsNonRoot (DEPRECATED)
+  ## @param identityKeycloak.podSecurityContext.fsGroup (DEPRECATED)
   podSecurityContext:
     runAsNonRoot: true
     fsGroup: 1001
-  ## @param identityKeycloak.httpRelativePath defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
+  ## @param identityKeycloak.httpRelativePath (DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only
   # where in Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's configurable.
   # NOTE: This should be the same as ".Values.global.identity.keycloak.contextPath" plus a trailing slash,
   # but it cannot be referenced directly because of a bug in Helm (tested with Helm v3.9.3).
   # NOTE: In Keycloak v23, accessing this path without the trailing slash will return "Internal Server Error".
   httpRelativePath: /auth/
-  ## @param identityKeycloak.extraEnvVars can be used set extra environment variables to be set on Keycloak container.
+  ## @param identityKeycloak.extraEnvVars (DEPRECATED) can be used set extra environment variables to be set on Keycloak container.
   extraEnvVars: []
 
   # under "global.ingress" is enabled. However, it's possible to setup Keycloak on a separate Ingress if needed.
   # For more details: https://github.com/bitnami/charts/tree/main/bitnami/keycloak#configure-ingress
   ingress:
-    ## @param identityKeycloak.ingress.enabled can be used enable ingress record generation for Keycloak.
+    ## @param identityKeycloak.ingress.enabled (DEPRECATED) can be used enable ingress record generation for Keycloak.
     enabled: false
-    ## @param identityKeycloak.ingress.tls can be used to enable TLS configuration for the host defined at ingress.hostname parameter.
+    ## @param identityKeycloak.ingress.tls (DEPRECATED) can be used to enable TLS configuration for the host defined at ingress.hostname parameter.
     tls: false
-    ## @param identityKeycloak.ingress.extraTls configuration for additional hostnames to be covered with this ingress record.
+    ## @param identityKeycloak.ingress.extraTls (DEPRECATED) configuration for additional hostnames to be covered with this ingress record.
     extraTls: []
-    ## @param identityKeycloak.ingress.labels [object] can be used to define labels which will be applied to the Keycloak ingress resource
+    ## @param identityKeycloak.ingress.labels (DEPRECATED) [object] can be used to define labels which will be applied to the Keycloak ingress resource
     labels: {}
-    ## @param identityKeycloak.ingress.annotations [object] configures annotations to be applied to the ingress record.
+    ## @param identityKeycloak.ingress.annotations (DEPRECATED) [object] configures annotations to be applied to the ingress record.
     annotations:
-      ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size
+      ## @skip identityKeycloak.ingress.annotations.nginx.ingress.kubernetes.io/proxy-buffer-size (DEPRECATED)
       nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       nginx.ingress.kubernetes.io/proxy-buffering: "on"
-    ## @param identityKeycloak.ingress.pathType defines Ingress path type.
+    ## @param identityKeycloak.ingress.pathType (DEPRECATED) defines Ingress path type.
     pathType: Prefix
 
-  ## @extra identityKeycloak.service configuration, to configure the service which is deployed along with keycloak
+  ## @extra identityKeycloak.service (DEPRECATED) configuration, to configure the service which is deployed along with keycloak
   service:
-    ## @param identityKeycloak.service.type can be set to change the service type.
+    ## @param identityKeycloak.service.type (DEPRECATED) can be set to change the service type.
     # We use clusterIP for keycloak service, since per default LoadBalancer is used, which is not supported on all cloud providers.
     # This might prevent scheduling of the service.
     type: ClusterIP
   ## Keycloak authentication parameters
   ## ref: https://github.com/bitnami/bitnami-docker-keycloak#admin-credentials
   ##
-  ## @extra identityKeycloak.auth uses the secrets generated by keycloak, to access keycloak.
+  ## @extra identityKeycloak.auth (DEPRECATED) uses the secrets generated by keycloak, to access keycloak.
   auth:
-    ## @param identityKeycloak.auth.adminUser defines the keycloak administrator user
+    ## @param identityKeycloak.auth.adminUser (DEPRECATED) defines the keycloak administrator user
     adminUser: admin
-    ## @param identityKeycloak.auth.existingSecret can be used to reuse an existing secret containing authentication information.
+    ## @param identityKeycloak.auth.existingSecret (DEPRECATED) can be used to reuse an existing secret containing authentication information.
     # See https://docs.bitnami.com/kubernetes/apps/keycloak/configuration/manage-passwords/ for more details.
     existingSecret: camunda-credentials
-    ## @param identityKeycloak.auth.passwordSecretKey defines the key within the existing secret object.
+    ## @param identityKeycloak.auth.passwordSecretKey (DEPRECATED) defines the key within the existing secret object.
     passwordSecretKey: identity-keycloak-admin-password
   keycloakConfigCli:
     image:
-      ## @param identityKeycloak.keycloakConfigCli.image.repository
+      ## @param identityKeycloak.keycloakConfigCli.image.repository (DEPRECATED)
       repository: bitnamilegacy/keycloak-config-cli
 
 #################################################
@@ -2006,13 +2006,13 @@ webModeler:
 #####  #    #      #   #   #  ### #####  #           # #  # # #
 #      #    # #    #   #   #    # #   #  #      #    # #   #  #
 #       ####   ####    #    ####  #    # ######  ####   ### # ######
-## @section WebModeler - PostgreSQL Parameters
-## @extra postgresql configuration for the postgresql dependency chart used by WebModeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
+## @section WebModeler - PostgreSQL Parameters (DEPRECATED)
+## @extra postgresql (DEPRECATED) configuration for the postgresql dependency chart used by WebModeler. See the chart documentation https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters for more details.
 webModelerPostgresql:
-  ## @param webModelerPostgresql.enabled if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
+  ## @param webModelerPostgresql.enabled (DEPRECATED) if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart
   # Note: If WebModeler is enabled, and WebModeler Postgresql is disabled, the external database configuration must be set under "webModeler.restapi.externalDatabase".
   enabled: false
-  ## @extra postgresql.global.compatibility Compatibility adaptations for Kubernetes platforms
+  ## @extra postgresql.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
     ##
@@ -2020,44 +2020,44 @@ webModelerPostgresql:
       ## Compatibility adaptations for Openshift
       ##
       openshift:
-        ## @param webModelerPostgresql.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param webModelerPostgresql.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
         adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
-  ## @param webModelerPostgresql.nameOverride defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
+  ## @param webModelerPostgresql.nameOverride (DEPRECATED) defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters
   # Note: Don't use the name "postgresql" which is already used for Keycloak's database.
   nameOverride: postgresql-web-modeler
   # https://hub.docker.com/r/bitnami/postgresql/tags
-  ## @param webModelerPostgresql.image.repository PostgreSQL repo
-  ## @param webModelerPostgresql.image.tag PostgreSQL image tag
-  ## @param webModelerPostgresql.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+  ## @param webModelerPostgresql.image.repository (DEPRECATED) PostgreSQL repo
+  ## @param webModelerPostgresql.image.tag (DEPRECATED) PostgreSQL image tag
+  ## @param webModelerPostgresql.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
   image:
     repository: bitnamilegacy/postgresql
     tag: 14.18.0-debian-12-r0
     digest: ""
-  ## @extra postgresql.auth configuration of the database authentication
+  ## @extra postgresql.auth (DEPRECATED) configuration of the database authentication
   auth:
-    ## @param webModelerPostgresql.auth.username defines the name of the database user to be created for WebModeler
+    ## @param webModelerPostgresql.auth.username (DEPRECATED) defines the name of the database user to be created for WebModeler
     username: web-modeler
-    ## @param webModelerPostgresql.auth.password can be used to provide the database user's password; a random password will be generated if left empty / ignored if `postgresql.auth.existingSecret` is set
+    ## @param webModelerPostgresql.auth.password (DEPRECATED) can be used to provide the database user's password; a random password will be generated if left empty / ignored if `postgresql.auth.existingSecret` is set
     password: ""
-    ## @param webModelerPostgresql.auth.database defines the name of the database to be created for WebModeler
+    ## @param webModelerPostgresql.auth.database (DEPRECATED) defines the name of the database to be created for WebModeler
     database: web-modeler
-    ## @param webModelerPostgresql.auth.existingSecret can be used to provide the name of an existing secret resource containing the database password
+    ## @param webModelerPostgresql.auth.existingSecret (DEPRECATED) can be used to provide the name of an existing secret resource containing the database password
     existingSecret: ""
     secretKeys:
-      ## @param webModelerPostgresql.auth.secretKeys.adminPasswordKey defines the key within the existing secret object for PostgreSQL admin.
+      ## @param webModelerPostgresql.auth.secretKeys.adminPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.
       adminPasswordKey: "web-modeler-postgresql-admin-password"
-      ## @param webModelerPostgresql.auth.secretKeys.userPasswordKey defines the key within the existing secret object for PostgreSQL user.
+      ## @param webModelerPostgresql.auth.secretKeys.userPasswordKey (DEPRECATED) defines the key within the existing secret object for PostgreSQL user.
       userPasswordKey: "web-modeler-postgresql-user-password"
 
-  ## @param webModelerPostgresql.primary.containerSecurityContext.enabled
-  ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation
-  ## @param webModelerPostgresql.primary.containerSecurityContext.privileged
-  ## @param webModelerPostgresql.primary.containerSecurityContext.readOnlyRootFilesystem
-  ## @param webModelerPostgresql.primary.containerSecurityContext.runAsNonRoot
-  ## @param webModelerPostgresql.primary.containerSecurityContext.runAsUser
-  ## @param webModelerPostgresql.primary.containerSecurityContext.capabilities.drop
-  ## @param webModelerPostgresql.primary.containerSecurityContext.seccompProfile.type
+  ## @param webModelerPostgresql.primary.containerSecurityContext.enabled (DEPRECATED)
+  ## @param webModelerPostgresql.primary.containerSecurityContext.allowPrivilegeEscalation (DEPRECATED)
+  ## @param webModelerPostgresql.primary.containerSecurityContext.privileged (DEPRECATED)
+  ## @param webModelerPostgresql.primary.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
+  ## @param webModelerPostgresql.primary.containerSecurityContext.runAsNonRoot (DEPRECATED)
+  ## @param webModelerPostgresql.primary.containerSecurityContext.runAsUser (DEPRECATED)
+  ## @param webModelerPostgresql.primary.containerSecurityContext.capabilities.drop (DEPRECATED)
+  ## @param webModelerPostgresql.primary.containerSecurityContext.seccompProfile.type (DEPRECATED)
   primary:
     containerSecurityContext:
       enabled: true
@@ -2070,9 +2070,9 @@ webModelerPostgresql:
         drop: ["ALL"]
       seccompProfile:
         type: RuntimeDefault
-    ## @param webModelerPostgresql.primary.podSecurityContext.enabled
-    ## @param webModelerPostgresql.primary.podSecurityContext.runAsNonRoot
-    ## @param webModelerPostgresql.primary.podSecurityContext.fsGroup
+    ## @param webModelerPostgresql.primary.podSecurityContext.enabled (DEPRECATED)
+    ## @param webModelerPostgresql.primary.podSecurityContext.runAsNonRoot (DEPRECATED)
+    ## @param webModelerPostgresql.primary.podSecurityContext.fsGroup (DEPRECATED)
     podSecurityContext:
       enabled: true
       runAsNonRoot: true
@@ -3262,13 +3262,13 @@ optimize:
 ####### ###### #    #  ####    #   #  ####   ####  ###### #    # #    #  ####  #    #
 #####################################################################################
 
-## @section Elasticsearch Parameters
+## @section Elasticsearch Parameters (DEPRECATED)
 
-## @extra elasticsearch
+## @extra elasticsearch (DEPRECATED)
 elasticsearch:
-  ## @param elasticsearch.enabled
+  ## @param elasticsearch.enabled (DEPRECATED)
   enabled: false
-  ## @extra elasticsearch.global.compatibility Compatibility adaptations for Kubernetes platforms
+  ## @extra elasticsearch.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
   global:
     ## Compatibility adaptations for Kubernetes platforms
     ##
@@ -3276,40 +3276,40 @@ elasticsearch:
       ## Compatibility adaptations for Openshift
       ##
       openshift:
-        ## @param elasticsearch.global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
+        ## @param elasticsearch.global.compatibility.openshift.adaptSecurityContext (DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
         ##
         adaptSecurityContext: '{{ .Values.global.compatibility.openshift.adaptSecurityContext | default "disabled" }}'
   # https://hub.docker.com/r/bitnami/elasticsearch/tags
   image:
-    ## @param elasticsearch.image.repository
+    ## @param elasticsearch.image.repository (DEPRECATED)
     repository: bitnamilegacy/elasticsearch
-    ## @param elasticsearch.image.tag
+    ## @param elasticsearch.image.tag (DEPRECATED)
     tag: 8.18.0
-    ## @param elasticsearch.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
+    ## @param elasticsearch.image.digest (DEPRECATED) can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
-  ## @skip elasticsearch.extraConfig Append extra configuration to the elasticsearch node configuration
+  ## @skip elasticsearch.extraConfig (DEPRECATED) Append extra configuration to the elasticsearch node configuration
   extraConfig:
     # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
     logger.org.elasticsearch.deprecation: "OFF"
   master:
-    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    ## @param elasticsearch.master.replicaCount (DEPRECATED) defines number of master-elegible replicas to deploy
     replicaCount: 3
-    ## @param elasticsearch.master.podAntiAffinityPreset defines Pod anti-affinity preset. Ignored if master.affinity is set
+    ## @param elasticsearch.master.podAntiAffinityPreset (DEPRECATED) defines Pod anti-affinity preset. Ignored if master.affinity is set
     podAntiAffinityPreset: hard
     containerSecurityContext:
-      ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem
+      ## @param elasticsearch.master.containerSecurityContext.readOnlyRootFilesystem (DEPRECATED)
       readOnlyRootFilesystem: true
-    ## @param elasticsearch.master.masterOnly
+    ## @param elasticsearch.master.masterOnly (DEPRECATED)
     masterOnly: false
-    ## @param elasticsearch.master.heapSize
+    ## @param elasticsearch.master.heapSize (DEPRECATED)
     heapSize: 1024m
     persistence:
-      ## @param elasticsearch.master.persistence.size
+      ## @param elasticsearch.master.persistence.size (DEPRECATED)
       size: 64Gi
-    ## @skip elasticsearch.master.resources.requests.cpu cpu request
-    ## @param elasticsearch.master.resources.requests.memory request
-    ## @skip elasticsearch.master.resources.limits.cpu cpu limit
-    ## @param elasticsearch.master.resources.limits.memory memory limit
+    ## @skip elasticsearch.master.resources.requests.cpu (DEPRECATED) cpu request
+    ## @param elasticsearch.master.resources.requests.memory (DEPRECATED) request
+    ## @skip elasticsearch.master.resources.limits.cpu (DEPRECATED) cpu limit
+    ## @param elasticsearch.master.resources.limits.memory (DEPRECATED) memory limit
     ## TODO: remove the skip tag on the cpu keys and add [number, string] modifiers when this issue is resolved: https://github.com/bitnami/readme-generator-for-helm/issues/173
     resources:
       requests:
@@ -3319,35 +3319,35 @@ elasticsearch:
         cpu: "2000m"
         memory: 2Gi
     extraEnvVars:
-      ## @param elasticsearch.master.extraEnvVars[0].name env
+      ## @param elasticsearch.master.extraEnvVars[0].name (DEPRECATED) env
       - name: ELASTICSEARCH_ENABLE_REST_TLS
-        ## @param elasticsearch.master.extraEnvVars[0].value env value
+        ## @param elasticsearch.master.extraEnvVars[0].value (DEPRECATED) env value
         value: "false"
   sysctlImage:
-    ## @param elasticsearch.sysctlImage.enabled
+    ## @param elasticsearch.sysctlImage.enabled (DEPRECATED)
     enabled: true
-    ## @param elasticsearch.sysctlImage.repository
+    ## @param elasticsearch.sysctlImage.repository (DEPRECATED)
     repository: bitnamilegacy/os-shell
   data:
-    ## @param elasticsearch.data.replicaCount
+    ## @param elasticsearch.data.replicaCount (DEPRECATED)
     replicaCount: 0
   coordinating:
-    ## @param elasticsearch.coordinating.replicaCount
+    ## @param elasticsearch.coordinating.replicaCount (DEPRECATED)
     replicaCount: 0
   ingest:
-    ## @param elasticsearch.ingest.enabled
+    ## @param elasticsearch.ingest.enabled (DEPRECATED)
     enabled: false
   metrics:
     image:
-      ## @param elasticsearch.metrics.image.repository
+      ## @param elasticsearch.metrics.image.repository (DEPRECATED)
       repository: bitnamilegacy/elasticsearch-exporter
   volumePermissions:
     image:
-      ## @param elasticsearch.volumePermissions.image.repository
+      ## @param elasticsearch.volumePermissions.image.repository (DEPRECATED)
       repository: bitnamilegacy/os-shell
   copyTlsCerts:
     image:
-      ## @param elasticsearch.copyTlsCerts.image.repository
+      ## @param elasticsearch.copyTlsCerts.image.repository (DEPRECATED)
       repository: bitnamilegacy/os-shell
 
 #####################################################################

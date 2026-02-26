@@ -97,3 +97,53 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
+			Values: map[string]string{
+				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithMultipleSubcharts",
+			Values: map[string]string{
+				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+				"identityPostgresql.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithAllSubcharts",
+			Values: map[string]string{
+				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+				"identityPostgresql.enabled": "true",
+				"identityKeycloak.enabled":   "true",
+				"identity.enabled":           "true",
+				"webModelerPostgresql.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestRenderSucceedsWithAllBitnamiSubchartsDisabled",
+			Values: map[string]string{
+				"elasticsearch.enabled":                    "false",
+				"global.elasticsearch.enabled":             "false",
+				"orchestration.data.secondaryStorage.type": "rdbms",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

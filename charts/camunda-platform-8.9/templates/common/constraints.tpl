@@ -227,6 +227,31 @@ The following values inside your values.yaml need to be set but were not:
 
   {{/* Secret configuration warnings */}}
   {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+
+  {{/* Bitnami subchart deprecation warnings */}}
+  {{- $bitnamiSubchartsEnabled := list -}}
+  {{- if .Values.identityPostgresql.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityPostgresql" -}}
+  {{- end -}}
+  {{- if .Values.identityKeycloak.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "identityKeycloak" -}}
+  {{- end -}}
+  {{- if .Values.webModelerPostgresql.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "webModelerPostgresql" -}}
+  {{- end -}}
+  {{- if .Values.elasticsearch.enabled -}}
+    {{- $bitnamiSubchartsEnabled = append $bitnamiSubchartsEnabled "elasticsearch" -}}
+  {{- end -}}
+  {{- if $bitnamiSubchartsEnabled }}
+    {{- $warningMessage := printf "%s %s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10:"
+        (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
+        "Please migrate to externally managed services before upgrading to 8.10."
+        "For more details: https://docs.camunda.io/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 {{- end }}
 
 {{/*
