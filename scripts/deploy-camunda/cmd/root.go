@@ -502,6 +502,7 @@ func Execute() error {
 	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 	rootCmd.AddCommand(newConfigCommand())
 	rootCmd.AddCommand(newMatrixCommand())
+	rootCmd.AddCommand(newPrepareValuesCommand())
 
 	err := rootCmd.Execute()
 	if err != nil {
