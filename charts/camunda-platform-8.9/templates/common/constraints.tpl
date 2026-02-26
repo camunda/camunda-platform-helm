@@ -227,6 +227,20 @@ The following values inside your values.yaml need to be set but were not:
 
   {{/* Secret configuration warnings */}}
   {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+
+  {{/* Warn when webModeler pusher secret is auto-generated */}}
+  {{- if .Values.webModeler.enabled }}
+    {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}
+    {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher secret. This will produce a new random secret on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
 {{- end }}
 
 {{/*
