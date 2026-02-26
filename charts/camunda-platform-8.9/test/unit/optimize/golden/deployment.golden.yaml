@@ -58,8 +58,6 @@ spec:
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: ""
           resources:
             limits:
               cpu: 2000m
@@ -93,8 +91,6 @@ spec:
               value: "camunda-platform-test-elasticsearch"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
-            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
-              value: ""
             - name: SPRING_PROFILES_ACTIVE
               value: "ccsm"
             - name: OPTIMIZE_LOG_LEVEL
