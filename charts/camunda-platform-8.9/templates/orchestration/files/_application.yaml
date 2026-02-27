@@ -320,7 +320,7 @@ camunda:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-      username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
+      username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
       password: "${VALUES_OPENSEARCH_PASSWORD:}"
     {{- end }}
     # Zeebe instance
