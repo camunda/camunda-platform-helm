@@ -40,11 +40,6 @@ global:
           name: "integration-test-credentials"
         existingSecretKey: "identity-zeebe-client-password"
 
-identity:
-  firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
-
 identityKeycloak:
   postgresql:
     auth:
