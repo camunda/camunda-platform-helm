@@ -67,10 +67,6 @@ identity:
   realm:
     enabled: true
     id: $KEYCLOAK_REALM
-  firstUser:
-    secret:
-      existingSecret: "integration-test-credentials"
-      existingSecretKey: "identity-user-password"
 
 identityKeycloak:
   enabled: false

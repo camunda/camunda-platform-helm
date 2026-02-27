@@ -150,6 +150,7 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 	args := []string{
 		"--absolute-chart-path", chartPath,
 		"--namespace", namespace,
+		"--run-smoke-tests",
 	}
 
 	if kubeContext != "" {

@@ -133,6 +133,12 @@ func newMatrixRunCommand() *cobra.Command {
 		keycloakProtocol         string
 		upgradeFromVersion       string
 		helmTimeout              int
+		dockerUsername           string
+		dockerPassword           string
+		ensureDockerRegistry     bool
+		dockerHubUsername        string
+		dockerHubPassword        string
+		ensureDockerHub          bool
 	)
 
 	cmd := &cobra.Command{
@@ -281,6 +287,12 @@ This command calls deploy.Execute() for each matrix entry.`,
 				KeycloakProtocol:      keycloakProtocol,
 				UpgradeFromVersion:    upgradeFromVersion,
 				HelmTimeout:           helmTimeout,
+				DockerUsername:        dockerUsername,
+				DockerPassword:        dockerPassword,
+				EnsureDockerRegistry:  ensureDockerRegistry,
+				DockerHubUsername:     dockerHubUsername,
+				DockerHubPassword:     dockerHubPassword,
+				EnsureDockerHub:       ensureDockerHub,
 			})
 
 			// Print summary (skip for dry-run/coverage since they print their own output)
@@ -330,6 +342,12 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
 	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
+	f.StringVar(&dockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env var)")
+	f.StringVar(&dockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env var)")
+	f.BoolVar(&ensureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created in each entry's namespace")
+	f.StringVar(&dockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
+	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
+	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

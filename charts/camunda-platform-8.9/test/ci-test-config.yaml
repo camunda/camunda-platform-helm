@@ -50,7 +50,7 @@ integration:
           persistence: elasticsearch-external
           platforms: [gke,eks]
         - name: opensearch
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: oske
           exclude: []

@@ -31,6 +31,8 @@ var (
 	noIncludeCRDs          bool
 	dockerUsername         string
 	dockerPassword         string
+	dockerHubUsername      string
+	dockerHubPassword      string
 	ingressHost            string
 	wait                   bool
 	atomic                 bool
@@ -43,6 +45,7 @@ var (
 	scenarioCSV            string
 	auth                   string
 	ensureDockerRegistry   bool
+	ensureDockerHub        bool
 	skipDockerLogin        bool
 	skipDependencyUpdate   bool
 	applyIntegrationCreds  bool
@@ -88,13 +91,13 @@ Examples:
 		if ctx == nil {
 			ctx = context.Background()
 		}
-		
+
 		// Pass nil for commonFiles to let BuildValuesList discover common files from ../common/
 		values, err := deployer.BuildValuesList(scenarioDir, splitCSV(scenarioCSV), auth, false, false, nil, nil)
 		if err != nil {
 			return err
 		}
-		
+
 		opts := types.Options{
 			ChartPath:              chart,
 			ReleaseName:            release,
@@ -110,6 +113,7 @@ Examples:
 			IngressHost:            ingressHost,
 			ValuesFiles:            values,
 			EnsureDockerRegistry:   ensureDockerRegistry,
+			EnsureDockerHub:        ensureDockerHub,
 			SkipDockerLogin:        skipDockerLogin,
 			SkipDependencyUpdate:   skipDependencyUpdate,
 			ApplyIntegrationCreds:  applyIntegrationCreds,
@@ -117,6 +121,8 @@ Examples:
 			ExternalSecretsStore:   externalSecretsStore,
 			DockerRegistryUsername: dockerUsername,
 			DockerRegistryPassword: dockerPassword,
+			DockerHubUsername:      dockerHubUsername,
+			DockerHubPassword:      dockerHubPassword,
 			Platform:               platform,
 			NamespacePrefix:        namespacePrefix,
 			RepoRoot:               repoRoot,
@@ -181,12 +187,15 @@ func init() {
 	rootCmd.Flags().StringVar(&ingressHost, "ingress-host", "", "ingress hostname to configure")
 
 	// Advanced deployment options
-	rootCmd.Flags().BoolVar(&ensureDockerRegistry, "ensure-docker-registry", true, "ensure Docker registry secret is created")
+	rootCmd.Flags().BoolVar(&ensureDockerRegistry, "ensure-docker-registry", true, "ensure Harbor registry pull secret (registry-camunda-cloud) is created")
+	rootCmd.Flags().BoolVar(&ensureDockerHub, "ensure-docker-hub", true, "ensure Docker Hub pull secret (index-docker-io) is created")
 	rootCmd.Flags().BoolVar(&skipDockerLogin, "skip-docker-login", false, "skip Docker login (useful when already authenticated)")
 	rootCmd.Flags().BoolVar(&skipDependencyUpdate, "skip-dependency-update", true, "skip Helm dependency update (useful when deps already updated)")
 	rootCmd.Flags().BoolVar(&applyIntegrationCreds, "apply-integration-creds", true, "apply integration test credentials if present")
-	rootCmd.Flags().StringVar(&dockerUsername, "docker-username", "", "Docker registry username (defaults to TEST_DOCKER_USERNAME_CAMUNDA_CLOUD or NEXUS_USERNAME)")
-	rootCmd.Flags().StringVar(&dockerPassword, "docker-password", "", "Docker registry password (defaults to TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD or NEXUS_PASSWORD)")
+	rootCmd.Flags().StringVar(&dockerUsername, "docker-username", "", "Harbor registry username (defaults to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME)")
+	rootCmd.Flags().StringVar(&dockerPassword, "docker-password", "", "Harbor registry password (defaults to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD)")
+	rootCmd.Flags().StringVar(&dockerHubUsername, "dockerhub-username", "", "Docker Hub username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME)")
+	rootCmd.Flags().StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD)")
 	rootCmd.Flags().BoolVar(&externalSecretsEnabled, "external-secrets-enabled", true, "enable external secrets configuration")
 	rootCmd.Flags().StringVar(&externalSecretsStore, "external-secrets-store", "", "external secrets store type (e.g., vault-backend)")
 	rootCmd.Flags().StringVar(&ttl, "ttl", "1h", "time-to-live label for namespace cleanup (e.g., 1h, 12h, 24h)")

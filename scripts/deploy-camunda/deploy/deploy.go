@@ -370,6 +370,14 @@ func redactDeployOpts(opts types.Options) map[string]interface{} {
 			}
 			return ""
 		}(),
+		"ensureDockerHub":   opts.EnsureDockerHub,
+		"dockerHubUsername": opts.DockerHubUsername,
+		"dockerHubPassword": func() string {
+			if opts.DockerHubPassword != "" {
+				return redacted
+			}
+			return ""
+		}(),
 		"skipDockerLogin":        opts.SkipDockerLogin,
 		"skipDependencyUpdate":   opts.SkipDependencyUpdate,
 		"applyIntegrationCreds":  opts.ApplyIntegrationCreds,
@@ -1343,6 +1351,10 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		ExternalSecretsStore:   externalSecretsStore,
 		DockerRegistryUsername: flags.DockerUsername,
 		DockerRegistryPassword: flags.DockerPassword,
+		EnsureDockerHub:        flags.EnsureDockerHub,
+		DockerHubUsername:      flags.DockerHubUsername,
+		DockerHubPassword:      flags.DockerHubPassword,
+		SkipDockerLogin:        flags.SkipDockerLogin,
 		Platform:               flags.Platform,
 		NamespacePrefix:        flags.NamespacePrefix,
 		RepoRoot:               flags.RepoRoot,
