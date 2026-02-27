@@ -44,7 +44,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	components := []string{"restapi", "webapp", "websockets"}
+	components := []string{"restapi", "websockets"}
 
 	for _, component := range components {
 		suite.Run(t, &DeploymentTemplateTest{
@@ -373,8 +373,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					SetValues: map[string]string{
 						"webModeler.enabled":                  "true",
 						"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"global.elasticsearch.enabled": "true",
-				"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled":        "true",
+						"elasticsearch.enabled":               "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
@@ -677,7 +677,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress":               "example@example.com",
 				"webModeler.restapi.extraConfiguration[0].file":     "testFile",
 				"webModeler.restapi.extraConfiguration[0].content":  "this is a test",
-				"webModeler.webapp.extraConfiguration.testFile":     "this is a test",
 				"webModeler.websockets.extraConfiguration.testFile": "this is a test",
 				"global.elasticsearch.enabled":                      "true",
 				"elasticsearch.enabled":                             "true",
@@ -721,7 +720,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				expectedEnvNames := map[string]string{
 					"websockets": "PUSHER_APP_SECRET",
-					"webapp":     "PUSHER_SECRET",
 					"restapi":    "RESTAPI_PUSHER_SECRET",
 				}
 

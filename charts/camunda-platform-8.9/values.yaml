@@ -1357,7 +1357,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.0-alpha4
+    tag: 8.9.0-alpha5-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1595,11 +1595,11 @@ webModeler:
     ## @param webModeler.restapi.resources.limits.memory
     resources:
       requests:
-        cpu: 500m
-        memory: 1Gi
+        cpu: 900m
+        memory: 1280Mi
       limits:
-        cpu: 1000m
-        memory: 2Gi
+        cpu: 1800m
+        memory: 2560Mi
 
     ## @extra webModeler.restapi.service configuration of the WebModeler restapi service
     service:
@@ -1626,179 +1626,6 @@ webModeler:
     ## @param webModeler.restapi.zeebeClientConfigPath can be used to set a custom path for the Zeebe client configuration file
     zeebeClientConfigPath: /tmp/zeebe_client_cache.txt
 
-  # WebModeler.
-  #    # ###### #####    ##   #####  #####
-  #    # #      #    #  #  #  #    # #    #
-  #    # #####  #####  #    # #    # #    #
-  # ## # #      #    # ###### #####  #####
-  ##  ## #      #    # #    # #      #
-  #    # ###### #####  #    # #      #
-  ## @section WebModeler - WebApp Parameters
-  ## @extra webModeler.webapp. configuration of the WebModeler webapp component
-  webapp:
-    ## @extra webModeler.webapp.image configuration of the webapp Docker image
-    image:
-      ## @param webModeler.webapp.image.repository defines which image repository to use for the webapp Docker image
-      repository: camunda/web-modeler-webapp
-      ## @param webModeler.webapp.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-      digest: ""
-
-    ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
-    sidecars: []
-    ## @param webModeler.webapp.initContainers can be used to set up extra init containers for the application Pod
-    initContainers: []
-
-    ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations. Supports templating (e.g., {{ .Release.Name }}).
-    podAnnotations: {}
-    ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels. Supports templating (e.g., {{ .Release.Name }}).
-    podLabels: {}
-
-    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.
-    env: []
-    ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
-    envFrom: []
-    ## @param webModeler.webapp.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-    command: []
-    ## @param webModeler.webapp.extraVolumes can be used to define extra volumes for the webapp pods, useful for TLS and self-signed certificates
-    extraVolumes: []
-    ## @param webModeler.webapp.extraVolumeMounts can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates
-    extraVolumeMounts: []
-
-    ## @param webModeler.webapp.replicas can be used to set the number of replicas for the webapp deployment
-    replicas: 1
-
-    ## @extra webModeler.webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
-    ## @param webModeler.webapp.podSecurityContext.runAsNonRoot
-    ## @param webModeler.webapp.podSecurityContext.fsGroup
-    podSecurityContext:
-      runAsNonRoot: true
-      fsGroup: 1001
-      ## @extra webModeler.webapp.podSecurityContext.seccompProfile
-      seccompProfile:
-        ## @param webModeler.webapp.podSecurityContext.seccompProfile.type
-        type: RuntimeDefault
-    ## @extra webModeler.webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
-    ## @param webModeler.webapp.containerSecurityContext.privileged
-    ## @param webModeler.webapp.containerSecurityContext.readOnlyRootFilesystem
-    ## @param webModeler.webapp.containerSecurityContext.allowPrivilegeEscalation
-    ## @param webModeler.webapp.containerSecurityContext.runAsNonRoot
-    ## @param webModeler.webapp.containerSecurityContext.runAsUser
-    containerSecurityContext:
-      allowPrivilegeEscalation: false
-      privileged: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      runAsUser: 1001
-      ## @extra webModeler.webapp.containerSecurityContext.seccompProfile
-      seccompProfile:
-        ## @param webModeler.webapp.containerSecurityContext.seccompProfile.type
-        type: RuntimeDefault
-
-    ## @extra webModeler.webapp.startupProbe configuration of the webapp startup probe
-    startupProbe:
-      ## @param webModeler.webapp.startupProbe.enabled if true, the startup probe will be enabled for the webapp container
-      enabled: false
-      ## @param webModeler.webapp.startupProbe.scheme defines the startup probe schema used on calling the probePath
-      scheme: HTTP
-      ## @param webModeler.webapp.startupProbe.probePath defines the HTTP endpoint used for the startup probe
-      probePath: /health/liveness
-      ## @param webModeler.webapp.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
-      initialDelaySeconds: 15
-      ## @param webModeler.webapp.startupProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param webModeler.webapp.startupProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
-      successThreshold: 1
-      ## @param webModeler.webapp.startupProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
-      failureThreshold: 5
-      ## @param webModeler.webapp.startupProbe.timeoutSeconds defines the number of seconds after which the probe times out
-      timeoutSeconds: 1
-
-    ## @extra webModeler.webapp.readinessProbe configuration of the webapp readiness probe
-    readinessProbe:
-      ## @param webModeler.webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
-      enabled: true
-      ## @param webModeler.webapp.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
-      scheme: HTTP
-      ## @param webModeler.webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
-      probePath: /health/readiness
-      ## @param webModeler.webapp.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
-      initialDelaySeconds: 15
-      ## @param webModeler.webapp.readinessProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param webModeler.webapp.readinessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
-      successThreshold: 1
-      ## @param webModeler.webapp.readinessProbe.failureThreshold defines when the probe is considered failed so the Pod will be marked unready
-      failureThreshold: 5
-      ## @param webModeler.webapp.readinessProbe.timeoutSeconds defines the number of seconds after which the probe times out
-      timeoutSeconds: 1
-
-    ## @extra webModeler.webapp.livenessProbe configuration of the webapp liveness probe
-    livenessProbe:
-      ## @param webModeler.webapp.livenessProbe.enabled if true, the liveness probe will be enabled for the webapp container
-      enabled: false
-      ## @param webModeler.webapp.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
-      scheme: HTTP
-      ## @param webModeler.webapp.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
-      probePath: /health/liveness
-      ## @param webModeler.webapp.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
-      initialDelaySeconds: 15
-      ## @param webModeler.webapp.livenessProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param webModeler.webapp.livenessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
-      successThreshold: 1
-      ## @param webModeler.webapp.livenessProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
-      failureThreshold: 5
-      ## @param webModeler.webapp.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
-      timeoutSeconds: 1
-
-    ## Metrics configuration
-    metrics:
-      ## @param webModeler.webapp.metrics.prometheus Prometheus metrics endpoint
-      prometheus: /metrics
-
-    ## @param webModeler.webapp.nodeSelector can be used to select the nodes the webapp pods should run on
-    nodeSelector: {}
-    ## @param webModeler.webapp.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-    tolerations: []
-    ## @param webModeler.webapp.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-    affinity: {}
-
-    ## @extra webModeler.webapp.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    ## @param webModeler.webapp.resources.requests.cpu
-    ## @param webModeler.webapp.resources.requests.memory
-    ## @param webModeler.webapp.resources.limits.cpu
-    ## @param webModeler.webapp.resources.limits.memory
-    resources:
-      requests:
-        cpu: 400m
-        memory: 256Mi
-      limits:
-        cpu: 800m
-        memory: 512Mi
-
-    ## @extra webModeler.webapp.service configuration of the WebModeler webapp service
-    service:
-      ## @param webModeler.webapp.service.annotations can be used to define annotations which will be applied to the service
-      annotations: {}
-      ## @param webModeler.webapp.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-      type: ClusterIP
-      ## @param webModeler.webapp.service.port defines the port of the service
-      port: 80
-      ## @param webModeler.webapp.service.managementPort defines the management port of the service
-      managementPort: 8071
-
-    ## @param webModeler.webapp.configuration if specified, contents will be used as the application.yaml
-    configuration: ""
-    ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-    extraConfiguration: {}
-    ## @param webModeler.webapp.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-    dnsPolicy: ""
-    ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-    dnsConfig: {}
-    ## @param webModeler.webapp.nodeEnv can be used to set the node environment.
-    nodeEnv: production
-    ## @param webModeler.webapp.nodeOptions can be used to set the NODE_OPTIONS env var.
-    nodeOptions: "--max-old-space-size=128"
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####

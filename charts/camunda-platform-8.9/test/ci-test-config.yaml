@@ -22,6 +22,7 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
+          flow: install,upgrade-minor
           auth: keycloak
           shortname: eske
           exclude: []

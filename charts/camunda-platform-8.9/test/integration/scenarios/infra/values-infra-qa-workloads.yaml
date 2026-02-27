@@ -88,14 +88,6 @@ webModeler:
       key: workload
       operator: Equal
       value: qa-workloads
-  webapp:
-    nodeSelector:
-      workload: qa-workloads
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: qa-workloads
   websockets:
     nodeSelector:
       workload: qa-workloads
