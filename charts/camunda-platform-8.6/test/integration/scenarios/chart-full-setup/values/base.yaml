@@ -26,7 +26,7 @@ global:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-      
+
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
@@ -55,22 +55,6 @@ zeebeGateway:
       host: "zeebe-{{ .Values.global.ingress.host }}"
       tls:
         enabled: true
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-admin-client-token"
-      webModeler:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
-      console:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}"
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-console-client-token"
-      optimize:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "identity-optimize-client-token"
-      # NOTE: No orchestration or connectors auth config here since they use basic auth
         # A wildcard certificate will be used.
         secretName: camunda-platform-zeebe-gateway
       annotations:
@@ -78,27 +62,48 @@ zeebeGateway:
         external-dns.alpha.kubernetes.io/ttl: "60"
 
 # -----------------------------------------------------------------------------
-# Connectors
+# Identity
 # -----------------------------------------------------------------------------
 identity:
   enabled: true
   contextPath: "/identity"
   firstUser:
-    secret:
-      existingSecret: "integration-test-credentials"
-      existingSecretKey: "identity-user-password"
-
-identityKeycloak:
-  enabled: true
-  postgresql:
-    auth:
-      existingSecret: "integration-test-credentials"
-      secretKeys:
-        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
-        userPasswordKey: "identity-keycloak-postgresql-user-password"
-  auth:
     existingSecret: "integration-test-credentials"
-    passwordSecretKey: "identity-keycloak-admin-password"
+    existingSecretKey: "identity-user-password"
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+
+# -----------------------------------------------------------------------------
+# Connectors
+# -----------------------------------------------------------------------------
 connectors:
   contextPath: "/connectors"
 
