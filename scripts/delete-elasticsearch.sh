@@ -35,7 +35,7 @@ Options:
   --external-secret-file PATH      ExternalSecret YAML to delete (default: ${EXTERNAL_SECRET_FILE})
   --skip-external-secret           Do not delete ExternalSecret
   --purge-pvcs                     Delete PVCs labeled with app.kubernetes.io/instance=<release>
-  --pool-index N                   ES pool index (e.g. 0 or 1); appends -pool-N to derived namespace
+  --pool-index N                   ES pool index (e.g. 0, 1, 2, 3); appends -pool-N to derived namespace
   --delete-namespace               Delete the namespace after uninstall
   --timeout DURATION               Helm uninstall wait timeout (default: ${HELM_TIMEOUT})
   -h, --help                       Show this help

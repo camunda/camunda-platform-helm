@@ -33,3 +33,6 @@ scripts/deploy-camunda/deploy-camunda
 scripts/deploy-camunda/.env
 
 charts/camunda-platform*/test/e2e/package-lock.json
+
+diagnostics/
+STATE.md

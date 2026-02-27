@@ -958,9 +958,15 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 
 	// Default ES pool index to 0 if not set (for local dev / manual runs).
 	// This ensures $ES_POOL_INDEX resolves in elasticsearch-external.yaml values files.
-	if os.Getenv("ES_POOL_INDEX") == "" {
-		os.Setenv("ES_POOL_INDEX", "0")
+	// Priority: flags.ESPoolIndex (set by matrix runner) > env var > "0".
+	esPoolIndex := flags.ESPoolIndex
+	if esPoolIndex == "" {
+		esPoolIndex = os.Getenv("ES_POOL_INDEX")
 	}
+	if esPoolIndex == "" {
+		esPoolIndex = "0"
+	}
+	os.Setenv("ES_POOL_INDEX", esPoolIndex)
 
 	// Set Keycloak environment variables
 	if flags.KeycloakHost != "" {
@@ -1290,10 +1296,10 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Str("realm", prepared.RealmName).
 		Msg("Starting scenario deployment")
 
-	// Determine timeout duration from flags (default to 5 minutes if not set)
+	// Determine timeout duration from flags (default to 10 minutes if not set)
 	timeoutMinutes := flags.Timeout
 	if timeoutMinutes <= 0 {
-		timeoutMinutes = 5
+		timeoutMinutes = 10
 	}
 
 	identifier := fmt.Sprintf("%s-%s-%s", scenarioCtx.Release, scenarioCtx.ScenarioName, time.Now().Format("20060102150405"))
@@ -1328,7 +1334,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Namespace:              scenarioCtx.Namespace,
 		KubeContext:            flags.KubeContext,
 		Wait:                   true,
-		Atomic:                 true,
+		Atomic:                 false, // Intentionally not atomic: failed pods must stay alive for post-failure diagnostics. Namespace cleanup handles teardown.
 		Timeout:                time.Duration(timeoutMinutes) * time.Minute,
 		ValuesFiles:            prepared.ValuesFiles,
 		EnsureDockerRegistry:   flags.EnsureDockerRegistry,
