@@ -13,6 +13,7 @@ import (
 
 	"github.com/jwalton/gchalk"
 
+	"scripts/camunda-core/pkg/docker"
 	"scripts/camunda-core/pkg/executil"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
@@ -113,6 +114,26 @@ type RunOptions struct {
 	// Applies uniformly to all matrix entries (install, upgrade Step 1, upgrade Step 2).
 	// When <= 0, deploy.Execute defaults to 5 minutes.
 	HelmTimeout int
+	// DockerUsername is the Harbor registry username for pulling images.
+	// When empty, the deployer falls back to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, or NEXUS_USERNAME env vars.
+	DockerUsername string
+	// DockerPassword is the Harbor registry password for pulling images.
+	// When empty, the deployer falls back to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, or NEXUS_PASSWORD env vars.
+	DockerPassword string
+	// EnsureDockerRegistry creates a Harbor registry secret in each entry's namespace.
+	// When true, the deployer performs docker login and creates a registry-camunda-cloud
+	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
+	EnsureDockerRegistry bool
+	// DockerHubUsername is the Docker Hub registry username.
+	// When empty, the deployer falls back to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env vars.
+	DockerHubUsername string
+	// DockerHubPassword is the Docker Hub registry password.
+	// When empty, the deployer falls back to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env vars.
+	DockerHubPassword string
+	// EnsureDockerHub creates a Docker Hub pull secret (index-docker-io) in each entry's namespace.
+	// When true, the deployer performs docker login and creates an index-docker-io
+	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
+	EnsureDockerHub bool
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -143,6 +164,21 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 		return coverageReport(entries, opts), nil
 	}
 
+	// Perform docker login ONCE before dispatching entries. Running `docker login`
+	// concurrently causes keychain conflicts on macOS ("item already exists" -25299).
+	// After this, each entry's deployer runs with SkipDockerLogin=true so it only
+	// creates the per-namespace K8s pull secrets without touching `docker login`.
+	if opts.EnsureDockerHub {
+		if err := docker.EnsureDockerHubLogin(ctx, opts.DockerHubUsername, opts.DockerHubPassword); err != nil {
+			return nil, fmt.Errorf("failed to ensure Docker Hub login: %w", err)
+		}
+	}
+	if opts.EnsureDockerRegistry {
+		if err := docker.EnsureHarborLogin(ctx, opts.DockerUsername, opts.DockerPassword); err != nil {
+			return nil, fmt.Errorf("failed to ensure Harbor login: %w", err)
+		}
+	}
+
 	parallel := opts.MaxParallel > 1
 	if parallel {
 		logging.Logger.Info().
@@ -170,15 +206,17 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 
 // dryRunEntry holds resolved details for one matrix entry in dry-run mode.
 type dryRunEntry struct {
-	entry       Entry
-	namespace   string
-	kubeCtx     string
-	platform    string
-	infraType   string
-	ingressHost string
-	envFile     string
-	useVault    bool
-	deleteNS    bool
+	entry                Entry
+	namespace            string
+	kubeCtx              string
+	platform             string
+	infraType            string
+	ingressHost          string
+	envFile              string
+	useVault             bool
+	deleteNS             bool
+	ensureDockerRegistry bool
+	ensureDockerHub      bool
 	// Resolved layer config (derived from scenario name + explicit overrides).
 	identity    string
 	persistence string
@@ -239,24 +277,26 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 			}
 
 			resolved = append(resolved, dryRunEntry{
-				entry:              entry,
-				namespace:          namespace,
-				kubeCtx:            kubeCtx,
-				platform:           platform,
-				infraType:          entry.InfraType,
-				ingressHost:        ingressHost,
-				envFile:            envFile,
-				useVault:           useVault,
-				deleteNS:           opts.DeleteNamespaceFirst,
-				identity:           deployConfig.Identity,
-				persistence:        deployConfig.Persistence,
-				features:           deployConfig.Features,
-				layerFiles:         layerFiles,
-				upgradeFromVersion: resolveUpgradeFromVersionQuiet(opts.RepoRoot, entry, opts.UpgradeFromVersion),
-				preUpgradeScript:   resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
-				upgradeOnly:        versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
-				step1ValuesFrom:    resolveStep1ValuesFromQuiet(entry),
-				chartRootOverlays:  resolveChartRootOverlaysQuiet(entry.ChartPath, entry),
+				entry:                entry,
+				namespace:            namespace,
+				kubeCtx:              kubeCtx,
+				platform:             platform,
+				infraType:            entry.InfraType,
+				ingressHost:          ingressHost,
+				envFile:              envFile,
+				useVault:             useVault,
+				deleteNS:             opts.DeleteNamespaceFirst,
+				ensureDockerRegistry: opts.EnsureDockerRegistry,
+				ensureDockerHub:      opts.EnsureDockerHub,
+				identity:             deployConfig.Identity,
+				persistence:          deployConfig.Persistence,
+				features:             deployConfig.Features,
+				layerFiles:           layerFiles,
+				upgradeFromVersion:   resolveUpgradeFromVersionQuiet(opts.RepoRoot, entry, opts.UpgradeFromVersion),
+				preUpgradeScript:     resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
+				upgradeOnly:          versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
+				step1ValuesFrom:      resolveStep1ValuesFromQuiet(entry),
+				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -458,6 +498,12 @@ func formatDryRunOutput(entries []dryRunEntry, versions []string, opts RunOption
 			}
 			if e.deleteNS {
 				fmt.Fprintf(&b, "      %s %s\n", dryKey("delete-ns:"), dryWarn("true"))
+			}
+			if e.ensureDockerRegistry {
+				fmt.Fprintf(&b, "      %s    %s\n", dryKey("docker:"), dryWarn("true"))
+			}
+			if e.ensureDockerHub {
+				fmt.Fprintf(&b, "      %s %s\n", dryKey("dockerhub:"), dryWarn("true"))
 			}
 			if len(e.entry.Exclude) > 0 {
 				fmt.Fprintf(&b, "      %s   %s\n", dryKey("exclude:"), dryWarn(strings.Join(e.entry.Exclude, ", ")))
@@ -1068,6 +1114,15 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		ImageTags:            entry.ImageTags,
 		UpgradeFlow:          entry.Upgrade,
 		DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
+		DockerUsername:       opts.DockerUsername,
+		DockerPassword:       opts.DockerPassword,
+		EnsureDockerRegistry: opts.EnsureDockerRegistry,
+		DockerHubUsername:    opts.DockerHubUsername,
+		DockerHubPassword:    opts.DockerHubPassword,
+		EnsureDockerHub:      opts.EnsureDockerHub,
+		// Docker login is performed once in Run() before parallel dispatch.
+		// Each entry only creates per-namespace K8s pull secrets.
+		SkipDockerLogin: true,
 		// Build chart-root overlays: enterprise (if flagged) + digest (always in CI).
 		ChartRootOverlays: func() []string {
 			var overlays []string

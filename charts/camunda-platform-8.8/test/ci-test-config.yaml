@@ -113,6 +113,7 @@ integration:
           auth: keycloak
           shortname: esarm
           exclude: []
+          platforms: [gke]
           infra-type:
             gke: arm
           flow: install

@@ -34,9 +34,12 @@ type Options struct {
 	CIMetadata CIMetadata
 
 	// Registry/cluster behaviors
-	EnsureDockerRegistry   bool
-	DockerRegistryUsername string
-	DockerRegistryPassword string
+	EnsureDockerRegistry   bool   // Create registry-camunda-cloud pull secret (Harbor)
+	DockerRegistryUsername string // Harbor username (falls back to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, NEXUS_USERNAME)
+	DockerRegistryPassword string // Harbor password (falls back to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, NEXUS_PASSWORD)
+	EnsureDockerHub        bool   // Create index-docker-io pull secret (Docker Hub)
+	DockerHubUsername      string // Docker Hub username (falls back to DOCKERHUB_USERNAME, TEST_DOCKER_USERNAME)
+	DockerHubPassword      string // Docker Hub password (falls back to DOCKERHUB_PASSWORD, TEST_DOCKER_PASSWORD)
 	SkipDockerLogin        bool
 	SkipDependencyUpdate   bool
 	ApplyIntegrationCreds  bool
