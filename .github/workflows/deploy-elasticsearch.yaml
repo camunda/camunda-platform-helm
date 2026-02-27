@@ -14,7 +14,7 @@ on:
         default: "21.6.3"
         type: string
       pool-index:
-        description: "ES pool index (0 or 1)"
+        description: "ES pool index (0-3)"
         required: false
         default: ""
         type: string
@@ -32,7 +32,7 @@ on:
         type: choice
         options: ["21.6.3"]
       pool-index:
-        description: "ES pool index (0 or 1); leave empty for legacy single-cluster"
+        description: "ES pool index (0-3); leave empty for legacy single-cluster"
         required: false
         default: ""
         type: string

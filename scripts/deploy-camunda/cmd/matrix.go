@@ -132,6 +132,7 @@ func newMatrixRunCommand() *cobra.Command {
 		keycloakHost             string
 		keycloakProtocol         string
 		upgradeFromVersion       string
+		helmTimeout              int
 	)
 
 	cmd := &cobra.Command{
@@ -279,6 +280,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				KeycloakHost:          keycloakHost,
 				KeycloakProtocol:      keycloakProtocol,
 				UpgradeFromVersion:    upgradeFromVersion,
+				HelmTimeout:           helmTimeout,
 			})
 
 			// Print summary (skip for dry-run/coverage since they print their own output)
@@ -327,6 +329,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&keycloakHost, "keycloak-host", "", "Keycloak external host (defaults to "+config.DefaultKeycloakHost+")")
 	f.StringVar(&keycloakProtocol, "keycloak-protocol", "", "Keycloak protocol (defaults to "+config.DefaultKeycloakProtocol+")")
 	f.StringVar(&upgradeFromVersion, "upgrade-from-version", "", "Override the auto-resolved 'from' chart version for upgrade flows (e.g., 13.5.0)")
+	f.IntVar(&helmTimeout, "timeout", 10, "Timeout in minutes for Helm deployment (applies to all entries)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)

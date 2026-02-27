@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jwalton/gchalk"
 
@@ -21,6 +23,10 @@ import (
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 )
+
+// numESPools is the number of Elasticsearch pools across which matrix entries
+// are distributed via round-robin. This matches the 4-cluster pool infra.
+const numESPools = 4
 
 // RunOptions controls matrix execution.
 type RunOptions struct {
@@ -103,6 +109,10 @@ type RunOptions struct {
 	// When set, this version is used instead of resolving from version-matrix JSON files.
 	// Only applies to entries with upgrade flows (upgrade-patch, upgrade-minor, modular-upgrade-minor).
 	UpgradeFromVersion string
+	// HelmTimeout is the timeout in minutes for each Helm deployment.
+	// Applies uniformly to all matrix entries (install, upgrade Step 1, upgrade Step 2).
+	// When <= 0, deploy.Execute defaults to 5 minutes.
+	HelmTimeout int
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -111,6 +121,7 @@ type RunResult struct {
 	Namespace   string
 	KubeContext string
 	Error       error
+	Diagnostics string // Post-failure namespace diagnostics (pods, events, logs)
 }
 
 // Run executes the matrix entries, building RuntimeFlags for each and calling deploy.Execute().
@@ -668,6 +679,7 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 	versions := VersionOrder(entries)
 	groups := GroupByVersion(entries)
 
+	globalIndex := 0
 	for _, version := range versions {
 		versionEntries := groups[version]
 
@@ -677,7 +689,8 @@ func runSequential(ctx context.Context, entries []Entry, opts RunOptions) ([]Run
 			Msg("Processing version")
 
 		for _, entry := range versionEntries {
-			result := executeEntry(ctx, entry, opts)
+			result := executeEntry(ctx, entry, opts, globalIndex)
+			globalIndex++
 			results = append(results, result)
 
 			if result.Error != nil {
@@ -754,7 +767,7 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 				return
 			}
 
-			result := executeEntry(runCtx, e, opts)
+			result := executeEntry(runCtx, e, opts, idx)
 			results[idx] = result
 
 			if result.Error != nil {
@@ -915,12 +928,72 @@ func resolveIngressBaseDomain(opts RunOptions, platform string) string {
 	return opts.IngressBaseDomain
 }
 
+// diagnosticsDir is the directory where per-namespace diagnostic files are written.
+const diagnosticsDir = "diagnostics"
+
+// collectDiagnostics gathers best-effort namespace diagnostics (pods, events, logs from
+// non-ready pods) after a deployment failure and writes them to a file under diagnosticsDir.
+// Uses a fresh background context so that diagnostics work even when the parent context
+// is cancelled (e.g., StopOnFailure).
+// Returns the file path on success, or empty string if collection/write fails.
+// Never returns an error — all failures are silently swallowed.
+func collectDiagnostics(namespace, kubeContext string) string {
+	// Use a fresh context with a generous timeout for the full collection.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var b strings.Builder
+
+	// Pods
+	if pods, err := kube.GetPods(ctx, kubeContext, namespace); err == nil && pods != "" {
+		fmt.Fprintf(&b, "PODS:\n%s\n\n", pods)
+	}
+
+	// Events (truncate to last 20 lines)
+	if events, err := kube.GetEvents(ctx, kubeContext, namespace); err == nil && events != "" {
+		lines := strings.Split(events, "\n")
+		if len(lines) > 21 { // 1 header + 20 events
+			lines = append(lines[:1], lines[len(lines)-20:]...)
+		}
+		fmt.Fprintf(&b, "EVENTS (last 20):\n%s\n\n", strings.Join(lines, "\n"))
+	}
+
+	// Logs from non-ready pods (untruncated — the file can hold the full output)
+	if nonReady, err := kube.GetNonReadyPods(ctx, kubeContext, namespace); err == nil {
+		for _, pod := range nonReady {
+			if logs, err := kube.GetPodLogs(ctx, kubeContext, namespace, pod, 50); err == nil && logs != "" {
+				fmt.Fprintf(&b, "LOGS (%s, last 50 lines):\n%s\n\n", pod, logs)
+			}
+		}
+	}
+
+	content := b.String()
+	if content == "" {
+		return ""
+	}
+
+	// Write to file: diagnostics/<namespace>.txt
+	if err := os.MkdirAll(diagnosticsDir, 0o755); err != nil {
+		logging.Logger.Warn().Err(err).Msg("failed to create diagnostics directory")
+		return ""
+	}
+	filePath := filepath.Join(diagnosticsDir, namespace+".txt")
+	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
+		logging.Logger.Warn().Err(err).Str("path", filePath).Msg("failed to write diagnostics file")
+		return ""
+	}
+
+	return filePath
+}
+
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
+// The entryIndex is used for round-robin ES pool distribution when ES_POOL_INDEX is not
+// already set in the environment (i.e., not in CI where workflow-vars assigns a per-run pool).
 // The flow determines the execution strategy:
 //   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
 //   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
 //   - Install (default): Single-step fresh install.
-func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
+func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex int) RunResult {
 	namespace := buildNamespace(opts.NamespacePrefix, entry)
 	baseNamespace := buildBaseNamespace(entry)
 
@@ -953,6 +1026,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 
 	// Build the base flags (used for single-step install or as Step 2 for upgrades).
 	flags := &config.RuntimeFlags{
+		Timeout:               opts.HelmTimeout,
 		ChartPath:             entry.ChartPath,
 		ScenarioPath:          scenarioDir,
 		Namespace:             baseNamespace,
@@ -1005,6 +1079,15 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		}(),
 	}
 
+	// Assign ES pool index for round-robin distribution across pools.
+	// In CI, ES_POOL_INDEX is set by workflow-vars (all entries in a run share one pool).
+	// For local matrix run, distribute entries across pools by round-robin on entry index.
+	if envPool := os.Getenv("ES_POOL_INDEX"); envPool != "" {
+		flags.ESPoolIndex = envPool
+	} else {
+		flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
+	}
+
 	logging.Logger.Info().
 		Str("version", entry.Version).
 		Str("scenario", entry.Scenario).
@@ -1022,12 +1105,14 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 		Str("persistence", entry.Persistence).
 		Strs("features", entry.Features).
 		Bool("vaultBackedSecrets", useVault).
+		Str("esPoolIndex", flags.ESPoolIndex).
 		Msg("Deploying matrix entry")
 
 	// Two-step upgrade flow: install old version first, then upgrade to current.
 	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
 		if err := executeTwoStepUpgrade(ctx, entry, flags, opts); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+			diag := collectDiagnostics(namespace, kubeCtx)
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag}
 		}
 		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
 	}
@@ -1036,14 +1121,16 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	// No Step 1 install — the prior "install" flow must have already deployed the old version.
 	if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
 		if err := executeUpgradeOnly(ctx, entry, flags, opts); err != nil {
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+			diag := collectDiagnostics(namespace, kubeCtx)
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag}
 		}
 		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
 	}
 
 	// Single-step install (default flow).
 	if err := deploy.Execute(ctx, flags); err != nil {
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
+		diag := collectDiagnostics(namespace, kubeCtx)
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag}
 	}
 
 	return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
@@ -1368,6 +1455,10 @@ func PrintRunSummary(results []RunResult) string {
 					fmt.Fprintf(&b, "    Command: %s\n", helmErr.ShortCommand())
 				} else {
 					fmt.Fprintf(&b, "    Error: %v\n", r.Error)
+				}
+
+				if r.Diagnostics != "" {
+					fmt.Fprintf(&b, "    Diagnostics: %s\n", r.Diagnostics)
 				}
 			}
 		}

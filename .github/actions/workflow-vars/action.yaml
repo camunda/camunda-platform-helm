@@ -87,7 +87,7 @@ runs:
 
       # Deterministically route this CI run to one of 2 ES pools.
       # All scenarios within the same run_id+attempt land on the same pool for debuggability.
-      ES_POOL_INDEX=$(( 16#$(echo -n "${{ github.run_id }}-${{ github.run_attempt }}" | sha256sum | head -c 8) % 2 ))
+      ES_POOL_INDEX=$(( 16#$(echo -n "${{ github.run_id }}-${{ github.run_attempt }}" | sha256sum | head -c 8) % 4 ))
       echo "ES_POOL_INDEX=${ES_POOL_INDEX}" | tee -a $GITHUB_ENV
       echo "es-pool-index=${ES_POOL_INDEX}" >> $GITHUB_OUTPUT
 

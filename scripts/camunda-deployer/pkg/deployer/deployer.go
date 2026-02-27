@@ -7,6 +7,7 @@ import (
 	"scripts/camunda-core/pkg/docker"
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
+	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/utils"
 	"scripts/camunda-deployer/pkg/types"
 )
@@ -39,7 +40,10 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if err := labelAndAnnotateNamespace(ctx, kubeClient, o.Namespace, o.Identifier, o.CIMetadata.Flow, o.TTL, o.CIMetadata.GithubRunID, o.CIMetadata.GithubJobID, o.CIMetadata.GithubOrg, o.CIMetadata.GithubRepo, o.CIMetadata.WorkflowURL); err != nil {
-		return err
+		// Non-fatal: namespace labels are CI housekeeping metadata (TTL, GitHub run IDs).
+		// On some clusters (e.g., EKS via Teleport) the user may lack namespace PATCH RBAC.
+		logging.Logger.Warn().Err(err).Str("namespace", o.Namespace).
+			Msg("failed to label/annotate namespace (continuing without CI metadata)")
 	}
 
 	if o.EnsureDockerRegistry {

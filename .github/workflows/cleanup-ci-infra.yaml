@@ -26,6 +26,8 @@ jobs:
         pool-index:
           - "0"
           - "1"
+          - "2"
+          - "3"
     uses: ./.github/workflows/delete-elasticsearch.yaml
     with:
       distro-platform: ${{ matrix.distro-platform }}
@@ -45,6 +47,8 @@ jobs:
         pool-index:
           - "0"
           - "1"
+          - "2"
+          - "3"
     uses: ./.github/workflows/deploy-elasticsearch.yaml
     with:
       distro-platform: ${{ matrix.distro-platform }}
