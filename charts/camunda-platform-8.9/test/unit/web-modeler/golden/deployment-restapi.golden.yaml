@@ -83,11 +83,11 @@ spec:
                 name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
-              cpu: 1000m
-              memory: 2Gi
+              cpu: 1800m
+              memory: 2560Mi
             requests:
-              cpu: 500m
-              memory: 1Gi
+              cpu: 900m
+              memory: 1280Mi
           ports:
             - containerPort: 8081
               name: http
