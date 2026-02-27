@@ -62,14 +62,9 @@ global:
 # Identity (with realm creation)
 # -----------------------------------------------------------------------------
 identity:
-  enabled: true
-  contextPath: "/identity"
   realm:
     enabled: true
     id: $KEYCLOAK_REALM
-  firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
 
 # -----------------------------------------------------------------------------
 # Identity PostgreSQL (no Keycloak PostgreSQL needed)
