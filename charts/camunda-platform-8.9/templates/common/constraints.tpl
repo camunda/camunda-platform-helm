@@ -276,7 +276,7 @@ The following values inside your values.yaml need to be set but were not:
   (dict "path" "global.opensearch.enabled" "config" .Values.global.opensearch.enabled)
   }}
   {{- range $deprecatedDatabaseOptions }}
-    {{- if (and .config (eq (kindOf .config) "string")) }}
+    {{- if .config }}
         {{- $warningMessage := printf "%s %s %s %s %s"
             "[camunda][warning]"
             (printf "DEPRECATION: values.yaml is using legacy option '%s'." .path)
