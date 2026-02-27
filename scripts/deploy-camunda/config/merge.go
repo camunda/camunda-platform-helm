@@ -48,6 +48,9 @@ type RuntimeFlags struct {
 	DockerUsername           string
 	DockerPassword           string
 	EnsureDockerRegistry     bool
+	DockerHubUsername        string
+	DockerHubPassword        string
+	EnsureDockerHub          bool
 	RenderTemplates          bool
 	RenderOutputDir          string
 	ExtraValues              []string
@@ -96,6 +99,11 @@ type RuntimeFlags struct {
 	ExtraHelmArgs []string
 	// Extra --set pairs for helm (e.g., {"orchestration.upgrade.allowPreReleaseImages": "true"}).
 	ExtraHelmSets map[string]string
+
+	// SkipDockerLogin skips the `docker login` step inside the deployer.
+	// The matrix runner sets this to true after performing docker login once
+	// before parallel dispatch — preventing concurrent keychain writes.
+	SkipDockerLogin bool
 
 	// ESPoolIndex specifies which Elasticsearch pool to target (e.g., "0", "1", "2", or "3").
 	// When set, this value is used directly for $ES_POOL_INDEX substitution in values files.
@@ -173,6 +181,8 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.VaultSecretMapping, dep.VaultSecretMapping, rc.VaultSecretMapping, changed, "vault-secret-mapping")
 	MergeStringField(&flags.DockerUsername, dep.DockerUsername, rc.DockerUsername, changed, "docker-username")
 	MergeStringField(&flags.DockerPassword, dep.DockerPassword, rc.DockerPassword, changed, "docker-password")
+	MergeStringField(&flags.DockerHubUsername, dep.DockerHubUsername, rc.DockerHubUsername, changed, "dockerhub-username")
+	MergeStringField(&flags.DockerHubPassword, dep.DockerHubPassword, rc.DockerHubPassword, changed, "dockerhub-password")
 	MergeStringField(&flags.RenderOutputDir, dep.RenderOutputDir, rc.RenderOutputDir, changed, "render-output-dir")
 	MergeStringField(&flags.RepoRoot, dep.RepoRoot, rc.RepoRoot, changed, "repo-root")
 	// ChartRootOverlays: merge from config's ValuesPreset (comma-separated string → []string).
@@ -209,6 +219,7 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.AutoGenerateSecrets, dep.AutoGenerateSecrets, rc.AutoGenerateSecrets, changed, "auto-generate-secrets")
 	MergeBoolField(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst, changed, "delete-namespace")
 	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry, changed, "ensure-docker-registry")
+	MergeBoolField(&flags.EnsureDockerHub, dep.EnsureDockerHub, rc.EnsureDockerHub, changed, "ensure-docker-hub")
 	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates, changed, "render-templates")
 
 	// Test execution flags
@@ -248,6 +259,8 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.VaultSecretMapping, "", rc.VaultSecretMapping, changed, "vault-secret-mapping")
 	MergeStringField(&flags.DockerUsername, "", rc.DockerUsername, changed, "docker-username")
 	MergeStringField(&flags.DockerPassword, "", rc.DockerPassword, changed, "docker-password")
+	MergeStringField(&flags.DockerHubUsername, "", rc.DockerHubUsername, changed, "dockerhub-username")
+	MergeStringField(&flags.DockerHubPassword, "", rc.DockerHubPassword, changed, "dockerhub-password")
 	MergeStringField(&flags.RenderOutputDir, "", rc.RenderOutputDir, changed, "render-output-dir")
 	MergeStringField(&flags.RepoRoot, "", rc.RepoRoot, changed, "repo-root")
 	// ChartRootOverlays: merge from root config's ValuesPreset (comma-separated string → []string).
@@ -278,6 +291,7 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.AutoGenerateSecrets, nil, rc.AutoGenerateSecrets, changed, "auto-generate-secrets")
 	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst, changed, "delete-namespace")
 	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry, changed, "ensure-docker-registry")
+	MergeBoolField(&flags.EnsureDockerHub, nil, rc.EnsureDockerHub, changed, "ensure-docker-hub")
 	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates, changed, "render-templates")
 
 	// Test execution flags

@@ -247,19 +247,32 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 }
 
 func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, username, password string) error {
+	return c.EnsureRegistrySecret(ctx, namespace, "registry-camunda-cloud", "registry.camunda.cloud", username, password)
+}
+
+// EnsureDockerHubSecret creates or updates the "index-docker-io" pull secret for Docker Hub.
+func (c *Client) EnsureDockerHubSecret(ctx context.Context, namespace, username, password string) error {
+	return c.EnsureRegistrySecret(ctx, namespace, "index-docker-io", "https://index.docker.io/v1/", username, password)
+}
+
+// EnsureRegistrySecret creates or updates a Docker registry pull secret with the given
+// secret name and registry URL in the specified namespace. Credentials are required;
+// if either username or password is empty the call is a no-op.
+func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName, registryURL, username, password string) error {
 	if username == "" || password == "" {
-		logging.Logger.Debug().Str("namespace", namespace).Msg("skipping docker registry secret creation (credentials not provided)")
+		logging.Logger.Debug().Str("namespace", namespace).Str("secret", secretName).Msg("skipping docker registry secret creation (credentials not provided)")
 		return nil
 	}
 
 	logging.Logger.Debug().
 		Str("namespace", namespace).
-		Str("secret", "registry-camunda-cloud").
+		Str("secret", secretName).
+		Str("registry", registryURL).
 		Msg("creating/updating docker registry secret")
 
 	dockerConfig := map[string]any{
 		"auths": map[string]any{
-			"registry.camunda.cloud": map[string]any{
+			registryURL: map[string]any{
 				"username": username,
 				"password": password,
 				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
@@ -272,7 +285,7 @@ func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, user
 		return fmt.Errorf("failed to marshal docker config: %w", err)
 	}
 
-	secretApply := corev1apply.Secret("registry-camunda-cloud", namespace).
+	secretApply := corev1apply.Secret(secretName, namespace).
 		WithType(corev1.SecretTypeDockerConfigJson).
 		WithData(map[string][]byte{
 			corev1.DockerConfigJsonKey: dockerConfigJSON,
@@ -286,9 +299,9 @@ func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, user
 	if err != nil {
 		// Check if error is due to namespace termination
 		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
-			return fmt.Errorf("failed to apply docker registry secret in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", namespace, c.kubeContext, err)
+			return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, namespace, c.kubeContext, err)
 		}
-		return fmt.Errorf("failed to apply docker registry secret in namespace %q (context=%q): %w", namespace, c.kubeContext, err)
+		return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
 	}
 
 	return nil

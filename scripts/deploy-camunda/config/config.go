@@ -69,6 +69,9 @@ type DeploymentConfig struct {
 	DockerUsername           string   `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
 	DockerPassword           string   `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
 	EnsureDockerRegistry     *bool    `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	DockerHubUsername        string   `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
+	DockerHubPassword        string   `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
+	EnsureDockerHub          *bool    `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
 	RenderTemplates          *bool    `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
 	RenderOutputDir          string   `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
 	ExtraValues              []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
@@ -116,6 +119,9 @@ type RootConfig struct {
 	DockerUsername           string                      `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
 	DockerPassword           string                      `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
 	EnsureDockerRegistry     *bool                       `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	DockerHubUsername        string                      `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
+	DockerHubPassword        string                      `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
+	EnsureDockerHub          *bool                       `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
 	RenderTemplates          *bool                       `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
 	RenderOutputDir          string                      `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
 	ExtraValues              []string                    `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
