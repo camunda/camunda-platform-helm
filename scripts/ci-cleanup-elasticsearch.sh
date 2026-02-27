@@ -170,7 +170,7 @@ debug() { [[ "$DEBUG" == "1" ]] && log "[DEBUG] $*" || true; }
 # --- Dry-run wrapper: skip mutations when --dry-run is set ---
 es_delete() {
   local url="$1"
-  if ((DRY_RUN)); then
+  if [ "${DRY_RUN}" -eq 1 ]; then
     log "  [dry-run] Would DELETE: ${url}"
     echo '{"acknowledged":true}'
     return 0
@@ -181,7 +181,7 @@ es_delete() {
 es_put() {
   local url="$1"
   shift
-  if ((DRY_RUN)); then
+  if [ "${DRY_RUN}" -eq 1 ]; then
     log "  [dry-run] Would PUT: ${url}"
     echo '{"acknowledged":true}'
     return 0
@@ -244,7 +244,9 @@ is_active_prefix() {
 log "=== CI Resource Cleanup - $(date -u '+%Y-%m-%dT%H:%M:%SZ') ==="
 log "  URL: ${ES_URL}"
 log "  Max index age: ${MAX_AGE_HOURS}h"
-((DRY_RUN)) && log "  MODE: DRY RUN (no deletions will be performed)"
+if [ "${DRY_RUN}" -eq 1 ]; then
+  log "  MODE: DRY RUN (no deletions will be performed)"
+fi
 
 # --- Verify ES connectivity ---
 if ! ${ES_CURL} "${ES_URL}/_cluster/health" > /dev/null 2>&1; then
@@ -554,11 +556,11 @@ if [ -s "${CI_V2_FILE}" ]; then
   #   opt-keycloak-original-zzj93rze-install-optimize-index
   # The group is everything up to and including the 8-char random ID.
   # The flow suffix (-install, -upgrade-patch, etc.) always follows the 8-char ID.
-  GROUPS=$(sed -E 's/-(install|upgrade-patch|upgrade-minor|modular-upgrade-minor)(-.*)?$//' \
+  TPL_GROUPS=$(sed -E 's/-(install|upgrade-patch|upgrade-minor|modular-upgrade-minor)([-_].*)?$//' \
     < "${CI_V2_FILE}" | sort -u || true)
 
-  if [ -n "$GROUPS" ]; then
-    for group in $GROUPS; do
+  if [ -n "$TPL_GROUPS" ]; then
+    for group in $TPL_GROUPS; do
       tpl_count=$(grep -c "^${group}" "${CI_V2_FILE}" || true)
       # Check if any indices still exist for this group
       resp=$(${ES_CURL} -s "${ES_URL}/_cat/indices/${group}-*?h=index&format=json" 2> /dev/null || echo "[]")
@@ -597,11 +599,11 @@ ${ES_CURL} -s "${ES_URL}/_component_template" 2> /dev/null \
 ci_comp_deleted=0
 ci_comp_skipped=0
 if [ -s "${CI_COMP_FILE}" ]; then
-  GROUPS=$(sed -E 's/-(install|upgrade-patch|upgrade-minor|modular-upgrade-minor)(-.*)?$//' \
+  TPL_GROUPS=$(sed -E 's/-(install|upgrade-patch|upgrade-minor|modular-upgrade-minor)([-_].*)?$//' \
     < "${CI_COMP_FILE}" | sort -u || true)
 
-  if [ -n "$GROUPS" ]; then
-    for group in $GROUPS; do
+  if [ -n "$TPL_GROUPS" ]; then
+    for group in $TPL_GROUPS; do
       tpl_count=$(grep -c "^${group}" "${CI_COMP_FILE}" || true)
       resp=$(${ES_CURL} -s "${ES_URL}/_cat/indices/${group}-*?h=index&format=json" 2> /dev/null || echo "[]")
       idx_remaining=$(echo "$resp" | jq -r 'if type == "array" then length else 0 end' 2> /dev/null || echo "0")
@@ -639,11 +641,11 @@ ${ES_CURL} -s "${ES_URL}/_template" 2> /dev/null \
 ci_legacy_deleted=0
 ci_legacy_skipped=0
 if [ -s "${CI_LEGACY_FILE}" ]; then
-  GROUPS=$(sed -E 's/-(install|upgrade-patch|upgrade-minor|modular-upgrade-minor)(-.*)?$//' \
+  TPL_GROUPS=$(sed -E 's/-(install|upgrade-patch|upgrade-minor|modular-upgrade-minor)([-_].*)?$//' \
     < "${CI_LEGACY_FILE}" | sort -u || true)
 
-  if [ -n "$GROUPS" ]; then
-    for group in $GROUPS; do
+  if [ -n "$TPL_GROUPS" ]; then
+    for group in $TPL_GROUPS; do
       tpl_count=$(grep -c "^${group}" "${CI_LEGACY_FILE}" || true)
       resp=$(${ES_CURL} -s "${ES_URL}/_cat/indices/${group}-*?h=index&format=json" 2> /dev/null || echo "[]")
       idx_remaining=$(echo "$resp" | jq -r 'if type == "array" then length else 0 end' 2> /dev/null || echo "0")
@@ -742,4 +744,6 @@ log "  Component templates:      ${total_comp_deleted}"
 log "  Legacy templates:         ${total_legacy_deleted}"
 total_resources=$((total_indices_deleted + total_v2_deleted + total_comp_deleted + total_legacy_deleted))
 log "  Total resources removed:  ${total_resources}"
-((DRY_RUN)) && log "  (dry-run mode — nothing was actually deleted)"
+if [ "${DRY_RUN}" -eq 1 ]; then
+  log "  (dry-run mode — nothing was actually deleted)"
+fi
