@@ -66,6 +66,17 @@ postgresql:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
 
+# -----------------------------------------------------------------------------
+# Zeebe
+# -----------------------------------------------------------------------------
+zeebe:
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    failureThreshold: 3
+    timeoutSeconds: 5
+
 zeebeGateway:
   contextPath: "/zeebe"
   ingress:
