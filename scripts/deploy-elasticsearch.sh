@@ -43,7 +43,7 @@ Options:
   --skip-external-secret           Do not apply ExternalSecret
   --timeout DURATION               Helm wait timeout (default: ${HELM_TIMEOUT})
   --atomic | --no-atomic           Helm atomic upgrade (default: --atomic)
-  --pool-index N                   ES pool index (e.g. 0 or 1); appends -pool-N to namespace & ingress
+  --pool-index N                   ES pool index (e.g. 0, 1, 2, 3); appends -pool-N to namespace & ingress
   --set KEY=VALUE                  Extra Helm --set (repeatable)
   --set-string KEY=VALUE           Extra Helm --set-string (repeatable)
   -h, --help                       Show this help
