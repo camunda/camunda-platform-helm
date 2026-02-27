@@ -24,31 +24,6 @@ global:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-optimize-client-token"
 
-identity:
-  firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
-  clients:
-    - id: venom
-      name: Venom
-      secret:
-        existingSecret: integration-test-credentials
-        existingSecretKey: identity-admin-client-password
-      redirectUris: /dummy
-      rootUrl: http://dummy
-      type: confidential
-      permissions:
-        - resourceServerId: camunda-identity-resource-server
-          definition: read
-        - resourceServerId: camunda-identity-resource-server
-          definition: write
-        - resourceServerId: optimize-api
-          definition: write:*
-        - resourceServerId: web-modeler-api
-          definition: write:*
-        - resourceServerId: console-api
-          definition: write:*
-
 identityKeycloak:
   enabled: true
   postgresql:

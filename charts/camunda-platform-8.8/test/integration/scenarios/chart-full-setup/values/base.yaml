@@ -1,4 +1,4 @@
-# Base values for all 8.9 integration test deployments
+# Base values for all 8.8 integration test deployments
 # Layer 1: Common configuration shared across all scenarios
 
 global:
@@ -15,10 +15,37 @@ global:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
 
-# Context paths for all components
+# Identity base setup
 identity:
   enabled: true
   contextPath: "/identity"
+  firstUser:
+    existingSecret: "integration-test-credentials"
+    existingSecretKey: "identity-user-password"
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
 
 optimize:
   enabled: true

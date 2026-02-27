@@ -30,7 +30,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          platforms: [gke,eks]
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
