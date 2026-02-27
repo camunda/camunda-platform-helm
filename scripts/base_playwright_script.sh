@@ -141,7 +141,8 @@ _setup_playwright_environment() {
       cached_hash=$(cat node_modules/.package-lock-hash 2>/dev/null || echo "")
       if [[ "$current_hash" == "$cached_hash" ]]; then
         log "node_modules is up to date, skipping npm install"
-        mkdir -p "$test_suite_path/test-results"
+        local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+        mkdir -p "$results_dir"
         return 0
       fi
     fi
@@ -161,7 +162,9 @@ _setup_playwright_environment() {
     rm -rf node_modules package-lock.json && npm i $npm_flags
   fi
 
-  mkdir -p "$test_suite_path/test-results"
+  # Create the test-results directory; use namespace-scoped path when set.
+  local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+  mkdir -p "$results_dir"
 }
 
 # Install Playwright browsers (with deps on Linux)
@@ -521,6 +524,8 @@ run_playwright_tests() {
   local -a playwright_args=(npx playwright test --project="$project" --shard="${shard_index}/${shard_total}" --reporter="$reporter")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
+  # Namespace-scoped output directory to avoid collisions during parallel matrix runs
+  [[ -n "${PLAYWRIGHT_TEST_OUTPUT:-}" ]] && playwright_args+=(--output="$PLAYWRIGHT_TEST_OUTPUT")
 
   # Run with retry logic for pod failures (spot instance preemption)
   _run_playwright_with_retry "$namespace" "$kube_context" "${playwright_args[@]}"
@@ -528,7 +533,7 @@ run_playwright_tests() {
 
   # Only show HTML report locally, never in CI (it blocks waiting for Ctrl+C)
   if [[ "$show_html_report" == "true" && "${CI:-false}" != "true" ]]; then
-    npx playwright show-report
+    npx playwright show-report "${PLAYWRIGHT_HTML_REPORT:-playwright-report}"
   fi
 
   _handle_playwright_result "$playwright_rc" "All Playwright tests" "$rerun_cmd" "true"
@@ -559,6 +564,8 @@ run_playwright_tests_hybrid() {
   # shellcheck disable=SC2206
   local -a playwright_args=(npx playwright test $test_files --project=full-suite --reporter="$reporter")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
+  # Namespace-scoped output directory to avoid collisions during parallel matrix runs
+  [[ -n "${PLAYWRIGHT_TEST_OUTPUT:-}" ]] && playwright_args+=(--output="$PLAYWRIGHT_TEST_OUTPUT")
 
   # Run specific test files with the auth type set as environment variable
   # This overrides any TEST_AUTH_TYPE in .env file
