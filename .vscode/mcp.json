@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "camunda-platform-helm-values": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "registry.camunda.cloud/team-distribution/camunda-platform-helm-values-mcp:0.0.1"
+      ]
+    },
+  }
+}
