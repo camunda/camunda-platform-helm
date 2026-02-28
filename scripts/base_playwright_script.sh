@@ -518,7 +518,14 @@ run_playwright_tests() {
   fi
 
   # Build the playwright command arguments
-  local -a playwright_args=(npx playwright test --project="$project" --shard="${shard_index}/${shard_total}" --reporter="$reporter")
+  local -a playwright_args=(
+  npx playwright test
+  --project="$project"
+  --shard="${shard_index}/${shard_total}"
+  --reporter="$reporter,json"
+  --output=test-results
+  --reporter-options outputFile=test-results/playwright-results.json
+)
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
 
