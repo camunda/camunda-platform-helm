@@ -275,12 +275,12 @@ Authentication.
     {{- else -}}
         {{- if .Values.global.noSecondaryStorage -}}
             none
-        {{- else if .Values.global.elasticsearch.enabled -}}
-            elasticsearch
-        {{- else if .Values.global.opensearch.enabled -}}
-            opensearch
         {{- else if .Values.orchestration.exporters.rdbms.enabled -}}
             rdbms
+        {{- else if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
+            elasticsearch
+        {{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
+            opensearch
         {{- else -}}
             unset
         {{- end -}}

@@ -12,8 +12,6 @@
 # =============================================================================
 
 global:
-  elasticsearch:
-    enabled: true
   ingress:
     enabled: true
     className: nginx
@@ -77,6 +75,9 @@ identityKeycloak:
 # -----------------------------------------------------------------------------
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
   contextPath: "/optimize"
 
 # -----------------------------------------------------------------------------
@@ -117,6 +118,11 @@ webModelerPostgresql:
 # Orchestration Cluster (Basic Auth)
 # -----------------------------------------------------------------------------
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
   contextPath: "/orchestration"
   ingress:
     grpc:

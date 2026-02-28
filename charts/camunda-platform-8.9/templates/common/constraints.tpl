@@ -252,6 +252,41 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+
+  {{/* global.elasticsearch and global.opensearch config warnings */}}
+  {{- $deprecatedDatabaseTlsOptions := list
+  (dict "path" "global.elasticsearch.tls.secret" "config" .Values.global.elasticsearch.tls.secret)
+  (dict "path" "global.opensearch.tls.secret" "config" .Values.global.opensearch.tls.secret)
+  }}
+  {{- range $deprecatedDatabaseTlsOptions }}
+    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true") }}
+        {{- $warningMessage := printf "%s %s %s %s %s"
+            "[camunda][warning]"
+            (printf "DEPRECATION: values.yaml is using legacy option '%s'." .path)
+            "This option is deprecated and will be removed in a future version."
+            (printf "Please migrate to the new option: 'orchestration.data.secondaryStorage.(elasticsearch|opensearch).tls.secret.existingSecret'")
+            (printf "or for optimize: 'optimize.database.(elasticsearch|opensearch).tls.secret.existingSecret'")
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{- $deprecatedDatabaseOptions := list
+  (dict "path" "global.elasticsearch.enabled" "config" .Values.global.elasticsearch.enabled)
+  (dict "path" "global.opensearch.enabled" "config" .Values.global.opensearch.enabled)
+  }}
+  {{- range $deprecatedDatabaseOptions }}
+    {{- if .config }}
+        {{- $warningMessage := printf "%s %s %s %s %s"
+            "[camunda][warning]"
+            (printf "DEPRECATION: values.yaml is using legacy option '%s'." .path)
+            "This option is deprecated and will be removed in a future version."
+            (printf "Please migrate to the new option: 'orchestration.data.secondaryStorage.(elasticsearch|opensearch).enabled'.")
+            (printf "or for optimize: 'optimize.database.(elasticsearch|opensearch).enabled'.")
+        -}}
+        {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
 {{- end }}
 
 {{/*

@@ -1,12 +1,15 @@
 global:
-  elasticsearch:
-    enabled: true
   image:
     pullPolicy: Always
   identity:
     auth:
       enabled: true
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
   security:
     authentication:
       method: oidc
@@ -42,6 +45,9 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
 webModeler:
   enabled: true
   security:

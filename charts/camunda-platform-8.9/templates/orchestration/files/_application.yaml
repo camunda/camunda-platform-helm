@@ -102,11 +102,11 @@ camunda:
         enabled: true
         minimum-age: {{ .Values.orchestration.history.retention.minimumAge | quote }}
       {{- end }}
-      {{- if .Values.global.elasticsearch.enabled }}
+      {{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "elasticsearch") }}
       elasticsearch:
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
-        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        username: {{ .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
         password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
@@ -115,11 +115,11 @@ camunda:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
         {{- end }}
       {{- end }}
-      {{- if .Values.global.opensearch.enabled }}
+      {{- if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "opensearch") }}
       opensearch:
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
-        username: {{ .Values.global.opensearch.auth.username | quote }}
+        username: {{ .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
         password: "${VALUES_OPENSEARCH_PASSWORD:}"
         index-prefix: {{ .Values.orchestration.index.prefix | quote }}
         number-of-replicas: {{ .Values.orchestration.index.replicas | quote }}
@@ -320,7 +320,7 @@ camunda:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
       awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-      username: {{ .Values.global.opensearch.auth.username | quote }}
+      username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
       password: "${VALUES_OPENSEARCH_PASSWORD:}"
     {{- end }}
     # Zeebe instance
@@ -372,10 +372,12 @@ zeebe:
     # zeebe.broker.exporters
     exporters:
     {{- if and
-      (not .Values.orchestration.exporters.rdbms.enabled)
-      (or
-        (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and .Values.global.elasticsearch.enabled .Values.optimize.enabled)
+      (or 
+        (and .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        (or
+          (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
+        )
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
@@ -385,14 +387,14 @@ zeebe:
       elasticsearch:
         className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         args:
-          {{- if .Values.global.elasticsearch.external }}
+          {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
           authentication:
-            username: {{ .Values.global.elasticsearch.auth.username | quote }}
+            username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
           {{- end }}
           url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
           index:
-            prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+            prefix: {{ .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | quote }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
@@ -402,7 +404,7 @@ zeebe:
     {{- else if and
       (or
         (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and .Values.global.opensearch.enabled .Values.optimize.enabled)
+        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
       )
       (or
         .Values.orchestration.exporters.zeebe.enabled
@@ -412,15 +414,15 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
-          {{- if not .Values.global.opensearch.aws.enabled }}
+          {{- if and (not .Values.global.opensearch.aws.enabled) (not .Values.optimize.database.opensearch.aws.enabled) }}
           authentication:
-            username: {{ .Values.global.opensearch.auth.username | quote }}
+            username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
             password: "${VALUES_OPENSEARCH_PASSWORD:}"
           {{- end }}
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
-            prefix: {{ .Values.global.opensearch.prefix | quote }}
-          {{- if .Values.global.opensearch.aws.enabled }}
+            prefix: {{ .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | quote }}
+          {{- if or .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
           aws:
             enabled: true
           {{- end }}
@@ -430,7 +432,7 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
-      {{- end }}
+    {{- end }}
     {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) }}
       camundaexporter:
         className: "io.camunda.exporter.CamundaExporter"
@@ -453,7 +455,5 @@ zeebe:
         args:
           apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"
     {{- end }}
-    {{- else -}}
-      {{ " {}" }}
     {{- end }}
 {{ end -}}

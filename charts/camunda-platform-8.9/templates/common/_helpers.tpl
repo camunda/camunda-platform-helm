@@ -307,21 +307,50 @@ Elasticsearch and Opensearch templates.
 */}}
 
 {{- define "camundaPlatform.elasticsearchHost" -}}
-  {{- tpl .Values.global.elasticsearch.url.host $ -}}
+  {{- tpl .Values.optimize.database.elasticsearch.url.host $ | default (tpl .Values.global.elasticsearch.url.host $) -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Elasticsearch port
+*/}}
+{{- define "camundaPlatform.elasticsearchPort" -}}
+{{- if ne (int .Values.optimize.database.elasticsearch.url.port) 0 -}}
+  {{ .Values.optimize.database.elasticsearch.url.port }}
+{{- else -}}
+  {{ .Values.global.elasticsearch.url.port }}
+{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.elasticsearchURL" -}}
-    {{ .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ .Values.global.elasticsearch.url.port }}
+{{- if .Values.orchestration.data.secondaryStorage.elasticsearch.url -}}
+  {{ .Values.orchestration.data.secondaryStorage.elasticsearch.url }}
+{{- else -}}
+  {{ .Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol }}://{{ include "camundaPlatform.elasticsearchHost" . }}:{{ include "camundaPlatform.elasticsearchPort" . }}
+{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.opensearchHost" -}}
-  {{- tpl .Values.global.opensearch.url.host $ -}}
+  {{- tpl .Values.optimize.database.opensearch.url.host $ | default (tpl .Values.global.opensearch.url.host $) -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Opensearch port
+*/}}
+{{- define "camundaPlatform.opensearchPort" -}}
+{{- if ne (int .Values.optimize.database.opensearch.url.port) 0 -}}
+  {{ .Values.optimize.database.opensearch.url.port }}
+{{- else -}}
+  {{ .Values.global.opensearch.url.port }}
+{{- end -}}
 {{- end -}}
 
 {{- define "camundaPlatform.opensearchURL" -}}
-    {{ .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ .Values.global.opensearch.url.port }}
+{{- if .Values.orchestration.data.secondaryStorage.opensearch.url -}}
+  {{ .Values.orchestration.data.secondaryStorage.opensearch.url }}
+{{- else -}}
+  {{ .Values.optimize.database.opensearch.url.protocol | default .Values.global.opensearch.url.protocol }}://{{ include "camundaPlatform.opensearchHost" . }}:{{ include "camundaPlatform.opensearchPort" . }}
 {{- end -}}
-
+{{- end -}}
 
 
 

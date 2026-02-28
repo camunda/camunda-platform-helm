@@ -246,12 +246,12 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "if true, enables elasticsearch for all components",
+                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch) if true, enables elasticsearch for all components",
                             "default": false
                         },
                         "external": {
                             "type": "boolean",
-                            "description": "if true, tries to connect to an external elasticsearch",
+                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch) if true, tries to connect to an external elasticsearch",
                             "default": false
                         },
                         "tls": {
@@ -259,7 +259,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enable tls for external elasticsearch",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.enabled or orchestration.data.secondaryStorage.elasticsearch.tls) if true, enable tls for external elasticsearch",
                                     "default": false
                                 },
                                 "existingSecret": {
@@ -272,12 +272,12 @@
                                     "properties": {
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
                                             "default": ""
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
-                                            "description": "can be used to provide the key within the secret containing the certificate",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                             "default": "externaldb.jks"
                                         }
                                     }
@@ -289,7 +289,7 @@
                             "properties": {
                                 "username": {
                                     "type": "string",
-                                    "description": "the username for external elasticsearch",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.username or orchestration.data.secondaryStorage.elasticsearch.auth.username) the username for external elasticsearch",
                                     "default": ""
                                 },
                                 "secret": {
@@ -297,17 +297,17 @@
                                     "properties": {
                                         "inlineSecret": {
                                             "type": "string",
-                                            "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.secret.inlineSecret or orchestration.data.secondaryStorage.elasticsearch.auth.secret.inlineSecret) can be used to provide the password as a plain-text value for non-production usage.",
                                             "default": ""
                                         },
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.secret.existingSecret or orchestration.data.secondaryStorage.elasticsearch.auth.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the password.",
                                             "default": ""
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
-                                            "description": "defines the key within the existing secret object.",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.secret.existingSecretKey or orchestration.data.secondaryStorage.elasticsearch.auth.secret.existingSecretKey) defines the key within the existing secret object.",
                                             "default": ""
                                         }
                                     }
@@ -324,29 +324,29 @@
                             "properties": {
                                 "protocol": {
                                     "type": "string",
-                                    "description": "defines the elasticsearch access protocol.",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.url.protocol or orchestration.data.secondaryStorage.elasticsearch.url) defines the elasticsearch access protocol.",
                                     "default": "http"
                                 },
                                 "host": {
                                     "type": "string",
-                                    "description": "Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.url.host or orchestration.data.secondaryStorage.elasticsearch.url) Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace",
                                     "default": "{{ .Release.Name }}-elasticsearch"
                                 },
                                 "port": {
                                     "type": "number",
-                                    "description": "Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.url.port or orchestration.data.secondaryStorage.elasticsearch.url) Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed",
                                     "default": 9200
                                 }
                             }
                         },
                         "clusterName": {
                             "type": "string",
-                            "description": "defines the name of the Elasticsearch cluster.",
+                            "description": "(DEPRECATED - use component-specific options instead, e.g., orchestration.data.secondaryStorage.elasticsearch) defines the name of the Elasticsearch cluster.",
                             "default": "elasticsearch"
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
+                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.prefix or orchestration.data.secondaryStorage.elasticsearch) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -356,7 +356,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "enabled external opensearch",
+                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch) enabled external opensearch",
                             "default": false
                         },
                         "aws": {
@@ -364,7 +364,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "Enabling AWS IRSA",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.aws.enabled or orchestration.data.secondaryStorage.opensearch) Enabling AWS IRSA",
                                     "default": false
                                 }
                             }
@@ -374,7 +374,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "if true, enable tls for external opensearch",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.enabled or orchestration.data.secondaryStorage.opensearch.tls) if true, enable tls for external opensearch",
                                     "default": false
                                 },
                                 "existingSecret": {
@@ -387,12 +387,12 @@
                                     "properties": {
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
                                             "default": ""
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
-                                            "description": "can be used to provide the key within the secret containing the certificate",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                             "default": "externaldb.jks"
                                         }
                                     }
@@ -404,7 +404,7 @@
                             "properties": {
                                 "username": {
                                     "type": "string",
-                                    "description": "the username for external opensearch",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.username or orchestration.data.secondaryStorage.opensearch.auth.username) the username for external opensearch",
                                     "default": ""
                                 },
                                 "secret": {
@@ -412,17 +412,17 @@
                                     "properties": {
                                         "inlineSecret": {
                                             "type": "string",
-                                            "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.secret.inlineSecret or orchestration.data.secondaryStorage.opensearch.auth.secret.inlineSecret) can be used to provide the password as a plain-text value for non-production usage.",
                                             "default": ""
                                         },
                                         "existingSecret": {
                                             "type": "string",
-                                            "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.secret.existingSecret or orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the password.",
                                             "default": ""
                                         },
                                         "existingSecretKey": {
                                             "type": "string",
-                                            "description": "defines the key within the existing secret object.",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecretKey) defines the key within the existing secret object.",
                                             "default": ""
                                         }
                                     }
@@ -434,29 +434,29 @@
                             "properties": {
                                 "protocol": {
                                     "type": "string",
-                                    "description": "defines the external opensearch access protocol",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.url.protocol or orchestration.data.secondaryStorage.opensearch.url) defines the external opensearch access protocol",
                                     "default": "https"
                                 },
                                 "host": {
                                     "type": "string",
-                                    "description": "defines the external opensearch host, ideally the service name inside the namespace",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.url.host or orchestration.data.secondaryStorage.opensearch.url) defines the external opensearch host, ideally the service name inside the namespace",
                                     "default": ""
                                 },
                                 "port": {
                                     "type": "number",
-                                    "description": "defines the external opensearch port, under which opensearch can be accessed",
+                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.url.port or orchestration.data.secondaryStorage.opensearch.url) defines the external opensearch port, under which opensearch can be accessed",
                                     "default": 443
                                 }
                             }
                         },
                         "clusterName": {
                             "type": "string",
-                            "description": "defines the name of the OpenSearch cluster.",
+                            "description": "(DEPRECATED - use component-specific options instead, e.g., orchestration.data.secondaryStorage.opensearch) defines the name of the OpenSearch cluster.",
                             "default": "opensearch"
                         },
                         "prefix": {
                             "type": "string",
-                            "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
+                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.prefix or orchestration.data.secondaryStorage.opensearch) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
                     }
@@ -1579,7 +1579,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.",
+                    "description": "(DEPRECATED) Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.",
                     "default": false
                 },
                 "global": {
@@ -1593,7 +1593,7 @@
                                     "properties": {
                                         "adaptSecurityContext": {
                                             "type": "string",
-                                            "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
+                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
                                     }
@@ -1607,24 +1607,24 @@
                     "properties": {
                         "repository": {
                             "type": "string",
-                            "description": "PostgreSQL repo",
+                            "description": "(DEPRECATED) PostgreSQL repo",
                             "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
-                            "description": "PostgreSQL image tag",
+                            "description": "(DEPRECATED) PostgreSQL image tag",
                             "default": "15.10.0-debian-12-r2"
                         },
                         "digest": {
                             "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
                     }
                 },
                 "nameOverride": {
                     "type": "string",
-                    "description": "the name used for Management Identity PostgreSQL.",
+                    "description": "(DEPRECATED) the name used for Management Identity PostgreSQL.",
                     "default": "identity-postgresql"
                 },
                 "auth": {
@@ -1632,22 +1632,22 @@
                     "properties": {
                         "username": {
                             "type": "string",
-                            "description": "Non-root username",
+                            "description": "(DEPRECATED) Non-root username",
                             "default": "identity"
                         },
                         "database": {
                             "type": "string",
-                            "description": "The database name",
+                            "description": "(DEPRECATED) The database name",
                             "default": "identity"
                         },
                         "password": {
                             "type": "string",
-                            "description": "Password for the non-root username",
+                            "description": "(DEPRECATED) Password for the non-root username",
                             "default": ""
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "Name of an existing secret resource containing the database credentials",
+                            "description": "(DEPRECATED) Name of an existing secret resource containing the database credentials",
                             "default": ""
                         },
                         "secretKeys": {
@@ -1655,12 +1655,12 @@
                             "properties": {
                                 "adminPasswordKey": {
                                     "type": "string",
-                                    "description": "defines the key within the existing secret object for PostgreSQL admin.",
+                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.",
                                     "default": "identity-postgresql-admin-password"
                                 },
                                 "userPasswordKey": {
                                     "type": "string",
-                                    "description": "defines the key within the existing secret object for PostgreSQL user.",
+                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "identity-postgresql-user-password"
                                 }
                             }
@@ -1675,7 +1675,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
                                 }
                             }
@@ -1690,7 +1690,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/postgres-exporter"
                                 }
                             }
@@ -1704,7 +1704,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "Enable Management Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
+                    "description": "(DEPRECATED) Enable Management Identity Keycloak Helm chart. It is used incorporate with \"global.identity.keycloak\" to use your own Keycloak instead of the one comes with Camunda Helm chart",
                     "default": false
                 },
                 "global": {
@@ -1718,7 +1718,7 @@
                                     "properties": {
                                         "adaptSecurityContext": {
                                             "type": "string",
-                                            "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
+                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
                                     }
@@ -1730,7 +1730,7 @@
                             "properties": {
                                 "allowInsecureImages": {
                                     "type": "boolean",
-                                    "description": "Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)",
+                                    "description": "(DEPRECATED) Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)",
                                     "default": true
                                 }
                             }
@@ -1739,7 +1739,7 @@
                 },
                 "nameOverride": {
                     "type": "string",
-                    "description": "the name used for Keycloak.",
+                    "description": "(DEPRECATED) the name used for Keycloak.",
                     "default": "keycloak"
                 },
                 "image": {
@@ -1747,17 +1747,17 @@
                     "properties": {
                         "repository": {
                             "type": "string",
-                            "description": "image repo",
+                            "description": "(DEPRECATED) image repo",
                             "default": "camunda/keycloak"
                         },
                         "tag": {
                             "type": "string",
-                            "description": "image tag",
+                            "description": "(DEPRECATED) image tag",
                             "default": "26.3.3"
                         },
                         "digest": {
                             "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
                     }
@@ -1770,12 +1770,12 @@
                             "properties": {
                                 "cpu": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "1000m"
                                 },
                                 "memory": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "1Gi"
                                 }
                             }
@@ -1785,12 +1785,12 @@
                             "properties": {
                                 "cpu": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "2000m"
                                 },
                                 "memory": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "2Gi"
                                 }
                             }
@@ -1805,17 +1805,17 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": "image repo",
+                                    "description": "(DEPRECATED) image repo",
                                     "default": "bitnamilegacy/postgresql"
                                 },
                                 "tag": {
                                     "type": "string",
-                                    "description": "image tag",
+                                    "description": "(DEPRECATED) image tag",
                                     "default": "15.10.0-debian-12-r2"
                                 },
                                 "digest": {
                                     "type": "string",
-                                    "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                                    "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
                             }
@@ -1825,7 +1825,7 @@
                             "properties": {
                                 "existingSecret": {
                                     "type": "string",
-                                    "description": "defines the existing secret resource containing the database credentials",
+                                    "description": "(DEPRECATED) defines the existing secret resource containing the database credentials",
                                     "default": "camunda-credentials"
                                 },
                                 "secretKeys": {
@@ -1833,12 +1833,12 @@
                                     "properties": {
                                         "adminPasswordKey": {
                                             "type": "string",
-                                            "description": "defines the key within the existing secret object for PostgreSQL admin.",
+                                            "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.",
                                             "default": "identity-keycloak-postgresql-admin-password"
                                         },
                                         "userPasswordKey": {
                                             "type": "string",
-                                            "description": "defines the key within the existing secret object for PostgreSQL user.",
+                                            "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
                                             "default": "identity-keycloak-postgresql-user-password"
                                         }
                                     }
@@ -1853,32 +1853,32 @@
                                     "properties": {
                                         "enabled": {
                                             "type": "boolean",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": true
                                         },
                                         "privileged": {
                                             "type": "boolean",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": false
                                         },
                                         "readOnlyRootFilesystem": {
                                             "type": "boolean",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": true
                                         },
                                         "allowPrivilegeEscalation": {
                                             "type": "boolean",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": false
                                         },
                                         "runAsNonRoot": {
                                             "type": "boolean",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": true
                                         },
                                         "runAsUser": {
                                             "type": "number",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": 1001
                                         },
                                         "capabilities": {
@@ -1886,7 +1886,7 @@
                                             "properties": {
                                                 "drop": {
                                                     "type": "array",
-                                                    "description": "",
+                                                    "description": "(DEPRECATED)",
                                                     "default": [
                                                         "ALL"
                                                     ],
@@ -1901,7 +1901,7 @@
                                             "properties": {
                                                 "type": {
                                                     "type": "string",
-                                                    "description": "",
+                                                    "description": "(DEPRECATED)",
                                                     "default": "RuntimeDefault"
                                                 }
                                             }
@@ -1913,17 +1913,17 @@
                                     "properties": {
                                         "enabled": {
                                             "type": "boolean",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": true
                                         },
                                         "runAsNonRoot": {
                                             "type": "boolean",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": true
                                         },
                                         "fsGroup": {
                                             "type": "number",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": 1001
                                         }
                                     }
@@ -1938,7 +1938,7 @@
                                     "properties": {
                                         "repository": {
                                             "type": "string",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/os-shell"
                                         }
                                     }
@@ -1953,7 +1953,7 @@
                                     "properties": {
                                         "repository": {
                                             "type": "string",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/postgres-exporter"
                                         }
                                     }
@@ -1964,7 +1964,7 @@
                 },
                 "proxy": {
                     "type": "string",
-                    "description": "keycloak proxy",
+                    "description": "(DEPRECATED) keycloak proxy",
                     "default": "edge"
                 },
                 "tls": {
@@ -1972,24 +1972,24 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "enabling tls",
+                            "description": "(DEPRECATED) enabling tls",
                             "default": false
                         }
                     }
                 },
                 "extraVolumeMounts": {
                     "type": "array",
-                    "description": "",
+                    "description": "(DEPRECATED)",
                     "items": {
                         "type": "object",
                         "properties": {
                             "name": {
                                 "type": "string",
-                                "description": ""
+                                "description": "(DEPRECATED)"
                             },
                             "mountPath": {
                                 "type": "string",
-                                "description": ""
+                                "description": "(DEPRECATED)"
                             }
                         }
                     }
@@ -1999,27 +1999,27 @@
                     "properties": {
                         "privileged": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": false
                         },
                         "readOnlyRootFilesystem": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": true
                         },
                         "allowPrivilegeEscalation": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": false
                         },
                         "runAsNonRoot": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": true
                         },
                         "runAsUser": {
                             "type": "number",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": 1001
                         },
                         "capabilities": {
@@ -2027,7 +2027,7 @@
                             "properties": {
                                 "drop": {
                                     "type": "array",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": [
                                         "ALL"
                                     ],
@@ -2042,7 +2042,7 @@
                             "properties": {
                                 "type": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "RuntimeDefault"
                                 }
                             }
@@ -2054,24 +2054,24 @@
                     "properties": {
                         "runAsNonRoot": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": true
                         },
                         "fsGroup": {
                             "type": "number",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": 1001
                         }
                     }
                 },
                 "httpRelativePath": {
                     "type": "string",
-                    "description": "defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
+                    "description": "(DEPRECATED) defines the context for Keycloak. This config is valid for Keycloak v19.x.x only",
                     "default": "/auth/"
                 },
                 "extraEnvVars": {
                     "type": "array",
-                    "description": "can be used set extra environment variables to be set on Keycloak container.",
+                    "description": "(DEPRECATED) can be used set extra environment variables to be set on Keycloak container.",
                     "default": [],
                     "items": {}
                 },
@@ -2080,23 +2080,28 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "can be used enable ingress record generation for Keycloak.",
+                            "description": "(DEPRECATED) can be used enable ingress record generation for Keycloak.",
                             "default": false
                         },
                         "tls": {
                             "type": "boolean",
-                            "description": "can be used to enable TLS configuration for the host defined at ingress.hostname parameter.",
+                            "description": "(DEPRECATED) can be used to enable TLS configuration for the host defined at ingress.hostname parameter.",
                             "default": false
                         },
                         "extraTls": {
                             "type": "array",
-                            "description": "configuration for additional hostnames to be covered with this ingress record.",
+                            "description": "(DEPRECATED) configuration for additional hostnames to be covered with this ingress record.",
                             "default": [],
                             "items": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "(DEPRECATED) [object] can be used to define labels which will be applied to the Keycloak ingress resource",
+                            "default": {}
+                        },
                         "pathType": {
                             "type": "string",
-                            "description": "defines Ingress path type.",
+                            "description": "(DEPRECATED) defines Ingress path type.",
                             "default": "Prefix"
                         }
                     }
@@ -2106,7 +2111,7 @@
                     "properties": {
                         "type": {
                             "type": "string",
-                            "description": "can be set to change the service type.",
+                            "description": "(DEPRECATED) can be set to change the service type.",
                             "default": "ClusterIP"
                         }
                     }
@@ -2116,17 +2121,17 @@
                     "properties": {
                         "adminUser": {
                             "type": "string",
-                            "description": "defines the keycloak administrator user",
+                            "description": "(DEPRECATED) defines the keycloak administrator user",
                             "default": "admin"
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "can be used to reuse an existing secret containing authentication information.",
+                            "description": "(DEPRECATED) can be used to reuse an existing secret containing authentication information.",
                             "default": "camunda-credentials"
                         },
                         "passwordSecretKey": {
                             "type": "string",
-                            "description": "defines the key within the existing secret object.",
+                            "description": "(DEPRECATED) defines the key within the existing secret object.",
                             "default": "identity-keycloak-admin-password"
                         }
                     }
@@ -2139,7 +2144,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/keycloak-config-cli"
                                 }
                             }
@@ -4206,7 +4211,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart",
+                    "description": "(DEPRECATED) if true, a PostgreSQL database will be deployed as part of the Helm release by using the dependency chart",
                     "default": false
                 },
                 "global": {
@@ -4220,7 +4225,7 @@
                                     "properties": {
                                         "adaptSecurityContext": {
                                             "type": "string",
-                                            "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
+                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
                                     }
@@ -4231,7 +4236,7 @@
                 },
                 "nameOverride": {
                     "type": "string",
-                    "description": "defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters",
+                    "description": "(DEPRECATED) defines the name of the Postgres resources (names will be prefixed with the release name), see https://github.com/bitnami/charts/tree/main/bitnami/postgresql#common-parameters",
                     "default": "postgresql-web-modeler"
                 },
                 "image": {
@@ -4239,17 +4244,17 @@
                     "properties": {
                         "repository": {
                             "type": "string",
-                            "description": "PostgreSQL repo",
+                            "description": "(DEPRECATED) PostgreSQL repo",
                             "default": "bitnamilegacy/postgresql"
                         },
                         "tag": {
                             "type": "string",
-                            "description": "PostgreSQL image tag",
+                            "description": "(DEPRECATED) PostgreSQL image tag",
                             "default": "14.18.0-debian-12-r0"
                         },
                         "digest": {
                             "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
                     }
@@ -4259,22 +4264,22 @@
                     "properties": {
                         "username": {
                             "type": "string",
-                            "description": "defines the name of the database user to be created for WebModeler",
+                            "description": "(DEPRECATED) defines the name of the database user to be created for WebModeler",
                             "default": "web-modeler"
                         },
                         "password": {
                             "type": "string",
-                            "description": "can be used to provide the database user's password; a random password will be generated if left empty / ignored if `postgresql.auth.existingSecret` is set",
+                            "description": "(DEPRECATED) can be used to provide the database user's password; a random password will be generated if left empty / ignored if `postgresql.auth.existingSecret` is set",
                             "default": ""
                         },
                         "database": {
                             "type": "string",
-                            "description": "defines the name of the database to be created for WebModeler",
+                            "description": "(DEPRECATED) defines the name of the database to be created for WebModeler",
                             "default": "web-modeler"
                         },
                         "existingSecret": {
                             "type": "string",
-                            "description": "can be used to provide the name of an existing secret resource containing the database password",
+                            "description": "(DEPRECATED) can be used to provide the name of an existing secret resource containing the database password",
                             "default": ""
                         },
                         "secretKeys": {
@@ -4282,12 +4287,12 @@
                             "properties": {
                                 "adminPasswordKey": {
                                     "type": "string",
-                                    "description": "defines the key within the existing secret object for PostgreSQL admin.",
+                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL admin.",
                                     "default": "web-modeler-postgresql-admin-password"
                                 },
                                 "userPasswordKey": {
                                     "type": "string",
-                                    "description": "defines the key within the existing secret object for PostgreSQL user.",
+                                    "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "web-modeler-postgresql-user-password"
                                 }
                             }
@@ -4302,32 +4307,32 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": true
                                 },
                                 "allowPrivilegeEscalation": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": false
                                 },
                                 "privileged": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": false
                                 },
                                 "readOnlyRootFilesystem": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": true
                                 },
                                 "runAsNonRoot": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": true
                                 },
                                 "runAsUser": {
                                     "type": "number",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": 1001
                                 },
                                 "capabilities": {
@@ -4335,7 +4340,7 @@
                                     "properties": {
                                         "drop": {
                                             "type": "array",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": [
                                                 "ALL"
                                             ],
@@ -4350,7 +4355,7 @@
                                     "properties": {
                                         "type": {
                                             "type": "string",
-                                            "description": "",
+                                            "description": "(DEPRECATED)",
                                             "default": "RuntimeDefault"
                                         }
                                     }
@@ -4362,17 +4367,17 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": true
                                 },
                                 "runAsNonRoot": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": true
                                 },
                                 "fsGroup": {
                                     "type": "number",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": 1001
                                 }
                             }
@@ -5878,6 +5883,126 @@
                                             }
                                         }
                                     }
+                                },
+                                "elasticsearch": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "description": "the URL for the elasticsearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200",
+                                            "default": ""
+                                        },
+                                        "auth": {
+                                            "type": "object",
+                                            "properties": {
+                                                "username": {
+                                                    "type": "string",
+                                                    "description": "the username for elasticsearch connection",
+                                                    "default": ""
+                                                },
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the elasticsearch password as a plain-text value for non-production usage",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the password",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing Kubernetes Secret",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "tls": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "opensearch": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "description": "the URL for the opensearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200",
+                                            "default": ""
+                                        },
+                                        "auth": {
+                                            "type": "object",
+                                            "properties": {
+                                                "username": {
+                                                    "type": "string",
+                                                    "description": "the username for opensearch connection",
+                                                    "default": ""
+                                                },
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the opensearch password as a plain-text value for non-production usage",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the password",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing Kubernetes Secret",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "tls": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "default": ""
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -6403,6 +6528,206 @@
                             "description": "can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
                             "default": [],
                             "items": {}
+                        }
+                    }
+                },
+                "database": {
+                    "type": "object",
+                    "properties": {
+                        "elasticsearch": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, enables elasticsearch for zeebe exporter and optimize",
+                                    "default": false
+                                },
+                                "external": {
+                                    "type": "boolean",
+                                    "description": "if true, tries to connect to an external elasticsearch",
+                                    "default": false
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, enable tls for external elasticsearch",
+                                            "default": false
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the secret containing the certificate",
+                                                    "default": "externaldb.jks"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "auth": {
+                                    "type": "object",
+                                    "properties": {
+                                        "username": {
+                                            "type": "string",
+                                            "description": "the username for external elasticsearch",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "type": "object",
+                                    "properties": {
+                                        "protocol": {
+                                            "type": "string",
+                                            "description": "defines the elasticsearch access protocol. Falls back to global.elasticsearch.url.protocol.",
+                                            "default": ""
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "Elasticsearch.host defines the elasticsearch host, ideally the service name inside the namespace. Falls back to global.elasticsearch.url.host.",
+                                            "default": ""
+                                        },
+                                        "port": {
+                                            "type": "number",
+                                            "description": "Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed. Falls back to global.elasticsearch.url.port.",
+                                            "default": 0
+                                        }
+                                    }
+                                },
+                                "prefix": {
+                                    "type": "string",
+                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize. Falls back to global.elasticsearch.prefix.",
+                                    "default": "zeebe-record"
+                                }
+                            }
+                        },
+                        "opensearch": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "enabled external opensearch",
+                                    "default": false
+                                },
+                                "aws": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "Enabling AWS IRSA",
+                                            "default": false
+                                        }
+                                    }
+                                },
+                                "tls": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true, enable tls for external opensearch",
+                                            "default": false
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the secret containing the certificate",
+                                                    "default": "externaldb.jks"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "auth": {
+                                    "type": "object",
+                                    "properties": {
+                                        "username": {
+                                            "type": "string",
+                                            "description": "the username for external opensearch",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "type": "object",
+                                    "properties": {
+                                        "protocol": {
+                                            "type": "string",
+                                            "description": "defines the external opensearch access protocol. Falls back to global.opensearch.url.protocol.",
+                                            "default": ""
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "defines the external opensearch host, ideally the service name inside the namespace. Falls back to global.opensearch.url.host.",
+                                            "default": ""
+                                        },
+                                        "port": {
+                                            "type": "number",
+                                            "description": "defines the external opensearch port, under which opensearch can be accessed. Falls back to global.opensearch.url.port.",
+                                            "default": 0
+                                        }
+                                    }
+                                },
+                                "prefix": {
+                                    "type": "string",
+                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize. Falls back to global.opensearch.prefix.",
+                                    "default": "zeebe-record"
+                                }
+                            }
                         }
                     }
                 },
@@ -7032,7 +7357,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "description": "",
+                    "description": "(DEPRECATED)",
                     "default": false
                 },
                 "global": {
@@ -7046,7 +7371,7 @@
                                     "properties": {
                                         "adaptSecurityContext": {
                                             "type": "string",
-                                            "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
+                                            "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
                                     }
@@ -7060,17 +7385,17 @@
                     "properties": {
                         "repository": {
                             "type": "string",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": "bitnamilegacy/elasticsearch"
                         },
                         "tag": {
                             "type": "string",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": "8.18.0"
                         },
                         "digest": {
                             "type": "string",
-                            "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
+                            "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
                     }
@@ -7080,12 +7405,12 @@
                     "properties": {
                         "replicaCount": {
                             "type": "number",
-                            "description": "defines number of master-elegible replicas to deploy",
+                            "description": "(DEPRECATED) defines number of master-elegible replicas to deploy",
                             "default": 3
                         },
                         "podAntiAffinityPreset": {
                             "type": "string",
-                            "description": "defines Pod anti-affinity preset. Ignored if master.affinity is set",
+                            "description": "(DEPRECATED) defines Pod anti-affinity preset. Ignored if master.affinity is set",
                             "default": "hard"
                         },
                         "containerSecurityContext": {
@@ -7093,19 +7418,19 @@
                             "properties": {
                                 "readOnlyRootFilesystem": {
                                     "type": "boolean",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": true
                                 }
                             }
                         },
                         "masterOnly": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": false
                         },
                         "heapSize": {
                             "type": "string",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": "1024m"
                         },
                         "persistence": {
@@ -7113,7 +7438,7 @@
                             "properties": {
                                 "size": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "64Gi"
                                 }
                             }
@@ -7126,7 +7451,7 @@
                                     "properties": {
                                         "memory": {
                                             "type": "string",
-                                            "description": "request",
+                                            "description": "(DEPRECATED) request",
                                             "default": "2Gi"
                                         }
                                     }
@@ -7136,7 +7461,7 @@
                                     "properties": {
                                         "memory": {
                                             "type": "string",
-                                            "description": "memory limit",
+                                            "description": "(DEPRECATED) memory limit",
                                             "default": "2Gi"
                                         }
                                     }
@@ -7145,17 +7470,17 @@
                         },
                         "extraEnvVars": {
                             "type": "array",
-                            "description": "env",
+                            "description": "(DEPRECATED) env",
                             "items": {
                                 "type": "object",
                                 "properties": {
                                     "name": {
                                         "type": "string",
-                                        "description": "env"
+                                        "description": "(DEPRECATED) env"
                                     },
                                     "value": {
                                         "type": "string",
-                                        "description": "env value"
+                                        "description": "(DEPRECATED) env value"
                                     }
                                 }
                             }
@@ -7167,12 +7492,12 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": true
                         },
                         "repository": {
                             "type": "string",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": "bitnamilegacy/os-shell"
                         }
                     }
@@ -7182,7 +7507,7 @@
                     "properties": {
                         "replicaCount": {
                             "type": "number",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": 0
                         }
                     }
@@ -7192,7 +7517,7 @@
                     "properties": {
                         "replicaCount": {
                             "type": "number",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": 0
                         }
                     }
@@ -7202,7 +7527,7 @@
                     "properties": {
                         "enabled": {
                             "type": "boolean",
-                            "description": "",
+                            "description": "(DEPRECATED)",
                             "default": false
                         }
                     }
@@ -7215,7 +7540,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/elasticsearch-exporter"
                                 }
                             }
@@ -7230,7 +7555,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
                                 }
                             }
@@ -7245,7 +7570,7 @@
                             "properties": {
                                 "repository": {
                                     "type": "string",
-                                    "description": "",
+                                    "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
                                 }
                             }

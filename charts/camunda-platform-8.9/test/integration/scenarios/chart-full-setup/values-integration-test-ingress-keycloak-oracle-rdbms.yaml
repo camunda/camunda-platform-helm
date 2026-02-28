@@ -2,6 +2,7 @@
 orchestration:
   data:
     secondaryStorage:
+      type: rdbms
       rdbms:
         url: jdbc:oracle:thin:@//${ORACLEDB_HOSTNAME}:${ORACLEDB_PORT}/${ORACLEDB_DATABASE}
         username: ${ORACLEDB_USERNAME}
