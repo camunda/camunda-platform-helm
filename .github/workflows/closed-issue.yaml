@@ -18,10 +18,10 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app-id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Update Closed At field
         uses: github/update-project-action@993f8e40e6cb9250b7d4b476aeee44e40f2d23c2 # main
