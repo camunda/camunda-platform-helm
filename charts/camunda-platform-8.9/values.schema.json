@@ -504,8 +504,33 @@
                                 },
                                 "auth": {
                                     "type": "object",
-                                    "description": "same as \"identityKeycloak.auth\" but it's used for existing Keycloak.",
-                                    "default": {}
+                                    "properties": {
+                                        "adminUser": {
+                                            "type": "string",
+                                            "description": "defines the admin user to access existing Keycloak.",
+                                            "default": ""
+                                        },
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the Keycloak admin password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the Keycloak admin password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object containing the Keycloak admin password.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
