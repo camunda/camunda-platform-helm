@@ -87,7 +87,7 @@ webModelerPostgresql:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/postgresql
-    tag: 18.2.0-debian-12-r0
+    tag: 18.3.0-debian-12-r0
     pullSecrets:
       - name: registry-camunda-cloud
 
