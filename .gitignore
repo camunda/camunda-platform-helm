@@ -32,4 +32,7 @@ scripts/values-injector/values-injector
 scripts/deploy-camunda/deploy-camunda
 scripts/deploy-camunda/.env
 
+# local dev binary (built via make build.deploy-camunda.local)
+/deploy-camunda
+
 charts/camunda-platform*/test/e2e/package-lock.json

@@ -76,7 +76,8 @@ var envMutex sync.Mutex
 // Returns the list of processed file paths in the output directory.
 func processCommonValues(scenarioPath, outputDir, envFile, platform string) ([]string, error) {
 	// Common directory is a sibling to the scenario directory
-	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
+	// e.g., if scenarioPath is "scenarios/chart-full-setup", common is "scenarios/common"
+	commonDir := filepath.Join(filepath.Dir(scenarioPath), "common")
 
 	logging.Logger.Debug().
 		Str("scenarioPath", scenarioPath).
@@ -775,6 +776,14 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		Str("namespace", scenarioCtx.Namespace).
 		Msg("Preparing scenario values")
 
+	// Default scenario path to chart-full-setup inside the chart directory
+	if flags.ScenarioPath == "" {
+		flags.ScenarioPath = filepath.Join(flags.ChartPath, "test/integration/scenarios/chart-full-setup")
+		logging.Logger.Debug().
+			Str("scenarioPath", flags.ScenarioPath).
+			Msg("ScenarioPath was empty, defaulting to chart-full-setup directory")
+	}
+
 	// Generate identifiers
 	realmName := scenarioCtx.KeycloakRealm
 	optimizePrefix := scenarioCtx.OptimizeIndexPrefix
@@ -954,7 +963,13 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		return nil, fmt.Errorf("failed to generate debug values: %w", err)
 	}
 
-	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth, false, false, flags.ExtraValues, processedCommonFiles)
+	// When auth equals the main scenario, don't pass it separately to BuildValuesList
+	// to avoid duplicate values files (the main scenario already includes the same file).
+	authForBuild := flags.Auth
+	if flags.Auth == scenarioCtx.ScenarioName {
+		authForBuild = ""
+	}
+	vals, err := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, authForBuild, false, false, flags.ExtraValues, processedCommonFiles)
 	if err != nil {
 		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to build values list: %w", err)
@@ -1068,7 +1083,9 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		Atomic:                 true,
 		Timeout:                time.Duration(timeoutMinutes) * time.Minute,
 		ValuesFiles:            prepared.ValuesFiles,
+		IngressHost:            scenarioCtx.IngressHost,
 		EnsureDockerRegistry:   flags.EnsureDockerRegistry,
+		SkipDockerLogin:        flags.SkipDockerLogin,
 		SkipDependencyUpdate:   flags.SkipDependencyUpdate,
 		ExternalSecretsEnabled: flags.ExternalSecrets,
 		ExternalSecretsStore:   externalSecretsStore,

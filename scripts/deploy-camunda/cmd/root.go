@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -69,6 +70,13 @@ func NewRootCommand() *cobra.Command {
 					return nil
 				}
 			}
+
+			// Record which flags were explicitly set on the CLI so config
+			// merging can respect them (CLI takes precedence over config file).
+			flags.ChangedFlags = make(map[string]bool)
+			cmd.Flags().Visit(func(f *pflag.Flag) {
+				flags.ChangedFlags[f.Name] = true
+			})
 
 			// Load config and merge with flags first to get envFile from config
 			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {
@@ -170,6 +178,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.DockerUsername, "docker-username", "", "Docker registry username")
 	f.StringVar(&flags.DockerPassword, "docker-password", "", "Docker registry password")
 	f.BoolVar(&flags.EnsureDockerRegistry, "ensure-docker-registry", false, "Ensure Docker registry secret is created")
+	f.BoolVar(&flags.SkipDockerLogin, "skip-docker-login", false, "Skip Docker login (useful when docker is not available on the runner)")
 	f.BoolVar(&flags.RenderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
 	f.StringVar(&flags.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
 	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
