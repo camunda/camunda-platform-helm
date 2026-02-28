@@ -50,9 +50,6 @@ data:
               id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
               type: m2m
               secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
-              permissions:
-                - audience: {{ include "orchestration.authAudience" . | quote }}
-                  definition: read:*
         {{- end }}
         console:
           applications:
@@ -123,9 +120,6 @@ data:
               id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
               type: confidential
               secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
-              permissions:
-                - audience: {{ include "orchestration.authAudience" . | quote }}
-                  definition: write:*
               root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
               redirect-uris:
                 - "/login/oauth2/code/orchestration"
@@ -133,19 +127,6 @@ data:
           apis:
             - name: "Orchestration API"
               audience: {{ include "orchestration.authAudience" . | quote }}
-              permissions:
-                - definition: read:*
-                  description: "Read permission"
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Orchestration"
-              description: "Grants full access to Orchestration"
-              permissions:
-                - audience: {{ include "orchestration.authAudience" . | quote }}
-                  definition: read:*
-                - audience: {{ include "orchestration.authAudience" . | quote }}
-                  definition: write:*
         {{- end }}
         webmodeler:
           applications:
@@ -230,12 +211,6 @@ data:
               definition: read
             - resourceServerId: camunda-identity-resource-server
               definition: write
-            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
-            - resourceServerId: orchestration-api
-              definition: read:*
-            - resourceServerId: orchestration-api
-              definition: write:*
-            {{- end }}
             - resourceServerId: optimize-api
               definition: write:*
             - resourceServerId: web-modeler-api
@@ -278,9 +253,6 @@ data:
             {{- end }}
             {{- if .Values.console.enabled }}
             - Console
-            {{- end }}
-            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
-            - Orchestration
             {{- end }}
           {{- end }}
         {{- end }}
