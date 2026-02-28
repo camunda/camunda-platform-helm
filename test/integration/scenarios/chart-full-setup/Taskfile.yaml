@@ -7,6 +7,11 @@ vars:
   TEST_CHART_VERSION: '{{ env "TEST_CHART_VERSION" | default ">0.0.0" | quote }}'
   VALUES_CONFIG: '{{ env "VALUES_CONFIG" | default "{}" }}'
   INFRA_TYPE_SUFFIX: '{{ if eq (env "PLATFORM") "eks" }}eks-{{ end }}{{ .INFRA_TYPE }}'
+  # Selection + composition model configuration
+  # This is now the default approach (layered values with identity/persistence/platform/features)
+  USE_LAYERED_VALUES: '{{ env "USE_LAYERED_VALUES" | default "true" }}'
+  # Values directory (per chart version)
+  LAYERED_VALUES_DIR: '{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values'
 
 dotenv:
 - ../vars/common.env
@@ -24,6 +29,7 @@ includes:
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
       TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
       TEST_HELM_EXTRA_ARGS: "{{ .TEST_HELM_EXTRA_ARGS }}"
+      VALUES_CONFIG: "{{ .VALUES_CONFIG }}"
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -41,6 +47,49 @@ includes:
       chartDir: "{{ .TEST_CHART_DIR }}"
 
 tasks:
+  # =============================================================================
+  # Selection + Composition Model
+  # =============================================================================
+  # Maps legacy TEST_AUTH_TYPE and TEST_VALUES_SCENARIO to the new structure
+  # This provides backward compatibility while enabling the new selection + composition approach
+  #
+  # Usage (new way - selection + composition):
+  #   TEST_IDENTITY=keycloak TEST_PERSISTENCE=elasticsearch TEST_PLATFORM=gke
+  #   TEST_FEATURES=multitenancy,documentstore TEST_QA=true TEST_IMAGE_TAGS=true
+  #
+  # Usage (deprecated but still supported):
+  #   TEST_VALUES_AUTH=keycloak TEST_VALUES_BACKEND=elasticsearch TEST_VALUES_FEATURES=rba,multitenancy
+  #
+  # Usage (legacy, still supported):
+  #   TEST_AUTH_TYPE=keycloak TEST_VALUES_SCENARIO=qa-elasticsearch-rba
+  # =============================================================================
+  
+  build-layered-values:
+    desc: "Build merged helm values file from selection + composition configuration"
+    internal: true
+    cmds:
+      - |
+        # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+        # This replaces the ~150-line bash layer resolution that was previously inlined here.
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+        SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
+        
+        MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+          --scenario-path "$SCENARIO_DIR" \
+          --identity "${TEST_IDENTITY:-keycloak}" \
+          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          --features "${TEST_FEATURES:-}" \
+          --qa="${TEST_QA:-false}" \
+          --image-tags="${TEST_IMAGE_TAGS:-false}" \
+          --upgrade-flow="${TEST_UPGRADE:-false}" \
+          --infra-type "${INFRA_TYPE:-}" \
+          --values-config '{{ .VALUES_CONFIG }}' \
+          --interactive=false \
+          --log-level info)
+        
+        echo "--values $MERGED_VALUES"
+
   setup.pre:
     env:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
@@ -54,28 +103,50 @@ tasks:
       echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
       
-      # Step 1: Merge all YAMLs
+      # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+      REPO_ROOT="$(git rev-parse --show-toplevel)"
+      SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
+      
+      MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+        --scenario-path "$SCENARIO_DIR" \
+        --identity "${TEST_IDENTITY:-keycloak}" \
+        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+        --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+        --features "${TEST_FEATURES:-}" \
+        --qa="${TEST_QA:-false}" \
+        --image-tags="${TEST_IMAGE_TAGS:-false}" \
+        --upgrade-flow="${TEST_UPGRADE:-false}" \
+        --infra-type "${INFRA_TYPE:-}" \
+        --values-config '{{ .VALUES_CONFIG }}' \
+        --interactive=false \
+        --log-level info)
+      
+      echo "Merged values file: $MERGED_VALUES"
+      
+      # Merge with common values, infra, and extra values to get the full picture
       MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
         "{{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml" \
-        "{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
+        "$MERGED_VALUES" \
         "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml" \
         /tmp/extra-values-file.yaml)
       
       echo "--- Merged YAML ---"
       echo "$MERGED_YAML"
       echo "-------------------"
-      # Step 2: Extract the Elasticsearch enabled value
+      # Extract the Elasticsearch enabled value
       ES_ENABLED=$(echo "$MERGED_YAML" | yq '.elasticsearch.enabled // false')
       
       echo "Elasticsearch enabled: $ES_ENABLED"
 
-      # Step 3: Determine if we should skip test
+      # Determine if we should skip test
       VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
+      
+      IDENTITY="${TEST_IDENTITY:-keycloak}"
+      PERSISTENCE="${TEST_PERSISTENCE:-elasticsearch}"
       
       echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
       echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-      #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "$TEST_VALUES_SCENARIO" = "elasticsearch" ] && echo true || echo false )" >> "${VARIABLES_ENV_FILE}"
+      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "${PERSISTENCE}" = "elasticsearch" ] && [ "${IDENTITY}" = "keycloak" ] || echo false )" >> "${VARIABLES_ENV_FILE}"
       echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
       echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
       # In case the Zeebe version has not been released officially yet.
@@ -95,44 +166,49 @@ tasks:
         bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-install.sh
       {{ end }}
     - |
-      {{ if and (eq .TEST_VALUES_SCENARIO "opensearch") .TEST_OPENSEARCH_PREFIX }}
-        sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      {{ if and (eq .TEST_PERSISTENCE "opensearch") .TEST_OPENSEARCH_PREFIX }}
+        # Update OpenSearch prefix in the persistence file if needed
+        sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .LAYERED_VALUES_DIR }}/persistence/opensearch.yaml
+      {{ else if and (eq .TEST_VALUES_BACKEND "opensearch") .TEST_OPENSEARCH_PREFIX }}
+        # Backward compatibility: Update OpenSearch prefix
+        sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .LAYERED_VALUES_DIR }}/persistence/opensearch.yaml
       {{ end }}
     - |
-      # Print out all the values that are being applied for debugging purposes. Note, printing like this so we can see which file a value is coming from.
-
-      echo "Values being applied:"
-      echo "--------------------"
-
+      # Print out all the values that are being applied for debugging purposes.
+      VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
+      
+      echo "Values being applied (selection + composition model):"
+      echo "=========================================="
+      
       echo "common/values-integration-test.yaml:"
       cat {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml
-
+      echo ""
+      
       echo "common/values-integration-test-pull-secrets.yaml:"
       cat {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml
-
-      echo "values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml:"
-      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml
-
-      echo "values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml:"
-      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-
-      {{ if eq .PLATFORM "eks" -}}
-        echo "values-integration-test-ingress-infra.yaml:"
-        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml
-      {{ end -}}
-
+      echo ""
+      
+      echo "Values from: $VALUES_DIR"
+      for f in "$VALUES_DIR"/*.yaml "$VALUES_DIR"/**/*.yaml; do
+        [ -f "$f" ] && echo "  - $f"
+      done
+      echo ""
+      
       {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
         echo "helm-digest-values.yaml:"
         cat {{ .TEST_HELM_DIGEST_VALUES }}
+        echo ""
       {{ end -}}
 
       echo "infra values:"
-      cat {{ .INFRA_TYPE_VALUES }}
+      cat {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml
+      echo ""
 
       echo "extra-values-file.yaml:"
       cat /tmp/extra-values-file.yaml
-
-      echo "--------------------"
+      echo ""
+      
+      echo "=========================================="
 
   setup.package:
     cmds:
@@ -154,66 +230,137 @@ tasks:
         echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
-        # Step 1: Merge all YAMLs
+        
+        # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+        SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
+        
+        MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+          --scenario-path "$SCENARIO_DIR" \
+          --identity "${TEST_IDENTITY:-keycloak}" \
+          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          --features "${TEST_FEATURES:-}" \
+          --qa="${TEST_QA:-false}" \
+          --image-tags="${TEST_IMAGE_TAGS:-false}" \
+          --upgrade-flow="${TEST_UPGRADE:-false}" \
+          --infra-type "${INFRA_TYPE:-}" \
+          --values-config '{{ .VALUES_CONFIG }}' \
+          --interactive=false \
+          --log-level info)
+        
+        echo "Merged values file: $MERGED_VALUES"
+        
+        # Merge with common values, infra, and extra values to get the full picture
         MERGED_YAML=$(yq eval-all '. as $item ireduce ({}; . * $item )' \
           "{{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml" \
-          "{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml" \
+          "$MERGED_VALUES" \
           "{{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml" \
           /tmp/extra-values-file.yaml)
         
         echo "--- Merged YAML ---"
         echo "$MERGED_YAML"
         echo "-------------------"
-        # Step 2: Extract the Elasticsearch enabled value
+        # Extract the Elasticsearch enabled value
         ES_ENABLED=$(echo "$MERGED_YAML" | yq '.elasticsearch.enabled // false')
         
         echo "Elasticsearch enabled: $ES_ENABLED"
   
-        # Step 3: Determine if we should skip test
+        # Determine if we should skip test
         VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
         
         echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
         echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-        #echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(yq eval-all '. as $item ireduce ({}; . * $item )' {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml /tmp/extra-values-file.yaml | yq '.elasticsearch.enabled // false | not')" >> "${VARIABLES_ENV_FILE}"
         echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
         echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
         # In case the Zeebe version has not been released officially yet.
         echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
         cat ${VARIABLES_ENV_FILE}
 
+  # =============================================================================
+  # setup.exec - Uses selection + composition model (default)
+  # =============================================================================
+  # This task now uses the selection + composition approach.
+  # The old monolithic value files have been removed in favor of composable layers.
+  #
+  # Environment variables (new - preferred):
+  #   TEST_IDENTITY    - Identity: keycloak, keycloak-external, oidc, basic, hybrid
+  #   TEST_PERSISTENCE - Persistence: elasticsearch, opensearch, rdbms, rdbms-oracle
+  #   TEST_PLATFORM    - Platform: gke, eks, openshift
+  #   TEST_FEATURES    - Features (comma-separated): multitenancy, rba, documentstore
+  #   TEST_QA          - Enable QA config: true/false
+  #   TEST_IMAGE_TAGS  - Enable image tag overrides: true/false
+  #   TEST_UPGRADE     - Enable upgrade flow: true/false
+  #
+  # Legacy variables (deprecated but still supported):
+  #   TEST_VALUES_AUTH     - Maps to TEST_IDENTITY
+  #   TEST_VALUES_BACKEND  - Maps to TEST_PERSISTENCE
+  #   TEST_VALUES_FEATURES - Maps to TEST_FEATURES
+  #   TEST_VALUES_QA       - Maps to TEST_QA
+  #   TEST_VALUES_INFRA    - Maps to TEST_PLATFORM
+  #   TEST_AUTH_TYPE       - Maps to TEST_IDENTITY
+  #   TEST_VALUES_SCENARIO - Used to derive all settings
+  # =============================================================================
   setup.exec:
+    desc: "Install helm chart using selection + composition configuration"
     env:
       VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
       set -o pipefail
-
-      IMAGE_TAGS_ARGS=""
-      if [[ -f /tmp/values-image-tags-processed.yaml ]]; then
-        IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
-        echo "Including processed image tags file"
-      fi
-
+      
+      # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+      # This replaces ~180 lines of bash that duplicated the Go layer resolution logic.
+      REPO_ROOT="$(git rev-parse --show-toplevel)"
+      SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
+      
+      MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+        --scenario-path "$SCENARIO_DIR" \
+        --identity "${TEST_IDENTITY:-keycloak}" \
+        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+        --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+        --features "${TEST_FEATURES:-}" \
+        --qa="${TEST_QA:-false}" \
+        --image-tags="${TEST_IMAGE_TAGS:-false}" \
+        --upgrade-flow="${TEST_UPGRADE:-false}" \
+        --infra-type "${INFRA_TYPE:-}" \
+        --values-config '{{ .VALUES_CONFIG }}' \
+        --interactive=false \
+        --log-level info)
+      
+      echo ""
+      echo "=========================================="
+      echo "Merged values file: $MERGED_VALUES"
+      echo "Final helm install command:"
+      echo "=========================================="
+      
       helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
-        {{ (and (eq .TEST_CHART_VERSION "13.0.0-alpha7") (eq .TEST_AUTH_TYPE "keycloak")) | ternary (printf "--values %s/common/values-integration-test-alpha7.yaml" .TEST_VALUES_BASE_DIR) (printf "--values %s/common/values-integration-test.yaml" .TEST_VALUES_BASE_DIR) }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml \
-        {{ if eq .PLATFORM "eks" -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
-        {{ end -}}
+        --values "$MERGED_VALUES" \
         {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
-        $IMAGE_TAGS_ARGS \
         --values /tmp/extra-values-file.yaml \
+        ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
         --timeout 20m0s \
         --wait \
         --wait-for-jobs \
         {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
+
+  # =============================================================================
+  # DEPRECATED: setup.exec.layered - Now same as setup.exec
+  # =============================================================================
+  # Kept for backward compatibility. Use setup.exec instead.
+  # =============================================================================
+  setup.exec.layered:
+    desc: "DEPRECATED: Use setup.exec instead. Install helm chart using layered values configuration"
+    env:
+      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
+    cmds:
+    - task: setup.exec
 
   setup.post:
     env:
@@ -309,6 +456,7 @@ tasks:
           }" | cat
 
   entra.template-yaml:
+    desc: "Template Entra configuration into OIDC identity file"
     cmds:
       - |
         export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
@@ -316,9 +464,15 @@ tasks:
         export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
         export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
 
-        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp
-        mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        # Template the OIDC identity file for Entra
+        OIDC_FILE="{{ .LAYERED_VALUES_DIR }}/identity/oidc.yaml"
+        if [ -f "$OIDC_FILE" ]; then
+          envsubst < "$OIDC_FILE" > "${OIDC_FILE}.tmp"
+          mv "${OIDC_FILE}.tmp" "$OIDC_FILE"
+          cat "$OIDC_FILE"
+        else
+          echo "WARNING: OIDC identity file not found: $OIDC_FILE" >&2
+        fi
 
   upgrade.pre:
     deps: [upgrade:pre]
@@ -327,6 +481,7 @@ tasks:
     deps: [upgrade:exec]
 
   all:
+    desc: "Run full test flow using selection + composition configuration"
     cmds:
     - task: init.seed
     - task: setup.pre
@@ -335,3 +490,9 @@ tasks:
     - task: test.preflight
     - task: test.core
     - task: test.playwright.core
+
+  # DEPRECATED: Kept for backward compatibility, same as 'all'
+  all.layered:
+    desc: "DEPRECATED: Use 'all' instead. Run full test flow using selection + composition configuration"
+    cmds:
+    - task: all

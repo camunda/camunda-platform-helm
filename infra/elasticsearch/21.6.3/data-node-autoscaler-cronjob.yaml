@@ -1,0 +1,251 @@
+# CronJob: Shard-aware horizontal autoscaler for Elasticsearch data nodes.
+#
+# CI jobs create many indices and templates, each contributing shards.
+# Elasticsearch enforces a per-node shard limit (cluster.max_shards_per_node).
+# When data nodes approach this limit, new index creation fails, breaking CI.
+#
+# This CronJob polls the cluster every 5 minutes and scales the data
+# StatefulSet based on actual shard-per-node utilization:
+#
+#   Scale UP:   shards_per_node > 80% of max_shards_per_node
+#   Scale DOWN: shards_per_node < 50% of max_shards_per_node
+#               AND cluster health is green
+#               AND current replicas > MIN_REPLICAS
+#               (at most 2 nodes removed per invocation to avoid rebalance storms)
+#
+# The script queries ES _cluster/stats for the live shard count and computes
+# the optimal number of data nodes. It never scales below MIN_REPLICAS or
+# above MAX_REPLICAS.
+#
+# RBAC: Requires a ServiceAccount with permission to get/patch the data
+#       StatefulSet in the elasticsearch namespace.
+#
+# Deploy: kubectl apply -f data-node-autoscaler-cronjob.yaml
+#
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: data-node-autoscaler
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: data-node-autoscaler
+    app.kubernetes.io/component: autoscaling
+    app.kubernetes.io/part-of: elasticsearch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: data-node-autoscaler
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: data-node-autoscaler
+    app.kubernetes.io/component: autoscaling
+    app.kubernetes.io/part-of: elasticsearch
+rules:
+  - apiGroups: ["apps"]
+    resources: ["statefulsets"]
+    resourceNames: ["elasticsearch-data"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets/scale"]
+    resourceNames: ["elasticsearch-data"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: data-node-autoscaler
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: data-node-autoscaler
+    app.kubernetes.io/component: autoscaling
+    app.kubernetes.io/part-of: elasticsearch
+subjects:
+  - kind: ServiceAccount
+    name: data-node-autoscaler
+    namespace: distribution-elasticsearch-21-6-3
+roleRef:
+  kind: Role
+  name: data-node-autoscaler
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: data-node-autoscaler
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: data-node-autoscaler
+    app.kubernetes.io/component: autoscaling
+    app.kubernetes.io/part-of: elasticsearch
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: data-node-autoscaler
+        spec:
+          serviceAccountName: data-node-autoscaler
+          restartPolicy: Never
+          containers:
+            - name: autoscaler
+              image: bitnamilegacy/os-shell:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: ES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: infra-credentials
+                      key: elasticsearch-password
+                # --- Autoscaler configuration ---
+                - name: MIN_REPLICAS
+                  value: "6"
+                - name: MAX_REPLICAS
+                  value: "20"
+                - name: MAX_SHARDS_PER_NODE
+                  value: "3000"
+                - name: SCALE_UP_THRESHOLD_PCT
+                  value: "80"
+                - name: SCALE_DOWN_THRESHOLD_PCT
+                  value: "50"
+                - name: MAX_SCALE_DOWN_STEP
+                  value: "2"
+                - name: STATEFULSET_NAME
+                  value: "elasticsearch-data"
+              command:
+                - /bin/bash
+                - -euo
+                - pipefail
+                - -c
+                - |
+                  ES_URL="https://elasticsearch:9200"
+                  ES_USER="elastic"
+                  ES_CURL="curl -sk -u ${ES_USER}:${ES_PASSWORD} --connect-timeout 10 --max-time 30"
+
+                  # K8s API access via mounted service account token
+                  K8S_API="https://kubernetes.default.svc"
+                  K8S_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+                  K8S_CA="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                  K8S_NS="distribution-elasticsearch-21-6-3"
+
+                  k8s_api() {
+                    curl -s --cacert "${K8S_CA}" -H "Authorization: Bearer ${K8S_TOKEN}" \
+                      -H "Content-Type: application/strategic-merge-patch+json" "$@"
+                  }
+
+                  echo "=== Data Node Autoscaler - $(date -u '+%Y-%m-%dT%H:%M:%SZ') ==="
+                  echo "  Config: min=${MIN_REPLICAS} max=${MAX_REPLICAS} max_shards_per_node=${MAX_SHARDS_PER_NODE}"
+                  echo "  Thresholds: scale_up=${SCALE_UP_THRESHOLD_PCT}% scale_down=${SCALE_DOWN_THRESHOLD_PCT}%"
+
+                  # --- Verify ES connectivity ---
+                  HEALTH_JSON=$(${ES_CURL} "${ES_URL}/_cluster/health" 2>/dev/null) || {
+                    echo "ERROR: Cannot reach Elasticsearch at ${ES_URL}"
+                    exit 1
+                  }
+                  cluster_status=$(echo "$HEALTH_JSON" | jq -r '.status // "unknown"')
+                  echo "  Cluster health: ${cluster_status}"
+
+                  # --- Get total shard count ---
+                  STATS_JSON=$(${ES_CURL} "${ES_URL}/_cluster/stats" 2>/dev/null) || {
+                    echo "ERROR: Cannot fetch cluster stats"
+                    exit 1
+                  }
+                  total_shards=$(echo "$STATS_JSON" | jq -r '.indices.shards.total // 0')
+                  echo "  Total shards: ${total_shards}"
+
+                  # --- Get current data node replica count from StatefulSet ---
+                  STS_JSON=$(k8s_api "${K8S_API}/apis/apps/v1/namespaces/${K8S_NS}/statefulsets/${STATEFULSET_NAME}")
+                  current_replicas=$(echo "$STS_JSON" | jq -r '.spec.replicas // 0')
+                  ready_replicas=$(echo "$STS_JSON" | jq -r '.status.readyReplicas // 0')
+                  echo "  Data nodes: current=${current_replicas} ready=${ready_replicas}"
+
+                  if [[ "${current_replicas}" -eq 0 ]]; then
+                    echo "ERROR: StatefulSet ${STATEFULSET_NAME} has 0 replicas or could not be read"
+                    exit 1
+                  fi
+
+                  # --- Calculate shards per node ---
+                  shards_per_node=$((total_shards / current_replicas))
+                  scale_up_threshold=$((MAX_SHARDS_PER_NODE * SCALE_UP_THRESHOLD_PCT / 100))
+                  scale_down_threshold=$((MAX_SHARDS_PER_NODE * SCALE_DOWN_THRESHOLD_PCT / 100))
+                  echo "  Shards per node: ${shards_per_node} (up_threshold=${scale_up_threshold} down_threshold=${scale_down_threshold})"
+
+                  # --- Determine desired replica count ---
+                  desired_replicas=${current_replicas}
+
+                  if [[ "${shards_per_node}" -gt "${scale_up_threshold}" ]]; then
+                    # Scale UP: calculate how many nodes needed to bring shards/node below threshold
+                    # desired = ceil(total_shards / scale_up_threshold)
+                    desired_replicas=$(( (total_shards + scale_up_threshold - 1) / scale_up_threshold ))
+                    echo "  SCALE UP needed: shards_per_node (${shards_per_node}) > threshold (${scale_up_threshold})"
+
+                  elif [[ "${shards_per_node}" -lt "${scale_down_threshold}" ]] && \
+                       [[ "${current_replicas}" -gt "${MIN_REPLICAS}" ]]; then
+
+                    # Scale DOWN: only if cluster is green (all shards allocated)
+                    if [[ "${cluster_status}" != "green" ]]; then
+                      echo "  Scale down skipped: cluster health is '${cluster_status}' (requires green)"
+                    else
+                      # desired = ceil(total_shards / scale_up_threshold)
+                      # We target the scale_up_threshold so we don't oscillate
+                      desired_replicas=$(( (total_shards + scale_up_threshold - 1) / scale_up_threshold ))
+
+                      # Limit scale-down step to avoid rebalance storms
+                      max_allowed_reduction=${MAX_SCALE_DOWN_STEP}
+                      if [[ $((current_replicas - desired_replicas)) -gt "${max_allowed_reduction}" ]]; then
+                        desired_replicas=$((current_replicas - max_allowed_reduction))
+                        echo "  Scale down capped: reducing by at most ${max_allowed_reduction} nodes per invocation"
+                      fi
+                      echo "  SCALE DOWN possible: shards_per_node (${shards_per_node}) < threshold (${scale_down_threshold})"
+                    fi
+                  else
+                    echo "  No scaling needed"
+                  fi
+
+                  # --- Apply bounds ---
+                  if [[ "${desired_replicas}" -lt "${MIN_REPLICAS}" ]]; then
+                    desired_replicas=${MIN_REPLICAS}
+                  fi
+                  if [[ "${desired_replicas}" -gt "${MAX_REPLICAS}" ]]; then
+                    desired_replicas=${MAX_REPLICAS}
+                  fi
+
+                  # --- Apply scaling ---
+                  if [[ "${desired_replicas}" -eq "${current_replicas}" ]]; then
+                    echo "  No change: staying at ${current_replicas} data nodes"
+                  else
+                    echo "  Scaling: ${current_replicas} -> ${desired_replicas} data nodes"
+                    PATCH_RESULT=$(k8s_api -X PATCH \
+                      "${K8S_API}/apis/apps/v1/namespaces/${K8S_NS}/statefulsets/${STATEFULSET_NAME}/scale" \
+                      -d "{\"spec\":{\"replicas\":${desired_replicas}}}")
+                    new_replicas=$(echo "$PATCH_RESULT" | jq -r '.spec.replicas // "unknown"')
+                    if [[ "${new_replicas}" == "${desired_replicas}" ]]; then
+                      echo "  SUCCESS: StatefulSet scaled to ${desired_replicas} replicas"
+                    else
+                      echo "  WARN: Patch response replicas=${new_replicas} (expected ${desired_replicas})"
+                      echo "  Response: $(echo "$PATCH_RESULT" | jq -c '.' 2>/dev/null || echo "$PATCH_RESULT")"
+                    fi
+                  fi
+
+                  # --- Summary ---
+                  echo ""
+                  echo "=== Autoscaler complete ==="
+                  echo "  Total shards:    ${total_shards}"
+                  echo "  Shards per node: ${shards_per_node}"
+                  echo "  Data nodes:      ${current_replicas} -> ${desired_replicas}"
+                  echo "  Cluster health:  ${cluster_status}"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi

@@ -1,0 +1,16 @@
+# Resource-Based Access (RBA) feature configuration for 8.8
+# Layer 4: Feature - Resource-Based Access control
+
+orchestration:
+  env:
+    - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
+    - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
+      value: 'true'
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
+
+identity:
+  env:
+    - name: RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'

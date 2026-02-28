@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -15,6 +16,19 @@ var ValidIngressBaseDomains = []string{
 	"ci.distro.ultrawombat.com",
 	"distribution.aws.camunda.cloud",
 }
+
+const (
+	// DefaultKeycloakHost is the default external Keycloak hostname used in CI.
+	DefaultKeycloakHost = "keycloak-24-9-0.ci.distro.ultrawombat.com"
+	// DefaultKeycloakProtocol is the default protocol for the external Keycloak.
+	DefaultKeycloakProtocol = "https"
+)
+
+// DeployPlatforms lists the valid deployment infrastructure platforms.
+var DeployPlatforms = []string{"gke", "eks", "rosa"}
+
+// TestPlatforms lists the valid test platform identifiers.
+var TestPlatforms = []string{"gke", "eks", "openshift"}
 
 // KeycloakConfig holds Keycloak connection settings.
 type KeycloakConfig struct {
@@ -44,6 +58,7 @@ type DeploymentConfig struct {
 	TasklistIndexPrefix      string   `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string   `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
 	IngressHost              string   `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressSubdomain         string   `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
 	IngressBaseDomain        string   `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	Flow                     string   `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string   `mapstructure:"envFile" yaml:"envFile,omitempty"`
@@ -54,6 +69,9 @@ type DeploymentConfig struct {
 	DockerUsername           string   `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
 	DockerPassword           string   `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
 	EnsureDockerRegistry     *bool    `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	DockerHubUsername        string   `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
+	DockerHubPassword        string   `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
+	EnsureDockerHub          *bool    `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
 	RenderTemplates          *bool    `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
 	RenderOutputDir          string   `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
 	ExtraValues              []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
@@ -90,6 +108,7 @@ type RootConfig struct {
 	TasklistIndexPrefix      string                      `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
 	OperateIndexPrefix       string                      `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
 	IngressHost              string                      `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressSubdomain         string                      `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
 	IngressBaseDomain        string                      `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	Flow                     string                      `mapstructure:"flow" yaml:"flow,omitempty"`
 	EnvFile                  string                      `mapstructure:"envFile" yaml:"envFile,omitempty"`
@@ -100,6 +119,9 @@ type RootConfig struct {
 	DockerUsername           string                      `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
 	DockerPassword           string                      `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
 	EnsureDockerRegistry     *bool                       `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	DockerHubUsername        string                      `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
+	DockerHubPassword        string                      `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
+	EnsureDockerHub          *bool                       `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
 	RenderTemplates          *bool                       `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
 	RenderOutputDir          string                      `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
 	ExtraValues              []string                    `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
@@ -133,7 +155,11 @@ func ResolvePath(explicit string) (string, error) {
 func Read(path string, includeEnv bool) (*RootConfig, error) {
 	rc := &RootConfig{}
 	// Missing file is not an error; we will create it on write
-	if data, err := os.ReadFile(path); err == nil {
+	data, err := os.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to read config %q: %w", path, err)
+	}
+	if err == nil {
 		if err := yaml.Unmarshal(data, rc); err != nil {
 			return nil, fmt.Errorf("failed to parse config %q: %w", path, err)
 		}
@@ -249,8 +275,8 @@ func applyEnvOverrides(rc *RootConfig) {
 	}
 }
 
-// firstNonEmpty returns the first non-empty string.
-func firstNonEmpty(vals ...string) string {
+// FirstNonEmpty returns the first non-empty string.
+func FirstNonEmpty(vals ...string) string {
 	for _, v := range vals {
 		if strings.TrimSpace(v) != "" {
 			return v
@@ -259,15 +285,29 @@ func firstNonEmpty(vals ...string) string {
 	return ""
 }
 
-// MergeStringField applies deployment/root value to target if target is empty.
-func MergeStringField(target *string, depVal, rootVal string) {
-	if strings.TrimSpace(*target) == "" {
-		*target = firstNonEmpty(depVal, rootVal)
+// MergeStringField applies deployment/root value to target when the CLI flag
+// was not explicitly set by the user. When changedFlags is non-nil and contains
+// flagName, the target is left untouched because the CLI value takes precedence.
+// For flags whose default is empty (""), the legacy behaviour (skip when
+// non-empty) is equivalent, but for flags with non-empty defaults (e.g.
+// --platform "gke") this ensures config-file values can still take effect.
+func MergeStringField(target *string, depVal, rootVal string, changedFlags map[string]bool, flagName string) {
+	if changedFlags != nil && changedFlags[flagName] {
+		return // CLI flag was explicitly set; do not override
+	}
+	merged := FirstNonEmpty(depVal, rootVal)
+	if merged != "" {
+		*target = merged
 	}
 }
 
-// MergeBoolField applies deployment/root value to target if target pointer is nil.
-func MergeBoolField(target *bool, depVal, rootVal *bool) {
+// MergeBoolField applies deployment/root value to target if the flag was not
+// explicitly set by the user. When changedFlags is non-nil and contains flagName,
+// the target is left untouched because the CLI value takes precedence.
+func MergeBoolField(target *bool, depVal, rootVal *bool, changedFlags map[string]bool, flagName string) {
+	if changedFlags != nil && changedFlags[flagName] {
+		return // CLI flag was explicitly set; do not override
+	}
 	if depVal != nil {
 		*target = *depVal
 	} else if rootVal != nil {
@@ -447,24 +487,12 @@ func parseValue(value string) any {
 	}
 
 	// Try integer
-	if i, err := parseInt(value); err == nil {
+	if i, err := strconv.Atoi(value); err == nil {
 		return i
 	}
 
 	// Return as string
 	return value
-}
-
-// parseInt attempts to parse a string as an integer.
-func parseInt(s string) (int, error) {
-	var result int
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0, fmt.Errorf("not an integer")
-		}
-		result = result*10 + int(c-'0')
-	}
-	return result, nil
 }
 
 // formatValue converts a value to a string for display.

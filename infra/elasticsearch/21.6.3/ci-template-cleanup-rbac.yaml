@@ -1,0 +1,51 @@
+# Cluster-scoped RBAC for the ci-template-cleanup CronJob.
+#
+# The cleanup script needs to list K8s namespaces (cluster-wide) to detect
+# orphaned hex-prefixed Elasticsearch indices. Each ES pool has its own
+# ServiceAccount, so all pool SAs must be listed as subjects here.
+#
+# This file is NOT processed by deploy-elasticsearch.sh's per-pool sed
+# replacement. It is applied once, separately, and covers all pools.
+#
+# Deploy:  kubectl apply -f infra/elasticsearch/21.6.3/ci-template-cleanup-rbac.yaml
+# Refresh: Re-run whenever a new pool is added.
+#
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ci-template-cleanup-ns-reader
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ci-template-cleanup-ns-reader
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+subjects:
+  - kind: ServiceAccount
+    name: ci-template-cleanup
+    namespace: distribution-elasticsearch-21-6-3-pool-0
+  - kind: ServiceAccount
+    name: ci-template-cleanup
+    namespace: distribution-elasticsearch-21-6-3-pool-1
+  - kind: ServiceAccount
+    name: ci-template-cleanup
+    namespace: distribution-elasticsearch-21-6-3-pool-2
+  - kind: ServiceAccount
+    name: ci-template-cleanup
+    namespace: distribution-elasticsearch-21-6-3-pool-3
+roleRef:
+  kind: ClusterRole
+  name: ci-template-cleanup-ns-reader
+  apiGroup: rbac.authorization.k8s.io

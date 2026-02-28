@@ -1,0 +1,17 @@
+# Document Store feature configuration for 8.8
+# Layer 4: Feature - Document Store (AWS S3)
+
+global:
+  documentStore:
+    activeStoreId: "aws"
+    type:
+      aws:
+        enabled: true
+        storeId: "aws"
+        bucket: "camunda-ci-eks-prod-team-bucket-qa"
+        region: "eu-central-1"
+        bucketPath: "documents"
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        existingSecret: "s3-bucket-credentials"
+        accessKeyIdKey: "access-key-id"
+        secretAccessKeyKey: "secret-access-key"

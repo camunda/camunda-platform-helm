@@ -1,0 +1,137 @@
+# External Keycloak auth configuration for 8.8
+# Layer 2: Auth method - External Keycloak (for multi-tenancy scenarios)
+
+global:
+  annotations:
+    keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
+  identity:
+    keycloak:
+      url:
+        protocol: $KEYCLOAK_EXT_PROTOCOL_24_9_0
+        host: $KEYCLOAK_EXT_HOST_24_9_0
+        port: 443
+      realm: "/realms/$KEYCLOAK_REALM"
+      auth:
+        adminUser: "admin"
+        existingSecret: "infra-credentials"
+        existingSecretKey: "keycloak-admin-password"
+    auth:
+      enabled: true
+      publicIssuerUrl: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM"
+      admin:
+        enabled: true
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-console-client-token"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-optimize-client-token"
+
+identity:
+  realm:
+    enabled: true
+    id: $KEYCLOAK_REALM
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+
+identityKeycloak:
+  enabled: false
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
+      userPasswordKey: identity-keycloak-postgresql-user-password
+
+
+connectors:
+  contextPath: "/connectors"
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
+
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  restapi:
+    mail:
+      # This value is required, otherwise the restapi pod wouldn't start.
+      fromAddress: noreply@example.com
+
+# WebModeler Database.
+webModelerPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "webmodeler-postgresql-admin-password"
+      userPasswordKey: "webmodeler-postgresql-user-password"
+
+orchestration:
+  migration:
+    identity:
+      backoffLimit: 12
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-migration-client-secret
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
+
+console:
+  keycloak:
+    realm: $KEYCLOAK_REALM

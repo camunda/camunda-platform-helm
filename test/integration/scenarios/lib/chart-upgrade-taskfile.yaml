@@ -6,6 +6,10 @@ vars:
   TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
   INFRA_TYPE_SUFFIX: '{{ if eq (env "PLATFORM") "eks" }}eks-{{ end }}{{ .INFRA_TYPE }}'
   TEST_CHART_FLOW: '{{ env "TEST_CHART_FLOW" }}'
+  VALUES_CONFIG: '{{ env "VALUES_CONFIG" | default "{}" }}'
+  # Selection + composition model configuration
+  LAYERED_VALUES_DIR: '{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values'
+
 tasks:
   pre:
     env:
@@ -26,58 +30,135 @@ tasks:
         bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-upgrade-minor.sh
       {{ end }}
 
+  # =============================================================================
+  # upgrade:exec - Uses selection + composition model
+  # =============================================================================
+  # This task now uses the selection + composition approach.
+  # 
+  # Environment variables (new - preferred):
+  #   TEST_IDENTITY    - Identity: keycloak, keycloak-external, oidc, basic, hybrid
+  #   TEST_PERSISTENCE - Persistence: elasticsearch, opensearch, rdbms, rdbms-oracle
+  #   TEST_PLATFORM    - Platform: gke, eks, openshift
+  #   TEST_FEATURES    - Features (comma-separated): multitenancy, rba, documentstore
+  #   TEST_QA          - Enable QA config: true/false
+  #   TEST_IMAGE_TAGS  - Enable image tag overrides: true/false
+  #   TEST_UPGRADE     - Enable upgrade flow: true/false
+  #
+  # Legacy variables (deprecated but still supported):
+  #   TEST_VALUES_SCENARIO - Used to derive all settings
+  #   TEST_AUTH_TYPE       - Maps to TEST_IDENTITY
+  # =============================================================================
   # https://docs.camunda.io/docs/self-managed/setup/upgrade/
   exec:
     cmds:
     - |
       set -o pipefail
+      
+      VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
+      
+      # Check if values directory exists (new model)
+      if [ -d "$VALUES_DIR" ]; then
+        echo "Using selection + composition model from: $VALUES_DIR"
+        
+        # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
+        # This replaces ~180 lines of bash that duplicated the Go layer resolution logic.
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+        SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
+        
+        MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
+          --scenario-path "$SCENARIO_DIR" \
+          --identity "${TEST_IDENTITY:-keycloak}" \
+          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          --features "${TEST_FEATURES:-}" \
+          --qa="${TEST_QA:-false}" \
+          --image-tags="${TEST_IMAGE_TAGS:-false}" \
+          --upgrade-flow=true \
+          --flow="${TEST_CHART_FLOW:-upgrade-minor}" \
+          --chart-version="${TEST_CHART_VERSION:-}" \
+          --infra-type "${INFRA_TYPE:-}" \
+          --values-config '{{ .VALUES_CONFIG }}' \
+          --interactive=false \
+          --log-level info)
+        
+        echo ""
+        echo "=========================================="
+        echo "Merged values file: $MERGED_VALUES"
+        echo "Final helm upgrade command:"
+        echo "=========================================="
+        
+        EXTRA_VALUES_ARGS=""
+        if [ -f /tmp/extra-values-file.yaml ]; then
+          EXTRA_VALUES_ARGS="--values /tmp/extra-values-file.yaml"
+        fi
+        
+        helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
+          --namespace {{ .TEST_NAMESPACE }} \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+          --values "$MERGED_VALUES" \
+          {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
+          --values {{ .TEST_HELM_DIGEST_VALUES }} \
+          {{ end -}}
+          $EXTRA_VALUES_ARGS \
+          ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
+          --force \
+          --timeout 20m0s \
+          --set orchestration.upgrade.allowPreReleaseImages=true \
+          --wait-for-jobs \
+          --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
+      
+      else
+        # Fallback to legacy monolithic values files
+        echo "WARNING: Values directory not found: $VALUES_DIR" >&2
+        echo "Falling back to legacy values files" >&2
+        
+        {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
+        export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
+        export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
+        export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
+        export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
 
-      {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
-      export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
-      export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
-      export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
-      export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
+        envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp
+        mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        {{ end }}
 
-      envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp
-      mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      {{ end }}
+        MERGED_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}-merged.yaml
+        USE_SCENARIO_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+        {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
+        {{ if (ne .TEST_CHART_FLOW "upgrade-patch") -}}
+        yq ea '. as $item ireduce ({}; . *+ $item)' \
+          "$USE_SCENARIO_FILE" \
+          {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
+          > "$MERGED_FILE"
+        USE_SCENARIO_FILE="$MERGED_FILE"
+        {{ end -}}
+        {{ end -}}
 
-      MERGED_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}-merged.yaml
-      USE_SCENARIO_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
-      {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
-      {{ if (ne .TEST_CHART_FLOW "upgrade-patch") -}}
-      yq ea '. as $item ireduce ({}; . *+ $item)' \
-        "$USE_SCENARIO_FILE" \
-        {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
-        > "$MERGED_FILE"
-      USE_SCENARIO_FILE="$MERGED_FILE"
-      {{ end -}}
-      {{ end -}}
+        IMAGE_TAGS_ARGS=""
+        if [ -f /tmp/values-image-tags-processed.yaml ]; then
+          IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
+          echo "Including processed image tags file"
+        fi
 
-      IMAGE_TAGS_ARGS=""
-      if [[ -f /tmp/values-image-tags-processed.yaml ]]; then
-        IMAGE_TAGS_ARGS="--values /tmp/values-image-tags-processed.yaml"
-        echo "Including processed image tags file"
+        helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
+          --namespace {{ .TEST_NAMESPACE }} \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+          --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+          --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
+          --values "$USE_SCENARIO_FILE" \
+          {{ if eq .PLATFORM "eks" -}}
+          --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
+          {{ end -}}
+          {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
+          --values {{ .TEST_HELM_DIGEST_VALUES }} \
+          {{ end -}}
+          --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
+          $IMAGE_TAGS_ARGS \
+          --force \
+          --timeout 20m0s \
+          --set orchestration.upgrade.allowPreReleaseImages=true \
+          --wait-for-jobs \
+          --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
       fi
-
-      helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
-        --namespace {{ .TEST_NAMESPACE }} \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
-        --values "$USE_SCENARIO_FILE" \
-        {{ if eq .PLATFORM "eks" -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
-        {{ end -}}
-        {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
-        --values {{ .TEST_HELM_DIGEST_VALUES }} \
-        {{ end -}}
-        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
-        $IMAGE_TAGS_ARGS \
-        --force \
-        --timeout 20m0s \
-        --set orchestration.upgrade.allowPreReleaseImages=true \
-        --force \
-        --wait-for-jobs \
-        --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'

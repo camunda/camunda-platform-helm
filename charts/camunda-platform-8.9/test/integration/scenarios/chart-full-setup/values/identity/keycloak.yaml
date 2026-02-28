@@ -1,0 +1,106 @@
+# Keycloak auth configuration for 8.9
+# Layer 2: Auth method - Internal Keycloak
+
+global:
+  elasticsearch:
+    enabled: true
+  ingress:
+    enabled: true
+    className: nginx
+    # The Ingress host will be added via CLI.
+    host: "$CAMUNDA_HOSTNAME"
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+      
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
+  identity:
+    auth:
+      enabled: true
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-console-client-token"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-optimize-client-token"
+      ## This section will be enabled by the pre-install-upgrade.sh for backwards compatibility with alpha8 chart.
+      ## TODO: Remove this section after the 8.8 release.
+      ## START pre-install-upgrade.sh COMMENT
+      # orchestration:
+      #   redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+      #   secret:
+      #     existingSecret: "integration-test-credentials"
+      #     existingSecretKey: "identity-orchestration-client-token"
+      # connectors:
+      #   secret:
+      #     existingSecret: "integration-test-credentials"
+      #     existingSecretKey: "identity-connectors-client-token"
+      ## END pre-install-upgrade.sh COMMENT
+
+identityKeycloak:
+  enabled: true
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
+
+optimize:
+  enabled: true
+  contextPath: "/optimize"
+  livenessProbe:
+    enabled: true
+
+connectors:
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
+
+webModeler:
+  security:
+    authentication:
+      method: oidc
+
+orchestration:
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api

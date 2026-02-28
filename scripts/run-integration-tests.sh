@@ -281,10 +281,36 @@ TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
-setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM" "$KUBE_CONTEXT"
+# ── Namespace-scoped .env to avoid collisions during parallel matrix runs ──
+# When multiple matrix entries target the same chart version, they share the
+# same TEST_SUITE_PATH.  Writing a single .env would cause a race condition.
+# Instead we write .env.<namespace> and source it into the process environment
+# so that Playwright inherits the values.  The dotenv() calls in test specs
+# are harmless no-ops because dotenv never overrides existing env vars.
+ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
+trap 'rm -f "$ENV_FILE"' EXIT
+
+setup_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM" "$KUBE_CONTEXT"
+
+# Export every variable from the namespace-scoped .env into the shell so that
+# the npx playwright subprocess inherits them without needing the .env file.
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+# ── Namespace-scoped Playwright output directories ──
+# Playwright defaults test artifacts to <cwd>/test-results and HTML reports to
+# <cwd>/playwright-report.  When parallel entries cd into the same test suite
+# directory these collide.  The env vars below isolate each run.
+export PLAYWRIGHT_TEST_OUTPUT="${TEST_SUITE_PATH}/test-results/${NAMESPACE}"
+export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}"
+export PLAYWRIGHT_JUNIT_OUTPUT_FILE="${TEST_SUITE_PATH}/test-results/${NAMESPACE}/results.xml"
 
 log "Invoking Playwright tests with:"
 log "  TEST_SUITE_PATH='${TEST_SUITE_PATH}' SHOW_HTML_REPORT='${SHOW_HTML_REPORT}' TEST_EXCLUDE='${TEST_EXCLUDE}'"
+log "  ENV_FILE='${ENV_FILE}'"
+log "  PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
 RERUN_CMD="./scripts/run-integration-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE} --platform ${PLATFORM}"

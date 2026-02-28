@@ -1,0 +1,108 @@
+# CronJob: Automated cleanup of ORPHANED CI-created Elasticsearch resources.
+#
+# CI jobs create ES indices and templates using TWO naming conventions:
+#
+# Convention 1 — Hex-prefixed (6-char hex):
+#   Pattern: "abc123-operate-*", "abc123-tasklist-*"
+#   Origin:  GitHub Actions workflow-vars generates a 6-char hex from
+#            sha256(namespace + run_id + attempt). This hex is also the
+#            last segment of the K8s namespace (e.g. "camunda-pr-42-...-abc123").
+#   Safety:  Cross-reference hex against active K8s namespaces. If the hex
+#            appears in any namespace name, the CI job is still running.
+#
+# Convention 2 — Component-prefixed (8-char random):
+#   Pattern: "orch-elasticsearch-xnqzizh7-*", "opt-keycloak-original-zzj93rze-*",
+#            "task-oidc-mb3m84y1-*", "op-elasticsearch-a1b2c3d4-*"
+#   Origin:  The deploy-camunda Go CLI generates a crypto/rand 8-char suffix
+#            per test scenario. The index prefix is {component}-{scenario}-{8rand}.
+#   Safety:  The 8-char ID is random and cannot be correlated to namespaces.
+#            Instead, use AGE-BASED cleanup: delete resources older than
+#            MAX_INDEX_AGE_HOURS (default: 4h). No CI test runs that long.
+#
+# Additionally handles:
+#   - Broken indices with literal "$" in names (un-interpolated Helm vars)
+#   - Bare "operate-*" and "tasklist-*" indices (no CI prefix, age-based)
+#   - Setting replicas=0 on all non-system indices (no replicas needed on CI)
+#
+# The cleanup script lives in scripts/ci-cleanup-elasticsearch.sh and is
+# mounted into the pod via a ConfigMap (ci-cleanup-script). The ConfigMap
+# is created by deploy-elasticsearch.sh from that script file.
+#
+# This CronJob runs every 5 minutes. It deletes BOTH indices and templates.
+#
+# RBAC: Requires cluster-level namespace list permission (for Convention 1).
+#
+# Deploy: scripts/deploy-elasticsearch.sh (creates ConfigMap + applies this file)
+#
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-template-cleanup
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ci-template-cleanup
+  namespace: distribution-elasticsearch-21-6-3
+  labels:
+    app.kubernetes.io/name: ci-template-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: elasticsearch
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: ci-template-cleanup
+        spec:
+          serviceAccountName: ci-template-cleanup
+          restartPolicy: OnFailure
+          volumes:
+            - name: cleanup-script
+              configMap:
+                name: ci-cleanup-script
+                defaultMode: 0755
+          containers:
+            - name: cleanup
+              image: bitnamilegacy/os-shell:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: ES_URL
+                  value: "https://elasticsearch:9200"
+                - name: ES_USER
+                  value: "elastic"
+                - name: ES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: infra-credentials
+                      key: elasticsearch-password
+                # Max age in hours for component-prefixed CI resources.
+                # Indices/templates older than this are deleted unconditionally.
+                - name: MAX_INDEX_AGE_HOURS
+                  value: "1"
+              volumeMounts:
+                - name: cleanup-script
+                  mountPath: /scripts
+                  readOnly: true
+              command:
+                - /scripts/ci-cleanup-elasticsearch.sh
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi

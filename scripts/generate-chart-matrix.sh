@@ -204,6 +204,19 @@ write_matrix_entry() {
         infra_type_eks=$(echo "$prScenario" | yq e -r '.infra-type.eks // "preemptible"' -)
         echo "    infraTypeGke: ${infra_type_gke}" >> matrix_versions.txt
         echo "    infraTypeEks: ${infra_type_eks}" >> matrix_versions.txt
+        # Selection + Composition model fields.
+        # These propagate through test-chart-version.yaml -> test-chart-version-template.yaml
+        # -> test-integration-template.yaml -> test-integration-runner.yaml -> Taskfile env vars.
+        identity=$(echo "$prScenario" | yq e -r '.identity // ""' -)
+        persistence=$(echo "$prScenario" | yq e -r '.persistence // ""' -)
+        features=$(echo "$prScenario" | yq e -r '(.features // []) | join(",")' -)
+        qa=$(echo "$prScenario" | yq e -r '.qa // false' -)
+        upgrade=$(echo "$prScenario" | yq e -r '.upgrade // false' -)
+        echo "    identity: ${identity}" >> matrix_versions.txt
+        echo "    persistence: ${persistence}" >> matrix_versions.txt
+        echo "    features: ${features}" >> matrix_versions.txt
+        echo "    qa: ${qa}" >> matrix_versions.txt
+        echo "    upgrade: ${upgrade}" >> matrix_versions.txt
       done
     done
     sed -i -e '$s/,$/]\n/' matrix_versions.txt

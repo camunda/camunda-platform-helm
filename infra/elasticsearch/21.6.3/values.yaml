@@ -1,14 +1,17 @@
 master:
   replicaCount: 3
   resources:
-    requests: { cpu: "2000m", memory: "3Gi" }
-    limits: { cpu: "4000m", memory: "3Gi" }
+    requests: { cpu: "3000m", memory: "6Gi" }
+    limits: { cpu: "6000m", memory: "6Gi" }
   roles:
     master: true
     data: false
     ingest: false
     coordinating: false
-  heapSize: 1536m
+  heapSize: 3g
+  extraEnvVars:
+    - name: ES_JAVA_OPTS
+      value: "-XX:G1HeapRegionSize=8m -XX:HeapDumpPath=/tmp"
   persistence:
     enabled: true
     size: 2Gi
@@ -17,7 +20,16 @@ master:
     minAvailable: 2
   service:
     type: ClusterIP
-  podAntiAffinityPreset: "soft"
+  # Schedule master pods on dedicated c2-standard-4 nodes in the 'es-master-2' pool.
+  # These nodes are tainted to prevent CI workloads from competing for CPU,
+  # which is critical because cluster state computation is single-threaded.
+  nodeSelector:
+    cloud.google.com/gke-nodepool: es-master-2
+  tolerations:
+    - key: "component"
+      value: "es-master"
+      effect: "NoSchedule"
+  podAntiAffinityPreset: "hard"
   readinessProbe:
     enabled: true
     initialDelaySeconds: 45
@@ -29,10 +41,10 @@ master:
 
 data:
   replicaCount: 6
-  heapSize: 1536m
+  heapSize: 2g
   resources:
-    requests: { cpu: "2000m", memory: "3Gi" }
-    limits: { cpu: "4000m", memory: "3Gi" }
+    requests: { cpu: "2000m", memory: "4Gi" }
+    limits: { cpu: "4000m", memory: "4Gi" }
   roles:
     master: false
     data: true
@@ -128,9 +140,19 @@ kibana:
   extraEnvVars:
     - name: NODE_OPTIONS
       value: "--max-old-space-size=3072"
-  extraConfig:
+  extraConfiguration:
     xpack.reporting.enabled: false
     xpack.fleet.enabled: true
+    # Required by Kibana alerting, connectors, and saved object encryption.
+    # Without this key Kibana refuses to create alerting rules or actions.
+    xpack.encryptedSavedObjects.encryptionKey: "5470b74cd2be8ca2a9d6f0dbc0d34e89"
+    # --- Stack Monitoring ---
+    # Enables the Stack Monitoring UI in Kibana so you can view cluster health,
+    # node metrics, index performance, and shard allocation over time.
+    monitoring.ui.enabled: true
+    # Use the self-monitoring data written by ES to local .monitoring-* indices
+    # (collection is enabled via xpack.monitoring.collection.enabled on the ES side).
+    monitoring.ui.ccs.enabled: false
   elasticsearch:
     security:
       auth:
@@ -193,6 +215,33 @@ extraConfig:
   cluster.routing.rebalance.enable: all
   cluster.routing.allocation.same_shard.host: true
   indices.recovery.max_bytes_per_sec: 100mb
+  cluster.routing.allocation.node_concurrent_recoveries: 4
+  cluster.routing.allocation.node_initial_primaries_recoveries: 8
+  # Give the master more time to process and publish cluster state updates.
+  # After template cleanup, each update takes ~121ms (14ms computation + 42ms
+  # publication + 22ms commit + 38ms completion). ~248 updates can queue before
+  # the 30s client timeout. 180s gives headroom if templates accumulate again.
+  cluster.publish.timeout: 180s
+  # Log cluster state updates that take longer than 10s (default) for diagnostics.
+  cluster.service.slow_task_logging_threshold: 5s
+  # --- Self-monitoring for Kibana Stack Monitoring ---
+  # Enables ES to collect its own metrics (node stats, index stats, cluster stats)
+  # and write them to local .monitoring-* indices. Kibana reads these indices to
+  # power the Stack Monitoring UI (cluster health, node performance, shard allocation, etc.).
+  # NOTE: Must use nested YAML (not flat dotted keys) because the Bitnami chart
+  # generates its own nested xpack.security block. Flat "xpack.monitoring.*" keys
+  # get clobbered during the YAML merge; nested keys merge correctly.
+  xpack:
+    monitoring:
+      collection:
+        enabled: true
+        # Collect metrics every 30s (default: 10s). Reduced frequency to limit
+        # monitoring index overhead on a CI cluster with many transient indices.
+        interval: 30s
+      history:
+        # Retain monitoring data for 3 days (default: 7d). Keeps disk usage in
+        # check while still providing enough history to diagnose multi-hour issues.
+        duration: 3d
 
 extraEnvVars:
   - name: ES_JAVA_OPTS

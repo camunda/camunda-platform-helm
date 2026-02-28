@@ -26,25 +26,40 @@ integration:
           shortname: es
           exclude: []
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch-external
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
             eks: preemptible
           platforms: [gke,eks]
         - name: keycloak-mt
-          enabled: false
+          enabled: true
           shortname: kemt
           exclude: []
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch-external
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
             eks: preemptible
+        - name: keycloak-rba
+          enabled: true
+          shortname: kerba
+          exclude: []
+          auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch-external
+          flow: install
+          infra-type:
+            gke: distroci
         - name: oidc
           enabled: true
           shortname: esoi
           exclude: []
           auth: oidc
+          persistence: elasticsearch-external
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
@@ -58,6 +73,8 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          identity: keycloak-external
+          persistence: elasticsearch-external
     nightly:
       scenario:
         - name: elasticsearch
@@ -70,6 +87,9 @@ integration:
           exclude: []
           shortname: mt
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch
+          features: [multitenancy]
         - name: oidc
           enabled: false
           exclude: []
@@ -90,3 +110,6 @@ integration:
           exclude: []
           shortname: docstr
           auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]

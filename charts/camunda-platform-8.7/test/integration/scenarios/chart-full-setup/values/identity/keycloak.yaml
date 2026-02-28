@@ -1,0 +1,52 @@
+# Keycloak auth configuration for 8.7
+# Layer 2: Auth method - Internal Keycloak
+
+global:
+  identity:
+    auth:
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-admin-client-password"
+      connectors:
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-connectors-client-password"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-console-client-password"
+      operate:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/operate"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-operate-client-password"
+      tasklist:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/tasklist"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-tasklist-client-password"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-optimize-client-password"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      zeebe:
+        existingSecret:
+          name: "integration-test-credentials"
+        existingSecretKey: "identity-zeebe-client-password"
+
+identityKeycloak:
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
