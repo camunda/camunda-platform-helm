@@ -360,8 +360,5 @@ data:
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
-  {{- range .Values.identity.extraConfiguration }}
-  {{ .file }}: |
-    {{ .content | indent 4 | trim }}
-  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.identity.extraConfiguration) }}
 {{- end }}

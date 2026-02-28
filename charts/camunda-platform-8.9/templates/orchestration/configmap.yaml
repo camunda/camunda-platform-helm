@@ -36,8 +36,5 @@ data:
     {{ .Values.orchestration.log4j2 | indent 4 | trim }}
   {{- end }}
 
-  {{- range .Values.orchestration.extraConfiguration }}
-  {{ .file }}: |
-    {{ .content | indent 4 | trim }}
-  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.orchestration.extraConfiguration) }}
 {{- end }}

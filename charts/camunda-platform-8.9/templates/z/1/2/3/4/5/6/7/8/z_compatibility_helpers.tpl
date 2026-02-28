@@ -161,284 +161,58 @@ Free-style inputs should be migrated manually by the user.
 */}}
 
 {{- if .Values.global.compatibility.orchestration.enabled -}}
+    {{- $migrationFields := list "configuration" "extraConfiguration" "env" "envFrom" "initContainers" "sidecars" "extraVolumes" "extraVolumeMounts" -}}
+
     {{/*
     Zeebe => Orchestration.
     */}}
     {{- if and .Values.zeebe .Values.zeebe.enabled -}}
-        {{/*
-        zeebe.configuration => orchestration.configuration
-        */}}
+        {{- range $field := $migrationFields }}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.configuration)
-            "oldName" "zeebe.configuration"
-            "newName" "orchestration.configuration"
+            "condition" (index $.Values.zeebe $field)
+            "oldName" (printf "zeebe.%s" $field)
+            "newName" (printf "orchestration.%s" $field)
         ) }}
-        {{/*
-        zeebe.extraConfiguration => orchestration.extraConfiguration
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.extraConfiguration)
-            "oldName" "zeebe.extraConfiguration"
-            "newName" "orchestration.extraConfiguration"
-        ) }}
-        {{/*
-        zeebe.env => orchestration.env
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.env)
-            "oldName" "zeebe.env"
-            "newName" "orchestration.env"
-        ) }}
-        {{/*
-        zeebe.envFrom => orchestration.envFrom
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.envFrom)
-            "oldName" "zeebe.envFrom"
-            "newName" "orchestration.envFrom"
-        ) }}
-        {{/*
-        zeebe.initContainers => orchestration.initContainers
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.initContainers)
-            "oldName" "zeebe.initContainers"
-            "newName" "orchestration.initContainers"
-        ) }}
-        {{/*
-        zeebe.sidecars => orchestration.sidecars
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.sidecars)
-            "oldName" "zeebe.sidecars"
-            "newName" "orchestration.sidecars"
-        ) }}
-        {{/*
-        zeebe.extraVolumes => orchestration.extraVolumes
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.extraVolumes)
-            "oldName" "zeebe.extraVolumes"
-            "newName" "orchestration.extraVolumes"
-        ) }}
-        {{/*
-        zeebe.extraVolumeMounts => orchestration.extraVolumeMounts
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebe.extraVolumeMounts)
-            "oldName" "zeebe.extraVolumeMounts"
-            "newName" "orchestration.extraVolumeMounts"
-        ) }}
+        {{- end -}}
     {{- end -}}
 
     {{/*
     Zeebe Gateway => Orchestration.
     */}}
     {{- if and .Values.zeebeGateway .Values.zeebeGateway.enabled -}}
-        {{/*
-        zeebeGateway.configuration => orchestration.configuration
-        */}}
+        {{- range $field := $migrationFields }}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.configuration)
-            "oldName" "zeebeGateway.configuration"
-            "newName" "orchestration.configuration"
+            "condition" (index $.Values.zeebeGateway $field)
+            "oldName" (printf "zeebeGateway.%s" $field)
+            "newName" (printf "orchestration.%s" $field)
         ) }}
-        {{/*
-        zeebeGateway.extraConfiguration => orchestration.extraConfiguration
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.extraConfiguration)
-            "oldName" "zeebeGateway.extraConfiguration"
-            "newName" "orchestration.extraConfiguration"
-        ) }}
-        {{/*
-        zeebeGateway.env => orchestration.env
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.env)
-            "oldName" "zeebeGateway.env"
-            "newName" "orchestration.env"
-        ) }}
-        {{/*
-        zeebeGateway.envFrom => orchestration.envFrom
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.envFrom)
-            "oldName" "zeebeGateway.envFrom"
-            "newName" "orchestration.envFrom"
-        ) }}
-        {{/*
-        zeebeGateway.initContainers => orchestration.initContainers
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.initContainers)
-            "oldName" "zeebeGateway.initContainers"
-            "newName" "orchestration.initContainers"
-        ) }}
-        {{/*
-        zeebeGateway.sidecars => orchestration.sidecars
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.sidecars)
-            "oldName" "zeebeGateway.sidecars"
-            "newName" "orchestration.sidecars"
-        ) }}
-        {{/*
-        zeebeGateway.extraVolumes => orchestration.extraVolumes
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.extraVolumes)
-            "oldName" "zeebeGateway.extraVolumes"
-            "newName" "orchestration.extraVolumes"
-        ) }}
-        {{/*
-        zeebeGateway.extraVolumeMounts => orchestration.extraVolumeMounts
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.zeebeGateway.extraVolumeMounts)
-            "oldName" "zeebeGateway.extraVolumeMounts"
-            "newName" "orchestration.extraVolumeMounts"
-        ) }}
+        {{- end -}}
     {{- end -}}
 
     {{/*
     Operate => Orchestration.
     */}}
     {{- if and .Values.operate .Values.operate.enabled -}}
-        {{/*
-        operate.configuration => orchestration.configuration
-        */}}
+        {{- range $field := $migrationFields }}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.configuration)
-            "oldName" "operate.configuration"
-            "newName" "orchestration.configuration"
+            "condition" (index $.Values.operate $field)
+            "oldName" (printf "operate.%s" $field)
+            "newName" (printf "orchestration.%s" $field)
         ) }}
-        {{/*
-        operate.extraConfiguration => orchestration.extraConfiguration
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.extraConfiguration)
-            "oldName" "operate.extraConfiguration"
-            "newName" "orchestration.extraConfiguration"
-        ) }}
-        {{/*
-        operate.env => orchestration.env
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.env)
-            "oldName" "operate.env"
-            "newName" "orchestration.env"
-        ) }}
-        {{/*
-        operate.envFrom => orchestration.envFrom
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.envFrom)
-            "oldName" "operate.envFrom"
-            "newName" "orchestration.envFrom"
-        ) }}
-        {{/*
-        operate.initContainers => orchestration.initContainers
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.initContainers)
-            "oldName" "operate.initContainers"
-            "newName" "orchestration.initContainers"
-        ) }}
-        {{/*
-        operate.sidecars => orchestration.sidecars
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.sidecars)
-            "oldName" "operate.sidecars"
-            "newName" "orchestration.sidecars"
-        ) }}
-        {{/*
-        operate.extraVolumes => orchestration.extraVolumes
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.extraVolumes)
-            "oldName" "operate.extraVolumes"
-            "newName" "orchestration.extraVolumes"
-        ) }}
-        {{/*
-        operate.extraVolumeMounts => orchestration.extraVolumeMounts
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.operate.extraVolumeMounts)
-            "oldName" "operate.extraVolumeMounts"
-            "newName" "orchestration.extraVolumeMounts"
-        ) }}
+        {{- end -}}
     {{- end -}}
 
     {{/*
     Tasklist => Orchestration.
     */}}
     {{- if and .Values.tasklist .Values.tasklist.enabled -}}
-        {{/*
-        tasklist.configuration => orchestration.configuration
-        */}}
+        {{- range $field := $migrationFields }}
         {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.configuration)
-            "oldName" "tasklist.configuration"
-            "newName" "orchestration.configuration"
+            "condition" (index $.Values.tasklist $field)
+            "oldName" (printf "tasklist.%s" $field)
+            "newName" (printf "orchestration.%s" $field)
         ) }}
-        {{/*
-        tasklist.extraConfiguration => orchestration.extraConfiguration
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.extraConfiguration)
-            "oldName" "tasklist.extraConfiguration"
-            "newName" "orchestration.extraConfiguration"
-        ) }}
-        {{/*
-        tasklist.env => orchestration.env
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.env)
-            "oldName" "tasklist.env"
-            "newName" "orchestration.env"
-        ) }}
-        {{/*
-        tasklist.envFrom => orchestration.envFrom
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.envFrom)
-            "oldName" "tasklist.envFrom"
-            "newName" "orchestration.envFrom"
-        ) }}
-        {{/*
-        tasklist.initContainers => orchestration.initContainers
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.initContainers)
-            "oldName" "tasklist.initContainers"
-            "newName" "orchestration.initContainers"
-        ) }}
-        {{/*
-        tasklist.sidecars => orchestration.sidecars
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.sidecars)
-            "oldName" "tasklist.sidecars"
-            "newName" "orchestration.sidecars"
-        ) }}
-        {{/*
-        tasklist.extraVolumes => orchestration.extraVolumes
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.extraVolumes)
-            "oldName" "tasklist.extraVolumes"
-            "newName" "orchestration.extraVolumes"
-        ) }}
-        {{/*
-        tasklist.extraVolumeMounts => orchestration.extraVolumeMounts
-        */}}
-        {{ include "camundaPlatform.manualMigrationRequired" (dict
-            "condition" (.Values.tasklist.extraVolumeMounts)
-            "oldName" "tasklist.extraVolumeMounts"
-            "newName" "orchestration.extraVolumeMounts"
-        ) }}
+        {{- end -}}
     {{- end -}}
 {{- end -}}
 

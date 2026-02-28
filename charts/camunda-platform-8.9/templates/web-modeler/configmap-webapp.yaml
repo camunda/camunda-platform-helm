@@ -51,8 +51,5 @@ data:
     {{- end }}
 
   {{- end }}
-  {{- range $key, $val := .Values.webModeler.webapp.extraConfiguration }}
-  {{ $key }}: |
-    {{ $val | indent 4 | trim }}
-  {{- end }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.webModeler.webapp.extraConfiguration) }}
 {{- end }}

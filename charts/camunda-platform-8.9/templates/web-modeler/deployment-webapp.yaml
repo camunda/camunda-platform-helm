@@ -147,10 +147,8 @@ spec:
             - name: config
               mountPath: /home/webapp/application.toml
               subPath: application.toml
-          {{- range $key, $val := .Values.webModeler.webapp.extraConfiguration }}
-            - name: config
-              mountPath: /home/webapp/config/{{ $key }}
-              subPath: {{ $key }}
+          {{- with .Values.webModeler.webapp.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
