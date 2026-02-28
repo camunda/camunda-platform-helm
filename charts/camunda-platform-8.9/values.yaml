@@ -2343,10 +2343,10 @@ orchestration:
   ## @param orchestration.debug if true, extra info is printed.
   debug: false
 
-  ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, identity, operate).
+  ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, admin, operate). Note: The "identity" profile has been renamed to "admin" in Camunda 8.9. Using "orchestration.profiles.identity" is deprecated.
   profiles:
     broker: true
-    identity: true
+    admin: true
     operate: true
     tasklist: true
 

@@ -55,7 +55,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.profiles.broker": "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "identity,operate,tasklist,consolidated-auth",
+				"configmapApplication.spring.profiles.active": "admin,operate,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -64,7 +64,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.profiles.operate": "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,tasklist,consolidated-auth",
+				"configmapApplication.spring.profiles.active": "admin,broker,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -73,7 +73,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.profiles.tasklist": "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,operate,consolidated-auth",
+				"configmapApplication.spring.profiles.active": "admin,broker,operate,consolidated-auth",
 			},
 		},
 		{
@@ -105,6 +105,16 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
+		{
+			Name: "TestApplicationYamlShouldContainEnabledProfilesWithDeprecatedIdentityProfile",
+			Values: map[string]string{
+				"orchestration.profiles.identity": "true",
+				"orchestration.profiles.admin":    "false",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "admin,broker,operate,tasklist,consolidated-auth",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -120,7 +130,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 				"zeebe.enabled":                              "false",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "identity,operate,tasklist,consolidated-auth",
+				"configmapApplication.spring.profiles.active": "admin,operate,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -131,7 +141,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 				"operate.enabled":                            "true",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist,consolidated-auth",
+				"configmapApplication.spring.profiles.active": "admin,broker,operate,tasklist,consolidated-auth",
 			},
 		},
 		{
@@ -142,7 +152,7 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedCompatibility() 
 				"tasklist.enabled":                           "true",
 			},
 			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,identity,operate,tasklist,consolidated-auth",
+				"configmapApplication.spring.profiles.active": "admin,broker,operate,tasklist,consolidated-auth",
 			},
 		},
 		{

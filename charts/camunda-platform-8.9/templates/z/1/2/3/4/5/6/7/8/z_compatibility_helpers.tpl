@@ -481,3 +481,23 @@ This is only needed when elasticsearch is actually enabled and deployed.
         {{- $_ := set .Values.elasticsearch.commonLabels "tuned.openshift.io/elasticsearch" "" -}}
     {{- end -}}
 {{- end -}}
+
+{{/*
+********************************************************************************
+* Camunda 8.8 => 8.9
+
+Overview:
+    Backward compatibility to make the values of Camunda Helm chart v13.0.0 (Camunda 8.8)
+    works with Camunda Helm chart v14.0.0 (Camunda 8.9).
+********************************************************************************
+*/}}
+
+{{/*
+orchestration.profiles.identity => orchestration.profiles.admin
+The "identity" profile has been renamed to "admin" in Camunda 8.9.
+This mapping is applied unconditionally to ensure backward compatibility.
+*/}}
+{{- if hasKey .Values.orchestration.profiles "identity" -}}
+    {{- $_ := set .Values.orchestration.profiles "admin" .Values.orchestration.profiles.identity -}}
+    {{- $_ := unset .Values.orchestration.profiles "identity" -}}
+{{- end -}}
