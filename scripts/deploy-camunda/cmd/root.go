@@ -215,6 +215,7 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
 	f.BoolVar(&flags.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
 	f.StringVar(&flags.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
+	f.StringVar(&flags.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
 	f.BoolVar(&flags.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
 	f.StringVar(&flags.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")

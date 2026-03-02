@@ -292,6 +292,10 @@ _wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
 ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
 trap 'rm -f "$ENV_FILE"' EXIT
 
+# Export TEST_EXCLUDE so envsubst inside setup_env_file can substitute it
+# into the .env template (playwright-job-vars.env.template line: TEST_EXCLUDE=${TEST_EXCLUDE}).
+export TEST_EXCLUDE
+
 setup_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM" "$KUBE_CONTEXT"
 
 # Export every variable from the namespace-scoped .env into the shell so that
