@@ -306,7 +306,7 @@ zeebe:
       (eq (include "orchestration.hasNoExporter" .) "true")
     }}
     # zeebe.broker.exporters
-    exporters: {{ if eq (include "orchestration.hasNoExporter" .) "true" }}{{ printf "%s" "{}" }}{{ end }}
+    exporters: {{- if eq (include "orchestration.hasNoExporter" .) "true" }}{{ printf " %s" "{}" }}{{ end }}
     {{- end }}
     {{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" }}
       elasticsearch:
