@@ -1,0 +1,8 @@
+global:
+  elasticsearch:
+    enabled: false
+
+  noSecondaryStorage: true
+
+elasticsearch:
+  enabled: false
