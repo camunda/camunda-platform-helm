@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -188,7 +190,95 @@ func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 		}
 	}
 
+	files, err := ExpandImports(files)
+	if err != nil {
+		return nil, fmt.Errorf("expanding imports: %w", err)
+	}
 	return files, nil
+}
+
+// ExpandImports reads each file in the list and expands any top-level
+// "imports:" entries. Imported files are resolved relative to the
+// importing file's directory (name without .yaml extension).
+// The expanded list preserves merge order: imports before importer.
+// Circular imports are detected and return an error.
+func ExpandImports(files []string) ([]string, error) {
+	var result []string
+	seen := make(map[string]bool)     // dedup: skip files already in the list
+	expanding := make(map[string]bool) // circular import detection
+
+	var expand func(filePath string) error
+	expand = func(filePath string) error {
+		abs, _ := filepath.Abs(filePath)
+		if seen[abs] {
+			return nil // already included
+		}
+		if expanding[abs] {
+			return fmt.Errorf("circular import detected: %s", filePath)
+		}
+		expanding[abs] = true
+
+		// Read YAML and check for imports key
+		imports, err := readImports(filePath)
+		if err != nil {
+			return err
+		}
+
+		// Recursively expand each import first
+		dir := filepath.Dir(filePath)
+		for _, imp := range imports {
+			impPath := filepath.Join(dir, imp+".yaml")
+			if _, err := os.Stat(impPath); err != nil {
+				return fmt.Errorf("import %q in %s not found: %s", imp, filepath.Base(filePath), impPath)
+			}
+			if err := expand(impPath); err != nil {
+				return err
+			}
+		}
+
+		// Add this file after its imports
+		seen[abs] = true
+		result = append(result, filePath)
+		delete(expanding, abs)
+		return nil
+	}
+
+	for _, f := range files {
+		if err := expand(f); err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
+// readImports reads a YAML file and returns the value of its top-level
+// "imports" key as a []string. Returns an empty slice if the key is absent.
+func readImports(filePath string) ([]string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s for imports: %w", filePath, err)
+	}
+	var doc map[string]any
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("parsing %s for imports: %w", filePath, err)
+	}
+	raw, ok := doc["imports"]
+	if !ok {
+		return nil, nil
+	}
+	rawSlice, ok := raw.([]any)
+	if !ok {
+		return nil, fmt.Errorf("imports key in %s must be a list", filePath)
+	}
+	imports := make([]string, 0, len(rawSlice))
+	for _, v := range rawSlice {
+		s, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("imports entry in %s must be a string, got %T", filePath, v)
+		}
+		imports = append(imports, s)
+	}
+	return imports, nil
 }
 
 // needsMigrator returns true if the migrator values file should be included.
