@@ -134,17 +134,10 @@ setup_env_file() {
 
   if [[ "$test_suite_path" == *"8.7"* || "$test_suite_path" == *"8.6"* ]]; then
     for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
-      if [[ "$PLATFORM" == "gke" ]]; then
-        log "Fetching secret for service '$svc' (gke identity password)"
-        secret=$($kubectl_cmd -n "$namespace" \
-          get secret integration-test-credentials \
-          -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
-      else
-        log "Fetching secret for service '$svc' (legacy secret key)"
-        secret=$($kubectl_cmd -n "$namespace" \
-          get secret integration-test-credentials \
-          -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
-      fi
+      log "Fetching secret for service '$svc' (identity client password)"
+      secret=$($kubectl_cmd -n "$namespace" \
+        get secret integration-test-credentials \
+        -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
       mask_secret "$secret"
       echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
     done
