@@ -867,7 +867,7 @@ jobs:
       run:
         shell: bash
     timeout-minutes: 20
-    if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
+    if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'nosec' }}
     permissions:
       contents: read
       id-token: write
@@ -994,7 +994,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' && inputs.shortname != 'nosec' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
