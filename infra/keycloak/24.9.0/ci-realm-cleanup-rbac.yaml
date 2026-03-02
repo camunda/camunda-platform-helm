@@ -1,0 +1,38 @@
+# Cluster-scoped RBAC for the ci-realm-cleanup CronJob.
+#
+# The cleanup script needs to list K8s namespaces (cluster-wide) to detect
+# orphaned CI-created Keycloak realms via namespace cross-reference.
+#
+# Deploy:  kubectl apply -f infra/keycloak/24.9.0/ci-realm-cleanup-rbac.yaml
+# Refresh: Re-run whenever the Keycloak namespace changes.
+#
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ci-realm-cleanup-ns-reader
+  labels:
+    app.kubernetes.io/name: ci-realm-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: keycloak
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ci-realm-cleanup-ns-reader
+  labels:
+    app.kubernetes.io/name: ci-realm-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: keycloak
+subjects:
+  - kind: ServiceAccount
+    name: ci-realm-cleanup
+    namespace: distribution-keycloak-24-9-0
+roleRef:
+  kind: ClusterRole
+  name: ci-realm-cleanup-ns-reader
+  apiGroup: rbac.authorization.k8s.io

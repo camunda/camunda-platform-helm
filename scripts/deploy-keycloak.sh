@@ -155,4 +155,41 @@ fi
 
 echo "Keycloak Helm release applied."
 
+# Create ConfigMap from the cleanup script so the CronJob can mount it.
+# The ci-realm-cleanup CronJob expects the script at /scripts/ci-cleanup-keycloak-realms.sh.
+CLEANUP_SCRIPT="$REPO_ROOT/scripts/ci-cleanup-keycloak-realms.sh"
+if [[ -f "$CLEANUP_SCRIPT" ]]; then
+  echo "[configmap] Creating/updating ci-cleanup-script-keycloak ConfigMap from: $CLEANUP_SCRIPT"
+  kubectl create configmap ci-cleanup-script-keycloak \
+    --from-file=ci-cleanup-keycloak-realms.sh="$CLEANUP_SCRIPT" \
+    --namespace "$NAMESPACE" \
+    --dry-run=client -o yaml | kubectl apply -f -
+  echo "[configmap] ci-cleanup-script-keycloak ConfigMap applied."
+else
+  echo "[configmap] WARN: $CLEANUP_SCRIPT not found — skipping ConfigMap creation."
+fi
 
+# Apply cluster-scoped RBAC (ClusterRole + ClusterRoleBinding) for the
+# ci-realm-cleanup CronJob to list namespaces.
+INFRA_DIR="$REPO_ROOT/infra/keycloak/${CHART_VERSION}"
+RBAC_FILE="${INFRA_DIR}/ci-realm-cleanup-rbac.yaml"
+if [[ -f "$RBAC_FILE" ]]; then
+  echo "[rbac] Applying cluster-scoped RBAC from: $RBAC_FILE"
+  kubectl apply -f "$RBAC_FILE"
+  echo "[rbac] Applied: $(basename "$RBAC_FILE")"
+fi
+
+# Apply all CronJob manifests (*-cronjob.yaml) from the infra directory for this chart version.
+# Each manifest contains per-namespace resources (ServiceAccount, CronJob).
+# Cluster-scoped RBAC is handled separately above.
+cronjob_found=false
+for CRONJOB_FILE in "${INFRA_DIR}"/*-cronjob.yaml; do
+  [[ -f "$CRONJOB_FILE" ]] || continue
+  cronjob_found=true
+  echo "[cronjob] Applying CronJob from: $CRONJOB_FILE"
+  kubectl apply -f "$CRONJOB_FILE"
+  echo "[cronjob] Applied: $(basename "$CRONJOB_FILE")"
+done
+if [[ "$cronjob_found" == false ]]; then
+  echo "[cronjob] No CronJob manifests found in $INFRA_DIR — skipping."
+fi

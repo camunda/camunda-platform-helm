@@ -1,0 +1,93 @@
+# CronJob: Automated cleanup of ORPHANED CI-created Keycloak realms.
+#
+# CI test jobs create Keycloak realms using the deploy-camunda Go CLI's
+# generateCompactRealmName(), producing names like "keycloak-mt-a8x9z3k1"
+# (format: {scenario}-{8-char-random-suffix}). When CI jobs finish and K8s
+# namespaces are deleted, the realms persist in Keycloak as orphans.
+#
+# Orphan detection uses a dual-signal approach:
+#   1. Session check: if any client has active sessions, the realm is in use.
+#   2. Namespace cross-reference: if any active K8s namespace contains the
+#      realm's scenario portion, the CI job is still running.
+#
+# A realm is deleted only when BOTH signals indicate it is orphaned.
+# The "master" realm is always protected.
+#
+# The cleanup script lives in scripts/ci-cleanup-keycloak-realms.sh and is
+# mounted into the pod via a ConfigMap (ci-cleanup-script-keycloak). The
+# ConfigMap is created by deploy-keycloak.sh from that script file.
+#
+# This CronJob runs every 5 minutes.
+#
+# RBAC: Requires cluster-level namespace list permission (for cross-reference).
+#
+# Deploy: scripts/deploy-keycloak.sh (creates ConfigMap + applies this file)
+#
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-realm-cleanup
+  namespace: distribution-keycloak-24-9-0
+  labels:
+    app.kubernetes.io/name: ci-realm-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: keycloak
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ci-realm-cleanup
+  namespace: distribution-keycloak-24-9-0
+  labels:
+    app.kubernetes.io/name: ci-realm-cleanup
+    app.kubernetes.io/component: maintenance
+    app.kubernetes.io/part-of: keycloak
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: ci-realm-cleanup
+        spec:
+          serviceAccountName: ci-realm-cleanup
+          restartPolicy: OnFailure
+          volumes:
+            - name: cleanup-script
+              configMap:
+                name: ci-cleanup-script-keycloak
+                defaultMode: 0755
+          containers:
+            - name: cleanup
+              image: bitnamilegacy/os-shell:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: KEYCLOAK_URL
+                  value: "http://keycloak:8080"
+                - name: KEYCLOAK_USER
+                  value: "admin"
+                - name: KEYCLOAK_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: infra-credentials
+                      key: keycloak-admin-password
+              volumeMounts:
+                - name: cleanup-script
+                  mountPath: /scripts
+                  readOnly: true
+              command:
+                - /scripts/ci-cleanup-keycloak-realms.sh
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
