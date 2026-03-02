@@ -112,6 +112,35 @@ check_required_cmds() {
   done
 }
 
+# Wait for DNS resolution of a hostname before proceeding.
+# External-dns can take time to create records after ingress creation,
+# and DNS propagation adds additional delay.
+# Args: hostname, [timeout_seconds=120]
+_wait_for_dns_resolution() {
+  local hostname="$1"
+  local timeout="${2:-120}"
+  local elapsed=0
+
+  # Skip if hostname is an IP address
+  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    return 0
+  fi
+
+  log "Waiting up to ${timeout}s for DNS resolution of ${hostname}..."
+
+  while ! nslookup "$hostname" >/dev/null 2>&1; do
+    if [[ $elapsed -ge $timeout ]]; then
+      log "ERROR: DNS resolution for '${hostname}' timed out after ${timeout}s"
+      return 1
+    fi
+    sleep 5
+    elapsed=$((elapsed + 5))
+    log "DNS not yet resolved for ${hostname} (${elapsed}s/${timeout}s)..."
+  done
+
+  log "✅  DNS resolved for ${hostname} (took ${elapsed}s)"
+}
+
 # ==============================================================================
 # Playwright Helper Functions
 # ==============================================================================

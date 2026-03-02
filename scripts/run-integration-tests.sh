@@ -280,6 +280,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
+_wait_for_dns_resolution "$hostname"
 
 # ── Namespace-scoped .env to avoid collisions during parallel matrix runs ──
 # When multiple matrix entries target the same chart version, they share the
