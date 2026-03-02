@@ -96,6 +96,14 @@ func NewRootCommand() *cobra.Command {
 				return err
 			}
 
+			// Auto-detect repoRoot from CWD if not set by CLI or config.
+			// Soft fallback — repoRoot is optional for deploy, so errors are non-fatal.
+			if flags.RepoRoot == "" {
+				if detected, _ := config.DetectRepoRoot(); detected != "" {
+					flags.RepoRoot = detected
+				}
+			}
+
 			// Load .env file - use config value if set, otherwise default to .env
 			envFileToLoad := flags.EnvFile
 			if envFileToLoad == "" {

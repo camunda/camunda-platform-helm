@@ -70,7 +70,14 @@ This command does not require cluster access.`,
 			}
 
 			if repoRoot == "" {
-				return fmt.Errorf("--repo-root is required (or set repoRoot in config)")
+				detected, err := config.DetectRepoRoot()
+				if err != nil {
+					return err
+				}
+				repoRoot = detected
+			}
+			if repoRoot == "" {
+				return fmt.Errorf("--repo-root is required (or set repoRoot in config, or run from within the repo)")
 			}
 
 			entries, err := matrix.Generate(repoRoot, matrix.GenerateOptions{
@@ -301,7 +308,14 @@ This command calls deploy.Execute() for each matrix entry.`,
 			_ = env.Load(envFileToLoad)
 
 			if repoRoot == "" {
-				return fmt.Errorf("--repo-root is required (or set repoRoot in config)")
+				detected, err := config.DetectRepoRoot()
+				if err != nil {
+					return err
+				}
+				repoRoot = detected
+			}
+			if repoRoot == "" {
+				return fmt.Errorf("--repo-root is required (or set repoRoot in config, or run from within the repo)")
 			}
 
 			// Validate ingress base domains early so the user gets immediate feedback.
@@ -538,7 +552,8 @@ func registerKubeContextCompletionForFlag(cmd *cobra.Command, flagName string) {
 	})
 }
 
-// resolveRepoRoot resolves the repository root from the flag or config file.
+// resolveRepoRoot resolves the repository root from the flag, config file,
+// or auto-detection via git.
 func resolveRepoRoot(flagValue string) string {
 	if flagValue != "" {
 		return flagValue
@@ -550,6 +565,12 @@ func resolveRepoRoot(flagValue string) string {
 		if tempFlags.RepoRoot != "" {
 			return tempFlags.RepoRoot
 		}
+	}
+
+	// Fall back to auto-detection from CWD (errors silently swallowed —
+	// completion should never crash the shell).
+	if detected, _ := config.DetectRepoRoot(); detected != "" {
+		return detected
 	}
 
 	return ""
