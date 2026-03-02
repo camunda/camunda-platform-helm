@@ -28,7 +28,7 @@ master:
     periodSeconds: 20
 
 data:
-  replicaCount: 6
+  replicaCount: 12
   heapSize: 1536m
   resources:
     requests: { cpu: "2000m", memory: "3Gi" }
