@@ -103,7 +103,7 @@ get_ingress_hostname() {
 }
 
 check_required_cmds() {
-  required_cmds=(kubectl jq git envsubst npm npx)
+  required_cmds=(kubectl jq git envsubst npm npx curl)
   for cmd in "${required_cmds[@]}"; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       echo "Error: required command '$cmd' not found in PATH" >&2
@@ -139,6 +139,80 @@ _wait_for_dns_resolution() {
   done
 
   log "✅  DNS resolved for ${hostname} (took ${elapsed}s)"
+}
+
+# Wait for ingress paths to return non-502/503/504 responses.
+# After DNS resolves, cloud load balancers (GKE NEG, EKS ALB, etc.) may still
+# need time to converge on backend health state. This function polls each
+# ingress context path until the LB routes traffic end-to-end.
+# Args: hostname, namespace, [timeout_seconds=120], [kube_context]
+_wait_for_ingress_ready() {
+  local hostname="$1"
+  local namespace="$2"
+  local timeout="${3:-120}"
+  local kube_context="${4:-}"
+  local kubectl_cmd="kubectl"
+
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
+
+  # Extract unique context paths from ingress objects (filter out zeebe/grpc, same as get_ingress_hostname)
+  local paths
+  paths=$($kubectl_cmd -n "$namespace" get ingress -o json 2>/dev/null | jq -r '
+    [.items[]
+     | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
+     | .spec.rules[].http.paths[].path]
+    | map(ltrimstr("/") | split("/")[0] | "/" + .)
+    | unique
+    | .[]' 2>/dev/null)
+
+  # Fall back to HTTPRoute (Gateway API) if no ingress paths found
+  if [[ -z "$paths" ]]; then
+    paths=$($kubectl_cmd -n "$namespace" get httproute -o json 2>/dev/null | jq -r '
+      [.items[].spec.rules[].matches[]?.path.value // empty]
+      | map(ltrimstr("/") | split("/")[0] | "/" + .)
+      | unique
+      | .[]' 2>/dev/null)
+  fi
+
+  if [[ -z "$paths" ]]; then
+    log "WARNING: No ingress paths found in namespace '$namespace', skipping ingress readiness check"
+    return 0
+  fi
+
+  log "Waiting up to ${timeout}s for ingress paths to become ready on ${hostname}..."
+  log "Paths to check: $(echo "$paths" | tr '\n' ' ')"
+
+  local elapsed=0
+  while [[ $elapsed -lt $timeout ]]; do
+    local all_ready=true
+    local status_summary=""
+
+    while IFS= read -r path; do
+      [[ -z "$path" ]] && continue
+      local http_code
+      http_code=$(curl -sk -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 "https://${hostname}${path}" 2>/dev/null || echo "000")
+      status_summary+=" ${path}=${http_code}"
+
+      # 502, 503, 504, 000 (connection failure) mean the LB is not ready
+      if [[ "$http_code" == "502" || "$http_code" == "503" || "$http_code" == "504" || "$http_code" == "000" ]]; then
+        all_ready=false
+      fi
+    done <<< "$paths"
+
+    if [[ "$all_ready" == "true" ]]; then
+      log "✅  Ingress ready on ${hostname} (took ${elapsed}s):${status_summary}"
+      return 0
+    fi
+
+    log "Ingress not ready yet (${elapsed}s/${timeout}s):${status_summary}"
+    sleep 5
+    elapsed=$((elapsed + 5))
+  done
+
+  log "ERROR: Ingress readiness timed out after ${timeout}s on ${hostname}"
+  return 1
 }
 
 # ==============================================================================
