@@ -3,6 +3,7 @@ package scenarios
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -414,6 +415,201 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestExpandImports(t *testing.T) {
+	t.Run("basic import expansion", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create a.yaml that imports b
+		writeYAML(t, filepath.Join(tmpDir, "a.yaml"), "imports:\n  - b\nkey: from-a\n")
+		writeYAML(t, filepath.Join(tmpDir, "b.yaml"), "key: from-b\n")
+
+		result, err := ExpandImports([]string{filepath.Join(tmpDir, "a.yaml")})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(result) != 2 {
+			t.Fatalf("expected 2 files, got %d: %v", len(result), result)
+		}
+		// b.yaml should come before a.yaml
+		if !containsSuffix(result[0], "b.yaml") {
+			t.Errorf("result[0] = %q, want b.yaml", result[0])
+		}
+		if !containsSuffix(result[1], "a.yaml") {
+			t.Errorf("result[1] = %q, want a.yaml", result[1])
+		}
+	})
+
+	t.Run("transitive imports (depth-first)", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// a imports b, b imports c
+		writeYAML(t, filepath.Join(tmpDir, "a.yaml"), "imports:\n  - b\nkey: from-a\n")
+		writeYAML(t, filepath.Join(tmpDir, "b.yaml"), "imports:\n  - c\nkey: from-b\n")
+		writeYAML(t, filepath.Join(tmpDir, "c.yaml"), "key: from-c\n")
+
+		result, err := ExpandImports([]string{filepath.Join(tmpDir, "a.yaml")})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(result) != 3 {
+			t.Fatalf("expected 3 files, got %d: %v", len(result), result)
+		}
+		// Order: c, b, a (depth-first, imports before importer)
+		wantSuffixes := []string{"c.yaml", "b.yaml", "a.yaml"}
+		for i, want := range wantSuffixes {
+			if !containsSuffix(result[i], want) {
+				t.Errorf("result[%d] = %q, want suffix %q", i, result[i], want)
+			}
+		}
+	})
+
+	t.Run("circular import detection", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// a imports b, b imports a
+		writeYAML(t, filepath.Join(tmpDir, "a.yaml"), "imports:\n  - b\n")
+		writeYAML(t, filepath.Join(tmpDir, "b.yaml"), "imports:\n  - a\n")
+
+		_, err := ExpandImports([]string{filepath.Join(tmpDir, "a.yaml")})
+		if err == nil {
+			t.Fatal("expected circular import error, got nil")
+		}
+		if !contains([]string{err.Error()}, "circular import detected: "+filepath.Join(tmpDir, "a.yaml")) {
+			// Check that the error message mentions circular import
+			if !containsSubstring(err.Error(), "circular import") {
+				t.Errorf("expected error about circular import, got: %v", err)
+			}
+		}
+	})
+
+	t.Run("missing import error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		writeYAML(t, filepath.Join(tmpDir, "a.yaml"), "imports:\n  - nonexistent\n")
+
+		_, err := ExpandImports([]string{filepath.Join(tmpDir, "a.yaml")})
+		if err == nil {
+			t.Fatal("expected missing import error, got nil")
+		}
+		if !containsSubstring(err.Error(), "not found") {
+			t.Errorf("expected error about not found, got: %v", err)
+		}
+	})
+
+	t.Run("deduplication across multiple importers", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Both a and b import c; input list is [a, b]
+		writeYAML(t, filepath.Join(tmpDir, "a.yaml"), "imports:\n  - c\nkey: from-a\n")
+		writeYAML(t, filepath.Join(tmpDir, "b.yaml"), "imports:\n  - c\nkey: from-b\n")
+		writeYAML(t, filepath.Join(tmpDir, "c.yaml"), "key: from-c\n")
+
+		result, err := ExpandImports([]string{
+			filepath.Join(tmpDir, "a.yaml"),
+			filepath.Join(tmpDir, "b.yaml"),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// c should appear only once, before a and b
+		if len(result) != 3 {
+			t.Fatalf("expected 3 files (c deduplicated), got %d: %v", len(result), result)
+		}
+		wantSuffixes := []string{"c.yaml", "a.yaml", "b.yaml"}
+		for i, want := range wantSuffixes {
+			if !containsSuffix(result[i], want) {
+				t.Errorf("result[%d] = %q, want suffix %q", i, result[i], want)
+			}
+		}
+	})
+
+	t.Run("no imports passes through unchanged", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		writeYAML(t, filepath.Join(tmpDir, "a.yaml"), "key: value\n")
+		writeYAML(t, filepath.Join(tmpDir, "b.yaml"), "key: value\n")
+
+		input := []string{filepath.Join(tmpDir, "a.yaml"), filepath.Join(tmpDir, "b.yaml")}
+		result, err := ExpandImports(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(result) != 2 {
+			t.Fatalf("expected 2 files, got %d: %v", len(result), result)
+		}
+		for i := range input {
+			if result[i] != input[i] {
+				t.Errorf("result[%d] = %q, want %q", i, result[i], input[i])
+			}
+		}
+	})
+}
+
+func TestDeploymentConfigResolvePathsWithImports(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create the expected directory structure
+	dirs := []string{
+		filepath.Join(tmpDir, "values", "identity"),
+		filepath.Join(tmpDir, "values", "persistence"),
+		filepath.Join(tmpDir, "values", "platform"),
+	}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Create files — hybrid.yaml imports keycloak-external
+	writeYAML(t, filepath.Join(tmpDir, "values", "base.yaml"), "base: true\n")
+	writeYAML(t, filepath.Join(tmpDir, "values", "identity", "keycloak-external.yaml"), "identity: keycloak-external\n")
+	writeYAML(t, filepath.Join(tmpDir, "values", "identity", "hybrid.yaml"),
+		"imports:\n  - keycloak-external\nidentity: hybrid\n")
+	writeYAML(t, filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"), "persistence: elasticsearch\n")
+	writeYAML(t, filepath.Join(tmpDir, "values", "platform", "gke.yaml"), "platform: gke\n")
+
+	config := &DeploymentConfig{
+		Identity:    "hybrid",
+		Persistence: "elasticsearch",
+		Platform:    "gke",
+	}
+	paths, err := config.ResolvePaths(tmpDir)
+	if err != nil {
+		t.Fatalf("ResolvePaths() error = %v", err)
+	}
+
+	// Expected: base, keycloak-external (imported), hybrid, elasticsearch, gke
+	if len(paths) != 5 {
+		t.Fatalf("expected 5 paths, got %d: %v", len(paths), paths)
+	}
+
+	expectedSuffixes := []string{
+		"values/base.yaml",
+		"values/identity/keycloak-external.yaml",
+		"values/identity/hybrid.yaml",
+		"values/persistence/elasticsearch.yaml",
+		"values/platform/gke.yaml",
+	}
+	for i, suffix := range expectedSuffixes {
+		if !containsSuffix(paths[i], suffix) {
+			t.Errorf("paths[%d] = %q, want suffix %q", i, paths[i], suffix)
+		}
+	}
+}
+
+// writeYAML is a test helper that writes content to a file.
+func writeYAML(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// containsSubstring checks if s contains substr.
+func containsSubstring(s, substr string) bool {
+	return len(s) >= len(substr) && strings.Contains(s, substr)
 }
 
 // containsSuffix checks if s ends with suffix (using filepath separator).

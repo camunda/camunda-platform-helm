@@ -40,6 +40,7 @@ func MergeYAMLFiles(files []string, outputPath string) (string, error) {
 		if doc == nil {
 			continue // empty document
 		}
+		delete(doc, "imports")
 		if merged == nil {
 			merged = doc
 		} else {
