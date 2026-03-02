@@ -39,7 +39,7 @@ func PrintFlags(flags *pflag.FlagSet) {
 
 		// Sensitive handling
 		switch name {
-		case "docker-password":
+		case "docker-password", "dockerhub-password":
 			val = stylePwd(maskIfSet(val))
 		case "vault-secret-mapping":
 			if strings.TrimSpace(val) != "" {

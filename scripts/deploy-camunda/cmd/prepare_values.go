@@ -137,7 +137,9 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 	if envFileToLoad == "" {
 		envFileToLoad = ".env"
 	}
-	_ = env.Load(envFileToLoad)
+	if err := env.Load(envFileToLoad); err != nil {
+		logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+	}
 
 	// Resolve scenario path.
 	scenarioDir := pv.scenarioPath

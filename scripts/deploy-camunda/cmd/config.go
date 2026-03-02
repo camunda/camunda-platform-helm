@@ -137,11 +137,9 @@ func completeDeploymentNames(cmd *cobra.Command, args []string, toComplete strin
 	}
 	var names []string
 	for name := range rc.Deployments {
-		if toComplete == "" || strings.HasPrefix(name, toComplete) {
-			names = append(names, name)
-		}
+		names = append(names, name)
 	}
-	return names, cobra.ShellCompDirectiveNoFileComp
+	return filterByPrefix(names, toComplete), cobra.ShellCompDirectiveNoFileComp
 }
 
 // validConfigKeys lists all valid configuration keys for root and deployment configs.
@@ -290,11 +288,7 @@ func completeConfigKeys(cmd *cobra.Command, args []string, toComplete string) ([
 	var completions []string
 
 	// Add root-level keys
-	for _, key := range validConfigKeys {
-		if toComplete == "" || strings.HasPrefix(key, toComplete) {
-			completions = append(completions, key)
-		}
-	}
+	completions = append(completions, filterByPrefix(validConfigKeys, toComplete)...)
 
 	// Add deployment-prefixed keys
 	for depName := range rc.Deployments {
@@ -348,59 +342,25 @@ func completeKubeContexts(toComplete string) ([]string, cobra.ShellCompDirective
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
-
-	var completions []string
-	for _, ctx := range contexts {
-		if toComplete == "" || strings.HasPrefix(ctx, toComplete) {
-			completions = append(completions, ctx)
-		}
-	}
-	return completions, cobra.ShellCompDirectiveNoFileComp
+	return filterByPrefix(contexts, toComplete), cobra.ShellCompDirectiveNoFileComp
 }
 
 // completePlatforms returns available platform values.
 func completePlatforms(toComplete string) ([]string, cobra.ShellCompDirective) {
-	platforms := config.DeployPlatforms
-	var completions []string
-	for _, p := range platforms {
-		if toComplete == "" || strings.HasPrefix(p, toComplete) {
-			completions = append(completions, p)
-		}
-	}
-	return completions, cobra.ShellCompDirectiveNoFileComp
+	return filterByPrefix(config.DeployPlatforms, toComplete), cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeBooleans returns boolean value completions.
 func completeBooleans(toComplete string) ([]string, cobra.ShellCompDirective) {
-	bools := []string{"true", "false"}
-	var completions []string
-	for _, b := range bools {
-		if toComplete == "" || strings.HasPrefix(b, toComplete) {
-			completions = append(completions, b)
-		}
-	}
-	return completions, cobra.ShellCompDirectiveNoFileComp
+	return filterByPrefix([]string{"true", "false"}, toComplete), cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeLogLevels returns log level completions.
 func completeLogLevels(toComplete string) ([]string, cobra.ShellCompDirective) {
-	levels := []string{"debug", "info", "warn", "error"}
-	var completions []string
-	for _, l := range levels {
-		if toComplete == "" || strings.HasPrefix(l, toComplete) {
-			completions = append(completions, l)
-		}
-	}
-	return completions, cobra.ShellCompDirectiveNoFileComp
+	return filterByPrefix([]string{"debug", "info", "warn", "error"}, toComplete), cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeIngressBaseDomains returns valid ingress base domain completions.
 func completeIngressBaseDomains(toComplete string) ([]string, cobra.ShellCompDirective) {
-	var completions []string
-	for _, d := range config.ValidIngressBaseDomains {
-		if toComplete == "" || strings.HasPrefix(d, toComplete) {
-			completions = append(completions, d)
-		}
-	}
-	return completions, cobra.ShellCompDirectiveNoFileComp
+	return filterByPrefix(config.ValidIngressBaseDomains, toComplete), cobra.ShellCompDirectiveNoFileComp
 }
