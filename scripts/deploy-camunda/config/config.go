@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -196,6 +197,27 @@ type RootConfig struct {
 	Deployments              map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
 	FilePath                 string                      `mapstructure:"-" yaml:"-"`
 	KubeContext              string                      `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
+}
+
+// DetectRepoRoot uses git to auto-detect the repository root from the current
+// working directory. This correctly returns the worktree root when running
+// inside a git worktree. Returns ("", nil) when git is not available or the
+// CWD is not inside a git repository. Returns an error when inside a git repo
+// that is not the Camunda Helm repo (missing sentinel file).
+func DetectRepoRoot() (string, error) {
+	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return "", nil // git not available or not in a repo — not an error
+	}
+	root := strings.TrimSpace(string(out))
+	if root == "" {
+		return "", nil
+	}
+	// Validate it's the expected repo
+	if _, err := os.Stat(filepath.Join(root, "charts", "chart-versions.yaml")); err != nil {
+		return "", fmt.Errorf("auto-detected git root %q is not the Camunda Helm repo (missing charts/chart-versions.yaml); set --repo-root explicitly", root)
+	}
+	return root, nil
 }
 
 // ResolvePath determines the config file path to use.
