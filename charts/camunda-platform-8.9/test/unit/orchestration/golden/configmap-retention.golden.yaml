@@ -142,6 +142,7 @@ data:
       #
       # Camunda Operate Configuration - Separated syntax.
       #
+      operate:
         multiTenancy:
           enabled: false
         # Zeebe instance
