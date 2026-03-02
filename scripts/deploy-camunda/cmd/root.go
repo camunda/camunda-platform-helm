@@ -118,7 +118,9 @@ func NewRootCommand() *cobra.Command {
 					return "default"
 				}()).
 				Msg("Loading environment file")
-			_ = env.Load(envFileToLoad)
+			if err := env.Load(envFileToLoad); err != nil {
+				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+			}
 
 			// Validate merged configuration
 			if err := config.Validate(&flags); err != nil {
@@ -288,40 +290,19 @@ func registerKubeContextCompletion(cmd *cobra.Command) {
 // registerPlatformCompletion adds tab completion for the --platform flag.
 func registerPlatformCompletion(cmd *cobra.Command) {
 	_ = cmd.RegisterFlagCompletionFunc("platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		platforms := config.DeployPlatforms
-		var completions []string
-		for _, p := range platforms {
-			if toComplete == "" || strings.HasPrefix(p, toComplete) {
-				completions = append(completions, p)
-			}
-		}
-		return completions, cobra.ShellCompDirectiveNoFileComp
+		return filterByPrefix(config.DeployPlatforms, toComplete), cobra.ShellCompDirectiveNoFileComp
 	})
 }
 
 // registerIngressBaseDomainCompletion adds tab completion for the --ingress-base-domain flag.
 func registerIngressBaseDomainCompletion(cmd *cobra.Command) {
-	_ = cmd.RegisterFlagCompletionFunc("ingress-base-domain", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		var completions []string
-		for _, d := range config.ValidIngressBaseDomains {
-			if toComplete == "" || strings.HasPrefix(d, toComplete) {
-				completions = append(completions, d)
-			}
-		}
-		return completions, cobra.ShellCompDirectiveNoFileComp
-	})
+	registerIngressBaseDomainCompletionForFlag(cmd, "ingress-base-domain")
 }
 
 // registerIngressBaseDomainCompletionForFlag adds tab completion for a named ingress-base-domain flag.
 func registerIngressBaseDomainCompletionForFlag(cmd *cobra.Command, flagName string) {
 	_ = cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		var completions []string
-		for _, d := range config.ValidIngressBaseDomains {
-			if toComplete == "" || strings.HasPrefix(d, toComplete) {
-				completions = append(completions, d)
-			}
-		}
-		return completions, cobra.ShellCompDirectiveNoFileComp
+		return filterByPrefix(config.ValidIngressBaseDomains, toComplete), cobra.ShellCompDirectiveNoFileComp
 	})
 }
 
@@ -340,6 +321,17 @@ func getKubeContexts() ([]string, error) {
 		}
 	}
 	return contexts, nil
+}
+
+// filterByPrefix returns items that have the given prefix (or all items if prefix is empty).
+func filterByPrefix(items []string, prefix string) []string {
+	var result []string
+	for _, item := range items {
+		if prefix == "" || strings.HasPrefix(item, prefix) {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // completeMultiSelect handles comma-separated multi-select tab completion.

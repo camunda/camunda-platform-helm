@@ -305,7 +305,9 @@ This command calls deploy.Execute() for each matrix entry.`,
 			logging.Logger.Debug().
 				Str("envFile", envFileToLoad).
 				Msg("Loading environment file")
-			_ = env.Load(envFileToLoad)
+			if err := env.Load(envFileToLoad); err != nil {
+				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
+			}
 
 			if repoRoot == "" {
 				detected, err := config.DetectRepoRoot()
@@ -541,14 +543,7 @@ func registerKubeContextCompletionForFlag(cmd *cobra.Command, flagName string) {
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-
-		var completions []string
-		for _, ctx := range contexts {
-			if toComplete == "" || strings.HasPrefix(ctx, toComplete) {
-				completions = append(completions, ctx)
-			}
-		}
-		return completions, cobra.ShellCompDirectiveNoFileComp
+		return filterByPrefix(contexts, toComplete), cobra.ShellCompDirectiveNoFileComp
 	})
 }
 
