@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // newMatrixCommand creates the matrix parent command with list and run subcommands.
@@ -47,7 +48,27 @@ ci-test-config.yaml (PR scenarios only), and permitted-flows.yaml.
 
 This command does not require cluster access.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			repoRoot = resolveRepoRoot(repoRoot)
+			// Track which CLI flags were explicitly set so config merging
+			// does not overwrite them.
+			changedFlags := make(map[string]bool)
+			cmd.Flags().Visit(func(f *pflag.Flag) {
+				changedFlags[f.Name] = true
+			})
+
+			// Load config file and merge matrix/root config into local flags.
+			if rc, err := config.LoadMatrixConfig(configFile); err == nil {
+				config.ApplyMatrixListConfig(rc, changedFlags, &config.MatrixListFlags{
+					Versions:        &versions,
+					IncludeDisabled: &includeDisabled,
+					ScenarioFilter:  &scenarioFilter,
+					ShortnameFilter: &shortnameFilter,
+					FlowFilter:      &flowFilter,
+					OutputFormat:    &outputFormat,
+					Platform:        &platform,
+					RepoRoot:        &repoRoot,
+				})
+			}
+
 			if repoRoot == "" {
 				return fmt.Errorf("--repo-root is required (or set repoRoot in config)")
 			}
@@ -152,7 +173,116 @@ Cleanup runs regardless of whether entries succeeded or failed.
 
 This command calls deploy.Execute() for each matrix entry.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Setup logging
+			// Track which CLI flags were explicitly set so config merging
+			// does not overwrite them.
+			changedFlags := make(map[string]bool)
+			cmd.Flags().Visit(func(f *pflag.Flag) {
+				changedFlags[f.Name] = true
+			})
+
+			// Build per-platform/per-version maps from CLI flags BEFORE config
+			// merging, so that CLI-provided map entries take precedence.
+			kubeContexts := make(map[string]string)
+			if kubeContextGKE != "" {
+				kubeContexts["gke"] = kubeContextGKE
+			}
+			if kubeContextEKS != "" {
+				kubeContexts["eks"] = kubeContextEKS
+			}
+
+			envFiles := make(map[string]string)
+			for version, path := range map[string]string{
+				"8.6": envFile86,
+				"8.7": envFile87,
+				"8.8": envFile88,
+				"8.9": envFile89,
+			} {
+				if path != "" {
+					envFiles[version] = path
+				}
+			}
+
+			vaultBackedSecrets := make(map[string]bool)
+			if cmd.Flags().Changed("use-vault-backed-secrets-gke") {
+				vaultBackedSecrets["gke"] = useVaultBackedSecretsGKE
+			}
+			if cmd.Flags().Changed("use-vault-backed-secrets-eks") {
+				vaultBackedSecrets["eks"] = useVaultBackedSecretsEKS
+			}
+
+			ingressBaseDomains := make(map[string]string)
+			if ingressBaseDomainGKE != "" {
+				ingressBaseDomains["gke"] = ingressBaseDomainGKE
+			}
+			if ingressBaseDomainEKS != "" {
+				ingressBaseDomains["eks"] = ingressBaseDomainEKS
+			}
+
+			// Load config file and merge matrix/root config into local flags.
+			// Config values fill in anything not explicitly set on the CLI.
+			if rc, err := config.LoadMatrixConfig(configFile); err == nil {
+				config.ApplyMatrixRunConfig(rc, changedFlags, &config.MatrixRunFlags{
+					// Filtering & generation
+					Versions:        &versions,
+					IncludeDisabled: &includeDisabled,
+					ScenarioFilter:  &scenarioFilter,
+					ShortnameFilter: &shortnameFilter,
+					FlowFilter:      &flowFilter,
+					Platform:        &platform,
+					RepoRoot:        &repoRoot,
+					// Execution
+					DryRun:               &dryRun,
+					Coverage:             &coverage,
+					StopOnFailure:        &stopOnFailure,
+					Cleanup:              &cleanup,
+					DeleteNamespace:      &deleteNamespace,
+					NamespacePrefix:      &namespacePrefix,
+					MaxParallel:          &maxParallel,
+					LogLevel:             &logLevel,
+					SkipDependencyUpdate: &skipDependencyUpdate,
+					HelmTimeout:          &helmTimeout,
+					// Tests
+					TestIT:  &testIT,
+					TestE2E: &testE2E,
+					TestAll: &testAll,
+					// Kube contexts
+					KubeContext:    &kubeContext,
+					KubeContextGKE: &kubeContextGKE,
+					KubeContextEKS: &kubeContextEKS,
+					KubeContexts:   kubeContexts,
+					// Ingress
+					IngressBaseDomain:    &ingressBaseDomain,
+					IngressBaseDomainGKE: &ingressBaseDomainGKE,
+					IngressBaseDomainEKS: &ingressBaseDomainEKS,
+					IngressBaseDomains:   ingressBaseDomains,
+					// Vault
+					UseVaultBackedSecrets:    &useVaultBackedSecrets,
+					UseVaultBackedSecretsGKE: &useVaultBackedSecretsGKE,
+					UseVaultBackedSecretsEKS: &useVaultBackedSecretsEKS,
+					VaultBackedSecrets:       vaultBackedSecrets,
+					// Env files
+					EnvFile:   &envFile,
+					EnvFile86: &envFile86,
+					EnvFile87: &envFile87,
+					EnvFile88: &envFile88,
+					EnvFile89: &envFile89,
+					EnvFiles:  envFiles,
+					// Docker
+					DockerUsername:       &dockerUsername,
+					DockerPassword:       &dockerPassword,
+					EnsureDockerRegistry: &ensureDockerRegistry,
+					DockerHubUsername:    &dockerHubUsername,
+					DockerHubPassword:    &dockerHubPassword,
+					EnsureDockerHub:      &ensureDockerHub,
+					// Keycloak
+					KeycloakHost:     &keycloakHost,
+					KeycloakProtocol: &keycloakProtocol,
+					// Upgrade
+					UpgradeFromVersion: &upgradeFromVersion,
+				})
+			}
+
+			// Setup logging (after config merge so log-level from config takes effect)
 			if err := logging.Setup(logging.Options{
 				LevelString:  logLevel,
 				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
@@ -160,8 +290,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				return err
 			}
 
-			// Load .env file — use flag value if set, otherwise default to .env.
-			// This loads the fallback env file for vars shared across all versions.
+			// Load .env file — use flag/config value if set, otherwise default to .env.
 			envFileToLoad := envFile
 			if envFileToLoad == "" {
 				envFileToLoad = ".env"
@@ -171,7 +300,6 @@ This command calls deploy.Execute() for each matrix entry.`,
 				Msg("Loading environment file")
 			_ = env.Load(envFileToLoad)
 
-			repoRoot = resolveRepoRoot(repoRoot)
 			if repoRoot == "" {
 				return fmt.Errorf("--repo-root is required (or set repoRoot in config)")
 			}
@@ -217,47 +345,6 @@ This command calls deploy.Execute() for each matrix entry.`,
 			if !dryRun && !coverage {
 				output, _ := matrix.Print(entries, "table")
 				fmt.Fprintln(os.Stdout, output)
-			}
-
-			// Build platform-to-context map from per-platform flags
-			kubeContexts := make(map[string]string)
-			if kubeContextGKE != "" {
-				kubeContexts["gke"] = kubeContextGKE
-			}
-			if kubeContextEKS != "" {
-				kubeContexts["eks"] = kubeContextEKS
-			}
-
-			// Build version-to-env-file map from per-version flags
-			envFiles := make(map[string]string)
-			for version, path := range map[string]string{
-				"8.6": envFile86,
-				"8.7": envFile87,
-				"8.8": envFile88,
-				"8.9": envFile89,
-			} {
-				if path != "" {
-					envFiles[version] = path
-				}
-			}
-
-			// Build platform-to-vault-backed-secrets map from per-platform flags.
-			// Only platforms explicitly set via --use-vault-backed-secrets-<platform> are included.
-			vaultBackedSecrets := make(map[string]bool)
-			if cmd.Flags().Changed("use-vault-backed-secrets-gke") {
-				vaultBackedSecrets["gke"] = useVaultBackedSecretsGKE
-			}
-			if cmd.Flags().Changed("use-vault-backed-secrets-eks") {
-				vaultBackedSecrets["eks"] = useVaultBackedSecretsEKS
-			}
-
-			// Build platform-to-ingress-domain map from per-platform flags
-			ingressBaseDomains := make(map[string]string)
-			if ingressBaseDomainGKE != "" {
-				ingressBaseDomains["gke"] = ingressBaseDomainGKE
-			}
-			if ingressBaseDomainEKS != "" {
-				ingressBaseDomains["eks"] = ingressBaseDomainEKS
 			}
 
 			results, err := matrix.Run(context.Background(), entries, matrix.RunOptions{

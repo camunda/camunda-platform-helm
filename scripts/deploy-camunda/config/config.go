@@ -36,6 +36,70 @@ type KeycloakConfig struct {
 	Protocol string `mapstructure:"protocol" yaml:"protocol,omitempty"`
 }
 
+// MatrixConfig holds configuration specific to the "matrix" subcommand.
+// Fields here can be set in the deploy.yaml config file under a top-level
+// "matrix:" key. Shared fields (repoRoot, platform, logLevel, keycloak, etc.)
+// fall back to root-level config when not set in the matrix section.
+type MatrixConfig struct {
+	// Filtering & generation
+	Versions        []string `mapstructure:"versions" yaml:"versions,omitempty"`
+	IncludeDisabled *bool    `mapstructure:"includeDisabled" yaml:"includeDisabled,omitempty"`
+	ScenarioFilter  string   `mapstructure:"scenarioFilter" yaml:"scenarioFilter,omitempty"`
+	ShortnameFilter string   `mapstructure:"shortnameFilter" yaml:"shortnameFilter,omitempty"`
+	FlowFilter      string   `mapstructure:"flowFilter" yaml:"flowFilter,omitempty"`
+	OutputFormat    string   `mapstructure:"outputFormat" yaml:"outputFormat,omitempty"`
+
+	// Execution
+	Platform             string `mapstructure:"platform" yaml:"platform,omitempty"`
+	RepoRoot             string `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
+	NamespacePrefix      string `mapstructure:"namespacePrefix" yaml:"namespacePrefix,omitempty"`
+	MaxParallel          *int   `mapstructure:"maxParallel" yaml:"maxParallel,omitempty"`
+	StopOnFailure        *bool  `mapstructure:"stopOnFailure" yaml:"stopOnFailure,omitempty"`
+	Cleanup              *bool  `mapstructure:"cleanup" yaml:"cleanup,omitempty"`
+	DeleteNamespace      *bool  `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
+	DryRun               *bool  `mapstructure:"dryRun" yaml:"dryRun,omitempty"`
+	Coverage             *bool  `mapstructure:"coverage" yaml:"coverage,omitempty"`
+	SkipDependencyUpdate *bool  `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
+	HelmTimeout          *int   `mapstructure:"helmTimeout" yaml:"helmTimeout,omitempty"`
+	LogLevel             string `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
+
+	// Tests
+	TestIT  *bool `mapstructure:"testIT" yaml:"testIT,omitempty"`
+	TestE2E *bool `mapstructure:"testE2E" yaml:"testE2E,omitempty"`
+	TestAll *bool `mapstructure:"testAll" yaml:"testAll,omitempty"`
+
+	// Per-platform kube contexts
+	KubeContext  string            `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
+	KubeContexts map[string]string `mapstructure:"kubeContexts" yaml:"kubeContexts,omitempty"`
+
+	// Per-platform ingress domains
+	IngressBaseDomain  string            `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
+	IngressBaseDomains map[string]string `mapstructure:"ingressBaseDomains" yaml:"ingressBaseDomains,omitempty"`
+
+	// Per-platform vault-backed secrets
+	UseVaultBackedSecrets *bool           `mapstructure:"useVaultBackedSecrets" yaml:"useVaultBackedSecrets,omitempty"`
+	VaultBackedSecrets    map[string]bool `mapstructure:"vaultBackedSecrets" yaml:"vaultBackedSecrets,omitempty"`
+
+	// Per-version env files (keys are version strings like "8.6", "8.7")
+	EnvFile  string            `mapstructure:"envFile" yaml:"envFile,omitempty"`
+	EnvFiles map[string]string `mapstructure:"envFiles" yaml:"envFiles,omitempty"`
+
+	// Docker registries
+	DockerUsername       string `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
+	DockerPassword       string `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
+	EnsureDockerRegistry *bool  `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	DockerHubUsername    string `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
+	DockerHubPassword    string `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
+	EnsureDockerHub      *bool  `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
+
+	// Keycloak overrides (if different from root)
+	KeycloakHost     string `mapstructure:"keycloakHost" yaml:"keycloakHost,omitempty"`
+	KeycloakProtocol string `mapstructure:"keycloakProtocol" yaml:"keycloakProtocol,omitempty"`
+
+	// Upgrade
+	UpgradeFromVersion string `mapstructure:"upgradeFromVersion" yaml:"upgradeFromVersion,omitempty"`
+}
+
 // DeploymentConfig represents a single deployment profile.
 type DeploymentConfig struct {
 	Name                     string   `mapstructure:"-" yaml:"-"` // filled at runtime from map key
@@ -128,6 +192,7 @@ type RootConfig struct {
 	RunIntegrationTests      *bool                       `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
 	RunE2ETests              *bool                       `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
 	Keycloak                 KeycloakConfig              `mapstructure:"keycloak" yaml:"keycloak,omitempty"`
+	Matrix                   MatrixConfig                `mapstructure:"matrix" yaml:"matrix,omitempty"`
 	Deployments              map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
 	FilePath                 string                      `mapstructure:"-" yaml:"-"`
 	KubeContext              string                      `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
@@ -272,6 +337,115 @@ func applyEnvOverrides(rc *RootConfig) {
 	}
 	if v := get("CAMUNDA_KUBE_CONTEXT"); v != "" {
 		rc.KubeContext = v
+	}
+
+	// Matrix-specific env overrides (CAMUNDA_MATRIX_*)
+	applyMatrixEnvOverrides(&rc.Matrix, get)
+}
+
+// applyMatrixEnvOverrides applies CAMUNDA_MATRIX_* environment variables to the matrix config.
+func applyMatrixEnvOverrides(m *MatrixConfig, get func(string) string) {
+	if m == nil {
+		return
+	}
+	parseBool := func(v string) bool {
+		return strings.EqualFold(v, "true") || v == "1"
+	}
+	if v := get("CAMUNDA_MATRIX_REPO_ROOT"); v != "" {
+		m.RepoRoot = v
+	}
+	if v := get("CAMUNDA_MATRIX_PLATFORM"); v != "" {
+		m.Platform = v
+	}
+	if v := get("CAMUNDA_MATRIX_LOG_LEVEL"); v != "" {
+		m.LogLevel = v
+	}
+	if v := get("CAMUNDA_MATRIX_NAMESPACE_PREFIX"); v != "" {
+		m.NamespacePrefix = v
+	}
+	if v := get("CAMUNDA_MATRIX_MAX_PARALLEL"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			m.MaxParallel = &n
+		}
+	}
+	if v := get("CAMUNDA_MATRIX_HELM_TIMEOUT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			m.HelmTimeout = &n
+		}
+	}
+	if v := get("CAMUNDA_MATRIX_CLEANUP"); v != "" {
+		b := parseBool(v)
+		m.Cleanup = &b
+	}
+	if v := get("CAMUNDA_MATRIX_STOP_ON_FAILURE"); v != "" {
+		b := parseBool(v)
+		m.StopOnFailure = &b
+	}
+	if v := get("CAMUNDA_MATRIX_SKIP_DEPENDENCY_UPDATE"); v != "" {
+		b := parseBool(v)
+		m.SkipDependencyUpdate = &b
+	}
+	if v := get("CAMUNDA_MATRIX_DELETE_NAMESPACE"); v != "" {
+		b := parseBool(v)
+		m.DeleteNamespace = &b
+	}
+	if v := get("CAMUNDA_MATRIX_DRY_RUN"); v != "" {
+		b := parseBool(v)
+		m.DryRun = &b
+	}
+	if v := get("CAMUNDA_MATRIX_KUBE_CONTEXT"); v != "" {
+		m.KubeContext = v
+	}
+	if v := get("CAMUNDA_MATRIX_INGRESS_BASE_DOMAIN"); v != "" {
+		m.IngressBaseDomain = v
+	}
+	if v := get("CAMUNDA_MATRIX_ENV_FILE"); v != "" {
+		m.EnvFile = v
+	}
+	if v := get("CAMUNDA_MATRIX_DOCKER_USERNAME"); v != "" {
+		m.DockerUsername = v
+	}
+	if v := get("CAMUNDA_MATRIX_DOCKER_PASSWORD"); v != "" {
+		m.DockerPassword = v
+	}
+	if v := get("CAMUNDA_MATRIX_ENSURE_DOCKER_REGISTRY"); v != "" {
+		b := parseBool(v)
+		m.EnsureDockerRegistry = &b
+	}
+	if v := get("CAMUNDA_MATRIX_DOCKERHUB_USERNAME"); v != "" {
+		m.DockerHubUsername = v
+	}
+	if v := get("CAMUNDA_MATRIX_DOCKERHUB_PASSWORD"); v != "" {
+		m.DockerHubPassword = v
+	}
+	if v := get("CAMUNDA_MATRIX_ENSURE_DOCKER_HUB"); v != "" {
+		b := parseBool(v)
+		m.EnsureDockerHub = &b
+	}
+	if v := get("CAMUNDA_MATRIX_KEYCLOAK_HOST"); v != "" {
+		m.KeycloakHost = v
+	}
+	if v := get("CAMUNDA_MATRIX_KEYCLOAK_PROTOCOL"); v != "" {
+		m.KeycloakProtocol = v
+	}
+	if v := get("CAMUNDA_MATRIX_USE_VAULT_BACKED_SECRETS"); v != "" {
+		b := parseBool(v)
+		m.UseVaultBackedSecrets = &b
+	}
+	if v := get("CAMUNDA_MATRIX_UPGRADE_FROM_VERSION"); v != "" {
+		m.UpgradeFromVersion = v
+	}
+	if v := get("CAMUNDA_MATRIX_TEST_IT"); v != "" {
+		b := parseBool(v)
+		m.TestIT = &b
+	}
+	if v := get("CAMUNDA_MATRIX_TEST_E2E"); v != "" {
+		b := parseBool(v)
+		m.TestE2E = &b
+	}
+	if v := get("CAMUNDA_MATRIX_TEST_ALL"); v != "" {
+		b := parseBool(v)
+		m.TestAll = &b
 	}
 }
 
