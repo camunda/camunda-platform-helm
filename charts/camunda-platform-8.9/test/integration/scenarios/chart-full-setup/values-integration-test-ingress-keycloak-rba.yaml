@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   image:
     pullPolicy: Always
   identity:
@@ -9,6 +7,11 @@ global:
 
 orchestration:
   contextPath: "/orchestration"
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
   security:
     initialization:
       defaultRoles:
@@ -41,6 +44,9 @@ orchestration:
 
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
   contextPath: "/optimize"
 
 webModeler:

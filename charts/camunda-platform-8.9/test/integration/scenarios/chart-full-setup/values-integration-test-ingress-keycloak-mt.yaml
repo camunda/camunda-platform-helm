@@ -15,19 +15,6 @@ global:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
-  elasticsearch:
-    enabled: true
-    external: true
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
-    auth:
-      username: elastic
-      secret:
-        existingSecret: infra-credentials
-        existingSecretKey: elasticsearch-password
-    url:
-      protocol: https
-      host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
-      port: 443
   identity:
     keycloak:
       url:
@@ -91,6 +78,20 @@ identityKeycloak:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  database:
+    elasticsearch:
+      enabled: true
+      external: true
+      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      auth:
+        username: elastic
+        secret:
+          existingSecret: infra-credentials
+          existingSecretKey: elasticsearch-password
+      url:
+        protocol: https
+        host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+        port: 443
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX-$FLOW
@@ -129,6 +130,16 @@ webModelerPostgresql:
 
 orchestration:
   contextPath: "/orchestration"
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com:443"
+        auth:
+          username: elastic
+          secret:
+            existingSecret: infra-credentials
+            existingSecretKey: elasticsearch-password
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   ingress:

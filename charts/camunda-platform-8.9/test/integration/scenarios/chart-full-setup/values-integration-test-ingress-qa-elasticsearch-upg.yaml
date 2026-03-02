@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   image:
     pullPolicy: Always
   identity:
@@ -34,6 +32,11 @@ global:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-connectors-client-token"
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
   security:
     initialization:
       defaultRoles:
@@ -72,6 +75,9 @@ identityKeycloak:
     passwordSecretKey: "identity-keycloak-admin-password"
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
 webModeler:
   enabled: true
   restapi:

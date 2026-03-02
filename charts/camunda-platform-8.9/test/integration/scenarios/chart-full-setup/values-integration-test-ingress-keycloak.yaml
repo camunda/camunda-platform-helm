@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   ingress:
     enabled: true
     className: nginx
@@ -90,6 +88,9 @@ identityKeycloak:
 
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
   contextPath: "/optimize"
   livenessProbe:
     enabled: true
@@ -130,6 +131,11 @@ webModelerPostgresql:
 
 orchestration:
   contextPath: "/orchestration"
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com:443"
   ingress:
     grpc:
       enabled: true

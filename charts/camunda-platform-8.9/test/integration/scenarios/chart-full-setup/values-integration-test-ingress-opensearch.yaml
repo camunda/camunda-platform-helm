@@ -2,26 +2,17 @@ global:
   exporter:
     zeebe:
       enabled: true
-  elasticsearch:
-    enabled: false
-  opensearch:
-    enabled: true
-    aws:
-      enabled: false
-    auth:
-      username: "$OPENSEARCH_USERNAME"
-      secret:
-        inlineSecret: "$OPENSEARCH_PASSWORD"
-    url:
-      protocol: $OPENSEARCH_PROTOCOL
-      host: "$OPENSEARCH_HOST"
-      port: $OPENSEARCH_PORT
-    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 orchestration:
   data:
     secondaryStorage:
       type: opensearch
+      opensearch:
+        url: "$OPENSEARCH_PROTOCOL://$OPENSEARCH_HOST:$OPENSEARCH_PORT"
+        auth:
+          username: "$OPENSEARCH_USERNAME"
+          secret:
+            inlineSecret: "$OPENSEARCH_PASSWORD"
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   env:
@@ -60,6 +51,22 @@ orchestration:
 
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: false
+    opensearch:
+      enabled: true
+      aws:
+        enabled: false
+      auth:
+        username: "$OPENSEARCH_USERNAME"
+        secret:
+          inlineSecret: "$OPENSEARCH_PASSWORD"
+      url:
+        protocol: $OPENSEARCH_PROTOCOL
+        host: "$OPENSEARCH_HOST"
+        port: $OPENSEARCH_PORT
+      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
