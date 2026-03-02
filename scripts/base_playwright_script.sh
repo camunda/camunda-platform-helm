@@ -519,18 +519,17 @@ run_playwright_tests() {
 
   # Build the playwright command arguments
   local -a playwright_args=(
-  npx playwright test
-  --project="$project"
-  --shard="${shard_index}/${shard_total}"
-  --reporter="$reporter,json"
-  --output=test-results
-  --reporter-options outputFile=test-results/playwright-results.json
-)
+    npx playwright test
+    --project="$project"
+    --shard="${shard_index}/${shard_total}"
+    --reporter="$reporter,json"
+  )
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
 
   # Run with retry logic for pod failures (spot instance preemption)
-  _run_playwright_with_retry "$namespace" "$kube_context" "${playwright_args[@]}"
+  PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/playwright-results.json \
+    _run_playwright_with_retry "$namespace" "$kube_context" "${playwright_args[@]}"
   local playwright_rc=$?
 
   # Only show HTML report locally, never in CI (it blocks waiting for Ctrl+C)
@@ -564,13 +563,14 @@ run_playwright_tests_hybrid() {
 
   # Build the playwright command arguments
   # shellcheck disable=SC2206
-  local -a playwright_args=(npx playwright test $test_files --project=full-suite --reporter="$reporter")
+  local -a playwright_args=(npx playwright test $test_files --project=full-suite --reporter="$reporter,json")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
 
   # Run specific test files with the auth type set as environment variable
   # This overrides any TEST_AUTH_TYPE in .env file
   # Run with retry logic for pod failures (spot instance preemption)
-  TEST_AUTH_TYPE="$auth_type" _run_playwright_with_retry "$namespace" "$kube_context" "${playwright_args[@]}"
+  PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/playwright-results.json \
+    TEST_AUTH_TYPE="$auth_type" _run_playwright_with_retry "$namespace" "$kube_context" "${playwright_args[@]}"
   local playwright_rc=$?
 
   _handle_playwright_result "$playwright_rc" "Hybrid Playwright tests ($auth_type)" "$rerun_cmd" "false"

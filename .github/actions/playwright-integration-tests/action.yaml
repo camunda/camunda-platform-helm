@@ -192,6 +192,7 @@ runs:
       run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
 
     - name: Test - Upload Playwright report
+      if: always()
       uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
       with:
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
