@@ -252,6 +252,17 @@ The following values inside your values.yaml need to be set but were not:
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
+
+  {{/* Orchestration profile deprecation warnings */}}
+  {{- if .Values._deprecatedIdentityProfileUsed }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"orchestration.profiles.identity\" has been renamed to \"orchestration.profiles.admin\"."
+        "The \"identity\" profile is deprecated and will be removed in a future version."
+        "Please update your values file to use \"orchestration.profiles.admin\" instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 {{- end }}
 
 {{/*

@@ -258,14 +258,14 @@ Authentication.
     {{- join "," $enabledProfiles }}
 {{- end -}}
 
-{{- define "orchestration.enabledProfilesWithIdentity" -}}
+{{- define "orchestration.enabledProfilesWithAuth" -}}
     {{- if or
         (eq (include "orchestration.authMethod" .) "oidc")
         (eq (include "orchestration.authMethod" .) "basic")
     }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}
-        {{- include "orchestration.enabledProfiles" . | replace "identity" "auth" -}}
+        {{- include "orchestration.enabledProfiles" . | replace "admin" "auth" -}}
     {{- end }}
 {{- end -}}
 

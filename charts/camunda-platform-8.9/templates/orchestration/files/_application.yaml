@@ -11,7 +11,7 @@ spring:
     {{- end }}
   {{- end }}
   profiles:
-    active: {{ include "orchestration.enabledProfilesWithIdentity" . | quote }}
+    active: {{ include "orchestration.enabledProfilesWithAuth" . | quote }}
   servlet:
     multipart:
       max-file-size: {{ .Values.global.config.requestBodySize | quote }}
