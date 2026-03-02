@@ -196,7 +196,7 @@ data:
         cluster:
           clusterName: camunda-platform-test-zeebe
         # zeebe.broker.exporters
-        exporters: 
+        exporters:
           camundaexporter:
             className: "io.camunda.exporter.CamundaExporter"
             args:
