@@ -145,7 +145,83 @@ _wait_for_dns_resolution() {
 # Playwright Helper Functions
 # ==============================================================================
 
+# Portable file hash — abstracts md5sum (Linux) vs md5 (macOS) vs shasum (fallback)
+_portable_file_hash() {
+  local file="$1"
+  if command -v md5sum >/dev/null 2>&1; then
+    md5sum "$file" | cut -d' ' -f1
+  elif command -v md5 >/dev/null 2>&1; then
+    md5 -q "$file"
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum "$file" | cut -d' ' -f1
+  else
+    echo "none"
+  fi
+}
+
+# Check if node_modules matches the current package-lock.json hash
+_is_node_modules_current() {
+  [[ -d "node_modules" ]] && [[ -f "package-lock.json" ]] && [[ -f "node_modules/.package-lock-hash" ]] || return 1
+  local current_hash cached_hash
+  current_hash=$(_portable_file_hash "package-lock.json")
+  cached_hash=$(cat "node_modules/.package-lock-hash" 2>/dev/null || echo "")
+  [[ -n "$current_hash" ]] && [[ "$current_hash" != "none" ]] && [[ "$current_hash" == "$cached_hash" ]]
+}
+
+# mkdir-based mutual exclusion for npm install (POSIX-portable, no flock dependency)
+# Returns 0 if lock acquired, 1 on timeout (caller should proceed anyway)
+_acquire_npm_lock() {
+  local base_dir="$1"
+  local timeout="${2:-120}"
+  local lock_dir="${base_dir}/.npm-install-lock"
+  local elapsed=0
+
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    # Check for stale lock — owner PID no longer running
+    local lock_pid
+    lock_pid=$(cat "$lock_dir/pid" 2>/dev/null || echo "")
+    if [[ -n "$lock_pid" ]] && ! kill -0 "$lock_pid" 2>/dev/null; then
+      log "Stale npm install lock (PID $lock_pid is dead), removing"
+      rm -rf "$lock_dir"
+      continue
+    fi
+
+    # Age-based fallback for SIGKILL / zombie cases (>300s = stale)
+    if [[ -f "$lock_dir/pid" ]]; then
+      local lock_age
+      # stat -f %m = macOS, stat -c %Y = Linux
+      lock_age=$(( $(date +%s) - $(stat -f %m "$lock_dir/pid" 2>/dev/null || stat -c %Y "$lock_dir/pid" 2>/dev/null || echo "0") ))
+      if [[ $lock_age -gt 300 ]]; then
+        log "npm install lock is ${lock_age}s old (>300s), treating as stale"
+        rm -rf "$lock_dir"
+        continue
+      fi
+    fi
+
+    if [[ $elapsed -ge $timeout ]]; then
+      log "WARNING: Timed out waiting for npm install lock after ${timeout}s, proceeding anyway"
+      return 1
+    fi
+
+    log "Waiting for npm install lock (held by PID ${lock_pid:-unknown}, ${elapsed}s/${timeout}s)..."
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  echo $$ > "$lock_dir/pid"
+  log "Acquired npm install lock (PID $$)"
+  return 0
+}
+
+_release_npm_lock() {
+  local base_dir="$1"
+  local lock_dir="${base_dir}/.npm-install-lock"
+  rm -rf "$lock_dir"
+  log "Released npm install lock"
+}
+
 # Setup playwright environment: change directory, install dependencies, create test-results dir
+# Uses double-checked locking to prevent concurrent npm install corruption.
 # Args: test_suite_path, [silent=false]
 _setup_playwright_environment() {
   local test_suite_path="$1"
@@ -159,37 +235,34 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Check if we should skip npm install (node_modules exists and package-lock.json hasn't changed)
-  if [[ -d "node_modules" ]] && [[ -f "package-lock.json" ]]; then
-    # In CI with pre-configured containers, prefer using existing node_modules if available
-    if [[ "${CI:-false}" == "true" ]] && [[ -f "node_modules/.package-lock.json" ]]; then
-      log "node_modules exists in CI environment, checking if up to date..."
-      # Compare package-lock.json hash with cached version
-      local current_hash cached_hash
-      current_hash=$(md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 || echo "none")
-      cached_hash=$(cat node_modules/.package-lock-hash 2>/dev/null || echo "")
-      if [[ "$current_hash" == "$cached_hash" ]]; then
-        log "node_modules is up to date, skipping npm install"
-        local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
-        mkdir -p "$results_dir"
-        return 0
-      fi
-    fi
+  # Fast path (no lock): node_modules already matches package-lock.json
+  if _is_node_modules_current; then
+    log "node_modules is up to date (fast path), skipping npm install"
+    local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+    mkdir -p "$results_dir"
+    return 0
   fi
 
-  # Use npm install in CI to handle package.json/lock file mismatches gracefully
-  if [[ "${CI:-false}" == "true" ]]; then
-    log "Running npm install (CI mode)..."
-    # shellcheck disable=SC2086
-    npm install $npm_flags
-    # Store hash for future comparison
-    md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 > node_modules/.package-lock-hash || true
-  else
-    # Force fresh install locally to always get the latest dependencies
-    log "Running npm install (local mode)..."
-    # shellcheck disable=SC2086
-    rm -rf node_modules package-lock.json && npm i $npm_flags
+  # Slow path: acquire lock, double-check, install if needed
+  local got_lock=true
+  _acquire_npm_lock "$test_suite_path" 120 || got_lock=false
+
+  # Re-check after acquiring lock — another process may have completed install
+  if _is_node_modules_current; then
+    log "node_modules is up to date (after lock), skipping npm install"
+    [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
+    local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+    mkdir -p "$results_dir"
+    return 0
   fi
+
+  log "Running npm install..."
+  # shellcheck disable=SC2086
+  npm install $npm_flags
+  # Store hash for future skip detection
+  _portable_file_hash "package-lock.json" > node_modules/.package-lock-hash || true
+
+  [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
 
   # Create the test-results directory; use namespace-scoped path when set.
   local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"

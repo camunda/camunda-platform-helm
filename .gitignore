@@ -12,6 +12,7 @@ Chart.lock
 
 node_modules/
 **/node_modules/
+**/.npm-install-lock/
 
 test-results/
 **/test-results/
