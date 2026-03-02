@@ -168,7 +168,7 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
-_wait_for_dns_resolution "$hostname"
+_wait_for_dns_resolution "$hostname" || exit 1
 
 log "DEBUG: Hostname: $hostname"
 log "DEBUG: Test suite path: $TEST_SUITE_PATH"
