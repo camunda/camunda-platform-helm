@@ -298,21 +298,17 @@ zeebe:
     cluster:
       clusterName: {{ tpl .Values.global.zeebeClusterName . }}
 
-    # zeebe.broker.exporters
-    exporters:
-    {{- if and
-      (or 
-        (and .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
-        (or
-          (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
-        )
-      )
-      (or
-        .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
-      )
+    {{- if or
+      (eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+      (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+      (eq (include "orchestration.hasCamundaExporter" .) "true")
+      (eq (include "orchestration.hasAppIntegrations" .) "true")
+      (eq (include "orchestration.hasNoExporter" .) "true")
     }}
+    # zeebe.broker.exporters
+    exporters: {{- if eq (include "orchestration.hasNoExporter" .) "true" }}{{ printf " %s" "{}" }}{{ end }}
+    {{- end }}
+    {{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" }}
       elasticsearch:
         className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
         args:
@@ -330,16 +326,7 @@ zeebe:
             minimumAge: {{ .Values.orchestration.retention.minimumAge | quote }}
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
-    {{- else if and
-      (or
-        (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
-        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
-      )
-      (or
-        .Values.orchestration.exporters.zeebe.enabled
-        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
-      )
-    }}
+    {{- else if eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true" }}
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
@@ -362,7 +349,7 @@ zeebe:
             policyName: {{ .Values.orchestration.retention.policyName | quote }}
           {{- end }}
     {{- end }}
-    {{- if and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) }}
+    {{- if eq (include "orchestration.hasCamundaExporter" .) "true" }}
       camundaexporter:
         className: "io.camunda.exporter.CamundaExporter"
         args:
@@ -379,7 +366,7 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
-    {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey)) "true" }}
+    {{- if eq (include "orchestration.hasAppIntegrations" .) "true" }}
       appIntegrations:
         args:
           apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"

@@ -292,6 +292,53 @@ Authentication.
 {{- end -}}
 
 
+{{- define "orchestration.hasCamundaExporter" -}}
+{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) -}}
+{{- end -}}
+
+{{- define "orchestration.hasNoExporter" -}}
+{{-
+and
+(ne (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+(ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+(ne (include "orchestration.hasCamundaExporter" .) "true")
+-}}
+{{- end -}}
+
+{{- define "orchestration.hasLegacyElasticsearchExporter" -}}
+{{- and
+      (or 
+        (and .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        (or
+          (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
+        )
+      )
+      (or
+        .Values.orchestration.exporters.zeebe.enabled
+        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+      )
+-}}
+{{- end -}}
+
+{{- define "orchestration.hasLegacyOpenSearchExporter" -}}
+{{- and
+      (or
+        (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
+      )
+      (or
+        .Values.orchestration.exporters.zeebe.enabled
+        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+      )
+-}}
+{{- end -}}
+
+{{- define "orchestration.hasAppIntegrations" -}}
+{{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
+{{- end -}}
+
+
 {{/*
 ********************************************************************************
 Service names.
