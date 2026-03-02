@@ -1057,7 +1057,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// avoids using os.Setenv which is process-global and unsafe for concurrent execution).
 	testExclude := ""
 	if len(entry.Exclude) > 0 {
-		testExclude = strings.Join(entry.Exclude, ",")
+		testExclude = strings.Join(entry.Exclude, "|")
 	}
 
 	// Default log level to "info" if not set.
