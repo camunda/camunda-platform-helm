@@ -112,6 +112,15 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"orchestration.profiles.admin":    "false",
 			},
 			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "broker,operate,tasklist,consolidated-auth",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldMigrateDeprecatedIdentityProfileWhenAdminNotSet",
+			Values: map[string]string{
+				"orchestration.profiles.identity": "true",
+			},
+			Expected: map[string]string{
 				"configmapApplication.spring.profiles.active": "admin,broker,operate,tasklist,consolidated-auth",
 			},
 		},

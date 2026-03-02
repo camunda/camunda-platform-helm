@@ -258,7 +258,7 @@ Authentication.
     {{- join "," $enabledProfiles }}
 {{- end -}}
 
-{{- define "orchestration.enabledProfilesWithIdentity" -}}
+{{- define "orchestration.enabledProfilesWithAuth" -}}
     {{- if or
         (eq (include "orchestration.authMethod" .) "oidc")
         (eq (include "orchestration.authMethod" .) "basic")

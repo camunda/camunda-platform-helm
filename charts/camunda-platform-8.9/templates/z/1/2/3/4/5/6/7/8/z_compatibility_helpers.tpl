@@ -495,9 +495,12 @@ Overview:
 {{/*
 orchestration.profiles.identity => orchestration.profiles.admin
 The "identity" profile has been renamed to "admin" in Camunda 8.9.
-This mapping is applied unconditionally to ensure backward compatibility.
+This mapping prefers the new "admin" key if both are present.
 */}}
 {{- if hasKey .Values.orchestration.profiles "identity" -}}
-    {{- $_ := set .Values.orchestration.profiles "admin" .Values.orchestration.profiles.identity -}}
+    {{- $_ := set .Values "_deprecatedIdentityProfileUsed" true -}}
+    {{- if not (hasKey .Values.orchestration.profiles "admin") -}}
+        {{- $_ := set .Values.orchestration.profiles "admin" .Values.orchestration.profiles.identity -}}
+    {{- end -}}
     {{- $_ := unset .Values.orchestration.profiles "identity" -}}
 {{- end -}}
