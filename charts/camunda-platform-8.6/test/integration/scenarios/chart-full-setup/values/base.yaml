@@ -105,7 +105,20 @@ identity:
 # Connectors
 # -----------------------------------------------------------------------------
 connectors:
+  replicas: 2
   contextPath: "/connectors"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - connectors
+            topologyKey: kubernetes.io/hostname
 
 # -----------------------------------------------------------------------------
 # Optimize
@@ -121,12 +134,25 @@ optimize:
 # Console
 # -----------------------------------------------------------------------------
 console:
+  replicas: 2
   enabled: true
   contextPath: "/"
   image:
     pullSecrets:
       - name: index-docker-io
       - name: registry-camunda-cloud
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - console
+            topologyKey: kubernetes.io/hostname
 
 # -----------------------------------------------------------------------------
 # Web Modeler
@@ -139,9 +165,36 @@ webModeler:
       - name: index-docker-io
       - name: registry-camunda-cloud
   restapi:
+    replicas: 2
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - restapi
+              topologyKey: kubernetes.io/hostname
+  webapp:
+    replicas: 2
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - webapp
+              topologyKey: kubernetes.io/hostname
 
 # -----------------------------------------------------------------------------
 # WebModeler Database (8.6 uses postgresql, not webModelerPostgresql)
