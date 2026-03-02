@@ -395,17 +395,17 @@ func redactDeployOpts(opts types.Options) map[string]interface{} {
 }
 
 // generateRandomSuffix creates an 8-character random string.
-func generateRandomSuffix() string {
+func generateRandomSuffix() (string, error) {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, 8)
 	for i := range result {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 		if err != nil {
-			panic(fmt.Sprintf("crypto/rand failed: %v", err))
+			return "", fmt.Errorf("crypto/rand failed: %w", err)
 		}
 		result[i] = chars[num.Int64()]
 	}
-	return string(result)
+	return string(result), nil
 }
 
 // generateCompactRealmName creates a realm name that fits within Keycloak's 36 character limit.
@@ -666,7 +666,10 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 
 	prepared := make([]*PreparedScenario, 0, len(flags.Scenarios))
 	for _, scenario := range flags.Scenarios {
-		scenarioCtx := generateScenarioContext(scenario, flags)
+		scenarioCtx, err := generateScenarioContext(scenario, flags)
+		if err != nil {
+			return fmt.Errorf("failed to generate scenario context for %s: %w", scenario, err)
+		}
 
 		logging.Logger.Info().
 			Str("scenario", scenario).
@@ -760,7 +763,10 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 // executeSingleDeployment deploys a single scenario (original behavior).
 func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) error {
 	scenario := flags.Scenarios[0]
-	scenarioCtx := generateScenarioContext(scenario, flags)
+	scenarioCtx, err := generateScenarioContext(scenario, flags)
+	if err != nil {
+		return fmt.Errorf("failed to generate scenario context: %w", err)
+	}
 
 	// Phase 1: Prepare values
 	prepared, err := prepareScenarioValues(scenarioCtx, flags)
@@ -797,8 +803,11 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 }
 
 // generateScenarioContext creates a scenario-specific deployment context.
-func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *ScenarioContext {
-	suffix := generateRandomSuffix()
+func generateScenarioContext(scenario string, flags *config.RuntimeFlags) (*ScenarioContext, error) {
+	suffix, err := generateRandomSuffix()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate random suffix: %w", err)
+	}
 
 	// Generate unique identifiers for this scenario
 	var realmName, optimizePrefix, orchestrationPrefix, tasklistPrefix, operatePrefix string
@@ -867,7 +876,7 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) *Scena
 		OrchestrationIndexPrefix: orchestrationPrefix,
 		TasklistIndexPrefix:      tasklistPrefix,
 		OperateIndexPrefix:       operatePrefix,
-	}
+	}, nil
 }
 
 // prepareScenarioValues processes values files for a scenario and returns a PreparedScenario.
@@ -924,7 +933,9 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Str("envFile", flags.EnvFile).
 			Str("scenario", scenarioCtx.ScenarioName).
 			Msg("📂 [prepareScenarioValues] loading .env file")
-		_ = env.Load(flags.EnvFile)
+		if err := env.Load(flags.EnvFile); err != nil {
+			logging.Logger.Warn().Err(err).Str("envFile", flags.EnvFile).Msg("Failed to load environment file")
+		}
 	}
 
 	// Set environment variables for prepare-helm-values
@@ -1474,23 +1485,35 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 
 // generateTestSecrets creates random secrets for testing.
 func generateTestSecrets(envFile string) error {
-	text := func() string {
+	text := func() (string, error) {
 		const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		result := make([]byte, 32)
 		for i := range result {
 			num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 			if err != nil {
-				panic(fmt.Sprintf("crypto/rand failed: %v", err))
+				return "", fmt.Errorf("crypto/rand failed: %w", err)
 			}
 			result[i] = chars[num.Int64()]
 		}
-		return string(result)
+		return string(result), nil
 	}
 
-	firstUserPwd := text()
-	secondUserPwd := text()
-	thirdUserPwd := text()
-	keycloakClientsSecret := text()
+	firstUserPwd, err := text()
+	if err != nil {
+		return err
+	}
+	secondUserPwd, err := text()
+	if err != nil {
+		return err
+	}
+	thirdUserPwd, err := text()
+	if err != nil {
+		return err
+	}
+	keycloakClientsSecret, err := text()
+	if err != nil {
+		return err
+	}
 
 	if os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD") == "" {
 		os.Setenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD", firstUserPwd)
