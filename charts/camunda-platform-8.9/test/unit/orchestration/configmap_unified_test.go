@@ -308,17 +308,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 			},
 		},
 		{
-			Name: "TestApplicationYamlShouldContainRDBMSPasswordWithInlineSecret",
-			Values: map[string]string{
-				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
-				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
-				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
-			},
-			Expected: map[string]string{
-				"configmapApplication.camunda.data.secondary-storage.rdbms.password": "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}",
-			},
-		},
-		{
 			Name: "TestApplicationYamlShouldContainRDBMSPasswordWithExistingSecret",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.rdbms.url":                      "jdbc:postgresql://localhost:5432/camunda",

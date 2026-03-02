@@ -128,7 +128,7 @@ camunda:
           policy-name: {{ .Values.orchestration.history.retention.policyName | quote }}
         {{- end }}
       {{- end }}
-      {{- if or .Values.orchestration.data.secondaryStorage.rdbms.secret.existingSecret .Values.orchestration.data.secondaryStorage.rdbms.secret.inlineSecret }}
+      {{- if .Values.orchestration.exporters.rdbms.enabled }}
       rdbms:
         {{- with .Values.orchestration.data.secondaryStorage.rdbms }}
         url: {{ .url | quote }}
