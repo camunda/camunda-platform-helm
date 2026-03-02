@@ -303,9 +303,10 @@ zeebe:
       (eq (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
       (eq (include "orchestration.hasCamundaExporter" .) "true")
       (eq (include "orchestration.hasAppIntegrations" .) "true")
+      (eq (include "orchestration.hasAnyExporter" .) "true")
     }}
     # zeebe.broker.exporters
-    exporters:
+    exporters: {{ if eq (include "orchestration.hasAnyExporter" .) "true" }}{{ printf "%s" "{}" }}{{ end }}
     {{- end }}
     {{- if eq (include "orchestration.hasLegacyElasticsearchExporter" .) "true" }}
       elasticsearch:

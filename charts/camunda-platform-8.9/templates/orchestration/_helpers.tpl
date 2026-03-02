@@ -296,6 +296,14 @@ Authentication.
 {{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) -}}
 {{- end -}}
 
+{{- define "orchestration.hasAnyExporter" -}}
+{{-
+and
+(ne (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+(ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+(ne (include "orchestration.hasCamundaExporter" .) "true")
+-}}
+{{- end -}}
 
 {{- define "orchestration.hasLegacyElasticsearchExporter" -}}
 {{- and
