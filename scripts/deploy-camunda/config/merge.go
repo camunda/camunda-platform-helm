@@ -92,7 +92,7 @@ type RuntimeFlags struct {
 	RunAllTests           bool // Run both integration and e2e tests after deployment
 	KubeContext           string
 	UseVaultBackedSecrets bool
-	TestExclude           string // Comma-separated test suites to exclude (passed as --test-exclude to test scripts)
+	TestExclude           string // Pipe-separated regex for test suites to exclude (passed as --grep-invert to Playwright)
 
 	// Extra helm arguments for advanced use cases (e.g., upgrade flows).
 	// These are appended to the helm command after all other arguments.

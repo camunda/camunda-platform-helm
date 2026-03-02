@@ -58,7 +58,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := runIntegrationTests(ctx, repoRoot, chartPath, namespace, flags.Platform, flags.KubeContext, flags.TestExclude)
+			err := runIntegrationTests(ctx, repoRoot, chartPath, namespace, flags.Platform, flags.KubeContext, flags.TestExclude, flags.Auth)
 			resultCh <- TestResult{Type: "integration", Error: err}
 		}()
 	}
@@ -101,7 +101,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 }
 
 // runIntegrationTests executes the integration test script.
-func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude string) error {
+func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude, testAuthType string) error {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-integration-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
@@ -127,6 +127,9 @@ func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, pl
 	}
 	if testExclude != "" {
 		args = append(args, "--test-exclude", testExclude)
+	}
+	if testAuthType != "" {
+		args = append(args, "--test-auth-type", testAuthType)
 	}
 
 	return executeScript(ctx, scriptPath, args, "integration")
