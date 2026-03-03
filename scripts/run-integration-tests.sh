@@ -329,6 +329,11 @@ hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 _wait_for_dns_resolution "$hostname" || exit 1
 _wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
 
+# Enable Node.js DNS fallback if the system resolver is stale
+if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
+  _enable_dns_fallback
+fi
+
 # ── Namespace-scoped .env to avoid collisions during parallel matrix runs ──
 # When multiple matrix entries target the same chart version, they share the
 # same TEST_SUITE_PATH.  Writing a single .env would cause a race condition.
