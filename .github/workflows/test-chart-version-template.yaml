@@ -182,3 +182,53 @@ jobs:
         secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
         secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
         secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+
+  integration-backwards-compatible:
+    name: ${{ matrix.platform }} - ITs
+    needs: [parse-platforms]
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      packages: read
+    secrets: inherit
+    strategy:
+      matrix:
+        scenarios:
+          - name: keycloak-original
+            shortkey: kco
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}-${{ matrix.platform }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
+      test-enabled: ${{ inputs.test-enabled }}
+      flows: ${{ inputs.flows }}
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      test-case: "${{ inputs.case }}"
+      scenario: "${{ matrix.scenarios.name }}"
+      e2e-enabled: "${{ inputs.e2e-enabled }}"
+      shortname: "${{ matrix.scenarios.shortkey }}"
+      auth: "${{ inputs.auth }}"
+      exclude: "${{ inputs.exclude }}"
+      platforms: "gke"
+      run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
+      values-digest: "true"
+      camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
+      camunda-version-previous: "${{ inputs.camunda-version-previous }}"
+      always-delete-namespace: "${{ inputs.always-delete-namespace }}"
+      infra-type: "${{ matrix.platform == 'eks' && inputs.infra-type-eks || inputs.infra-type-gke }}"
+      # Selection + composition model passthrough
+      test-identity: ${{ inputs.test-identity }}
+      test-persistence: ${{ inputs.test-persistence }}
+      test-platform: ${{ inputs.test-platform }}
+      test-features: ${{ inputs.test-features }}
+      test-qa: ${{ inputs.test-qa }}
+      test-upgrade: ${{ inputs.test-upgrade }}
+      vault-secret-mapping: |
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
