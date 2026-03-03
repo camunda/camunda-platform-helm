@@ -6,3 +6,13 @@ global:
 
 elasticsearch:
   enabled: false
+
+orchestration:
+  data:
+    secondaryStorage:
+      elasticsearch:
+        auth:
+          username: elastic
+          secret:
+            existingSecret: infra-credentials
+            existingSecretKey: elasticsearch-password
