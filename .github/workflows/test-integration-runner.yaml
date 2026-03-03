@@ -1340,6 +1340,12 @@ jobs:
           env: ${{ steps.vars.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
+      - name: CI Cleanup - Delete venom Entra app registration
+        if: always() && (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc')
+        continue-on-error: true
+        run: |
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.cleanup-venom-app
+
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace
         run: |

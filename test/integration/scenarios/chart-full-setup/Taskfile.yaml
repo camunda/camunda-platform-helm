@@ -482,8 +482,10 @@ tasks:
           exit 1
         fi
 
-        # Use a deterministic display name so we can find it again.
-        VENOM_APP_NAME="venom-integration-test"
+        # Use a deterministic display name scoped to the K8s namespace.
+        # Each CI matrix job uses a unique namespace, so this prevents parallel jobs
+        # from racing on the same Entra app registration (credential rotation conflicts).
+        VENOM_APP_NAME="venom-test-{{ .TEST_NAMESPACE }}"
 
         # Search for an existing app registration with this display name.
         SEARCH_RESULT=$(curl -s -X GET \
@@ -562,11 +564,13 @@ tasks:
           exit 1
         fi
 
-        echo "::add-mask::${VENOM_CLIENT_SECRET}"
+        # Mask the secret in CI logs (no-op locally).
+        if [ -n "${GITHUB_ACTIONS:-}" ]; then
+          echo "::add-mask::${VENOM_CLIENT_SECRET}"
+        fi
         echo "Venom app secret created successfully"
 
-        # Grant the venom app API permissions on the main Camunda app (audience).
-        # This is done by creating a service principal and granting admin consent.
+        # Ensure a service principal exists for the venom app (required for token acquisition).
         SP_RESULT=$(curl -s -X GET \
           "https://graph.microsoft.com/v1.0/servicePrincipals?\$filter=appId%20eq%20'${VENOM_CLIENT_ID}'" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
@@ -595,7 +599,7 @@ tasks:
         echo "  VENOM_CLIENT_ID=${VENOM_CLIENT_ID}"
         echo "  VENOM_AUDIENCE={{ .ENTRA_APP_CLIENT_ID }}"
 
-        # Export VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID to GITHUB_ENV so subsequent steps
+        # Export VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID so subsequent steps
         # (prepare-values, helm install) can substitute $VENOM_CLIENT_ID and $CONNECTORS_CLIENT_ID
         # in values files like oidc.yaml and opensearch.yaml.
         if [ -n "${GITHUB_ENV:-}" ]; then
@@ -603,9 +607,64 @@ tasks:
           echo "CONNECTORS_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}" >> "$GITHUB_ENV"
           echo "Exported VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID to GITHUB_ENV"
         else
-          echo "GITHUB_ENV not set (local run). Export manually:"
-          echo "  export VENOM_CLIENT_ID=${VENOM_CLIENT_ID}"
-          echo "  export CONNECTORS_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}"
+          echo ""
+          echo "=== LOCAL RUN: export these before running entra.template-yaml ==="
+          echo "export VENOM_CLIENT_ID=${VENOM_CLIENT_ID}"
+          echo "export CONNECTORS_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}"
+          echo "=================================================================="
+        fi
+
+  entra.cleanup-venom-app:
+    desc: "Delete the per-namespace venom Entra app registration (cleanup after tests)"
+    preconditions:
+      - test -n "{{ .ENTRA_APP_DIRECTORY_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_SECRET }}"
+      - test -n "{{ .TEST_NAMESPACE }}"
+    cmds:
+      - |
+        set -euo pipefail
+
+        VENOM_APP_NAME="venom-test-{{ .TEST_NAMESPACE }}"
+        echo "Cleaning up Entra app registration: ${VENOM_APP_NAME}"
+
+        # Authenticate to Graph API.
+        RESPONSE=$(curl -s -X POST \
+          "https://login.microsoftonline.com/{{ .ENTRA_APP_DIRECTORY_ID }}/oauth2/v2.0/token" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id={{ .ENTRA_APP_CLIENT_ID }}" \
+          -d "scope=https://graph.microsoft.com/.default" \
+          -d "client_secret={{ .ENTRA_APP_CLIENT_SECRET }}" \
+          -d "grant_type=client_credentials")
+
+        BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
+        if [ -z "$BEARER_TOKEN" ] || [ "$BEARER_TOKEN" = "null" ]; then
+          echo "WARNING: Failed to obtain Entra bearer token for cleanup" >&2
+          echo "$RESPONSE" >&2
+          exit 0
+        fi
+
+        # Find the app registration by display name.
+        SEARCH_RESULT=$(curl -s -X GET \
+          "https://graph.microsoft.com/v1.0/applications?\$filter=displayName%20eq%20'${VENOM_APP_NAME}'" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json")
+
+        OBJECT_ID=$(echo "$SEARCH_RESULT" | jq -r '.value[0].id // empty')
+        if [ -z "$OBJECT_ID" ]; then
+          echo "No Entra app registration found with name '${VENOM_APP_NAME}', nothing to clean up."
+          exit 0
+        fi
+
+        echo "Deleting app registration: objectId=${OBJECT_ID}"
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+          "https://graph.microsoft.com/v1.0/applications/${OBJECT_ID}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}")
+
+        if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "404" ]; then
+          echo "Successfully deleted Entra app '${VENOM_APP_NAME}' (HTTP ${HTTP_CODE})"
+        else
+          echo "WARNING: Unexpected HTTP ${HTTP_CODE} when deleting Entra app '${VENOM_APP_NAME}'" >&2
         fi
 
   entra.template-yaml:
