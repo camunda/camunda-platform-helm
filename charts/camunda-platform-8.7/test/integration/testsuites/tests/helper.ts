@@ -33,7 +33,7 @@ export const authHeader = async (api: APIRequestContext, config: any): Promise<s
     return `Basic ${Buffer.from(
       `${config.demoUser}:${config.demoPass}`,
     ).toString("base64")}`;
-  } else if (config.authType === "keycloak" || config.authType === "oidc") {
+  } else {
     return `Bearer ${await fetchToken(config.venomID, config.venomSec, api, config)}`;
   }
 };

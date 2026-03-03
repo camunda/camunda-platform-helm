@@ -455,6 +455,159 @@ tasks:
             \"spa\": { \"redirectUris\": $FINAL_SPA_URIS }
           }" | cat
 
+  entra.ensure-venom-app:
+    desc: "Ensure a 'venom' test client app registration exists in Entra for OIDC integration tests"
+    preconditions:
+      - test -n "{{ .ENTRA_APP_DIRECTORY_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_ID }}"
+      - test -n "{{ .ENTRA_APP_CLIENT_SECRET }}"
+      - test -n "{{ .TEST_NAMESPACE }}"
+    cmds:
+      - |
+        set -euo pipefail
+
+        # Authenticate using the main Entra app to get a Graph API bearer token.
+        RESPONSE=$(curl -s -X POST \
+          "https://login.microsoftonline.com/{{ .ENTRA_APP_DIRECTORY_ID }}/oauth2/v2.0/token" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id={{ .ENTRA_APP_CLIENT_ID }}" \
+          -d "scope=https://graph.microsoft.com/.default" \
+          -d "client_secret={{ .ENTRA_APP_CLIENT_SECRET }}" \
+          -d "grant_type=client_credentials")
+
+        BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
+        if [ -z "$BEARER_TOKEN" ] || [ "$BEARER_TOKEN" = "null" ]; then
+          echo "Failed to obtain Entra bearer token for Graph API" >&2
+          echo "$RESPONSE" >&2
+          exit 1
+        fi
+
+        # Use a deterministic display name so we can find it again.
+        VENOM_APP_NAME="venom-integration-test"
+
+        # Search for an existing app registration with this display name.
+        SEARCH_RESULT=$(curl -s -X GET \
+          "https://graph.microsoft.com/v1.0/applications?\$filter=displayName%20eq%20'${VENOM_APP_NAME}'" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json")
+
+        EXISTING_APP_ID=$(echo "$SEARCH_RESULT" | jq -r '.value[0].appId // empty')
+        EXISTING_OBJECT_ID=$(echo "$SEARCH_RESULT" | jq -r '.value[0].id // empty')
+
+        if [ -n "$EXISTING_APP_ID" ]; then
+          echo "Found existing venom app: appId=${EXISTING_APP_ID} objectId=${EXISTING_OBJECT_ID}"
+          VENOM_CLIENT_ID="$EXISTING_APP_ID"
+          VENOM_OBJECT_ID="$EXISTING_OBJECT_ID"
+        else
+          echo "Creating new venom app registration: ${VENOM_APP_NAME}"
+          CREATE_RESULT=$(curl -s -X POST \
+            "https://graph.microsoft.com/v1.0/applications" \
+            -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"displayName\": \"${VENOM_APP_NAME}\",
+              \"signInAudience\": \"AzureADMyOrg\",
+              \"requiredResourceAccess\": [{
+                \"resourceAppId\": \"{{ .ENTRA_APP_CLIENT_ID }}\",
+                \"resourceAccess\": [{
+                  \"id\": \"00000000-0000-0000-0000-000000000000\",
+                  \"type\": \"Scope\"
+                }]
+              }]
+            }")
+
+          VENOM_CLIENT_ID=$(echo "$CREATE_RESULT" | jq -r '.appId // empty')
+          VENOM_OBJECT_ID=$(echo "$CREATE_RESULT" | jq -r '.id // empty')
+
+          if [ -z "$VENOM_CLIENT_ID" ] || [ "$VENOM_CLIENT_ID" = "null" ]; then
+            echo "Failed to create venom app registration" >&2
+            echo "$CREATE_RESULT" >&2
+            exit 1
+          fi
+          echo "Created venom app: appId=${VENOM_CLIENT_ID} objectId=${VENOM_OBJECT_ID}"
+        fi
+
+        # Ensure the venom app has a client secret (password credential).
+        # Check for existing credentials.
+        CREDS=$(curl -s -X GET \
+          "https://graph.microsoft.com/v1.0/applications/${VENOM_OBJECT_ID}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json" | jq '.passwordCredentials')
+
+        CRED_COUNT=$(echo "$CREDS" | jq 'length')
+
+        if [ "$CRED_COUNT" -gt 0 ]; then
+          echo "Venom app already has ${CRED_COUNT} credential(s). Rotating to get a fresh secret."
+          # Remove existing credentials to avoid accumulation.
+          for KEY_ID in $(echo "$CREDS" | jq -r '.[].keyId'); do
+            curl -s -X POST \
+              "https://graph.microsoft.com/v1.0/applications/${VENOM_OBJECT_ID}/removePassword" \
+              -H "Authorization: Bearer ${BEARER_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"keyId\": \"${KEY_ID}\"}" > /dev/null
+          done
+        fi
+
+        # Add a new client secret.
+        SECRET_RESULT=$(curl -s -X POST \
+          "https://graph.microsoft.com/v1.0/applications/${VENOM_OBJECT_ID}/addPassword" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d '{"passwordCredential": {"displayName": "integration-test-secret", "endDateTime": "2099-12-31T00:00:00Z"}}')
+
+        VENOM_CLIENT_SECRET=$(echo "$SECRET_RESULT" | jq -r '.secretText // empty')
+        if [ -z "$VENOM_CLIENT_SECRET" ]; then
+          echo "Failed to create client secret for venom app" >&2
+          echo "$SECRET_RESULT" >&2
+          exit 1
+        fi
+
+        echo "::add-mask::${VENOM_CLIENT_SECRET}"
+        echo "Venom app secret created successfully"
+
+        # Grant the venom app API permissions on the main Camunda app (audience).
+        # This is done by creating a service principal and granting admin consent.
+        SP_RESULT=$(curl -s -X GET \
+          "https://graph.microsoft.com/v1.0/servicePrincipals?\$filter=appId%20eq%20'${VENOM_CLIENT_ID}'" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H "Content-Type: application/json")
+
+        SP_ID=$(echo "$SP_RESULT" | jq -r '.value[0].id // empty')
+        if [ -z "$SP_ID" ]; then
+          echo "Creating service principal for venom app"
+          SP_CREATE=$(curl -s -X POST \
+            "https://graph.microsoft.com/v1.0/servicePrincipals" \
+            -H "Authorization: Bearer ${BEARER_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"appId\": \"${VENOM_CLIENT_ID}\"}")
+          SP_ID=$(echo "$SP_CREATE" | jq -r '.id // empty')
+          echo "Created service principal: ${SP_ID}"
+        fi
+
+        # Store credentials in a K8s secret for the integration tests to consume.
+        kubectl -n "{{ .TEST_NAMESPACE }}" create secret generic venom-entra-credentials \
+          --from-literal=client-id="${VENOM_CLIENT_ID}" \
+          --from-literal=client-secret="${VENOM_CLIENT_SECRET}" \
+          --from-literal=audience="{{ .ENTRA_APP_CLIENT_ID }}" \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        echo "Venom Entra credentials stored in K8s secret 'venom-entra-credentials' in namespace {{ .TEST_NAMESPACE }}"
+        echo "  VENOM_CLIENT_ID=${VENOM_CLIENT_ID}"
+        echo "  VENOM_AUDIENCE={{ .ENTRA_APP_CLIENT_ID }}"
+
+        # Export VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID to GITHUB_ENV so subsequent steps
+        # (prepare-values, helm install) can substitute $VENOM_CLIENT_ID and $CONNECTORS_CLIENT_ID
+        # in values files like oidc.yaml and opensearch.yaml.
+        if [ -n "${GITHUB_ENV:-}" ]; then
+          echo "VENOM_CLIENT_ID=${VENOM_CLIENT_ID}" >> "$GITHUB_ENV"
+          echo "CONNECTORS_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}" >> "$GITHUB_ENV"
+          echo "Exported VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID to GITHUB_ENV"
+        else
+          echo "GITHUB_ENV not set (local run). Export manually:"
+          echo "  export VENOM_CLIENT_ID=${VENOM_CLIENT_ID}"
+          echo "  export CONNECTORS_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}"
+        fi
+
   entra.template-yaml:
     desc: "Template Entra configuration into OIDC identity file"
     cmds:
@@ -463,11 +616,16 @@ tasks:
         export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
         export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
         export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
+        # VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID are expected to be set in the
+        # parent environment (exported by the workflow step after entra.ensure-venom-app).
+        # Re-export them here to ensure envsubst can substitute them in oidc.yaml.
+        export VENOM_CLIENT_ID="${VENOM_CLIENT_ID:-}"
+        export CONNECTORS_CLIENT_ID="${CONNECTORS_CLIENT_ID:-${ENTRA_APP_CLIENT_ID}}"
 
         # Template the OIDC identity file for Entra
         OIDC_FILE="{{ .LAYERED_VALUES_DIR }}/identity/oidc.yaml"
         if [ -f "$OIDC_FILE" ]; then
-          envsubst < "$OIDC_FILE" > "${OIDC_FILE}.tmp"
+          envsubst '$ENTRA_APP_CLIENT_ID $ENTRA_APP_CLIENT_SECRET $ENTRA_APP_DIRECTORY_ID $ENTRA_APP_OBJECT_ID $VENOM_CLIENT_ID $CONNECTORS_CLIENT_ID' < "$OIDC_FILE" > "${OIDC_FILE}.tmp"
           mv "${OIDC_FILE}.tmp" "$OIDC_FILE"
           cat "$OIDC_FILE"
         else

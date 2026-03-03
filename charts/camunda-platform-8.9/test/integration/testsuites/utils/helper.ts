@@ -7,13 +7,16 @@ export async function fetchToken(
   api: APIRequestContext,
   config: any,
 ) {
-  const r = await api.post(config.authURL, {
-    form: {
-      client_id: id,
-      client_secret: sec,
-      grant_type: "client_credentials",
-    },
-  });
+  const form: Record<string, string> = {
+    client_id: id,
+    client_secret: sec,
+    grant_type: "client_credentials",
+  };
+  // Entra v2.0 requires a scope for client_credentials grants.
+  if (config.tokenScope) {
+    form.scope = config.tokenScope;
+  }
+  const r = await api.post(config.authURL, { form });
   expect(
     r.ok(),
     `Failed to get token for client_id=${id}: ${r.status()}`,
@@ -26,7 +29,7 @@ export const authHeader = async (api: APIRequestContext, config: any) => {
     return `Basic ${Buffer.from(
       `${config.venomID}:${config.venomSec}`,
     ).toString("base64")}`;
-  } else if (config.authType === "keycloak") {
+  } else if (config.authType === "keycloak" || config.authType === "oidc") {
     return `Bearer ${await fetchToken(config.venomID, config.venomSec, api, config)}`;
   }
 };

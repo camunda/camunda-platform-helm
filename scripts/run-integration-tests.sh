@@ -83,17 +83,38 @@ setup_env_file() {
   if [[ "$test_suite_path" == *"8.8"* || "$test_suite_path" == *"8.9"* || "$test_suite_path" == *"8.10"* ]]; then
     export TEST_AUTH_TYPE="$test_auth_type"
   fi
+  export TEST_AUTH_TYPE="$test_auth_type"
 
   log "Rendering env template: '$test_suite_path/vars/playwright/files/playwright-job-vars.env.template' -> '$env_file'"
   keycloakUrl=$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
   host=""
-  echo "::group::Keycloak URL parsing"
+  echo "::group::Token URL resolution"
   if [[ -n "$keycloakUrl" ]]; then
-    # This parses out the host from the keycloakUrl
     tokenUrl="${keycloakUrl}"
-    echo "Resolved tokenUrl: $tokenUrl"
+    echo "Resolved tokenUrl from annotation: $tokenUrl"
+  elif [[ "$test_auth_type" == "oidc" ]]; then
+    # OIDC mode: try Helm release values, then ENTRA_APP_DIRECTORY_ID env var
+    local releaseName
+    releaseName=$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity \
+      -o jsonpath="{.items[0].metadata.labels.app\.kubernetes\.io/instance}" 2>/dev/null || true)
+    local helmTokenUrl=""
+    if [[ -n "$releaseName" ]] && command -v helm &>/dev/null; then
+      helmTokenUrl=$(helm -n "$namespace" ${kube_context:+--kube-context=$kube_context} \
+        get values "$releaseName" -a -o jsonpath='{.global.identity.auth.tokenUrl}' 2>/dev/null || true)
+    fi
+    if [[ -n "$helmTokenUrl" ]]; then
+      tokenUrl="${helmTokenUrl}"
+      echo "Resolved tokenUrl from Helm release values: $tokenUrl"
+    elif [[ -n "${ENTRA_APP_DIRECTORY_ID:-}" ]]; then
+      tokenUrl="https://login.microsoftonline.com/${ENTRA_APP_DIRECTORY_ID}/oauth2/v2.0/token"
+      echo "Resolved tokenUrl from ENTRA_APP_DIRECTORY_ID: $tokenUrl"
+    else
+      echo "WARNING: OIDC mode but no token URL found. Tried: annotation, Helm values, ENTRA_APP_DIRECTORY_ID env var."
+      echo "Set ENTRA_APP_DIRECTORY_ID or redeploy with updated OIDC values to add the keycloak-token-url annotation."
+      tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
+      echo "Falling back to Keycloak tokenUrl (will likely fail): $tokenUrl"
+    fi
   else
-    # This parses out the host from the keycloakUrl
     tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
     echo "Resolved tokenUrl: $tokenUrl"
   fi
@@ -149,6 +170,38 @@ setup_env_file() {
     -o jsonpath="{.data.identity-admin-client-password}" | base64 -d)
   mask_secret "$secret"
   echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${secret}" >> "$env_file"
+
+  # For OIDC mode, fetch venom Entra app credentials from the K8s secret created
+  # by the entra.ensure-venom-app Taskfile task. This provides the test client with
+  # a real Entra app registration (simulating a third-party API consumer).
+  if [[ "$test_auth_type" == "oidc" ]]; then
+    log "Fetching venom Entra credentials for OIDC mode"
+    if $kubectl_cmd -n "$namespace" get secret venom-entra-credentials > /dev/null 2>&1; then
+      local venom_client_id venom_client_secret venom_audience
+      venom_client_id=$($kubectl_cmd -n "$namespace" \
+        get secret venom-entra-credentials \
+        -o jsonpath="{.data.client-id}" | base64 -d)
+      venom_client_secret=$($kubectl_cmd -n "$namespace" \
+        get secret venom-entra-credentials \
+        -o jsonpath="{.data.client-secret}" | base64 -d)
+      venom_audience=$($kubectl_cmd -n "$namespace" \
+        get secret venom-entra-credentials \
+        -o jsonpath="{.data.audience}" | base64 -d)
+      if [[ -z "$venom_client_id" || -z "$venom_client_secret" || -z "$venom_audience" ]]; then
+        log "ERROR: venom-entra-credentials secret exists but one or more fields are empty"
+        log "  client-id='${venom_client_id}' client-secret=[masked] audience='${venom_audience}'"
+        return 1
+      fi
+      mask_secret "$venom_client_secret"
+      echo "TEST_CLIENT_ID=${venom_client_id}" >> "$env_file"
+      echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${venom_client_secret}" >> "$env_file"
+      echo "TEST_TOKEN_SCOPE=${venom_audience}/.default" >> "$env_file"
+      log "Venom Entra credentials written to env file (client_id=${venom_client_id})"
+    else
+      log "WARNING: venom-entra-credentials secret not found in namespace '$namespace'."
+      log "OIDC tests will use fallback credentials (may fail if venom is not registered in Entra)."
+    fi
+  fi
 
   # fixtures are the *.bpmn files that are used to test the platform. This is likely to change
   # to be more flexible in what we are testing.
