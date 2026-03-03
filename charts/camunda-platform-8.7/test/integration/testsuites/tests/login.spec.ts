@@ -66,7 +66,10 @@ test.describe("Camunda core", () => {
   });
 
   test("M2M tokens", async () => {
-    if (config.authType === "basic") {
+    // Skip for basic auth (no OAuth) and OIDC auth (component secrets are
+    // Identity-generated client passwords, not Entra client credentials —
+    // sending client_id=connectors to the Entra token endpoint is invalid).
+    if (config.authType === "basic" || config.authType === "oidc") {
       test.skip();
       return;
     }
@@ -130,6 +133,12 @@ test.describe("Camunda core", () => {
     ],
   ] as const) {
     test(`API: ${label}`, async () => {
+      // In OIDC mode, Identity's REST API requires Identity-issued tokens
+      // (not Entra tokens), so this endpoint returns 404 or 401.
+      if (label === "Identity users" && config.authType === "oidc") {
+        test.skip();
+        return;
+      }
       const r = await api.fetch(url, {
         method,
         data: body || undefined,
@@ -200,6 +209,7 @@ test.describe("Camunda core", () => {
   ] as const) {
     const extra =
       process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+    const scopeArgs = config.tokenScope ? ["--scope", config.tokenScope] : [];
     test(`Deploy BPMN: ${name}`, async () => {
       execFileSync(
         "zbctl",
@@ -216,6 +226,7 @@ test.describe("Camunda core", () => {
           config.authURL,
           "--address",
           config.base.zeebeGRPC,
+          ...scopeArgs,
           ...extra,
         ],
         { stdio: "inherit" },
@@ -233,6 +244,7 @@ test.describe("Camunda core", () => {
       test.setTimeout(3 * 60 * 1000); // > polling window
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+      const scopeArgs = config.tokenScope ? ["--scope", config.tokenScope] : [];
       execFileSync(
         "zbctl",
         [
@@ -248,6 +260,7 @@ test.describe("Camunda core", () => {
           config.authURL,
           "--address",
           config.base.zeebeGRPC,
+          ...scopeArgs,
           ...extra,
         ],
         { stdio: "inherit" },

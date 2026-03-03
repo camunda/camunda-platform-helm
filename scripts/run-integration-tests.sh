@@ -172,8 +172,8 @@ setup_env_file() {
   echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${secret}" >> "$env_file"
 
   # For OIDC mode, fetch venom Entra app credentials from the K8s secret created
-  # by the entra.ensure-venom-app Taskfile task. This provides the test client with
-  # a real Entra app registration (simulating a third-party API consumer).
+  # by the "deploy-camunda entra ensure-venom-app" CLI command. This provides the
+  # test client with a real Entra app registration (simulating a third-party API consumer).
   if [[ "$test_auth_type" == "oidc" ]]; then
     log "Fetching venom Entra credentials for OIDC mode"
     if $kubectl_cmd -n "$namespace" get secret venom-entra-credentials > /dev/null 2>&1; then

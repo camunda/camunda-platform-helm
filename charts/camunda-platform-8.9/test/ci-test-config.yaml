@@ -85,7 +85,7 @@ integration:
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
-          flow: upgrade-minor
+          flow: install,upgrade-minor
           infra-type:
             gke: distroci
             eks: preemptible

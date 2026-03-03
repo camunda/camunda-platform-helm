@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -115,6 +116,13 @@ type RuntimeFlags struct {
 	// config-file values. This is essential for boolean flags whose zero
 	// value (false) is a valid explicit choice (e.g., --skip-dependency-update=false).
 	ChangedFlags map[string]bool
+
+	// PreInstallHooks are functions called by the deployer after namespace and
+	// registry secrets are set up but before helm upgrade/install. This allows
+	// callers (e.g., the matrix runner) to create K8s resources that must
+	// exist at install time but cannot be created earlier because the namespace
+	// may not yet exist or may be recreated by DeleteNamespaceFirst.
+	PreInstallHooks []func(ctx context.Context) error
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
