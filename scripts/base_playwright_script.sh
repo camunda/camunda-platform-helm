@@ -50,6 +50,12 @@ COLOR_MAGENTA='\033[0;35m'
 COLOR_CYAN='\033[0;36m'
 COLOR_GRAY='\033[0;90m'
 
+# Always-visible status output for long-running steps.
+# Use this instead of log() for messages the user must see regardless of -v.
+info() {
+  echo -e "${COLOR_CYAN}[$(date +'%H:%M:%S')]${COLOR_RESET} $*" >&2
+}
+
 log() {
   if $VERBOSE; then
     local message="$*"
@@ -85,12 +91,14 @@ get_ingress_hostname() {
     kubectl_cmd="kubectl --context=$kube_context"
   fi
 
+  info "Detecting ingress hostname in namespace ${namespace}..."
   hostname=$($kubectl_cmd -n "$namespace" get ingress -o json | jq -r '
     .items[]
     | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
     | ([.spec.rules[].host] | join(","))')
   if [[ -z "$hostname" ]]; then
     # might be using the Gateway api
+    log "No matching Ingress found, trying Gateway API..."
     hostname=$($kubectl_cmd -n "$namespace" get gateway -o json | jq -r '.items[].spec.listeners[].hostname')
   fi
 
@@ -99,6 +107,7 @@ get_ingress_hostname() {
     exit 1
   fi
 
+  info "Ingress hostname: ${hostname}"
   echo "$hostname"
 }
 
@@ -112,39 +121,85 @@ check_required_cmds() {
   done
 }
 
+# Resolve a hostname to an IP address, trying the system resolver first and
+# falling back to public DNS (8.8.8.8).  Prints the resolved IP on stdout.
+# Returns 0 on success, 1 if neither resolver can find the host.
+_resolve_host() {
+  local hostname="$1"
+  local ip
+
+  # Try system resolver
+  ip=$(nslookup "$hostname" 2>/dev/null | awk '/^Address: / { print $2; exit }')
+  if [[ -n "$ip" ]]; then
+    echo "$ip"
+    return 0
+  fi
+
+  # Fall back to Google public DNS
+  ip=$(nslookup "$hostname" 8.8.8.8 2>/dev/null | awk '/^Address: / { a=$2 } END { print a }')
+  if [[ -n "$ip" ]]; then
+    echo "$ip"
+    return 0
+  fi
+
+  return 1
+}
+
 # Wait for DNS resolution of a hostname before proceeding.
 # External-dns can take time to create records after ingress creation,
 # and DNS propagation adds additional delay.
+# Checks both the system resolver and public DNS (8.8.8.8) to avoid getting
+# stuck on stale negative (NXDOMAIN) caches in local/router resolvers.
+# On success, sets _RESOLVED_IP so callers (e.g. curl) can use --resolve to
+# bypass a broken local cache.
 # Args: hostname, [timeout_seconds=120]
+_RESOLVED_IP=""
 _wait_for_dns_resolution() {
   local hostname="$1"
   local timeout="${2:-120}"
   local elapsed=0
+  _RESOLVED_IP=""
 
   # Skip if hostname is an IP address
   if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    _RESOLVED_IP="$hostname"
     return 0
   fi
 
-  log "Waiting up to ${timeout}s for DNS resolution of ${hostname}..."
+  info "Waiting for DNS resolution of ${hostname} (timeout ${timeout}s)..."
 
-  while ! nslookup "$hostname" >/dev/null 2>&1; do
+  while true; do
+    local ip
+    ip=$(_resolve_host "$hostname") && {
+      _RESOLVED_IP="$ip"
+      # Inform when the system resolver is stale so the user knows why curl
+      # needs --resolve and the Playwright tests may need /etc/hosts entries.
+      if ! nslookup "$hostname" >/dev/null 2>&1; then
+        info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Resolved via public DNS (8.8.8.8 -> ${ip}) but local resolver still returns NXDOMAIN."
+        info "  Ingress checks will use --resolve to work around stale cache."
+        info "  To fix: sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder  (macOS)"
+      fi
+      break
+    }
+
     if [[ $elapsed -ge $timeout ]]; then
-      log "ERROR: DNS resolution for '${hostname}' timed out after ${timeout}s"
+      info "${COLOR_RED}ERROR:${COLOR_RESET} DNS resolution for '${hostname}' timed out after ${timeout}s (checked both local and public DNS)"
       return 1
     fi
     sleep 5
     elapsed=$((elapsed + 5))
-    log "DNS not yet resolved for ${hostname} (${elapsed}s/${timeout}s)..."
+    info "  DNS not yet resolved (${elapsed}s/${timeout}s)..."
   done
 
-  log "✅  DNS resolved for ${hostname} (took ${elapsed}s)"
+  info "DNS resolved: ${hostname} -> ${_RESOLVED_IP} (${elapsed}s)"
 }
 
 # Wait for ingress paths to return non-502/503/504 responses.
 # After DNS resolves, cloud load balancers (GKE NEG, EKS ALB, etc.) may still
 # need time to converge on backend health state. This function polls each
 # ingress context path until the LB routes traffic end-to-end.
+# Uses _RESOLVED_IP (set by _wait_for_dns_resolution) to add a curl --resolve
+# flag when the system resolver cannot resolve the hostname (stale NXDOMAIN).
 # Args: hostname, namespace, [timeout_seconds=120], [kube_context]
 _wait_for_ingress_ready() {
   local hostname="$1"
@@ -155,6 +210,13 @@ _wait_for_ingress_ready() {
 
   if [[ -n "$kube_context" ]]; then
     kubectl_cmd="kubectl --context=$kube_context"
+  fi
+
+  # Build --resolve flag for curl when the system resolver can't reach the host
+  local resolve_flag=()
+  if [[ -n "${_RESOLVED_IP:-}" ]] && ! nslookup "$hostname" >/dev/null 2>&1; then
+    resolve_flag=(--resolve "${hostname}:443:${_RESOLVED_IP}")
+    log "Using curl --resolve ${hostname}:443:${_RESOLVED_IP} (system DNS is stale)"
   fi
 
   # Extract unique context paths from ingress objects (filter out zeebe/grpc, same as get_ingress_hostname)
@@ -177,12 +239,12 @@ _wait_for_ingress_ready() {
   fi
 
   if [[ -z "$paths" ]]; then
-    log "WARNING: No ingress paths found in namespace '$namespace', skipping ingress readiness check"
+    info "${COLOR_YELLOW}WARNING:${COLOR_RESET} No ingress/httproute paths found in namespace '${namespace}', skipping readiness check"
     return 0
   fi
 
-  log "Waiting up to ${timeout}s for ingress paths to become ready on ${hostname}..."
-  log "Paths to check: $(echo "$paths" | tr '\n' ' ')"
+  info "Waiting for ingress to become ready on ${hostname} (timeout ${timeout}s)..."
+  info "  Paths: $(echo "$paths" | tr '\n' ' ')"
 
   local elapsed=0
   while [[ $elapsed -lt $timeout ]]; do
@@ -192,7 +254,7 @@ _wait_for_ingress_ready() {
     while IFS= read -r path; do
       [[ -z "$path" ]] && continue
       local http_code
-      http_code=$(curl -sk -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 "https://${hostname}${path}" 2>/dev/null || echo "000")
+      http_code=$(curl -sk -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 "${resolve_flag[@]}" "https://${hostname}${path}" 2>/dev/null || echo "000")
       status_summary+=" ${path}=${http_code}"
 
       # 502, 503, 504, 000 (connection failure) mean the LB is not ready
@@ -202,16 +264,16 @@ _wait_for_ingress_ready() {
     done <<< "$paths"
 
     if [[ "$all_ready" == "true" ]]; then
-      log "✅  Ingress ready on ${hostname} (took ${elapsed}s):${status_summary}"
+      info "Ingress ready (${elapsed}s):${status_summary}"
       return 0
     fi
 
-    log "Ingress not ready yet (${elapsed}s/${timeout}s):${status_summary}"
+    info "  Not ready yet (${elapsed}s/${timeout}s):${status_summary}"
     sleep 5
     elapsed=$((elapsed + 5))
   done
 
-  log "ERROR: Ingress readiness timed out after ${timeout}s on ${hostname}"
+  info "${COLOR_RED}ERROR:${COLOR_RESET} Ingress readiness timed out after ${timeout}s on ${hostname}"
   return 1
 }
 
@@ -330,7 +392,7 @@ _setup_playwright_environment() {
     return 0
   fi
 
-  log "Running npm install..."
+  info "Installing npm dependencies..."
   # shellcheck disable=SC2086
   npm install $npm_flags
   # Store hash for future skip detection
@@ -368,7 +430,7 @@ _install_playwright_browsers() {
     fi
   fi
 
-  log "Installing Playwright browsers..."
+  info "Installing Playwright browsers..."
   if [[ "$(uname -s)" == "Linux" ]]; then
     npx playwright install --with-deps || exit 1
   else
@@ -491,14 +553,14 @@ _wait_for_pods_ready() {
     return 0
   fi
   
-  log "Waiting up to ${timeout}s for all pods in namespace $namespace to be Ready..."
+  info "Waiting for pods to be ready in ${namespace} (timeout ${timeout}s)..."
   
   # Exclude completed Jobs (status.phase=Succeeded) - they don't have Ready condition
   if $kubectl_cmd wait --for=condition=Ready pods --all \
        --field-selector=status.phase!=Succeeded \
        -n "$namespace" \
        --timeout="${timeout}s" 2>/dev/null; then
-    log "All pods in namespace $namespace are Ready"
+    info "All pods ready in ${namespace}"
     return 0
   else
     # kubectl wait failed - this can happen if:
@@ -558,11 +620,11 @@ _run_playwright_with_retry() {
     # Check pods are ready before running
     if [[ -n "$namespace" ]]; then
       if ! _check_all_pods_ready "$namespace" "$kube_context"; then
-        log "WARNING: Pods not ready before test attempt $attempt, waiting for recovery..."
+        info "${COLOR_YELLOW}Pods not ready before attempt ${attempt}, waiting for recovery...${COLOR_RESET}"
         if ! _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT" "$kube_context"; then
-          log "ERROR: Pods did not recover before test attempt $attempt"
+          info "${COLOR_RED}Pods did not recover before attempt ${attempt}${COLOR_RESET}"
           if [[ $attempt -ge $_POD_RETRY_MAX_ATTEMPTS ]]; then
-            log "ERROR: Max retry attempts reached, pods never recovered"
+            info "${COLOR_RED}Max retry attempts reached, pods never recovered${COLOR_RESET}"
             return 1
           fi
           log "Will continue to next attempt..."
@@ -572,7 +634,7 @@ _run_playwright_with_retry() {
     fi
     
     if [[ $attempt -gt 1 ]]; then
-      log "Retry attempt $attempt/$_POD_RETRY_MAX_ATTEMPTS after pod recovery..."
+      info "Retry attempt ${attempt}/${_POD_RETRY_MAX_ATTEMPTS} after pod recovery..."
     fi
     
     # Create temp file to capture output for connection error analysis
@@ -593,13 +655,13 @@ _run_playwright_with_retry() {
     fi
     
     # Tests failed - analyze why
-    log "Tests failed with exit code $playwright_rc"
+    info "Tests failed (exit code ${playwright_rc}), checking infrastructure..."
     
     # Check for connection-related errors in output (infrastructure issues)
     local has_connection_error=false
     if grep -qiE "ECONNREFUSED|ECONNRESET|ETIMEDOUT|connection refused|connection reset|transport error|dial tcp.*connect:|Unavailable desc = connection error" "$output_file" 2>/dev/null; then
       has_connection_error=true
-      log "WARNING: Detected connection error in test output (likely infrastructure issue)"
+      info "${COLOR_YELLOW}Detected connection errors in test output (likely infrastructure issue)${COLOR_RESET}"
     fi
     
     if [[ -n "$namespace" ]]; then
@@ -607,34 +669,31 @@ _run_playwright_with_retry() {
       
       if ! _check_all_pods_ready "$namespace" "$kube_context"; then
         # Pods are not ready - this was likely a spot instance preemption
-        log "WARNING: Test failed and pods are not ready (possible spot instance preemption)"
+        info "${COLOR_YELLOW}Pods not ready after failure (possible spot preemption)${COLOR_RESET}"
         
         if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
-          log "Waiting for pods to recover before retry..."
+          info "Waiting for pods to recover before retry..."
           if _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT" "$kube_context"; then
-            log "Pods recovered, will retry tests..."
+            info "Pods recovered, retrying tests..."
             continue
           else
-            log "ERROR: Pods did not recover within timeout"
+            info "${COLOR_RED}Pods did not recover within timeout${COLOR_RESET}"
             return $playwright_rc
           fi
         else
-          log "ERROR: Max retry attempts reached, pods still not ready"
+          info "${COLOR_RED}Max retry attempts reached, pods still not ready${COLOR_RESET}"
           return $playwright_rc
         fi
       elif [[ "$has_connection_error" == "true" ]]; then
         # Pods are ready NOW, but we saw connection errors - likely recovered mid-test
-        log "WARNING: Pods are ready now, but connection errors occurred during test"
-        log "This suggests infrastructure disruption during test execution (pods may have recovered after failure)"
+        info "${COLOR_YELLOW}Pods are ready now but connection errors occurred during test${COLOR_RESET}"
         
         if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
-          log "Will retry due to connection errors..."
-          # Brief pause to ensure stability after recovery
-          log "Pausing 10s to ensure pod stability..."
+          info "Pausing 10s for stability, then retrying..."
           sleep 10
           continue
         else
-          log "ERROR: Max retry attempts reached"
+          info "${COLOR_RED}Max retry attempts reached${COLOR_RESET}"
           _dump_pod_status "$namespace"
           return $playwright_rc
         fi
@@ -691,9 +750,9 @@ run_playwright_tests() {
   local project="full-suite"
   if [[ "$run_smoke_tests" == "true" ]]; then
     project="smoke-tests"
-    log "Running smoke tests"
+    info "Running smoke tests..."
   else
-    log "Running full suite"
+    info "Running Playwright tests..."
   fi
 
   # Build the playwright command arguments
@@ -733,7 +792,7 @@ run_playwright_tests_hybrid() {
   local kube_context="${7:-}"  # Optional: kubernetes context
   local rerun_cmd="${8:-}"  # Optional: command to rerun tests locally
 
-  log "Running hybrid tests: auth_type='$auth_type' test_files='$test_files'"
+  info "Running hybrid tests (auth=${auth_type}): ${test_files}"
   [[ -n "$namespace" ]] && log "Namespace for pod checks: $namespace"
   [[ -n "$kube_context" ]] && log "Kube context: $kube_context"
 

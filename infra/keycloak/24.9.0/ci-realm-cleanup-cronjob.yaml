@@ -17,7 +17,7 @@
 # mounted into the pod via a ConfigMap (ci-cleanup-script-keycloak). The
 # ConfigMap is created by deploy-keycloak.sh from that script file.
 #
-# This CronJob runs every 5 minutes.
+# This CronJob runs every 15 minutes.
 #
 # RBAC: Requires cluster-level namespace list permission (for cross-reference).
 #
@@ -44,7 +44,7 @@ metadata:
     app.kubernetes.io/component: maintenance
     app.kubernetes.io/part-of: keycloak
 spec:
-  schedule: "*/5 * * * *"
+  schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
