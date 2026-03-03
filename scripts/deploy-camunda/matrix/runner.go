@@ -1160,7 +1160,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// before namespace setup.
 	var venomOpts *entra.Options
 	if entra.IsOIDCEntry(entry.Auth, entry.Identity) {
-		opts := entra.Options{
+		entraOpts := entra.Options{
 			Namespace:     namespace,
 			KubeContext:   kubeCtx,
 			SkipK8sSecret: true, // Phase 2 is deferred to PreInstallHook.
@@ -1169,18 +1169,28 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			Str("namespace", namespace).
 			Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")
 
-		venomApp, err := entra.EnsureVenomApp(ctx, opts)
+		venomApp, err := entra.EnsureVenomApp(ctx, entraOpts)
 		if err != nil {
 			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("entra: provision venom app: %w", err)}
 		}
-		venomOpts = &opts
+		venomOpts = &entraOpts
 
-		// Phase 2: register a PreInstallHook that creates the K8s secret after
-		// the namespace exists and before helm install.
-		audience := opts.ClientID
+		// Inject VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID via per-entry ExtraEnv
+		// so that prepareScenarioValues applies them under the envMutex, avoiding
+		// the process-global os.Setenv race when multiple OIDC entries execute
+		// concurrently (each has a distinct venom app registration).
+		audience := entraOpts.ClientID
 		if audience == "" {
 			audience = os.Getenv("ENTRA_APP_CLIENT_ID")
 		}
+		if flags.ExtraEnv == nil {
+			flags.ExtraEnv = make(map[string]string)
+		}
+		flags.ExtraEnv["VENOM_CLIENT_ID"] = venomApp.AppID
+		flags.ExtraEnv["CONNECTORS_CLIENT_ID"] = audience
+
+		// Phase 2: register a PreInstallHook that creates the K8s secret after
+		// the namespace exists and before helm install.
 		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
 			logging.Logger.Info().
 				Str("namespace", namespace).
