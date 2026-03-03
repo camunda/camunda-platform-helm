@@ -673,12 +673,18 @@ _run_playwright_with_retry() {
     rm -f "$output_file"
     output_file=$(mktemp)
     
-    # Run the playwright command, tee output to file for analysis
-    # Use pipefail to capture the actual playwright exit code
-    set -o pipefail
-    "${playwright_cmd[@]}" 2>&1 | tee "$output_file"
-    playwright_rc=${PIPESTATUS[0]}
-    set +o pipefail
+    # Run the playwright command, capturing output for analysis.
+    # IMPORTANT: We redirect to the file and separately stream to stdout
+    # instead of piping through `tee`.  A pipeline (`cmd | tee file`)
+    # keeps the pipe open until ALL writers close their inherited copy of
+    # the write-end file descriptor.  If npx/node spawns child processes
+    # (browser workers, etc.) that linger after the main process exits,
+    # `tee` — and therefore the whole pipeline — hangs until those orphan
+    # children terminate.  Using process substitution avoids this: the
+    # shell only waits for the main command, not for the tee background
+    # process.
+    "${playwright_cmd[@]}" > >(tee "$output_file") 2>&1
+    playwright_rc=$?
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then

@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/matrix"
 	"scripts/prepare-helm-values/pkg/env"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -180,6 +182,13 @@ Cleanup runs regardless of whether entries succeeded or failed.
 
 This command calls deploy.Execute() for each matrix entry.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create a signal-aware context so that Ctrl+C (SIGINT) and
+			// SIGTERM cancel the context, which propagates through
+			// matrix.Run → deploy.Execute → executeScript, cleanly
+			// terminating the entire subprocess tree.
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			defer stop()
+
 			// Track which CLI flags were explicitly set so config merging
 			// does not overwrite them.
 			changedFlags := make(map[string]bool)
@@ -363,7 +372,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				fmt.Fprintln(os.Stdout, output)
 			}
 
-			results, err := matrix.Run(context.Background(), entries, matrix.RunOptions{
+			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
 				DryRun:                dryRun,
 				Coverage:              coverage,
 				StopOnFailure:         stopOnFailure,

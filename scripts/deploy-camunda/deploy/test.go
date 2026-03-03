@@ -10,6 +10,7 @@ import (
 	"scripts/deploy-camunda/config"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 // TestResult holds the result of a test execution.
@@ -167,11 +168,40 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 }
 
 // executeScript runs a shell script with the given arguments.
+//
+// The subprocess is placed in its own process group (Setpgid) so that when
+// the context is cancelled (e.g. StopOnFailure, Ctrl+C) we can send SIGTERM
+// to the entire process tree — shell, node, playwright browsers, etc. —
+// instead of only killing the direct child and leaving orphans behind.
+//
+// Without this, exec.CommandContext sends os.Kill (SIGKILL) only to the
+// direct child PID, and any grandchild processes (npx, playwright, tee, etc.)
+// continue running until they finish or the terminal is closed.
 func executeScript(ctx context.Context, scriptPath string, args []string, testType string) error {
 	cmd := exec.CommandContext(ctx, scriptPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = os.Environ()
+
+	// Place the child in its own process group so we can signal the whole tree.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// Override the default CommandContext kill behavior: instead of sending
+	// SIGKILL to just the child PID, send SIGTERM to the entire process group
+	// (negative PID). This gives the shell and its children a chance to run
+	// cleanup traps before exiting.
+	cmd.Cancel = func() error {
+		if cmd.Process == nil {
+			return nil
+		}
+		pgid := cmd.Process.Pid
+		logging.Logger.Info().
+			Int("pgid", pgid).
+			Str("testType", testType).
+			Msg("Context cancelled, sending SIGTERM to process group")
+		// Negative PID signals the entire process group.
+		return syscall.Kill(-pgid, syscall.SIGTERM)
+	}
 
 	logging.Logger.Debug().
 		Str("command", scriptPath).
@@ -180,6 +210,9 @@ func executeScript(ctx context.Context, scriptPath string, args []string, testTy
 		Msg("Executing test script")
 
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return fmt.Errorf("%s tests cancelled: %w", testType, ctx.Err())
+		}
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return fmt.Errorf("%s tests failed with exit code %d", testType, exitErr.ExitCode())
 		}
