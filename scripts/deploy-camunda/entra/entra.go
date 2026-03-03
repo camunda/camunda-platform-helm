@@ -452,7 +452,7 @@ var createVenomK8sSecretFunc = createVenomK8sSecret
 // 3. Rotates the client secret (removes old ones, creates a fresh one).
 // 4. Ensures a service principal exists for the app.
 // 5. Creates/updates the venom-entra-credentials K8s secret in the namespace.
-// 6. Sets VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID in the process environment.
+// 6. Returns the provisioned VenomApp — callers should use ExtraEnv for per-entry env vars.
 //
 // Returns the provisioned VenomApp or an error.
 func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
@@ -531,13 +531,13 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Msg("Venom Entra credentials stored in K8s secret 'venom-entra-credentials'")
 	}
 
-	// Step 6: Set process environment variables for values.Process() substitution.
-	os.Setenv("VENOM_CLIENT_ID", appID)
-	os.Setenv("CONNECTORS_CLIENT_ID", opts.ClientID)
+	// Step 6: Return the provisioned app. Callers that need env vars for values
+	// substitution should use RuntimeFlags.ExtraEnv (per-entry, mutex-protected)
+	// rather than process-global os.Setenv to avoid races in parallel execution.
 	logging.Logger.Info().
 		Str("VENOM_CLIENT_ID", appID).
 		Str("CONNECTORS_CLIENT_ID", opts.ClientID).
-		Msg("Set OIDC environment variables")
+		Msg("Venom app provisioned — callers should set VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID via ExtraEnv")
 
 	return &VenomApp{
 		AppID:        appID,

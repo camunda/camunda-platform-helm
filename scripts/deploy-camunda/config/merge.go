@@ -123,6 +123,13 @@ type RuntimeFlags struct {
 	// exist at install time but cannot be created earlier because the namespace
 	// may not yet exist or may be recreated by DeleteNamespaceFirst.
 	PreInstallHooks []func(ctx context.Context) error
+
+	// ExtraEnv holds per-entry environment variables that are set under the
+	// envMutex in prepareScenarioValues before values.Process() runs.
+	// This avoids process-global os.Setenv races when multiple OIDC entries
+	// run concurrently — each entry carries its own VENOM_CLIENT_ID and
+	// CONNECTORS_CLIENT_ID instead of relying on os.Setenv.
+	ExtraEnv map[string]string
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
