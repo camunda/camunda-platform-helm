@@ -40,6 +40,12 @@ test.describe("identity", () => {
 
   // Parameterized API endpoint tests
   test("API: Identity users", async ({ request }) => {
+    // In OIDC mode, Identity's REST API requires Identity-issued tokens
+    // (not Entra tokens), so this endpoint returns 404 or 401.
+    if (config.authType === "oidc") {
+      test.skip();
+      return;
+    }
     const url = `${config.base.identity}/api/users`;
     const method = "GET";
     const body = "";

@@ -1383,6 +1383,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		VaultSecretPath:       prepared.VaultSecretPath,
 		ExtraArgs:             flags.ExtraHelmArgs,
 		SetPairs:              flags.ExtraHelmSets,
+		PreInstallHooks:       flags.PreInstallHooks,
 	}
 
 	// Log deployment options (redact sensitive fields)

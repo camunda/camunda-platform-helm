@@ -23,6 +23,7 @@ import (
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
+	"scripts/deploy-camunda/entra"
 )
 
 // numESPools is the number of Elasticsearch pools across which matrix entries
@@ -143,6 +144,11 @@ type RunResult struct {
 	KubeContext string
 	Error       error
 	Diagnostics string // Post-failure namespace diagnostics (pods, events, logs)
+
+	// venomOpts stores the Entra options used to provision a venom app for OIDC entries.
+	// Populated only when the entry uses OIDC authentication. Used during cleanup to
+	// delete the corresponding Entra app registration.
+	venomOpts *entra.Options
 }
 
 // Run executes the matrix entries, building RuntimeFlags for each and calling deploy.Execute().
@@ -1143,6 +1149,46 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
 	}
 
+	// OIDC hook: provision a venom Entra app registration before deployment.
+	// The entra package is the canonical implementation for OIDC app provisioning,
+	// used by both this matrix runner and the "deploy-camunda entra" CLI subcommand.
+	//
+	// Two-phase approach: Phase 1 (Entra API provisioning + env vars) runs now,
+	// before deploy.Execute(). Phase 2 (K8s secret creation) is deferred to a
+	// PreInstallHook because deploy.Execute() may delete and recreate the
+	// namespace (via DeleteNamespaceFirst), which would wipe any secret created
+	// before namespace setup.
+	var venomOpts *entra.Options
+	if entra.IsOIDCEntry(entry.Auth, entry.Identity) {
+		opts := entra.Options{
+			Namespace:     namespace,
+			KubeContext:   kubeCtx,
+			SkipK8sSecret: true, // Phase 2 is deferred to PreInstallHook.
+		}
+		logging.Logger.Info().
+			Str("namespace", namespace).
+			Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")
+
+		venomApp, err := entra.EnsureVenomApp(ctx, opts)
+		if err != nil {
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: fmt.Errorf("entra: provision venom app: %w", err)}
+		}
+		venomOpts = &opts
+
+		// Phase 2: register a PreInstallHook that creates the K8s secret after
+		// the namespace exists and before helm install.
+		audience := opts.ClientID
+		if audience == "" {
+			audience = os.Getenv("ENTRA_APP_CLIENT_ID")
+		}
+		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
+			logging.Logger.Info().
+				Str("namespace", namespace).
+				Msg("OIDC Phase 2 — creating venom-entra-credentials K8s secret (PreInstallHook)")
+			return entra.CreateVenomK8sSecret(hookCtx, kubeCtx, namespace, venomApp, audience)
+		})
+	}
+
 	logging.Logger.Info().
 		Str("version", entry.Version).
 		Str("scenario", entry.Scenario).
@@ -1167,9 +1213,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
 		if err := executeTwoStepUpgrade(ctx, entry, flags, opts); err != nil {
 			diag := collectDiagnostics(namespace, kubeCtx)
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag}
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag, venomOpts: venomOpts}
 		}
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, venomOpts: venomOpts}
 	}
 
 	// Upgrade-only flow (modular-upgrade-minor): upgrade an already-running deployment.
@@ -1177,18 +1223,18 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
 		if err := executeUpgradeOnly(ctx, entry, flags, opts); err != nil {
 			diag := collectDiagnostics(namespace, kubeCtx)
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag}
+			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag, venomOpts: venomOpts}
 		}
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, venomOpts: venomOpts}
 	}
 
 	// Single-step install (default flow).
 	if err := deploy.Execute(ctx, flags); err != nil {
 		diag := collectDiagnostics(namespace, kubeCtx)
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag}
+		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag, venomOpts: venomOpts}
 	}
 
-	return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx}
+	return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, venomOpts: venomOpts}
 }
 
 // executeTwoStepUpgrade performs a two-step upgrade deployment:
@@ -1424,8 +1470,19 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 // cleanupNamespaces deletes all namespaces that were created during the matrix run.
 // It deduplicates namespaces (in case multiple flows share the same namespace)
 // and logs each deletion. Each namespace is deleted using the kube context that
-// was resolved for it during execution. Errors are logged but do not halt the cleanup.
+// was resolved for it during execution. For OIDC entries, the corresponding Entra
+// app registration is also cleaned up. Errors are logged but do not halt the cleanup.
 func cleanupNamespaces(ctx context.Context, results []RunResult, opts RunOptions) {
+	// First, clean up Entra apps for OIDC entries (best-effort, before namespace deletion).
+	for _, r := range results {
+		if r.venomOpts != nil {
+			logging.Logger.Info().
+				Str("namespace", r.Namespace).
+				Msg("Cleaning up venom Entra app registration")
+			entra.CleanupVenomApp(ctx, *r.venomOpts)
+		}
+	}
+
 	// Deduplicate namespaces while preserving order and tracking kube context
 	type nsInfo struct {
 		namespace   string

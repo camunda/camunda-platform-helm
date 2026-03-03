@@ -108,5 +108,14 @@ func Deploy(ctx context.Context, o types.Options) error {
 		}
 	}
 
+	// Run pre-install hooks (e.g., OIDC credential secret creation).
+	// These run after the namespace is guaranteed to exist and all standard
+	// secrets are in place, but before the helm upgrade/install.
+	for i, hook := range o.PreInstallHooks {
+		if err := hook(ctx); err != nil {
+			return fmt.Errorf("pre-install hook [%d] failed: %w", i, err)
+		}
+	}
+
 	return upgradeInstall(ctx, o)
 }

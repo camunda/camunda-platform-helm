@@ -129,17 +129,18 @@ orchestration:
       value: "false"
     # Mapping rules for OIDC (Entra ID) - these override base-qa.yaml mapping rules
     # because Helm replaces arrays, so this orchestration.env replaces base-qa.yaml's entirely.
-    # In Entra, client_id claim = the app's GUID, not a friendly name like "venom" or "connectors".
+    # In Entra v2.0 tokens, the application (client) ID is in the "azp" claim,
+    # not "client_id" (which Keycloak uses). The value is the app's GUID.
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
       value: "venom-client-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "client_id"
+      value: "azp"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
       value: "$VENOM_CLIENT_ID"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
       value: "connectors-client-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
+      value: "azp"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
       value: "$ENTRA_APP_CLIENT_ID"
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
