@@ -2695,7 +2695,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.9.0-alpha4"
+                            "default": "8.9.0-alpha5-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -3176,12 +3176,12 @@
                                         "cpu": {
                                             "type": "string",
                                             "description": "",
-                                            "default": "500m"
+                                            "default": "900m"
                                         },
                                         "memory": {
                                             "type": "string",
                                             "description": "",
-                                            "default": "1Gi"
+                                            "default": "1280Mi"
                                         }
                                     }
                                 },
@@ -3191,12 +3191,12 @@
                                         "cpu": {
                                             "type": "string",
                                             "description": "",
-                                            "default": "1000m"
+                                            "default": "1800m"
                                         },
                                         "memory": {
                                             "type": "string",
                                             "description": "",
-                                            "default": "2Gi"
+                                            "default": "2560Mi"
                                         }
                                     }
                                 }
