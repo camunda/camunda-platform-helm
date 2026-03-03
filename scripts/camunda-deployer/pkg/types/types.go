@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type ValuesInput struct {
 	ChartPath string
@@ -64,6 +67,13 @@ type Options struct {
 	RenderTemplates bool
 	RenderOutputDir string
 	IncludeCRDs     bool
+
+	// PreInstallHooks are functions called after the namespace and registry
+	// secrets are set up but before helm upgrade/install. This allows callers
+	// to create K8s resources (e.g., OIDC credential secrets) that must exist
+	// in the namespace at install time but cannot be created earlier because
+	// the namespace may not yet exist or may be recreated.
+	PreInstallHooks []func(ctx context.Context) error
 }
 
 type CIMetadata struct {

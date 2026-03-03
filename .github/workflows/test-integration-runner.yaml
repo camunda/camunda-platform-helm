@@ -509,19 +509,15 @@ jobs:
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.ensure-venom-app
-
-          # Read VENOM_CLIENT_ID from the K8s secret created by entra.ensure-venom-app
-          # and export it so entra.template-yaml can substitute $VENOM_CLIENT_ID in oidc.yaml.
-          export VENOM_CLIENT_ID=$(kubectl -n "$TEST_NAMESPACE" get secret venom-entra-credentials -o jsonpath='{.data.client-id}' | base64 -d)
-          export CONNECTORS_CLIENT_ID="${ENTRA_APP_CLIENT_ID}"
-          echo "VENOM_CLIENT_ID=${VENOM_CLIENT_ID}"
-          echo "CONNECTORS_CLIENT_ID=${CONNECTORS_CLIENT_ID}"
-          # Persist for subsequent workflow steps (setup.pre, setup.exec)
-          echo "VENOM_CLIENT_ID=${VENOM_CLIENT_ID}" >> "$GITHUB_ENV"
-          echo "CONNECTORS_CLIENT_ID=${CONNECTORS_CLIENT_ID}" >> "$GITHUB_ENV"
-
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.template-yaml
+          go run ./scripts/deploy-camunda entra ensure-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info | tee /tmp/entra-output.txt
+          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
+          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
+          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
+          # Also export for the current step.
+          eval "$(grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt)"
+          eval "$(grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt)"
 
       - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
@@ -828,14 +824,12 @@ jobs:
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.ensure-venom-app
-
-          # Read VENOM_CLIENT_ID from the K8s secret created by entra.ensure-venom-app
-          # and persist for subsequent workflow steps (upgrade.exec, etc.)
-          export VENOM_CLIENT_ID=$(kubectl -n "$TEST_NAMESPACE" get secret venom-entra-credentials -o jsonpath='{.data.client-id}' | base64 -d)
-          export CONNECTORS_CLIENT_ID="${ENTRA_APP_CLIENT_ID}"
-          echo "VENOM_CLIENT_ID=${VENOM_CLIENT_ID}" >> "$GITHUB_ENV"
-          echo "CONNECTORS_CLIENT_ID=${CONNECTORS_CLIENT_ID}" >> "$GITHUB_ENV"
+          go run ./scripts/deploy-camunda entra ensure-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info | tee /tmp/entra-output.txt
+          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
+          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
+          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
 
       - name: CI Setup - Upgrade - Set test type vars
         id: test-type-vars-upgrade-minor
@@ -1344,7 +1338,9 @@ jobs:
         if: always() && (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc')
         continue-on-error: true
         run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.cleanup-venom-app
+          go run ./scripts/deploy-camunda entra cleanup-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info
 
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace

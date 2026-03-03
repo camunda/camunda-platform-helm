@@ -307,6 +307,37 @@ func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName
 	return nil
 }
 
+// EnsureOpaqueSecret creates or updates an Opaque secret with string data in the
+// specified namespace using server-side apply.
+func (c *Client) EnsureOpaqueSecret(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	if secretName == "" {
+		return errors.New("secret name must not be empty")
+	}
+
+	logging.Logger.Debug().
+		Str("namespace", namespace).
+		Str("secret", secretName).
+		Msg("creating/updating opaque secret")
+
+	secretApply := corev1apply.Secret(secretName, namespace).
+		WithType(corev1.SecretTypeOpaque).
+		WithStringData(stringData)
+
+	_, err := c.clientset.CoreV1().Secrets(namespace).Apply(
+		ctx,
+		secretApply,
+		defaultApplyOptions(),
+	)
+	if err != nil {
+		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+			return fmt.Errorf("failed to apply opaque secret %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, namespace, c.kubeContext, err)
+		}
+		return fmt.Errorf("failed to apply opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
+	}
+
+	return nil
+}
+
 func (c *Client) DeleteNamespace(ctx context.Context, namespace string) error {
 	logging.Logger.Debug().Str("namespace", namespace).Msg("deleting namespace")
 
