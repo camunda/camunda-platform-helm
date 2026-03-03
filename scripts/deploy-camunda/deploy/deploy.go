@@ -949,6 +949,10 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		"FLOW",
 		"ES_POOL_INDEX",
 	}
+	// Also capture/restore any per-entry extra env vars so they don't leak across entries.
+	for k := range flags.ExtraEnv {
+		envVarsToCapture = append(envVarsToCapture, k)
+	}
 	originalEnv := captureEnv(envVarsToCapture)
 
 	// Ensure environment is restored and mutex is unlocked even on error
@@ -986,6 +990,13 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		esPoolIndex = "0"
 	}
 	os.Setenv("ES_POOL_INDEX", esPoolIndex)
+
+	// Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
+	// These are set under the envMutex to avoid process-global races when multiple entries
+	// run in parallel and each has a different venom app registration.
+	for k, v := range flags.ExtraEnv {
+		os.Setenv(k, v)
+	}
 
 	// Set Keycloak environment variables
 	if flags.KeycloakHost != "" {
