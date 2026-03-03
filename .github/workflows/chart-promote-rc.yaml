@@ -224,14 +224,12 @@ jobs:
           chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
           head_ref="release-please--branches--main--components--camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
 
-          # For prerelease charts (alpha/beta/rc), force release-please to use the
-          # version already embedded in the dev tag. This avoids manual PR edits.
-          release_as_args=()
-          if [[ "${{ steps.parse.outputs.version }}" =~ -(alpha|beta|rc)[0-9]+$ ]]; then
-            echo "::notice::Prerelease dev tag detected; forcing release-please version to '${{ steps.parse.outputs.version }}'"
-            release_as_args+=("--release-as=${{ steps.parse.outputs.version }}")
-          fi
-          
+          # Always pass --release-as with the version from the dev tag. This ensures
+          # the release-please PR version matches exactly what the dev build computed.
+          # Without this, release-please recomputes the version from the release tag
+          # baseline, which preserves alpha suffixes even after a stable transition.
+          echo "::notice::Forcing release-please version to '${{ steps.parse.outputs.version }}'"
+
           release-please release-pr \
             --token="${{ steps.generate-github-token.outputs.token }}" \
             --repo-url="${{ github.repository }}" \
@@ -239,7 +237,7 @@ jobs:
             --path="${chart_path}" \
             --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
             --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
-            "${release_as_args[@]}" \
+            --release-as="${{ steps.parse.outputs.version }}" \
             --debug 2>&1 | tee release-please.log
 
           if grep -qiE 'aborting|untagged, merged release PRs outstanding' release-please.log; then
