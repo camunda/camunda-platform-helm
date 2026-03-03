@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/deploy-camunda/config"
@@ -12,6 +13,7 @@ import (
 	"scripts/deploy-camunda/format"
 	"scripts/prepare-helm-values/pkg/env"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -152,11 +154,16 @@ func NewRootCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create a signal-aware context so that Ctrl+C (SIGINT) and
+			// SIGTERM cancel the context and cleanly terminate subprocesses.
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			defer stop()
+
 			// Log flags
 			format.PrintFlags(cmd.Flags())
 
 			// Execute deployment
-			return deploy.Execute(context.Background(), &flags)
+			return deploy.Execute(ctx, &flags)
 		},
 	}
 
