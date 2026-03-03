@@ -261,6 +261,9 @@ env:
   ENTRA_APP_DIRECTORY_ID: ${{ secrets.ENTRA_APP_DIRECTORY_ID }}
   ENTRA_APP_OBJECT_ID: ${{ secrets.ENTRA_APP_OBJECT_ID }}
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
+  # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.
+  VENOM_CLIENT_ID: venom
+  CONNECTORS_CLIENT_ID: connectors
   # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
@@ -506,6 +509,18 @@ jobs:
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.ensure-venom-app
+
+          # Read VENOM_CLIENT_ID from the K8s secret created by entra.ensure-venom-app
+          # and export it so entra.template-yaml can substitute $VENOM_CLIENT_ID in oidc.yaml.
+          export VENOM_CLIENT_ID=$(kubectl -n "$TEST_NAMESPACE" get secret venom-entra-credentials -o jsonpath='{.data.client-id}' | base64 -d)
+          export CONNECTORS_CLIENT_ID="${ENTRA_APP_CLIENT_ID}"
+          echo "VENOM_CLIENT_ID=${VENOM_CLIENT_ID}"
+          echo "CONNECTORS_CLIENT_ID=${CONNECTORS_CLIENT_ID}"
+          # Persist for subsequent workflow steps (setup.pre, setup.exec)
+          echo "VENOM_CLIENT_ID=${VENOM_CLIENT_ID}" >> "$GITHUB_ENV"
+          echo "CONNECTORS_CLIENT_ID=${CONNECTORS_CLIENT_ID}" >> "$GITHUB_ENV"
+
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.template-yaml
 
       - name: Helm - Install - Execute before install lifecycle tasks
@@ -813,6 +828,14 @@ jobs:
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.ensure-venom-app
+
+          # Read VENOM_CLIENT_ID from the K8s secret created by entra.ensure-venom-app
+          # and persist for subsequent workflow steps (upgrade.exec, etc.)
+          export VENOM_CLIENT_ID=$(kubectl -n "$TEST_NAMESPACE" get secret venom-entra-credentials -o jsonpath='{.data.client-id}' | base64 -d)
+          export CONNECTORS_CLIENT_ID="${ENTRA_APP_CLIENT_ID}"
+          echo "VENOM_CLIENT_ID=${VENOM_CLIENT_ID}" >> "$GITHUB_ENV"
+          echo "CONNECTORS_CLIENT_ID=${CONNECTORS_CLIENT_ID}" >> "$GITHUB_ENV"
 
       - name: CI Setup - Upgrade - Set test type vars
         id: test-type-vars-upgrade-minor

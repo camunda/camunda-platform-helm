@@ -58,7 +58,7 @@ integration:
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
-          flow: upgrade-minor
+          flow: install,upgrade-minor
           infra-type:
             gke: distroci
             eks: preemptible
@@ -99,7 +99,7 @@ integration:
           identity: keycloak-external
           persistence: elasticsearch-external
         - name: elasticsearch
-          enabled: true
+          enabled: false
           exclude: [orchestration-grpc]
           shortname: eshy
           identity: hybrid
