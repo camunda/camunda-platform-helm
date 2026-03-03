@@ -56,7 +56,7 @@ data:
         cookie:
           same-site:
             enabled: false
-    {{- if .Values.global.identity.auth.enabled }}
+    {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
         ccsm:
           redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
     api:
