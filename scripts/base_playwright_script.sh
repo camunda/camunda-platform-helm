@@ -122,8 +122,8 @@ check_required_cmds() {
 }
 
 # Resolve a hostname to an IP address, trying the system resolver first and
-# falling back to public DNS (8.8.8.8).  Prints the resolved IP on stdout.
-# Returns 0 on success, 1 if neither resolver can find the host.
+# falling back to multiple public DNS servers.  Prints the resolved IP on stdout.
+# Returns 0 on success, 1 if no resolver can find the host.
 _resolve_host() {
   local hostname="$1"
   local ip
@@ -135,30 +135,62 @@ _resolve_host() {
     return 0
   fi
 
-  # Fall back to Google public DNS
-  ip=$(nslookup "$hostname" 8.8.8.8 2>/dev/null | awk '/^Address: / { a=$2 } END { print a }')
-  if [[ -n "$ip" ]]; then
-    echo "$ip"
-    return 0
-  fi
+  # Try multiple public DNS servers — any single one may have a stale NXDOMAIN
+  # cached (the SOA negative-cache TTL for this zone is 300s).
+  local resolver
+  for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
+    ip=$(nslookup "$hostname" "$resolver" 2>/dev/null | awk '/^Address: / { a=$2 } END { print a }')
+    if [[ -n "$ip" ]]; then
+      echo "$ip"
+      return 0
+    fi
+  done
 
   return 1
+}
+
+# ── DNS fallback for Node.js/Playwright ──
+# When the system resolver has a stale NXDOMAIN but public DNS can resolve the
+# host, we inject a Node.js preload script via NODE_OPTIONS that monkey-patches
+# dns.lookup to fall back to public resolvers (1.1.1.1, 8.8.8.8, 9.9.9.9).
+# This avoids needing sudo or /etc/hosts edits.
+_DNS_FALLBACK_ENABLED=false
+
+_enable_dns_fallback() {
+  local fallback_script
+  fallback_script="$(dirname "${BASH_SOURCE[0]}")/dns-fallback.cjs"
+
+  if [[ ! -f "$fallback_script" ]]; then
+    info "${COLOR_YELLOW}WARNING:${COLOR_RESET} dns-fallback.cjs not found at ${fallback_script}. Playwright may fail with ENOTFOUND."
+    return 1
+  fi
+
+  # Use absolute path so it works regardless of cwd
+  fallback_script="$(cd "$(dirname "$fallback_script")" && pwd)/$(basename "$fallback_script")"
+
+  # Append to NODE_OPTIONS so we don't clobber existing values
+  export NODE_OPTIONS="${NODE_OPTIONS:+${NODE_OPTIONS} }--require ${fallback_script}"
+  _DNS_FALLBACK_ENABLED=true
+  info "Enabled Node.js DNS fallback (public resolvers) via NODE_OPTIONS"
 }
 
 # Wait for DNS resolution of a hostname before proceeding.
 # External-dns can take time to create records after ingress creation,
 # and DNS propagation adds additional delay.
-# Checks both the system resolver and public DNS (8.8.8.8) to avoid getting
-# stuck on stale negative (NXDOMAIN) caches in local/router resolvers.
+# Checks both the system resolver and multiple public DNS servers to avoid
+# getting stuck on stale negative (NXDOMAIN) caches.
 # On success, sets _RESOLVED_IP so callers (e.g. curl) can use --resolve to
-# bypass a broken local cache.
+# bypass a broken local cache.  When the system resolver is stale, sets
+# _NEEDS_DNS_FALLBACK=true so callers can enable the Node.js DNS preload.
 # Args: hostname, [timeout_seconds=120]
 _RESOLVED_IP=""
+_NEEDS_DNS_FALLBACK=false
 _wait_for_dns_resolution() {
   local hostname="$1"
   local timeout="${2:-120}"
   local elapsed=0
   _RESOLVED_IP=""
+  _NEEDS_DNS_FALLBACK=false
 
   # Skip if hostname is an IP address
   if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -172,18 +204,17 @@ _wait_for_dns_resolution() {
     local ip
     ip=$(_resolve_host "$hostname") && {
       _RESOLVED_IP="$ip"
-      # Inform when the system resolver is stale so the user knows why curl
-      # needs --resolve and the Playwright tests may need /etc/hosts entries.
+      # Flag when system resolver is stale so callers enable the DNS fallback
       if ! nslookup "$hostname" >/dev/null 2>&1; then
-        info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Resolved via public DNS (8.8.8.8 -> ${ip}) but local resolver still returns NXDOMAIN."
-        info "  Ingress checks will use --resolve to work around stale cache."
-        info "  To fix: sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder  (macOS)"
+        _NEEDS_DNS_FALLBACK=true
+        info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Resolved via public DNS (-> ${ip}) but local resolver still returns NXDOMAIN."
+        info "  Will inject Node.js DNS fallback for Playwright."
       fi
       break
     }
 
     if [[ $elapsed -ge $timeout ]]; then
-      info "${COLOR_RED}ERROR:${COLOR_RESET} DNS resolution for '${hostname}' timed out after ${timeout}s (checked both local and public DNS)"
+      info "${COLOR_RED}ERROR:${COLOR_RESET} DNS resolution for '${hostname}' timed out after ${timeout}s (checked system + public DNS)"
       return 1
     fi
     sleep 5

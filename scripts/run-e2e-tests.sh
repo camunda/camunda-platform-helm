@@ -171,6 +171,11 @@ hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 _wait_for_dns_resolution "$hostname" || exit 1
 _wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
 
+# Enable Node.js DNS fallback if the system resolver is stale
+if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
+  _enable_dns_fallback
+fi
+
 log "DEBUG: Hostname: $hostname"
 log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 [[ "$IS_OPENSEARCH" == "true" ]] && log "IS_OPENSEARCH is set to true"
