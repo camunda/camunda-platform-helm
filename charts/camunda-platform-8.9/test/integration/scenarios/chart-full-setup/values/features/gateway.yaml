@@ -1,4 +1,5 @@
 global:
+  host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: false
   gateway:
