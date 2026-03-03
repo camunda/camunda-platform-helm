@@ -856,7 +856,7 @@ jobs:
   playwright-integration-tests-after-install:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [install]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -920,7 +920,7 @@ jobs:
   playwright-integration-tests-after-upgrade:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [upgrade]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -984,7 +984,7 @@ jobs:
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1048,7 +1048,7 @@ jobs:
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
