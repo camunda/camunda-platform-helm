@@ -5,9 +5,14 @@
  * resolver has a stale NXDOMAIN cached for a hostname that public DNS can
  * already resolve.
  *
- * Monkey-patches dns.lookup (used by http/https/Playwright) to fall back to
- * Cloudflare (1.1.1.1) + Google (8.8.8.8) DNS when the system resolver
- * returns ENOTFOUND.  This avoids needing sudo or /etc/hosts edits.
+ * Monkey-patches both:
+ *   - dns.lookup          (callback-based, used by Node http/https)
+ *   - dns.promises.lookup (Promise-based, used by Playwright's Happy Eyeballs agent)
+ *
+ * to fall back to Cloudflare (1.1.1.1), Google (8.8.8.8), and Quad9 (9.9.9.9)
+ * DNS when the system resolver returns ENOTFOUND.
+ *
+ * This avoids needing sudo or /etc/hosts edits.
  */
 "use strict";
 
@@ -17,6 +22,9 @@ const { Resolver } = dns;
 const resolver = new Resolver();
 resolver.setServers(["1.1.1.1", "8.8.8.8", "9.9.9.9"]);
 
+// ---------------------------------------------------------------------------
+// 1. Patch callback-based dns.lookup (used by Node's http/https Agent)
+// ---------------------------------------------------------------------------
 const origLookup = dns.lookup;
 
 dns.lookup = function (hostname, options, callback) {
@@ -36,10 +44,60 @@ dns.lookup = function (hostname, options, callback) {
           // Public DNS also failed — return the original error
           return callback(err);
         }
+        // If the caller asked for { all: true }, return an array
+        if (options && options.all) {
+          return callback(
+            null,
+            addresses.map((a) => ({ address: a, family: 4 }))
+          );
+        }
         callback(null, addresses[0], 4);
       });
     } else {
       callback(err, address, family);
     }
   });
+};
+
+// ---------------------------------------------------------------------------
+// 2. Patch Promise-based dns.promises.lookup (used by Playwright)
+//
+//    Playwright's Happy Eyeballs agent calls:
+//      dns.promises.lookup(hostname, { all: true, family: 0, verbatim: true })
+//    which returns Promise<Array<{ address: string, family: number }>>
+//
+//    dns.promises is a separate object — patching dns.lookup does NOT
+//    automatically patch dns.promises.lookup.
+// ---------------------------------------------------------------------------
+const dnsPromises = dns.promises;
+const origPromisesLookup = dnsPromises.lookup;
+
+dnsPromises.lookup = async function (hostname, options) {
+  try {
+    return await origPromisesLookup.call(dnsPromises, hostname, options);
+  } catch (err) {
+    if (err && err.code === "ENOTFOUND") {
+      // System resolver failed — try public DNS via c-ares Resolver
+      // resolver.resolve4 is callback-based; wrap in a promise
+      const addresses = await new Promise((resolve, reject) => {
+        resolver.resolve4(hostname, (resolveErr, addrs) => {
+          if (resolveErr || !addrs || addrs.length === 0) {
+            return reject(err); // reject with the *original* ENOTFOUND error
+          }
+          resolve(addrs);
+        });
+      });
+
+      const opts =
+        typeof options === "number" ? { family: options } : options || {};
+
+      // When { all: true } — return array of { address, family } objects
+      if (opts.all) {
+        return addresses.map((a) => ({ address: a, family: 4 }));
+      }
+      // Single result — return { address, family }
+      return { address: addresses[0], family: 4 };
+    }
+    throw err;
+  }
 };
