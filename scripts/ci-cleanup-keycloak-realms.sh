@@ -6,13 +6,22 @@
 #   {scenario}-{8-char-random-suffix}
 #   e.g. "keycloak-mt-a8x9z3k1"
 #
-# Orphan detection uses a dual-signal approach:
-#   1. Session check: realms with active client sessions are in use
-#   2. Namespace cross-reference: if any active namespace contains the
-#      realm's scenario portion, the CI job is still running
+# Orphan detection uses a triple-signal approach:
+#   1. Session check: if any client has active sessions, the realm is in use.
+#   2. Namespace cross-reference: if any active K8s namespace contains the
+#      realm's scenario portion, the CI job is still running.
+#   3. Age check: realms younger than --min-age (default 2h) are protected.
+#      This prevents deletion during Helm --force upgrades when sessions
+#      temporarily drop to zero while pods are being recreated.
 #
-# A realm is deleted only when BOTH signals indicate it is orphaned.
+# A realm is deleted only when ALL THREE signals indicate it is orphaned.
 # The "master" realm is always protected.
+#
+# NOTE: The namespace cross-reference (signal 2) has a known limitation:
+# realm names use the full scenario name (e.g., "keycloak-mt") while
+# namespace names use compact shortnames (e.g., "kemt"). This means the
+# grep may fail to match active namespaces. The age-based check (signal 3)
+# compensates for this gap.
 #
 # Usage:
 #   # Local — with port-forward or direct access:
@@ -44,6 +53,7 @@ Options:
                     (default: \$KEYCLOAK_USER or "admin")
   --pass PASS       Admin password
                     (default: \$KEYCLOAK_PASSWORD)
+  --min-age HOURS   Protect realms younger than HOURS hours (default: 2)
   --dry-run         Show what would be deleted, do not delete
   --debug           Verbose output
   -h, --help        Show this help and exit
@@ -78,6 +88,7 @@ require_cmd() {
 KC_URL="${KEYCLOAK_URL:-http://localhost:8080}"
 KC_USER="${KEYCLOAK_USER:-admin}"
 KC_PASS="${KEYCLOAK_PASSWORD:-}"
+MIN_AGE_HOURS=2
 DRY_RUN=0
 DEBUG="${DEBUG:-0}"
 
@@ -94,6 +105,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --pass)
       KC_PASS="$2"
+      shift 2
+      ;;
+    --min-age)
+      MIN_AGE_HOURS="$2"
       shift 2
       ;;
     --dry-run)
@@ -126,6 +141,11 @@ fi
 
 # Strip trailing slash from URL
 KC_URL="${KC_URL%/}"
+
+# Compute age cutoff: realms younger than MIN_AGE_HOURS are protected.
+NOW_EPOCH=$(date +%s)
+MIN_AGE_SECONDS=$(( MIN_AGE_HOURS * 3600 ))
+CUTOFF_EPOCH=$(( NOW_EPOCH - MIN_AGE_SECONDS ))
 
 debug() { [[ "$DEBUG" == "1" ]] && log "[DEBUG] $*" || true; }
 
@@ -237,6 +257,7 @@ deleted=0
 skipped=0
 kept_sessions=0
 kept_namespace=0
+kept_young=0
 kept_not_ci=0
 
 echo ""
@@ -277,6 +298,10 @@ while IFS= read -r realm; do
   fi
 
   # Check 2: Namespace cross-reference
+  # NOTE: This check has a known limitation — realm names use the full scenario
+  # name (e.g., "keycloak-mt") while namespace names use compact shortnames
+  # (e.g., "kemt"), so the grep may miss active namespaces. The age check
+  # (Check 3) compensates for this gap.
   if [[ "$HAS_NAMESPACES" == "true" ]] && grep -qF "$scenario" "${NS_FILE}"; then
     log "  KEEP  '${realm}': namespace match for scenario '${scenario}'"
     kept_namespace=$((kept_namespace + 1))
@@ -284,8 +309,29 @@ while IFS= read -r realm; do
     continue
   fi
 
-  # Both checks say orphaned — delete
-  log "  DELETE '${realm}' (no sessions, no namespace match)"
+  # Check 3: Realm age — protect realms younger than MIN_AGE_HOURS.
+  # During Helm --force upgrades, old pods are deleted and new pods recreated,
+  # causing active sessions to temporarily drop to zero. This age gate prevents
+  # the cronjob from deleting realms that are still needed by in-progress runs.
+  # We use the first user's createdTimestamp as a proxy for realm creation time
+  # (Identity always creates users in the realm during setup).
+  first_user=$(curl -sk -H "Authorization: Bearer ${TOKEN}" \
+    "${KC_URL}/auth/admin/realms/${realm}/users?first=0&max=1" 2>/dev/null || echo "[]")
+  created_ts=$(echo "$first_user" | jq -r '.[0].createdTimestamp // empty' 2>/dev/null || echo "")
+
+  if [[ -n "$created_ts" ]]; then
+    created_epoch=$(( created_ts / 1000 ))
+    if [[ "$created_epoch" -gt "$CUTOFF_EPOCH" ]]; then
+      age_hours=$(( (NOW_EPOCH - created_epoch) / 3600 ))
+      log "  KEEP  '${realm}': younger than ${MIN_AGE_HOURS}h (created ${age_hours}h ago)"
+      kept_young=$((kept_young + 1))
+      skipped=$((skipped + 1))
+      continue
+    fi
+  fi
+
+  # All checks say orphaned — delete
+  log "  DELETE '${realm}' (no sessions, no namespace match, older than ${MIN_AGE_HOURS}h)"
   kc_delete_realm "$realm"
   deleted=$((deleted + 1))
 
@@ -302,6 +348,7 @@ log "  Deleted (orphaned):       ${deleted}"
 log "  Kept (total):             ${skipped}"
 log "    - Active sessions:      ${kept_sessions}"
 log "    - Namespace match:      ${kept_namespace}"
+log "    - Younger than ${MIN_AGE_HOURS}h:       ${kept_young}"
 log "    - Non-CI / protected:   ${kept_not_ci}"
 if [ "${DRY_RUN}" -eq 1 ]; then
   log "  (dry-run mode — nothing was actually deleted)"
