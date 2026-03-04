@@ -121,8 +121,10 @@ check_required_cmds() {
   done
 }
 
-# Resolve a hostname to an IP address, trying the system resolver first and
-# falling back to multiple public DNS servers.  Prints the resolved IP on stdout.
+# Resolve a hostname to an IP address, trying the system resolver first,
+# falling back to public DNS servers, and finally querying authoritative
+# nameservers directly (which bypasses negative-cache TTLs entirely).
+# Prints the resolved IP on stdout.
 # Returns 0 on success, 1 if no resolver can find the host.
 _resolve_host() {
   local hostname="$1"
@@ -140,6 +142,52 @@ _resolve_host() {
   local resolver
   for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
     ip=$(nslookup "$hostname" "$resolver" 2>/dev/null | awk '/^Address: / { a=$2 } END { print a }')
+    if [[ -n "$ip" ]]; then
+      echo "$ip"
+      return 0
+    fi
+  done
+
+  # All recursive resolvers failed — they likely have a stale NXDOMAIN cached.
+  # Query the authoritative nameservers directly to bypass negative caching.
+  ip=$(_resolve_host_authoritative "$hostname")
+  if [[ -n "$ip" ]]; then
+    echo "$ip"
+    return 0
+  fi
+
+  return 1
+}
+
+# Query authoritative nameservers for a hostname, bypassing recursive caches.
+# Walks up the domain hierarchy to find the NS records for the zone, then
+# queries those nameservers directly.  This is the last-resort fallback when
+# all recursive resolvers have a stale NXDOMAIN cached.
+_resolve_host_authoritative() {
+  local hostname="$1"
+  local domain="$hostname"
+  local ns_servers=""
+
+  # Walk up the domain hierarchy to find authoritative NS records.
+  # e.g., for "foo.ci.distro.ultrawombat.com" try:
+  #   ci.distro.ultrawombat.com → distro.ultrawombat.com → ultrawombat.com
+  while [[ "$domain" == *.* ]]; do
+    domain="${domain#*.}"
+    ns_servers=$(nslookup -type=ns "$domain" 8.8.8.8 2>/dev/null \
+      | awk '/nameserver =/ { print $NF }' | sed 's/\.$//')
+    if [[ -n "$ns_servers" ]]; then
+      break
+    fi
+  done
+
+  if [[ -z "$ns_servers" ]]; then
+    return 1
+  fi
+
+  # Query each authoritative nameserver directly (no cache to poison).
+  local ns ip
+  for ns in $ns_servers; do
+    ip=$(nslookup "$hostname" "$ns" 2>/dev/null | awk '/^Address: / { a=$2 } END { print a }')
     if [[ -n "$ip" ]]; then
       echo "$ip"
       return 0
@@ -332,7 +380,19 @@ _is_node_modules_current() {
   local current_hash cached_hash
   current_hash=$(_portable_file_hash "package-lock.json")
   cached_hash=$(cat "node_modules/.package-lock-hash" 2>/dev/null || echo "")
-  [[ -n "$current_hash" ]] && [[ "$current_hash" != "none" ]] && [[ "$current_hash" == "$cached_hash" ]]
+  [[ -n "$current_hash" ]] && [[ "$current_hash" != "none" ]] && [[ "$current_hash" == "$cached_hash" ]] || return 1
+
+  # Hash match alone is not enough — node_modules can be corrupt (e.g., a prior
+  # npm install was interrupted leaving only a fraction of files).  Verify that
+  # the key Playwright module can actually be loaded before trusting the cache.
+  # When corruption is detected we must remove node_modules entirely — npm
+  # trusts its own internal manifest (.package-lock.json) and will report
+  # "up to date" even when packages are incomplete.
+  if ! node -e "require('@playwright/test')" 2>/dev/null; then
+    log "node_modules hash matches but @playwright/test cannot be loaded — nuking node_modules to force clean reinstall"
+    rm -rf "node_modules"
+    return 1
+  fi
 }
 
 # mkdir-based mutual exclusion for npm install (POSIX-portable, no flock dependency)
@@ -389,6 +449,9 @@ _release_npm_lock() {
 
 # Setup playwright environment: change directory, install dependencies, create test-results dir
 # Uses double-checked locking to prevent concurrent npm install corruption.
+# Before installing, updates @camunda/e2e-test-suite to the latest version from
+# the registry so that the "latest" tag in package.json is actually resolved
+# (npm install alone never upgrades past the version pinned in package-lock.json).
 # Args: test_suite_path, [silent=false]
 _setup_playwright_environment() {
   local test_suite_path="$1"
@@ -402,21 +465,37 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Fast path (no lock): node_modules already matches package-lock.json
-  if _is_node_modules_current; then
-    log "node_modules is up to date (fast path), skipping npm install"
-    local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
-    mkdir -p "$results_dir"
-    return 0
-  fi
-
-  # Slow path: acquire lock, double-check, install if needed
+  # Acquire the lock first — npm update and npm install both modify
+  # node_modules and package-lock.json, so they must be serialized.
   local got_lock=true
   _acquire_npm_lock "$test_suite_path" 120 || got_lock=false
 
-  # Re-check after acquiring lock — another process may have completed install
-  if _is_node_modules_current; then
-    log "node_modules is up to date (after lock), skipping npm install"
+  # Update @camunda/e2e-test-suite to the latest version from the registry.
+  # npm install respects package-lock.json and never upgrades past the pinned
+  # version, so without this step the "latest" tag in package.json is ignored
+  # once a lock file exists.  npm update rewrites the lock file when a newer
+  # version is available, which also invalidates the hash cache below.
+  local suite_updated=false
+  if [[ -f "package.json" ]] && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
+    local pre_hash=""
+    [[ -f "package-lock.json" ]] && pre_hash=$(_portable_file_hash "package-lock.json")
+    info "Checking for newer @camunda/e2e-test-suite..."
+    # shellcheck disable=SC2086
+    npm update @camunda/e2e-test-suite $npm_flags 2>/dev/null || true
+    local post_hash=""
+    [[ -f "package-lock.json" ]] && post_hash=$(_portable_file_hash "package-lock.json")
+    if [[ "$pre_hash" != "$post_hash" ]]; then
+      suite_updated=true
+      info "@camunda/e2e-test-suite was updated — will run full npm install to reconcile dependencies"
+    fi
+  fi
+
+  # If the test suite was updated, always run a full npm install to reconcile
+  # the entire dependency tree (npm update only touches the named package and
+  # can leave transitive deps like playwright in an inconsistent state).
+  # Otherwise, check whether node_modules already matches the lock file.
+  if [[ "$suite_updated" != "true" ]] && _is_node_modules_current; then
+    log "node_modules is up to date, skipping npm install"
     [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
     local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
     mkdir -p "$results_dir"
@@ -425,9 +504,14 @@ _setup_playwright_environment() {
 
   info "Installing npm dependencies..."
   # shellcheck disable=SC2086
-  npm install $npm_flags
-  # Store hash for future skip detection
-  _portable_file_hash "package-lock.json" > node_modules/.package-lock-hash || true
+  if npm install $npm_flags; then
+    # Store hash only on success — a partial/failed install must not be cached
+    # or future runs will skip reinstallation and inherit the broken state.
+    _portable_file_hash "package-lock.json" > node_modules/.package-lock-hash || true
+  else
+    info "npm install failed — removing hash cache to force reinstall on next run"
+    rm -f "node_modules/.package-lock-hash"
+  fi
 
   [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
 
