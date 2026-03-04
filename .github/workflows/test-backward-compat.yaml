@@ -56,7 +56,7 @@ jobs:
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       camunda-helm-dir: camunda-platform-8.8
       teleport-token: infra-ci-prod-github-action-distribution
-      namespace-prefix: ""
+      namespace-prefix: "backcompate2e88p-"
       deployment-ttl: 30m
       test-enabled: false
       scenario: elasticsearch
@@ -101,7 +101,7 @@ jobs:
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       camunda-helm-dir: camunda-platform-8.7
       teleport-token: infra-ci-prod-github-action-distribution
-      namespace-prefix: ""
+      namespace-prefix: "backcompate2e-"
       deployment-ttl: 30m
       test-enabled: false
       scenario: elasticsearch
@@ -145,7 +145,7 @@ jobs:
       platforms: gke
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       camunda-helm-dir: camunda-platform-8.9
-      namespace-prefix: ""
+      namespace-prefix: "backcompcamdock-"
       test-enabled: false
       e2e-enabled: false
       deployment-ttl: 30m
@@ -177,6 +177,7 @@ jobs:
       identifier: compat-cam-simp
       camunda-helm-dir: camunda-platform-8.8
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      namespace-prefix: "backcompcamsimp-"
       test-enabled: false
       caller-git-ref: main
       extra-values: |
