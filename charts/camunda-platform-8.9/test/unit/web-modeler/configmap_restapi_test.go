@@ -1,6 +1,7 @@
 package web_modeler
 
 import (
+	"camunda-platform/test/unit/testhelpers"
 	"maps"
 	"path/filepath"
 	"strings"
@@ -24,9 +25,9 @@ type configmapRestAPITemplateTest struct {
 }
 
 var requiredValues = map[string]string{
-	"webModeler.enabled":                                              "true",
-	"webModeler.restapi.mail.fromAddress":                             "example@example.com",
-	"connectors.security.authentication.oidc.secret.existingSecret":   "foo",
+	"webModeler.enabled":                                               "true",
+	"webModeler.restapi.mail.fromAddress":                              "example@example.com",
+	"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
 	"orchestration.security.authentication.oidc.secret.existingSecret": "foo",
 }
 
@@ -104,6 +105,66 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 	s.Require().Equal("custom-audience", configmapApplication.Camunda.Modeler.Security.JWT.Audience.PublicAPI)
 }
 
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                         "true",
+		"global.identity.auth.enabled":             "true",
+		"global.identity.auth.webModeler.clientId": "custom-clientId",
+		"global.elasticsearch.enabled":             "true",
+		"elasticsearch.enabled":                    "true",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("custom-clientId", configmapApplication.Camunda.Modeler.OAuth2.ClientId)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUsernameClaim() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                                         "true",
+		"global.identity.auth.enabled":                             "true",
+		"global.elasticsearch.enabled":                             "true",
+		"elasticsearch.enabled":                                    "true",
+		"orchestration.security.authentication.oidc.usernameClaim": "example-claim",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("example-claim", configmapApplication.Camunda.Modeler.OAuth2.Token.UsernameClaim)
+}
+
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServiceUrlWithFullnameOverride() {
 	// given
 	values := map[string]string{
@@ -167,17 +228,17 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                             "true",
-		"global.identity.auth.enabled":                 "true",
-		"global.identity.auth.type":                    "MICROSOFT",
+		"identity.enabled":                                    "true",
+		"global.identity.auth.enabled":                        "true",
+		"global.identity.auth.type":                           "MICROSOFT",
 		"global.identity.auth.identity.secret.existingSecret": "foo",
-		"global.identity.auth.issuer":                  "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
-		"global.identity.auth.issuerBackendUrl":        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
-		"global.identity.auth.authUrl":                 "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
-		"global.identity.auth.tokenUrl":                "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
-		"global.identity.auth.jwksUrl":                 "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
-		"global.elasticsearch.enabled":                 "true",
-		"elasticsearch.enabled":                        "true",
+		"global.identity.auth.issuer":                         "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+		"global.identity.auth.issuerBackendUrl":               "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0",
+		"global.identity.auth.authUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/authorize",
+		"global.identity.auth.tokenUrl":                       "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/oauth2/v2.0/token",
+		"global.identity.auth.jwksUrl":                        "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/discovery/v2.0/keys",
+		"global.elasticsearch.enabled":                        "true",
+		"elasticsearch.enabled":                               "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -267,10 +328,10 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                     "true",
+		"identity.enabled":                 "true",
 		"webModeler.restapi.mail.smtpUser": "modeler-user",
-		"global.elasticsearch.enabled":         "true",
-		"elasticsearch.enabled":                "true",
+		"global.elasticsearch.enabled":     "true",
+		"elasticsearch.enabled":            "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -296,12 +357,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                             "true",
-		"webModelerPostgresql.enabled":                 "false",
+		"identity.enabled":                         "true",
+		"webModelerPostgresql.enabled":             "false",
 		"webModeler.restapi.externalDatabase.url":  "jdbc:postgresql://postgres.example.com:65432/modeler-database",
 		"webModeler.restapi.externalDatabase.user": "modeler-user",
-		"global.elasticsearch.enabled":                 "true",
-		"elasticsearch.enabled":                        "true",
+		"global.elasticsearch.enabled":             "true",
+		"elasticsearch.enabled":                    "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -328,13 +389,13 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfigurationWithUsername() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                                              "true",
-		"webModelerPostgresql.enabled":                                  "false",
-		"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.username":                  "modeler-user-new",
-		"webModeler.restapi.externalDatabase.secret.inlineSecret":       "modeler-password",
-		"global.elasticsearch.enabled":                                  "true",
-		"elasticsearch.enabled":                                         "true",
+		"identity.enabled":                                        "true",
+		"webModelerPostgresql.enabled":                            "false",
+		"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username":            "modeler-user-new",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
+		"global.elasticsearch.enabled":                            "true",
+		"elasticsearch.enabled":                                   "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -361,14 +422,14 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 func (s *configmapRestAPITemplateTest) TestContainerShouldPrioritizeUsernameOverUser() {
 	// given - test that username takes precedence when both are set
 	values := map[string]string{
-		"identity.enabled":                                              "true",
-		"webModelerPostgresql.enabled":                                  "false",
-		"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.user":                      "old-user",
-		"webModeler.restapi.externalDatabase.username":                  "new-username",
-		"webModeler.restapi.externalDatabase.secret.inlineSecret":       "modeler-password",
-		"global.elasticsearch.enabled":                                  "true",
-		"elasticsearch.enabled":                                         "true",
+		"identity.enabled":                                        "true",
+		"webModelerPostgresql.enabled":                            "false",
+		"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.user":                "old-user",
+		"webModeler.restapi.externalDatabase.username":            "new-username",
+		"webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
+		"global.elasticsearch.enabled":                            "true",
+		"elasticsearch.enabled":                                   "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -695,4 +756,218 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPort
 
 	// then
 	s.Require().Equal("jdbc:postgresql://custom-db.example.com:65432/custom-modeler-db", configmapApplication.Spring.Datasource.Url)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAndHttpsOnly() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                            "true",
+		"global.identity.auth.enabled":                "true",
+		"global.elasticsearch.enabled":                "true",
+		"elasticsearch.enabled":                       "true",
+		"global.identity.auth.webModeler.redirectUrl": "https://modeler.example.com",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("https://modeler.example.com", configmapApplication.Camunda.Modeler.Server.Url)
+	s.Require().Equal("true", configmapApplication.Camunda.Modeler.Server.HttpsOnly)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath() {
+	// given
+	values := map[string]string{
+		"identity.enabled":             "true",
+		"global.identity.auth.enabled": "true",
+		"global.elasticsearch.enabled": "true",
+		"elasticsearch.enabled":        "true",
+		"webModeler.contextPath":       "/modeler",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("/modeler", configmapApplication.Server.Servlet.ContextPath)
+	s.Require().Equal("/modeler", configmapApplication.Management.Server.BasePath)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherPort() {
+	// given
+	values := map[string]string{
+		"identity.enabled":                 "true",
+		"global.identity.auth.enabled":     "true",
+		"global.elasticsearch.enabled":     "true",
+		"elasticsearch.enabled":            "true",
+		"webModeler.websockets.publicPort": "8082",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("8082", configmapApplication.Camunda.Modeler.Pusher.Client.Port)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsDisabled() {
+	// given
+	values := map[string]string{
+		"identity.enabled":             "true",
+		"global.identity.auth.enabled": "true",
+		"global.elasticsearch.enabled": "true",
+		"elasticsearch.enabled":        "true",
+		"webModeler.contextPath":       "/modeler",
+		"global.ingress.enabled":       "true",
+		"global.ingress.host":          "c8.example.com",
+		"global.ingress.tls.enabled":   "false",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host)
+	s.Require().Equal("80", configmapApplication.Camunda.Modeler.Pusher.Client.Port)
+	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Modeler.Pusher.Client.Path)
+	s.Require().Equal(false, configmapApplication.Camunda.Modeler.Pusher.Client.ForceTLS)
+}
+
+func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusherConfigurationWithGlobalIngressTlsEnabled() {
+	// given
+	values := map[string]string{
+		"identity.enabled":             "true",
+		"global.identity.auth.enabled": "true",
+		"global.elasticsearch.enabled": "true",
+		"elasticsearch.enabled":        "true",
+		"webModeler.contextPath":       "/modeler",
+		"global.ingress.enabled":       "true",
+		"global.ingress.host":          "c8.example.com",
+		"global.ingress.tls.enabled":   "true",
+	}
+	maps.Insert(values, maps.All(requiredValues))
+	options := &helm.Options{
+		SetValues:      values,
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var configmap corev1.ConfigMap
+	var configmapApplication WebModelerRestAPIApplicationYAML
+	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	if err != nil {
+		s.Fail("Failed to unmarshal yaml. error=", err)
+	}
+
+	// then
+	s.Require().Equal("c8.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host)
+	s.Require().Equal("443", configmapApplication.Camunda.Modeler.Pusher.Client.Port)
+	s.Require().Equal("/modeler-ws", configmapApplication.Camunda.Modeler.Pusher.Client.Path)
+	s.Require().Equal(true, configmapApplication.Camunda.Modeler.Pusher.Client.ForceTLS)
+}
+
+func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:        "TestWebModelerURLsWithTemplatedIngressHost",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-templated-ingress-host.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// Verify templated global.ingress.host is resolved
+				// The release name is "camunda-platform-test" so host should resolve to "camunda-platform-test.example.com"
+				s.Require().Equal("camunda-platform-test.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host, "Pusher host should contain resolved templated host")
+			},
+		},
+		{
+			Name: "TestWebModelerURLsWithLiteralIngressHost",
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"webModeler.enabled":                  "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+				"webModeler.contextPath":              "/modeler",
+				"global.ingress.enabled":              "true",
+				"global.ingress.host":                 "literal.example.com",
+				"global.ingress.tls.enabled":          "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				var configmapApplication WebModelerRestAPIApplicationYAML
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				if e != nil {
+					s.Fail("Failed to unmarshal yaml. error=", e)
+				}
+
+				// Verify literal host values still work (backward compatibility)
+				s.Require().Equal("literal.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host, "Pusher host should contain literal host")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
