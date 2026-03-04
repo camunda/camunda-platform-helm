@@ -509,7 +509,9 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+          go run ./scripts/deploy-camunda entra update-redirect-uris \
+            --ingress-host "$TEST_INGRESS_HOST" \
+            --log-level info
           go run ./scripts/deploy-camunda entra ensure-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info | tee /tmp/entra-output.txt
@@ -824,7 +826,9 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+          go run ./scripts/deploy-camunda entra update-redirect-uris \
+            --ingress-host "$TEST_INGRESS_HOST" \
+            --log-level info
           go run ./scripts/deploy-camunda entra ensure-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info | tee /tmp/entra-output.txt

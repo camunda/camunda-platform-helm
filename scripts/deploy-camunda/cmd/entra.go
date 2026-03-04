@@ -20,6 +20,7 @@ func newEntraCommand() *cobra.Command {
 
 	entraCmd.AddCommand(newEntraEnsureCommand())
 	entraCmd.AddCommand(newEntraCleanupCommand())
+	entraCmd.AddCommand(newEntraUpdateRedirectURIsCommand())
 
 	return entraCmd
 }
@@ -83,6 +84,62 @@ Environment variables (or set in .env file):
 	f.StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
 	f.StringVar(&envFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
 	_ = cmd.MarkFlagRequired("namespace")
+
+	return cmd
+}
+
+// newEntraUpdateRedirectURIsCommand creates the "entra update-redirect-uris" subcommand.
+// It replaces the bash-based Taskfile task that was accumulating redirect URIs
+// unboundedly. This Go implementation prunes stale CI URIs before adding the
+// current deployment's URIs, preventing the Microsoft Graph API limit from
+// being exceeded.
+func newEntraUpdateRedirectURIsCommand() *cobra.Command {
+	var (
+		ingressHost string
+		objectID    string
+		logLevel    string
+		envFile     string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "update-redirect-uris",
+		Short: "Update redirect URIs on the parent Entra app registration",
+		Long: `Update redirect URIs on the parent Entra app registration.
+
+This command:
+1. Authenticates to Microsoft Graph API using parent app credentials.
+2. Fetches the current web and SPA redirect URIs from the app registration.
+3. Removes stale CI redirect URIs (those matching *.ci.distro.ultrawombat.com).
+4. Removes malformed URIs (e.g., trailing commas from data corruption).
+5. Adds the redirect URIs for the current deployment's ingress host.
+6. PATCHes the updated URI lists back to the app registration.
+
+Environment variables (or set in .env file):
+  ENTRA_APP_DIRECTORY_ID  - Entra tenant/directory ID
+  ENTRA_APP_CLIENT_ID     - Parent app client ID (for Graph API auth)
+  ENTRA_APP_CLIENT_SECRET - Parent app client secret
+  ENTRA_APP_OBJECT_ID     - Parent app object ID (target for redirect URIs)`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := setupEntraLogging(logLevel); err != nil {
+				return err
+			}
+			loadEnvFile(envFile)
+
+			opts := entra.RedirectURIOptions{
+				IngressHost: ingressHost,
+				ObjectID:    objectID,
+			}
+
+			return entra.UpdateRedirectURIs(context.Background(), opts)
+		},
+	}
+
+	f := cmd.Flags()
+	f.StringVar(&ingressHost, "ingress-host", "", "Ingress hostname for the current deployment (required)")
+	f.StringVar(&objectID, "object-id", "", "Entra app object ID (falls back to ENTRA_APP_OBJECT_ID env var)")
+	f.StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
+	f.StringVar(&envFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
+	_ = cmd.MarkFlagRequired("ingress-host")
 
 	return cmd
 }
