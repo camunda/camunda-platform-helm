@@ -1,10 +1,3 @@
-{{/*
-Expand the name of the chart.
-*/}}
-{{- define "console.name" -}}
-    {{- default .Chart.Name .Values.console.nameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
 {{- define "console.fullname" -}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "console"
@@ -13,35 +6,16 @@ Expand the name of the chart.
     ) -}}
 {{- end -}}
 
-{{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "console.chart" -}}
-    {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Defines extra labels for console.
-*/}}
 {{- define "console.extraLabels" -}}
-app.kubernetes.io/component: console
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.console "chart" .Chart) | quote }}
+    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "console" "componentValuesKey" "console" "context" $) -}}
 {{- end -}}
 
-{{/*
-Common labels
-*/}}
 {{- define "console.labels" -}}
-{{- template "camundaPlatform.labels" . }}
-{{ template "console.extraLabels" . }}
+    {{- include "camundaPlatform.componentLabels" (dict "componentName" "console" "componentValuesKey" "console" "context" $) -}}
 {{- end -}}
 
-{{/*
-Selector labels
-*/}}
 {{- define "console.matchLabels" -}}
-{{- template "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: console
+    {{- include "camundaPlatform.componentMatchLabels" (dict "componentName" "console" "context" $) -}}
 {{- end -}}
 
 {{/*
