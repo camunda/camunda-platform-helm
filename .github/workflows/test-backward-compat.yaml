@@ -155,15 +155,6 @@ jobs:
       shortname: kcor
       always-delete-namespace: true
       flows: install
-      extra-values: |
-        orchestration:
-          image:
-            registry: registry.camunda.cloud
-            repository: team-camunda/camunda
-            tag: latest
-            pullSecrets:
-              - name: index-docker-io
-              - name: registry-camunda-cloud
       vault-secret-mapping: ""
 
   # ===========================================================================
@@ -183,19 +174,6 @@ jobs:
       test-enabled: true
       e2e-enabled: true
       caller-git-ref: main
-      extra-values: |
-        zeebe:
-          image:
-            tag: SNAPSHOT
-        operate:
-          image:
-            tag: SNAPSHOT
-        tasklist:
-          image:
-            tag: SNAPSHOT
-        optimize:
-          image:
-            tag: 8-SNAPSHOT
       vault-secret-mapping: ""
 
   # ===========================================================================
