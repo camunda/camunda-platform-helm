@@ -19,8 +19,69 @@
 const dns = require("dns");
 const { Resolver } = dns;
 
-const resolver = new Resolver();
-resolver.setServers(["1.1.1.1", "8.8.8.8", "9.9.9.9"]);
+const publicResolver = new Resolver();
+publicResolver.setServers(["1.1.1.1", "8.8.8.8", "9.9.9.9"]);
+
+/**
+ * Discover the authoritative nameservers for a hostname by walking up the
+ * domain hierarchy and looking for NS records.  Returns a Resolver instance
+ * configured to use them, or null if discovery fails.
+ *
+ * This bypasses negative-cache TTLs (SOA minimum = 300s for this zone)
+ * because authoritative servers always answer with the current zone state.
+ */
+function _discoverAuthoritativeNS(hostname) {
+  return new Promise((resolve) => {
+    const labels = hostname.split(".");
+    let idx = 1; // skip the first label (the subdomain itself)
+
+    function tryNext() {
+      if (idx >= labels.length - 1) {
+        return resolve(null); // exhausted hierarchy
+      }
+      const domain = labels.slice(idx).join(".");
+      idx++;
+      publicResolver.resolveNs(domain, (err, nsRecords) => {
+        if (!err && nsRecords && nsRecords.length > 0) {
+          const authResolver = new Resolver();
+          authResolver.setServers(nsRecords);
+          return resolve(authResolver);
+        }
+        tryNext();
+      });
+    }
+    tryNext();
+  });
+}
+
+/**
+ * Resolve hostname via public DNS, then authoritative NS as a last resort.
+ * Returns an array of IPv4 addresses or throws the original error.
+ */
+async function _resolveWithFallback(hostname, origErr) {
+  // Try public recursive resolvers first
+  const publicAddrs = await new Promise((resolve) => {
+    publicResolver.resolve4(hostname, (err, addrs) => {
+      if (!err && addrs && addrs.length > 0) return resolve(addrs);
+      resolve(null);
+    });
+  });
+  if (publicAddrs) return publicAddrs;
+
+  // Public DNS also has stale NXDOMAIN — try authoritative NS directly
+  const authResolver = await _discoverAuthoritativeNS(hostname);
+  if (authResolver) {
+    const authAddrs = await new Promise((resolve) => {
+      authResolver.resolve4(hostname, (err, addrs) => {
+        if (!err && addrs && addrs.length > 0) return resolve(addrs);
+        resolve(null);
+      });
+    });
+    if (authAddrs) return authAddrs;
+  }
+
+  throw origErr;
+}
 
 // ---------------------------------------------------------------------------
 // 1. Patch callback-based dns.lookup (used by Node's http/https Agent)
