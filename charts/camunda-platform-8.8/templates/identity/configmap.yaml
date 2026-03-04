@@ -106,6 +106,7 @@ data:
                   definition: read
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: write
+        {{- if .Values.optimize.enabled }}
         optimize:
           applications:
             - name: Optimize
@@ -129,6 +130,7 @@ data:
                   definition: write:*
                 - audience: {{ include "identity.authAudience" . | quote }}
                   definition: read:users
+        {{- end }}
         {{- if eq (include "orchestration.authMethod" .) "oidc" }}
         orchestration:
           applications:
@@ -222,8 +224,10 @@ data:
         {{- end }}
         console:
           root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+        {{- if .Values.optimize.enabled }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        {{- end }}
         {{- if eq (include "orchestration.authMethod" .) "oidc" }}
         orchestration:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
@@ -260,8 +264,10 @@ data:
             - resourceServerId: orchestration-api
               definition: write:*
             {{- end }}
+            {{- if .Values.optimize.enabled }}
             - resourceServerId: optimize-api
               definition: write:*
+            {{- end }}
             - resourceServerId: web-modeler-api
               definition: write:*
             - resourceServerId: console-api
