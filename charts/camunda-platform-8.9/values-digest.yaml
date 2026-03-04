@@ -35,13 +35,6 @@ webModeler:
       tag: SNAPSHOT
       digest: "sha256:11005d0e6aee2cafc491942f31f2e4875dbee926bcbcd541ceb25ba50d8396bd"
 
-  # https://hub.docker.com/r/camunda/web-modeler-webapp/tags
-  webapp:
-    image:
-      repository: camunda/web-modeler-webapp
-      tag: SNAPSHOT
-      digest: "sha256:98411bc36d157613ab61eeff7ff9f5b0420e0451d5bb99922e7f705453fff91a"
-
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
     image:
