@@ -63,3 +63,9 @@ optimize:
           echo "Orchestration cluster is healthy!"
       securityContext:
         runAsUser: 1000
+
+connectors:
+  logging:
+    level:
+        io.camunda.client.job.worker: INFO
+
