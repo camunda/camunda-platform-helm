@@ -42,6 +42,7 @@ integration:
             eks: preemptible
           identity: keycloak-external
           persistence: elasticsearch-external
+          platforms: [gke]
         - name: elasticsearch-basic
           enabled: false
           shortname: esba
@@ -53,6 +54,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          platforms: [gke]
         - name: oidc
           enabled: true
           exclude: [identity,console,orchestration-grpc]
@@ -64,6 +66,7 @@ integration:
             eks: preemptible
           identity: oidc
           persistence: elasticsearch-external
+          platforms: [gke]
         - name: keycloak-mt
           enabled: true
           exclude: []
@@ -75,6 +78,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          platforms: [gke]
         - name: keycloak-rba
           enabled: true
           exclude: []
@@ -87,6 +91,7 @@ integration:
           identity: keycloak-external
           persistence: elasticsearch-external
           features: [rba]
+          platforms: [gke]
         - name: keycloak-original
           enabled: true
           exclude: []
@@ -98,6 +103,7 @@ integration:
             eks: preemptible
           identity: keycloak-external
           persistence: elasticsearch-external
+          platforms: [gke]
         - name: elasticsearch
           enabled: false
           exclude: [orchestration-grpc]
@@ -108,6 +114,7 @@ integration:
           flow: install
           infra-type:
             gke: distroci
+          platforms: [gke]
         - name: elasticsearch-arm
           enabled: true
           auth: keycloak

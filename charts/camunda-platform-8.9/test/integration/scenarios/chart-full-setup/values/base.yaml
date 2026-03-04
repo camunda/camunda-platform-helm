@@ -2,6 +2,8 @@
 # Layer 1: Common configuration shared across all scenarios
 
 global:
+  elasticsearch:
+    enabled: true
   exporter:
     zeebe:
       enabled: false
@@ -88,8 +90,6 @@ orchestration:
   data:
     secondaryStorage:
       type: elasticsearch
-      elasticsearch:
-        url: "http://integration-elasticsearch:9200"
   contextPath: "/orchestration"
   livenessProbe:
     enabled: true

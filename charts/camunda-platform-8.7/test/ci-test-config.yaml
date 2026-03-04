@@ -28,7 +28,7 @@ integration:
           auth: keycloak
           identity: keycloak-external
           persistence: elasticsearch-external
-          flow: install,upgrade-patch
+          flow: install
           infra-type:
             gke: distroci
             eks: preemptible
@@ -44,6 +44,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          platforms: [gke]
         - name: keycloak-rba
           enabled: true
           shortname: kerba
@@ -54,6 +55,7 @@ integration:
           flow: install
           infra-type:
             gke: distroci
+          platforms: [gke]
         - name: oidc
           enabled: true
           shortname: esoi
@@ -64,6 +66,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          platforms: [gke]
         - name: keycloak-original
           enabled: true
           shortname: keyc
@@ -75,6 +78,7 @@ integration:
             eks: preemptible
           identity: keycloak-external
           persistence: elasticsearch-external
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
