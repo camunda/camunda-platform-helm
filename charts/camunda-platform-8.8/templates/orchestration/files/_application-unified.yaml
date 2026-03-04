@@ -360,7 +360,7 @@ zeebe:
               usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
               usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
           {{- end }}
-    {{- else -}}
+    {{- else if not .Values.orchestration.exporters.zeebe.enabled -}}
       {{ " {}" }}
     {{- end }}
 {{ end -}}
