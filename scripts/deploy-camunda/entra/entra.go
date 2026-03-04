@@ -563,8 +563,9 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	}
 
 	// Step 6: Return the provisioned app. Callers that need env vars for values
-	// substitution should use RuntimeFlags.ExtraEnv (per-entry, mutex-protected)
-	// rather than process-global os.Setenv to avoid races in parallel execution.
+	// substitution should use RuntimeFlags.ExtraEnv (per-entry, merged into the
+	// isolated env map by buildScenarioEnv) rather than process-global os.Setenv
+	// to avoid races in parallel execution.
 	logging.Logger.Info().
 		Str("VENOM_CLIENT_ID", appID).
 		Str("CONNECTORS_CLIENT_ID", opts.ClientID).
