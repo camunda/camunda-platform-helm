@@ -177,8 +177,7 @@ func newMatrixRunCommand() *cobra.Command {
 		Long: `Run the full CI test matrix, deploying each scenario + flow combination sequentially.
 Each entry gets its own namespace (<prefix>-<version>-<shortname>).
 
-Use --cleanup to automatically delete all created namespaces after the run finishes.
-Cleanup runs regardless of whether entries succeeded or failed.
+Use --cleanup to automatically delete each entry's namespace after its deployment and tests complete.
 
 This command calls deploy.Execute() for each matrix entry.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -431,7 +430,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&testAll, "test-all", false, "Run both integration and e2e tests after each deployment")
 	f.BoolVar(&stopOnFailure, "stop-on-failure", false, "Stop the run on the first failure")
 	f.StringVar(&namespacePrefix, "namespace-prefix", "matrix", "Prefix for generated namespaces")
-	f.BoolVar(&cleanup, "cleanup", false, "Delete all created namespaces after the run completes")
+	f.BoolVar(&cleanup, "cleanup", false, "Delete each entry's namespace after its deployment and tests complete")
 	f.BoolVar(&deleteNamespace, "delete-namespace", false, "Delete the namespace before deploying each entry (clean-slate deployment)")
 	f.StringVar(&kubeContext, "kube-context", "", "Default Kubernetes context for all platforms (overridden by --kube-context-gke/--kube-context-eks)")
 	f.StringVar(&kubeContextGKE, "kube-context-gke", "", "Kubernetes context for GKE entries")
