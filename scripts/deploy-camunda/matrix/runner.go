@@ -37,7 +37,9 @@ type RunOptions struct {
 	// StopOnFailure stops the run on the first failure.
 	// In parallel mode, this cancels in-flight entries and prevents new ones from starting.
 	StopOnFailure bool
-	// Cleanup deletes all created namespaces after the run completes.
+	// Cleanup deletes each entry's namespace immediately after its deployment
+	// and tests complete (regardless of success or failure). This frees cluster
+	// resources as early as possible rather than waiting for the entire run to finish.
 	Cleanup bool
 	// KubeContexts maps platform names to Kubernetes contexts, e.g.,
 	// {"gke": "gke_my-project_us-east1_cluster", "eks": "arn:aws:eks:..."}
@@ -153,8 +155,10 @@ type RunResult struct {
 
 // Run executes the matrix entries, building RuntimeFlags for each and calling deploy.Execute().
 // When MaxParallel <= 1, entries are processed sequentially. When MaxParallel > 1, up to
-// MaxParallel entries run concurrently. If Cleanup is enabled, all created namespaces are
-// deleted after the run completes (regardless of success or failure).
+// MaxParallel entries run concurrently. If Cleanup is enabled, each entry's namespace is
+// deleted immediately after that entry's deployment and tests complete (regardless of
+// success or failure). This frees cluster resources as early as possible rather than
+// waiting for the entire matrix run to finish.
 func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("no matrix entries to run")
@@ -200,11 +204,6 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 		results, retErr = runParallel(ctx, entries, opts)
 	} else {
 		results, retErr = runSequential(ctx, entries, opts)
-	}
-
-	// Cleanup phase: delete all namespaces that were created
-	if opts.Cleanup && !opts.DryRun {
-		cleanupNamespaces(ctx, results, opts)
 	}
 
 	return results, retErr
@@ -1038,6 +1037,40 @@ func collectDiagnostics(namespace, kubeContext string) string {
 	return filePath
 }
 
+// cleanupEntry performs per-entry cleanup after deployment and tests have completed.
+// It cleans up the Entra app registration (for OIDC entries) and deletes the namespace.
+// This runs regardless of whether the entry succeeded or failed — cleanup should always
+// happen after diagnostics have been collected. Errors are logged but do not affect the
+// entry's result.
+func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
+	// Clean up Entra app registration for OIDC entries (best-effort, before namespace deletion).
+	if result.venomOpts != nil {
+		logging.Logger.Info().
+			Str("namespace", result.Namespace).
+			Msg("Cleaning up venom Entra app registration")
+		entra.CleanupVenomApp(ctx, *result.venomOpts)
+	}
+
+	// Delete the namespace.
+	if result.Namespace != "" {
+		logging.Logger.Info().
+			Str("namespace", result.Namespace).
+			Str("kubeContext", result.KubeContext).
+			Msg("Deleting namespace (per-entry cleanup)")
+
+		if err := kube.DeleteNamespace(ctx, "", result.KubeContext, result.Namespace); err != nil {
+			logging.Logger.Error().
+				Err(err).
+				Str("namespace", result.Namespace).
+				Msg("Failed to delete namespace during per-entry cleanup")
+		} else {
+			logging.Logger.Info().
+				Str("namespace", result.Namespace).
+				Msg("Namespace deleted successfully")
+		}
+	}
+}
+
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
 // The entryIndex is used for round-robin ES pool distribution when ES_POOL_INDEX is not
 // already set in the environment (i.e., not in CI where workflow-vars assigns a per-run pool).
@@ -1219,32 +1252,37 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Str("esPoolIndex", flags.ESPoolIndex).
 		Msg("Deploying matrix entry")
 
+	// Execute the deployment (deploy + tests run inside deploy.Execute).
+	// All code paths converge into a single result so cleanup runs exactly once.
+	var deployErr error
+	var diag string
+
 	// Two-step upgrade flow: install old version first, then upgrade to current.
 	if versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) {
-		if err := executeTwoStepUpgrade(ctx, entry, flags, opts); err != nil {
-			diag := collectDiagnostics(namespace, kubeCtx)
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag, venomOpts: venomOpts}
-		}
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, venomOpts: venomOpts}
+		deployErr = executeTwoStepUpgrade(ctx, entry, flags, opts)
+	} else if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
+		// Upgrade-only flow (modular-upgrade-minor): upgrade an already-running deployment.
+		// No Step 1 install — the prior "install" flow must have already deployed the old version.
+		deployErr = executeUpgradeOnly(ctx, entry, flags, opts)
+	} else {
+		// Single-step install (default flow).
+		deployErr = deploy.Execute(ctx, flags)
 	}
 
-	// Upgrade-only flow (modular-upgrade-minor): upgrade an already-running deployment.
-	// No Step 1 install — the prior "install" flow must have already deployed the old version.
-	if versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
-		if err := executeUpgradeOnly(ctx, entry, flags, opts); err != nil {
-			diag := collectDiagnostics(namespace, kubeCtx)
-			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag, venomOpts: venomOpts}
-		}
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, venomOpts: venomOpts}
+	// Collect diagnostics on failure (before cleanup deletes the namespace).
+	if deployErr != nil {
+		diag = collectDiagnostics(namespace, kubeCtx)
 	}
 
-	// Single-step install (default flow).
-	if err := deploy.Execute(ctx, flags); err != nil {
-		diag := collectDiagnostics(namespace, kubeCtx)
-		return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err, Diagnostics: diag, venomOpts: venomOpts}
+	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Diagnostics: diag, venomOpts: venomOpts}
+
+	// Per-entry cleanup: delete namespace and Entra app after deployment + tests complete.
+	// This runs regardless of success/failure, after diagnostics have been collected.
+	if opts.Cleanup {
+		cleanupEntry(ctx, result, opts)
 	}
 
-	return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, venomOpts: venomOpts}
+	return result
 }
 
 // executeTwoStepUpgrade performs a two-step upgrade deployment:
@@ -1475,63 +1513,6 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		Msg("Upgrade-only flow completed successfully")
 
 	return nil
-}
-
-// cleanupNamespaces deletes all namespaces that were created during the matrix run.
-// It deduplicates namespaces (in case multiple flows share the same namespace)
-// and logs each deletion. Each namespace is deleted using the kube context that
-// was resolved for it during execution. For OIDC entries, the corresponding Entra
-// app registration is also cleaned up. Errors are logged but do not halt the cleanup.
-func cleanupNamespaces(ctx context.Context, results []RunResult, opts RunOptions) {
-	// First, clean up Entra apps for OIDC entries (best-effort, before namespace deletion).
-	for _, r := range results {
-		if r.venomOpts != nil {
-			logging.Logger.Info().
-				Str("namespace", r.Namespace).
-				Msg("Cleaning up venom Entra app registration")
-			entra.CleanupVenomApp(ctx, *r.venomOpts)
-		}
-	}
-
-	// Deduplicate namespaces while preserving order and tracking kube context
-	type nsInfo struct {
-		namespace   string
-		kubeContext string
-	}
-	seen := make(map[string]bool)
-	var namespaces []nsInfo
-	for _, r := range results {
-		if r.Namespace != "" && !seen[r.Namespace] {
-			seen[r.Namespace] = true
-			namespaces = append(namespaces, nsInfo{namespace: r.Namespace, kubeContext: r.KubeContext})
-		}
-	}
-
-	if len(namespaces) == 0 {
-		return
-	}
-
-	logging.Logger.Info().
-		Int("count", len(namespaces)).
-		Msg("Cleaning up namespaces")
-
-	for _, ns := range namespaces {
-		logging.Logger.Info().
-			Str("namespace", ns.namespace).
-			Str("kubeContext", ns.kubeContext).
-			Msg("Deleting namespace")
-
-		if err := kube.DeleteNamespace(ctx, "", ns.kubeContext, ns.namespace); err != nil {
-			logging.Logger.Error().
-				Err(err).
-				Str("namespace", ns.namespace).
-				Msg("Failed to delete namespace during cleanup")
-		} else {
-			logging.Logger.Info().
-				Str("namespace", ns.namespace).
-				Msg("Namespace deleted successfully")
-		}
-	}
 }
 
 // PrintRunSummary outputs a summary of all run results.

@@ -59,6 +59,11 @@ optimize:
 connectors:
   replicas: 2
   contextPath: "/connectors"
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 8
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:

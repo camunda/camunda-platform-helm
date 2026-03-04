@@ -224,6 +224,37 @@ func graphPost(ctx context.Context, client *http.Client, token, path string, pay
 	return body, resp.StatusCode, err
 }
 
+// graphPatch performs a PATCH request to the Graph API.
+func graphPatch(ctx context.Context, client *http.Client, token, path string, payload interface{}) ([]byte, int, error) {
+	var bodyReader io.Reader
+	if payload != nil {
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return nil, 0, fmt.Errorf("marshal payload: %w", err)
+		}
+		bodyReader = strings.NewReader(string(data))
+	}
+
+	reqURL := graphBaseURL + path
+	logging.Logger.Debug().Str("method", "PATCH").Str("url", reqURL).Msg("Graph API request")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, reqURL, bodyReader)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Int("bodyLen", len(body)).Msg("Graph API PATCH response")
+	return body, resp.StatusCode, err
+}
+
 // graphDelete performs a DELETE request to the Graph API and returns the HTTP status code.
 func graphDelete(ctx context.Context, client *http.Client, token, path string) (int, error) {
 	reqURL := graphBaseURL + path
@@ -638,4 +669,252 @@ func CreateVenomK8sSecret(ctx context.Context, kubeContext, namespace string, ap
 // (either via the Auth field or the Identity field).
 func IsOIDCEntry(auth, identity string) bool {
 	return auth == "oidc" || identity == "oidc"
+}
+
+// ciDomainSuffix is the CI ingress domain suffix used to identify redirect
+// URIs that belong to CI deployments and can be pruned.
+const ciDomainSuffix = ".ci.distro.ultrawombat.com"
+
+// RedirectURIOptions configures an UpdateRedirectURIs operation.
+type RedirectURIOptions struct {
+	// ObjectID is the Entra app registration object ID whose redirect URIs
+	// should be updated. Falls back to ENTRA_APP_OBJECT_ID env var when empty.
+	ObjectID string
+
+	// IngressHost is the ingress hostname for the current deployment
+	// (e.g., "my-ns.ci.distro.ultrawombat.com").
+	IngressHost string
+
+	// DirectoryID (tenant ID) for the Entra directory.
+	// Falls back to ENTRA_APP_DIRECTORY_ID env var when empty.
+	DirectoryID string
+
+	// ClientID of the parent Entra app used to authenticate to Graph API.
+	// Falls back to ENTRA_APP_CLIENT_ID env var when empty.
+	ClientID string
+
+	// ClientSecret of the parent Entra app for Graph API authentication.
+	// Falls back to ENTRA_APP_CLIENT_SECRET env var when empty.
+	ClientSecret string
+
+	// HTTPClient is an optional HTTP client for making requests.
+	// When nil, http.DefaultClient is used.
+	HTTPClient *http.Client
+}
+
+// resolveRedirectOpts fills in empty RedirectURIOptions fields from environment
+// variables.
+func resolveRedirectOpts(opts *RedirectURIOptions) error {
+	if opts.ObjectID == "" {
+		opts.ObjectID = os.Getenv("ENTRA_APP_OBJECT_ID")
+	}
+	if opts.DirectoryID == "" {
+		opts.DirectoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")
+	}
+	if opts.ClientID == "" {
+		opts.ClientID = os.Getenv("ENTRA_APP_CLIENT_ID")
+	}
+	if opts.ClientSecret == "" {
+		opts.ClientSecret = os.Getenv("ENTRA_APP_CLIENT_SECRET")
+	}
+
+	if opts.DirectoryID == "" {
+		return fmt.Errorf("ENTRA_APP_DIRECTORY_ID is required (set RedirectURIOptions.DirectoryID or ENTRA_APP_DIRECTORY_ID env var)")
+	}
+	if opts.ClientID == "" {
+		return fmt.Errorf("ENTRA_APP_CLIENT_ID is required (set RedirectURIOptions.ClientID or ENTRA_APP_CLIENT_ID env var)")
+	}
+	if opts.ClientSecret == "" {
+		return fmt.Errorf("ENTRA_APP_CLIENT_SECRET is required (set RedirectURIOptions.ClientSecret or ENTRA_APP_CLIENT_SECRET env var)")
+	}
+	if opts.ObjectID == "" {
+		return fmt.Errorf("ENTRA_APP_OBJECT_ID is required (set RedirectURIOptions.ObjectID or ENTRA_APP_OBJECT_ID env var)")
+	}
+	if opts.IngressHost == "" {
+		return fmt.Errorf("ingress host is required")
+	}
+	return nil
+}
+
+// webRedirectPaths are the path suffixes appended to the ingress host for
+// web (server-side) redirect URIs.
+var webRedirectPaths = []string{
+	"/identity/auth/login-callback",
+	"/operate/identity-callback",
+	"/optimize/api/authentication/callback",
+	"/tasklist/identity-callback",
+	"/orchestration/sso-callback",
+}
+
+// spaRedirectPaths are the path suffixes appended to the ingress host for
+// SPA (single-page application) redirect URIs.
+var spaRedirectPaths = []string{
+	"/modeler/login-callback",
+	"/",
+}
+
+// buildRedirectURIs builds the web and SPA redirect URI lists for a given host.
+func buildRedirectURIs(host string) (web []string, spa []string) {
+	for _, p := range webRedirectPaths {
+		web = append(web, "https://"+host+p)
+	}
+	for _, p := range spaRedirectPaths {
+		spa = append(spa, "https://"+host+p)
+	}
+	return web, spa
+}
+
+// isCIDomainURI returns true if the URI belongs to a CI deployment
+// (contains the CI ingress domain suffix).
+func isCIDomainURI(uri string) bool {
+	return strings.Contains(uri, ciDomainSuffix)
+}
+
+// isValidURI returns true if the URI is a well-formed redirect URI.
+// It rejects URIs with trailing commas (data corruption) and empty strings.
+func isValidURI(uri string) bool {
+	if uri == "" {
+		return false
+	}
+	if strings.HasSuffix(uri, ",") {
+		return false
+	}
+	return true
+}
+
+// filterRedirectURIs filters a list of redirect URIs:
+// - Removes invalid URIs (empty, trailing commas).
+// - Removes stale CI URIs (those matching the CI domain suffix).
+// - Preserves all non-CI URIs (e.g., production, staging).
+// - Appends the new URIs for the current deployment.
+// - Deduplicates the result.
+func filterRedirectURIs(existing []string, newURIs []string) []string {
+	seen := make(map[string]bool)
+	var result []string
+
+	// Keep existing non-CI URIs that are valid.
+	for _, uri := range existing {
+		if !isValidURI(uri) {
+			logging.Logger.Debug().Str("uri", uri).Msg("Removing invalid redirect URI")
+			continue
+		}
+		if isCIDomainURI(uri) {
+			logging.Logger.Debug().Str("uri", uri).Msg("Removing stale CI redirect URI")
+			continue
+		}
+		if !seen[uri] {
+			seen[uri] = true
+			result = append(result, uri)
+		}
+	}
+
+	// Add new URIs for the current deployment.
+	for _, uri := range newURIs {
+		if !seen[uri] {
+			seen[uri] = true
+			result = append(result, uri)
+		}
+	}
+
+	return result
+}
+
+// UpdateRedirectURIs updates the redirect URIs on the parent Entra app
+// registration. It:
+// 1. Authenticates to Graph API using the parent app credentials.
+// 2. Fetches the current web and SPA redirect URIs.
+// 3. Removes stale CI URIs and invalid/malformed URIs.
+// 4. Adds the redirect URIs for the current deployment's ingress host.
+// 5. PATCHes the updated URI lists back to the app registration.
+func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
+	if err := resolveRedirectOpts(&opts); err != nil {
+		return fmt.Errorf("entra: %w", err)
+	}
+
+	client := opts.HTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	logging.Logger.Info().
+		Str("objectId", opts.ObjectID).
+		Str("ingressHost", opts.IngressHost).
+		Msg("Updating Entra app redirect URIs")
+
+	// Step 1: Acquire bearer token.
+	authOpts := &Options{
+		DirectoryID:  opts.DirectoryID,
+		ClientID:     opts.ClientID,
+		ClientSecret: opts.ClientSecret,
+		Namespace:    "redirect-uri-update", // placeholder; not used for K8s
+		HTTPClient:   opts.HTTPClient,
+	}
+	token, err := acquireBearerToken(ctx, authOpts)
+	if err != nil {
+		return fmt.Errorf("entra: %w", err)
+	}
+
+	// Step 2: Fetch current app registration.
+	appPath := fmt.Sprintf("/applications/%s", opts.ObjectID)
+	body, err := graphGet(ctx, client, token, appPath)
+	if err != nil {
+		return fmt.Errorf("entra: fetch app registration: %w", err)
+	}
+
+	var appData struct {
+		Web struct {
+			RedirectURIs []string `json:"redirectUris"`
+		} `json:"web"`
+		Spa struct {
+			RedirectURIs []string `json:"redirectUris"`
+		} `json:"spa"`
+	}
+	if err := json.Unmarshal(body, &appData); err != nil {
+		return fmt.Errorf("entra: parse app registration: %w", err)
+	}
+
+	logging.Logger.Info().
+		Int("existingWebURIs", len(appData.Web.RedirectURIs)).
+		Int("existingSpaURIs", len(appData.Spa.RedirectURIs)).
+		Msg("Fetched current redirect URIs")
+
+	// Step 3: Build new URIs for the current deployment.
+	newWebURIs, newSpaURIs := buildRedirectURIs(opts.IngressHost)
+
+	// Step 4: Filter and merge.
+	finalWebURIs := filterRedirectURIs(appData.Web.RedirectURIs, newWebURIs)
+	finalSpaURIs := filterRedirectURIs(appData.Spa.RedirectURIs, newSpaURIs)
+
+	logging.Logger.Info().
+		Int("finalWebURIs", len(finalWebURIs)).
+		Int("finalSpaURIs", len(finalSpaURIs)).
+		Strs("newWebURIs", newWebURIs).
+		Strs("newSpaURIs", newSpaURIs).
+		Msg("Computed final redirect URI lists")
+
+	// Step 5: PATCH the app registration.
+	patchPayload := map[string]interface{}{
+		"web": map[string]interface{}{
+			"redirectUris": finalWebURIs,
+		},
+		"spa": map[string]interface{}{
+			"redirectUris": finalSpaURIs,
+		},
+	}
+
+	patchBody, statusCode, err := graphPatch(ctx, client, token, appPath, patchPayload)
+	if err != nil {
+		return fmt.Errorf("entra: PATCH redirect URIs: %w", err)
+	}
+
+	if statusCode >= 300 {
+		return fmt.Errorf("entra: PATCH redirect URIs failed (status=%d): %s", statusCode, string(patchBody))
+	}
+
+	logging.Logger.Info().
+		Int("statusCode", statusCode).
+		Str("objectId", opts.ObjectID).
+		Msg("Successfully updated Entra app redirect URIs")
+
+	return nil
 }

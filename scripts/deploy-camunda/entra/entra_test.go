@@ -775,3 +775,429 @@ func TestCreateVenomK8sSecret_Error(t *testing.T) {
 		t.Errorf("error %q does not contain 'simulated failure'", err)
 	}
 }
+
+// --- Tests for redirect URI functionality ---
+
+func TestIsValidURI(t *testing.T) {
+	tests := []struct {
+		uri  string
+		want bool
+	}{
+		{"https://example.com/callback", true},
+		{"https://ns.ci.distro.ultrawombat.com/identity/auth/login-callback", true},
+		{"", false},
+		{"https://example.com/callback,", false},  // trailing comma = corruption
+		{"https://example.com/callback,,", false}, // double trailing comma
+	}
+	for _, tc := range tests {
+		t.Run(tc.uri, func(t *testing.T) {
+			if got := isValidURI(tc.uri); got != tc.want {
+				t.Errorf("isValidURI(%q) = %v, want %v", tc.uri, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsCIDomainURI(t *testing.T) {
+	tests := []struct {
+		uri  string
+		want bool
+	}{
+		{"https://my-ns.ci.distro.ultrawombat.com/identity/auth/login-callback", true},
+		{"https://other.ci.distro.ultrawombat.com/operate/identity-callback", true},
+		{"https://production.example.com/callback", false},
+		{"https://staging.distribution.aws.camunda.cloud/callback", false},
+		{"", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.uri, func(t *testing.T) {
+			if got := isCIDomainURI(tc.uri); got != tc.want {
+				t.Errorf("isCIDomainURI(%q) = %v, want %v", tc.uri, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestBuildRedirectURIs(t *testing.T) {
+	web, spa := buildRedirectURIs("my-ns.ci.distro.ultrawombat.com")
+
+	expectedWeb := []string{
+		"https://my-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		"https://my-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+		"https://my-ns.ci.distro.ultrawombat.com/optimize/api/authentication/callback",
+		"https://my-ns.ci.distro.ultrawombat.com/tasklist/identity-callback",
+		"https://my-ns.ci.distro.ultrawombat.com/orchestration/sso-callback",
+	}
+	expectedSpa := []string{
+		"https://my-ns.ci.distro.ultrawombat.com/modeler/login-callback",
+		"https://my-ns.ci.distro.ultrawombat.com/",
+	}
+
+	if len(web) != len(expectedWeb) {
+		t.Fatalf("web URI count = %d, want %d", len(web), len(expectedWeb))
+	}
+	for i, uri := range web {
+		if uri != expectedWeb[i] {
+			t.Errorf("web[%d] = %q, want %q", i, uri, expectedWeb[i])
+		}
+	}
+
+	if len(spa) != len(expectedSpa) {
+		t.Fatalf("spa URI count = %d, want %d", len(spa), len(expectedSpa))
+	}
+	for i, uri := range spa {
+		if uri != expectedSpa[i] {
+			t.Errorf("spa[%d] = %q, want %q", i, uri, expectedSpa[i])
+		}
+	}
+}
+
+func TestFilterRedirectURIs(t *testing.T) {
+	existing := []string{
+		// Non-CI URI — should be preserved.
+		"https://production.example.com/callback",
+		// Stale CI URI — should be removed.
+		"https://old-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		"https://old-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+		// Malformed URI with trailing comma — should be removed.
+		"https://broken.ci.distro.ultrawombat.com/callback,",
+		// Empty string — should be removed.
+		"",
+		// Another non-CI URI.
+		"https://staging.distribution.aws.camunda.cloud/callback",
+		// Duplicate non-CI URI — should be deduplicated.
+		"https://production.example.com/callback",
+	}
+
+	newURIs := []string{
+		"https://new-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		"https://new-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+	}
+
+	result := filterRedirectURIs(existing, newURIs)
+
+	expected := []string{
+		"https://production.example.com/callback",
+		"https://staging.distribution.aws.camunda.cloud/callback",
+		"https://new-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		"https://new-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+	}
+
+	if len(result) != len(expected) {
+		t.Fatalf("filterRedirectURIs count = %d, want %d\ngot:  %v\nwant: %v", len(result), len(expected), result, expected)
+	}
+	for i, uri := range result {
+		if uri != expected[i] {
+			t.Errorf("result[%d] = %q, want %q", i, uri, expected[i])
+		}
+	}
+}
+
+func TestFilterRedirectURIs_EmptyExisting(t *testing.T) {
+	newURIs := []string{
+		"https://ns.ci.distro.ultrawombat.com/callback",
+	}
+
+	result := filterRedirectURIs(nil, newURIs)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 URI, got %d: %v", len(result), result)
+	}
+	if result[0] != newURIs[0] {
+		t.Errorf("result[0] = %q, want %q", result[0], newURIs[0])
+	}
+}
+
+func TestFilterRedirectURIs_DeduplicatesNewURIs(t *testing.T) {
+	newURIs := []string{
+		"https://ns.ci.distro.ultrawombat.com/callback",
+		"https://ns.ci.distro.ultrawombat.com/callback", // duplicate
+	}
+
+	result := filterRedirectURIs(nil, newURIs)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 URI after dedup, got %d: %v", len(result), result)
+	}
+}
+
+func TestResolveRedirectOpts_MissingRequired(t *testing.T) {
+	tests := []struct {
+		name string
+		opts RedirectURIOptions
+		want string
+	}{
+		{
+			name: "missing directory ID",
+			opts: RedirectURIOptions{ObjectID: "oid", IngressHost: "host", ClientID: "cid", ClientSecret: "cs"},
+			want: "ENTRA_APP_DIRECTORY_ID",
+		},
+		{
+			name: "missing client ID",
+			opts: RedirectURIOptions{ObjectID: "oid", IngressHost: "host", DirectoryID: "did", ClientSecret: "cs"},
+			want: "ENTRA_APP_CLIENT_ID",
+		},
+		{
+			name: "missing client secret",
+			opts: RedirectURIOptions{ObjectID: "oid", IngressHost: "host", DirectoryID: "did", ClientID: "cid"},
+			want: "ENTRA_APP_CLIENT_SECRET",
+		},
+		{
+			name: "missing object ID",
+			opts: RedirectURIOptions{IngressHost: "host", DirectoryID: "did", ClientID: "cid", ClientSecret: "cs"},
+			want: "ENTRA_APP_OBJECT_ID",
+		},
+		{
+			name: "missing ingress host",
+			opts: RedirectURIOptions{ObjectID: "oid", DirectoryID: "did", ClientID: "cid", ClientSecret: "cs"},
+			want: "ingress host is required",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("ENTRA_APP_DIRECTORY_ID", "")
+			t.Setenv("ENTRA_APP_CLIENT_ID", "")
+			t.Setenv("ENTRA_APP_CLIENT_SECRET", "")
+			t.Setenv("ENTRA_APP_OBJECT_ID", "")
+
+			err := resolveRedirectOpts(&tc.opts)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("error %q does not contain %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestResolveRedirectOpts_EnvFallback(t *testing.T) {
+	t.Setenv("ENTRA_APP_DIRECTORY_ID", "env-dir-id")
+	t.Setenv("ENTRA_APP_CLIENT_ID", "env-client-id")
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "env-secret")
+	t.Setenv("ENTRA_APP_OBJECT_ID", "env-object-id")
+
+	opts := RedirectURIOptions{IngressHost: "my-host.example.com"}
+	if err := resolveRedirectOpts(&opts); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if opts.DirectoryID != "env-dir-id" {
+		t.Errorf("DirectoryID = %q, want %q", opts.DirectoryID, "env-dir-id")
+	}
+	if opts.ClientID != "env-client-id" {
+		t.Errorf("ClientID = %q, want %q", opts.ClientID, "env-client-id")
+	}
+	if opts.ClientSecret != "env-secret" {
+		t.Errorf("ClientSecret = %q, want %q", opts.ClientSecret, "env-secret")
+	}
+	if opts.ObjectID != "env-object-id" {
+		t.Errorf("ObjectID = %q, want %q", opts.ObjectID, "env-object-id")
+	}
+}
+
+func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
+	var patchReceived map[string]interface{}
+
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]interface{}{
+				"web": map[string]interface{}{
+					"redirectUris": []string{
+						"https://production.example.com/callback",
+						"https://old-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+						"https://old-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+						"https://corrupt.ci.distro.ultrawombat.com/callback,",
+					},
+				},
+				"spa": map[string]interface{}{
+					"redirectUris": []string{
+						"https://production.example.com/spa-callback",
+						"https://old-ns.ci.distro.ultrawombat.com/modeler/login-callback",
+					},
+				},
+			})
+		},
+		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			json.NewDecoder(r.Body).Decode(&patchReceived) //nolint:errcheck
+			w.WriteHeader(204)
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	origLogin := loginBaseURL
+	graphBaseURL = srv.URL
+	loginBaseURL = srv.URL
+	defer func() {
+		graphBaseURL = origGraph
+		loginBaseURL = origLogin
+	}()
+
+	err := UpdateRedirectURIs(context.Background(), RedirectURIOptions{
+		ObjectID:     "parent-obj-id",
+		IngressHost:  "new-ns.ci.distro.ultrawombat.com",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if patchReceived == nil {
+		t.Fatal("expected PATCH request, got none")
+	}
+
+	// Verify web URIs: production preserved, stale CI removed, new added.
+	webData, ok := patchReceived["web"].(map[string]interface{})
+	if !ok {
+		t.Fatal("missing 'web' in PATCH payload")
+	}
+	webURIs, ok := webData["redirectUris"].([]interface{})
+	if !ok {
+		t.Fatal("missing 'redirectUris' in web payload")
+	}
+
+	webStrings := make([]string, len(webURIs))
+	for i, u := range webURIs {
+		webStrings[i] = u.(string)
+	}
+
+	// Should contain production + 5 new web URIs = 6 total.
+	// Old CI URIs and corrupt URI should be removed.
+	if len(webStrings) != 6 {
+		t.Errorf("web URI count = %d, want 6, got: %v", len(webStrings), webStrings)
+	}
+
+	// Verify production URI is preserved.
+	found := false
+	for _, u := range webStrings {
+		if u == "https://production.example.com/callback" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("production URI was not preserved in web URIs")
+	}
+
+	// Verify stale CI URI was removed.
+	for _, u := range webStrings {
+		if strings.Contains(u, "old-ns.ci.distro.ultrawombat.com") {
+			t.Errorf("stale CI URI should have been removed: %s", u)
+		}
+	}
+
+	// Verify corrupt URI was removed.
+	for _, u := range webStrings {
+		if strings.HasSuffix(u, ",") {
+			t.Errorf("corrupt URI with trailing comma should have been removed: %s", u)
+		}
+	}
+
+	// Verify SPA URIs.
+	spaData, ok := patchReceived["spa"].(map[string]interface{})
+	if !ok {
+		t.Fatal("missing 'spa' in PATCH payload")
+	}
+	spaURIs, ok := spaData["redirectUris"].([]interface{})
+	if !ok {
+		t.Fatal("missing 'redirectUris' in spa payload")
+	}
+
+	// Should contain production + 2 new SPA URIs = 3 total.
+	if len(spaURIs) != 3 {
+		spaStrings := make([]string, len(spaURIs))
+		for i, u := range spaURIs {
+			spaStrings[i] = u.(string)
+		}
+		t.Errorf("spa URI count = %d, want 3, got: %v", len(spaURIs), spaStrings)
+	}
+}
+
+func TestUpdateRedirectURIs_PatchFails(t *testing.T) {
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]interface{}{
+				"web": map[string]interface{}{"redirectUris": []string{}},
+				"spa": map[string]interface{}{"redirectUris": []string{}},
+			})
+		},
+		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 400, map[string]interface{}{
+				"error": map[string]string{
+					"code":    "Request_BadRequest",
+					"message": "too many redirect URIs",
+				},
+			})
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	origLogin := loginBaseURL
+	graphBaseURL = srv.URL
+	loginBaseURL = srv.URL
+	defer func() {
+		graphBaseURL = origGraph
+		loginBaseURL = origLogin
+	}()
+
+	err := UpdateRedirectURIs(context.Background(), RedirectURIOptions{
+		ObjectID:     "parent-obj-id",
+		IngressHost:  "ns.ci.distro.ultrawombat.com",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "status=400") {
+		t.Errorf("error %q does not mention status=400", err)
+	}
+}
+
+func TestUpdateRedirectURIs_InvalidOpts(t *testing.T) {
+	t.Setenv("ENTRA_APP_DIRECTORY_ID", "")
+	t.Setenv("ENTRA_APP_CLIENT_ID", "")
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "")
+	t.Setenv("ENTRA_APP_OBJECT_ID", "")
+
+	err := UpdateRedirectURIs(context.Background(), RedirectURIOptions{})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestGraphPatch(t *testing.T) {
+	var receivedBody map[string]interface{}
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"PATCH /applications/test-id": func(w http.ResponseWriter, r *http.Request) {
+			json.NewDecoder(r.Body).Decode(&receivedBody) //nolint:errcheck
+			w.WriteHeader(204)
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	graphBaseURL = srv.URL
+	defer func() { graphBaseURL = origGraph }()
+
+	payload := map[string]string{"key": "value"}
+	_, statusCode, err := graphPatch(context.Background(), srv.Client(), "token", "/applications/test-id", payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if statusCode != 204 {
+		t.Errorf("statusCode = %d, want 204", statusCode)
+	}
+	if receivedBody == nil {
+		t.Fatal("expected PATCH body, got nil")
+	}
+	if receivedBody["key"] != "value" {
+		t.Errorf("body key = %q, want %q", receivedBody["key"], "value")
+	}
+}
