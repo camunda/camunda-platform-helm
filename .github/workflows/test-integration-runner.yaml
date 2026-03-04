@@ -467,7 +467,8 @@ jobs:
           --namespace $TEST_NAMESPACE \
           --docker-server "registry.camunda.cloud" \
           --docker-username $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD \
-          --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
+          --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD \
+          --dry-run=client -o yaml | kubectl apply -f -
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
         env:
