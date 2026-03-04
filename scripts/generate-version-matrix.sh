@@ -120,14 +120,24 @@ get_chart_enterprise_images () {
       else
         helm_version_arg="--version ${chart_version}"
       fi
-      # Enable all optional components to ensure all images are listed,
-      # without depending on the integration test values file.
+      # Enable all optional components and subcharts to ensure all enterprise images are listed.
+      # Detect correct postgres key (renamed from postgresql to webModelerPostgresql in 8.8+).
+      if yq -e 'has("postgresql")' "${CHART_DIR}/values.yaml" > /dev/null 2>&1; then
+        webmodeler_pg_flag="--set postgresql.enabled=true"
+      else
+        webmodeler_pg_flag="--set webModelerPostgresql.enabled=true"
+      fi
       chart_enterprise_images="$(
         helm template --skip-tests camunda "${CHART_SOURCE}" ${helm_version_arg} \
           --set webModeler.enabled=true \
           --set webModeler.restapi.mail.fromAddress=noreply@example.com \
           --set console.enabled=true \
-          --set postgresql.enabled=true \
+          --set identity.enabled=true \
+          --set identityKeycloak.enabled=true \
+          --set identityPostgresql.enabled=true \
+          --set elasticsearch.enabled=true \
+          --set orchestration.data.secondaryStorage.type=elasticsearch \
+          ${webmodeler_pg_flag} \
           --values "${enterprise_values_file}" 2> /dev/null |
         tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
         sort | uniq;
@@ -317,7 +327,7 @@ while test -n "${1:-}"; do
             echo "[ERROR] Chart dir and Helm chart version are needed as an arg for this option";
             exit 1
           )
-          CHART_DIR="${2}" get_chart_enterprise_images "${3}" | grep "registry.camunda.cloud"
+          CHART_DIR="${2}" get_chart_enterprise_images "${3}" | grep "registry.camunda.cloud" || true
           shift 2
           ;;
         *)
