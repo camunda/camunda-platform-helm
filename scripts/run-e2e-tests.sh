@@ -168,12 +168,17 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
-_wait_for_dns_resolution "$hostname" || exit 1
-_wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
 
-# Enable Node.js DNS fallback if the system resolver is stale
-if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
-  _enable_dns_fallback
+# On CI the DNS records are already propagated by the time e2e tests start,
+# so skip the DNS resolution wait and ingress readiness polling.
+if [[ "$IS_CI" != "true" ]]; then
+  _wait_for_dns_resolution "$hostname" || exit 1
+  _wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
+
+  # Enable Node.js DNS fallback if the system resolver is stale
+  if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
+    _enable_dns_fallback
+  fi
 fi
 
 log "DEBUG: Hostname: $hostname"
