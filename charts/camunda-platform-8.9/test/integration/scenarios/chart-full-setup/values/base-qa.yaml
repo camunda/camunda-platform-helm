@@ -13,8 +13,6 @@ orchestration:
   data:
     secondaryStorage:
       type: elasticsearch
-      elasticsearch:
-        url: "http://integration-elasticsearch:9200"
   security:
     authentication:
       method: oidc

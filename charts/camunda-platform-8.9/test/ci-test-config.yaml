@@ -59,16 +59,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-        - name: upgrade-migration
-          # upgrade migrators are only for 8.7 -> 8.8, not for 8.9
-          enabled: false
-          flow: upgrade-minor
-          auth: keycloak
-          shortname: eske-upgm
-          exclude: []
-          infra-type:
-            gke: distroci
-            eks: preemptible
+          platforms: [gke]
         - name: elasticsearch-basic
           enabled: false
           shortname: esba
@@ -91,6 +82,7 @@ integration:
             eks: preemptible
           identity: oidc
           persistence: elasticsearch
+          platforms: [gke]
         - name: keycloak-mt
           enabled: true
           exclude: []
@@ -102,6 +94,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          platforms: [gke]
         - name: keycloak-rba
           enabled: true
           exclude: []
@@ -114,17 +107,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           features: [rba]
-        - name: keycloak-original
-          enabled: true
-          exclude: []
-          shortname: keyc
-          auth: keycloak
-          flow: upgrade-minor
-          infra-type:
-            gke: distroci
-            eks: preemptible
-          identity: keycloak-external
-          persistence: elasticsearch-external
+          platforms: [gke]
         - name: keycloak-original
           enabled: true
           exclude: []
@@ -136,6 +119,7 @@ integration:
             eks: preemptible
           identity: keycloak-external
           persistence: elasticsearch-external
+          platforms: [gke]
         - name: gateway-keycloak
           enabled: true
           exclude: []
@@ -148,6 +132,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          platforms: [gke]
         - name: elasticsearch-arm
           enabled: true
           auth: keycloak
@@ -165,6 +150,7 @@ integration:
           identity: keycloak-external
           persistence: elasticsearch-external
           features: [arm]
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
