@@ -79,16 +79,19 @@ type PreparedScenario struct {
 	RealmName           string
 	OptimizePrefix      string
 	OrchestrationPrefix string
+	// Secrets holds auto-generated test credentials (DISTRO_QA_* passwords, keycloak
+	// clients secret) so that they can flow from prepareScenarioValues to
+	// executeDeployment without going through the process environment.
+	Secrets map[string]string
 }
-
-// envMutex protects environment variable access during parallel deployments.
-var envMutex sync.Mutex
 
 // processCommonValues finds and processes common values files from the common/ sibling directory.
 // It processes each file through values.Process() to apply env var substitution and writes to outputDir.
 // If platform is specified, it also processes files from the platform-specific subdirectory (e.g., common/eks/).
+// envOverrides, when non-nil, is passed through to values.Options.EnvOverrides so that
+// placeholder substitution uses the caller-supplied env map instead of the process environment.
 // Returns the list of processed file paths in the output directory.
-func processCommonValues(scenarioPath, outputDir, envFile, platform string) ([]string, error) {
+func processCommonValues(scenarioPath, outputDir, envFile, platform string, envOverrides map[string]string) ([]string, error) {
 	// Common directory is a sibling to the scenario directory
 	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
 
@@ -218,8 +221,9 @@ func processCommonValues(scenarioPath, outputDir, envFile, platform string) ([]s
 			Msg("⚙️ [processCommonValues] processing common values file")
 
 		opts := values.Options{
-			OutputDir: outputDir,
-			EnvFile:   envFile,
+			OutputDir:    outputDir,
+			EnvFile:      envFile,
+			EnvOverrides: envOverrides,
 		}
 
 		outputPath, _, err := values.Process(srcFile, opts)
@@ -444,24 +448,68 @@ func generateCompactRealmName(namespace, scenario, suffix string) string {
 	return result
 }
 
-// captureEnv saves current values of specified environment variables.
-func captureEnv(keys []string) map[string]string {
-	envVars := make(map[string]string, len(keys))
-	for _, key := range keys {
-		envVars[key] = os.Getenv(key)
-	}
-	return envVars
-}
-
-// restoreEnv restores environment variables to captured values.
-func restoreEnv(envVars map[string]string) {
-	for key, val := range envVars {
-		if val == "" {
-			_ = os.Unsetenv(key)
-		} else {
-			_ = os.Setenv(key, val)
+// buildScenarioEnv creates an isolated environment map for a scenario by snapshotting
+// the process environment, loading the .env file, and applying scenario-specific
+// overrides. The returned map is used as values.Options.EnvOverrides so that
+// parallel calls to values.Process never touch (or race on) the real process env.
+func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (map[string]string, error) {
+	// 1. Snapshot the current process environment as the baseline.
+	envMap := make(map[string]string)
+	for _, entry := range os.Environ() {
+		if k, v, ok := strings.Cut(entry, "="); ok {
+			envMap[k] = v
 		}
 	}
+
+	// 2. Overlay .env file values (without modifying the process environment).
+	if flags.EnvFile != "" {
+		dotenvMap, err := env.ReadFile(flags.EnvFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read env file %q: %w", flags.EnvFile, err)
+		}
+		for k, v := range dotenvMap {
+			envMap[k] = v
+		}
+	}
+
+	// 3. Apply scenario-specific overrides.
+	envMap["KEYCLOAK_REALM"] = scenarioCtx.KeycloakRealm
+	envMap["OPTIMIZE_INDEX_PREFIX"] = scenarioCtx.OptimizeIndexPrefix
+	envMap["ORCHESTRATION_INDEX_PREFIX"] = scenarioCtx.OrchestrationIndexPrefix
+	if scenarioCtx.TasklistIndexPrefix != "" {
+		envMap["TASKLIST_INDEX_PREFIX"] = scenarioCtx.TasklistIndexPrefix
+	}
+	if scenarioCtx.OperateIndexPrefix != "" {
+		envMap["OPERATE_INDEX_PREFIX"] = scenarioCtx.OperateIndexPrefix
+	}
+	if scenarioCtx.IngressHost != "" {
+		envMap["CAMUNDA_HOSTNAME"] = scenarioCtx.IngressHost
+	}
+	envMap["FLOW"] = flags.Flow
+
+	// Default ES pool index to 0 if not set (for local dev / manual runs).
+	esPoolIndex := flags.ESPoolIndex
+	if esPoolIndex == "" {
+		esPoolIndex = envMap["ES_POOL_INDEX"]
+	}
+	if esPoolIndex == "" {
+		esPoolIndex = "0"
+	}
+	envMap["ES_POOL_INDEX"] = esPoolIndex
+
+	// 4. Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
+	for k, v := range flags.ExtraEnv {
+		envMap[k] = v
+	}
+
+	// 5. Set Keycloak versioned environment variables.
+	if flags.KeycloakHost != "" {
+		kcVersionSafe := keycloakVersionSuffix(flags.KeycloakHost)
+		envMap[fmt.Sprintf("KEYCLOAK_EXT_HOST_%s", kcVersionSafe)] = flags.KeycloakHost
+		envMap[fmt.Sprintf("KEYCLOAK_EXT_PROTOCOL_%s", kcVersionSafe)] = flags.KeycloakProtocol
+	}
+
+	return envMap, nil
 }
 
 // buildDeploymentConfigFromFlags creates a DeploymentConfig from RuntimeFlags.
@@ -792,7 +840,7 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 	}
 
 	// Print single deployment summary
-	printDeploymentSummary(result.KeycloakRealm, result.OptimizeIndexPrefix, result.OrchestrationIndexPrefix, result.Namespace, result.Release, result.TestEnvFile, result.LayeredFiles, flags)
+	printDeploymentSummary(result, flags)
 
 	// Phase 3: Run tests if requested
 	if err := RunTests(ctx, flags, result.Namespace); err != nil {
@@ -880,8 +928,9 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) (*Scen
 }
 
 // prepareScenarioValues processes values files for a scenario and returns a PreparedScenario.
-// This function handles all environment variable substitution and interactive prompts,
-// making it safe to call sequentially before parallel deployments.
+// Each invocation builds an isolated env map via buildScenarioEnv so that parallel
+// calls never race on the process environment. The resulting map is passed to
+// values.Process via EnvOverrides.
 func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (*PreparedScenario, error) {
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
@@ -916,95 +965,13 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 	scenarioCtx.TempDir = tempDir
 	logging.Logger.Debug().Str("dir", tempDir).Str("scenario", scenarioCtx.ScenarioName).Msg("✅ [prepareScenarioValues] temp directory created successfully")
 
-	// Thread-safe environment variable manipulation
-	logging.Logger.Debug().
-		Str("scenario", scenarioCtx.ScenarioName).
-		Msg("🔒 [prepareScenarioValues] acquiring environment mutex for values processing")
-	envMutex.Lock()
-	logging.Logger.Debug().
-		Str("scenario", scenarioCtx.ScenarioName).
-		Msg("✅ [prepareScenarioValues] environment mutex acquired")
-
-	// Load the .env file under the mutex so that version-specific env vars
-	// are available to values.Process(). This is safe for parallel execution
-	// because the mutex serialises all environment manipulation.
-	if flags.EnvFile != "" {
-		logging.Logger.Debug().
-			Str("envFile", flags.EnvFile).
-			Str("scenario", scenarioCtx.ScenarioName).
-			Msg("📂 [prepareScenarioValues] loading .env file")
-		if err := env.Load(flags.EnvFile); err != nil {
-			logging.Logger.Warn().Err(err).Str("envFile", flags.EnvFile).Msg("Failed to load environment file")
-		}
-	}
-
-	// Set environment variables for prepare-helm-values
-	envVarsToCapture := []string{
-		"KEYCLOAK_REALM",
-		"OPTIMIZE_INDEX_PREFIX",
-		"ORCHESTRATION_INDEX_PREFIX",
-		"TASKLIST_INDEX_PREFIX",
-		"OPERATE_INDEX_PREFIX",
-		"CAMUNDA_HOSTNAME",
-		"FLOW",
-		"ES_POOL_INDEX",
-	}
-	// Also capture/restore any per-entry extra env vars so they don't leak across entries.
-	for k := range flags.ExtraEnv {
-		envVarsToCapture = append(envVarsToCapture, k)
-	}
-	originalEnv := captureEnv(envVarsToCapture)
-
-	// Ensure environment is restored and mutex is unlocked even on error
-	defer func() {
-		logging.Logger.Debug().
-			Str("scenario", scenarioCtx.ScenarioName).
-			Msg("🔄 [prepareScenarioValues] restoring environment and releasing mutex")
-		restoreEnv(originalEnv)
-		envMutex.Unlock()
-	}()
-
-	// Set scenario-specific environment variables
-	os.Setenv("KEYCLOAK_REALM", realmName)
-	os.Setenv("OPTIMIZE_INDEX_PREFIX", optimizePrefix)
-	os.Setenv("ORCHESTRATION_INDEX_PREFIX", orchestrationPrefix)
-	if scenarioCtx.TasklistIndexPrefix != "" {
-		os.Setenv("TASKLIST_INDEX_PREFIX", scenarioCtx.TasklistIndexPrefix)
-	}
-	if scenarioCtx.OperateIndexPrefix != "" {
-		os.Setenv("OPERATE_INDEX_PREFIX", scenarioCtx.OperateIndexPrefix)
-	}
-	if scenarioCtx.IngressHost != "" {
-		os.Setenv("CAMUNDA_HOSTNAME", scenarioCtx.IngressHost)
-	}
-	os.Setenv("FLOW", flags.Flow)
-
-	// Default ES pool index to 0 if not set (for local dev / manual runs).
-	// This ensures $ES_POOL_INDEX resolves in elasticsearch-external.yaml values files.
-	// Priority: flags.ESPoolIndex (set by matrix runner) > env var > "0".
-	esPoolIndex := flags.ESPoolIndex
-	if esPoolIndex == "" {
-		esPoolIndex = os.Getenv("ES_POOL_INDEX")
-	}
-	if esPoolIndex == "" {
-		esPoolIndex = "0"
-	}
-	os.Setenv("ES_POOL_INDEX", esPoolIndex)
-
-	// Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
-	// These are set under the envMutex to avoid process-global races when multiple entries
-	// run in parallel and each has a different venom app registration.
-	for k, v := range flags.ExtraEnv {
-		os.Setenv(k, v)
-	}
-
-	// Set Keycloak environment variables
-	if flags.KeycloakHost != "" {
-		kcVersionSafe := keycloakVersionSuffix(flags.KeycloakHost)
-		kcHostVar := fmt.Sprintf("KEYCLOAK_EXT_HOST_%s", kcVersionSafe)
-		kcProtoVar := fmt.Sprintf("KEYCLOAK_EXT_PROTOCOL_%s", kcVersionSafe)
-		os.Setenv(kcHostVar, flags.KeycloakHost)
-		os.Setenv(kcProtoVar, flags.KeycloakProtocol)
+	// Build an isolated environment map for this scenario. This replaces the
+	// old envMutex + os.Setenv/os.Getenv approach: each scenario gets its own
+	// map so parallel calls never race on the process environment.
+	envMap, err := buildScenarioEnv(scenarioCtx, flags)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return nil, fmt.Errorf("failed to build scenario env: %w", err)
 	}
 
 	// Helper function to process values files
@@ -1019,12 +986,13 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			Msg("📝 [prepareScenarioValues.processValues] building values options")
 
 		opts := values.Options{
-			ChartPath:   flags.ChartPath,
-			Scenario:    scen,
-			ScenarioDir: flags.ScenarioPath,
-			OutputDir:   tempDir,
-			Interactive: flags.Interactive,
-			EnvFile:     flags.EnvFile,
+			ChartPath:    flags.ChartPath,
+			Scenario:     scen,
+			ScenarioDir:  flags.ScenarioPath,
+			OutputDir:    tempDir,
+			Interactive:  flags.Interactive,
+			EnvFile:      flags.EnvFile,
+			EnvOverrides: envMap,
 		}
 
 		file, err := values.ResolveValuesFile(opts)
@@ -1049,7 +1017,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		Str("tempDir", tempDir).
 		Str("platform", flags.Platform).
 		Msg("📋 [prepareScenarioValues] processing common values files")
-	processedCommonFiles, err := processCommonValues(flags.ScenarioPath, tempDir, flags.EnvFile, flags.Platform)
+	processedCommonFiles, err := processCommonValues(flags.ScenarioPath, tempDir, flags.EnvFile, flags.Platform, envMap)
 	if err != nil {
 		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to process common values: %w", err)
@@ -1129,11 +1097,12 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		// Process each layered file (env var substitution) into tempDir
 		for _, srcFile := range layeredFiles {
 			opts := values.Options{
-				ChartPath:   flags.ChartPath,
-				ScenarioDir: effectiveScenarioDir,
-				OutputDir:   tempDir,
-				Interactive: flags.Interactive,
-				EnvFile:     flags.EnvFile,
+				ChartPath:    flags.ChartPath,
+				ScenarioDir:  effectiveScenarioDir,
+				OutputDir:    tempDir,
+				Interactive:  flags.Interactive,
+				EnvFile:      flags.EnvFile,
+				EnvOverrides: envMap,
 			}
 			outputPath, _, procErr := values.Process(srcFile, opts)
 			if procErr != nil {
@@ -1180,13 +1149,19 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 	}
 
 	// Auto-generate secrets if requested
+	var secrets map[string]string
 	if flags.AutoGenerateSecrets {
 		logging.Logger.Debug().
 			Str("scenario", scenarioCtx.ScenarioName).
 			Msg("🔑 [prepareScenarioValues] auto-generating test secrets")
-		if err := generateTestSecrets(flags.EnvFile); err != nil {
+		secrets, err = generateTestSecrets(flags.EnvFile, envMap)
+		if err != nil {
 			os.RemoveAll(tempDir) // Cleanup on error
 			return nil, fmt.Errorf("failed to generate test secrets: %w", err)
+		}
+		// Merge secrets into envMap so that vault_secret_mapping is available below.
+		for k, v := range secrets {
+			envMap[k] = v
 		}
 	}
 
@@ -1197,7 +1172,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		logging.Logger.Info().Str("scenario", scenarioCtx.ScenarioName).Msg("Generating vault secrets")
 		mapping := flags.VaultSecretMapping
 		if mapping == "" {
-			mapping = os.Getenv("vault_secret_mapping")
+			mapping = envMap["vault_secret_mapping"]
 		}
 		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath); err != nil {
 			os.RemoveAll(tempDir) // Cleanup on error
@@ -1282,12 +1257,13 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		RealmName:           realmName,
 		OptimizePrefix:      optimizePrefix,
 		OrchestrationPrefix: orchestrationPrefix,
+		Secrets:             secrets,
 	}, nil
 }
 
 // executeDeployment runs the helm deployment for a prepared scenario.
 // This function is safe to run in parallel as it doesn't do any interactive prompts
-// or environment variable manipulation that requires mutex protection.
+// or environment variable manipulation. Credentials are carried in PreparedScenario.Secrets.
 func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *config.RuntimeFlags) *ScenarioResult {
 	startTime := time.Now()
 	scenarioCtx := prepared.ScenarioCtx
@@ -1460,11 +1436,13 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		return result
 	}
 
-	// Capture credentials from environment
-	result.FirstUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")
-	result.SecondUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")
-	result.ThirdUserPassword = os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
-	result.KeycloakClientsSecret = os.Getenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET")
+	// Capture credentials from the secrets map prepared in prepareScenarioValues.
+	if prepared.Secrets != nil {
+		result.FirstUserPassword = prepared.Secrets["DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"]
+		result.SecondUserPassword = prepared.Secrets["DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"]
+		result.ThirdUserPassword = prepared.Secrets["DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"]
+		result.KeycloakClientsSecret = prepared.Secrets["DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"]
+	}
 
 	// Generate E2E test env file if requested
 	if flags.OutputTestEnv {
@@ -1495,8 +1473,19 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 	return result
 }
 
-// generateTestSecrets creates random secrets for testing.
-func generateTestSecrets(envFile string) error {
+// generateTestSecrets creates random secrets for testing and returns them as a
+// map[string]string. The caller is responsible for merging these into its env
+// map; this function does NOT call os.Setenv.
+//
+// If a key already exists in existingEnv with a non-empty value, the existing
+// value is preserved (idempotent across multiple calls / scenarios).
+//
+// The generated secrets are also persisted to envFile (or ".env" by default)
+// so that subsequent processes (e.g., test runners) can pick them up.
+//
+// The returned map also contains `vault_secret_mapping` so the caller can feed
+// it into mapper.Generate without touching the process environment.
+func generateTestSecrets(envFile string, existingEnv map[string]string) (map[string]string, error) {
 	text := func() (string, error) {
 		const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		result := make([]byte, 32)
@@ -1512,33 +1501,37 @@ func generateTestSecrets(envFile string) error {
 
 	firstUserPwd, err := text()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	secondUserPwd, err := text()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	thirdUserPwd, err := text()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	keycloakClientsSecret, err := text()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD") == "" {
-		os.Setenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD", firstUserPwd)
+	secrets := map[string]string{
+		"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD":  firstUserPwd,
+		"DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD": secondUserPwd,
+		"DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD":  thirdUserPwd,
+		"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":      keycloakClientsSecret,
 	}
-	if os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD") == "" {
-		os.Setenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD", secondUserPwd)
+
+	// Preserve existing non-empty values (idempotent).
+	for k := range secrets {
+		if existing, ok := existingEnv[k]; ok && existing != "" {
+			secrets[k] = existing
+		}
 	}
-	if os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD") == "" {
-		os.Setenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD", thirdUserPwd)
-	}
-	if os.Getenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET") == "" {
-		os.Setenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET", keycloakClientsSecret)
-	}
+
+	// Add vault secret mapping.
+	secrets["vault_secret_mapping"] = "ci/path DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;"
 
 	// Persist to .env file
 	targetEnvFile := envFile
@@ -1548,10 +1541,10 @@ func generateTestSecrets(envFile string) error {
 
 	type pair struct{ key, val string }
 	toPersist := []pair{
-		{"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD", os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")},
-		{"DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD", os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")},
-		{"DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD", os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")},
-		{"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET", os.Getenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET")},
+		{"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD", secrets["DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"]},
+		{"DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD", secrets["DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"]},
+		{"DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD", secrets["DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"]},
+		{"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET", secrets["DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"]},
 	}
 
 	for _, p := range toPersist {
@@ -1562,10 +1555,7 @@ func generateTestSecrets(envFile string) error {
 		}
 	}
 
-	// Build vault secret mapping
-	os.Setenv("vault_secret_mapping", "ci/path DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;")
-
-	return nil
+	return secrets, nil
 }
 
 // deleteNamespace deletes a Kubernetes namespace.
@@ -1639,11 +1629,18 @@ func renderTestEnvFile(ctx context.Context, flags *config.RuntimeFlags, namespac
 }
 
 // printDeploymentSummary outputs the deployment results.
-func printDeploymentSummary(realm, optimizePrefix, orchestrationPrefix, namespace, release, testEnvFile string, layeredFiles []string, flags *config.RuntimeFlags) {
-	firstPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD")
-	secondPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD")
-	thirdPwd := os.Getenv("DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD")
-	clientSecret := os.Getenv("DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET")
+func printDeploymentSummary(result *ScenarioResult, flags *config.RuntimeFlags) {
+	realm := result.KeycloakRealm
+	optimizePrefix := result.OptimizeIndexPrefix
+	orchestrationPrefix := result.OrchestrationIndexPrefix
+	namespace := result.Namespace
+	release := result.Release
+	testEnvFile := result.TestEnvFile
+	layeredFiles := result.LayeredFiles
+	firstPwd := result.FirstUserPassword
+	secondPwd := result.SecondUserPassword
+	thirdPwd := result.ThirdUserPassword
+	clientSecret := result.KeycloakClientsSecret
 
 	if !logging.IsTerminal(os.Stdout.Fd()) {
 		// Plain, machine-friendly output

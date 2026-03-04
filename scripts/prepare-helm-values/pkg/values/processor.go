@@ -27,6 +27,14 @@ type Options struct {
 	Interactive   bool
 	EnvFile       string
 	ImageTagsFile string
+
+	// EnvOverrides, when non-nil, provides an explicit set of environment
+	// variables for placeholder substitution. It replaces the process
+	// environment entirely — os.LookupEnv is NOT consulted. This allows
+	// concurrent callers to each supply an isolated env map, eliminating
+	// the need for a process-global mutex around os.Setenv/os.Getenv.
+	// When nil (the default), the process environment is used as before.
+	EnvOverrides map[string]string
 }
 
 type MissingEnvError struct {
@@ -133,6 +141,10 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 		if v, ok := configEnv[name]; ok {
 			return v, true
 		}
+		if opts.EnvOverrides != nil {
+			v, ok := opts.EnvOverrides[name]
+			return v, ok
+		}
 		v, ok := os.LookupEnv(name)
 		return v, ok
 	}
@@ -165,8 +177,12 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 					continue
 				}
 				if val != "" {
-					// Set in current environment so subsequent lookups find it
-					os.Setenv(p, val)
+					// Store in the appropriate env source so subsequent lookups find it
+					if opts.EnvOverrides != nil {
+						opts.EnvOverrides[p] = val
+					} else {
+						os.Setenv(p, val)
+					}
 					// Also persist to .env file if configured
 					if opts.EnvFile != "" {
 						if err := env.Append(opts.EnvFile, p, val); err != nil {
@@ -295,6 +311,10 @@ func ProcessImageTags(opts Options) (string, error) {
 	getVal := func(name string) (string, bool) {
 		if v, ok := configEnv[name]; ok {
 			return v, true
+		}
+		if opts.EnvOverrides != nil {
+			v, ok := opts.EnvOverrides[name]
+			return v, ok
 		}
 		v, ok := os.LookupEnv(name)
 		return v, ok

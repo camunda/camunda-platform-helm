@@ -124,11 +124,11 @@ type RuntimeFlags struct {
 	// may not yet exist or may be recreated by DeleteNamespaceFirst.
 	PreInstallHooks []func(ctx context.Context) error
 
-	// ExtraEnv holds per-entry environment variables that are set under the
-	// envMutex in prepareScenarioValues before values.Process() runs.
+	// ExtraEnv holds per-entry environment variables that are merged into the
+	// isolated env map by buildScenarioEnv before values.Process() runs.
 	// This avoids process-global os.Setenv races when multiple OIDC entries
 	// run concurrently — each entry carries its own VENOM_CLIENT_ID and
-	// CONNECTORS_CLIENT_ID instead of relying on os.Setenv.
+	// CONNECTORS_CLIENT_ID in an isolated map instead of relying on os.Setenv.
 	ExtraEnv map[string]string
 }
 
