@@ -20,12 +20,16 @@ data:
     echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
 
     if [ "$ZEEBE_RESTORE" = "true" ]; then
-      if [ "$ZEEBE_RESTORE_FROM_BACKUP_ID" ]; then
-        exec /usr/local/camunda/bin/restore --backupId="${ZEEBE_RESTORE_FROM_BACKUP_ID}"
-      elif [ -z "$ZEEBE_RESTORE_TO_TIMESTAMP" ]; then
-        exec /usr/local/camunda/bin/restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}"
+      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
+        exec /usr/local/camunda/restore --backupId="${ZEEBE_RESTORE_FROM_BACKUP_ID}"
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        exec /usr/local/camunda/restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}" --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
+        exec /usr/local/camunda/restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}"
+      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        exec /usr/local/camunda/restore --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
       else
-        exec /usr/local/camunda/bin/restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}" --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
+        exec /usr/local/camunda/bin/restore
       fi
     else
       exec /usr/local/camunda/bin/camunda
