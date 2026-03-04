@@ -99,21 +99,18 @@ dns.lookup = function (hostname, options, callback) {
 
   origLookup.call(dns, hostname, options, (err, address, family) => {
     if (err && err.code === "ENOTFOUND") {
-      // System resolver failed — try public DNS via c-ares
-      resolver.resolve4(hostname, (resolveErr, addresses) => {
-        if (resolveErr || !addresses || addresses.length === 0) {
-          // Public DNS also failed — return the original error
-          return callback(err);
-        }
-        // If the caller asked for { all: true }, return an array
-        if (options && options.all) {
-          return callback(
-            null,
-            addresses.map((a) => ({ address: a, family: 4 }))
-          );
-        }
-        callback(null, addresses[0], 4);
-      });
+      // System resolver failed — try public DNS, then authoritative NS
+      _resolveWithFallback(hostname, err)
+        .then((addresses) => {
+          if (options && options.all) {
+            return callback(
+              null,
+              addresses.map((a) => ({ address: a, family: 4 }))
+            );
+          }
+          callback(null, addresses[0], 4);
+        })
+        .catch((fallbackErr) => callback(fallbackErr));
     } else {
       callback(err, address, family);
     }
@@ -138,16 +135,8 @@ dnsPromises.lookup = async function (hostname, options) {
     return await origPromisesLookup.call(dnsPromises, hostname, options);
   } catch (err) {
     if (err && err.code === "ENOTFOUND") {
-      // System resolver failed — try public DNS via c-ares Resolver
-      // resolver.resolve4 is callback-based; wrap in a promise
-      const addresses = await new Promise((resolve, reject) => {
-        resolver.resolve4(hostname, (resolveErr, addrs) => {
-          if (resolveErr || !addrs || addrs.length === 0) {
-            return reject(err); // reject with the *original* ENOTFOUND error
-          }
-          resolve(addrs);
-        });
-      });
+      // System resolver failed — try public DNS, then authoritative NS
+      const addresses = await _resolveWithFallback(hostname, err);
 
       const opts =
         typeof options === "number" ? { family: options } : options || {};
