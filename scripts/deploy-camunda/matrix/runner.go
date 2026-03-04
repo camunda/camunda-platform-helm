@@ -1209,9 +1209,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		venomOpts = &entraOpts
 
 		// Inject VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID via per-entry ExtraEnv
-		// so that prepareScenarioValues applies them under the envMutex, avoiding
-		// the process-global os.Setenv race when multiple OIDC entries execute
-		// concurrently (each has a distinct venom app registration).
+		// so that buildScenarioEnv merges them into the isolated env map for
+		// values.Process(), avoiding process-global os.Setenv races when multiple
+		// OIDC entries execute concurrently (each has a distinct venom app registration).
 		audience := entraOpts.ClientID
 		if audience == "" {
 			audience = os.Getenv("ENTRA_APP_CLIENT_ID")

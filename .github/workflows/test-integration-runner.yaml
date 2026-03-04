@@ -509,10 +509,11 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          go run ./scripts/deploy-camunda entra update-redirect-uris \
+          cd ./scripts/deploy-camunda
+          go run . entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          go run ./scripts/deploy-camunda entra ensure-venom-app \
+          go run . entra ensure-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info | tee /tmp/entra-output.txt
           # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
@@ -826,10 +827,11 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          go run ./scripts/deploy-camunda entra update-redirect-uris \
+          cd ./scripts/deploy-camunda
+          go run . entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
-          go run ./scripts/deploy-camunda entra ensure-venom-app \
+          go run . entra ensure-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info | tee /tmp/entra-output.txt
           # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
@@ -1343,7 +1345,8 @@ jobs:
         if: always() && (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc')
         continue-on-error: true
         run: |
-          go run ./scripts/deploy-camunda entra cleanup-venom-app \
+          cd ./scripts/deploy-camunda
+          go run . entra cleanup-venom-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info
 

@@ -400,7 +400,9 @@ tasks:
       - test -n "{{ .ENTRA_APP_OBJECT_ID }}"
     cmds:
       - >-
-        go run ./scripts/deploy-camunda entra update-redirect-uris
+        REPO_ROOT="$(git rev-parse --show-toplevel)" &&
+        cd "$REPO_ROOT/scripts/deploy-camunda" &&
+        go run . entra update-redirect-uris
         --ingress-host "{{ .TEST_INGRESS_HOST }}"
         --log-level info
 
