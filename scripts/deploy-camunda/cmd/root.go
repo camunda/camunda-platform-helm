@@ -103,9 +103,9 @@ func NewRootCommand() *cobra.Command {
 
 			// Auto-detect repoRoot from CWD if not set by CLI or config.
 			// Soft fallback — repoRoot is optional for deploy, so errors are non-fatal.
-			if flags.RepoRoot == "" {
+			if flags.Chart.RepoRoot == "" {
 				if detected, _ := config.DetectRepoRoot(); detected != "" {
-					flags.RepoRoot = detected
+					flags.Chart.RepoRoot = detected
 				}
 			}
 
@@ -133,21 +133,21 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// Validate chartPath exists
-			if strings.TrimSpace(flags.ChartPath) != "" {
-				if fi, err := os.Stat(flags.ChartPath); err != nil || !fi.IsDir() {
-					return fmt.Errorf("resolved chart path %q does not exist or is not a directory; set --repo-root/--chart/--version or --chart-path explicitly", flags.ChartPath)
+			if strings.TrimSpace(flags.Chart.ChartPath) != "" {
+				if fi, err := os.Stat(flags.Chart.ChartPath); err != nil || !fi.IsDir() {
+					return fmt.Errorf("resolved chart path %q does not exist or is not a directory; set --repo-root/--chart/--version or --chart-path explicitly", flags.Chart.ChartPath)
 				}
 			}
 
 			// Parse debug flags into the DebugComponents map
 			if len(debugFlagsRaw) > 0 {
-				flags.DebugComponents = make(map[string]config.DebugConfig)
+				flags.Debug.DebugComponents = make(map[string]config.DebugConfig)
 				for _, raw := range debugFlagsRaw {
-					component, port, err := config.ParseDebugFlag(raw, flags.DebugPort)
+					component, port, err := config.ParseDebugFlag(raw, flags.Debug.DebugPort)
 					if err != nil {
 						return fmt.Errorf("invalid --debug flag %q: %w", raw, err)
 					}
-					flags.DebugComponents[component] = config.DebugConfig{Port: port}
+					flags.Debug.DebugComponents[component] = config.DebugConfig{Port: port}
 				}
 			}
 
@@ -172,76 +172,76 @@ func NewRootCommand() *cobra.Command {
 
 	// Deployment flags
 	f := rootCmd.Flags()
-	f.StringVar(&flags.ChartPath, "chart-path", "", "Path to the Camunda chart directory")
-	f.StringVarP(&flags.Chart, "chart", "c", "", "Chart name")
-	f.StringVarP(&flags.ChartVersion, "version", "v", "", "Chart version (only valid with --chart; not allowed with --chart-path)")
-	f.StringVarP(&flags.Namespace, "namespace", "n", "", "Kubernetes namespace")
-	f.StringVar(&flags.NamespacePrefix, "namespace-prefix", "", "Prefix to prepend to namespace (e.g., 'distribution' for EKS results in 'distribution-<namespace>')")
-	f.StringVarP(&flags.Release, "release", "r", "", "Helm release name")
-	f.StringVarP(&flags.Scenario, "scenario", "s", "", "The name of the scenario to deploy (comma-separated for parallel deployment)")
-	f.StringVar(&flags.ScenarioPath, "scenario-path", "", "Path to scenario files")
-	f.StringVar(&flags.Auth, "auth", "keycloak", "Auth scenario")
-	f.StringVar(&flags.Platform, "platform", "gke", "Target platform: gke, rosa, eks")
+	f.StringVar(&flags.Chart.ChartPath, "chart-path", "", "Path to the Camunda chart directory")
+	f.StringVarP(&flags.Chart.Chart, "chart", "c", "", "Chart name")
+	f.StringVarP(&flags.Chart.ChartVersion, "version", "v", "", "Chart version (only valid with --chart; not allowed with --chart-path)")
+	f.StringVarP(&flags.Deployment.Namespace, "namespace", "n", "", "Kubernetes namespace")
+	f.StringVar(&flags.Deployment.NamespacePrefix, "namespace-prefix", "", "Prefix to prepend to namespace (e.g., 'distribution' for EKS results in 'distribution-<namespace>')")
+	f.StringVarP(&flags.Deployment.Release, "release", "r", "", "Helm release name")
+	f.StringVarP(&flags.Deployment.Scenario, "scenario", "s", "", "The name of the scenario to deploy (comma-separated for parallel deployment)")
+	f.StringVar(&flags.Deployment.ScenarioPath, "scenario-path", "", "Path to scenario files")
+	f.StringVar(&flags.Auth.Auth, "auth", "keycloak", "Auth scenario")
+	f.StringVar(&flags.Deployment.Platform, "platform", "gke", "Target platform: gke, rosa, eks")
 	f.StringVarP(&flags.LogLevel, "log-level", "l", "info", "Log level")
-	f.BoolVar(&flags.SkipDependencyUpdate, "skip-dependency-update", true, "Skip Helm dependency update")
-	f.BoolVar(&flags.ExternalSecrets, "external-secrets", true, "Enable external secrets")
-	f.StringVar(&flags.ExternalSecretsStore, "external-secrets-store", "", "External secrets store type (e.g., vault-backend)")
-	f.StringVar(&flags.KeycloakHost, "keycloak-host", config.DefaultKeycloakHost, "Keycloak external host")
-	f.StringVar(&flags.KeycloakProtocol, "keycloak-protocol", config.DefaultKeycloakProtocol, "Keycloak protocol")
-	f.StringVar(&flags.KeycloakRealm, "keycloak-realm", "", "Keycloak realm name (auto-generated if not specified)")
-	f.StringVar(&flags.OptimizeIndexPrefix, "optimize-index-prefix", "", "Optimize Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.OrchestrationIndexPrefix, "orchestration-index-prefix", "", "Orchestration Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.TasklistIndexPrefix, "tasklist-index-prefix", "", "Tasklist Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.OperateIndexPrefix, "operate-index-prefix", "", "Operate Elasticsearch index prefix (auto-generated if not specified)")
-	f.StringVar(&flags.RepoRoot, "repo-root", "", "Repository root path")
-	f.StringVar(&flags.Flow, "flow", "install", "Flow type")
+	f.BoolVar(&flags.Chart.SkipDependencyUpdate, "skip-dependency-update", true, "Skip Helm dependency update")
+	f.BoolVar(&flags.Secrets.ExternalSecrets, "external-secrets", true, "Enable external secrets")
+	f.StringVar(&flags.Secrets.ExternalSecretsStore, "external-secrets-store", "", "External secrets store type (e.g., vault-backend)")
+	f.StringVar(&flags.Auth.KeycloakHost, "keycloak-host", config.DefaultKeycloakHost, "Keycloak external host")
+	f.StringVar(&flags.Auth.KeycloakProtocol, "keycloak-protocol", config.DefaultKeycloakProtocol, "Keycloak protocol")
+	f.StringVar(&flags.Auth.KeycloakRealm, "keycloak-realm", "", "Keycloak realm name (auto-generated if not specified)")
+	f.StringVar(&flags.Index.OptimizeIndexPrefix, "optimize-index-prefix", "", "Optimize Elasticsearch index prefix (auto-generated if not specified)")
+	f.StringVar(&flags.Index.OrchestrationIndexPrefix, "orchestration-index-prefix", "", "Orchestration Elasticsearch index prefix (auto-generated if not specified)")
+	f.StringVar(&flags.Index.TasklistIndexPrefix, "tasklist-index-prefix", "", "Tasklist Elasticsearch index prefix (auto-generated if not specified)")
+	f.StringVar(&flags.Index.OperateIndexPrefix, "operate-index-prefix", "", "Operate Elasticsearch index prefix (auto-generated if not specified)")
+	f.StringVar(&flags.Chart.RepoRoot, "repo-root", "", "Repository root path")
+	f.StringVar(&flags.Deployment.Flow, "flow", "install", "Flow type")
 	f.StringVar(&flags.EnvFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
 	f.BoolVar(&flags.Interactive, "interactive", true, "Enable interactive prompts for missing variables")
-	f.StringVar(&flags.VaultSecretMapping, "vault-secret-mapping", "", "Vault secret mapping content")
-	f.BoolVar(&flags.AutoGenerateSecrets, "auto-generate-secrets", false, "Auto-generate certain secrets for testing purposes")
-	f.BoolVar(&flags.DeleteNamespaceFirst, "delete-namespace", false, "Delete the namespace first, then deploy")
-	f.StringVar(&flags.DockerUsername, "docker-username", "", "Harbor registry username")
-	f.StringVar(&flags.DockerPassword, "docker-password", "", "Harbor registry password")
-	f.BoolVar(&flags.EnsureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created")
-	f.StringVar(&flags.DockerHubUsername, "dockerhub-username", "", "Docker Hub registry username")
-	f.StringVar(&flags.DockerHubPassword, "dockerhub-password", "", "Docker Hub registry password")
-	f.BoolVar(&flags.EnsureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created")
-	f.BoolVar(&flags.RenderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
-	f.StringVar(&flags.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
-	f.StringSliceVar(&flags.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
-	f.StringSliceVar(&flags.ChartRootOverlays, "values-preset", nil, "Chart-root overlay files to apply (comma-separated or repeatable): enterprise, digest, latest, local, bitnami-legacy (resolves to values-{name}.yaml)")
-	f.StringVar(&flags.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (requires --ingress-base-domain)")
-	f.StringVar(&flags.IngressBaseDomain, "ingress-base-domain", "", "Base domain for ingress (ci.distro.ultrawombat.com or distribution.aws.camunda.cloud)")
-	f.StringVar(&flags.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
-	f.IntVar(&flags.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
+	f.StringVar(&flags.Secrets.VaultSecretMapping, "vault-secret-mapping", "", "Vault secret mapping content")
+	f.BoolVar(&flags.Secrets.AutoGenerateSecrets, "auto-generate-secrets", false, "Auto-generate certain secrets for testing purposes")
+	f.BoolVar(&flags.Deployment.DeleteNamespaceFirst, "delete-namespace", false, "Delete the namespace first, then deploy")
+	f.StringVar(&flags.Docker.DockerUsername, "docker-username", "", "Harbor registry username")
+	f.StringVar(&flags.Docker.DockerPassword, "docker-password", "", "Harbor registry password")
+	f.BoolVar(&flags.Docker.EnsureDockerRegistry, "ensure-docker-registry", false, "Ensure Harbor registry pull secret is created")
+	f.StringVar(&flags.Docker.DockerHubUsername, "dockerhub-username", "", "Docker Hub registry username")
+	f.StringVar(&flags.Docker.DockerHubPassword, "dockerhub-password", "", "Docker Hub registry password")
+	f.BoolVar(&flags.Docker.EnsureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created")
+	f.BoolVar(&flags.Deployment.RenderTemplates, "render-templates", false, "Render manifests to a directory instead of installing")
+	f.StringVar(&flags.Deployment.RenderOutputDir, "render-output-dir", "", "Output directory for rendered manifests (defaults to ./rendered/<release>)")
+	f.StringSliceVar(&flags.Deployment.ExtraValues, "extra-values", nil, "Additional Helm values files to apply last (comma-separated or repeatable)")
+	f.StringSliceVar(&flags.Chart.ChartRootOverlays, "values-preset", nil, "Chart-root overlay files to apply (comma-separated or repeatable): enterprise, digest, latest, local, bitnami-legacy (resolves to values-{name}.yaml)")
+	f.StringVar(&flags.Ingress.IngressSubdomain, "ingress-subdomain", "", "Ingress subdomain (requires --ingress-base-domain)")
+	f.StringVar(&flags.Ingress.IngressBaseDomain, "ingress-base-domain", "", "Base domain for ingress (ci.distro.ultrawombat.com or distribution.aws.camunda.cloud)")
+	f.StringVar(&flags.Ingress.IngressHostname, "ingress-hostname", "", "Full ingress hostname (overrides --ingress-subdomain)")
+	f.IntVar(&flags.Deployment.Timeout, "timeout", 5, "Timeout in minutes for Helm deployment")
 	f.StringSliceVar(&debugFlagsRaw, "debug", nil, "Enable JVM remote debugging for component (repeatable, e.g., --debug orchestration:5005 --debug connectors:5006)")
-	f.IntVar(&flags.DebugPort, "debug-port", 5005, "Default JVM debug port (used when no port specified in --debug)")
-	f.BoolVar(&flags.DebugSuspend, "debug-suspend", false, "Suspend JVM on startup until debugger attaches")
-	f.BoolVar(&flags.OutputTestEnv, "output-test-env", false, "Generate a .env file for E2E tests after deployment")
-	f.StringVar(&flags.OutputTestEnvPath, "output-test-env-path", ".env.test", "Path for the test .env file output (for multi-scenario: used as base, e.g., .env.test.{scenario})")
+	f.IntVar(&flags.Debug.DebugPort, "debug-port", 5005, "Default JVM debug port (used when no port specified in --debug)")
+	f.BoolVar(&flags.Debug.DebugSuspend, "debug-suspend", false, "Suspend JVM on startup until debugger attaches")
+	f.BoolVar(&flags.Test.OutputTestEnv, "output-test-env", false, "Generate a .env file for E2E tests after deployment")
+	f.StringVar(&flags.Test.OutputTestEnvPath, "output-test-env-path", ".env.test", "Path for the test .env file output (for multi-scenario: used as base, e.g., .env.test.{scenario})")
 
 	// Test execution flags
-	f.BoolVar(&flags.RunIntegrationTests, "test-it", false, "Run integration tests after deployment")
-	f.BoolVar(&flags.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
-	f.BoolVar(&flags.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
-	f.StringVar(&flags.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
-	f.StringVar(&flags.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
-	f.BoolVar(&flags.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
+	f.BoolVar(&flags.Test.RunIntegrationTests, "test-it", false, "Run integration tests after deployment")
+	f.BoolVar(&flags.Test.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
+	f.BoolVar(&flags.Test.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
+	f.StringVar(&flags.Test.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
+	f.StringVar(&flags.Test.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
+	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
-	f.StringVar(&flags.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&flags.Persistence, "persistence", "", "Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle")
-	f.StringVar(&flags.TestPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
-	f.StringSliceVar(&flags.Features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
-	f.BoolVar(&flags.QA, "qa", false, "Enable QA configuration (test users, etc.)")
-	f.BoolVar(&flags.ImageTags, "image-tags", false, "Enable image tag overrides from env vars")
-	f.BoolVar(&flags.UpgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
+	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
+	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle")
+	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
+	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
+	f.BoolVar(&flags.Selection.QA, "qa", false, "Enable QA configuration (test users, etc.)")
+	f.BoolVar(&flags.Selection.ImageTags, "image-tags", false, "Enable image tag overrides from env vars")
+	f.BoolVar(&flags.Selection.UpgradeFlow, "upgrade-flow", false, "Enable upgrade flow configuration")
 
 	// Deprecated layered values flags (kept for backward compatibility)
-	f.StringVar(&flags.ValuesAuth, "values-auth", "", "DEPRECATED: use --identity instead")
-	f.StringVar(&flags.ValuesBackend, "values-backend", "", "DEPRECATED: use --persistence instead")
-	f.StringSliceVar(&flags.ValuesFeatures, "values-features", nil, "DEPRECATED: use --features instead")
-	f.BoolVar(&flags.ValuesQA, "values-qa", false, "DEPRECATED: use --qa instead")
-	f.StringVar(&flags.ValuesInfra, "values-infra", "", "DEPRECATED: use --test-platform instead")
+	f.StringVar(&flags.Deprecated.ValuesAuth, "values-auth", "", "DEPRECATED: use --identity instead")
+	f.StringVar(&flags.Deprecated.ValuesBackend, "values-backend", "", "DEPRECATED: use --persistence instead")
+	f.StringSliceVar(&flags.Deprecated.ValuesFeatures, "values-features", nil, "DEPRECATED: use --features instead")
+	f.BoolVar(&flags.Deprecated.ValuesQA, "values-qa", false, "DEPRECATED: use --qa instead")
+	f.StringVar(&flags.Deprecated.ValuesInfra, "values-infra", "", "DEPRECATED: use --test-platform instead")
 
 	// Mark deprecated flags as hidden (they still work but won't show in help)
 	_ = f.MarkHidden("values-auth")
@@ -272,11 +272,11 @@ func registerScenarioCompletion(cmd *cobra.Command, flagName string) {
 		if scenarioPath == "" {
 			// Fall back to config file - create temporary flags with CLI values and merge config
 			var tempFlags config.RuntimeFlags
-			tempFlags.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
-			tempFlags.ChartPath, _ = cmd.Flags().GetString("chart-path")
+			tempFlags.Deployment.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
+			tempFlags.Chart.ChartPath, _ = cmd.Flags().GetString("chart-path")
 
 			if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
-				scenarioPath = tempFlags.ScenarioPath
+				scenarioPath = tempFlags.Deployment.ScenarioPath
 			}
 		}
 
@@ -500,11 +500,11 @@ func resolveScenarioPath(cmd *cobra.Command) string {
 	scenarioPath, _ := cmd.Flags().GetString("scenario-path")
 	if scenarioPath == "" {
 		var tempFlags config.RuntimeFlags
-		tempFlags.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
-		tempFlags.ChartPath, _ = cmd.Flags().GetString("chart-path")
+		tempFlags.Deployment.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
+		tempFlags.Chart.ChartPath, _ = cmd.Flags().GetString("chart-path")
 
 		if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
-			scenarioPath = tempFlags.ScenarioPath
+			scenarioPath = tempFlags.Deployment.ScenarioPath
 		}
 	}
 	return scenarioPath
