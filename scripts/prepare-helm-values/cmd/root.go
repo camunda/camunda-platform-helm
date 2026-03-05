@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -109,7 +110,7 @@ func Execute() {
 			logging.Logger.Info().Str("scenario", scenario).Msg("Scenario")
 			logging.Logger.Debug().Str("values-file", valuesFile).Msg("Source values file")
 
-			outputPath, content, err := values.Process(valuesFile, opts)
+			outputPath, content, err := values.Process(context.Background(), valuesFile, opts)
 			if err != nil {
 				if missing, names := values.IsMissingEnv(err); missing {
 					logging.Logger.Error().Msg("Missing required environment variables for substitution:")

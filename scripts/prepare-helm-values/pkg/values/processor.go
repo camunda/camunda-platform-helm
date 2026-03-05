@@ -1,6 +1,7 @@
 package values
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -105,7 +106,8 @@ func computeOutputPath(sourceValuesFile string, opts Options) (string, error) {
 
 // Process performs substitution and optional license injection, writing once to disk and
 // returning the output path and final content as a string.
-func Process(valuesFile string, opts Options) (string, string, error) {
+// The context is used to allow cancellation of interactive prompts (e.g., Ctrl+C).
+func Process(ctx context.Context, valuesFile string, opts Options) (string, string, error) {
 	logging.Logger.Debug().Str("values-file", valuesFile).Msg("Starting values processing for")
 
 	// Build overlay env from JSON config (stringified)
@@ -170,7 +172,7 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 			if opts.Interactive {
 				// Try to guess a default or just empty
 				defVal := ""
-				val, err := env.Prompt(p, defVal)
+				val, err := env.Prompt(ctx, p, defVal)
 				if err != nil {
 					logging.Logger.Error().Err(err).Msg("Failed to read input")
 					missing = append(missing, p)
