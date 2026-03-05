@@ -80,19 +80,18 @@ func generateTestSecrets(envFile string, existingEnv map[string]string) (map[str
 		targetEnvFile = ".env"
 	}
 
-	type pair struct{ key, val string }
-	toPersist := []pair{
-		{"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD", secrets["DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"]},
-		{"DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD", secrets["DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"]},
-		{"DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD", secrets["DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"]},
-		{"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET", secrets["DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"]},
+	toPersist := map[string]string{
+		"DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD":  secrets["DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"],
+		"DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD": secrets["DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"],
+		"DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD":  secrets["DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"],
+		"DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET":      secrets["DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"],
 	}
 
-	for _, p := range toPersist {
-		if err := env.Append(targetEnvFile, p.key, p.val); err != nil {
-			logging.Logger.Warn().Err(err).Str("key", p.key).Str("path", targetEnvFile).Msg("Failed to persist generated secret to .env")
-		} else {
-			logging.Logger.Info().Str("key", p.key).Str("path", targetEnvFile).Msg("Persisted generated secret to .env")
+	if err := env.AppendMultiple(targetEnvFile, toPersist); err != nil {
+		logging.Logger.Warn().Err(err).Str("path", targetEnvFile).Msg("Failed to persist generated secrets to .env")
+	} else {
+		for k := range toPersist {
+			logging.Logger.Info().Str("key", k).Str("path", targetEnvFile).Msg("Persisted generated secret to .env")
 		}
 	}
 
