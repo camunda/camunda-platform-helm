@@ -68,8 +68,8 @@ spec:
                   key: pusher-app-id
             - name: RESTAPI_PUSHER_KEY
               valueFrom:
-                configMapKeyRef:
-                  name: camunda-platform-test-web-modeler-configuration
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
                   key: pusher-app-key
             - name: RESTAPI_PUSHER_SECRET
               valueFrom:
