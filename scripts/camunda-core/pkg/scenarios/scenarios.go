@@ -204,7 +204,7 @@ func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 // Circular imports are detected and return an error.
 func ExpandImports(files []string) ([]string, error) {
 	var result []string
-	seen := make(map[string]bool)     // dedup: skip files already in the list
+	seen := make(map[string]bool)      // dedup: skip files already in the list
 	expanding := make(map[string]bool) // circular import detection
 
 	var expand func(filePath string) error
@@ -317,7 +317,14 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// 3rd parties call test-integration-template.yaml with scenario: keycloak-original,
 	// so it must keep working.
 	if s == "keycloak-original" {
-		config.Identity = "keycloak-external"
+		config.Identity = "keycloak"
+		config.Persistence = "elasticsearch-external"
+		config.Platform = "gke"
+		return config
+	}
+
+	if s == "elasticsearch" {
+		config.Identity = "keycloak"
 		config.Persistence = "elasticsearch-external"
 		config.Platform = "gke"
 		return config
@@ -325,8 +332,6 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 
 	// Derive identity
 	switch {
-	case strings.Contains(s, "keycloak-mt") || strings.Contains(s, "-mt-") || strings.Contains(s, "multitenancy"):
-		config.Identity = "keycloak-external"
 	case strings.Contains(s, "oidc") || strings.Contains(s, "entra"):
 		config.Identity = "oidc"
 	case strings.Contains(s, "basic"):
@@ -346,7 +351,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "rdbms"):
 		config.Persistence = "rdbms"
 	default:
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 	}
 
 	// Derive platform (default to gke)
@@ -368,6 +373,9 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	}
 	if strings.Contains(s, "document") {
 		config.Features = append(config.Features, "documentstore")
+	}
+	if strings.Contains(s, "tasklist-v1") {
+		config.Features = append(config.Features, "tasklist-v1")
 	}
 
 	// Derive upgrade mode
