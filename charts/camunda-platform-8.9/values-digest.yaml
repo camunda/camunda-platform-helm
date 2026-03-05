@@ -21,7 +21,7 @@ optimize:
   image:
     repository: camunda/optimize
     tag: 8-latest
-    digest: "sha256:73908ec35d6a9d093e2579e47034461ce7a25563d55bfaec9e9390adb6949b5e"
+    digest: "sha256:208f34564d71ac1f5a18472f9a426972f4fdf2a9d4fd7f31aabfdf8f9a272810"
 
 #
 # Web Modeler
@@ -33,7 +33,7 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:11005d0e6aee2cafc491942f31f2e4875dbee926bcbcd541ceb25ba50d8396bd"
+      digest: "sha256:517ee1b5dd54736688dc112ede6c5b5babf580b98196869483a44aeddc3dab63"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:

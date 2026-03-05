@@ -419,6 +419,30 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET",
 					"Orchestration OIDC config should not be present when orchestration.enabled=false")
 			},
+		}, {
+			// Test: Optimize disabled should NOT include optimize config in identity configmap
+			Name:                 "TestOptimizeDisabledExcludesOptimizeConfig",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"optimize.enabled":                      "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(t, output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+
+				// Optimize config should NOT be present when optimize is disabled
+				s.Require().NotContains(applicationYaml, "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET",
+					"Optimize config should not be present when optimize.enabled=false")
+				s.Require().NotContains(applicationYaml, "CAMUNDA_OPTIMIZE_SECRET",
+					"Optimize secret should not be present when optimize.enabled=false")
+				s.Require().NotContains(applicationYaml, "optimize-api",
+					"Optimize API should not be present when optimize.enabled=false")
+			},
 		},
 	}
 
