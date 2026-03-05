@@ -327,11 +327,14 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 	// Create the files
 	files := []string{
 		filepath.Join(tmpDir, "values", "base.yaml"),
+		filepath.Join(tmpDir, "values", "base-qa.yaml"),
 		filepath.Join(tmpDir, "values", "identity", "keycloak.yaml"),
 		filepath.Join(tmpDir, "values", "identity", "keycloak-external.yaml"),
 		filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"),
 		filepath.Join(tmpDir, "values", "persistence", "elasticsearch-external.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "opensearch.yaml"),
 		filepath.Join(tmpDir, "values", "platform", "gke.yaml"),
+		filepath.Join(tmpDir, "values", "platform", "eks.yaml"),
 		filepath.Join(tmpDir, "values", "features", "multitenancy.yaml"),
 	}
 	for _, f := range files {
@@ -412,6 +415,72 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		for i, suffix := range expectedSuffixes {
 			if !containsSuffix(paths[i], suffix) {
 				t.Errorf("paths[%d] = %q, want suffix %q", i, paths[i], suffix)
+			}
+		}
+	})
+
+	t.Run("qa scenario includes base-qa.yaml layer", func(t *testing.T) {
+		config := MapScenarioToConfig("qa-elasticsearch")
+		paths, err := config.ResolvePaths(tmpDir)
+		if err != nil {
+			t.Fatalf("ResolvePaths() error = %v", err)
+		}
+
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, elasticsearch.yaml, gke.yaml
+		if len(paths) != 5 {
+			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
+		}
+
+		expectedSuffixes := []string{
+			"values/base.yaml",
+			"values/base-qa.yaml",
+			"values/identity/keycloak.yaml",
+			"values/persistence/elasticsearch.yaml",
+			"values/platform/gke.yaml",
+		}
+		for i, suffix := range expectedSuffixes {
+			if !containsSuffix(paths[i], suffix) {
+				t.Errorf("paths[%d] = %q, want suffix %q", i, paths[i], suffix)
+			}
+		}
+	})
+
+	t.Run("qa combined with opensearch and eks includes base-qa.yaml layer", func(t *testing.T) {
+		config := MapScenarioToConfig("qa-opensearch-eks")
+		paths, err := config.ResolvePaths(tmpDir)
+		if err != nil {
+			t.Fatalf("ResolvePaths() error = %v", err)
+		}
+
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch.yaml, eks.yaml
+		if len(paths) != 5 {
+			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
+		}
+
+		expectedSuffixes := []string{
+			"values/base.yaml",
+			"values/base-qa.yaml",
+			"values/identity/keycloak.yaml",
+			"values/persistence/opensearch.yaml",
+			"values/platform/eks.yaml",
+		}
+		for i, suffix := range expectedSuffixes {
+			if !containsSuffix(paths[i], suffix) {
+				t.Errorf("paths[%d] = %q, want suffix %q", i, paths[i], suffix)
+			}
+		}
+	})
+
+	t.Run("non-qa scenario does not include base-qa.yaml", func(t *testing.T) {
+		config := MapScenarioToConfig("elasticsearch")
+		paths, err := config.ResolvePaths(tmpDir)
+		if err != nil {
+			t.Fatalf("ResolvePaths() error = %v", err)
+		}
+
+		for _, p := range paths {
+			if containsSuffix(p, "base-qa.yaml") {
+				t.Errorf("non-QA scenario should not include base-qa.yaml, but found: %q", p)
 			}
 		}
 	})
