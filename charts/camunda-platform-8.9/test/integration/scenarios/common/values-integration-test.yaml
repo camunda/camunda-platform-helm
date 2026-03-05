@@ -52,6 +52,8 @@ connectors:
       io.camunda.client.job.poller: INFO
 
 optimize:
+  livenessProbe:
+    enabled: true
   initContainers:
     - name: wait-for-orchestration
       image: busybox:1.36
