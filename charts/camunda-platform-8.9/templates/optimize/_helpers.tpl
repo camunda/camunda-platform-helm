@@ -132,3 +132,14 @@ zeebe-record
   {{- toYaml .Values.global.opensearch.auth -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+[optimize] Build a comma-separated spring.config.import line from extraConfiguration files.
+*/}}
+{{- define "optimize.springConfigImport" -}}
+{{- $imports := list -}}
+{{- range .Values.optimize.extraConfiguration -}}
+  {{- $imports = append $imports (printf "optional:file:/optimize/config/%s" .file) -}}
+{{- end -}}
+{{- join "," $imports -}}
+{{- end -}}
