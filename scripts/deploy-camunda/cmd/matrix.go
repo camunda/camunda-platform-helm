@@ -11,6 +11,7 @@ import (
 	"scripts/prepare-helm-values/pkg/env"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -371,6 +372,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				fmt.Fprintln(os.Stdout, output)
 			}
 
+			runStart := time.Now()
 			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
 				DryRun:                dryRun,
 				Coverage:              coverage,
@@ -408,7 +410,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 
 			// Print summary (skip for dry-run/coverage since they print their own output)
 			if !dryRun && !coverage {
-				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results))
+				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart)))
 			}
 
 			return err
