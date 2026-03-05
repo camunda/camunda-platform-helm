@@ -5,12 +5,23 @@
  * resolver has a stale NXDOMAIN cached for a hostname that public DNS can
  * already resolve.
  *
+ * Two resolution strategies, tried in order:
+ *
+ * 1. **Static override** (fast & reliable) — when the caller sets
+ *      DNS_FALLBACK_HOSTNAMES="host1,host2"  DNS_FALLBACK_IP="1.2.3.4"
+ *    or a full mapping
+ *      DNS_FALLBACK_MAP="host1=1.2.3.4,host2=5.6.7.8"
+ *    any ENOTFOUND for those hostnames is resolved instantly from the map.
+ *
+ * 2. **Public recursive resolvers** — Cloudflare 1.1.1.1, Google 8.8.8.8,
+ *    Quad9 9.9.9.9.
+ *
+ * 3. **Authoritative NS** — walks up the domain hierarchy and queries the
+ *    zone's own nameservers, bypassing negative-cache TTLs entirely.
+ *
  * Monkey-patches both:
  *   - dns.lookup          (callback-based, used by Node http/https)
  *   - dns.promises.lookup (Promise-based, used by Playwright's Happy Eyeballs agent)
- *
- * to fall back to Cloudflare (1.1.1.1), Google (8.8.8.8), and Quad9 (9.9.9.9)
- * DNS when the system resolver returns ENOTFOUND.
  *
  * This avoids needing sudo or /etc/hosts edits.
  */
@@ -19,6 +30,38 @@
 const dns = require("dns");
 const { Resolver } = dns;
 
+// ---------------------------------------------------------------------------
+// Static hostname → IP mapping from environment variables
+// ---------------------------------------------------------------------------
+const _staticMap = new Map();
+
+// DNS_FALLBACK_MAP="host1=1.2.3.4,host2=5.6.7.8"
+if (process.env.DNS_FALLBACK_MAP) {
+  for (const entry of process.env.DNS_FALLBACK_MAP.split(",")) {
+    const [host, ip] = entry.trim().split("=");
+    if (host && ip) _staticMap.set(host.trim().toLowerCase(), ip.trim());
+  }
+}
+// DNS_FALLBACK_HOSTNAMES="host1,host2" + DNS_FALLBACK_IP="1.2.3.4"
+if (process.env.DNS_FALLBACK_HOSTNAMES && process.env.DNS_FALLBACK_IP) {
+  const ip = process.env.DNS_FALLBACK_IP.trim();
+  for (const host of process.env.DNS_FALLBACK_HOSTNAMES.split(",")) {
+    const h = host.trim().toLowerCase();
+    if (h && !_staticMap.has(h)) _staticMap.set(h, ip);
+  }
+}
+
+if (_staticMap.size > 0) {
+  const entries = [..._staticMap.entries()]
+    .map(([h, ip]) => `${h}->${ip}`)
+    .join(", ");
+  // eslint-disable-next-line no-console
+  console.error(`[dns-fallback] Static overrides: ${entries}`);
+}
+
+// ---------------------------------------------------------------------------
+// Public recursive resolvers (fallback when static map has no entry)
+// ---------------------------------------------------------------------------
 const publicResolver = new Resolver();
 publicResolver.setServers(["1.1.1.1", "8.8.8.8", "9.9.9.9"]);
 
@@ -43,9 +86,27 @@ function _discoverAuthoritativeNS(hostname) {
       idx++;
       publicResolver.resolveNs(domain, (err, nsRecords) => {
         if (!err && nsRecords && nsRecords.length > 0) {
-          const authResolver = new Resolver();
-          authResolver.setServers(nsRecords);
-          return resolve(authResolver);
+          // resolveNs returns hostnames, but setServers needs IP addresses.
+          // Resolve each NS hostname to an IP first.
+          let resolved = 0;
+          const nsIPs = [];
+          nsRecords.forEach((nsHost) => {
+            publicResolver.resolve4(nsHost, (resolveErr, addrs) => {
+              if (!resolveErr && addrs && addrs.length > 0) {
+                nsIPs.push(...addrs);
+              }
+              resolved++;
+              if (resolved === nsRecords.length) {
+                if (nsIPs.length > 0) {
+                  const authResolver = new Resolver();
+                  authResolver.setServers(nsIPs);
+                  return resolve(authResolver);
+                }
+                tryNext();
+              }
+            });
+          });
+          return;
         }
         tryNext();
       });
@@ -55,11 +116,16 @@ function _discoverAuthoritativeNS(hostname) {
 }
 
 /**
- * Resolve hostname via public DNS, then authoritative NS as a last resort.
- * Returns an array of IPv4 addresses or throws the original error.
+ * Resolve hostname via static map, public DNS, then authoritative NS as a
+ * last resort.  Returns an array of IPv4 addresses or throws the original
+ * error.
  */
 async function _resolveWithFallback(hostname, origErr) {
-  // Try public recursive resolvers first
+  // 1. Static map — instant, no network needed
+  const staticIP = _staticMap.get(hostname.toLowerCase());
+  if (staticIP) return [staticIP];
+
+  // 2. Public recursive resolvers
   const publicAddrs = await new Promise((resolve) => {
     publicResolver.resolve4(hostname, (err, addrs) => {
       if (!err && addrs && addrs.length > 0) return resolve(addrs);
@@ -68,7 +134,7 @@ async function _resolveWithFallback(hostname, origErr) {
   });
   if (publicAddrs) return publicAddrs;
 
-  // Public DNS also has stale NXDOMAIN — try authoritative NS directly
+  // 3. Authoritative NS directly (bypasses negative-cache TTLs)
   const authResolver = await _discoverAuthoritativeNS(hostname);
   if (authResolver) {
     const authAddrs = await new Promise((resolve) => {
@@ -99,7 +165,7 @@ dns.lookup = function (hostname, options, callback) {
 
   origLookup.call(dns, hostname, options, (err, address, family) => {
     if (err && err.code === "ENOTFOUND") {
-      // System resolver failed — try public DNS, then authoritative NS
+      // System resolver failed — try static map, public DNS, then authoritative NS
       _resolveWithFallback(hostname, err)
         .then((addresses) => {
           if (options && options.all) {
@@ -135,7 +201,7 @@ dnsPromises.lookup = async function (hostname, options) {
     return await origPromisesLookup.call(dnsPromises, hostname, options);
   } catch (err) {
     if (err && err.code === "ENOTFOUND") {
-      // System resolver failed — try public DNS, then authoritative NS
+      // System resolver failed — try static map, public DNS, then authoritative NS
       const addresses = await _resolveWithFallback(hostname, err);
 
       const opts =
