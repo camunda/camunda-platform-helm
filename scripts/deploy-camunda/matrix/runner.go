@@ -24,6 +24,7 @@ import (
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/entra"
+	"scripts/prepare-helm-values/pkg/env"
 )
 
 // numESPools is the number of Elasticsearch pools across which matrix entries
@@ -1216,6 +1217,30 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			KubeContext:   kubeCtx,
 			SkipK8sSecret: true, // Phase 2 is deferred to PreInstallHook.
 		}
+
+		// Populate Entra credentials from the version-specific env file.
+		// resolveOpts in entra.go falls back to os.Getenv, but the version-specific
+		// env file (e.g., --env-file-89) is only stored in flags.EnvFile for later
+		// use by buildScenarioEnv — it is NOT loaded into the process environment.
+		// Read it explicitly and inject the values into Options to avoid the lookup
+		// miss (and to stay safe for parallel execution without os.Setenv races).
+		if envFile != "" {
+			envMap, err := env.ReadFile(envFile)
+			if err != nil {
+				logging.Logger.Warn().Err(err).Str("envFile", envFile).Msg("Could not read env file for Entra credentials")
+			} else {
+				if v, ok := envMap["ENTRA_APP_DIRECTORY_ID"]; ok && v != "" {
+					entraOpts.DirectoryID = v
+				}
+				if v, ok := envMap["ENTRA_APP_CLIENT_ID"]; ok && v != "" {
+					entraOpts.ClientID = v
+				}
+				if v, ok := envMap["ENTRA_APP_CLIENT_SECRET"]; ok && v != "" {
+					entraOpts.ClientSecret = v
+				}
+			}
+		}
+
 		logging.Logger.Info().
 			Str("namespace", namespace).
 			Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")

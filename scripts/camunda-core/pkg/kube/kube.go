@@ -257,11 +257,10 @@ func (c *Client) EnsureDockerHubSecret(ctx context.Context, namespace, username,
 
 // EnsureRegistrySecret creates or updates a Docker registry pull secret with the given
 // secret name and registry URL in the specified namespace. Credentials are required;
-// if either username or password is empty the call is a no-op.
+// if either username or password is empty the call returns an error.
 func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName, registryURL, username, password string) error {
 	if username == "" || password == "" {
-		logging.Logger.Debug().Str("namespace", namespace).Str("secret", secretName).Msg("skipping docker registry secret creation (credentials not provided)")
-		return nil
+		return fmt.Errorf("cannot create docker registry secret %q in namespace %q: credentials not provided (both username and password are required)", secretName, namespace)
 	}
 
 	logging.Logger.Debug().
