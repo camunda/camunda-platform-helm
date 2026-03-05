@@ -26,6 +26,7 @@ integration:
           exclude: []
           shortname: es
           auth: keycloak
+          identity: keycloak
           flow: install,upgrade-patch
           infra-type:
             gke: distroci

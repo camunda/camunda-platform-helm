@@ -27,7 +27,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           platforms: [gke,eks]
         - name: upgrade-migration
@@ -40,7 +40,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           platforms: [gke]
         - name: elasticsearch-basic
@@ -72,7 +72,7 @@ integration:
           exclude: []
           shortname: kemt
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           flow: upgrade-minor
           infra-type:
@@ -88,7 +88,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           features: [rba]
           platforms: [gke]
@@ -101,7 +101,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           platforms: [gke]
         - name: elasticsearch

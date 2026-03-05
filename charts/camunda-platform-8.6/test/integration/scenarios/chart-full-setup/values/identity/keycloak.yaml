@@ -4,9 +4,23 @@
 # Layer 2: Auth method - Internal Keycloak deployed in cluster
 # Used with: TEST_AUTH_TYPE=keycloak
 # Note: 8.6 uses separate operate, tasklist, zeebe auth configs
+#       8.6 uses Keycloak 25.0.6 (Bitnami chart 22.2.6) — cannot use pre-built
+#       CI image (which targets 26.3.3), so values-only optimizations are applied.
 # =============================================================================
 
 global:
+  ingress:
+    enabled: true
+    className: nginx
+    # The Ingress host will be added via CLI.
+    host: "$CAMUNDA_HOSTNAME"
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+      
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
     auth:
       enabled: true
@@ -46,12 +60,137 @@ global:
           name: "integration-test-credentials"
         existingSecretKey: "identity-zeebe-client-password"
 
+# -- Wait for Keycloak before starting Identity --------------------------------
+# Identity's /actuator/health returns 503 while Keycloak is not reachable,
+# which burns through startup probe budget and causes unnecessary restarts.
+# This init container blocks until Keycloak's health endpoint responds.
+identity:
+  initContainers:
+    - name: wait-for-keycloak
+      image: busybox:1.36
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak at {{ .Release.Name }}-keycloak:80/auth/ ..."
+          until wget -q --spider --timeout=2 "http://{{ .Release.Name }}-keycloak:80/auth/"; do
+            sleep 2
+          done
+          echo "Keycloak is ready"
+
 # -----------------------------------------------------------------------------
 # Keycloak
 # -----------------------------------------------------------------------------
 identityKeycloak:
   enabled: true
+  # ---------------------------------------------------------------------------
+  # Fastest possible startup for single-replica, single-realm CI tests.
+  # Every setting below trades long-running throughput / hardening for speed.
+  # ---------------------------------------------------------------------------
+  # NOTE: 8.6 uses Keycloak 25.0.6 — the pre-built CI image (26.3.3) is
+  # incompatible, so we rely on values-only optimizations here. No custom
+  # image, no production: true, no --optimized.
+
+  # -- Pod-level speed knobs --------------------------------------------------
+  enableServiceLinks: false
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1001
+    fsGroupChangePolicy: OnRootMismatch
+  networkPolicy:
+    enabled: false
+  pdb:
+    create: false
+
+  # -- Keycloak config --------------------------------------------------------
+  cache:
+    enabled: false
+  resources:
+    requests:
+      cpu: "2"
+      memory: 1Gi
+    limits:
+      cpu: "4"
+      memory: 2Gi
+  extraEnvVars:
+    - name: JAVA_OPTS
+      value: >-
+        -Xms512m -Xmx1024m
+        -XX:MaxMetaspaceSize=256m
+        -XX:+UseSerialGC
+        -XX:TieredStopAtLevel=1
+        -Djava.security.egd=file:/dev/urandom
+        -Djava.net.preferIPv4Stack=true
+    - name: KC_HEALTH_ENABLED
+      value: "true"
+    - name: KC_LOG_LEVEL
+      value: "WARN"
+    - name: KC_DB_POOL_INITIAL_SIZE
+      value: "1"
+    - name: KC_DB_POOL_MIN_SIZE
+      value: "1"
+    - name: KC_DB_POOL_MAX_SIZE
+      value: "10"
+    - name: KC_TRANSACTION_XA_ENABLED
+      value: "false"
+    - name: KC_FEATURES_DISABLED
+      value: "ciba,client-policies,dpop,dynamic-scopes,kerberos,par,step-up-authentication,web-authn"
+
+  # -- Probes -----------------------------------------------------------------
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 2
+    timeoutSeconds: 3
+    failureThreshold: 60
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # -- PostgreSQL: accelerate startup so Keycloak can connect sooner ----------
   postgresql:
+    primary:
+      persistence:
+        enabled: false
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 512Mi
+      startupProbe:
+        enabled: true
+        initialDelaySeconds: 2
+        periodSeconds: 2
+        timeoutSeconds: 2
+        failureThreshold: 30
+      livenessProbe:
+        enabled: true
+        initialDelaySeconds: 2
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 6
+      readinessProbe:
+        enabled: true
+        initialDelaySeconds: 2
+        periodSeconds: 2
+        timeoutSeconds: 2
+        failureThreshold: 6
     auth:
       existingSecret: "integration-test-credentials"
       secretKeys:
