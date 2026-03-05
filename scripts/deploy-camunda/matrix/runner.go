@@ -145,7 +145,8 @@ type RunResult struct {
 	Namespace   string
 	KubeContext string
 	Error       error
-	Diagnostics string // Post-failure namespace diagnostics (pods, events, logs)
+	Duration    time.Duration // Wall-clock time for this entry's execution.
+	Diagnostics string        // Post-failure namespace diagnostics (pods, events, logs)
 
 	// venomOpts stores the Entra options used to provision a venom app for OIDC entries.
 	// Populated only when the entry uses OIDC authentication. Used during cleanup to
@@ -1079,6 +1080,7 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 //   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
 //   - Install (default): Single-step fresh install.
 func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex int) RunResult {
+	start := time.Now()
 	namespace := buildNamespace(opts.NamespacePrefix, entry)
 	baseNamespace := buildBaseNamespace(entry)
 
@@ -1111,66 +1113,82 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 
 	// Build the base flags (used for single-step install or as Step 2 for upgrades).
 	flags := &config.RuntimeFlags{
-		Timeout:               opts.HelmTimeout,
-		ChartPath:             entry.ChartPath,
-		ScenarioPath:          scenarioDir,
-		Namespace:             baseNamespace,
-		NamespacePrefix:       opts.NamespacePrefix,
-		Release:               "integration",
-		Scenario:              entry.Scenario,
-		Scenarios:             []string{entry.Scenario},
-		Auth:                  entry.Auth,
-		Platform:              platform,
-		Flow:                  entry.Flow,
-		LogLevel:              logLevel,
-		SkipDependencyUpdate:  opts.SkipDependencyUpdate,
-		ExternalSecrets:       true,
-		Interactive:           false,
-		AutoGenerateSecrets:   true,
-		UseVaultBackedSecrets: useVault,
-		KeycloakHost:          keycloakHost,
-		KeycloakProtocol:      keycloakProtocol,
-		RepoRoot:              opts.RepoRoot,
-		KubeContext:           kubeCtx,
-		EnvFile:               envFile,
-		TestExclude:           testExclude,
-		RunIntegrationTests:   opts.TestIT || opts.TestAll,
-		RunE2ETests:           opts.TestE2E || opts.TestAll,
-		RunAllTests:           opts.TestAll,
-		// Ingress: use the namespace as subdomain so each entry gets a unique hostname.
-		// e.g., namespace "matrix-89-eske-inst" + base "ci.distro.ultrawombat.com"
-		//     → hostname "matrix-89-eske-inst.ci.distro.ultrawombat.com"
-		// The base domain is resolved per-platform (GKE/EKS may have different domains).
-		IngressSubdomain:  ingressSubdomain(resolveIngressBaseDomain(opts, platform), namespace),
-		IngressBaseDomain: resolveIngressBaseDomain(opts, platform),
+		LogLevel:    logLevel,
+		Interactive: false,
+		EnvFile:     envFile,
+		Chart: config.ChartFlags{
+			ChartPath:            entry.ChartPath,
+			SkipDependencyUpdate: opts.SkipDependencyUpdate,
+			RepoRoot:             opts.RepoRoot,
+			// Build chart-root overlays: enterprise (if flagged) + digest (always in CI).
+			ChartRootOverlays: func() []string {
+				var overlays []string
+				if entry.Enterprise {
+					overlays = append(overlays, "enterprise")
+				}
+				overlays = append(overlays, "digest") // CI default: always pin image digests.
+				return overlays
+			}(),
+		},
+		Deployment: config.DeploymentFlags{
+			Namespace:            baseNamespace,
+			NamespacePrefix:      opts.NamespacePrefix,
+			Release:              "integration",
+			Scenario:             entry.Scenario,
+			Scenarios:            []string{entry.Scenario},
+			ScenarioPath:         scenarioDir,
+			Platform:             platform,
+			Flow:                 entry.Flow,
+			Timeout:              opts.HelmTimeout,
+			DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
+		},
+		Ingress: config.IngressFlags{
+			// Ingress: use the namespace as subdomain so each entry gets a unique hostname.
+			// e.g., namespace "matrix-89-eske-inst" + base "ci.distro.ultrawombat.com"
+			//     → hostname "matrix-89-eske-inst.ci.distro.ultrawombat.com"
+			// The base domain is resolved per-platform (GKE/EKS may have different domains).
+			IngressSubdomain:  ingressSubdomain(resolveIngressBaseDomain(opts, platform), namespace),
+			IngressBaseDomain: resolveIngressBaseDomain(opts, platform),
+		},
+		Auth: config.AuthFlags{
+			Auth:             entry.Auth,
+			KeycloakHost:     keycloakHost,
+			KeycloakProtocol: keycloakProtocol,
+		},
+		Docker: config.DockerFlags{
+			DockerUsername:       opts.DockerUsername,
+			DockerPassword:       opts.DockerPassword,
+			EnsureDockerRegistry: opts.EnsureDockerRegistry,
+			DockerHubUsername:    opts.DockerHubUsername,
+			DockerHubPassword:    opts.DockerHubPassword,
+			EnsureDockerHub:      opts.EnsureDockerHub,
+			// Docker login is performed once in Run() before parallel dispatch.
+			// Each entry only creates per-namespace K8s pull secrets.
+			SkipDockerLogin: true,
+		},
+		Secrets: config.SecretsFlags{
+			ExternalSecrets:       true,
+			AutoGenerateSecrets:   true,
+			UseVaultBackedSecrets: useVault,
+		},
+		Test: config.TestFlags{
+			KubeContext:         kubeCtx,
+			TestExclude:         testExclude,
+			RunIntegrationTests: opts.TestIT || opts.TestAll,
+			RunE2ETests:         opts.TestE2E || opts.TestAll,
+			RunAllTests:         opts.TestAll,
+		},
 		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.
 		// When set, these override MapScenarioToConfig name-based derivation in deploy.go.
-		Identity:             entry.Identity,
-		Persistence:          entry.Persistence,
-		Features:             entry.Features,
-		InfraType:            entry.InfraType,
-		QA:                   entry.QA,
-		ImageTags:            entry.ImageTags,
-		UpgradeFlow:          entry.Upgrade,
-		DeleteNamespaceFirst: opts.DeleteNamespaceFirst,
-		DockerUsername:       opts.DockerUsername,
-		DockerPassword:       opts.DockerPassword,
-		EnsureDockerRegistry: opts.EnsureDockerRegistry,
-		DockerHubUsername:    opts.DockerHubUsername,
-		DockerHubPassword:    opts.DockerHubPassword,
-		EnsureDockerHub:      opts.EnsureDockerHub,
-		// Docker login is performed once in Run() before parallel dispatch.
-		// Each entry only creates per-namespace K8s pull secrets.
-		SkipDockerLogin: true,
-		// Build chart-root overlays: enterprise (if flagged) + digest (always in CI).
-		ChartRootOverlays: func() []string {
-			var overlays []string
-			if entry.Enterprise {
-				overlays = append(overlays, "enterprise")
-			}
-			overlays = append(overlays, "digest") // CI default: always pin image digests.
-			return overlays
-		}(),
+		Selection: config.SelectionFlags{
+			Identity:    entry.Identity,
+			Persistence: entry.Persistence,
+			Features:    entry.Features,
+			InfraType:   entry.InfraType,
+			QA:          entry.QA,
+			ImageTags:   entry.ImageTags,
+			UpgradeFlow: entry.Upgrade,
+		},
 	}
 
 	// Assign ES pool index for round-robin distribution across pools.
@@ -1274,7 +1292,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		diag = collectDiagnostics(namespace, kubeCtx)
 	}
 
-	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Diagnostics: diag, venomOpts: venomOpts}
+	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts}
 
 	// Per-entry cleanup: delete namespace and Entra app after deployment + tests complete.
 	// This runs regardless of success/failure, after diagnostics have been collected.
@@ -1344,17 +1362,17 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 
 	// Clone flags for Step 1: deploy from repo instead of local chart path.
 	step1Flags := *flags
-	step1Flags.Chart = versionmatrix.DefaultHelmChartRef
-	step1Flags.ChartVersion = fromVersion
-	step1Flags.ChartPath = "" // Use repo chart, not local path.
-	step1Flags.Flow = "install"
-	step1Flags.UpgradeFlow = false         // Step 1 is a fresh install, no base-upgrade.yaml.
-	step1Flags.ChartRootOverlays = nil     // Step 1 installs old version from repo — no chart-root overlays.
-	step1Flags.SkipDependencyUpdate = true // Repo charts don't need local dep update.
-	step1Flags.RunIntegrationTests = false // Don't run tests after Step 1.
-	step1Flags.RunE2ETests = false
-	step1Flags.RunAllTests = false
-	step1Flags.DeleteNamespaceFirst = flags.DeleteNamespaceFirst // Only delete on Step 1.
+	step1Flags.Chart.Chart = versionmatrix.DefaultHelmChartRef
+	step1Flags.Chart.ChartVersion = fromVersion
+	step1Flags.Chart.ChartPath = "" // Use repo chart, not local path.
+	step1Flags.Deployment.Flow = "install"
+	step1Flags.Selection.UpgradeFlow = false     // Step 1 is a fresh install, no base-upgrade.yaml.
+	step1Flags.Chart.ChartRootOverlays = nil     // Step 1 installs old version from repo — no chart-root overlays.
+	step1Flags.Chart.SkipDependencyUpdate = true // Repo charts don't need local dep update.
+	step1Flags.Test.RunIntegrationTests = false  // Don't run tests after Step 1.
+	step1Flags.Test.RunE2ETests = false
+	step1Flags.Test.RunAllTests = false
+	step1Flags.Deployment.DeleteNamespaceFirst = flags.Deployment.DeleteNamespaceFirst // Only delete on Step 1.
 
 	// For upgrade-minor, Step 1 uses the PREVIOUS app version's values files.
 	// In CI, test-type-vars sets CHART_PATH to charts/camunda-platform-<previous> for
@@ -1367,7 +1385,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		}
 		prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
 		prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
-		step1Flags.ScenarioPath = prevScenarioDir
+		step1Flags.Deployment.ScenarioPath = prevScenarioDir
 
 		logging.Logger.Info().
 			Str("flow", entry.Flow).
@@ -1399,8 +1417,8 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 				Msg("Running pre-upgrade script")
 
 			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
-			if flags.KubeContext != "" {
-				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.KubeContext)
+			if flags.Test.KubeContext != "" {
+				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
 			}
 
 			if err := executil.RunCommand(ctx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
@@ -1426,10 +1444,10 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 
 	// Clone flags for Step 2: upgrade from installed state to local chart.
 	step2Flags := *flags
-	step2Flags.UpgradeFlow = true           // Ensure base-upgrade.yaml is included.
-	step2Flags.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
-	step2Flags.ExtraHelmArgs = []string{"--force"}
-	step2Flags.ExtraHelmSets = map[string]string{
+	step2Flags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
+	step2Flags.Deployment.DeleteNamespaceFirst = false // Namespace already exists from Step 1.
+	step2Flags.Deployment.ExtraHelmArgs = []string{"--force"}
+	step2Flags.Deployment.ExtraHelmSets = map[string]string{
 		"orchestration.upgrade.allowPreReleaseImages": "true",
 	}
 
@@ -1472,8 +1490,8 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 				Msg("Running pre-upgrade script")
 
 			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
-			if flags.KubeContext != "" {
-				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.KubeContext)
+			if flags.Test.KubeContext != "" {
+				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
 			}
 
 			if err := executil.RunCommand(ctx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
@@ -1497,10 +1515,10 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 		Msg("Upgrading to current chart version")
 
 	upgradeFlags := *flags
-	upgradeFlags.UpgradeFlow = true           // Ensure base-upgrade.yaml is included.
-	upgradeFlags.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
-	upgradeFlags.ExtraHelmArgs = []string{"--force"}
-	upgradeFlags.ExtraHelmSets = map[string]string{
+	upgradeFlags.Selection.UpgradeFlow = true            // Ensure base-upgrade.yaml is included.
+	upgradeFlags.Deployment.DeleteNamespaceFirst = false // Namespace must already exist from prior install.
+	upgradeFlags.Deployment.ExtraHelmArgs = []string{"--force"}
+	upgradeFlags.Deployment.ExtraHelmSets = map[string]string{
 		"orchestration.upgrade.allowPreReleaseImages": "true",
 	}
 
@@ -1515,7 +1533,7 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 	return nil
 }
 
-// PrintRunSummary outputs a summary of all run results.
+// PrintRunSummary outputs a summary of all run results including per-entry timings.
 func PrintRunSummary(results []RunResult) string {
 	if len(results) == 0 {
 		return "No entries executed."
@@ -1524,10 +1542,15 @@ func PrintRunSummary(results []RunResult) string {
 	var b strings.Builder
 	successCount := 0
 	failCount := 0
+	skipCount := 0
+	var totalDuration time.Duration
 
 	for _, r := range results {
+		totalDuration += r.Duration
 		if r.Error == nil {
 			successCount++
+		} else if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
+			skipCount++
 		} else {
 			failCount++
 		}
@@ -1537,11 +1560,40 @@ func PrintRunSummary(results []RunResult) string {
 	fmt.Fprintf(&b, "Total:   %d\n", len(results))
 	fmt.Fprintf(&b, "Success: %d\n", successCount)
 	fmt.Fprintf(&b, "Failed:  %d\n", failCount)
+	if skipCount > 0 {
+		fmt.Fprintf(&b, "Skipped: %d\n", skipCount)
+	}
+
+	// Per-entry timings table.
+	fmt.Fprintf(&b, "\nEntry timings:\n")
+	for _, r := range results {
+		status := "[PASS]"
+		if r.Error != nil {
+			if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
+				status = "[SKIP]"
+			} else {
+				status = "[FAIL]"
+			}
+		}
+
+		shortname := r.Entry.Shortname
+		if shortname == "" {
+			shortname = r.Entry.Scenario
+		}
+		label := fmt.Sprintf("%s/%s (%s, flow=%s)",
+			r.Entry.Version, r.Entry.Scenario, shortname, r.Entry.Flow)
+
+		fmt.Fprintf(&b, "  %-6s %-60s %s\n", status, label, formatDuration(r.Duration))
+	}
+	fmt.Fprintf(&b, "\n  Total time (sum): %s\n", formatDuration(totalDuration))
 
 	if failCount > 0 {
 		fmt.Fprintf(&b, "\nFailed entries:\n")
 		for _, r := range results {
 			if r.Error != nil {
+				if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
+					continue // Skip cancelled entries in the failure details.
+				}
 				fmt.Fprintf(&b, "\n  - %s/%s (%s, flow=%s)\n",
 					r.Entry.Version, r.Entry.Scenario, r.Entry.Shortname, r.Entry.Flow)
 
@@ -1568,4 +1620,23 @@ func PrintRunSummary(results []RunResult) string {
 	}
 
 	return b.String()
+}
+
+// formatDuration formats a duration into a human-friendly string.
+// Uses the compact "1m30s" style for durations >= 1 minute, and "45.2s" for shorter durations.
+func formatDuration(d time.Duration) string {
+	if d == 0 {
+		return "0s"
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%.1fs", d.Seconds())
+	}
+	minutes := int(d.Minutes())
+	seconds := int(d.Seconds()) % 60
+	if minutes >= 60 {
+		hours := minutes / 60
+		minutes = minutes % 60
+		return fmt.Sprintf("%dh%dm%ds", hours, minutes, seconds)
+	}
+	return fmt.Sprintf("%dm%02ds", minutes, seconds)
 }
