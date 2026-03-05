@@ -406,16 +406,16 @@ jobs:
           flow: "${{ inputs.flow }}"
           camunda-version-previous: "${{ inputs.camunda-version-previous }}"
 
+      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/keycloak)
+      - name: CI Setup - Login to Docker Hub
+        run: |
+          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
+
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
           export chartPath="${{ env.CHART_PATH }}"
           make helm.repos-add
           make helm.dependency-update
-
-      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/postgresql)
-      - name: CI Setup - Login to Docker Hub
-        run: |
-          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
 
       - name: CI Setup - Start GitHub deployment
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
@@ -795,6 +795,11 @@ jobs:
           values-digest: "${{ inputs.values-digest }}"
           flow: "${{ inputs.flow }}"
           camunda-version-previous: "${{ inputs.camunda-version-previous }}"
+
+      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/keycloak)
+      - name: CI Setup - Login to Docker Hub
+        run: |
+          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
