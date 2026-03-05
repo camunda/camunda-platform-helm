@@ -104,7 +104,9 @@ camunda:
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
         client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
+        {{- if .Values.orchestration.security.authentication.oidc.groupsClaim }}
         groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
+        {{- end }}
         client-id: {{ include "orchestration.authClientId" . | quote }}
         client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
         audiences:
