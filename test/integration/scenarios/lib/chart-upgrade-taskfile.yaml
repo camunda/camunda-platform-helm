@@ -92,15 +92,20 @@ tasks:
           EXTRA_VALUES_ARGS="--values /tmp/extra-values-file.yaml"
         fi
         
+        # Helm values precedence: last --values wins.
+        # Order: common → digest (overlay) → extra → scenario (highest precedence).
+        # This ensures scenario-specific values (e.g., CI Keycloak image) override
+        # chart-wide defaults and user-supplied base configuration.
+        # See deploy/chain.go BuildValuesChain() for the canonical precedence definition.
         helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
           --namespace {{ .TEST_NAMESPACE }} \
           --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
           --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-          --values "$MERGED_VALUES" \
           {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
           --values {{ .TEST_HELM_DIGEST_VALUES }} \
           {{ end -}}
           $EXTRA_VALUES_ARGS \
+          --values "$MERGED_VALUES" \
           ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
           --force \
           --timeout 20m0s \

@@ -766,33 +766,19 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		return nil, fmt.Errorf("failed to generate debug values: %w", err)
 	}
 
-	var vals []string
-	if isLayered {
-		// For layered values, we already have the processed scenario files.
-		// Build the values list directly: common + scenario layers + overlays + user values.
-		vals = append(vals, processedCommonFiles...)
-		vals = append(vals, scenarioValueFiles...)
-		vals = append(vals, flags.Deployment.ExtraValues...)
-	} else {
-		// Legacy path: let BuildValuesList resolve scenario files from tempDir.
-		vals, err = deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth.Auth, false, false, flags.Deployment.ExtraValues, processedCommonFiles)
-		if err != nil {
-			os.RemoveAll(tempDir)
-			return nil, fmt.Errorf("failed to build values list: %w", err)
-		}
-	}
-
-	// Append chart-root overlay files (e.g., values-enterprise.yaml, values-digest.yaml).
+	// Resolve chart-root overlay files (e.g., values-enterprise.yaml, values-latest.yaml).
 	// Each name in ChartRootOverlays resolves to <chartPath>/values-<name>.yaml.
-	// Applied after scenario layers + extra values, before debug values.
+	// These provide chart-wide defaults (image versions, enterprise patches, digest pins)
+	// and are applied BEFORE scenario layers so that scenario-specific values take precedence.
 	// Not passed through values.Process() — these files contain literal values, no env placeholders.
+	var chartRootOverlayFiles []string
 	for _, overlay := range flags.Chart.ChartRootOverlays {
 		if flags.Chart.ChartPath == "" {
 			continue // repo-based installs (upgrade Step 1) have no local chart path
 		}
 		overlayPath := filepath.Join(flags.Chart.ChartPath, "values-"+overlay+".yaml")
 		if _, statErr := os.Stat(overlayPath); statErr == nil {
-			vals = append(vals, overlayPath)
+			chartRootOverlayFiles = append(chartRootOverlayFiles, overlayPath)
 			logging.Logger.Info().
 				Str("overlay", overlay).
 				Str("path", overlayPath).
@@ -805,10 +791,27 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		}
 	}
 
-	// Append debug values file last to ensure it overrides other values
-	if debugValuesFile != "" {
-		vals = append(vals, debugValuesFile)
+	// Build the final values list using the single canonical precedence function.
+	// See BuildValuesChain() for the full precedence documentation.
+	var scenarioFiles []string
+	if isLayered {
+		// For layered values, we already have the processed scenario files.
+		scenarioFiles = scenarioValueFiles
+	} else {
+		// Legacy path: let BuildValuesList resolve scenario files from tempDir.
+		// Pass nil for userValues — we handle ExtraValues in BuildValuesChain
+		// to maintain correct precedence (extra values before scenario, not after).
+		legacyVals, legacyErr := deployer.BuildValuesList(tempDir, []string{scenarioCtx.ScenarioName}, flags.Auth.Auth, false, false, nil, processedCommonFiles)
+		if legacyErr != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to build values list: %w", legacyErr)
+		}
+		// BuildValuesList returns: common + auth + scenario.
+		// Extract the scenario portion (everything after common files).
+		scenarioFiles = legacyVals[len(processedCommonFiles):]
 	}
+
+	vals := BuildValuesChain(processedCommonFiles, chartRootOverlayFiles, flags.Deployment.ExtraValues, scenarioFiles, debugValuesFile)
 
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
