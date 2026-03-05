@@ -1,67 +1,6 @@
 # QA-specific configuration for 8.8
 # Layer 5: QA additions - Extra users, clients, and test configuration
 
-global:
-  image:
-    pullPolicy: Always
-  identity:
-    auth:
-      enabled: true
-  elasticsearch:
-    enabled: false
-  opensearch:
-    enabled: true
-    auth:
-      username: "$OPENSEARCH_USERNAME"
-      secret:
-        inlineSecret: "$OPENSEARCH_PASSWORD"
-    url:
-      protocol: https
-      host: "$AWS_HOST_URL"
-      port: 443
-    prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
-
-orchestration:
-  data:
-    secondaryStorage:
-      type: elasticsearch
-      elasticsearch:
-        url: "http://integration-elasticsearch:9200"
-  security:
-    authentication:
-      method: oidc
-      oidc:
-        groupsClaim: ""
-      authenticationRefreshInterval: "PT30S"
-  env:
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "preferred_username"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: "demo"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "venom"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
-      value: "connectors"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
-      value: "connectors-client-mapping-rule"
-
-identityKeycloak:
-  enabled: true
-
 optimize:
   enabled: true
   caches:
@@ -75,29 +14,6 @@ identity:
       existingSecret: vault-mapped-secrets
       existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
   clients:
-    - id: venom
-      name: Venom
-      secret:
-        existingSecret: integration-test-credentials
-        existingSecretKey: identity-admin-client-password
-      redirectUris: /dummy
-      rootUrl: http://dummy
-      type: confidential
-      permissions:
-        - resourceServerId: camunda-identity-resource-server
-          definition: read
-        - resourceServerId: camunda-identity-resource-server
-          definition: write
-        - resourceServerId: orchestration-api
-          definition: read:*
-        - resourceServerId: orchestration-api
-          definition: write:*
-        - resourceServerId: optimize-api
-          definition: write:*
-        - resourceServerId: web-modeler-api
-          definition: write:*
-        - resourceServerId: console-api
-          definition: write:*
     - id: test
       name: Test
       secret:
@@ -152,9 +68,6 @@ identity:
         - Orchestration
 
 connectors:
-  security:
-    authentication:
-      method: oidc
   env:
     - name: username
       value: username
