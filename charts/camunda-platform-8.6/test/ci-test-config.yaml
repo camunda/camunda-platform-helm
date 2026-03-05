@@ -27,6 +27,7 @@ integration:
           shortname: es
           auth: keycloak
           identity: keycloak
+          persistence: elasticsearch
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
