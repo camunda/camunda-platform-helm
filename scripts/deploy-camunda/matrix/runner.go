@@ -1559,7 +1559,9 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 }
 
 // PrintRunSummary outputs a summary of all run results including per-entry timings.
-func PrintRunSummary(results []RunResult) string {
+// wallClock is the actual elapsed wall-clock duration for the entire matrix run.
+// When entries run in parallel, this will be less than the sum of individual entry durations.
+func PrintRunSummary(results []RunResult, wallClock time.Duration) string {
 	if len(results) == 0 {
 		return "No entries executed."
 	}
@@ -1568,10 +1570,10 @@ func PrintRunSummary(results []RunResult) string {
 	successCount := 0
 	failCount := 0
 	skipCount := 0
-	var totalDuration time.Duration
+	var sumDuration time.Duration
 
 	for _, r := range results {
-		totalDuration += r.Duration
+		sumDuration += r.Duration
 		if r.Error == nil {
 			successCount++
 		} else if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
@@ -1610,7 +1612,11 @@ func PrintRunSummary(results []RunResult) string {
 
 		fmt.Fprintf(&b, "  %-6s %-60s %s\n", status, label, formatDuration(r.Duration))
 	}
-	fmt.Fprintf(&b, "\n  Total time (sum): %s\n", formatDuration(totalDuration))
+	fmt.Fprintf(&b, "\n  Total time: %s\n", formatDuration(wallClock))
+	// Show the sum of entry durations when it differs from wall-clock (parallel execution).
+	if sumDuration > wallClock+(1*time.Second) {
+		fmt.Fprintf(&b, "  Sum of entries: %s\n", formatDuration(sumDuration))
+	}
 
 	if failCount > 0 {
 		fmt.Fprintf(&b, "\nFailed entries:\n")
