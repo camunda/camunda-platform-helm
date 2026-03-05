@@ -14,7 +14,6 @@ metadata:
 apiVersion: v1
 data:
   environment-config.yaml: |
-    
     zeebe:
       enabled: true
       partitionCount: 3
