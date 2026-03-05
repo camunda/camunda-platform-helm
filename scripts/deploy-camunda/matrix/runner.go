@@ -322,6 +322,7 @@ var (
 	dryVal  = func(s string) string { return logging.Emphasize(s, gchalk.Magenta) }
 	dryOk   = func(s string) string { return logging.Emphasize(s, gchalk.Green) }
 	dryWarn = func(s string) string { return logging.Emphasize(s, gchalk.Yellow) }
+	dryFail = func(s string) string { return logging.Emphasize(s, gchalk.Red) }
 	dryDim  = func(s string) string { return logging.Emphasize(s, gchalk.WithBrightBlack().Italic) }
 )
 
@@ -1583,24 +1584,30 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration) string {
 		}
 	}
 
-	fmt.Fprintf(&b, "\n=== Matrix Run Summary ===\n")
-	fmt.Fprintf(&b, "Total:   %d\n", len(results))
-	fmt.Fprintf(&b, "Success: %d\n", successCount)
-	fmt.Fprintf(&b, "Failed:  %d\n", failCount)
+	fmt.Fprintf(&b, "\n%s\n", dryHead("=== Matrix Run Summary ==="))
+	fmt.Fprintf(&b, "%s   %d\n", dryKey("Total:"), len(results))
+	fmt.Fprintf(&b, "%s %s\n", dryKey("Success:"), dryOk(fmt.Sprintf("%d", successCount)))
+	if failCount > 0 {
+		fmt.Fprintf(&b, "%s  %s\n", dryKey("Failed:"), dryFail(fmt.Sprintf("%d", failCount)))
+	} else {
+		fmt.Fprintf(&b, "%s  %d\n", dryKey("Failed:"), failCount)
+	}
 	if skipCount > 0 {
-		fmt.Fprintf(&b, "Skipped: %d\n", skipCount)
+		fmt.Fprintf(&b, "%s %s\n", dryKey("Skipped:"), dryWarn(fmt.Sprintf("%d", skipCount)))
 	}
 
 	// Per-entry timings table.
-	fmt.Fprintf(&b, "\nEntry timings:\n")
+	fmt.Fprintf(&b, "\n%s\n", dryHead("Entry timings:"))
 	for _, r := range results {
-		status := "[PASS]"
+		var status string
 		if r.Error != nil {
 			if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
-				status = "[SKIP]"
+				status = dryWarn("[SKIP]")
 			} else {
-				status = "[FAIL]"
+				status = dryFail("[FAIL]")
 			}
+		} else {
+			status = dryOk("[PASS]")
 		}
 
 		shortname := r.Entry.Shortname
@@ -1610,16 +1617,16 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration) string {
 		label := fmt.Sprintf("%s/%s (%s, flow=%s)",
 			r.Entry.Version, r.Entry.Scenario, shortname, r.Entry.Flow)
 
-		fmt.Fprintf(&b, "  %-6s %-60s %s\n", status, label, formatDuration(r.Duration))
+		fmt.Fprintf(&b, "  %-6s %-60s %s\n", status, label, dryDim(formatDuration(r.Duration)))
 	}
-	fmt.Fprintf(&b, "\n  Total time: %s\n", formatDuration(wallClock))
+	fmt.Fprintf(&b, "\n  %s %s\n", dryKey("Total time:"), dryVal(formatDuration(wallClock)))
 	// Show the sum of entry durations when it differs from wall-clock (parallel execution).
 	if sumDuration > wallClock+(1*time.Second) {
-		fmt.Fprintf(&b, "  Sum of entries: %s\n", formatDuration(sumDuration))
+		fmt.Fprintf(&b, "  %s %s\n", dryKey("Sum of entries:"), dryVal(formatDuration(sumDuration)))
 	}
 
 	if failCount > 0 {
-		fmt.Fprintf(&b, "\nFailed entries:\n")
+		fmt.Fprintf(&b, "\n%s\n", dryHead("Failed entries:"))
 		for _, r := range results {
 			if r.Error != nil {
 				if r.Duration == 0 && strings.Contains(r.Error.Error(), "skipped") {
@@ -1635,16 +1642,16 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration) string {
 					helmMsg := helmErr.Error()
 					if prefix := strings.TrimSuffix(fullMsg, helmMsg); prefix != "" {
 						prefix = strings.TrimRight(prefix, ": ")
-						fmt.Fprintf(&b, "    Step:    %s\n", prefix)
+						fmt.Fprintf(&b, "    %s    %s\n", dryKey("Step:"), dryWarn(prefix))
 					}
-					fmt.Fprintf(&b, "    Reason:  %s: %v\n", helmErr.Reason, helmErr.Cause)
-					fmt.Fprintf(&b, "    Command: %s\n", helmErr.ShortCommand())
+					fmt.Fprintf(&b, "    %s  %s\n", dryKey("Reason:"), dryFail(fmt.Sprintf("%s: %v", helmErr.Reason, helmErr.Cause)))
+					fmt.Fprintf(&b, "    %s %s\n", dryKey("Command:"), helmErr.ShortCommand())
 				} else {
-					fmt.Fprintf(&b, "    Error: %v\n", r.Error)
+					fmt.Fprintf(&b, "    %s %s\n", dryKey("Error:"), dryFail(fmt.Sprintf("%v", r.Error)))
 				}
 
 				if r.Diagnostics != "" {
-					fmt.Fprintf(&b, "    Diagnostics: %s\n", r.Diagnostics)
+					fmt.Fprintf(&b, "    %s %s\n", dryKey("Diagnostics:"), dryWarn(r.Diagnostics))
 				}
 			}
 		}
