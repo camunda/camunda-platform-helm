@@ -73,7 +73,7 @@ func executeParallelDeployments(ctx context.Context, flags *config.RuntimeFlags)
 			Str("namespace", scenarioCtx.Namespace).
 			Msg("Preparing scenario")
 
-		p, err := prepareScenarioValues(scenarioCtx, flags)
+		p, err := prepareScenarioValues(ctx, scenarioCtx, flags)
 		if err != nil {
 			// Cleanup any already-prepared temp directories
 			for _, prep := range prepared {
@@ -166,7 +166,7 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 	}
 
 	// Phase 1: Prepare values
-	prepared, err := prepareScenarioValues(scenarioCtx, flags)
+	prepared, err := prepareScenarioValues(ctx, scenarioCtx, flags)
 	if err != nil {
 		return fmt.Errorf("failed to prepare scenario: %w", err)
 	}

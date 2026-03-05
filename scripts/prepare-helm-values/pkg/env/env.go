@@ -2,6 +2,7 @@ package env
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -59,23 +60,42 @@ func Append(path, key, value string) error {
 	return godotenv.Write(envMap, path)
 }
 
+// readResult holds the result of a non-blocking stdin read.
+type readResult struct {
+	value string
+	err   error
+}
+
 // Prompt interactively asks the user for a value for the given key.
-func Prompt(key, defaultValue string) (string, error) {
+// It respects context cancellation so that Ctrl+C (which cancels the
+// signal-aware context) can interrupt a blocking stdin read.
+func Prompt(ctx context.Context, key, defaultValue string) (string, error) {
 	fmt.Printf("Enter value for %s", key)
 	if defaultValue != "" {
 		fmt.Printf(" [default: %s]", defaultValue)
 	}
 	fmt.Print(": ")
 
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	input = strings.TrimSpace(input)
+	ch := make(chan readResult, 1)
+	go func() {
+		reader := bufio.NewReader(os.Stdin)
+		input, err := reader.ReadString('\n')
+		ch <- readResult{value: input, err: err}
+	}()
 
-	if input == "" {
-		return defaultValue, nil
+	select {
+	case <-ctx.Done():
+		// Print a newline so the terminal prompt isn't garbled.
+		fmt.Println()
+		return "", ctx.Err()
+	case res := <-ch:
+		if res.err != nil {
+			return "", res.err
+		}
+		input := strings.TrimSpace(res.value)
+		if input == "" {
+			return defaultValue, nil
+		}
+		return input, nil
 	}
-	return input, nil
 }

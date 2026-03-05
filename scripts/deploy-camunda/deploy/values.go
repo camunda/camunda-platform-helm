@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ import (
 // envOverrides, when non-nil, is passed through to values.Options.EnvOverrides so that
 // placeholder substitution uses the caller-supplied env map instead of the process environment.
 // Returns the list of processed file paths in the output directory.
-func processCommonValues(scenarioPath, outputDir, envFile, platform string, envOverrides map[string]string) ([]string, error) {
+func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, platform string, envOverrides map[string]string) ([]string, error) {
 	// Common directory is a sibling to the scenario directory
 	commonDir := filepath.Join(filepath.Dir(scenarioPath), "..", "common")
 
@@ -157,7 +158,7 @@ func processCommonValues(scenarioPath, outputDir, envFile, platform string, envO
 			EnvOverrides: envOverrides,
 		}
 
-		outputPath, _, err := values.Process(srcFile, opts)
+		outputPath, _, err := values.Process(ctx, srcFile, opts)
 		if err != nil {
 			logging.Logger.Debug().
 				Err(err).
@@ -503,7 +504,7 @@ func enhanceScenarioError(err error, scenario, scenarioPath, chartPath string) e
 // Each invocation builds an isolated env map via buildScenarioEnv so that parallel
 // calls never race on the process environment. The resulting map is passed to
 // values.Process via EnvOverrides.
-func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (*PreparedScenario, error) {
+func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) (*PreparedScenario, error) {
 	logging.Logger.Debug().
 		Str("scenario", scenarioCtx.ScenarioName).
 		Str("namespace", scenarioCtx.Namespace).
@@ -572,7 +573,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 			return enhanceScenarioError(err, scen, flags.Deployment.ScenarioPath, flags.Chart.ChartPath)
 		}
 
-		_, _, err = values.Process(file, opts)
+		_, _, err = values.Process(ctx, file, opts)
 		if err != nil {
 			return fmt.Errorf("failed to process scenario %q: %w", scen, err)
 		}
@@ -589,7 +590,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 		Str("tempDir", tempDir).
 		Str("platform", flags.Deployment.Platform).
 		Msg("📋 [prepareScenarioValues] processing common values files")
-	processedCommonFiles, err := processCommonValues(flags.Deployment.ScenarioPath, tempDir, flags.EnvFile, flags.Deployment.Platform, envMap)
+	processedCommonFiles, err := processCommonValues(ctx, flags.Deployment.ScenarioPath, tempDir, flags.EnvFile, flags.Deployment.Platform, envMap)
 	if err != nil {
 		os.RemoveAll(tempDir) // Cleanup on error
 		return nil, fmt.Errorf("failed to process common values: %w", err)
@@ -676,7 +677,7 @@ func prepareScenarioValues(scenarioCtx *ScenarioContext, flags *config.RuntimeFl
 				EnvFile:      flags.EnvFile,
 				EnvOverrides: envMap,
 			}
-			outputPath, _, procErr := values.Process(srcFile, opts)
+			outputPath, _, procErr := values.Process(ctx, srcFile, opts)
 			if procErr != nil {
 				os.RemoveAll(tempDir)
 				return nil, fmt.Errorf("failed to process layered values file %q: %w", srcFile, procErr)
