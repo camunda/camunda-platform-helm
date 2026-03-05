@@ -152,20 +152,6 @@ webModeler:
                   operator: In
                   values:
                     - t-core-16-unstable
-  webapp:
-    tolerations:
-      - key: t-core-16-unstable
-        operator: Exists
-        effect: NoSchedule
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodegroup
-                  operator: In
-                  values:
-                    - t-core-16-unstable
   websockets:
     tolerations:
       - key: t-core-16-unstable

@@ -9,7 +9,6 @@ preflightVars:
     tasklist: http://integration-tasklist:9600
     connectors: http://integration-connectors:8080
     webModelerRestapi: http://integration-web-modeler-restapi:8091
-    webModelerWebapp: http://integration-web-modeler-webapp:8071
     zeebeGateway: http://integration-zeebe-gateway:9600
 
 coreVars:

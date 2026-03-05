@@ -368,10 +368,10 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
+    {{- end }}
     {{- if eq (include "orchestration.hasAppIntegrations" .) "true" }}
       appIntegrations:
         args:
           apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"
-    {{- end }}
     {{- end }}
 {{ end -}}
