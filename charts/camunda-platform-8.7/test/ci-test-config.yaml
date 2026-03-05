@@ -26,7 +26,7 @@ integration:
           shortname: es
           exclude: []
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           flow: install
           infra-type:
@@ -38,7 +38,7 @@ integration:
           shortname: kemt
           exclude: []
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           flow: install,upgrade-patch
           infra-type:
@@ -50,7 +50,7 @@ integration:
           shortname: kerba
           exclude: []
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           flow: install
           infra-type:
@@ -76,7 +76,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           platforms: [gke]
     nightly:

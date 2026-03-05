@@ -1,17 +1,29 @@
 # CronJob: Automated cleanup of ORPHANED CI-created Keycloak realms.
 #
-# CI test jobs create Keycloak realms using the deploy-camunda Go CLI's
-# generateCompactRealmName(), producing names like "keycloak-mt-a8x9z3k1"
-# (format: {scenario}-{8-char-random-suffix}). When CI jobs finish and K8s
-# namespaces are deleted, the realms persist in Keycloak as orphans.
+# CI test jobs create Keycloak realms via two naming conventions:
+#   1. Go CLI (generateCompactRealmName): {scenario}-{8-char-suffix}
+#      e.g. "keycloak-mt-a8x9z3k1"
+#   2. GitHub Actions (workflow-vars):    {6-hex-job-id}-realm
+#      e.g. "d6da2c-realm"
 #
-# Orphan detection uses a dual-signal approach:
-#   1. Session check: if any client has active sessions, the realm is in use.
-#   2. Namespace cross-reference: if any active K8s namespace contains the
-#      realm's scenario portion, the CI job is still running.
+# When CI jobs finish and K8s namespaces are deleted, the realms persist
+# in Keycloak as orphans.
 #
-# A realm is deleted only when BOTH signals indicate it is orphaned.
+# Orphan detection uses namespace cross-reference only (local filtering,
+# no per-realm API calls — critical for performance at 400+ realms):
+#   - Get all realm names + enabled status in a single API call.
+#   - Get all active K8s namespace names.
+#   - A CI-pattern realm is orphaned if its identifier does not appear
+#     in any active namespace name.
 # The "master" realm is always protected.
+#
+# Two-phase cleanup (disable-then-delete):
+#   Phase 2a: DISABLE enabled orphans (~0.5s each, 10 parallel).
+#     Disabled realms return "403 Realm not enabled" on auth attempts,
+#     immediately stopping CLIENT_LOGIN_ERROR spam.
+#   Phase 2b: DELETE already-disabled orphans in small batches
+#     (DELETE_BATCH_SIZE per run, default 20, 2 parallel).
+#     Deletion is slow (~20-30s each) so batching prevents timeout.
 #
 # The cleanup script lives in scripts/ci-cleanup-keycloak-realms.sh and is
 # mounted into the pod via a ConfigMap (ci-cleanup-script-keycloak). The
@@ -51,7 +63,7 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 2
-      activeDeadlineSeconds: 600
+      activeDeadlineSeconds: 1800
       template:
         metadata:
           labels:

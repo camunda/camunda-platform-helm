@@ -2,6 +2,18 @@
 # Layer 2: Auth method - Internal Keycloak
 
 global:
+  ingress:
+    enabled: true
+    className: nginx
+    # The Ingress host will be added via CLI.
+    host: "$CAMUNDA_HOSTNAME"
+    tls:
+      enabled: true
+      # A wildcard certificate will be used.
+      
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
     auth:
       enabled: true
@@ -24,9 +36,186 @@ global:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-optimize-client-token"
 
+# -- Wait for Keycloak before starting Identity --------------------------------
+# Identity's /actuator/health returns 503 while Keycloak is not reachable,
+# which burns through startup probe budget and causes unnecessary restarts.
+# This init container blocks until Keycloak's health endpoint responds.
+identity:
+  initContainers:
+    - name: wait-for-keycloak
+      image: busybox:1.36
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak at {{ .Release.Name }}-keycloak:80/auth/ ..."
+          until wget -q --spider --timeout=2 "http://{{ .Release.Name }}-keycloak:80/auth/"; do
+            sleep 2
+          done
+          echo "Keycloak is ready"
+
 identityKeycloak:
   enabled: true
+  # ---------------------------------------------------------------------------
+  # Fastest possible startup for single-replica, single-realm CI tests.
+  # Every setting below trades long-running throughput / hardening for speed.
+  # ---------------------------------------------------------------------------
+
+  # -- Pre-built image: skip Quarkus augmentation (~30-40 s saved) ------------
+  # The default camunda/keycloak:26.3.3 image was not built with our runtime
+  # config (cache=local, db=postgres, /auth/ path, disabled features, etc.),
+  # so Keycloak detects "changes" and re-augments on every boot.
+  # This custom image runs `kc.sh build` at image build time with the exact
+  # options we need, so `--optimized` can skip augmentation entirely.
+  # Dockerfile: .github/docker/keycloak-ci/Dockerfile
+  image:
+    # registry must be empty: the Bitnami chart concatenates registry/repository,
+    # and the default registry is docker.io, which would produce
+    # "docker.io/registry.camunda.cloud/..." — an invalid reference.
+    registry: ""
+    repository: registry.camunda.cloud/team-distribution/keycloak-ci
+    tag: "26.3.3"
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  # Production mode: runs `kc.sh start` (not start-dev). Required for
+  # --optimized to work.
+  production: true
+  # Skip Quarkus augmentation: the image was pre-built with matching config.
+  extraStartupArgs: "--optimized"
+
+  # -- Pod-level speed knobs --------------------------------------------------
+  # Disable Kubernetes service links: avoids injecting hundreds of env vars
+  # into the pod, which is slow in namespaces with many services.
+  enableServiceLinks: false
+  # The init container (prepare-write-dirs) that copies quarkus/data/providers/
+  # themes to emptyDir is mandatory: the StatefulSet unconditionally mounts
+  # emptyDir subPaths over those directories, so without the copy they're empty.
+  # enableDefaultInitContainers: true  (chart default, no override needed)
+  # Only re-chown when the root dir ownership mismatches (default: Always,
+  # which recursively chowns every file on every pod start).
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1001
+    fsGroupChangePolicy: OnRootMismatch
+  # No network-policy or PDB needed for a single-replica CI instance.
+  networkPolicy:
+    enabled: false
+  pdb:
+    create: false
+
+  # -- Keycloak config --------------------------------------------------------
+  # Single replica: disable distributed cache (no JGroups/Infinispan overhead).
+  cache:
+    enabled: false
+  # CPU-heavy startup (class loading): give 4 cores limit and 2 cores request
+  # so the scheduler guarantees real CPU capacity from the start.
+  resources:
+    requests:
+      cpu: "2"
+      memory: 1Gi
+    limits:
+      cpu: "4"
+      memory: 2Gi
+  # JVM tuned for fastest cold-start, not peak throughput:
+  #   SerialGC            – lower startup overhead than G1 for small heaps
+  #   TieredStopAtLevel=1 – skip C2 compiler (massive startup win)
+  #   /dev/urandom        – avoid entropy blocking on container start
+  extraEnvVars:
+    - name: JAVA_OPTS
+      value: >-
+        -Xms512m -Xmx1024m
+        -XX:MaxMetaspaceSize=256m
+        -XX:+UseSerialGC
+        -XX:TieredStopAtLevel=1
+        -Djava.security.egd=file:/dev/urandom
+        -Djava.net.preferIPv4Stack=true
+    # Production mode without TLS requires explicit HTTP enablement.
+    - name: KC_HTTP_ENABLED
+      value: "true"
+    # Health endpoints must be explicitly enabled for probes.
+    - name: KC_HEALTH_ENABLED
+      value: "true"
+    # Reduce logging I/O during startup.
+    - name: KC_LOG_LEVEL
+      value: "WARN"
+    # Minimal DB connection pool for a single-realm instance.
+    - name: KC_DB_POOL_INITIAL_SIZE
+      value: "1"
+    - name: KC_DB_POOL_MIN_SIZE
+      value: "1"
+    - name: KC_DB_POOL_MAX_SIZE
+      value: "10"
+    # Disable XA transactions – not needed for single-node, avoids 2PC overhead.
+    - name: KC_TRANSACTION_XA_ENABLED
+      value: "false"
+    # Disable unused Keycloak features to speed up SPI initialization.
+    - name: KC_FEATURES_DISABLED
+      value: "ciba,client-policies,dpop,dynamic-scopes,kerberos,par,step-up-authentication,web-authn"
+
+  # -- Probes -----------------------------------------------------------------
+  # startupProbe gates liveness/readiness so they start with initialDelay=0.
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 2
+    timeoutSeconds: 3
+    failureThreshold: 60
+    # Total window: 5 + (60 × 2) = 125 s before giving up.
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # -- PostgreSQL: accelerate startup so Keycloak can connect sooner ----------
   postgresql:
+    primary:
+      # No PVC needed for ephemeral CI tests — use emptyDir instead.
+      # Eliminates PV provisioning/binding latency.
+      persistence:
+        enabled: false
+      # Bump PG resources: request enough CPU to get guaranteed capacity.
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 512Mi
+      # Enable startup probe with tight timing so PG is marked ready ASAP.
+      startupProbe:
+        enabled: true
+        initialDelaySeconds: 2
+        periodSeconds: 2
+        timeoutSeconds: 2
+        failureThreshold: 30
+      # Reduce liveness initial delay from default 30 s.
+      livenessProbe:
+        enabled: true
+        initialDelaySeconds: 2
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 6
+      # Faster readiness checks.
+      readinessProbe:
+        enabled: true
+        initialDelaySeconds: 2
+        periodSeconds: 2
+        timeoutSeconds: 2
+        failureThreshold: 6
     auth:
       existingSecret: "integration-test-credentials"
       secretKeys:

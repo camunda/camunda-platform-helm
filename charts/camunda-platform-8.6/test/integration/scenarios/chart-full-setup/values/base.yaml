@@ -36,18 +36,100 @@ global:
 # -----------------------------------------------------------------------------
 operate:
   contextPath: "/operate"
+  javaOpts: >-
+    -XX:+TieredCompilation
+    -XX:TieredStopAtLevel=1
+    -XX:+UseG1GC
+    -XX:+UseStringDeduplication
+    -Xms512m
+    -Xmx1536m
+  env:
+    - name: SPRING_THREADS_VIRTUAL_ENABLED
+      value: "true"
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 30
+    timeoutSeconds: 1
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
 
 # -----------------------------------------------------------------------------
 # Tasklist
 # -----------------------------------------------------------------------------
 tasklist:
   contextPath: "/tasklist"
+  javaOpts: >-
+    -XX:+TieredCompilation
+    -XX:TieredStopAtLevel=1
+    -XX:+UseG1GC
+    -XX:+UseStringDeduplication
+    -Xms512m
+    -Xmx1536m
+  env:
+    - name: SPRING_THREADS_VIRTUAL_ENABLED
+      value: "true"
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 30
+    timeoutSeconds: 1
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
 
 # -----------------------------------------------------------------------------
 # Zeebe Gateway
 # -----------------------------------------------------------------------------
 zeebeGateway:
   contextPath: "/zeebe"
+  javaOpts: >-
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+TieredCompilation
+    -XX:TieredStopAtLevel=1
+    -XX:+UseG1GC
+    -XX:+UseStringDeduplication
+    -Xms512m
+    -Xmx1536m
+  env:
+    - name: SPRING_THREADS_VIRTUAL_ENABLED
+      value: "true"
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 30
+    timeoutSeconds: 1
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
   ingress:
     grpc:
       enabled: true
@@ -67,6 +149,36 @@ zeebeGateway:
 identity:
   enabled: true
   contextPath: "/identity"
+  env:
+    # JVM startup optimizations: identity has no javaOpts field, so JAVA_TOOL_OPTIONS must be set via env.
+    - name: JAVA_TOOL_OPTIONS
+      value: >-
+        -XX:+TieredCompilation
+        -XX:TieredStopAtLevel=1
+        -XX:+UseG1GC
+        -XX:+UseStringDeduplication
+        -Xms512m
+        -Xmx1536m
+    # Virtual threads (JDK 21+): reduces thread-pool initialization overhead for I/O-bound tasks.
+    - name: SPRING_THREADS_VIRTUAL_ENABLED
+      value: "true"
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 2
+    failureThreshold: 60
+    timeoutSeconds: 1
+  readinessProbe:
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    failureThreshold: 3
+    timeoutSeconds: 1
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
   firstUser:
     existingSecret: "integration-test-credentials"
     existingSecretKey: "identity-user-password"
@@ -105,20 +217,27 @@ identity:
 # Connectors
 # -----------------------------------------------------------------------------
 connectors:
-  replicas: 2
   contextPath: "/connectors"
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-                - key: app.kubernetes.io/component
-                  operator: In
-                  values:
-                    - connectors
-            topologyKey: kubernetes.io/hostname
+  env:
+    - name: JAVA_TOOL_OPTIONS
+      value: "-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx1536m"
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 30
+    timeoutSeconds: 1
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 1
 
 # -----------------------------------------------------------------------------
 # Optimize
@@ -129,6 +248,33 @@ optimize:
     elasticsearch:
       enabled: true
   contextPath: "/optimize"
+  javaOpts: >-
+    -XX:+TieredCompilation
+    -XX:TieredStopAtLevel=1
+    -XX:+UseG1GC
+    -XX:+UseStringDeduplication
+    -Xms512m
+    -Xmx1536m
+  env:
+    - name: SPRING_THREADS_VIRTUAL_ENABLED
+      value: "true"
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 40
+    timeoutSeconds: 5
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 3
+    timeoutSeconds: 5
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    failureThreshold: 3
+    timeoutSeconds: 5
 
 # -----------------------------------------------------------------------------
 # Console
@@ -165,22 +311,43 @@ webModeler:
       - name: index-docker-io
       - name: registry-camunda-cloud
   restapi:
-    replicas: 2
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+      -XX:+TieredCompilation
+      -XX:TieredStopAtLevel=1
+      -XX:+UseG1GC
+      -XX:+UseStringDeduplication
+    env:
+      - name: SPRING_THREADS_VIRTUAL_ENABLED
+        value: "true"
+    # Wait for PostgreSQL to accept connections before starting restapi.
+    # Prevents restapi from failing on DB connection during Spring context init.
+    initContainers:
+      - name: wait-for-postgresql
+        image: busybox:1.36
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for PostgreSQL at {{ .Release.Name }}-postgresql-web-modeler:5432 ..."
+            until nc -z "{{ .Release.Name }}-postgresql-web-modeler" 5432; do
+              sleep 2
+            done
+            echo "PostgreSQL is ready"
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      failureThreshold: 30
+      timeoutSeconds: 1
     mail:
       # This value is required, otherwise the restapi pod wouldn't start.
       fromAddress: noreply@example.com
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/component
-                    operator: In
-                    values:
-                      - restapi
-              topologyKey: kubernetes.io/hostname
   webapp:
     replicas: 2
     affinity:
@@ -206,16 +373,71 @@ postgresql:
     secretKeys:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
+  primary:
+    # No persistent storage needed in CI — use emptyDir instead of PVC.
+    persistence:
+      enabled: false
+    # Resource allocation for faster startup
+    resources:
+      requests:
+        cpu: 500m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 512Mi
+    # PostgreSQL configuration optimized for fast startup in integration tests.
+    # WARNING: These settings trade durability for speed — NOT suitable for production.
+    extendedConfiguration: |
+      shared_buffers = 64MB
+      work_mem = 8MB
+      max_connections = 50
+      fsync = off
+      full_page_writes = off
+      synchronous_commit = off
 
 # -----------------------------------------------------------------------------
 # Zeebe
 # -----------------------------------------------------------------------------
 zeebe:
+  # JVM startup optimizations: TieredStopAtLevel=1 skips C2 compiler for ~30-50% faster startup,
+  # pre-sized heap avoids resizing overhead, G1GC with string deduplication for efficiency.
+  javaOpts: >-
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/zeebe/data
+    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+TieredCompilation
+    -XX:TieredStopAtLevel=1
+    -XX:+UseG1GC
+    -XX:+UseStringDeduplication
+    -Xms1024m
+    -Xmx2048m
+  env:
+    - name: SPRING_THREADS_VIRTUAL_ENABLED
+      value: "true"
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 2000Mi
+    limits:
+      cpu: 2000m
+      memory: 3000Mi
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30
+    timeoutSeconds: 5
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 5
+    timeoutSeconds: 5
   livenessProbe:
     enabled: true
     initialDelaySeconds: 60
-    periodSeconds: 30
-    failureThreshold: 3
+    periodSeconds: 10
+    failureThreshold: 5
     timeoutSeconds: 5
 
 # -----------------------------------------------------------------------------
