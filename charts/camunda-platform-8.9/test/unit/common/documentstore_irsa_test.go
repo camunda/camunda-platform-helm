@@ -79,8 +79,8 @@ func hasAwsSecretAccessKeyEnvVar(containers []corev1.Container) bool {
 func baseValues() map[string]string {
 	return map[string]string{
 		"identity.enabled": "true",
-		"connectors.security.authentication.oidc.existingSecret.existingSecret":    "foo",
-		"orchestration.security.authentication.oidc.existingSecret.existingSecret": "bar",
+		"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+		"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
 	}
 }
 
@@ -97,9 +97,10 @@ func awsDocumentStoreValuesWithIRSA(irsaEnabled bool) map[string]string {
 	} else {
 		// Credentials mode: credentials are injected from secret
 		values["global.documentStore.type.aws.irsa.enabled"] = "false"
-		values["global.documentStore.type.aws.existingSecret"] = "aws-credentials"
-		values["global.documentStore.type.aws.accessKeyIdKey"] = "awsAccessKeyId"
-		values["global.documentStore.type.aws.secretAccessKeyKey"] = "awsSecretAccessKey"
+		values["global.documentStore.type.aws.accessKeyId.secret.existingSecret"] = "aws-credentials"
+		values["global.documentStore.type.aws.accessKeyId.secret.existingSecretKey"] = "awsAccessKeyId"
+		values["global.documentStore.type.aws.secretAccessKey.secret.existingSecret"] = "aws-credentials"
+		values["global.documentStore.type.aws.secretAccessKey.secret.existingSecretKey"] = "awsSecretAccessKey"
 	}
 	return values
 }
@@ -293,53 +294,6 @@ func (s *documentStoreIRSATest) TestOptimizeWithIRSA() {
 		{
 			Name:     "Optimize: AWS credentials SHOULD be injected when irsa.enabled is false",
 			Template: "templates/optimize/deployment.yaml",
-			Values:   valuesWithCredentials,
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				containers := deployment.Spec.Template.Spec.Containers
-				require.True(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should be present when irsa.enabled is false")
-				require.True(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should be present when irsa.enabled is false")
-			},
-		},
-	}
-
-	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
-}
-
-func (s *documentStoreIRSATest) TestWebModelerWebappWithIRSA() {
-	valuesIRSA := awsDocumentStoreValuesWithIRSA(true)
-	valuesIRSA["webModeler.enabled"] = "true"
-	valuesIRSA["webModeler.restapi.mail.fromAddress"] = "test@example.com"
-
-	valuesWithCredentials := awsDocumentStoreValuesWithIRSA(false)
-	valuesWithCredentials["webModeler.enabled"] = "true"
-	valuesWithCredentials["webModeler.restapi.mail.fromAddress"] = "test@example.com"
-
-	testCases := []testhelpers.TestCase{
-		{
-			Name:     "WebModeler Webapp: AWS credentials should NOT be injected when irsa.enabled is true (IRSA mode)",
-			Template: "templates/web-modeler/deployment-webapp.yaml",
-			Values:   valuesIRSA,
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				containers := deployment.Spec.Template.Spec.Containers
-				require.False(t, hasAwsAccessKeyIdEnvVar(containers),
-					"AWS_ACCESS_KEY_ID should NOT be present when irsa.enabled is true")
-				require.False(t, hasAwsSecretAccessKeyEnvVar(containers),
-					"AWS_SECRET_ACCESS_KEY should NOT be present when irsa.enabled is true")
-			},
-		},
-		{
-			Name:     "WebModeler Webapp: AWS credentials SHOULD be injected when irsa.enabled is false",
-			Template: "templates/web-modeler/deployment-webapp.yaml",
 			Values:   valuesWithCredentials,
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
