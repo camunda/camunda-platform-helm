@@ -334,16 +334,21 @@ tasks:
       echo "Final helm install command:"
       echo "=========================================="
       
+      # Helm values precedence: last --values wins.
+      # Order: common → digest (overlay) → extra → scenario (highest precedence).
+      # This ensures scenario-specific values (e.g., CI Keycloak image) override
+      # chart-wide defaults and user-supplied base configuration.
+      # See deploy/chain.go BuildValuesChain() for the canonical precedence definition.
       helm install integration {{ .TEST_CHART_NAME }} \
         --version {{ .TEST_CHART_VERSION }} \
         --namespace {{ .TEST_NAMESPACE }} \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
         --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
-        --values "$MERGED_VALUES" \
         {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
         --values /tmp/extra-values-file.yaml \
+        --values "$MERGED_VALUES" \
         ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
         --timeout 20m0s \
         --wait \

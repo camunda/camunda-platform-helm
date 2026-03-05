@@ -20,41 +20,41 @@ func TestMapScenarioToConfig(t *testing.T) {
 	}{
 		// Well-known composite scenarios
 		{
-			name:            "keycloak-original maps to external keycloak + external elasticsearch",
+			name:            "keycloak-original maps to keycloak + elasticsearch-external",
 			scenario:        "keycloak-original",
-			wantIdentity:    "keycloak-external",
+			wantIdentity:    "keycloak",
 			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "keycloak-original case insensitive",
 			scenario:        "Keycloak-Original",
-			wantIdentity:    "keycloak-external",
+			wantIdentity:    "keycloak",
 			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 
 		// Standard identity derivation
 		{
-			name:            "elasticsearch defaults to keycloak + elasticsearch",
+			name:            "elasticsearch defaults to keycloak + elasticsearch-external",
 			scenario:        "elasticsearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 		{
-			name:            "keycloak-mt maps to keycloak-external with multitenancy",
+			name:            "keycloak-mt maps to keycloak with multitenancy",
 			scenario:        "keycloak-mt",
-			wantIdentity:    "keycloak-external",
-			wantPersistence: "elasticsearch",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy"},
 		},
 		{
-			name:            "multitenancy maps to keycloak-external with multitenancy",
+			name:            "multitenancy maps to keycloak with multitenancy",
 			scenario:        "multitenancy",
-			wantIdentity:    "keycloak-external",
-			wantPersistence: "elasticsearch",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy"},
 		},
@@ -62,21 +62,21 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "oidc maps to oidc identity",
 			scenario:        "oidc",
 			wantIdentity:    "oidc",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "elasticsearch-basic maps to basic identity",
 			scenario:        "elasticsearch-basic",
 			wantIdentity:    "basic",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 		{
 			name:            "hybrid maps to hybrid identity",
 			scenario:        "hybrid",
 			wantIdentity:    "hybrid",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 
@@ -108,21 +108,21 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "eks maps to eks platform",
 			scenario:        "elasticsearch-eks",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "eks",
 		},
 		{
 			name:            "openshift maps to openshift platform",
 			scenario:        "elasticsearch-openshift",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "openshift",
 		},
 		{
 			name:            "rosa maps to openshift platform",
 			scenario:        "elasticsearch-rosa",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "openshift",
 		},
 
@@ -131,7 +131,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "keycloak-rba maps to rba feature",
 			scenario:        "keycloak-rba",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"rba"},
 		},
@@ -139,7 +139,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "documentstore maps to documentstore feature",
 			scenario:        "documentstore",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"documentstore"},
 		},
@@ -149,7 +149,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "qa- prefix enables QA mode",
 			scenario:        "qa-elasticsearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantQA:          true,
 		},
@@ -157,7 +157,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "upgrade in name enables upgrade mode",
 			scenario:        "upgrade-migration",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantUpgrade:     true,
 		},
@@ -167,14 +167,14 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "entra maps to oidc identity",
 			scenario:        "entra",
 			wantIdentity:    "oidc",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 		},
 		{
-			name:            "-mt- trigger maps to keycloak-external with multitenancy",
+			name:            "-mt- trigger maps to keycloak with multitenancy",
 			scenario:        "foo-mt-bar",
-			wantIdentity:    "keycloak-external",
-			wantPersistence: "elasticsearch",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy"},
 		},
@@ -182,15 +182,15 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "-upg trigger enables upgrade mode",
 			scenario:        "elasticsearch-upg",
 			wantIdentity:    "keycloak",
-			wantPersistence: "elasticsearch",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantUpgrade:     true,
 		},
 		{
 			name:            "combined multi-feature: mt + documentstore",
 			scenario:        "keycloak-mt-document",
-			wantIdentity:    "keycloak-external",
-			wantPersistence: "elasticsearch",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"multitenancy", "documentstore"},
 		},
@@ -343,21 +343,21 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		}
 	}
 
-	t.Run("keycloak-original config resolves to keycloak-external + elasticsearch-external", func(t *testing.T) {
+	t.Run("keycloak-original config resolves to keycloak + elasticsearch-external", func(t *testing.T) {
 		config := MapScenarioToConfig("keycloak-original")
 		paths, err := config.ResolvePaths(tmpDir)
 		if err != nil {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, keycloak-external.yaml, elasticsearch-external.yaml, gke.yaml
+		// Should contain: base.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml
 		if len(paths) != 4 {
 			t.Fatalf("Expected 4 paths, got %d: %v", len(paths), paths)
 		}
 
 		expectedSuffixes := []string{
 			"values/base.yaml",
-			"values/identity/keycloak-external.yaml",
+			"values/identity/keycloak.yaml",
 			"values/persistence/elasticsearch-external.yaml",
 			"values/platform/gke.yaml",
 		}
@@ -375,7 +375,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, keycloak.yaml, elasticsearch.yaml, gke.yaml
+		// Should contain: base.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml
 		if len(paths) != 4 {
 			t.Fatalf("Expected 4 paths, got %d: %v", len(paths), paths)
 		}
@@ -383,7 +383,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		expectedSuffixes := []string{
 			"values/base.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/elasticsearch.yaml",
+			"values/persistence/elasticsearch-external.yaml",
 			"values/platform/gke.yaml",
 		}
 		for i, suffix := range expectedSuffixes {
@@ -400,15 +400,15 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, keycloak-external.yaml, elasticsearch.yaml, gke.yaml, multitenancy.yaml
+		// Should contain: base.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml, multitenancy.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
 
 		expectedSuffixes := []string{
 			"values/base.yaml",
-			"values/identity/keycloak-external.yaml",
-			"values/persistence/elasticsearch.yaml",
+			"values/identity/keycloak.yaml",
+			"values/persistence/elasticsearch-external.yaml",
 			"values/platform/gke.yaml",
 			"values/features/multitenancy.yaml",
 		}
@@ -426,7 +426,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, elasticsearch.yaml, gke.yaml
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, elasticsearch-external.yaml, gke.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
@@ -435,7 +435,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			"values/base.yaml",
 			"values/base-qa.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/elasticsearch.yaml",
+			"values/persistence/elasticsearch-external.yaml",
 			"values/platform/gke.yaml",
 		}
 		for i, suffix := range expectedSuffixes {
