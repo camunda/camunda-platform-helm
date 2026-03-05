@@ -83,20 +83,17 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Name: "TestSecretCreatedWhenInlineSecretProvided",
+			Name: "TestSecretNotCreatedWhenInlineSecretProvided",
 			Values: map[string]string{
-				"identity.enabled":                                "true",
-				"webModeler.enabled":                              "true",
-				"webModeler.restapi.mail.fromAddress":             "example@example.com",
-				"webModeler.restapi.pusher.secret.inlineSecret":   "my-inline-secret",
+				"identity.enabled":                              "true",
+				"webModeler.enabled":                            "true",
+				"webModeler.restapi.mail.fromAddress":           "example@example.com",
+				"webModeler.restapi.pusher.secret.inlineSecret": "my-inline-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				var secret coreV1.Secret
-				helm.UnmarshalK8SYaml(s.T(), output, &secret)
-
-				// Secret should still be created (inlineSecret doesn't prevent creation)
-				s.Require().NotNil(secret.Data)
-				s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["pusher-app-secret"]))
+				// Secret should not be rendered when inlineSecret is provided
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "could not find template")
 			},
 		},
 	}

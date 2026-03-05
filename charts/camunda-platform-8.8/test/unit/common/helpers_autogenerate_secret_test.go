@@ -89,6 +89,7 @@ func (s *shouldAutogenerateSecretTest) TestShouldAutogenerateSecretWithExistingS
 	config := map[string]string{
 		"global.identity.auth.optimize.existingSecret.name": "camunda-credentials",
 		"global.identity.auth.enabled": "true",
+		"optimize.enabled": "true",
 	}
 	
 	// Should generate the identity-optimize-client-token key

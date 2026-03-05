@@ -61,11 +61,12 @@ spec:
                 configMapKeyRef:
                   name: {{ include "webModeler.fullname" . }}-configuration
                   key: pusher-app-id
-            - name: RESTAPI_PUSHER_KEY
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "webModeler.fullname" . }}-configuration
-                  key: pusher-app-key
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "RESTAPI_PUSHER_KEY"
+                "config" .Values.webModeler.restapi.pusher.client
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-key"
+            ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_PUSHER_SECRET"
                 "config" .Values.webModeler.restapi.pusher

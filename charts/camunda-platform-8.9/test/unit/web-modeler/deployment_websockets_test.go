@@ -321,6 +321,57 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("my-inline-secret-value", pusherSecretEnv.Value)
 				s.Require().Nil(pusherSecretEnv.ValueFrom, "PUSHER_APP_SECRET should not use valueFrom for inline values")
 			},
+		}, {
+			Name: "TestPusherAppKeyUsesExistingSecret",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				var pusherKeyEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "PUSHER_APP_KEY" {
+						pusherKeyEnv = &env
+						break
+					}
+				}
+
+				s.Require().NotNil(pusherKeyEnv, "PUSHER_APP_KEY env var should exist")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom, "PUSHER_APP_KEY should use valueFrom")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom.SecretKeyRef, "PUSHER_APP_KEY should use secretKeyRef")
+				s.Require().Equal("my-custom-app-key-secret", pusherKeyEnv.ValueFrom.SecretKeyRef.Name)
+				s.Require().Equal("my-pusher-app-key", pusherKeyEnv.ValueFrom.SecretKeyRef.Key)
+			},
+		}, {
+			Name: "TestPusherAppKeyUsesInlineSecret",
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"webModeler.enabled":                                     "true",
+				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
+				"webModeler.restapi.pusher.client.secret.inlineSecret":   "my-inline-app-key-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				var pusherKeyEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "PUSHER_APP_KEY" {
+						pusherKeyEnv = &env
+						break
+					}
+				}
+
+				s.Require().NotNil(pusherKeyEnv, "PUSHER_APP_KEY env var should exist")
+				s.Require().Equal("my-inline-app-key-value", pusherKeyEnv.Value)
+				s.Require().Nil(pusherKeyEnv.ValueFrom, "PUSHER_APP_KEY should not use valueFrom for inline values")
+			},
 		},
 	}
 
