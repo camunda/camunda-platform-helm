@@ -22,8 +22,8 @@ type TestResult struct {
 // RunTests executes tests after deployment based on flags.
 // Tests are run in parallel if both --test-it and --test-e2e (or --test-all) are specified.
 func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string) error {
-	runIT := flags.RunIntegrationTests || flags.RunAllTests
-	runE2E := flags.RunE2ETests || flags.RunAllTests
+	runIT := flags.Test.RunIntegrationTests || flags.Test.RunAllTests
+	runE2E := flags.Test.RunE2ETests || flags.Test.RunAllTests
 
 	if !runIT && !runE2E {
 		return nil
@@ -36,17 +36,17 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		Msg("Starting post-deployment tests")
 
 	// Resolve paths
-	repoRoot := flags.RepoRoot
+	repoRoot := flags.Chart.RepoRoot
 	if repoRoot == "" {
 		// Try to determine repo root from chart path
-		repoRoot = findRepoRoot(flags.ChartPath)
+		repoRoot = findRepoRoot(flags.Chart.ChartPath)
 	}
 
 	if repoRoot == "" {
 		return fmt.Errorf("unable to determine repository root; set --repo-root flag")
 	}
 
-	chartPath, err := filepath.Abs(flags.ChartPath)
+	chartPath, err := filepath.Abs(flags.Chart.ChartPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve chart path: %w", err)
 	}
@@ -59,7 +59,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := runIntegrationTests(ctx, repoRoot, chartPath, namespace, flags.Platform, flags.KubeContext, flags.TestExclude, flags.Auth)
+			err := runIntegrationTests(ctx, repoRoot, chartPath, namespace, flags.Deployment.Platform, flags.Test.KubeContext, flags.Test.TestExclude, flags.Auth.Auth)
 			resultCh <- TestResult{Type: "integration", Error: err}
 		}()
 	}
@@ -68,7 +68,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := runE2ETests(ctx, repoRoot, chartPath, namespace, flags.KubeContext, flags.TestExclude)
+			err := runE2ETests(ctx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude)
 			resultCh <- TestResult{Type: "e2e", Error: err}
 		}()
 	}

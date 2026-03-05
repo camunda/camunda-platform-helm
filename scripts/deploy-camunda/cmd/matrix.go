@@ -565,8 +565,8 @@ func resolveRepoRoot(flagValue string) string {
 	// Try to resolve from config file
 	var tempFlags config.RuntimeFlags
 	if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
-		if tempFlags.RepoRoot != "" {
-			return tempFlags.RepoRoot
+		if tempFlags.Chart.RepoRoot != "" {
+			return tempFlags.Chart.RepoRoot
 		}
 	}
 

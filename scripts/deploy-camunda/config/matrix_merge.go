@@ -170,7 +170,7 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 	MergeBoolField(f.DeleteNamespace, m.DeleteNamespace, nil, changedFlags, "delete-namespace")
 	MergeBoolField(f.DryRun, m.DryRun, nil, changedFlags, "dry-run")
 	MergeBoolField(f.Coverage, m.Coverage, nil, changedFlags, "coverage")
-	MergeBoolField(f.SkipDependencyUpdate, m.SkipDependencyUpdate, boolPtr(rc.SkipDependencyUpdate), changedFlags, "skip-dependency-update")
+	MergeBoolField(f.SkipDependencyUpdate, m.SkipDependencyUpdate, rc.SkipDependencyUpdate, changedFlags, "skip-dependency-update")
 	MergeIntField(f.HelmTimeout, m.HelmTimeout, nil, changedFlags, "timeout")
 	MergeStringField(f.LogLevel, m.LogLevel, rc.LogLevel, changedFlags, "log-level")
 

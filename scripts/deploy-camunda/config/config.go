@@ -37,11 +37,69 @@ type KeycloakConfig struct {
 	Protocol string `mapstructure:"protocol" yaml:"protocol,omitempty"`
 }
 
+// InfraConfig holds infrastructure fields shared across RootConfig,
+// DeploymentConfig, and MatrixConfig. Embedding this struct eliminates
+// field duplication and ensures new fields only need to be added once.
+type InfraConfig struct {
+	Platform             string `mapstructure:"platform" yaml:"platform,omitempty"`
+	RepoRoot             string `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
+	NamespacePrefix      string `mapstructure:"namespacePrefix" yaml:"namespacePrefix,omitempty"`
+	LogLevel             string `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
+	SkipDependencyUpdate *bool  `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
+	EnvFile              string `mapstructure:"envFile" yaml:"envFile,omitempty"`
+	IngressBaseDomain    string `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
+	KubeContext          string `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
+	DeleteNamespace      *bool  `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
+
+	// Docker registries
+	DockerUsername       string `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
+	DockerPassword       string `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
+	EnsureDockerRegistry *bool  `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
+	DockerHubUsername    string `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
+	DockerHubPassword    string `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
+	EnsureDockerHub      *bool  `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
+}
+
+// DeploySpecConfig holds deployment-specification fields shared between
+// RootConfig and DeploymentConfig (but not MatrixConfig). These are the
+// fields that describe what to deploy and how.
+type DeploySpecConfig struct {
+	Chart                    string   `mapstructure:"chart" yaml:"chart,omitempty"`
+	Version                  string   `mapstructure:"version" yaml:"version,omitempty"`
+	ChartPath                string   `mapstructure:"chartPath" yaml:"chartPath,omitempty"`
+	Namespace                string   `mapstructure:"namespace" yaml:"namespace,omitempty"`
+	Release                  string   `mapstructure:"release" yaml:"release,omitempty"`
+	Scenario                 string   `mapstructure:"scenario" yaml:"scenario,omitempty"`
+	ScenarioPath             string   `mapstructure:"scenarioPath" yaml:"scenarioPath,omitempty"`
+	Auth                     string   `mapstructure:"auth" yaml:"auth,omitempty"`
+	Flow                     string   `mapstructure:"flow" yaml:"flow,omitempty"`
+	ExternalSecrets          *bool    `mapstructure:"externalSecrets" yaml:"externalSecrets,omitempty"`
+	KeycloakRealm            string   `mapstructure:"keycloakRealm" yaml:"keycloakRealm,omitempty"`
+	OptimizeIndexPrefix      string   `mapstructure:"optimizeIndexPrefix" yaml:"optimizeIndexPrefix,omitempty"`
+	OrchestrationIndexPrefix string   `mapstructure:"orchestrationIndexPrefix" yaml:"orchestrationIndexPrefix,omitempty"`
+	TasklistIndexPrefix      string   `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
+	OperateIndexPrefix       string   `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
+	IngressHost              string   `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
+	IngressSubdomain         string   `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
+	Interactive              *bool    `mapstructure:"interactive" yaml:"interactive,omitempty"`
+	VaultSecretMapping       string   `mapstructure:"vaultSecretMapping" yaml:"vaultSecretMapping,omitempty"`
+	AutoGenerateSecrets      *bool    `mapstructure:"autoGenerateSecrets" yaml:"autoGenerateSecrets,omitempty"`
+	RenderTemplates          *bool    `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
+	RenderOutputDir          string   `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
+	ExtraValues              []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
+	ScenarioRoot             string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
+	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
+	RunIntegrationTests      *bool    `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
+	RunE2ETests              *bool    `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
+}
+
 // MatrixConfig holds configuration specific to the "matrix" subcommand.
 // Fields here can be set in the deploy.yaml config file under a top-level
 // "matrix:" key. Shared fields (repoRoot, platform, logLevel, keycloak, etc.)
 // fall back to root-level config when not set in the matrix section.
 type MatrixConfig struct {
+	InfraConfig `mapstructure:",squash" yaml:",inline"`
+
 	// Filtering & generation
 	Versions        []string `mapstructure:"versions" yaml:"versions,omitempty"`
 	IncludeDisabled *bool    `mapstructure:"includeDisabled" yaml:"includeDisabled,omitempty"`
@@ -51,18 +109,12 @@ type MatrixConfig struct {
 	OutputFormat    string   `mapstructure:"outputFormat" yaml:"outputFormat,omitempty"`
 
 	// Execution
-	Platform             string `mapstructure:"platform" yaml:"platform,omitempty"`
-	RepoRoot             string `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
-	NamespacePrefix      string `mapstructure:"namespacePrefix" yaml:"namespacePrefix,omitempty"`
-	MaxParallel          *int   `mapstructure:"maxParallel" yaml:"maxParallel,omitempty"`
-	StopOnFailure        *bool  `mapstructure:"stopOnFailure" yaml:"stopOnFailure,omitempty"`
-	Cleanup              *bool  `mapstructure:"cleanup" yaml:"cleanup,omitempty"`
-	DeleteNamespace      *bool  `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
-	DryRun               *bool  `mapstructure:"dryRun" yaml:"dryRun,omitempty"`
-	Coverage             *bool  `mapstructure:"coverage" yaml:"coverage,omitempty"`
-	SkipDependencyUpdate *bool  `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
-	HelmTimeout          *int   `mapstructure:"helmTimeout" yaml:"helmTimeout,omitempty"`
-	LogLevel             string `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
+	MaxParallel   *int  `mapstructure:"maxParallel" yaml:"maxParallel,omitempty"`
+	StopOnFailure *bool `mapstructure:"stopOnFailure" yaml:"stopOnFailure,omitempty"`
+	Cleanup       *bool `mapstructure:"cleanup" yaml:"cleanup,omitempty"`
+	DryRun        *bool `mapstructure:"dryRun" yaml:"dryRun,omitempty"`
+	Coverage      *bool `mapstructure:"coverage" yaml:"coverage,omitempty"`
+	HelmTimeout   *int  `mapstructure:"helmTimeout" yaml:"helmTimeout,omitempty"`
 
 	// Tests
 	TestIT  *bool `mapstructure:"testIT" yaml:"testIT,omitempty"`
@@ -70,11 +122,9 @@ type MatrixConfig struct {
 	TestAll *bool `mapstructure:"testAll" yaml:"testAll,omitempty"`
 
 	// Per-platform kube contexts
-	KubeContext  string            `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
 	KubeContexts map[string]string `mapstructure:"kubeContexts" yaml:"kubeContexts,omitempty"`
 
 	// Per-platform ingress domains
-	IngressBaseDomain  string            `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
 	IngressBaseDomains map[string]string `mapstructure:"ingressBaseDomains" yaml:"ingressBaseDomains,omitempty"`
 
 	// Per-platform vault-backed secrets
@@ -82,16 +132,7 @@ type MatrixConfig struct {
 	VaultBackedSecrets    map[string]bool `mapstructure:"vaultBackedSecrets" yaml:"vaultBackedSecrets,omitempty"`
 
 	// Per-version env files (keys are version strings like "8.6", "8.7")
-	EnvFile  string            `mapstructure:"envFile" yaml:"envFile,omitempty"`
 	EnvFiles map[string]string `mapstructure:"envFiles" yaml:"envFiles,omitempty"`
-
-	// Docker registries
-	DockerUsername       string `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
-	DockerPassword       string `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
-	EnsureDockerRegistry *bool  `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
-	DockerHubUsername    string `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
-	DockerHubPassword    string `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
-	EnsureDockerHub      *bool  `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
 
 	// Keycloak overrides (if different from root)
 	KeycloakHost     string `mapstructure:"keycloakHost" yaml:"keycloakHost,omitempty"`
@@ -103,100 +144,22 @@ type MatrixConfig struct {
 
 // DeploymentConfig represents a single deployment profile.
 type DeploymentConfig struct {
-	Name                     string   `mapstructure:"-" yaml:"-"` // filled at runtime from map key
-	Chart                    string   `mapstructure:"chart" yaml:"chart,omitempty"`
-	Version                  string   `mapstructure:"version" yaml:"version,omitempty"`
-	Scenario                 string   `mapstructure:"scenario" yaml:"scenario,omitempty"`
-	ChartPath                string   `mapstructure:"chartPath" yaml:"chartPath,omitempty"`
-	Namespace                string   `mapstructure:"namespace" yaml:"namespace,omitempty"`
-	NamespacePrefix          string   `mapstructure:"namespacePrefix" yaml:"namespacePrefix,omitempty"`
-	Release                  string   `mapstructure:"release" yaml:"release,omitempty"`
-	ScenarioPath             string   `mapstructure:"scenarioPath" yaml:"scenarioPath,omitempty"`
-	Auth                     string   `mapstructure:"auth" yaml:"auth,omitempty"`
-	Platform                 string   `mapstructure:"platform" yaml:"platform,omitempty"`
-	LogLevel                 string   `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
-	ExternalSecrets          *bool    `mapstructure:"externalSecrets" yaml:"externalSecrets,omitempty"`
-	SkipDependencyUpdate     *bool    `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
-	KeycloakRealm            string   `mapstructure:"keycloakRealm" yaml:"keycloakRealm,omitempty"`
-	OptimizeIndexPrefix      string   `mapstructure:"optimizeIndexPrefix" yaml:"optimizeIndexPrefix,omitempty"`
-	OrchestrationIndexPrefix string   `mapstructure:"orchestrationIndexPrefix" yaml:"orchestrationIndexPrefix,omitempty"`
-	TasklistIndexPrefix      string   `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
-	OperateIndexPrefix       string   `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
-	IngressHost              string   `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
-	IngressSubdomain         string   `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
-	IngressBaseDomain        string   `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
-	Flow                     string   `mapstructure:"flow" yaml:"flow,omitempty"`
-	EnvFile                  string   `mapstructure:"envFile" yaml:"envFile,omitempty"`
-	Interactive              *bool    `mapstructure:"interactive" yaml:"interactive,omitempty"`
-	VaultSecretMapping       string   `mapstructure:"vaultSecretMapping" yaml:"vaultSecretMapping,omitempty"`
-	AutoGenerateSecrets      *bool    `mapstructure:"autoGenerateSecrets" yaml:"autoGenerateSecrets,omitempty"`
-	DeleteNamespace          *bool    `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
-	DockerUsername           string   `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
-	DockerPassword           string   `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
-	EnsureDockerRegistry     *bool    `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
-	DockerHubUsername        string   `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
-	DockerHubPassword        string   `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
-	EnsureDockerHub          *bool    `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
-	RenderTemplates          *bool    `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
-	RenderOutputDir          string   `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
-	ExtraValues              []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
-	RepoRoot                 string   `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
-	ScenarioRoot             string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
-	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
-	RunIntegrationTests      *bool    `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
-	RunE2ETests              *bool    `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
-	KubeContext              string   `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
+	InfraConfig      `mapstructure:",squash" yaml:",inline"`
+	DeploySpecConfig `mapstructure:",squash" yaml:",inline"`
+
+	Name string `mapstructure:"-" yaml:"-"` // filled at runtime from map key
 }
 
 // RootConfig represents the entire configuration file.
 type RootConfig struct {
-	Current                  string                      `mapstructure:"current" yaml:"current,omitempty"`
-	RepoRoot                 string                      `mapstructure:"repoRoot" yaml:"repoRoot,omitempty"`
-	ScenarioRoot             string                      `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
-	ValuesPreset             string                      `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
-	ChartPath                string                      `mapstructure:"chartPath" yaml:"chartPath,omitempty"`
-	Chart                    string                      `mapstructure:"chart" yaml:"chart,omitempty"`
-	Version                  string                      `mapstructure:"version" yaml:"version,omitempty"`
-	Namespace                string                      `mapstructure:"namespace" yaml:"namespace,omitempty"`
-	NamespacePrefix          string                      `mapstructure:"namespacePrefix" yaml:"namespacePrefix,omitempty"`
-	Release                  string                      `mapstructure:"release" yaml:"release,omitempty"`
-	Scenario                 string                      `mapstructure:"scenario" yaml:"scenario,omitempty"`
-	ScenarioPath             string                      `mapstructure:"scenarioPath" yaml:"scenarioPath,omitempty"`
-	Auth                     string                      `mapstructure:"auth" yaml:"auth,omitempty"`
-	Platform                 string                      `mapstructure:"platform" yaml:"platform,omitempty"`
-	LogLevel                 string                      `mapstructure:"logLevel" yaml:"logLevel,omitempty"`
-	ExternalSecrets          bool                        `mapstructure:"externalSecrets" yaml:"externalSecrets,omitempty"`
-	SkipDependencyUpdate     bool                        `mapstructure:"skipDependencyUpdate" yaml:"skipDependencyUpdate,omitempty"`
-	KeycloakRealm            string                      `mapstructure:"keycloakRealm" yaml:"keycloakRealm,omitempty"`
-	OptimizeIndexPrefix      string                      `mapstructure:"optimizeIndexPrefix" yaml:"optimizeIndexPrefix,omitempty"`
-	OrchestrationIndexPrefix string                      `mapstructure:"orchestrationIndexPrefix" yaml:"orchestrationIndexPrefix,omitempty"`
-	TasklistIndexPrefix      string                      `mapstructure:"tasklistIndexPrefix" yaml:"tasklistIndexPrefix,omitempty"`
-	OperateIndexPrefix       string                      `mapstructure:"operateIndexPrefix" yaml:"operateIndexPrefix,omitempty"`
-	IngressHost              string                      `mapstructure:"ingressHost" yaml:"ingressHost,omitempty"`
-	IngressSubdomain         string                      `mapstructure:"ingressSubdomain" yaml:"ingressSubdomain,omitempty"`
-	IngressBaseDomain        string                      `mapstructure:"ingressBaseDomain" yaml:"ingressBaseDomain,omitempty"`
-	Flow                     string                      `mapstructure:"flow" yaml:"flow,omitempty"`
-	EnvFile                  string                      `mapstructure:"envFile" yaml:"envFile,omitempty"`
-	Interactive              *bool                       `mapstructure:"interactive" yaml:"interactive,omitempty"`
-	VaultSecretMapping       string                      `mapstructure:"vaultSecretMapping" yaml:"vaultSecretMapping,omitempty"`
-	AutoGenerateSecrets      *bool                       `mapstructure:"autoGenerateSecrets" yaml:"autoGenerateSecrets,omitempty"`
-	DeleteNamespaceFirst     *bool                       `mapstructure:"deleteNamespace" yaml:"deleteNamespace,omitempty"`
-	DockerUsername           string                      `mapstructure:"dockerUsername" yaml:"dockerUsername,omitempty"`
-	DockerPassword           string                      `mapstructure:"dockerPassword" yaml:"dockerPassword,omitempty"`
-	EnsureDockerRegistry     *bool                       `mapstructure:"ensureDockerRegistry" yaml:"ensureDockerRegistry,omitempty"`
-	DockerHubUsername        string                      `mapstructure:"dockerHubUsername" yaml:"dockerHubUsername,omitempty"`
-	DockerHubPassword        string                      `mapstructure:"dockerHubPassword" yaml:"dockerHubPassword,omitempty"`
-	EnsureDockerHub          *bool                       `mapstructure:"ensureDockerHub" yaml:"ensureDockerHub,omitempty"`
-	RenderTemplates          *bool                       `mapstructure:"renderTemplates" yaml:"renderTemplates,omitempty"`
-	RenderOutputDir          string                      `mapstructure:"renderOutputDir" yaml:"renderOutputDir,omitempty"`
-	ExtraValues              []string                    `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
-	RunIntegrationTests      *bool                       `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
-	RunE2ETests              *bool                       `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
-	Keycloak                 KeycloakConfig              `mapstructure:"keycloak" yaml:"keycloak,omitempty"`
-	Matrix                   MatrixConfig                `mapstructure:"matrix" yaml:"matrix,omitempty"`
-	Deployments              map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
-	FilePath                 string                      `mapstructure:"-" yaml:"-"`
-	KubeContext              string                      `mapstructure:"kubeContext" yaml:"kubeContext,omitempty"`
+	InfraConfig      `mapstructure:",squash" yaml:",inline"`
+	DeploySpecConfig `mapstructure:",squash" yaml:",inline"`
+
+	Current     string                      `mapstructure:"current" yaml:"current,omitempty"`
+	Keycloak    KeycloakConfig              `mapstructure:"keycloak" yaml:"keycloak,omitempty"`
+	Matrix      MatrixConfig                `mapstructure:"matrix" yaml:"matrix,omitempty"`
+	Deployments map[string]DeploymentConfig `mapstructure:"deployments" yaml:"deployments,omitempty"`
+	FilePath    string                      `mapstructure:"-" yaml:"-"`
 }
 
 // DetectRepoRoot uses git to auto-detect the repository root from the current
@@ -328,10 +291,12 @@ func applyEnvOverrides(rc *RootConfig) {
 		rc.LogLevel = v
 	}
 	if v := get("CAMUNDA_EXTERNAL_SECRETS"); v != "" {
-		rc.ExternalSecrets = strings.EqualFold(v, "true") || v == "1"
+		b := strings.EqualFold(v, "true") || v == "1"
+		rc.ExternalSecrets = &b
 	}
 	if v := get("CAMUNDA_SKIP_DEPENDENCY_UPDATE"); v != "" {
-		rc.SkipDependencyUpdate = strings.EqualFold(v, "true") || v == "1"
+		b := strings.EqualFold(v, "true") || v == "1"
+		rc.SkipDependencyUpdate = &b
 	}
 	if v := get("CAMUNDA_KEYCLOAK_HOST"); v != "" {
 		rc.Keycloak.Host = v
