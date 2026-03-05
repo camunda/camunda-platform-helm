@@ -321,6 +321,16 @@ The following values inside your values.yaml need to be set but were not:
       -}}
       {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
+    {{- $pusherClientSecret := .Values.webModeler.restapi.pusher.client.secret }}
+    {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 {{- end }}
 

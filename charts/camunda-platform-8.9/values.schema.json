@@ -2893,6 +2893,31 @@
                         "pusher": {
                             "type": "object",
                             "properties": {
+                                "client": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the Pusher app key as a plain-text value for non-production usage",
+                                                    "default": ""
+                                                },
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the Pusher app key",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "defines the key within the existing secret object",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "secret": {
                                     "type": "object",
                                     "properties": {

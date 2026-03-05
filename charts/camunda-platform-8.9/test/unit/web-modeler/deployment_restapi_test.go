@@ -470,6 +470,57 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
+		}, {
+			Name: "TestRestapiPusherKeyUsesExistingSecret",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				var pusherKeyEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "RESTAPI_PUSHER_KEY" {
+						pusherKeyEnv = &env
+						break
+					}
+				}
+
+				s.Require().NotNil(pusherKeyEnv, "RESTAPI_PUSHER_KEY env var should exist")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom, "RESTAPI_PUSHER_KEY should use valueFrom")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom.SecretKeyRef, "RESTAPI_PUSHER_KEY should use secretKeyRef")
+				s.Require().Equal("my-custom-app-key-secret", pusherKeyEnv.ValueFrom.SecretKeyRef.Name)
+				s.Require().Equal("my-pusher-app-key", pusherKeyEnv.ValueFrom.SecretKeyRef.Key)
+			},
+		}, {
+			Name: "TestRestapiPusherKeyUsesInlineSecret",
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"webModeler.enabled":                                     "true",
+				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
+				"webModeler.restapi.pusher.client.secret.inlineSecret":   "my-inline-app-key-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				var pusherKeyEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "RESTAPI_PUSHER_KEY" {
+						pusherKeyEnv = &env
+						break
+					}
+				}
+
+				s.Require().NotNil(pusherKeyEnv, "RESTAPI_PUSHER_KEY env var should exist")
+				s.Require().Equal("my-inline-app-key-value", pusherKeyEnv.Value)
+				s.Require().Nil(pusherKeyEnv.ValueFrom, "RESTAPI_PUSHER_KEY should not use valueFrom for inline values")
+			},
 		},
 	}
 

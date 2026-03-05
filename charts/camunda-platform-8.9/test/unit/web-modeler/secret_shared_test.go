@@ -52,7 +52,7 @@ func TestSecretSharedTemplate(t *testing.T) {
 func (s *secretSharedTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name: "TestContainerGenerateRandomPusherAppSecret",
+			Name: "TestContainerGenerateRandomPusherKeys",
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
@@ -62,36 +62,93 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 				var secret coreV1.Secret
 				helm.UnmarshalK8SYaml(s.T(), output, &secret)
 
-				// then
 				s.Require().NotNil(secret.Data)
 				s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["pusher-app-secret"]))
+				s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["pusher-app-key"]))
 			},
 		},
 		{
-			Name: "TestSecretNotCreatedWhenExistingSecretProvided",
+			Name: "TestSecretOnlyContainsPusherAppKeyWhenSecretProvided",
 			Values: map[string]string{
-				"identity.enabled":                                     "true",
-				"webModeler.enabled":                                   "true",
-				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":      "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":   "pusher-key",
+				"identity.enabled":                                "true",
+				"webModeler.enabled":                             "true",
+				"webModeler.restapi.mail.fromAddress":            "example@example.com",
+				"webModeler.restapi.pusher.secret.inlineSecret":  "my-inline-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				// Secret should not be rendered when existingSecret is provided
-				s.Require().Error(err)
-				s.Require().Contains(err.Error(), "could not find template")
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				s.Require().NotNil(secret.Data)
+				s.Require().Empty(secret.Data["pusher-app-secret"])
+				s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["pusher-app-key"]))
 			},
 		},
 		{
-			Name: "TestSecretNotCreatedWhenInlineSecretProvided",
+			Name: "TestSecretOnlyContainsPusherAppSecretWhenAppKeyProvided",
 			Values: map[string]string{
-				"identity.enabled":                              "true",
+				"identity.enabled":                               "true",
 				"webModeler.enabled":                            "true",
 				"webModeler.restapi.mail.fromAddress":           "example@example.com",
-				"webModeler.restapi.pusher.secret.inlineSecret": "my-inline-secret",
+				"webModeler.restapi.pusher.client.secret.inlineSecret":                 "my-inline-app-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				// Secret should not be rendered when inlineSecret is provided
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				s.Require().NotNil(secret.Data)
+				s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["pusher-app-secret"]))
+				s.Require().Empty(secret.Data["pusher-app-key"])
+			},
+		},
+		{
+			Name: "TestSecretOnlyContainsPusherAppKeyWhenExistingSecretProvided",
+			Values: map[string]string{
+				"identity.enabled":                                    "true",
+				"webModeler.enabled":                                  "true",
+				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":     "my-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":  "my-pusher-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				s.Require().NotNil(secret.Data)
+				s.Require().Empty(secret.Data["pusher-app-secret"])
+				s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["pusher-app-key"]))
+			},
+		},
+		{
+			Name: "TestSecretOnlyContainsPusherAppSecretWhenExistingAppKeyProvided",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var secret coreV1.Secret
+				helm.UnmarshalK8SYaml(s.T(), output, &secret)
+
+				s.Require().NotNil(secret.Data)
+				s.Require().Regexp("^[a-zA-Z0-9]{20}$", string(secret.Data["pusher-app-secret"]))
+				s.Require().Empty(secret.Data["pusher-app-key"])
+			},
+		},
+		{
+			Name: "TestSecretNotRenderedWhenBothConfigured",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":           "my-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":        "my-pusher-key",
+				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Error(err)
 				s.Require().Contains(err.Error(), "could not find template")
 			},
