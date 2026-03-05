@@ -13,13 +13,17 @@ ingress:
       secretName: camunda-platform
 
 # --- CI-oriented Keycloak setup (non-production) ---
-replicaCount: 5
+# Scaled vertically for ~700 concurrent realms.
+# Two replicas so the StatefulSet RollingUpdate keeps one pod serving while the other restarts.
+replicaCount: 2
 
 resources:
   requests:
-    memory: 2Gi
+    cpu: "4"
+    memory: 12Gi
   limits:
-    memory: 4Gi
+    cpu: "6"
+    memory: 16Gi
 
 service:
   type: ClusterIP
@@ -31,14 +35,22 @@ image:
   repository: bitnamilegacy/keycloak
   pullPolicy: IfNotPresent
 
+# Probes tuned for slower startup under 700-realm load.
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 90
+  periodSeconds: 10
+  failureThreshold: 30
 livenessProbe:
   enabled: true
-  initialDelaySeconds: 60
+  initialDelaySeconds: 0
   periodSeconds: 20
+  failureThreshold: 5
 readinessProbe:
   enabled: true
-  initialDelaySeconds: 30
+  initialDelaySeconds: 0
   periodSeconds: 10
+  failureThreshold: 5
 
 auth:
   adminUser: admin
@@ -58,13 +70,25 @@ global:
 
 httpRelativePath: /auth/
 
+# Two replicas: enable distributed Infinispan cache for session replication.
+cache:
+  enabled: true
+  stack: kubernetes
+
 postgresql:
   primary:
     resources:
       requests:
-        memory: 256Mi
+        cpu: "1"
+        memory: 2Gi
       limits:
-        memory: 512Mi
+        cpu: "2"
+        memory: 4Gi
+    extendedConfiguration: |
+      max_connections = 300
+      shared_buffers = 1GB
+      effective_cache_size = 3GB
+      work_mem = 8MB
   image:
     repository: bitnamilegacy/postgresql
 
@@ -77,3 +101,15 @@ extraEnvVars:
     value: keycloak-24-9-0.ci.distro.ultrawombat.com
   - name: KC_HOSTNAME_STRICT_HTTPS
     value: "true"
+  # JVM heap sized for ~700 concurrent realms (~10 GB heap).
+  # NOTE: JAVA_OPTS_APPEND is set by the chart's ConfigMap for JGroups DNS discovery
+  # (cache.enabled=true). We use JAVA_OPTS for heap/metaspace so both take effect.
+  - name: JAVA_OPTS
+    value: "-Xms8g -Xmx10g -XX:MaxMetaspaceSize=512m"
+  # DB connection pool: raised from default (100) to handle 700 concurrent realms.
+  - name: KC_DB_POOL_MIN_SIZE
+    value: "50"
+  - name: KC_DB_POOL_MAX_SIZE
+    value: "200"
+  - name: KC_DB_POOL_INITIAL_SIZE
+    value: "50"

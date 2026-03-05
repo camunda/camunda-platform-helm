@@ -47,7 +47,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           platforms: [gke,eks]
         - name: opensearch
@@ -55,7 +55,7 @@ integration:
           auth: keycloak
           shortname: oske
           exclude: []
-          identity: keycloak-external
+          identity: keycloak
           infra-type:
             gke: distroci
             eks: preemptible
@@ -81,14 +81,14 @@ integration:
             gke: distroci
             eks: preemptible
           identity: oidc
-          persistence: elasticsearch
+          persistence: elasticsearch-external
           platforms: [gke]
         - name: keycloak-mt
           enabled: true
           exclude: []
           shortname: kemt
           auth: keycloak
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           flow: upgrade-minor
           infra-type:
@@ -117,7 +117,7 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           platforms: [gke]
         - name: gateway-keycloak
@@ -126,7 +126,7 @@ integration:
           shortname: gatkc
           auth: keycloak
           flow: install
-          identity: keycloak-external
+          identity: keycloak
           persistence: elasticsearch-external
           features: [gateway]
           infra-type:
