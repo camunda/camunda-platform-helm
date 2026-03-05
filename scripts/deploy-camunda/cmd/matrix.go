@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -170,6 +171,7 @@ func newMatrixRunCommand() *cobra.Command {
 		dockerHubUsername        string
 		dockerHubPassword        string
 		ensureDockerHub          bool
+		yes                      bool
 	)
 
 	cmd := &cobra.Command{
@@ -366,6 +368,23 @@ This command calls deploy.Execute() for each matrix entry.`,
 				return nil
 			}
 
+			// Block e2e runs with many entries — Playwright spawns a browser per test
+			// which can exhaust machine resources fast.
+			const e2eWarnThreshold = 5
+			if (testE2E || testAll) && len(entries) > e2eWarnThreshold && !yes {
+				logging.Logger.Warn().
+					Int("entries", len(entries)).
+					Int("threshold", e2eWarnThreshold).
+					Msg("Running e2e tests on many entries — Playwright spawns a browser per test which can exhaust machine resources. Consider using --scenario-filter or --shortname-filter to reduce the set.")
+				fmt.Fprintf(os.Stderr, "\nProceed with e2e tests on %d entries? [y/N] ", len(entries))
+				reader := bufio.NewReader(os.Stdin)
+				answer, _ := reader.ReadString('\n')
+				answer = strings.TrimSpace(strings.ToLower(answer))
+				if answer != "y" && answer != "yes" {
+					return fmt.Errorf("aborted: e2e run with %d entries not confirmed (use --yes to skip this prompt)", len(entries))
+				}
+			}
+
 			// Show what will be run (only for non-dry-run/non-coverage; those modes print their own detailed output)
 			if !dryRun && !coverage {
 				output, _ := matrix.Print(entries, "table")
@@ -461,6 +480,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&dockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
 	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
+	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
