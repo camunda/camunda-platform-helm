@@ -70,29 +70,6 @@ data:
                   definition: read
                 - audience: "camunda-identity-resource-server"
                   definition: write
-        optimize:
-          applications:
-            - name: Optimize
-              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
-              type: confidential
-              secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
-              root-url: "http://localhost:8083"
-              redirect-uris:
-                - "/api/authentication/callback"
-          apis:
-            - name: Optimize API
-              audience: "optimize-api"
-              permissions:
-                - definition: write:*
-                  description: "Write permission"
-          roles:
-            - name: "Optimize"
-              description: "Grants full access to Optimize"
-              permissions:
-                - audience: "optimize-api"
-                  definition: write:*
-                - audience: "camunda-identity-resource-server"
-                  definition: read:users
         webmodeler:
           applications:
             - name: "Web Modeler"
@@ -145,8 +122,6 @@ data:
       init:
         console:
           root-url: "http://localhost:8087"
-        optimize:
-          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
         webmodeler:
           root-url: "http://localhost:8070"
       clients:
