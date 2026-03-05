@@ -1,5 +1,5 @@
 master:
-  replicaCount: 3
+  replicaCount: 6
   resources:
     requests: { cpu: "2000m", memory: "3Gi" }
     limits: { cpu: "4000m", memory: "3Gi" }
