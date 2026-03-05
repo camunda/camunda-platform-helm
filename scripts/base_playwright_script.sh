@@ -201,10 +201,19 @@ _resolve_host_authoritative() {
 # When the system resolver has a stale NXDOMAIN but public DNS can resolve the
 # host, we inject a Node.js preload script via NODE_OPTIONS that monkey-patches
 # dns.lookup to fall back to public resolvers (1.1.1.1, 8.8.8.8, 9.9.9.9).
+# Additionally, when a hostname and resolved IP are available (from
+# _wait_for_dns_resolution), we pass them as DNS_FALLBACK_MAP so the Node.js
+# script can resolve them instantly without any network calls.
 # This avoids needing sudo or /etc/hosts edits.
 _DNS_FALLBACK_ENABLED=false
 
+# Usage: _enable_dns_fallback [hostname] [resolved_ip]
+# When hostname and resolved_ip are provided, the Node.js DNS fallback script
+# will use a static hostname→IP mapping for instant resolution.
+# Common hostname variants (grpc-*, zeebe-*) are automatically included.
 _enable_dns_fallback() {
+  local hostname="${1:-}"
+  local resolved_ip="${2:-}"
   local fallback_script
   fallback_script="$(dirname "${BASH_SOURCE[0]}")/dns-fallback.cjs"
 
@@ -218,8 +227,21 @@ _enable_dns_fallback() {
 
   # Append to NODE_OPTIONS so we don't clobber existing values
   export NODE_OPTIONS="${NODE_OPTIONS:+${NODE_OPTIONS} }--require ${fallback_script}"
+
+  # When we have a pre-resolved hostname→IP, export a static mapping so the
+  # Node.js fallback can resolve it instantly without network calls.
+  # Include common prefixed variants (grpc-*, zeebe-*) that share the same IP.
+  if [[ -n "$hostname" && -n "$resolved_ip" ]]; then
+    local map_entries="${hostname}=${resolved_ip}"
+    map_entries+=",grpc-${hostname}=${resolved_ip}"
+    map_entries+=",zeebe-${hostname}=${resolved_ip}"
+    export DNS_FALLBACK_MAP="$map_entries"
+    info "Enabled Node.js DNS fallback with static map: ${hostname} -> ${resolved_ip} (+ grpc-/zeebe- variants)"
+  else
+    info "Enabled Node.js DNS fallback (public resolvers only) via NODE_OPTIONS"
+  fi
+
   _DNS_FALLBACK_ENABLED=true
-  info "Enabled Node.js DNS fallback (public resolvers) via NODE_OPTIONS"
 }
 
 # Wait for DNS resolution of a hostname before proceeding.

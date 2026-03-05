@@ -329,7 +329,7 @@ if [[ "$IS_CI" != "true" ]]; then
 
   # Enable Node.js DNS fallback if the system resolver is stale
   if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
-    _enable_dns_fallback
+    _enable_dns_fallback "$hostname" "$_RESOLVED_IP"
   fi
 else
   log "CI detected — skipping DNS resolution and ingress readiness checks"
