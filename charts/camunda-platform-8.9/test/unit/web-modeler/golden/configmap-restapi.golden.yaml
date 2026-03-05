@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: camunda-platform
     app.kubernetes.io/component: web-modeler
-    app.kubernetes.io/version: "8.9.0-alpha4"
+    app.kubernetes.io/version: "8.9.0-alpha5-rc1"
   annotations:
     {}
 data:
@@ -24,9 +24,16 @@ data:
         type: "KEYCLOAK"
 
       modeler:
+        feature:
+          play-enabled: "true"
+
         pusher:
           host: "camunda-platform-test-web-modeler-websockets"
           port: 80
+          client:
+            host: "localhost"
+            port: "8085"
+            force-tls: false
         security:
           jwt:
             issuer:
@@ -39,8 +46,14 @@ data:
           from-address: "example@example.com"
           from-name: "Camunda 8"
 
+        oauth2:
+          client-id: "web-modeler"
+          token:
+            username-claim: "preferred_username"
+
         server:
           url: "http://localhost:8070"
+          https-only: "false"
         clusters:
           - id: "default-cluster"
             name: "camunda-platform-test-zeebe"

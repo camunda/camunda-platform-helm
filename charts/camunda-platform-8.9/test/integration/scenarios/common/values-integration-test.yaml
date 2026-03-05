@@ -29,3 +29,41 @@ orchestration:
     # Allow to upgrade from alpha or snapshot versions.
     - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
       value: "false"
+
+connectors:
+  initContainers:
+    - name: wait-for-orchestration
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Orchestration cluster to be healthy..."
+          until wget --spider -q http://integration-zeebe-gateway:9600/orchestration/actuator/health/readiness 2>/dev/null; do
+            echo "Orchestration cluster not ready yet, waiting..."
+            sleep 5
+          done
+          echo "Orchestration cluster is healthy!"
+      securityContext:
+        runAsUser: 1000
+  logging:
+    level:
+      io.camunda.client.job.worker: INFO
+      io.camunda.client.job.poller: INFO
+
+optimize:
+  initContainers:
+    - name: wait-for-orchestration
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Orchestration cluster to be healthy..."
+          until wget --spider -q http://integration-zeebe-gateway:9600/orchestration/actuator/health/readiness 2>/dev/null; do
+            echo "Orchestration cluster not ready yet, waiting..."
+            sleep 5
+          done
+          echo "Orchestration cluster is healthy!"
+      securityContext:
+        runAsUser: 1000

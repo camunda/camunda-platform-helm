@@ -1,9 +1,10 @@
 package web_modeler
 
-// REST API ---
 type WebModelerRestAPIApplicationYAML struct {
-	Camunda CamundaYAML `yaml:"camunda"`
-	Spring  SpringYAML  `yaml:"spring"`
+	Camunda    CamundaYAML    `yaml:"camunda"`
+	Spring     SpringYAML     `yaml:"spring"`
+	Server     ServerYAML     `yaml:"server"`
+	Management ManagementYAML `yaml:"management"`
 }
 
 type SpringYAML struct {
@@ -21,10 +22,10 @@ type MailYAML struct {
 }
 
 type SpringSecurityYAML struct {
-	OAuth2 OAuth2YAML `yaml:"oauth2"`
+	OAuth2 SpringSecurityOAuth2YAML `yaml:"oauth2"`
 }
 
-type OAuth2YAML struct {
+type SpringSecurityOAuth2YAML struct {
 	ResourceServer ResourceServerYAML `yaml:"resourceserver"`
 }
 
@@ -48,10 +49,18 @@ type IdentityYAML struct {
 type ModelerYAML struct {
 	Security ModelerSecurityYAML `yaml:"security"`
 	Clusters []ClusterYAML       `yaml:"clusters"`
+	Server   ModelerServerYAML   `yaml:"server"`
+	OAuth2   ModelerOAuth2YAML   `yaml:"oauth2"`
+	Pusher   PusherYAML          `yaml:"pusher"`
 }
 
 type ModelerSecurityYAML struct {
 	JWT ModelerJwtYAML `yaml:"jwt"`
+}
+
+type ModelerServerYAML struct {
+	HttpsOnly string `yaml:"https-only"`
+	Url       string `yaml:"url"`
 }
 
 type ModelerJwtYAML struct {
@@ -95,40 +104,38 @@ type AuthorizationsYAML struct {
 	Enabled bool `yaml:"enabled"`
 }
 
-// Web App ---
-
-type WebModelerWebAppTOML struct {
-	OAuth2   OAuth2Config   `toml:"oAuth2"`
-	Client   ClientConfig   `toml:"client"`
-	Identity IdentityConfig `toml:"identity"`
-	Server   ServerConfig   `toml:"server"`
-}
-type ServerConfig struct {
-	HttpsOnly string `toml:"httpsOnly"`
-}
-type IdentityConfig struct {
-	BaseUrl string `toml:"baseUrl"`
+type PusherYAML struct {
+	Client PusherClientYAML `yaml:"client"`
 }
 
-type ClientConfig struct {
-	Pusher PusherConfig `toml:"pusher"`
+type PusherClientYAML struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Path     string `yaml:"path"`
+	ForceTLS bool   `yaml:"force-tls"`
 }
 
-type PusherConfig struct {
-	Host     string `toml:"host"`
-	Port     string `toml:"port"`
-	Path     string `toml:"path"`
-	ForceTLS bool   `toml:"forceTLS"`
+type ModelerOAuth2YAML struct {
+	Token    TokenYAML `yaml:"token"`
+	ClientId string    `yaml:"client-id"`
 }
 
-type OAuth2Config struct {
-	Token    TokenConfig `toml:"token"`
-	ClientId string      `toml:"clientId"`
-	Type     string      `toml:"type"`
+type TokenYAML struct {
+	UsernameClaim string `yaml:"username-claim"`
 }
 
-type TokenConfig struct {
-	Audience      string `toml:"audience"`
-	JwksUrl       string `toml:"jwksUrl"`
-	UsernameClaim string `toml:"usernameClaim"`
+type ServerYAML struct {
+	Servlet ServletYAML `yaml:"servlet"`
+}
+
+type ServletYAML struct {
+	ContextPath string `yaml:"context-path"`
+}
+
+type ManagementYAML struct {
+	Server ManagementServerYAML `yaml:"server"`
+}
+
+type ManagementServerYAML struct {
+	BasePath string `yaml:"base-path"`
 }

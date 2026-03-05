@@ -89,6 +89,10 @@ global:
     ## @extra global.security.authentication
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
+      # This is the global default. Each component can override it via its own security.authentication.method.
+      # When using an External OIDC provider, components that should authenticate via the external
+      # provider must either set this globally to "oidc" or override per-component.
+      # See the "Identity / Authentication Modes" overview below global.identity for details.
       method: "basic"
 
   ## @param global.createReleaseInfo Create config that will be used in Camunda Console.
@@ -270,6 +274,148 @@ global:
   ## @param global.zeebeClusterName ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.
   zeebeClusterName: "{{ .Release.Name }}-zeebe"
 
+  # --------------------------------------------------------------------------
+  # Identity / Authentication Modes
+  #
+  # Camunda supports three authentication modes. The mode you choose
+  # determines which parameters below are required.
+  #
+  # -----------------------------------------------------------------------
+  # Mode A: Internal Keycloak (Bitnami subchart)
+  # -----------------------------------------------------------------------
+  # The Bitnami Keycloak subchart is deployed alongside Camunda.
+  # OIDC endpoints are auto-derived from the internal Keycloak service.
+  #
+  # Required:
+  #   identityKeycloak.enabled: true
+  #   global.identity.auth.enabled: true
+  #   global.security.authentication.method: "oidc"
+  #   identity.enabled: true
+  #   global.identity.auth.type: "KEYCLOAK"  (default)
+  #
+  # Optional:
+  #   global.identity.auth.publicIssuerUrl  - override public Keycloak URL
+  #     (default works with port-forward; override when using ingress)
+  #   global.identity.keycloak.contextPath  - "/auth" (Keycloak v16) or "/" (v19+)
+  #
+  # No explicit OIDC endpoint URLs are needed; they are auto-derived.
+  #
+  # Minimal snippet:
+  #   identityKeycloak:
+  #     enabled: true
+  #   global:
+  #     security:
+  #       authentication:
+  #         method: oidc
+  #     identity:
+  #       auth:
+  #         enabled: true
+  #   identity:
+  #     enabled: true
+  #
+  # -----------------------------------------------------------------------
+  # Mode B: External Keycloak
+  # -----------------------------------------------------------------------
+  # Use an existing Keycloak instance running outside this Helm release.
+  #
+  # Required:
+  #   identityKeycloak.enabled: false
+  #   global.identity.keycloak.url.protocol / host / port
+  #   global.identity.keycloak.auth.adminUser / existingSecret
+  #   global.identity.auth.enabled: true
+  #   global.security.authentication.method: "oidc"
+  #   identity.enabled: true
+  #   global.identity.auth.type: "KEYCLOAK"  (default)
+  #
+  # Recommended (explicit OIDC URLs for split-horizon DNS setups where
+  # Keycloak has different internal/external URLs):
+  #   global.identity.auth.publicIssuerUrl   - browser-facing issuer URL
+  #   global.identity.auth.issuerBackendUrl  - cluster-internal issuer URL
+  #   global.identity.auth.authUrl           - browser-facing auth endpoint
+  #   global.identity.auth.tokenUrl          - cluster-internal token endpoint
+  #   global.identity.auth.jwksUrl           - cluster-internal JWKS endpoint
+  #
+  # If internal and external Keycloak URLs are identical, these OIDC
+  # endpoints can be omitted — they will be auto-derived from
+  # global.identity.keycloak.url + contextPath + realm.
+  #
+  # Optional:
+  #   global.identity.keycloak.internal: true  - ExternalName svc for cross-namespace access
+  #   global.identity.keycloak.contextPath     - "/auth" (Keycloak v16) or "/" (v19+)
+  #
+  # Minimal snippet:
+  #   identityKeycloak:
+  #     enabled: false
+  #   global:
+  #     security:
+  #       authentication:
+  #         method: oidc
+  #     identity:
+  #       keycloak:
+  #         url:
+  #           protocol: "https"
+  #           host: "keycloak.example.com"
+  #           port: "443"
+  #         contextPath: "/"
+  #         auth:
+  #           adminUser: "admin"
+  #           existingSecret: "my-keycloak-secret"
+  #           existingSecretKey: "admin-password"
+  #       auth:
+  #         enabled: true
+  #         publicIssuerUrl: "https://keycloak.example.com/realms/camunda-platform"
+  #   identity:
+  #     enabled: true
+  #
+  # -----------------------------------------------------------------------
+  # Mode C: External OIDC Provider (Microsoft Entra ID, Generic)
+  # -----------------------------------------------------------------------
+  # Use a non-Keycloak OIDC provider. All OIDC endpoints must be
+  # explicitly configured.
+  #
+  # Required:
+  #   identityKeycloak.enabled: false
+  #   A database for Identity: identityPostgresql.enabled: true
+  #     (or identity.externalDatabase; Identity needs its own DB without Keycloak)
+  #   global.identity.auth.enabled: true
+  #   global.security.authentication.method: "oidc"
+  #   identity.enabled: true
+  #   global.identity.auth.type: "MICROSOFT" or "GENERIC"
+  #   global.identity.auth.issuerBackendUrl / tokenUrl / jwksUrl / authUrl
+  #   Either global.identity.auth.issuer or global.identity.auth.publicIssuerUrl
+  #   Per-component clientId, audience, and secret in global.identity.auth.<component>
+  #
+  # Minimal snippet (Microsoft Entra example):
+  #   identityKeycloak:
+  #     enabled: false
+  #   identityPostgresql:
+  #     enabled: true
+  #   global:
+  #     security:
+  #       authentication:
+  #         method: oidc
+  #     identity:
+  #       auth:
+  #         enabled: true
+  #         type: "MICROSOFT"
+  #         issuer: "https://login.microsoftonline.com/<tenant>/v2.0"
+  #         issuerBackendUrl: "https://login.microsoftonline.com/<tenant>/v2.0"
+  #         tokenUrl: "https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token"
+  #         authUrl: "https://login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize"
+  #         jwksUrl: "https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys"
+  #         identity:
+  #           clientId: "<client-id>"
+  #           audience: "<client-id>"
+  #           secret:
+  #             existingSecret: "<secret-name>"
+  #             existingSecretKey: "<secret-key>"
+  #           initialClaimName: "preferred_username"
+  #           initialClaimValue: "<admin-user-email>"
+  #   identity:
+  #     enabled: true
+  #
+  # --------------------------------------------------------------------------
+
   # Identity configuration to configure identity specifics on global level, which can be accessed by other components
   identity:
     service:
@@ -278,8 +424,11 @@ global:
     keycloak:
       # global.identity.keycloak.internal if true, it will configure an extra service with type "ExternalName".
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
+      # Applies to: External Keycloak. Not used in Internal Keycloak or External OIDC.
       internal: false
       ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart.
+      # Applies to: External Keycloak - required.
+      # In Internal Keycloak, auto-derived from the Keycloak subchart. In External OIDC, not used.
       url:
         {}
         # Example to produce the following URL "https://keycloak.prod.svc.cluster.local:8443":
@@ -289,41 +438,69 @@ global:
         #   port: "8443"
       #  defines the endpoint of Keycloak which varies between Keycloak versions.
       ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
+      # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
       contextPath: "/auth"
       ## @param global.identity.keycloak.realm defines Keycloak realm path used for Camunda.
+      # Applies to: Internal Keycloak and External Keycloak. Not used in External OIDC.
       realm: "/realms/camunda-platform"
-      ## @param global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
+      ## @extra global.identity.keycloak.auth same as "identityKeycloak.auth" but it's used for existing Keycloak.
+      # Applies to: External Keycloak - provides admin credentials for the external Keycloak instance.
+      # Not needed in Internal Keycloak (handled by the identityKeycloak subchart) or External OIDC (no Keycloak).
       auth:
-        {}
-        # identity.keycloak.auth.adminUser can be used to configure admin user to access existing Keycloak.
-        # adminUser: ""
-        # identity.keycloak.auth.existingSecret can be used to configure existing Secret object which has admin password
-        # to access existing Keycloak.
-        # existingSecret: ""
-        # identity.keycloak.auth.existingSecretKey can be used to configure the key inside existing Secret object
-        # which has admin password to access existing Keycloak.
-        # existingSecretKey: "admin-password"
+        ## @param global.identity.keycloak.auth.adminUser defines the admin user to access existing Keycloak.
+        adminUser: ""
+        ## @skip global.identity.keycloak.auth.existingSecret (DEPRECATED - use global.identity.keycloak.auth.secret instead) @skip because these are internal legacy keys, not public API.
+        existingSecret: ""
+        ## @skip global.identity.keycloak.auth.existingSecretKey (DEPRECATED - use global.identity.keycloak.auth.secret instead) @skip because these are internal legacy keys, not public API.
+        existingSecretKey: ""
+        ## @extra global.identity.keycloak.auth.secret configuration to provide the Keycloak admin password secret.
+        secret:
+          ## @param global.identity.keycloak.auth.secret.inlineSecret can be used to provide the Keycloak admin password as a plain-text value for non-production usage.
+          inlineSecret: ""
+          ## @param global.identity.keycloak.auth.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Keycloak admin password.
+          existingSecret: ""
+          ## @param global.identity.keycloak.auth.secret.existingSecretKey defines the key within the existing secret object containing the Keycloak admin password.
+          existingSecretKey: ""
 
     ## @extra global.identity.auth configuration, to configure identity authentication setup
+    # Internal Keycloak: OIDC values are auto-derived from the Keycloak subchart; no explicit URLs needed.
+    # External Keycloak: OIDC values are auto-derived but docs recommend setting them explicitly for split-horizon DNS.
+    # External OIDC: all OIDC endpoint URLs must be explicitly provided.
     auth:
       ## @param global.identity.auth.enabled if true, enables authentication on Management Identity .
+      # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
+      # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer;
+      #   generic OIDC docs use publicIssuerUrl). Internal Keycloak and External Keycloak: leave empty.
       issuer: ""
       ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
+      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
+      #   auto-derived if omitted and internal/external Keycloak URLs are identical.
       issuerBackendUrl: ""
       ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access.
+      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (browser-facing URL);
+      #   auto-derived if omitted.
       authUrl: ""
       ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens.
+      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
+      #   auto-derived if omitted.
       tokenUrl: ""
       ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
+      # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
+      #   auto-derived if omitted.
       jwksUrl: ""
       ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.
+      # Internal Keycloak and External Keycloak: "KEYCLOAK" (default). OIDC endpoints are derived automatically from global.identity.keycloak settings.
+      # External OIDC: "MICROSOFT" or "GENERIC". OIDC endpoints (issuer or publicIssuerUrl, tokenUrl, jwksUrl, authUrl) must be explicitly set.
       type: "KEYCLOAK"
 
       #  defines the token issuer (Keycloak) URL, where the services can request JWT tokens.
       # Should be publicly accessible, per default we assume a port-forward to Keycloak (18080) is created before login.
       ## @param global.identity.auth.publicIssuerUrl Can be overwritten if ingress is in use and an external IP is available.
+      # Internal Keycloak and External Keycloak: primary issuer URL when issuer is not set; default works with port-forward,
+      #   override when using ingress. External Keycloak docs recommend setting this explicitly.
+      # External OIDC: required when issuer is not set (generic OIDC pattern); not consulted if issuer is set.
       publicIssuerUrl: "http://localhost:18080/auth/realms/camunda-platform"
 
       ## @extra global.identity.auth.admin configuration to configure Connectors authentication specifics on global level, which can be accessed by other components
@@ -346,6 +523,8 @@ global:
       #####################
 
       ## @extra global.identity.auth.identity configuration to configure Management Identity authentication specifics on global level, which can be accessed by other components
+      # In Internal Keycloak and External Keycloak, clientId and audience have working defaults; secret is auto-generated.
+      # In External OIDC, clientId, audience, and secret must be configured to match the external OIDC provider.
       identity:
         ## @param global.identity.auth.identity.clientId defines the client id, which is used by Management Identity in authentication flows.
         clientId: camunda-identity
@@ -361,8 +540,10 @@ global:
           existingSecretKey: ""
         ## @param global.identity.auth.identity.initialClaimName defines the initial claim name, which is used by Management Identity to configure initial mapping rules,
         # defaults to "oid".
+        # Applies to: External OIDC. Used to map the initial admin user from the external provider.
         initialClaimName: "oid"
         ## @param global.identity.auth.identity.initialClaimValue defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.
+        # Applies to: External OIDC. Set to the object ID (or equivalent claim value) of the initial admin user.
         initialClaimValue: ""
 
       #####################
@@ -370,6 +551,8 @@ global:
       #####################
 
       ## @extra global.identity.auth.console configuration to configure Console authentication specifics on global level, which can be accessed by other components
+      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External OIDC, clientId and audience must match the external OIDC provider configuration.
       console:
         ## @param global.identity.auth.console.clientId defines the client id, which is used by Console in authentication flows.
         clientId: console
@@ -387,6 +570,8 @@ global:
       #####################
 
       ## @extra global.identity.auth.webModeler configuration to configure WebModeler authentication specifics on global level, which can be accessed by other components
+      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External OIDC, clientId and audience must match the external OIDC provider configuration.
       webModeler:
         ## @param global.identity.auth.webModeler.clientId defines the client id, which is used by WebModeler in authentication flows.
         clientId: web-modeler
@@ -395,7 +580,7 @@ global:
         ## @param global.identity.auth.webModeler.publicApiAudience defines the audience which is used by WebModeler's public API.
         publicApiAudience: web-modeler-public-api
         ## @param global.identity.auth.webModeler.redirectUrl defines the root URL which is used by Keycloak to access WebModeler.
-        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8084.
+        # Should be publicly accessible, the default value works if a port-forward to WebModeler is created to 8070.
         # Can be overwritten if ingress is in use and an external IP is available.
         redirectUrl: "http://localhost:8070"
 
@@ -403,6 +588,8 @@ global:
       # Optimize
       #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
+      # In Internal Keycloak and External Keycloak, defaults work out-of-the-box with Keycloak.
+      # In External OIDC, clientId, audience, and secret must match the external OIDC provider configuration.
       optimize:
         ## @param global.identity.auth.optimize.audience defines the audience, which is used by Optimize.
         audience: optimize-api
@@ -536,6 +723,7 @@ identity:
   #         global.identity.auth.enabled=false
   #         webModeler.enabled=false
   #         identityKeycloak.enabled=false
+  # Required for all authentication modes (Internal Keycloak, External Keycloak, External OIDC).
   enabled: false
 
   ## @param identity.fullnameOverride can be used to override the full name of the Management Identity resources
@@ -845,6 +1033,9 @@ identity:
 ## @extra identityPostgresql (DEPRECATED) configuration for the PostgreSQL dependency chart used by Management Identity. For more details, check [Bitnami package for PostgreSQL](https://artifacthub.io/packages/helm/bitnami/postgresql#parameters) documentation.
 identityPostgresql:
   ## @param identityPostgresql.enabled (DEPRECATED) Enable Management Identity PostgreSQL Helm chart. Required for Multi-Tenancy.
+  # Also required for External OIDC, since Identity needs its own database when Keycloak is not deployed.
+  # Alternatively, use identity.externalDatabase to provide a database from outside this chart.
+  # In Internal Keycloak and External Keycloak, Keycloak provides the database for Identity and this is not needed (unless multi-tenancy is enabled).
   ##
   enabled: false
   ## @extra identityPostgresql.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
@@ -908,6 +1099,9 @@ identityPostgresql:
 ## @extra identityKeycloak (DEPRECATED) configuration, for the Keycloak dependency chart which is used by Management Identity. For more details, check [Bitnami package for Keycloak](https://artifacthub.io/packages/helm/bitnami/keycloak#parameters) documentation.
 identityKeycloak:
   ## @param identityKeycloak.enabled (DEPRECATED) Enable Management Identity Keycloak Helm chart. It is used incorporate with "global.identity.keycloak" to use your own Keycloak instead of the one comes with Camunda Helm chart
+  # Internal Keycloak: set to true (deploys Keycloak as part of this Helm release).
+  # External Keycloak: set to false and configure global.identity.keycloak.url to point to your external Keycloak.
+  # External OIDC: set to false (no Keycloak is used).
   enabled: false
   ## @extra identityKeycloak.global.compatibility (DEPRECATED) Compatibility adaptations for Kubernetes platforms
   global:
@@ -1134,7 +1328,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.9.0-alpha4
+    tag: 8.9.0-alpha5
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1360,7 +1554,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.0-alpha4
+    tag: 8.9.0-alpha5-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1374,6 +1568,7 @@ webModeler:
     ## @extra webModeler.security.authentication
     authentication:
       ## @param webModeler.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
       method: ""
 
   # WebModeler.
@@ -1598,11 +1793,11 @@ webModeler:
     ## @param webModeler.restapi.resources.limits.memory
     resources:
       requests:
-        cpu: 500m
-        memory: 1Gi
+        cpu: 900m
+        memory: 1280Mi
       limits:
-        cpu: 1000m
-        memory: 2Gi
+        cpu: 1800m
+        memory: 2560Mi
 
     ## @extra webModeler.restapi.service configuration of the WebModeler restapi service
     service:
@@ -1629,179 +1824,6 @@ webModeler:
     ## @param webModeler.restapi.zeebeClientConfigPath can be used to set a custom path for the Zeebe client configuration file
     zeebeClientConfigPath: /tmp/zeebe_client_cache.txt
 
-  # WebModeler.
-  #    # ###### #####    ##   #####  #####
-  #    # #      #    #  #  #  #    # #    #
-  #    # #####  #####  #    # #    # #    #
-  # ## # #      #    # ###### #####  #####
-  ##  ## #      #    # #    # #      #
-  #    # ###### #####  #    # #      #
-  ## @section WebModeler - WebApp Parameters
-  ## @extra webModeler.webapp. configuration of the WebModeler webapp component
-  webapp:
-    ## @extra webModeler.webapp.image configuration of the webapp Docker image
-    image:
-      ## @param webModeler.webapp.image.repository defines which image repository to use for the webapp Docker image
-      repository: camunda/web-modeler-webapp
-      ## @param webModeler.webapp.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
-      digest: ""
-
-    ## @param webModeler.webapp.sidecars can be used to attach extra containers to the modeler webapp deployment
-    sidecars: []
-    ## @param webModeler.webapp.initContainers can be used to set up extra init containers for the application Pod
-    initContainers: []
-
-    ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations. Supports templating (e.g., {{ .Release.Name }}).
-    podAnnotations: {}
-    ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels. Supports templating (e.g., {{ .Release.Name }}).
-    podLabels: {}
-
-    ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.
-    env: []
-    ## @param webModeler.webapp.envFrom list of environment variables to import from configMapRef and secretRef
-    envFrom: []
-    ## @param webModeler.webapp.command can be used to override the default command provided by the container image, see https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-    command: []
-    ## @param webModeler.webapp.extraVolumes can be used to define extra volumes for the webapp pods, useful for TLS and self-signed certificates
-    extraVolumes: []
-    ## @param webModeler.webapp.extraVolumeMounts can be used to mount extra volumes for the webapp pods, useful for TLS and self-signed certificates
-    extraVolumeMounts: []
-
-    ## @param webModeler.webapp.replicas can be used to set the number of replicas for the webapp deployment
-    replicas: 1
-
-    ## @extra webModeler.webapp.podSecurityContext can be used to define the security options the webapp pod should be run with
-    ## @param webModeler.webapp.podSecurityContext.runAsNonRoot
-    ## @param webModeler.webapp.podSecurityContext.fsGroup
-    podSecurityContext:
-      runAsNonRoot: true
-      fsGroup: 1001
-      ## @extra webModeler.webapp.podSecurityContext.seccompProfile
-      seccompProfile:
-        ## @param webModeler.webapp.podSecurityContext.seccompProfile.type
-        type: RuntimeDefault
-    ## @extra webModeler.webapp.containerSecurityContext can be used to define the security options the webapp container should be run with
-    ## @param webModeler.webapp.containerSecurityContext.privileged
-    ## @param webModeler.webapp.containerSecurityContext.readOnlyRootFilesystem
-    ## @param webModeler.webapp.containerSecurityContext.allowPrivilegeEscalation
-    ## @param webModeler.webapp.containerSecurityContext.runAsNonRoot
-    ## @param webModeler.webapp.containerSecurityContext.runAsUser
-    containerSecurityContext:
-      allowPrivilegeEscalation: false
-      privileged: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      runAsUser: 1001
-      ## @extra webModeler.webapp.containerSecurityContext.seccompProfile
-      seccompProfile:
-        ## @param webModeler.webapp.containerSecurityContext.seccompProfile.type
-        type: RuntimeDefault
-
-    ## @extra webModeler.webapp.startupProbe configuration of the webapp startup probe
-    startupProbe:
-      ## @param webModeler.webapp.startupProbe.enabled if true, the startup probe will be enabled for the webapp container
-      enabled: false
-      ## @param webModeler.webapp.startupProbe.scheme defines the startup probe schema used on calling the probePath
-      scheme: HTTP
-      ## @param webModeler.webapp.startupProbe.probePath defines the HTTP endpoint used for the startup probe
-      probePath: /health/liveness
-      ## @param webModeler.webapp.startupProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
-      initialDelaySeconds: 15
-      ## @param webModeler.webapp.startupProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param webModeler.webapp.startupProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
-      successThreshold: 1
-      ## @param webModeler.webapp.startupProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
-      failureThreshold: 5
-      ## @param webModeler.webapp.startupProbe.timeoutSeconds defines the number of seconds after which the probe times out
-      timeoutSeconds: 1
-
-    ## @extra webModeler.webapp.readinessProbe configuration of the webapp readiness probe
-    readinessProbe:
-      ## @param webModeler.webapp.readinessProbe.enabled if true, the readiness probe will be enabled for the webapp container
-      enabled: true
-      ## @param webModeler.webapp.readinessProbe.scheme defines the readiness probe schema used on calling the probePath
-      scheme: HTTP
-      ## @param webModeler.webapp.readinessProbe.probePath defines the HTTP endpoint used for the readiness probe
-      probePath: /health/readiness
-      ## @param webModeler.webapp.readinessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
-      initialDelaySeconds: 15
-      ## @param webModeler.webapp.readinessProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param webModeler.webapp.readinessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
-      successThreshold: 1
-      ## @param webModeler.webapp.readinessProbe.failureThreshold defines when the probe is considered failed so the Pod will be marked unready
-      failureThreshold: 5
-      ## @param webModeler.webapp.readinessProbe.timeoutSeconds defines the number of seconds after which the probe times out
-      timeoutSeconds: 1
-
-    ## @extra webModeler.webapp.livenessProbe configuration of the webapp liveness probe
-    livenessProbe:
-      ## @param webModeler.webapp.livenessProbe.enabled if true, the liveness probe will be enabled for the webapp container
-      enabled: false
-      ## @param webModeler.webapp.livenessProbe.scheme defines the liveness probe schema used on calling the probePath
-      scheme: HTTP
-      ## @param webModeler.webapp.livenessProbe.probePath defines the HTTP endpoint used for the liveness probe
-      probePath: /health/liveness
-      ## @param webModeler.webapp.livenessProbe.initialDelaySeconds defines the number of seconds after the container has started before the probe is initiated
-      initialDelaySeconds: 15
-      ## @param webModeler.webapp.livenessProbe.periodSeconds defines how often the probe is executed
-      periodSeconds: 30
-      ## @param webModeler.webapp.livenessProbe.successThreshold defines how often the probe needs to succeed to be considered successful after having failed
-      successThreshold: 1
-      ## @param webModeler.webapp.livenessProbe.failureThreshold defines when the probe is considered failed so the container will be restarted
-      failureThreshold: 5
-      ## @param webModeler.webapp.livenessProbe.timeoutSeconds defines the number of seconds after which the probe times out
-      timeoutSeconds: 1
-
-    ## Metrics configuration
-    metrics:
-      ## @param webModeler.webapp.metrics.prometheus Prometheus metrics endpoint
-      prometheus: /metrics
-
-    ## @param webModeler.webapp.nodeSelector can be used to select the nodes the webapp pods should run on
-    nodeSelector: {}
-    ## @param webModeler.webapp.tolerations can be used to define pod tolerations, see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-    tolerations: []
-    ## @param webModeler.webapp.affinity can be used to define pod affinity or anti-affinity, see https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-    affinity: {}
-
-    ## @extra webModeler.webapp.resources configuration of resource requests and limits for the container, see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-    ## @param webModeler.webapp.resources.requests.cpu
-    ## @param webModeler.webapp.resources.requests.memory
-    ## @param webModeler.webapp.resources.limits.cpu
-    ## @param webModeler.webapp.resources.limits.memory
-    resources:
-      requests:
-        cpu: 400m
-        memory: 256Mi
-      limits:
-        cpu: 800m
-        memory: 512Mi
-
-    ## @extra webModeler.webapp.service configuration of the WebModeler webapp service
-    service:
-      ## @param webModeler.webapp.service.annotations can be used to define annotations which will be applied to the service
-      annotations: {}
-      ## @param webModeler.webapp.service.type defines the type of the service, see https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-      type: ClusterIP
-      ## @param webModeler.webapp.service.port defines the port of the service
-      port: 80
-      ## @param webModeler.webapp.service.managementPort defines the management port of the service
-      managementPort: 8071
-
-    ## @param webModeler.webapp.configuration if specified, contents will be used as the application.yaml
-    configuration: ""
-    ## @param webModeler.webapp.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
-    extraConfiguration: {}
-    ## @param webModeler.webapp.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
-    dnsPolicy: ""
-    ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
-    dnsConfig: {}
-    ## @param webModeler.webapp.nodeEnv can be used to set the node environment.
-    nodeEnv: production
-    ## @param webModeler.webapp.nodeOptions can be used to set the NODE_OPTIONS env var.
-    nodeOptions: "--max-old-space-size=128"
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
@@ -2102,6 +2124,8 @@ connectors:
     ## @extra connectors.security.authentication
     authentication:
       ## @param connectors.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
+      # When set to "oidc", also configure oidc.clientId, audience, and secret below.
       method: ""
       oidc:
         ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
@@ -2125,7 +2149,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.9.0-alpha4
+    tag: 8.9.0-alpha5
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2361,6 +2385,8 @@ orchestration:
     ## @extra orchestration.security.authentication
     authentication:
       ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
+      # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
+      # When set to "oidc", also configure oidc.clientId, audience, and secret below.
       method: ""
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
@@ -2386,7 +2412,7 @@ orchestration:
         ## @param orchestration.security.authentication.oidc.clientIdClaim can be used to set client ID claim.
         clientIdClaim: client_id
         ## @param orchestration.security.authentication.oidc.groupsClaim can be used to set group claim.
-        groupsClaim: "groups"
+        groupsClaim: ""
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
         audience: orchestration-api
         ## @param orchestration.security.authentication.oidc.scope defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.
@@ -2677,25 +2703,6 @@ orchestration:
         processing: "2GB"
         ## @param orchestration.data.disk.freeSpace.replication the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace
         replication: "1GB"
-    primaryStorage:
-      ## @extra orchestration.data.primaryStorage.backup configuration for configuring Zeebe continuous backups
-      backup:
-        ## @param orchestration.data.primaryStorage.backup.required if true, broker startup will be blocked until a backup storage is configured and available
-        required: false
-        ## @param orchestration.data.primaryStorage.backup.continuous if true, enables continuous backups for primary storage
-        continuous: false
-        ## @param orchestration.data.primaryStorage.backup.schedule defines the schedule for continuous backups, supports CRON, ISO8601, "none"
-        schedule: ""
-        ## @param orchestration.data.primaryStorage.backup.checkpointInterval defines the schedule for injecting checkpoints in the logstream, ISO8601 format
-        checkpointInterval: ""
-        ## @param orchestration.data.primaryStorage.backup.offset defines an optional offset for the generated backup ids to ensure continuation from existing backups
-        offset: 0
-        ## @extra orchestration.data.primaryStorage.backup.retention defines the retention policy for the backups
-        retention:
-          ## @param orchestration.data.primaryStorage.backup.retention.window defines the time window for which the backups should be retained, ISO8601 format
-          window: ""
-          ## @param orchestration.data.primaryStorage.backup.retention.cleanupSchedule defines the schedule for running backup cleanup, supports CRON, ISO8601, "none"
-          cleanupSchedule: ""
     ## @extra orchestration.data.secondaryStorage configuration for secondary storage backend used by the orchestration cluster
     secondaryStorage:
       ## @param orchestration.data.secondaryStorage.type the type of secondary storage (rdbms, elasticsearch, opensearch)
