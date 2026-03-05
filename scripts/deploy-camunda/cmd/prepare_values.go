@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -238,7 +239,7 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 			EnvFile:      pv.envFile,
 		}
 
-		outputPath, _, procErr := values.Process(srcFile, opts)
+		outputPath, _, procErr := values.Process(context.Background(), srcFile, opts)
 		if procErr != nil {
 			return fmt.Errorf("failed to process values file %q: %w", srcFile, procErr)
 		}

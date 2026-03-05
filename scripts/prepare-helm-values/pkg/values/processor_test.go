@@ -1,6 +1,7 @@
 package values
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -260,7 +261,7 @@ port: "$MY_PORT"
 		},
 	}
 
-	outputPath, resultContent, err := Process(inputFile, opts)
+	outputPath, resultContent, err := Process(context.Background(), inputFile, opts)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -305,7 +306,7 @@ func TestProcess_EnvOverridesUnsetVarIsMissing(t *testing.T) {
 		EnvOverrides: map[string]string{}, // empty — no fallback to os.LookupEnv
 	}
 
-	_, _, err := Process(inputFile, opts)
+	_, _, err := Process(context.Background(), inputFile, opts)
 	if err == nil {
 		t.Fatal("expected MissingEnvError when placeholder not in EnvOverrides, got nil")
 	}
@@ -338,7 +339,7 @@ func TestProcess_ConfigEnvOverridesEnvOverrides(t *testing.T) {
 		},
 	}
 
-	_, resultContent, err := Process(inputFile, opts)
+	_, resultContent, err := Process(context.Background(), inputFile, opts)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -370,7 +371,7 @@ func TestProcess_NilEnvOverridesFallsBackToProcessEnv(t *testing.T) {
 		EnvOverrides: nil, // explicitly nil — should fall back to os.LookupEnv
 	}
 
-	_, resultContent, err := Process(inputFile, opts)
+	_, resultContent, err := Process(context.Background(), inputFile, opts)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
