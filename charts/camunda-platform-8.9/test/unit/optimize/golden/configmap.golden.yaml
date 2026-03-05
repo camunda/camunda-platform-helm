@@ -19,6 +19,7 @@ data:
       enabled: true
       partitionCount: 3
       name: "zeebe-record"
+
     es:
       connection:
         nodes:
@@ -32,8 +33,6 @@ data:
           max-request-size: "10MB"
       profiles:
         active: "ccsm"
-      config:
-        import: optional:file:/optimize/config/boat.yaml,optional:file:/optimize/config/about.yaml,optional:file:/optimize/config/env.yaml
 
     security:
       auth:
