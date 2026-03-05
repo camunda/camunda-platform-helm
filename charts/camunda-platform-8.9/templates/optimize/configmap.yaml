@@ -10,7 +10,7 @@ data:
   {{- if .Values.optimize.configuration }}
     {{ .Values.optimize.configuration | indent 4 | trim }}
   {{- else }}
-    {{- include "optimize.defaultConfig" . | nindent 4 }}
+    {{- include "optimize.defaultConfig" . | trim | nindent 4 }}
   {{- end }}
   {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
   application-ccsm.yaml: |
