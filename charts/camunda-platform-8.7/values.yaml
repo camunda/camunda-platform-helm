@@ -485,11 +485,14 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.7.95
+    tag: 8.7.102
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  ## @param console.nodeEnv can be used to set the node environment.
+  nodeEnv: prod
 
   ## @param console.sidecars can be used to attach extra containers to the console deployment
   sidecars: []
@@ -729,7 +732,7 @@ zeebe:
      ## @param zeebe.image.repository defines which image repository to use
     repository: camunda/zeebe
      ## @param zeebe.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.22
+    tag: 8.7.24
     ## @param zeebe.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
      ## @param zeebe.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1027,7 +1030,7 @@ zeebeGateway:
     ## @param zeebeGateway.image.repository defines which image repository to use
     repository: camunda/zeebe
     ## @param zeebeGateway.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.22
+    tag: 8.7.24
     ## @param zeebeGateway.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param zeebeGateway.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1343,7 +1346,7 @@ operate:
     ## @param operate.image.repository defines which image repository to use
     repository: camunda/operate
     ## @param operate.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.22
+    tag: 8.7.24
     ## @param operate.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param operate.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1588,6 +1591,10 @@ operate:
   dnsPolicy: ""
   ## @param operate.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param operate.javaOpts can be used to set extra java options for the Operate application
+  javaOpts: ""
+  ## @param operate.zeebeClientConfigPath can be used to set a custom zeebe client config path
+  zeebeClientConfigPath: ""
 
 ##################################################
 #######
@@ -1611,7 +1618,7 @@ tasklist:
     ## @param tasklist.image.repository defines which image repository to use
     repository: camunda/tasklist
     ## @param tasklist.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.22
+    tag: 8.7.24
     ## @param tasklist.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param tasklist.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1833,6 +1840,10 @@ tasklist:
   dnsPolicy: ""
   ## @param tasklist.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param tasklist.javaOpts can be used to set java options for tasklist
+  javaOpts: ""
+  ## @param tasklist.zeebeClientConfigPath can be used to set a custom zeebe client config path
+  zeebeClientConfigPath: ""
 
 #############################################
  #####
@@ -1857,7 +1868,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.16
+    tag: 8.7.17
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1882,6 +1893,9 @@ optimize:
       limits:
         cpu: 2000m
         memory: 2Gi
+
+    ## @param optimize.migration.javaOpts can be used to set java options for optimize migration init container
+    javaOpts: ""
 
   ## @param optimize.sidecars can be used to attach extra containers to the optimize deployment
   sidecars: []
@@ -2086,6 +2100,22 @@ optimize:
   dnsPolicy: ""
   ## @param optimize.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+  ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
+  profiles: "ccsm"
+  ## @param optimize.javaOpts can be used to set java options for optimize
+  javaOpts: ""
+  ## @extra optimize.multitenancy options relating to multitenancy in optimize
+  multitenancy:
+    ## @param optimize.multitenancy.enabled if true, enables multitenancy in Optimize
+    enabled: false
+  ## @extra optimize.caches options relating to caches in optimize
+  caches:
+    ## @extra optimize.caches.cloudTenantAuthorizations options relating to cloud tenant authorizations cache in optimize
+    cloudTenantAuthorizations:
+      ## @param optimize.caches.cloudTenantAuthorizations.maxSize defines the maximum number of entries in the cache
+      maxSize: 10000
+      ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds defines the minimum interval between fetches from the database for the cache
+      minFetchIntervalSeconds: 600000
 
 #########################################################################################################
 ###### #    # ######  ####  #    # ##### #  ####  #    #       # #####  ###### #    # ##### # ##### #   #
@@ -2404,7 +2434,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.13
+    tag: 8.7.16
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2925,7 +2955,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.7.15
+    tag: 8.7.17
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -3173,6 +3203,11 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: { }
+    ## @param webModeler.restapi.javaOpts can be used to set extra Java options for the restapi container
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+    ## @param webModeler.restapi.zeebeClientConfigPath can be used to set a custom path for the Zeebe client configuration file
+    zeebeClientConfigPath: /tmp/zeebe_client_cache.txt
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -3343,6 +3378,12 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.webapp.nodeEnv can be used to set the node environment.
+    nodeEnv: production
+    ## @param webModeler.webapp.nodeOptions can be used to set the NODE_OPTIONS env var.
+    nodeOptions: "--max-old-space-size=128"
+    ## @param webModeler.webapp.playEnabled can be used to set the PLAY_ENABLED env var.
+    playEnabled: true
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
@@ -3677,7 +3718,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.7.14
+    tag: 8.7.16
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod

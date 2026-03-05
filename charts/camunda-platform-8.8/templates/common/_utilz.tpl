@@ -7,6 +7,29 @@ Utilities.
 */}}
 
 {{/*
+camundaPlatform.toYamlPretty
+A version-safe wrapper for toYamlPretty that falls back to toYaml on older Helm versions.
+toYamlPretty was introduced in Helm 3.17.0, so older versions will fail if it's used directly.
+
+This uses tpl to dynamically evaluate the template string at runtime, avoiding parse-time
+errors on older Helm versions that don't recognize toYamlPretty as a function.
+
+Usage:
+{{ include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) }}
+
+Parameters:
+- value: The value to convert to YAML
+- context: The root context ($) needed for accessing Capabilities
+*/}}
+{{- define "camundaPlatform.toYamlPretty" -}}
+  {{- if semverCompare ">=3.17.0" .context.Capabilities.HelmVersion.Version -}}
+    {{- tpl "{{ toYamlPretty .value }}" (dict "value" .value) -}}
+  {{- else -}}
+    {{- toYaml .value -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 camundaPlatform.manualMigrationRequired
 Fail with message when the old values file key is used and show the new key.
 

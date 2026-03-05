@@ -74,15 +74,15 @@ spec:
             {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-        {{ toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.migration.affinity }}
       affinity:
-        {{- toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:
-        {{ toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
       volumes:
         - name: config

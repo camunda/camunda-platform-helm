@@ -55,8 +55,7 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                              "true",
 				"global.identity.auth.enabled":                                  "true",
 				"global.security.authentication.method":                         "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":           "foo",
-				"orchestration.security.authentication.oidc.existingSecret":     "",
+				"connectors.security.authentication.oidc.secret.existingSecret": "foo",
 				"global.identity.auth.issuerBackendUrl":                         "http://keycloak:80/auth/realms/camunda-platform",
 				"global.testDeprecationFlags.existingSecretsMustBeSet":          "error",
 			},
@@ -67,30 +66,148 @@ func (s *ConstraintTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestExistingSecretConstraintDoesNotDisplayErrorForComponentWithExistingSecret",
 			Values: map[string]string{
-				"identity.enabled":                                                   "true",
-				"global.identity.auth.enabled":                                       "true",
-				"global.security.authentication.method":                              "oidc",
-				"orchestration.security.authentication.oidc.existingSecret.name":    "bar",
-				"global.identity.auth.issuerBackendUrl":                              "http://keycloak:80/auth/realms/camunda-platform",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":               "error",
+				"identity.enabled":                                                 "true",
+				"global.identity.auth.enabled":                                     "true",
+				"global.security.authentication.method":                            "oidc",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+				"global.identity.auth.issuerBackendUrl":                            "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":             "error",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
 				requiredComponentsNotSet := strings.Split(err.Error(), "The following values inside your values.yaml need to be set but were not")[1]
-				s.Require().NotContains(requiredComponentsNotSet, "orchestration.security.authentication.oidc.existingSecret")
+				s.Require().NotContains(requiredComponentsNotSet, "orchestration.security.authentication.oidc.secret.existingSecret")
 			},
 		}, {
 			Name: "TestExistingSecretConstraintInWarningModeDoesNotPreventInstall",
 			Values: map[string]string{
-				"identity.enabled":                                                "true",
-				"global.security.authentication.method":                           "oidc",
-				"connectors.security.authentication.oidc.existingSecret.name":             "foo",
-				"orchestration.security.authentication.oidc.existingSecret.name": "bar",
-				"global.identity.auth.issuerBackendUrl":                           "http://keycloak:80/auth/realms/camunda-platform",
-				"global.testDeprecationFlags.existingSecretsMustBeSet":            "warning",
+				"identity.enabled":                                                 "true",
+				"global.security.authentication.method":                            "oidc",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
+				"global.identity.auth.issuerBackendUrl":                            "http://keycloak:80/auth/realms/camunda-platform",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":             "warning",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				// then
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestSecondaryStorageConstraintFailsWhenOrchestrationEnabledAndNoStorageConfigured",
+			Values: map[string]string{
+				"orchestration.enabled":        "true",
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Please configure an expected secondary storage type under `orchestration.data.secondaryStorage.type`")
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireWhenOrchestrationDisabled",
+			Values: map[string]string{
+				"orchestration.enabled":        "false",
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireWhenElasticsearchEnabled",
+			Values: map[string]string{
+				"orchestration.enabled":        "true",
+				"global.elasticsearch.enabled": "true",
+				"elasticsearch.enabled":        "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireWhenOpensearchEnabled",
+			Values: map[string]string{
+				"orchestration.enabled":        "true",
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"global.opensearch.enabled":    "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageConstraintDoesNotFireWhenStorageTypeExplicitlySet",
+			Values: map[string]string{
+				"orchestration.enabled":                    "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+				"global.elasticsearch.enabled":             "false",
+				"elasticsearch.enabled":                    "false",
+				"global.opensearch.enabled":                "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+
+func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithElasticsearch",
+			Values: map[string]string{
+				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithMultipleSubcharts",
+			Values: map[string]string{
+				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+				"identityPostgresql.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestBitnamiDeprecationWarningDoesNotPreventInstallWithAllSubcharts",
+			Values: map[string]string{
+				// elasticsearch.enabled and global.elasticsearch.enabled default to true via test helper
+				"identityPostgresql.enabled": "true",
+				"identityKeycloak.enabled":   "true",
+				"identity.enabled":           "true",
+				"webModelerPostgresql.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestRenderSucceedsWithAllBitnamiSubchartsDisabled",
+			Values: map[string]string{
+				"elasticsearch.enabled":                    "false",
+				"global.elasticsearch.enabled":             "false",
+				"orchestration.data.secondaryStorage.type": "rdbms",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
 			},
 		},

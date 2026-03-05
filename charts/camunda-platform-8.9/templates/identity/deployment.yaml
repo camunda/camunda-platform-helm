@@ -16,12 +16,12 @@ spec:
       labels:
         {{- include "identity.labels" . | nindent 8 }}
         {{- if .Values.identity.podLabels }}
-        {{- toYaml .Values.identity.podLabels | nindent 8 }}
+        {{- tpl (toYaml .Values.identity.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
       {{- if .Values.identity.podAnnotations }}
-        {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.identity.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -39,7 +39,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             {{- if .Values.global.identity.auth.enabled }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -59,16 +58,14 @@ spec:
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
             ) | nindent 12 }}
-            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "identity.keycloak.authExistingSecret" . }}
-                  key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"           "VALUES_KEYCLOAK_SETUP_PASSWORD"
+                "config"            (include "identity.keycloak.authPasswordConfig" . | fromYaml)
+            ) | nindent 12 }}
             {{- if .Values.identity.firstUser.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
               "config" .Values.identity.firstUser
-              "plaintextKey" "password"
             ) | nindent 12 }}
             {{- end }}
             {{- if .Values.global.identity.auth.admin.enabled }}
@@ -95,7 +92,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "IDENTITY_DATABASE_PASSWORD"
               "config" .Values.identity.externalDatabase
-              "legacyKeyField" "existingSecretPasswordKey"
             ) | nindent 12 }}
             {{- else if .Values.identityPostgresql.enabled }}
             - name: IDENTITY_DATABASE_PASSWORD
@@ -214,10 +210,8 @@ spec:
             - name: config
               mountPath: /app/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.identity.extraConfiguration }}
-            - name: config
-              mountPath: /app/config/{{ $key }}
-              subPath: {{ $key }}
+          {{- with .Values.identity.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/app/config") | trim | nindent 12 }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
@@ -249,7 +243,6 @@ spec:
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"
             "config" .Values.global.documentStore.type.gcp
-            "legacyKeyField" "credentialsKey"
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}

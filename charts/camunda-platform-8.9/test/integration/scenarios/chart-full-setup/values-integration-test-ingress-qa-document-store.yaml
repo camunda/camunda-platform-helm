@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   documentStore:
     activeStoreId: "aws"
     type:
@@ -11,9 +9,14 @@ global:
         region: "eu-central-1"
         bucketPath: "documents"
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
-        existingSecret: "s3-bucket-credentials"
-        accessKeyIdKey: "access-key-id"
-        secretAccessKeyKey: "secret-access-key"
+        accessKeyId:
+          secret:
+            existingSecret: "s3-bucket-credentials"
+            existingSecretKey: "access-key-id"
+        secretAccessKey:
+          secret:
+            existingSecret: "s3-bucket-credentials"
+            existingSecretKey: "secret-access-key"
   image:
     pullPolicy: Always
   identity:
@@ -22,6 +25,11 @@ global:
 elasticsearch:
   enabled: true
 orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
   security:
     authentication:
       method: oidc
@@ -56,6 +64,9 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
 webModeler:
   enabled: true
   security:
@@ -187,6 +198,8 @@ connectors:
       value: "$IDP_AWS_REGION"
     - name: IDP_AWS_SECRETKEY
       value: "$IDP_AWS_SECRETKEY"
+    - name: IDP_AWS_ACCESSKEY
+      value: "$IDP_AWS_ACCESSKEY"
       #    - name: IDP_GCP_SERVICE_ACCOUNT
       #      value: "$IDP_GCP_SERVICE_ACCOUNT"
       #    - name: IDP_GCP_VERTEX_BUCKET_NAME

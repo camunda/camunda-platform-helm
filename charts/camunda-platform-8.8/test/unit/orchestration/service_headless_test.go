@@ -97,6 +97,18 @@ func (s *GatewayServiceTest) TestGatewayServiceDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar-service-annotation", service.ObjectMeta.Annotations["foo"])
 			},
+		}, {
+			Name: "TestHeadlessServiceType",
+			Values: map[string]string{
+				"orchestration.service.headless.type": "ClusterIP",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(s.T(), output, &service)
+
+				// then
+				s.Require().Equal(coreV1.ServiceTypeClusterIP, service.Spec.Type)
+			},
 		},
 	}
 

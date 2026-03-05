@@ -187,6 +187,7 @@ jobs:
           
           package_file=$(ls /tmp/camunda-platform-*.tgz)
           echo "✅ Dev package exists: ${package_file}"
+          echo "package_file=${package_file}" | tee -a $GITHUB_OUTPUT
           
           # Extract Camunda version from Chart.yaml inside the package
           tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
@@ -201,6 +202,14 @@ jobs:
             echo "image_versions<<EOF" >> $GITHUB_OUTPUT
             echo "${image_versions}" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+          # Check if image overrides were used during dev build
+          image_overrides=$(yq '.annotations."camunda.io/imageOverrides" // ""' /tmp/Chart.yaml)
+          if [[ -n "${image_overrides}" ]]; then
+            echo "has_image_overrides=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_image_overrides=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Install release-please
@@ -248,8 +257,70 @@ jobs:
             exit 1
           fi
           echo "pr_url=${pr_url}" | tee -a "$GITHUB_OUTPUT"
+          echo "head_ref=${head_ref}" | tee -a "$GITHUB_OUTPUT"
           
           echo "::notice::Release-please PR: ${pr_url}"
+
+      - name: Pre-populate version matrix from dev package
+        if: steps.package.outputs.has_image_overrides == 'true'
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          
+          chart_version="${{ steps.parse.outputs.version }}"
+          app_version="${{ steps.package.outputs.camunda_version }}"
+          head_ref="${{ steps.release-please.outputs.head_ref }}"
+          package_file="${{ steps.package.outputs.package_file }}"
+          chart_path="charts/camunda-platform-${app_version}"
+          
+          echo "Extracting images from dev package for version-matrix.json"
+          
+          # Extract the chart from the package
+          mkdir -p /tmp/rc-chart
+          tar -xzf "${package_file}" -C /tmp/rc-chart
+          
+          # Get images using helm template on the extracted package
+          chart_images=$(
+            helm template --skip-tests camunda /tmp/rc-chart/camunda-platform \
+              --values "${chart_path}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-keycloak.yaml" 2>/dev/null |
+            tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
+            sort | uniq
+          )
+          chart_images_json=$(echo -e "$chart_images" | jq -R | jq -sc)
+          
+          # Checkout release-please branch to update version-matrix.json
+          git fetch origin "${head_ref}"
+          git checkout "${head_ref}"
+          
+          # Update version-matrix.json
+          version_matrix_file="version-matrix/camunda-${app_version}/version-matrix.json"
+          mkdir -p "$(dirname "${version_matrix_file}")"
+          test -f "${version_matrix_file}" || echo '[]' > "${version_matrix_file}"
+          
+          # Remove existing entry for this version if present, then add new one
+          updated_json=$(cat "${version_matrix_file}" | \
+            jq --arg ver "${chart_version}" 'map(select(.chart_version != $ver))' | \
+            jq --arg ver "${chart_version}" --argjson imgs "${chart_images_json}" \
+              '. + [{"chart_version": $ver, "chart_images": $imgs}]')
+          
+          echo "${updated_json}" > "${version_matrix_file}"
+          
+          # Check if there are changes to commit
+          if git diff --quiet "${version_matrix_file}"; then
+            echo "::notice::No changes to version-matrix.json"
+          else
+            git config user.name "distro-ci[bot]"
+            git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
+            git add "${version_matrix_file}"
+            git commit -m "chore: pre-populate version-matrix from dev package ${{ steps.parse.outputs.resolved_tag }}"
+            git push origin "${head_ref}"
+            echo "::notice::Updated version-matrix.json on release-please branch"
+          fi
+          
+          # Switch back to original checkout
+          git checkout "${{ steps.parse.outputs.sha }}"
+          rm -rf /tmp/rc-chart
 
       - name: Add RC tags to Harbor package
         env:
@@ -383,3 +454,44 @@ jobs:
           2. Review release-please PR
           3. Run **Chart - Release - Pipeline - 3 - Public** with \`${RC_TAG}\`
           EOF
+
+  notify-on-failure:
+    name: Notify on Failure
+    needs: [promote-rc]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+          exportEnv: false
+      - name: Send Slack notification
+        continue-on-error: true
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "Chart RC Promotion Failed"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    The *Chart RC Promotion* pipeline has failed.
+
+                    *Dev tag:* ${{ inputs.dev-tag }}
+
+                    <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View failed workflow>

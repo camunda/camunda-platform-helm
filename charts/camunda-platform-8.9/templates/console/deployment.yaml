@@ -19,12 +19,12 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/console/configmap.yaml") . | sha256sum }}
       {{- with .Values.console.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       labels:
         {{- include "console.matchLabels" . | nindent 8 }}
         {{- if .Values.console.podLabels }}
-          {{- toYaml .Values.console.podLabels | nindent 8 }}
+          {{- tpl (toYaml .Values.console.podLabels) $ | nindent 8 }}
         {{- end }}
     spec:
       imagePullSecrets:
@@ -50,12 +50,11 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             - name: NODE_EXTRA_CA_CERTS
               value: {{ printf "/usr/local/console/certificates/%s" .Values.console.tls.certKeyFilename | quote }}
             - name: NODE_ENV
-              value: prod
+              value: {{ .Values.console.nodeEnv | default "prod" | quote }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
             - name: KEYCLOAK_INTERNAL_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
@@ -174,7 +173,6 @@ spec:
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"
             "config" .Values.global.documentStore.type.gcp
-            "legacyKeyField" "credentialsKey"
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}

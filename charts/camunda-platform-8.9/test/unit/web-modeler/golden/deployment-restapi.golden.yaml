@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-restapi
-          image: "camunda/web-modeler-restapi:8.9.0-alpha3"
+          image: "camunda/web-modeler-restapi:8.9.0-alpha5-rc1"
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -77,17 +77,17 @@ spec:
                   name: camunda-platform-test-web-modeler
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: /tmp/zeebe_client_cache.txt
+              value: "/tmp/zeebe_client_cache.txt"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
           resources:
             limits:
-              cpu: 1000m
-              memory: 2Gi
+              cpu: 1800m
+              memory: 2560Mi
             requests:
-              cpu: 500m
-              memory: 1Gi
+              cpu: 900m
+              memory: 1280Mi
           ports:
             - containerPort: 8081
               name: http

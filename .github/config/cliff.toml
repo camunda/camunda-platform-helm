@@ -39,6 +39,8 @@ footer = """
 """
 # remove the leading and trailing s
 trim = true
+# render the body template even if there are no commits matching parsers
+render_always = true
 # postprocessors
 postprocessors = [
   # { pattern = '<REPO>', replace = "https://github.com/orhun/git-cliff" }, # replace repository URL

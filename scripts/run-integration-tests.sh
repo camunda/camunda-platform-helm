@@ -6,8 +6,9 @@ validate_args() {
   local chart_path="$1"
   local namespace="$2"
   local platform="$3"
+  local kube_context="$4"
 
-  log "validate_args: chart_path='${chart_path}' namespace='${namespace}'"
+  log "validate_args: chart_path='${chart_path}' namespace='${namespace}' kube_context='${kube_context}'"
 
   if [[ -z "$chart_path" ]]; then
     echo "--absolute-chart-path is required"
@@ -24,7 +25,12 @@ validate_args() {
     exit 1
   fi
 
-  if ! kubectl get namespace "$namespace" > /dev/null 2>&1; then
+  local kubectl_cmd="kubectl"
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
+
+  if ! $kubectl_cmd get namespace "$namespace" > /dev/null 2>&1; then
     echo "Error: namespace '$namespace' not found in the current Kubernetes context" >&2
     exit 1
   fi
@@ -62,8 +68,14 @@ setup_env_file() {
   local test_auth_type="$6"
   local is_ci="$7"
   local platform="$8"
+  local kube_context="$9"
 
-  log "setup_env_file: env_file='${env_file}' test_suite_path='${test_suite_path}' hostname='${hostname}' repo_root='${repo_root}' namespace='${namespace}' test_auth_type='${test_auth_type}' is_ci='${is_ci}'"
+  log "setup_env_file: env_file='${env_file}' test_suite_path='${test_suite_path}' hostname='${hostname}' repo_root='${repo_root}' namespace='${namespace}' test_auth_type='${test_auth_type}' is_ci='${is_ci}' kube_context='${kube_context}'"
+
+  local kubectl_cmd="kubectl"
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
 
   export TEST_INGRESS_HOST="$hostname"
 
@@ -73,7 +85,7 @@ setup_env_file() {
   fi
 
   log "Rendering env template: '$test_suite_path/vars/playwright/files/playwright-job-vars.env.template' -> '$env_file'"
-  keycloakUrl=$(kubectl -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
+  keycloakUrl=$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
   host=""
   echo "::group::Keycloak URL parsing"
   if [[ -n "$keycloakUrl" ]]; then
@@ -102,7 +114,7 @@ setup_env_file() {
     if [[ "${platform,,}" == "gke" ]]; then
       for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         log "Fetching secret for service '$svc' (gke identity token)"
-        secret=$(kubectl -n "$namespace" \
+        secret=$($kubectl_cmd -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
         mask_secret "$secret"
@@ -111,7 +123,7 @@ setup_env_file() {
     else
       for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         log "Fetching secret for service '$svc' (identity token)"
-        secret=$(kubectl -n "$namespace" \
+        secret=$($kubectl_cmd -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-token}" | base64 -d)
         mask_secret "$secret"
@@ -124,12 +136,12 @@ setup_env_file() {
     for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
       if [[ "$PLATFORM" == "gke" ]]; then
         log "Fetching secret for service '$svc' (gke identity password)"
-        secret=$(kubectl -n "$namespace" \
+        secret=$($kubectl_cmd -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
       else
         log "Fetching secret for service '$svc' (legacy secret key)"
-        secret=$(kubectl -n "$namespace" \
+        secret=$($kubectl_cmd -n "$namespace" \
           get secret integration-test-credentials \
           -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
       fi
@@ -139,7 +151,7 @@ setup_env_file() {
   fi
 
   log "Fetching admin client password"
-  secret=$(kubectl -n "$namespace" \
+  secret=$($kubectl_cmd -n "$namespace" \
     get secret integration-test-credentials \
     -o jsonpath="{.data.identity-admin-client-password}" | base64 -d)
   mask_secret "$secret"
@@ -174,6 +186,7 @@ Options:
   --absolute-chart-path ABSOLUTE_CHART_PATH   The absolute path to the chart directory.
   --namespace NAMESPACE                       The namespace c8 is deployed into
   --platform PLATFORM                         The platform where c8 is deployed (e.g., gke, eks).
+  --kube-context KUBE_CONTEXT                 The Kubernetes context to use (optional).
   --show-html-report                          Show the HTML report after the tests have run.
   --shard-index SHARD_INDEX                   The shard index to run.
   --shard-total SHARD_TOTAL                   The total number of shards.
@@ -191,6 +204,7 @@ EOF
 ABSOLUTE_CHART_PATH=""
 NAMESPACE=""
 PLATFORM=""
+KUBE_CONTEXT=""
 SHOW_HTML_REPORT=false
 VERBOSE=false
 TEST_AUTH_TYPE="${TEST_AUTH_TYPE:-keycloak}"
@@ -212,6 +226,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --platform)
       PLATFORM="$2"
+      shift 2
+      ;;
+    --kube-context)
+      KUBE_CONTEXT="$2"
       shift 2
       ;;
     --show-html-report)
@@ -249,32 +267,39 @@ done
 log "Args parsed:"
 log "  ABSOLUTE_CHART_PATH='${ABSOLUTE_CHART_PATH}'"
 log "  NAMESPACE='${NAMESPACE}'"
+log "  KUBE_CONTEXT='${KUBE_CONTEXT}'"
 log "  SHOW_HTML_REPORT='${SHOW_HTML_REPORT}'"
 log "  TEST_AUTH_TYPE='${TEST_AUTH_TYPE}'"
 log "  TEST_EXCLUDE='${TEST_EXCLUDE}'"
 log "  IS_CI='${IS_CI}'"
 log "  VERBOSE='${VERBOSE}'"
 
-validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$PLATFORM"
+validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$PLATFORM" "$KUBE_CONTEXT"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
-hostname=$(get_ingress_hostname "$NAMESPACE")
+hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
-setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM"
+setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM" "$KUBE_CONTEXT"
 
 log "Invoking Playwright tests with:"
 log "  TEST_SUITE_PATH='${TEST_SUITE_PATH}' SHOW_HTML_REPORT='${SHOW_HTML_REPORT}' TEST_EXCLUDE='${TEST_EXCLUDE}'"
+
+# Build the rerun command for display on failure
+RERUN_CMD="./scripts/run-integration-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE} --platform ${PLATFORM}"
+[[ -n "$KUBE_CONTEXT" ]] && RERUN_CMD+=" --kube-context ${KUBE_CONTEXT}"
+[[ -n "$TEST_AUTH_TYPE" && "$TEST_AUTH_TYPE" != "keycloak" ]] && RERUN_CMD+=" --test-auth-type ${TEST_AUTH_TYPE}"
+[[ -n "$TEST_EXCLUDE" ]] && RERUN_CMD+=" --test-exclude \"${TEST_EXCLUDE}\""
 
 if [[ "$TEST_AUTH_TYPE" == "hybrid" ]]; then
   log "Running hybrid auth tests - splitting by component auth type"
   # Run OIDC-based tests (Identity, Console) with keycloak auth
   log "Phase 1: Running OIDC components (identity, console) with keycloak auth"
-  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "keycloak" "identity.spec.ts console.spec.ts" "$TEST_EXCLUDE" "$NAMESPACE"
+  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "keycloak" "identity.spec.ts console.spec.ts" "$TEST_EXCLUDE" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD"
   # Run basic auth tests (Connectors, Orchestration REST/gRPC)
   log "Phase 2: Running basic auth components (connectors, core-rest, core-grpc) with basic auth"
-  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "basic" "connectors.spec.ts core-rest.spec.ts core-grpc.spec.ts" "$TEST_EXCLUDE" "$NAMESPACE"
+  run_playwright_tests_hybrid "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "basic" "connectors.spec.ts core-rest.spec.ts core-grpc.spec.ts" "$TEST_EXCLUDE" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD"
 else
-  run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "1" "1" "html" "$TEST_EXCLUDE" false false "$NAMESPACE"
+  run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "1" "1" "html" "$TEST_EXCLUDE" false false "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD"
 fi

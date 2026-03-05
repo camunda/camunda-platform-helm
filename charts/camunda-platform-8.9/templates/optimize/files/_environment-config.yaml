@@ -1,0 +1,55 @@
+{{/*
+This file name should start with an underscore to avoid rendering it as a template.
+It is included (imported) in the ConfigMap.
+*/}}
+{{- define "optimize.defaultConfig" -}}
+{{- if .Values.optimize.contextPath }}
+container:
+  contextPath: {{ .Values.optimize.contextPath | quote }}
+{{- end }}
+
+zeebe:
+  enabled: true
+  partitionCount: {{ .Values.optimize.partitionCount }}
+  name: {{ include "optimize.indexPrefix" . | quote }}
+
+es:
+  connection:
+    nodes:
+    {{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled }}
+      - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+        httpPort: {{ .Values.optimize.database.elasticsearch.url.port | default .Values.global.elasticsearch.url.port }}
+    {{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled }}
+      - host: {{ include "camundaPlatform.opensearchHost" . | quote }}
+        httpPort: {{ .Values.optimize.database.opensearch.url.port | default .Values.global.opensearch.url.port }}
+    {{- end }}
+  {{- if or .Values.global.elasticsearch.external .Values.optimize.database.elasticsearch.external }}
+  security:
+    username: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
+    {{- if eq (.Values.optimize.database.elasticsearch.url.protocol | default .Values.global.elasticsearch.url.protocol) "https" }}
+    ssl:
+      enabled: "true"
+    {{- end }}
+  {{- end }}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+      max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+  profiles:
+    active: "ccsm"
+
+security:
+  auth:
+    cookie:
+      same-site:
+        enabled: false
+{{- if .Values.global.identity.auth.enabled }}
+    ccsm:
+      redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+api:
+  audience: {{ include "optimize.authAudience" . | quote }}
+  jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+{{- end }}
+{{- end -}}

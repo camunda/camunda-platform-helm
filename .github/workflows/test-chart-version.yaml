@@ -82,11 +82,15 @@ on:
         options:
           - all
           - elasticsearch
-          - upgrade-migration
-          - keycloak-original
+          - elasticsearch-arm
+          - elasticsearch-basic
+          - gateway-keycloak
           - keycloak-mt
+          - keycloak-original
           - keycloak-rba
           - oidc
+          - opensearch
+          - upgrade-migration
       test-enabled:
         description: Whether to run the IT tests
         required: false
@@ -106,6 +110,7 @@ permissions:
   contents: read
   id-token: write
   deployments: write
+  packages: read
 
 jobs:
   init:
@@ -171,7 +176,16 @@ jobs:
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
 
   integration-tests:
-    if: ${{ !contains(github.head_ref, 'release-please--branches--') }}
+    # Skip integration tests for Renovate image/digest PRs - these images are already
+    # validated by AlwaysGreen before publishing. Only golden file updates are needed.
+    if: >-
+      ${{
+        !contains(github.head_ref, 'release-please--branches--') &&
+        !(startsWith(github.head_ref, 'renovate/') && (
+          contains(github.head_ref, 'camunda-platform-images') ||
+          contains(github.head_ref, 'camunda-platform-digests')
+        ))
+      }}
     name: ${{ matrix.version }} - ${{ matrix.shortname }} - ${{ matrix.flow }} - ${{ matrix.case }} - ${{ inputs.platforms || 'gke' }}
     needs: [init]
     strategy:
@@ -195,3 +209,5 @@ jobs:
       camunda-version-previous: ${{ matrix.camundaVersionPrevious }}
       test-enabled: ${{ inputs.test-enabled || true }}
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
+      infra-type-gke: ${{ matrix.infraTypeGke || 'preemptible' }}
+      infra-type-eks: ${{ matrix.infraTypeEks || 'preemptible' }}

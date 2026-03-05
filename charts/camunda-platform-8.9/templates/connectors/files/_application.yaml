@@ -25,6 +25,15 @@ management:
           - processDefinitionImport
           - zeebeClient
 
+{{- if .Values.connectors.extraConfiguration }}
+spring:
+  config:
+    import:
+    {{- range .Values.connectors.extraConfiguration }}
+      - optional:file:/config/{{ .file }}
+    {{- end }}
+{{- end }}
+
 camunda:
   client:
     rest-address: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . }}

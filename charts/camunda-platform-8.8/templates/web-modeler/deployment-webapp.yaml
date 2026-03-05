@@ -15,11 +15,11 @@ spec:
     metadata:
       labels: {{- include "webModeler.webapp.labels" . | nindent 8 }}
       {{- if .Values.webModeler.webapp.podLabels }}
-      {{- toYaml .Values.webModeler.webapp.podLabels | nindent 8 }}
+      {{- tpl (toYaml .Values.webModeler.webapp.podLabels) $ | nindent 8 }}
       {{- end }}
       {{- if .Values.webModeler.webapp.podAnnotations }}
       annotations:
-        {{- toYaml .Values.webModeler.webapp.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.webModeler.webapp.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -40,11 +40,11 @@ spec:
                 "plaintextKey" "key"
             ) | nindent 12 }}
             - name: NODE_ENV
-              value: "production"
+              value: {{ .Values.webModeler.webapp.nodeEnv | default "production" | quote }}
             - name: PLAY_ENABLED
               value: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
             - name: NODE_OPTIONS
-              value: "--max-old-space-size=128"
+              value: {{ .Values.webModeler.webapp.nodeOptions | default "--max-old-space-size=128" | quote }}
             - name: PUSHER_APP_ID
               valueFrom:
                 configMapKeyRef:

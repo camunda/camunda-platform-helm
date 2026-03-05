@@ -16,12 +16,12 @@ spec:
       labels:
         {{- include "connectors.labels" . | nindent 8 }}
         {{- if .Values.connectors.podLabels }}
-        {{- toYaml .Values.connectors.podLabels | nindent 8 }}
+        {{- tpl (toYaml .Values.connectors.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/connectors/configmap.yaml") . | sha256sum }}
       {{- if .Values.connectors.podAnnotations }}
-      {{- toYaml .Values.connectors.podAnnotations | nindent 8 }}
+      {{- tpl (toYaml .Values.connectors.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
@@ -42,7 +42,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             {{- if eq (include "connectors.authMethod" .) "oidc" }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -126,10 +125,8 @@ spec:
             - name: config
               mountPath: /config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.connectors.extraConfiguration }}
-            - name: config
-              mountPath: /config/{{ $key }}
-              subPath: {{ $key }}
+          {{- with .Values.connectors.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/config") | trim | nindent 12 }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
@@ -160,7 +157,6 @@ spec:
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"
             "config" .Values.global.documentStore.type.gcp
-            "legacyKeyField" "credentialsKey"
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}

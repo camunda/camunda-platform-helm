@@ -18,7 +18,7 @@ spec:
   ingressClassName: {{ .Values.global.ingress.className }}
   rules:
     {{- if .Values.global.ingress.host }}
-    - host: {{ .Values.global.ingress.host }}
+    - host: {{ tpl .Values.global.ingress.host $ }}
       http:
     {{- else }}
     - http:
@@ -58,9 +58,9 @@ spec:
           {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
           - backend:
               service:
-                name: {{ template "webModeler.webapp.fullname" . }}
+                name: {{ template "webModeler.restapi.fullname" . }}
                 port:
-                  number: {{ .Values.webModeler.webapp.service.port }}
+                  number: {{ .Values.webModeler.restapi.service.port }}
             path: {{ .Values.webModeler.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           - backend:
@@ -110,7 +110,7 @@ spec:
     - {}
     {{- else }}
     - hosts:
-        - {{ .Values.global.ingress.host }}
+        - {{ tpl .Values.global.ingress.host $ }}
       {{- if .Values.global.ingress.tls.secretName }}
       secretName: {{ .Values.global.ingress.tls.secretName }}
       {{- end }}

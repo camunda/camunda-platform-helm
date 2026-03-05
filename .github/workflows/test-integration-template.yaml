@@ -172,6 +172,7 @@ permissions:
   contents: read
   id-token: write
   deployments: write
+  packages: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -276,6 +277,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.init.outputs.matrix) }}

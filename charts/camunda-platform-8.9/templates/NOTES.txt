@@ -63,7 +63,6 @@
   {{- if .Values.webModeler.enabled }}
   - Docker images used for Web Modeler:
     - {{ include "webModeler.restapi.image" . }}
-    - {{ include "webModeler.webapp.image" . }}
     - {{ include "webModeler.websockets.image" . }}
   {{- end }}
 - Elasticsearch:
@@ -79,7 +78,7 @@ The Cluster itself is not exposed as a service which means that you can use `kub
 > kubectl port-forward svc/{{ include "orchestration.serviceName" . }} 26500:26500 -n {{ .Release.Namespace }}
 > kubectl port-forward svc/{{ include "orchestration.serviceName" . }} 8080:8080 -n {{ .Release.Namespace }}
 
-Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:26500` for REST API usage.
+Now you can connect your workers and clients to `localhost:26500` for gRPC or `localhost:8080` for REST API usage.
 
 {{ if or (.Values.orchestration.enabled) (.Values.identity.enabled) }}
 ### Connecting to Web apps
@@ -98,7 +97,7 @@ Optimize:
 {{- end }}
 {{ if .Values.webModeler.enabled -}}
 Web Modeler:
-> kubectl port-forward svc/{{ include "webModeler.webapp.fullname" . }} 8070:80
+> kubectl port-forward svc/{{ include "webModeler.restapi.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
 {{- end }}
 {{ if .Values.connectors.enabled -}}
@@ -149,7 +148,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
   - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
   {{ if .Values.webModeler.enabled -}}
-  - WebModeler WebApp: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
+  - WebModeler: {{ include "camundaPlatform.webModelerExternalURL" . }}
   - WebModeler WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
   {{- end }}
 {{- end }}

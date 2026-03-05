@@ -46,7 +46,7 @@ jobs:
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           project-number: "187"
-          component-label: "component/helm"
+          labels: "component/helm"
         # Only run this job for issues labeled as 'kind/bug' and
         # for the relevant GitHub issue events that indicate a new or updated issue.
         if: >

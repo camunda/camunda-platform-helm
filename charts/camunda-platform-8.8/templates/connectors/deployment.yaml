@@ -16,12 +16,12 @@ spec:
       labels:
         {{- include "connectors.labels" . | nindent 8 }}
         {{- if .Values.connectors.podLabels }}
-        {{- toYaml .Values.connectors.podLabels | nindent 8 }}
+        {{- tpl (toYaml .Values.connectors.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/connectors/configmap.yaml") . | sha256sum }}
       {{- if .Values.connectors.podAnnotations }}
-      {{- toYaml .Values.connectors.podAnnotations | nindent 8 }}
+      {{- tpl (toYaml .Values.connectors.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}

@@ -27,8 +27,14 @@ data:
     {{- end }}
   {{- if .Values.console.overrideConfiguration }}
   application-override.yaml: |-
-    {{- if .Values.console.overrideConfiguration }}
       {{- include "common.tplvalues.render" ( dict "value" .Values.console.overrideConfiguration "context" $ ) | nindent 4 }}
+  {{ else if .Values.console.extraConfiguration }}
+  application-override.yaml: |
+    {{- $merged := dict }}
+    {{- range .Values.console.extraConfiguration }}
+    {{- $parsed := .content | fromYaml }}
+    {{- $merged = mustMergeOverwrite $merged $parsed }}
     {{- end }}
+    {{- $merged | toYaml | nindent 4 }}
   {{- end }}
 {{- end }}

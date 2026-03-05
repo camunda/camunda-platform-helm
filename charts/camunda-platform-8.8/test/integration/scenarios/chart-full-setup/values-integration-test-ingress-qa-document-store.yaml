@@ -183,6 +183,8 @@ connectors:
       value: "$IDP_AWS_REGION"
     - name: IDP_AWS_SECRETKEY
       value: "$IDP_AWS_SECRETKEY"
+    - name: IDP_AWS_ACCESSKEY
+      value: "$IDP_AWS_ACCESSKEY"
       #    - name: IDP_GCP_SERVICE_ACCOUNT
       #      value: "$IDP_GCP_SERVICE_ACCOUNT"
       #    - name: IDP_GCP_VERTEX_BUCKET_NAME

@@ -1,0 +1,144 @@
+# GKE distroci nodes need nodeSelector and tolerations config.
+
+# Auth.
+identity:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+identityKeycloak:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+  postgresql:
+    primary:
+      nodeSelector:
+        workload: distroci
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: distroci
+identityPostgresql:
+  primary:
+    nodeSelector:
+      workload: distroci
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: distroci
+
+# Web Apps.
+console:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+connectors:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+tasklist:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+operate:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+optimize:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+
+# Web Modeler.
+webModeler:
+  restapi:
+    nodeSelector:
+      workload: distroci
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: distroci
+  webapp:
+    nodeSelector:
+      workload: distroci
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: distroci
+  websockets:
+    nodeSelector:
+      workload: distroci
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: distroci
+webModelerPostgresql:
+  primary:
+    nodeSelector:
+      workload: distroci
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: distroci
+
+# Zeebe.
+orchestration:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+zeebeGateway:
+  nodeSelector:
+    workload: distroci
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: distroci
+
+# Elasticsearch.
+elasticsearch:
+  master:
+    nodeSelector:
+      workload: distroci
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: distroci

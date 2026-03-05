@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   documentStore:
     activeStoreId: "aws"
     type:
@@ -11,9 +9,21 @@ global:
         region: "eu-central-1"
         bucketPath: "documents"
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
-        existingSecret: "s3-bucket-credentials"
-        accessKeyIdKey: "access-key-id"
-        secretAccessKeyKey: "secret-access-key"
+        accessKeyId:
+          secret:
+            existingSecret: "s3-bucket-credentials"
+            existingSecretKey: "access-key-id"
+        secretAccessKey:
+          secret:
+            existingSecret: "s3-bucket-credentials"
+            existingSecretKey: "secret-access-key"
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
 
 elasticsearch:
   enabled: true

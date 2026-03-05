@@ -84,7 +84,10 @@ spec:
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: JAVA_TOOL_OPTIONS
-              value: -Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks
+              value: {{ printf "-Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks %s" .Values.tasklist.javaOpts | trim | quote }}
+            {{- else if .Values.tasklist.javaOpts }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.tasklist.javaOpts | quote }}
             {{- end }}
             {{- if .Values.global.identity.auth.enabled }}
             - name: CAMUNDA_IDENTITY_CLIENT_SECRET
@@ -129,7 +132,7 @@ spec:
             - name: HOME
               value: /parent
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: /tmp/zeebe_auth_cache
+              value: {{ .Values.tasklist.zeebeClientConfigPath | default "/tmp/zeebe_auth_cache" }}
             {{- end }}
             # the host name of Operate that is used when connecting with the Zeebe cluster
             # via atomix-cluster (SWIM)

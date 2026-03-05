@@ -158,7 +158,7 @@ global:
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host.
+    ## @param global.ingress.host If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com)
     host: ""
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
@@ -641,7 +641,7 @@ identity:
     ## @param identity.image.repository defines which image repository to use
     repository: camunda/identity
     ## @param identity.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.6
+    tag: 8.8.9
     ## @param identity.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param identity.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -667,9 +667,9 @@ identity:
   # contextPath: "/identity"
   contextPath: ""
 
-  ## @param identity.podAnnotations can be used to define extra Management Identity pod annotations
+  ## @param identity.podAnnotations can be used to define extra Management Identity pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param identity.podLabels can be used to define extra Management Identity pod labels
+  ## @param identity.podLabels can be used to define extra Management Identity pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @extra identity.logging configuration for the Management Identity logging. This template will be directly included in the Management Identity configuration YAML file
@@ -1179,11 +1179,14 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.73
+    tag: 8.8.113
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
+
+  ## @param console.nodeEnv can be used to set the node environment.
+  nodeEnv: prod
 
   ## @param console.sidecars can be used to attach extra containers to the console deployment
   sidecars: []
@@ -1211,9 +1214,9 @@ console:
   ## @param console.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @param console.podAnnotations can be used to define extra Console pod annotations
+  ## @param console.podAnnotations can be used to define extra Console pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param console.podLabels can be used to define extra Console pod labels
+  ## @param console.podLabels can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @param console.logging configuration for the Console logging. This template will be directly included in the configuration YAML file
@@ -1398,7 +1401,7 @@ webModeler:
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.6
+    tag: 8.8.10
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1521,9 +1524,9 @@ webModeler:
     #      rest: "http://camunda-platform-orchestration:8080"
     #      web-app: "http://localhost:8088"
 
-    ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations
+    ## @param webModeler.restapi.podAnnotations can be used to define extra restapi pod annotations. Supports templating (e.g., {{ .Release.Name }})
     podAnnotations: {}
-    ## @param webModeler.restapi.podLabels can be used to define extra restapi pod labels
+    ## @param webModeler.restapi.podLabels can be used to define extra restapi pod labels. Supports templating (e.g., {{ .Release.Name }})
     podLabels: {}
 
     ## @extra webModeler.restapi.logging configuration for the restapi logging. This template will be directly included in the webModeler.restapi configuration YAML file
@@ -1676,6 +1679,11 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.restapi.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.restapi.javaOpts can be used to set extra Java options for the restapi container
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+    ## @param webModeler.restapi.zeebeClientConfigPath can be used to set a custom path for the Zeebe client configuration file
+    zeebeClientConfigPath: /tmp/zeebe_client_cache.txt
 
   # WebModeler.
   #    # ###### #####    ##   #####  #####
@@ -1699,9 +1707,9 @@ webModeler:
     ## @param webModeler.webapp.initContainers can be used to set up extra init containers for the application Pod
     initContainers: []
 
-    ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations
+    ## @param webModeler.webapp.podAnnotations can be used to define extra webapp pod annotations. Supports templating (e.g., {{ .Release.Name }})
     podAnnotations: {}
-    ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels
+    ## @param webModeler.webapp.podLabels can be used to define extra webapp pod labels. Supports templating (e.g., {{ .Release.Name }})
     podLabels: {}
 
     ## @param webModeler.webapp.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-webapp-component for more details.
@@ -1846,6 +1854,10 @@ webModeler:
     dnsPolicy: ""
     ## @param webModeler.webapp.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
     dnsConfig: {}
+    ## @param webModeler.webapp.nodeEnv can be used to set the node environment.
+    nodeEnv: production
+    ## @param webModeler.webapp.nodeOptions can be used to set the NODE_OPTIONS env var.
+    nodeOptions: "--max-old-space-size=128"
 
   # WebModeler.
   #    # ###### #####   ####   ####   ####  #    # ###### #####  ####
@@ -1878,9 +1890,9 @@ webModeler:
     # Note: The port will only be used if the Ingress resource for WebModeler is disabled.
     publicPort: 8085
 
-    ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations
+    ## @param webModeler.websockets.podAnnotations can be used to define extra websockets pod annotations. Supports templating (e.g., {{ .Release.Name }})
     podAnnotations: {}
-    ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels
+    ## @param webModeler.websockets.podLabels can be used to define extra websockets pod labels. Supports templating (e.g., {{ .Release.Name }})
     podLabels: {}
 
     ## @param webModeler.websockets.env can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.
@@ -2173,7 +2185,7 @@ connectors:
     ## @param connectors.image.repository defines which image repository to use
     repository: camunda/connectors-bundle
     ## @param connectors.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.5
+    tag: 8.8.8
     ## @param connectors.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param connectors.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2191,9 +2203,9 @@ connectors:
   ## @param connectors.contextPath can be used to make Connectors web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
   contextPath: ""
 
-  ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations
+  ## @param connectors.podAnnotations can be used to define extra Connectors pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param connectors.podLabels can be used to define extra Connectors pod labels
+  ## @param connectors.podLabels can be used to define extra Connectors pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @extra connectors.logging configuration for the Connectors logging. This template will be directly included in the connector configuration YAML file
@@ -2434,7 +2446,7 @@ orchestration:
         ## @param orchestration.security.authentication.oidc.clientIdClaim can be used to set client ID claim.
         clientIdClaim: client_id
         ## @param orchestration.security.authentication.oidc.groupsClaim can be used to set group claim.
-        groupsClaim: "groups"
+        groupsClaim: ""
         ## @param orchestration.security.authentication.oidc.audience defines the audience, which is used by Orchestration Cluster.
         audience: orchestration-api
         ## @param orchestration.security.authentication.oidc.scope defines a list of scopes to request in the OIDC token. If not set, it will use the application defaults.
@@ -2522,6 +2534,8 @@ orchestration:
       #     claimName: preferred_username
       #     claimValue: demo
       mappingRules: []
+      ## @param orchestration.security.initialization.authorizations define authorizations.
+      authorizations: []
   ## @extra orchestration.image configuration to configure the image specifics
   image:
     ## @param orchestration.image.registry can be used to set container image registry.
@@ -2529,7 +2543,7 @@ orchestration:
     ## @param orchestration.image.repository defines which image repository to use
     repository: camunda/camunda
     ## @param orchestration.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.9
+    tag: 8.8.15
     ## @param orchestration.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2719,6 +2733,8 @@ orchestration:
     headless:
       ## @param orchestration.service.headless.annotations can be used to define annotations, which will be applied to the headless service
       annotations: {}
+      ## @param orchestration.service.headless.type defines the type of the headless service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+      type: ClusterIP
     ## @param orchestration.service.type defines the type of the service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
     type: ClusterIP
     ## @param orchestration.service.loadBalancerIP defines public IP of the load balancer if the type is LoadBalancer
@@ -2796,7 +2812,7 @@ orchestration:
         ## @param orchestration.ingress.grpc.tls.enabled if true, then tls is configured on the ingress resource. If enabled the Ingress.host need to be defined.
         enabled: false
         ## @param orchestration.ingress.grpc.tls.secretName defines the secret name which contains the TLS private key and certificate
-        secretName: camunda-platform-orchestration-grpc
+        secretName: camunda-platform-zeebe-gateway
 
   # contextPath: "/orchestration"
   ## @param orchestration.contextPath can be used to make Orchestration Cluster web application works on a custom sub-path. This is mainly used to run Camunda web applications under a single domain.
@@ -2858,9 +2874,9 @@ orchestration:
   ## @param orchestration.initContainers can be used to set up extra init containers for the application Pod
   initContainers: []
 
-  ## @param orchestration.podAnnotations can be used to define extra broker pod annotations
+  ## @param orchestration.podAnnotations can be used to define extra broker pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param orchestration.podLabels can be used to define extra broker pod labels
+  ## @param orchestration.podLabels can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
   ## @extra orchestration.podDisruptionBudget configuration to configure a pod disruption budget for the broker pods https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   podDisruptionBudget:
@@ -3082,7 +3098,7 @@ optimize:
     ## @param optimize.image.repository defines which image repository to use
     repository: camunda/optimize
     ## @param optimize.image.tag can be set to overwrite the global tag, which should be used in that chart
-    tag: 8.8.4
+    tag: 8.8.6
     ## @param optimize.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param optimize.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -3121,9 +3137,9 @@ optimize:
     # See https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623
     defaultMode: 0754
 
-  ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations
+  ## @param optimize.podAnnotations can be used to define extra Optimize pod annotations. Supports templating (e.g., {{ .Release.Name }})
   podAnnotations: {}
-  ## @param optimize.podLabels can be used to define extra Optimize pod labels
+  ## @param optimize.podLabels can be used to define extra Optimize pod labels. Supports templating (e.g., {{ .Release.Name }})
   podLabels: {}
 
   ## @param optimize.logLevel configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/
@@ -3308,6 +3324,22 @@ optimize:
     annotations: {}
     ## @param optimize.persistence.selector can be used to define a label selector for the persistent volume claim
     selector: {}
+  ## @param optimize.profiles [string] defines SPRING_ACTIVE_PROFILES
+  profiles: "ccsm"
+  ## @param optimize.javaOpts can be used to set java options for optimize
+  javaOpts: ""
+  ## @extra optimize.multitenancy options relating to multitenancy in optimize
+  multitenancy:
+    ## @param optimize.multitenancy.enabled if true, enables multitenancy in Optimize
+    enabled: false
+  ## @extra optimize.caches options relating to caches in optimize
+  caches:
+    ## @extra optimize.caches.cloudTenantAuthorizations options relating to cloud tenant authorizations cache in optimize
+    cloudTenantAuthorizations:
+      ## @param optimize.caches.cloudTenantAuthorizations.maxSize defines the maximum number of entries in the cache
+      maxSize: 10000
+      ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds defines the minimum interval between fetches from the database for the cache
+      minFetchIntervalSeconds: 600000
 
 #####################################################################################
 #######

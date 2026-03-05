@@ -23,12 +23,12 @@ spec:
       labels:
         {{- include "orchestration.labels" . | nindent 8 }}
         {{- if .Values.orchestration.podLabels }}
-        {{- toYaml .Values.orchestration.podLabels | nindent 8 }}
+        {{- tpl (toYaml .Values.orchestration.podLabels) $ | nindent 8 }}
         {{- end }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
-        {{- range $key, $value := .Values.orchestration.podAnnotations }}
-        {{ $key }}: {{ $value | quote }}
+        {{- if .Values.orchestration.podAnnotations }}
+        {{- tpl (toYaml .Values.orchestration.podAnnotations) $ | nindent 8 }}
         {{- end }}
     spec:
       {{- if .Values.orchestration.priorityClassName }}
@@ -263,15 +263,15 @@ spec:
       {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-        {{ toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.affinity }}
       affinity:
-        {{- toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
       {{- with .Values.orchestration.tolerations }}
       tolerations:
-        {{ toYamlPretty . | nindent 8 }}
+        {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
       {{- end }}
   {{- if eq .Values.orchestration.persistenceType "disk" }}
   volumeClaimTemplates:

@@ -198,6 +198,7 @@ permissions:
   contents: read
   id-token: write
   deployments: write
+  packages: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ github.ref_name || github.ref }}-runner
@@ -240,6 +241,15 @@ jobs:
     if: github.event.action != 'closed' && inputs.flow != 'modular-upgrade-minor'
     name: install for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
       vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
@@ -250,6 +260,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
@@ -273,20 +284,14 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
 
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
-            zbctl
+      # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
+      # See: .github/docker/ci-runner/Dockerfile
 
       # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
       # and populate environment variables from Vault
@@ -373,6 +378,11 @@ jobs:
           make helm.repos-add
           make helm.dependency-update
 
+      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/postgresql)
+      - name: CI Setup - Login to Docker Hub
+        run: |
+          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
+
       - name: CI Setup - Start GitHub deployment
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         id: deployment
@@ -455,6 +465,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
@@ -473,6 +484,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           # Configure OpenSearch environment if using opensearch scenario
           if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
@@ -540,11 +552,14 @@ jobs:
           VALUES_CONFIG: ${{ inputs.values-config }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
       - name: Helm - Execute after install lifecycle tasks
         timeout-minutes: 5
+        env:
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
 
@@ -596,6 +611,15 @@ jobs:
     if: always() && github.event.action != 'closed' && (needs.install.result == 'success' || needs.install.result == 'skipped') && inputs.flow != 'install'
     name: upgrade for ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
     needs: [install]
     outputs:
       vars-identifier: ${{ steps.vars.outputs.identifier }}
@@ -607,6 +631,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       TEST_CLUSTER_TYPE: ${{ inputs.distro-type || inputs.cluster-type }}
 
@@ -630,17 +655,11 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
-            zbctl
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
+      # See: .github/docker/ci-runner/Dockerfile
 
       # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
       # and populate environment variables from Vault
@@ -742,6 +761,7 @@ jobs:
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
@@ -812,6 +832,7 @@ jobs:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
+            --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
@@ -835,16 +856,23 @@ jobs:
   playwright-integration-tests-after-install:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [install]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-release
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
-      options: --ipc=host
-    timeout-minutes: 5
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 20
     if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
       TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
@@ -892,16 +920,23 @@ jobs:
   playwright-integration-tests-after-upgrade:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [upgrade]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-release
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
-      options: --ipc=host
-    timeout-minutes: 5
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 20
     if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
     permissions:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     env:
       CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
       TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
@@ -949,9 +984,18 @@ jobs:
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
-    runs-on: gcp-core-8-default
+    runs-on: gcp-core-8-release
+    container:
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -961,6 +1005,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -998,13 +1043,23 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-install
           shard-index: ${{ matrix.shardIndex }}
+          scenario: ${{ inputs.scenario }}
 
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
-    runs-on: gcp-core-8-default
+    runs-on: gcp-core-8-release
+    container:
+      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --ipc=host --user root
+    defaults:
+      run:
+        shell: bash
     if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -1014,6 +1069,7 @@ jobs:
       contents: read
       id-token: write
       deployments: write
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -1051,6 +1107,7 @@ jobs:
           exclude: ${{ inputs.exclude }}
           test-stage: after-upgrade
           shard-index: ${{ matrix.shardIndex }}
+          scenario: ${{ inputs.scenario }}
 
   merge-e2e-reports:
     name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
@@ -1134,10 +1191,20 @@ jobs:
     needs: [merge-e2e-reports, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: read
       id-token: write
-      deployments: write 
+      deployments: write
+      packages: read
     steps:
       - name: CI Cleanup - 🚨 Get failed Pods info 🚨
         if: failure()
@@ -1149,6 +1216,9 @@ jobs:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - Configure Git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
         id: vars
@@ -1172,16 +1242,8 @@ jobs:
           platform: "${{ inputs.distro-platform }}"
           flow: "${{ inputs.flow }}"
 
-      - name: CI Setup - Install tools
-        uses: ./.github/actions/install-tool-versions
-        with:
-          tools: |
-            golang
-            helm
-            kubectl
-            oc
-            task
-            yq
+      # Tools (golang, helm, kubectl, oc, task, yq) are pre-installed in the CI runner container image
+      # See: .github/docker/ci-runner/Dockerfile
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -1221,6 +1283,7 @@ jobs:
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
             scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
+            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=${CI_DEPLOYMENT_TTL} --overwrite=true || true
@@ -1229,5 +1292,6 @@ jobs:
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true || true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
               scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
+              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
             fi
           fi

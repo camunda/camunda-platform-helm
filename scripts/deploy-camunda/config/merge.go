@@ -2,8 +2,14 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+// DebugConfig holds debug configuration for a component.
+type DebugConfig struct {
+	Port int
+}
 
 // RuntimeFlags holds all CLI flag values that can be merged with config.
 type RuntimeFlags struct {
@@ -11,6 +17,7 @@ type RuntimeFlags struct {
 	Chart                    string
 	ChartVersion             string
 	Namespace                string
+	NamespacePrefix          string // Prefix to prepend to namespace (e.g., "distribution" for EKS)
 	Release                  string
 	Scenario                 string   // Single scenario or comma-separated list
 	Scenarios                []string // Parsed list of scenarios (populated by Validate)
@@ -20,6 +27,7 @@ type RuntimeFlags struct {
 	LogLevel                 string
 	SkipDependencyUpdate     bool
 	ExternalSecrets          bool
+	ExternalSecretsStore     string
 	KeycloakHost             string
 	KeycloakProtocol         string
 	KeycloakRealm            string
@@ -28,6 +36,7 @@ type RuntimeFlags struct {
 	TasklistIndexPrefix      string
 	OperateIndexPrefix       string
 	IngressSubdomain         string
+	IngressBaseDomain        string
 	IngressHostname          string
 	RepoRoot                 string
 	Flow                     string
@@ -43,7 +52,44 @@ type RuntimeFlags struct {
 	RenderOutputDir          string
 	ExtraValues              []string
 	ValuesPreset             string
-	Timeout                  int // Timeout in minutes for Helm deployment
+	Timeout                  int                    // Timeout in minutes for Helm deployment
+	DebugComponents          map[string]DebugConfig // Components to enable JVM debugging for, with their ports
+	DebugPort                int                    // Default JVM debug port (used when no port specified)
+	DebugSuspend             bool                   // Suspend JVM on startup until debugger attaches
+	OutputTestEnv            bool                   // Generate .env file for E2E tests after deployment
+	OutputTestEnvPath        string                 // Path for the test .env file output
+	// Test execution flags
+	RunIntegrationTests   bool // Run integration tests after deployment
+	RunE2ETests           bool // Run e2e tests after deployment
+	RunAllTests           bool // Run both integration and e2e tests after deployment
+	KubeContext           string
+	UseVaultBackedSecrets bool
+	RunTestsIT            bool // Alias for RunIntegrationTests (backward compat)
+	RunTestsE2E           bool // Alias for RunE2ETests (backward compat)
+}
+
+// ParseDebugFlag parses a debug flag value in the format "component" or "component:port".
+// Returns the component name and port (using defaultPort if not specified).
+func ParseDebugFlag(value string, defaultPort int) (string, int, error) {
+	parts := strings.SplitN(value, ":", 2)
+	component := strings.ToLower(strings.TrimSpace(parts[0]))
+	if component == "" {
+		return "", 0, fmt.Errorf("empty component name")
+	}
+
+	port := defaultPort
+	if len(parts) == 2 {
+		var err error
+		port, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return "", 0, fmt.Errorf("invalid port %q: %w", parts[1], err)
+		}
+		if port < 1 || port > 65535 {
+			return "", 0, fmt.Errorf("port %d out of range (1-65535)", port)
+		}
+	}
+
+	return component, port, nil
 }
 
 // ApplyActiveDeployment merges active deployment and root config into runtime flags.
@@ -73,6 +119,7 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.Chart, dep.Chart, rc.Chart)
 	MergeStringField(&flags.ChartVersion, dep.Version, rc.Version)
 	MergeStringField(&flags.Namespace, dep.Namespace, rc.Namespace)
+	MergeStringField(&flags.NamespacePrefix, dep.NamespacePrefix, rc.NamespacePrefix)
 	MergeStringField(&flags.Release, dep.Release, rc.Release)
 	MergeStringField(&flags.Scenario, dep.Scenario, rc.Scenario)
 	MergeStringField(&flags.Auth, dep.Auth, rc.Auth)
@@ -91,6 +138,9 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeStringField(&flags.OrchestrationIndexPrefix, dep.OrchestrationIndexPrefix, rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, dep.TasklistIndexPrefix, rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, dep.OperateIndexPrefix, rc.OperateIndexPrefix)
+	MergeStringField(&flags.KubeContext, dep.KubeContext, rc.KubeContext)
+	MergeStringField(&flags.IngressBaseDomain, dep.IngressBaseDomain, rc.IngressBaseDomain)
+	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	// ScenarioPath special handling
 	if strings.TrimSpace(flags.ScenarioPath) == "" {
@@ -105,6 +155,10 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.DeleteNamespaceFirst, dep.DeleteNamespace, rc.DeleteNamespaceFirst)
 	MergeBoolField(&flags.EnsureDockerRegistry, dep.EnsureDockerRegistry, rc.EnsureDockerRegistry)
 	MergeBoolField(&flags.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates)
+
+	// Test execution flags
+	MergeBoolField(&flags.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests)
+	MergeBoolField(&flags.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests)
 
 	// Slice fields
 	MergeStringSliceField(&flags.ExtraValues, dep.ExtraValues, rc.ExtraValues)
@@ -126,6 +180,7 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.Chart, "", rc.Chart)
 	MergeStringField(&flags.ChartVersion, "", rc.Version)
 	MergeStringField(&flags.Namespace, "", rc.Namespace)
+	MergeStringField(&flags.NamespacePrefix, "", rc.NamespacePrefix)
 	MergeStringField(&flags.Release, "", rc.Release)
 	MergeStringField(&flags.Scenario, "", rc.Scenario)
 	MergeStringField(&flags.ScenarioPath, "", firstNonEmpty(rc.ScenarioPath, rc.ScenarioRoot))
@@ -145,6 +200,9 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeStringField(&flags.OrchestrationIndexPrefix, "", rc.OrchestrationIndexPrefix)
 	MergeStringField(&flags.TasklistIndexPrefix, "", rc.TasklistIndexPrefix)
 	MergeStringField(&flags.OperateIndexPrefix, "", rc.OperateIndexPrefix)
+	MergeStringField(&flags.KubeContext, "", rc.KubeContext)
+	MergeStringField(&flags.IngressBaseDomain, "", rc.IngressBaseDomain)
+	MergeStringField(&flags.ExternalSecretsStore, "", "") // No config file support yet
 
 	if rc.ExternalSecrets {
 		flags.ExternalSecrets = true
@@ -158,6 +216,10 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.DeleteNamespaceFirst, nil, rc.DeleteNamespaceFirst)
 	MergeBoolField(&flags.EnsureDockerRegistry, nil, rc.EnsureDockerRegistry)
 	MergeBoolField(&flags.RenderTemplates, nil, rc.RenderTemplates)
+
+	// Test execution flags
+	MergeBoolField(&flags.RunIntegrationTests, nil, rc.RunIntegrationTests)
+	MergeBoolField(&flags.RunE2ETests, nil, rc.RunE2ETests)
 
 	MergeStringSliceField(&flags.ExtraValues, nil, rc.ExtraValues)
 
@@ -204,6 +266,20 @@ func Validate(flags *RuntimeFlags) error {
 		return fmt.Errorf("no valid scenarios found in %q", flags.Scenario)
 	}
 
+	// Validate ingress configuration
+	// --ingress-hostname is mutually exclusive with --ingress-subdomain and --ingress-base-domain
+	if flags.IngressHostname != "" && (flags.IngressSubdomain != "" || flags.IngressBaseDomain != "") {
+		return fmt.Errorf("--ingress-hostname cannot be used with --ingress-subdomain or --ingress-base-domain; use either --ingress-hostname OR --ingress-subdomain with --ingress-base-domain")
+	}
+	if flags.IngressSubdomain != "" && flags.IngressBaseDomain == "" {
+		return fmt.Errorf("--ingress-base-domain is required when using --ingress-subdomain; valid values: %s", strings.Join(ValidIngressBaseDomains, ", "))
+	}
+	if flags.IngressBaseDomain != "" {
+		if !isValidIngressBaseDomain(flags.IngressBaseDomain) {
+			return fmt.Errorf("--ingress-base-domain must be one of: %s", strings.Join(ValidIngressBaseDomains, ", "))
+		}
+	}
+
 	return nil
 }
 
@@ -219,17 +295,36 @@ func parseScenarios(scenario string) []string {
 	return scenarios
 }
 
+// isValidIngressBaseDomain checks if the given domain is in the allowed list.
+func isValidIngressBaseDomain(domain string) bool {
+	for _, valid := range ValidIngressBaseDomains {
+		if domain == valid {
+			return true
+		}
+	}
+	return false
+}
+
 // ResolveIngressHostname returns the resolved ingress hostname.
 // If IngressHostname is set, it takes precedence (full override).
-// Otherwise, IngressSubdomain is appended to DefaultIngressBaseDomain.
+// Otherwise, IngressSubdomain is appended to IngressBaseDomain.
 func (f *RuntimeFlags) ResolveIngressHostname() string {
 	if f.IngressHostname != "" {
 		return f.IngressHostname
 	}
-	if f.IngressSubdomain != "" {
-		return f.IngressSubdomain + "." + DefaultIngressBaseDomain
+	if f.IngressSubdomain != "" && f.IngressBaseDomain != "" {
+		return f.IngressSubdomain + "." + f.IngressBaseDomain
 	}
 	return ""
+}
+
+// EffectiveNamespace returns the namespace with the prefix applied if set.
+// If NamespacePrefix is set, returns "prefix-namespace", otherwise just "namespace".
+func (f *RuntimeFlags) EffectiveNamespace() string {
+	if f.NamespacePrefix != "" && f.Namespace != "" {
+		return f.NamespacePrefix + "-" + f.Namespace
+	}
+	return f.Namespace
 }
 
 // LoadAndMerge loads config from the given path and merges the active deployment into flags.

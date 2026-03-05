@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   multitenancy:
     checksEnabled: true
     apiEnabled: true
@@ -28,7 +26,9 @@ global:
 identity:
   enabled: true
   firstUser:
-    existingSecret: "integration-test-credentials"
+    secret:
+      existingSecret: "integration-test-credentials"
+      existingSecretKey: "identity-user-password"
 
 identityPostgresql:
   enabled: true
@@ -37,3 +37,10 @@ identityPostgresql:
 
 elasticsearch:
   enabled: true
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"

@@ -77,19 +77,20 @@ console:
                   - t-core-16-unstable
 
 webModelerPostgresql:
-  tolerations:
-    - key: t-core-16-unstable
-      operator: Exists
-      effect: NoSchedule
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: nodegroup
-                operator: In
-                values:
-                  - t-core-16-unstable
+  primary:
+    tolerations:
+      - key: t-core-16-unstable
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - t-core-16-unstable
 
 orchestration:
   tolerations:

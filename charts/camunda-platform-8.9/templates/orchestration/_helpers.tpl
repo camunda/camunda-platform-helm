@@ -258,14 +258,14 @@ Authentication.
     {{- join "," $enabledProfiles }}
 {{- end -}}
 
-{{- define "orchestration.enabledProfilesWithIdentity" -}}
+{{- define "orchestration.enabledProfilesWithAuth" -}}
     {{- if or
         (eq (include "orchestration.authMethod" .) "oidc")
         (eq (include "orchestration.authMethod" .) "basic")
     }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}
-        {{- include "orchestration.enabledProfiles" . | replace "identity" "auth" -}}
+        {{- include "orchestration.enabledProfiles" . | replace "admin" "auth" -}}
     {{- end }}
 {{- end -}}
 
@@ -275,12 +275,12 @@ Authentication.
     {{- else -}}
         {{- if .Values.global.noSecondaryStorage -}}
             none
-        {{- else if .Values.global.elasticsearch.enabled -}}
-            elasticsearch
-        {{- else if .Values.global.opensearch.enabled -}}
-            opensearch
         {{- else if .Values.orchestration.exporters.rdbms.enabled -}}
             rdbms
+        {{- else if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
+            elasticsearch
+        {{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
+            opensearch
         {{- else -}}
             unset
         {{- end -}}
@@ -288,7 +288,54 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.persistentSessionsEnabled" -}}
-    {{- and (not .Values.global.noSecondaryStorage) (not .Values.orchestration.exporters.rdbms.enabled) -}}
+    {{ not .Values.global.noSecondaryStorage -}}
+{{- end -}}
+
+
+{{- define "orchestration.hasCamundaExporter" -}}
+{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) -}}
+{{- end -}}
+
+{{- define "orchestration.hasNoExporter" -}}
+{{-
+and
+(ne (include "orchestration.hasLegacyOpenSearchExporter" .) "true")
+(ne (include "orchestration.hasLegacyElasticsearchExporter" .) "true")
+(ne (include "orchestration.hasCamundaExporter" .) "true")
+-}}
+{{- end -}}
+
+{{- define "orchestration.hasLegacyElasticsearchExporter" -}}
+{{- and
+      (or 
+        (and .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        (or
+          (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+          (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)
+        )
+      )
+      (or
+        .Values.orchestration.exporters.zeebe.enabled
+        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+      )
+-}}
+{{- end -}}
+
+{{- define "orchestration.hasLegacyOpenSearchExporter" -}}
+{{- and
+      (or
+        (and .Values.global.opensearch.enabled .Values.orchestration.exporters.zeebe.enabled)
+        (and (or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled) .Values.optimize.enabled)
+      )
+      (or
+        .Values.orchestration.exporters.zeebe.enabled
+        (lt (int (default 0 .Values.global.multiregion.regions)) 2)
+      )
+-}}
+{{- end -}}
+
+{{- define "orchestration.hasAppIntegrations" -}}
+{{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
 
 

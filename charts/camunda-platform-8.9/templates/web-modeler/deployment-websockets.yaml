@@ -15,11 +15,11 @@ spec:
     metadata:
       labels: {{- include "webModeler.websockets.labels" . | nindent 8 }}
       {{- if .Values.webModeler.websockets.podLabels }}
-      {{- toYaml .Values.webModeler.websockets.podLabels | nindent 8 }}
+      {{- tpl (toYaml .Values.webModeler.websockets.podLabels) $ | nindent 8 }}
       {{- end }}
       {{- if .Values.webModeler.websockets.podAnnotations }}
       annotations:
-        {{- toYaml .Values.webModeler.websockets.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.webModeler.websockets.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -37,7 +37,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             - name: APP_NAME
               value: "Web Modeler WebSockets"
@@ -117,10 +116,8 @@ spec:
             - name: config
               mountPath: /home/webapp/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
-            - name: config
-              mountPath: /home/webapp/config/{{ $key }}
-              subPath: {{ $key }}
+          {{- with .Values.webModeler.websockets.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
           {{- end }}
           {{- if .Values.webModeler.websockets.extraVolumeMounts }}
           {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 12 }}

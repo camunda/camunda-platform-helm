@@ -1,6 +1,4 @@
 global:
-  elasticsearch:
-    enabled: true
   image:
     pullPolicy: Always
   identity:
@@ -9,6 +7,11 @@ global:
 
 orchestration:
   contextPath: "/orchestration"
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
   security:
     initialization:
       defaultRoles:
@@ -26,8 +29,9 @@ orchestration:
           - tasklist-api
           - zeebe-api
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
   env:
     - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
       value: 'false'
@@ -40,6 +44,9 @@ orchestration:
 
 optimize:
   enabled: true
+  database:
+    elasticsearch:
+      enabled: true
   contextPath: "/optimize"
 
 webModeler:
@@ -76,8 +83,9 @@ console:
 identity:
   enabled: true
   firstUser:
-    existingSecret: "integration-test-credentials"
-    existingSecretKey: "identity-user-password"
+    secret:
+      existingSecret: "integration-test-credentials"
+      existingSecretKey: "identity-user-password"
   contextPath: "/identity"
   clients:
     - id: venom
@@ -124,8 +132,9 @@ connectors:
   security:
     authentication:
       oidc:
-        existingSecret:
-          name: "integration-test-credentials"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
   env:
     - name: username
       value: username

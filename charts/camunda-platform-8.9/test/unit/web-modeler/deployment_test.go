@@ -44,7 +44,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
-	components := []string{"restapi", "webapp", "websockets"}
+	components := []string{"restapi", "websockets"}
 
 	for _, component := range components {
 		suite.Run(t, &DeploymentTemplateTest{
@@ -128,6 +128,17 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.Require().Equal("bar", deployment.Spec.Template.Annotations["foo"])
 				s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
+			},
+		}, {
+			Name:        "TestContainerSetPodLabelsAndAnnotationsWithTemplating",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-templated-labels.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - verify templating is evaluated
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Labels["release"])
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Annotations["release"])
 			},
 		}, {
 			Name: "TestContainerSetGlobalAnnotations",
@@ -362,8 +373,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 					SetValues: map[string]string{
 						"webModeler.enabled":                  "true",
 						"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"global.elasticsearch.enabled": "true",
-				"elasticsearch.enabled":        "true",
+						"global.elasticsearch.enabled":        "true",
+						"elasticsearch.enabled":               "true",
 					},
 					KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
 				}
@@ -664,8 +675,8 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"identity.enabled":                                  "true",
 				"webModeler.enabled":                                "true",
 				"webModeler.restapi.mail.fromAddress":               "example@example.com",
-				"webModeler.restapi.extraConfiguration.testFile":    "this is a test",
-				"webModeler.webapp.extraConfiguration.testFile":     "this is a test",
+				"webModeler.restapi.extraConfiguration[0].file":     "testFile",
+				"webModeler.restapi.extraConfiguration[0].content":  "this is a test",
 				"webModeler.websockets.extraConfiguration.testFile": "this is a test",
 				"global.elasticsearch.enabled":                      "true",
 				"elasticsearch.enabled":                             "true",
@@ -709,7 +720,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				expectedEnvNames := map[string]string{
 					"websockets": "PUSHER_APP_SECRET",
-					"webapp":     "PUSHER_SECRET",
 					"restapi":    "RESTAPI_PUSHER_SECRET",
 				}
 

@@ -7,6 +7,29 @@ Utilities.
 */}}
 
 {{/*
+camundaPlatform.toYamlPretty
+A version-safe wrapper for toYamlPretty that falls back to toYaml on older Helm versions.
+toYamlPretty was introduced in Helm 3.17.0, so older versions will fail if it's used directly.
+
+This uses tpl to dynamically evaluate the template string at runtime, avoiding parse-time
+errors on older Helm versions that don't recognize toYamlPretty as a function.
+
+Usage:
+{{ include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) }}
+
+Parameters:
+- value: The value to convert to YAML
+- context: The root context ($) needed for accessing Capabilities
+*/}}
+{{- define "camundaPlatform.toYamlPretty" -}}
+  {{- if semverCompare ">=3.17.0" .context.Capabilities.HelmVersion.Version -}}
+    {{- tpl "{{ toYamlPretty .value }}" (dict "value" .value) -}}
+  {{- else -}}
+    {{- toYaml .value -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
 camundaPlatform.manualMigrationRequired
 Fail with message when the old values file key is used and show the new key.
 
@@ -62,4 +85,53 @@ Usage:
   {{- $paths := join "/" . -}}
   {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
   {{- printf "/%s" $pathsSanitized -}}
+{{- end -}}
+
+{{/*
+camundaPlatform.renderExtraConfiguration
+Renders extraConfiguration entries as ConfigMap data keys.
+Supports both list format [{file, content}] and map format {filename: content}.
+
+Usage:
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.connectors.extraConfiguration) }}
+*/}}
+{{- define "camundaPlatform.renderExtraConfiguration" -}}
+  {{- if kindIs "slice" .extraConfig }}
+  {{- range .extraConfig }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
+  {{- end }}
+  {{- else }}
+  {{- range $key, $val := .extraConfig }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+camundaPlatform.extraConfigurationVolumeMounts
+Renders volumeMounts for extraConfiguration entries.
+
+Usage:
+  {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict
+      "extraConfig" .Values.connectors.extraConfiguration
+      "volumeName" "config"
+      "basePath" "/config"
+  ) | nindent 12 }}
+*/}}
+{{- define "camundaPlatform.extraConfigurationVolumeMounts" -}}
+{{- if kindIs "slice" .extraConfig }}
+{{- range .extraConfig }}
+- name: {{ $.volumeName }}
+  mountPath: {{ $.basePath }}/{{ .file }}
+  subPath: {{ .file }}
+{{- end }}
+{{- else }}
+{{- range $key, $val := .extraConfig }}
+- name: {{ $.volumeName }}
+  mountPath: {{ $.basePath }}/{{ $key }}
+  subPath: {{ $key }}
+{{- end }}
+{{- end }}
 {{- end -}}

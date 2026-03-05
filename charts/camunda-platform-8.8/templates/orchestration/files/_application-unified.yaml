@@ -104,7 +104,9 @@ camunda:
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
         client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
+        {{- if .Values.orchestration.security.authentication.oidc.groupsClaim }}
         groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
+        {{- end }}
         client-id: {{ include "orchestration.authClientId" . | quote }}
         client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
         audiences:
@@ -145,6 +147,10 @@ camunda:
       {{- if .Values.orchestration.security.initialization.mappingRules }}
       mapping-rules:
         {{- .Values.orchestration.security.initialization.mappingRules | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if .Values.orchestration.security.initialization.authorizations }}
+      authorizations:
+        {{- .Values.orchestration.security.initialization.authorizations | toYaml | nindent 8 }}
       {{- end }}
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
@@ -356,7 +362,7 @@ zeebe:
               usageMetricsMinimumAge: {{ .Values.orchestration.history.retention.usageMetricsMinimumAge | quote }}
               usageMetricsPolicyName: {{ .Values.orchestration.history.retention.usageMetricsPolicyName | quote }}
           {{- end }}
-    {{- else -}}
+    {{- else if not .Values.orchestration.exporters.zeebe.enabled -}}
       {{ " {}" }}
     {{- end }}
 {{ end -}}

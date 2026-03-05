@@ -122,6 +122,21 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("baz", deployment.Spec.Template.Annotations["foz"])
 			},
 		}, {
+			Name:        "TestContainerSetPodLabelsAndAnnotationsWithTemplating",
+			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/web-modeler/testdata/values-templated-labels.yaml")},
+			Values: map[string]string{
+				"identity.enabled":                    "true",
+				"webModeler.restapi.mail.fromAddress": "example@example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then - verify templating is evaluated for both labels and annotations
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Labels["release"])
+				s.Require().Equal("camunda-platform-test", deployment.Spec.Template.Annotations["release"])
+			},
+		}, {
 			Name: "TestContainerSetGlobalAnnotations",
 			Values: map[string]string{
 				"identity.enabled":                    "true",

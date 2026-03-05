@@ -4,20 +4,15 @@ global:
   identity:
     auth:
       enabled: true
-  opensearch:
-    enabled: true
-    auth:
-      username: "$OPENSEARCH_USERNAME"
-      password: "$OPENSEARCH_PASSWORD"
-    url:
-      protocol: https
-      host: "$AWS_HOST_URL"
-      port: 443
-    prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
 orchestration:
   data:
     secondaryStorage:
       type: opensearch
+      opensearch:
+        url: "https://$AWS_HOST_URL:443"
+        username: "$OPENSEARCH_USERNAME"
+        secret:
+          inlineSecret: "$OPENSEARCH_PASSWORD"
   security:
     authentication:
       method: oidc
@@ -51,12 +46,24 @@ orchestration:
       value: "connectors-client-mapping-rule"
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
-    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
 identityKeycloak:
   enabled: true
 optimize:
   enabled: true
+  database:
+    opensearch:
+      enabled: true
+      auth:
+        username: "$OPENSEARCH_USERNAME"
+        secret:
+          inlineSecret: "$OPENSEARCH_PASSWORD"
+      url:
+        protocol: https
+        host: "$AWS_HOST_URL"
+        port: 443
+      prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"

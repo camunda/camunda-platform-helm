@@ -15,11 +15,11 @@ spec:
     metadata:
       labels: {{- include "webModeler.restapi.labels" . | nindent 8 }}
       {{- if .Values.webModeler.restapi.podLabels }}
-      {{- toYaml .Values.webModeler.restapi.podLabels | nindent 8 }}
+      {{- tpl (toYaml .Values.webModeler.restapi.podLabels) $ | nindent 8 }}
       {{- end }}
       {{- if .Values.webModeler.restapi.podAnnotations }}
       annotations:
-        {{- toYaml .Values.webModeler.restapi.podAnnotations | nindent 8 }}
+        {{- tpl (toYaml .Values.webModeler.restapi.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
@@ -37,15 +37,13 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
-                "plaintextKey" "key"
             ) | nindent 12 }}
             - name: JAVA_OPTIONS
-              value: "-XX:MaxRAMPercentage=80.0"
+              value: {{ .Values.webModeler.restapi.javaOpts | default "-XX:MaxRAMPercentage=80.0" | quote }}
             {{- if not .Values.webModelerPostgresql.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "SPRING_DATASOURCE_PASSWORD"
                 "config" .Values.webModeler.restapi.externalDatabase
-                "legacyKeyField" "existingSecretPasswordKey"
             ) | nindent 12 }}
             {{- else }}
             - name: SPRING_DATASOURCE_PASSWORD
@@ -57,8 +55,6 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_MAIL_PASSWORD"
                 "config" .Values.webModeler.restapi.mail
-                "plaintextKey" "smtpPassword"
-                "legacyKeyField" "existingSecretPasswordKey"
             ) | nindent 12 }}
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
@@ -77,7 +73,7 @@ spec:
                 "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: /tmp/zeebe_client_cache.txt
+              value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | default "/tmp/zeebe_client_cache.txt" | quote }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
@@ -118,7 +114,7 @@ spec:
           {{- if .Values.webModeler.restapi.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.webModeler.restapi.startupProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.startupProbe.probePath) }}
               scheme: {{ .Values.webModeler.restapi.startupProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
@@ -130,7 +126,7 @@ spec:
           {{- if .Values.webModeler.restapi.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.webModeler.restapi.readinessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.readinessProbe.probePath) }}
               scheme: {{ .Values.webModeler.restapi.readinessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
@@ -142,7 +138,7 @@ spec:
           {{- if .Values.webModeler.restapi.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.webModeler.restapi.livenessProbe.probePath }}
+              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.livenessProbe.probePath) }}
               scheme: {{ .Values.webModeler.restapi.livenessProbe.scheme }}
               port: http-management
             initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}
@@ -157,10 +153,8 @@ spec:
             - name: config
               mountPath: /home/runner/config/application.yaml
               subPath: application.yaml
-          {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
-            - name: config
-              mountPath: /home/runner/config/{{ $key }}
-              subPath: {{ $key }}
+          {{- with .Values.webModeler.restapi.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/runner/config") | trim | nindent 12 }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
@@ -191,7 +185,6 @@ spec:
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
             "volumeName" "gcp-credentials-volume"
             "config" .Values.global.documentStore.type.gcp
-            "legacyKeyField" "credentialsKey"
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}

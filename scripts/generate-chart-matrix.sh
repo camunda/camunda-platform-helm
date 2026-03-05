@@ -199,6 +199,11 @@ write_matrix_entry() {
         echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
         echo "    flow: ${flow_trimmed}" >> matrix_versions.txt
         echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+        # infra-type is a map (per-platform), e.g. {gke: distroci, eks: preemptible}.
+        infra_type_gke=$(echo "$prScenario" | yq e -r '.infra-type.gke // "preemptible"' -)
+        infra_type_eks=$(echo "$prScenario" | yq e -r '.infra-type.eks // "preemptible"' -)
+        echo "    infraTypeGke: ${infra_type_gke}" >> matrix_versions.txt
+        echo "    infraTypeEks: ${infra_type_eks}" >> matrix_versions.txt
       done
     done
     sed -i -e '$s/,$/]\n/' matrix_versions.txt

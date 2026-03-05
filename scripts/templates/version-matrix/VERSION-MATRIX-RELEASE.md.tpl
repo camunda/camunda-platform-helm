@@ -20,6 +20,7 @@
   "chart_version" $chartVersion
   "chart_images_camunda" (chartImagesCamunda $chartDir $chartVersion | strings.Trim "\n")
   "chart_images_non_camunda" (chartImagesNonCamunda $chartDir $chartVersion | strings.Trim "\n")
+  "chart_images_enterprise" (chartImagesEnterprise $chartDir $chartVersion | strings.Trim "\n")
   "helm_cli_version" (helmCLIVersion $gitRef | strings.Trim " ")
 }}
 
@@ -50,6 +51,12 @@ Camunda images:
 Non-Camunda images:
 
 {{ .chart_images_non_camunda }}
+{{- if .chart_images_enterprise }}
+
+Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/self-managed/setup/guides/install-bitnami-enterprise-images/)):
+
+{{ .chart_images_enterprise }}
+{{- end }}
 {{ end }}
 
 {{- end -}}
