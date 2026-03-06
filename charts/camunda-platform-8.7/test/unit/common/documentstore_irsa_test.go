@@ -17,6 +17,7 @@ package camunda
 
 import (
 	"camunda-platform/test/unit/testhelpers"
+	_ "camunda-platform/test/unit/utils"
 	"path/filepath"
 	"strings"
 	"testing"
