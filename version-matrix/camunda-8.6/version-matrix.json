@@ -17,6 +17,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.8",
       "docker.io/camunda/web-modeler-websockets:8.6.8",
       "docker.io/camunda/zeebe:8.6.11"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -37,6 +54,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.7",
       "docker.io/camunda/web-modeler-websockets:8.6.7",
       "docker.io/camunda/zeebe:8.6.9"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -57,6 +91,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.7",
       "docker.io/camunda/web-modeler-websockets:8.6.7",
       "docker.io/camunda/zeebe:8.6.8"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -77,6 +128,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.6",
       "docker.io/camunda/web-modeler-websockets:8.6.6",
       "docker.io/camunda/zeebe:8.6.7"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -97,6 +165,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.4",
       "docker.io/camunda/web-modeler-websockets:8.6.4",
       "docker.io/camunda/zeebe:8.6.6"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -117,6 +202,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.3",
       "docker.io/camunda/web-modeler-websockets:8.6.3",
       "docker.io/camunda/zeebe:8.6.5"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -137,6 +239,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.3",
       "docker.io/camunda/web-modeler-websockets:8.6.3",
       "docker.io/camunda/zeebe:8.6.5"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -157,6 +276,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.2",
       "docker.io/camunda/web-modeler-websockets:8.6.2",
       "docker.io/camunda/zeebe:8.6.4"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -177,6 +313,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.2",
       "docker.io/camunda/web-modeler-websockets:8.6.2",
       "docker.io/camunda/zeebe:8.6.2"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -197,6 +350,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.1",
       "docker.io/camunda/web-modeler-websockets:8.6.1",
       "docker.io/camunda/zeebe:8.6.0"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -217,6 +387,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.8",
       "docker.io/camunda/web-modeler-websockets:8.6.8",
       "docker.io/camunda/zeebe:8.6.12"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -237,6 +424,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.9",
       "docker.io/camunda/web-modeler-websockets:8.6.9",
       "docker.io/camunda/zeebe:8.6.13"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -257,6 +461,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.10",
       "docker.io/camunda/web-modeler-websockets:8.6.10",
       "docker.io/camunda/zeebe:8.6.15"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -277,6 +498,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.11",
       "docker.io/camunda/web-modeler-websockets:8.6.11",
       "docker.io/camunda/zeebe:8.6.16"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -297,6 +535,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.11",
       "docker.io/camunda/web-modeler-websockets:8.6.11",
       "docker.io/camunda/zeebe:8.6.18"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -317,6 +572,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.14",
       "docker.io/camunda/web-modeler-websockets:8.6.14",
       "docker.io/camunda/zeebe:8.6.19"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -337,6 +609,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.15",
       "docker.io/camunda/web-modeler-websockets:8.6.15",
       "docker.io/camunda/zeebe:8.6.21"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -357,6 +646,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.17",
       "docker.io/camunda/web-modeler-websockets:8.6.17",
       "docker.io/camunda/zeebe:8.6.24"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -377,6 +683,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.17",
       "docker.io/camunda/web-modeler-websockets:8.6.17",
       "docker.io/camunda/zeebe:8.6.25"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -397,6 +720,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.18",
       "docker.io/camunda/web-modeler-websockets:8.6.18",
       "docker.io/camunda/zeebe:8.6.26"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -417,6 +757,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.19",
       "docker.io/camunda/web-modeler-websockets:8.6.19",
       "docker.io/camunda/zeebe:8.6.29"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -437,6 +794,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.20",
       "docker.io/camunda/web-modeler-websockets:8.6.20",
       "docker.io/camunda/zeebe:8.6.29"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -457,6 +831,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.21",
       "docker.io/camunda/web-modeler-websockets:8.6.21",
       "docker.io/camunda/zeebe:8.6.30"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -477,6 +868,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.22",
       "docker.io/camunda/web-modeler-websockets:8.6.22",
       "docker.io/camunda/zeebe:8.6.30"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -497,6 +905,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.22",
       "docker.io/camunda/web-modeler-websockets:8.6.22",
       "docker.io/camunda/zeebe:8.6.31"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -517,6 +942,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.23",
       "docker.io/camunda/web-modeler-websockets:8.6.23",
       "docker.io/camunda/zeebe:8.6.32"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -537,6 +979,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.23",
       "docker.io/camunda/web-modeler-websockets:8.6.23",
       "docker.io/camunda/zeebe:8.6.34"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -557,6 +1016,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.24",
       "docker.io/camunda/web-modeler-websockets:8.6.24",
       "docker.io/camunda/zeebe:8.6.35"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -577,6 +1053,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.25",
       "docker.io/camunda/web-modeler-websockets:8.6.25",
       "docker.io/camunda/zeebe:8.6.36"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -597,6 +1090,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.25",
       "docker.io/camunda/web-modeler-websockets:8.6.25",
       "docker.io/camunda/zeebe:8.6.36"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   },
   {
@@ -617,6 +1127,23 @@
       "docker.io/camunda/web-modeler-webapp:8.6.26",
       "docker.io/camunda/web-modeler-websockets:8.6.26",
       "docker.io/camunda/zeebe:8.6.37"
+    ],
+    "chart_enterprise_images": [
+      "docker.io/camunda/connectors-bundle:8.6.25",
+      "docker.io/camunda/console:8.6.101",
+      "docker.io/camunda/identity:8.6.29",
+      "docker.io/camunda/operate:8.6.37",
+      "docker.io/camunda/optimize:8.6.24",
+      "docker.io/camunda/tasklist:8.6.37",
+      "docker.io/camunda/web-modeler-restapi:8.6.26",
+      "docker.io/camunda/web-modeler-webapp:8.6.26",
+      "docker.io/camunda/web-modeler-websockets:8.6.26",
+      "docker.io/camunda/zeebe:8.6.37",
+      "registry.camunda.cloud/keycloak-ee/keycloak:25.0.6",
+      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.12",
+      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
+      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
+      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   }
 ]
