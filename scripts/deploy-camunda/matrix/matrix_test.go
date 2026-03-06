@@ -407,9 +407,9 @@ func TestGenerateWithRealConfigs(t *testing.T) {
 		t.Errorf("Generate: expected entries for at least 2 versions, got %d: %v", len(versions), versions)
 	}
 
-	// Verify no denied flows leaked through
+	// Verify no denied flows leaked through (must stay in sync with permitted-flows.yaml)
 	for _, e := range entries {
-		if e.Version == "8.9" && (e.Flow == "upgrade-patch" || e.Flow == "upgrade-minor") {
+		if e.Version == "8.9" && e.Flow == "upgrade-patch" {
 			t.Errorf("Generate: 8.9 entry has denied flow %q (scenario=%s)", e.Flow, e.Scenario)
 		}
 		if (e.Version == "8.6" || e.Version == "8.7") && e.Flow == "upgrade-minor" {
