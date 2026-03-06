@@ -2,6 +2,44 @@
 
 This is the **Camunda 8 Self-Managed Helm Charts** repository. It contains Helm charts for deploying the Camunda Platform on Kubernetes, along with Go-based CLI tooling for deployment automation, integration testing, and CI/CD.
 
+## State File
+
+Use `STATE.md` (repo root) to persist session context across conversations. This file is gitignored.
+
+**On session start:** Read `STATE.md` if it exists. Use it to understand the current goal, what has been done, what remains, and any discoveries or decisions made so far.
+
+**During work:** Update `STATE.md` whenever you make meaningful progress — after completing a task, discovering something important, or making a decision. Do not wait until the end of the session.
+
+**Format:**
+
+```markdown
+## Goal
+
+One-line summary of what we are working on.
+
+## Instructions
+
+Constraints, preferences, or standing orders from the user that apply across sessions.
+
+## Discoveries
+
+Key findings, root causes, gotchas, and architectural decisions made during investigation.
+
+## Accomplished
+
+Numbered list of completed items with enough detail to not repeat work.
+
+## Not Yet Done
+
+Numbered list of remaining items, in priority order.
+
+## Relevant Files
+
+Files and directories that are central to the current task, with brief annotations.
+```
+
+Keep it concise. The file should be useful to a fresh agent session that has never seen prior conversation history.
+
 ## Repository Structure
 
 ```
@@ -43,15 +81,15 @@ When making changes across chart versions, check which structure applies. Do not
 
 ### Chart Components (8.8+)
 
-| Component | Templates | Key Resources |
-|-----------|-----------|---------------|
-| Orchestration | `templates/orchestration/` | StatefulSet, Services, ConfigMap, GRPCRoute, HTTPRoute |
-| Connectors | `templates/connectors/` | Deployment, Service, ConfigMap, PVC |
-| Console | `templates/console/` | Deployment, Service, ConfigMap |
-| Identity | `templates/identity/` | Deployment, Service, ConfigMap, PVC |
-| Optimize | `templates/optimize/` | Deployment, Service, ConfigMap, PVC |
-| Web Modeler | `templates/web-modeler/` | 2 Deployments (restapi + websockets), Services, ConfigMaps |
-| Common/Shared | `templates/common/` | Ingress, Gateway, ReferenceGrant, shared ConfigMaps |
+| Component     | Templates                  | Key Resources                                              |
+| ------------- | -------------------------- | ---------------------------------------------------------- |
+| Orchestration | `templates/orchestration/` | StatefulSet, Services, ConfigMap, GRPCRoute, HTTPRoute     |
+| Connectors    | `templates/connectors/`    | Deployment, Service, ConfigMap, PVC                        |
+| Console       | `templates/console/`       | Deployment, Service, ConfigMap                             |
+| Identity      | `templates/identity/`      | Deployment, Service, ConfigMap, PVC                        |
+| Optimize      | `templates/optimize/`      | Deployment, Service, ConfigMap, PVC                        |
+| Web Modeler   | `templates/web-modeler/`   | 2 Deployments (restapi + websockets), Services, ConfigMaps |
+| Common/Shared | `templates/common/`        | Ingress, Gateway, ReferenceGrant, shared ConfigMaps        |
 
 ### Chart Dependencies
 
@@ -76,6 +114,7 @@ Keep the header under 120 chars (prefer under 72). The description should be in 
 - Complex CI logic (>20 lines) must be implemented as Go scripts in `scripts/`, not bash.
 - All Go scripts must have unit tests.
 - Go code uses the golden file (snapshot) testing pattern. After changes that affect rendered output, run:
+
   ```bash
   make go.update-golden-only
   ```
@@ -88,16 +127,16 @@ Branch naming: `issueId-description` (e.g., `123-adding-bpel-support`).
 
 Pinned in `.tool-versions` (managed by `asdf`). Install all with: `asdf install`
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Go | 1.26 | Required for all `scripts/` tooling |
-| Helm | 3.20 | Chart rendering, linting, deployment |
-| kubectl | 1.27.16 | Matches CI cluster version |
-| kind | 0.31 | Local Kubernetes clusters |
-| yq | 4.52.4 | YAML processing |
-| jq | 1.8.1 | JSON processing |
-| kustomize | 5.8.1 | Test suite deployment |
-| bats | 1.11.0 | Bash testing |
+| Tool      | Version | Notes                                |
+| --------- | ------- | ------------------------------------ |
+| Go        | 1.26    | Required for all `scripts/` tooling  |
+| Helm      | 3.20    | Chart rendering, linting, deployment |
+| kubectl   | 1.27.16 | Matches CI cluster version           |
+| kind      | 0.31    | Local Kubernetes clusters            |
+| yq        | 4.52.4  | YAML processing                      |
+| jq        | 1.8.1   | JSON processing                      |
+| kustomize | 5.8.1   | Test suite deployment                |
+| bats      | 1.11.0  | Bash testing                         |
 
 ## Common Development Tasks
 
@@ -118,15 +157,15 @@ Most `make` targets accept `chartPath` to target a specific version (e.g., `make
 
 Each chart has multiple values overlays:
 
-| File | Purpose |
-|------|---------|
-| `values.yaml` | Default values (primary, heavily documented) |
-| `values-latest.yaml` | Latest upstream image tags |
-| `values-local.yaml` | Local development overrides |
-| `values-enterprise.yaml` | Enterprise feature overrides |
-| `values-bitnami-legacy.yaml` | Legacy Bitnami compatibility |
-| `values-digest.yaml` | Image digest pinning |
-| `values.schema.json` | JSON Schema for validation |
+| File                         | Purpose                                      |
+| ---------------------------- | -------------------------------------------- |
+| `values.yaml`                | Default values (primary, heavily documented) |
+| `values-latest.yaml`         | Latest upstream image tags                   |
+| `values-local.yaml`          | Local development overrides                  |
+| `values-enterprise.yaml`     | Enterprise feature overrides                 |
+| `values-bitnami-legacy.yaml` | Legacy Bitnami compatibility                 |
+| `values-digest.yaml`         | Image digest pinning                         |
+| `values.schema.json`         | JSON Schema for validation                   |
 
 ## Layered Values System (Integration Tests)
 
@@ -177,3 +216,8 @@ Docker registry credentials are required for cluster deployments. Before running
 - **Docker Hub**: `TEST_DOCKER_USERNAME` and `TEST_DOCKER_PASSWORD`
 
 Both are needed when `ensureDockerHub` and `ensureDockerRegistry` are `true` in `.camunda-deploy.yaml`. Do not attempt to extract credentials automatically — ask the user to set them up.
+
+## Development tips
+
+- Complex logic for CI pipelines (>20 lines) should be implemented as golang scripts inside the scripts directory and then called with github actions. Do not implement this in bash.
+- When writing any golang, the scripts must have unit tests
