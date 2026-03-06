@@ -1,0 +1,16 @@
+global:
+  elasticsearch:
+    enabled: true
+
+elasticsearch:
+  enabled: true
+
+orchestration:
+  enabled: true
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  podLabels:
+    release: "{{ .Release.Name }}"
+  podAnnotations:
+    release: "{{ .Release.Name }}"

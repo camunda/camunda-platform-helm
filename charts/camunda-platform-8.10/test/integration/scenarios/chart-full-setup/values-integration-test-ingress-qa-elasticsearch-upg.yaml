@@ -1,0 +1,170 @@
+global:
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-admin-client-token"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-console-client-token"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-optimize-client-token"
+      orchestration:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
+      connectors:
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-orchestration-client-token"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
+  env:
+    - name: JAVA_TOOL_OPTIONS
+      value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
+identityKeycloak:
+  enabled: true
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: true
+webModeler:
+  enabled: true
+  restapi:
+    mail:
+      # This value is required, otherwise the restapi pod wouldn't start.
+      fromAddress: noreply@example.com
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+webModelerPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "webmodeler-postgresql-admin-password"
+      userPasswordKey: "webmodeler-postgresql-user-password"
+console:
+  enabled: true
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: "$TEST_NAMESPACE"
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+identity:
+  enabled: true
+  firstUser:
+    enabled: true
+    user: demo
+    secret:
+      existingSecret: vault-mapped-secrets
+      existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+  users:
+    - username: lisa
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+      firstName: Lisa
+      lastName: Doe
+      email: cawemodev+lisa@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
+    - username: bart
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+      firstName: Bart
+      lastName: Foo
+      email: cawemodev+bart@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
+connectors:
+  security:
+    authentication:
+      oidc:
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-connectors-client-token"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
+elasticsearch:
+  enabled: true

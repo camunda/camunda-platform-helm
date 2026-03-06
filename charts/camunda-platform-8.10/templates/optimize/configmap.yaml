@@ -1,0 +1,36 @@
+{{- if and .Values.optimize.enabled (not .Values.global.noSecondaryStorage) -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "optimize.fullname" . }}-configuration
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+apiVersion: v1
+data:
+  environment-config.yaml: |
+  {{- if .Values.optimize.configuration }}
+    {{ .Values.optimize.configuration | indent 4 | trim }}
+  {{- else }}
+    {{- include "optimize.defaultConfig" . | trim | nindent 4 }}
+  {{- end }}
+  {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
+  application-ccsm.yaml: |
+    {{- if .Values.optimize.extraConfiguration }}
+    spring:
+      config:
+        import: {{ include "optimize.springConfigImport" . }}
+    {{- end }}
+    {{- if .Values.global.identity.auth.enabled }}
+    camunda:
+      identity:
+        clientId: {{ include "optimize.authClientId" . | quote }}
+        audience: {{ include "optimize.authAudience" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+    {{- end }}
+  {{- end }}
+
+  {{- range .Values.optimize.extraConfiguration }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
+  {{- end }}
+{{- end }}
