@@ -2,10 +2,13 @@ package matrix
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -147,7 +150,7 @@ type RunResult struct {
 	KubeContext string
 	Error       error
 	Duration    time.Duration // Wall-clock time for this entry's execution.
-	Diagnostics string        // Post-failure namespace diagnostics (pods, events, logs)
+	Diagnostics string        // Post-failure diagnostics run directory path
 
 	// venomOpts stores the Entra options used to provision a venom app for OIDC entries.
 	// Populated only when the entry uses OIDC authentication. Used during cleanup to
@@ -985,22 +988,111 @@ func resolveIngressBaseDomain(opts RunOptions, platform string) string {
 // diagnosticsDir is the directory where per-namespace diagnostic files are written.
 const diagnosticsDir = "diagnostics"
 
-// collectDiagnostics gathers best-effort namespace diagnostics (pods, events, logs from
-// non-ready pods) after a deployment failure and writes them to a file under diagnosticsDir.
+const diagnosticsPodTailLines = 50
+
+var diagnosticsFileSanitizer = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+
+type diagnosticsPodLog struct {
+	Pod   string `json:"pod"`
+	File  string `json:"file,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
+type diagnosticsSummary struct {
+	Namespace         string              `json:"namespace"`
+	KubeContext       string              `json:"kubeContext,omitempty"`
+	CollectedAt       string              `json:"collectedAt"`
+	PodLogTailLines   int                 `json:"podLogTailLines"`
+	Pods              string              `json:"pods,omitempty"`
+	Events            string              `json:"events,omitempty"`
+	PodLogs           []diagnosticsPodLog `json:"podLogs,omitempty"`
+	TestOutputLast200 string              `json:"testOutputLast200,omitempty"`
+	Errors            []string            `json:"errors,omitempty"`
+}
+
+func diagnosticsTimestamp(now time.Time) string {
+	return now.UTC().Format("20060102T150405Z")
+}
+
+func diagnosticsRunDir(namespace string, now time.Time) string {
+	return filepath.Join(diagnosticsDir, namespace, diagnosticsTimestamp(now))
+}
+
+func sanitizeDiagnosticsFilename(name string) string {
+	clean := strings.TrimSpace(name)
+	clean = diagnosticsFileSanitizer.ReplaceAllString(clean, "_")
+	if clean == "" {
+		return "unknown"
+	}
+	return clean
+}
+
+func writeDiagnosticsSummary(runDir string, summary diagnosticsSummary) error {
+	summaryPath := filepath.Join(runDir, "summary.json")
+	b, err := json.MarshalIndent(summary, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal diagnostics summary: %w", err)
+	}
+	if err := os.WriteFile(summaryPath, append(b, '\n'), 0o644); err != nil {
+		return fmt.Errorf("write diagnostics summary: %w", err)
+	}
+	return nil
+}
+
+func writeDiagnosticsReadme(runDir string, summary diagnosticsSummary) error {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Diagnostics for namespace %s\n", summary.Namespace)
+	fmt.Fprintf(&b, "Collected at: %s\n", summary.CollectedAt)
+	if summary.KubeContext != "" {
+		fmt.Fprintf(&b, "Kube context: %s\n", summary.KubeContext)
+	}
+	fmt.Fprintf(&b, "\nFiles:\n")
+	fmt.Fprintf(&b, "- summary.json\n")
+	fmt.Fprintf(&b, "- logs/<pod>.log (last %d lines per pod)\n", summary.PodLogTailLines)
+	if summary.TestOutputLast200 != "" {
+		fmt.Fprintf(&b, "- test-output.txt (last 200 lines)\n")
+	}
+
+	readmePath := filepath.Join(runDir, "README.txt")
+	if err := os.WriteFile(readmePath, []byte(b.String()), 0o644); err != nil {
+		return fmt.Errorf("write diagnostics readme: %w", err)
+	}
+	return nil
+}
+
+// collectDiagnostics gathers best-effort namespace diagnostics after a deployment failure.
+// It writes run-scoped artifacts under diagnostics/<namespace>/<timestamp>/:
+// - summary.json (machine-friendly metadata)
+// - README.txt (quick human index)
+// - logs/<pod>.log (last diagnosticsPodTailLines lines for every pod)
 // Uses a fresh background context so that diagnostics work even when the parent context
 // is cancelled (e.g., StopOnFailure).
-// Returns the file path on success, or empty string if collection/write fails.
+// Returns the run directory path on success, or empty string if collection/write fails.
 // Never returns an error — all failures are silently swallowed.
 func collectDiagnostics(namespace, kubeContext string) string {
 	// Use a fresh context with a generous timeout for the full collection.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	var b strings.Builder
+	runDir := diagnosticsRunDir(namespace, time.Now())
+	logsDir := filepath.Join(runDir, "logs")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		logging.Logger.Warn().Err(err).Str("path", logsDir).Msg("failed to create diagnostics logs directory")
+		return ""
+	}
+
+	summary := diagnosticsSummary{
+		Namespace:       namespace,
+		KubeContext:     kubeContext,
+		CollectedAt:     time.Now().UTC().Format(time.RFC3339),
+		PodLogTailLines: diagnosticsPodTailLines,
+	}
 
 	// Pods
 	if pods, err := kube.GetPods(ctx, kubeContext, namespace); err == nil && pods != "" {
-		fmt.Fprintf(&b, "PODS:\n%s\n\n", pods)
+		summary.Pods = pods
+	} else if err != nil {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("get pods: %v", err))
 	}
 
 	// Events (truncate to last 20 lines)
@@ -1009,35 +1101,127 @@ func collectDiagnostics(namespace, kubeContext string) string {
 		if len(lines) > 21 { // 1 header + 20 events
 			lines = append(lines[:1], lines[len(lines)-20:]...)
 		}
-		fmt.Fprintf(&b, "EVENTS (last 20):\n%s\n\n", strings.Join(lines, "\n"))
+		summary.Events = strings.Join(lines, "\n")
+	} else if err != nil {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("get events: %v", err))
 	}
 
-	// Logs from non-ready pods (untruncated — the file can hold the full output)
-	if nonReady, err := kube.GetNonReadyPods(ctx, kubeContext, namespace); err == nil {
-		for _, pod := range nonReady {
-			if logs, err := kube.GetPodLogs(ctx, kubeContext, namespace, pod, 50); err == nil && logs != "" {
-				fmt.Fprintf(&b, "LOGS (%s, last 50 lines):\n%s\n\n", pod, logs)
+	// Logs from all pods: one file per pod under logs/.
+	if podNames, err := kube.GetPodNames(ctx, kubeContext, namespace); err == nil {
+		sort.Strings(podNames)
+		for _, pod := range podNames {
+			entry := diagnosticsPodLog{Pod: pod}
+
+			logs, logErr := kube.GetPodLogs(ctx, kubeContext, namespace, pod, diagnosticsPodTailLines)
+			if logErr != nil {
+				entry.Error = logErr.Error()
+				summary.PodLogs = append(summary.PodLogs, entry)
+				summary.Errors = append(summary.Errors, fmt.Sprintf("get pod logs (%s): %v", pod, logErr))
+				continue
 			}
+
+			if logs != "" {
+				relPath := filepath.Join("logs", sanitizeDiagnosticsFilename(pod)+".log")
+				absPath := filepath.Join(runDir, relPath)
+				if err := os.WriteFile(absPath, []byte(logs), 0o644); err != nil {
+					entry.Error = fmt.Sprintf("write log file: %v", err)
+					summary.Errors = append(summary.Errors, fmt.Sprintf("write pod logs (%s): %v", pod, err))
+				} else {
+					entry.File = relPath
+				}
+			}
+
+			summary.PodLogs = append(summary.PodLogs, entry)
+		}
+	} else {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("list pod names: %v", err))
+	}
+
+	if err := writeDiagnosticsSummary(runDir, summary); err != nil {
+		logging.Logger.Warn().Err(err).Msg("failed to write diagnostics summary")
+		return ""
+	}
+	if err := writeDiagnosticsReadme(runDir, summary); err != nil {
+		logging.Logger.Warn().Err(err).Msg("failed to write diagnostics readme")
+		return ""
+	}
+
+	return runDir
+}
+
+// appendTestOutputToDiagnostics checks whether err wraps a *deploy.TestError and, if so,
+// persists the captured test script output in diagnostics. When the deployment
+// itself succeeded (all pods healthy) but the post-deployment tests failed, the standard
+// collectDiagnostics may produce an empty or minimal file. This function ensures the
+// test output is always persisted so developers can debug test failures from the
+// diagnostics directory alone.
+//
+// If diagPath is empty (no k8s diagnostics were collected), a new run directory is created.
+// Returns the diagnostics run directory path, or the original diagPath if no test output was found.
+func appendTestOutputToDiagnostics(err error, namespace, diagPath string) string {
+	var testErr *deploy.TestError
+	if !errors.As(err, &testErr) || testErr.Output == "" {
+		return diagPath
+	}
+
+	// Truncate test output to the last 200 lines to keep diagnostics files manageable.
+	output := lastNLines(testErr.Output, 200)
+	runDir := diagPath
+	if runDir == "" {
+		runDir = diagnosticsRunDir(namespace, time.Now())
+		if err := os.MkdirAll(filepath.Join(runDir, "logs"), 0o755); err != nil {
+			logging.Logger.Warn().Err(err).Str("path", runDir).Msg("failed to create diagnostics directory for test output")
+			return ""
 		}
 	}
 
-	content := b.String()
-	if content == "" {
-		return ""
+	summaryPath := filepath.Join(runDir, "summary.json")
+	summary := diagnosticsSummary{
+		Namespace:       namespace,
+		CollectedAt:     time.Now().UTC().Format(time.RFC3339),
+		PodLogTailLines: diagnosticsPodTailLines,
+	}
+	if existing, readErr := os.ReadFile(summaryPath); readErr == nil {
+		if err := json.Unmarshal(existing, &summary); err != nil {
+			logging.Logger.Warn().Err(err).Str("path", summaryPath).Msg("failed to parse existing diagnostics summary")
+		}
+	}
+	if summary.Namespace == "" {
+		summary.Namespace = namespace
+	}
+	if summary.CollectedAt == "" {
+		summary.CollectedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+	if summary.PodLogTailLines == 0 {
+		summary.PodLogTailLines = diagnosticsPodTailLines
+	}
+	summary.TestOutputLast200 = output
+
+	testOutputPath := filepath.Join(runDir, "test-output.txt")
+	if err := os.WriteFile(testOutputPath, []byte(output), 0o644); err != nil {
+		logging.Logger.Warn().Err(err).Str("path", testOutputPath).Msg("failed to write test output file")
+		summary.Errors = append(summary.Errors, fmt.Sprintf("write test output: %v", err))
 	}
 
-	// Write to file: diagnostics/<namespace>.txt
-	if err := os.MkdirAll(diagnosticsDir, 0o755); err != nil {
-		logging.Logger.Warn().Err(err).Msg("failed to create diagnostics directory")
-		return ""
+	if err := writeDiagnosticsSummary(runDir, summary); err != nil {
+		logging.Logger.Warn().Err(err).Str("path", summaryPath).Msg("failed to write diagnostics summary with test output")
+		return runDir
 	}
-	filePath := filepath.Join(diagnosticsDir, namespace+".txt")
-	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
-		logging.Logger.Warn().Err(err).Str("path", filePath).Msg("failed to write diagnostics file")
-		return ""
+	if err := writeDiagnosticsReadme(runDir, summary); err != nil {
+		logging.Logger.Warn().Err(err).Str("path", runDir).Msg("failed to update diagnostics readme with test output")
 	}
 
-	return filePath
+	return runDir
+}
+
+// lastNLines returns the last n lines of s. If s has n or fewer lines, it is
+// returned unchanged (without a trailing newline added).
+func lastNLines(s string, n int) string {
+	lines := strings.Split(s, "\n")
+	if len(lines) <= n {
+		return s
+	}
+	return strings.Join(lines[len(lines)-n:], "\n")
 }
 
 // cleanupEntry performs per-entry cleanup after deployment and tests have completed.
@@ -1316,6 +1500,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// Collect diagnostics on failure (before cleanup deletes the namespace).
 	if deployErr != nil {
 		diag = collectDiagnostics(namespace, kubeCtx)
+		diag = appendTestOutputToDiagnostics(deployErr, namespace, diag)
 	}
 
 	result := RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: deployErr, Duration: time.Since(start), Diagnostics: diag, venomOpts: venomOpts}

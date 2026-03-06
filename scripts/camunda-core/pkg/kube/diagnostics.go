@@ -43,6 +43,30 @@ func GetPods(ctx context.Context, kubeContext, namespace string) (string, error)
 	return runKubectl(ctx, args)
 }
 
+// GetPodNames returns all pod names in the namespace.
+func GetPodNames(ctx context.Context, kubeContext, namespace string) ([]string, error) {
+	args := append(kubectlBaseArgs(kubeContext),
+		"get", "pods", "-n", namespace,
+		"--no-headers",
+		"-o", "custom-columns=NAME:.metadata.name",
+	)
+	output, err := runKubectl(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+
+	var names []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		names = append(names, line)
+	}
+
+	return names, nil
+}
+
 // GetEvents returns the output of `kubectl get events -n <namespace> --sort-by=.lastTimestamp`.
 func GetEvents(ctx context.Context, kubeContext, namespace string) (string, error) {
 	args := append(kubectlBaseArgs(kubeContext), "get", "events", "-n", namespace, "--sort-by=.lastTimestamp")
