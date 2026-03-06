@@ -119,6 +119,12 @@ integration:
           infra-type:
             gke: arm
           flow: install
+        - name: noSecondaryStorage
+          enabled: true
+          auth: keycloak
+          shortname: nosec
+          exclude: []
+          flow: install
     nightly:
       scenario:
         - name: elasticsearch
