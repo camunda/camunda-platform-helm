@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"scripts/camunda-deployer/pkg/deployer"
+	"scripts/deploy-camunda/deploy"
 )
 
 // --- Version comparison tests ---
@@ -1207,4 +1209,233 @@ func findRepoRoot(t *testing.T) string {
 
 	t.Skip("cannot find repo root (charts/chart-versions.yaml); skipping integration test")
 	return ""
+}
+
+// --- lastNLines tests ---
+
+func TestLastNLines(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		n     int
+		want  string
+	}{
+		{
+			name:  "empty string",
+			input: "",
+			n:     5,
+			want:  "",
+		},
+		{
+			name:  "fewer lines than n",
+			input: "line1\nline2\nline3",
+			n:     10,
+			want:  "line1\nline2\nline3",
+		},
+		{
+			name:  "exactly n lines",
+			input: "line1\nline2\nline3",
+			n:     3,
+			want:  "line1\nline2\nline3",
+		},
+		{
+			name:  "more lines than n",
+			input: "line1\nline2\nline3\nline4\nline5",
+			n:     3,
+			want:  "line3\nline4\nline5",
+		},
+		{
+			name:  "n is 1",
+			input: "line1\nline2\nline3",
+			n:     1,
+			want:  "line3",
+		},
+		{
+			name:  "trailing newline produces empty last element",
+			input: "line1\nline2\n",
+			n:     2,
+			want:  "line2\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := lastNLines(tt.input, tt.n)
+			if got != tt.want {
+				t.Errorf("lastNLines(%q, %d) = %q, want %q", tt.input, tt.n, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- appendTestOutputToDiagnostics tests ---
+
+func TestAppendTestOutputToDiagnostics_PlainError(t *testing.T) {
+	// A plain error (no *TestError) should return diagPath unchanged.
+	plainErr := fmt.Errorf("deployment timed out")
+	result := appendTestOutputToDiagnostics(plainErr, "test-ns", "/some/path")
+	if result != "/some/path" {
+		t.Errorf("expected unchanged diagPath, got %q", result)
+	}
+}
+
+func TestAppendTestOutputToDiagnostics_TestErrorEmptyOutput(t *testing.T) {
+	// A *TestError with empty Output should return diagPath unchanged.
+	te := &deploy.TestError{Err: fmt.Errorf("tests failed"), Output: ""}
+	result := appendTestOutputToDiagnostics(te, "test-ns", "/some/path")
+	if result != "/some/path" {
+		t.Errorf("expected unchanged diagPath, got %q", result)
+	}
+}
+
+func TestAppendTestOutputToDiagnostics_AppendToExistingRunDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	runDir := filepath.Join(tmpDir, "diagnostics", "test-ns", "20260306T120000Z")
+	if err := os.MkdirAll(filepath.Join(runDir, "logs"), 0o755); err != nil {
+		t.Fatalf("setup: mkdir: %v", err)
+	}
+
+	initialSummary := diagnosticsSummary{
+		Namespace:       "test-ns",
+		CollectedAt:     "2026-03-06T12:00:00Z",
+		PodLogTailLines: diagnosticsPodTailLines,
+		Pods:            "NAME READY STATUS",
+	}
+	b, err := json.Marshal(initialSummary)
+	if err != nil {
+		t.Fatalf("setup: marshal summary: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "summary.json"), b, 0o644); err != nil {
+		t.Fatalf("setup: write summary: %v", err)
+	}
+
+	te := &deploy.TestError{
+		Err:    fmt.Errorf("integration tests failed"),
+		Output: "FAIL: TestSomething\nexpected 200, got 500\n",
+	}
+
+	result := appendTestOutputToDiagnostics(te, "test-ns", runDir)
+	if result != runDir {
+		t.Errorf("expected same diagPath %q, got %q", runDir, result)
+	}
+
+	content, err := os.ReadFile(filepath.Join(runDir, "test-output.txt"))
+	if err != nil {
+		t.Fatalf("read test-output: %v", err)
+	}
+	if !strings.Contains(string(content), "FAIL: TestSomething") {
+		t.Errorf("test-output.txt should contain test output, got:\n%s", string(content))
+	}
+
+	summaryBytes, err := os.ReadFile(filepath.Join(runDir, "summary.json"))
+	if err != nil {
+		t.Fatalf("read summary: %v", err)
+	}
+	var summary diagnosticsSummary
+	if err := json.Unmarshal(summaryBytes, &summary); err != nil {
+		t.Fatalf("unmarshal summary: %v", err)
+	}
+	if summary.Namespace != "test-ns" {
+		t.Errorf("expected namespace to be preserved, got %q", summary.Namespace)
+	}
+	if !strings.Contains(summary.TestOutputLast200, "FAIL: TestSomething") {
+		t.Errorf("summary should contain test output, got:\n%s", summary.TestOutputLast200)
+	}
+}
+
+func TestAppendTestOutputToDiagnostics_CreatesNewRunDirectory(t *testing.T) {
+	// When diagPath is empty, the function should create a new run directory under diagnosticsDir.
+	// We override diagnosticsDir by changing to a temp directory so the "diagnostics/"
+	// subdir is created there instead of the real working directory.
+	tmpDir := t.TempDir()
+
+	// Save and restore working directory.
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd: %v", err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Chdir: %v", err)
+	}
+	t.Cleanup(func() { os.Chdir(origWd) })
+
+	te := &deploy.TestError{
+		Err:    fmt.Errorf("e2e tests failed"),
+		Output: "FAIL: TestLogin\ntimeout waiting for element\n",
+	}
+
+	result := appendTestOutputToDiagnostics(te, "my-namespace", "")
+	if result == "" {
+		t.Fatal("expected a file path, got empty string")
+	}
+	if !strings.Contains(result, filepath.Join("diagnostics", "my-namespace")) {
+		t.Errorf("expected diagnostics namespace path, got %q", result)
+	}
+
+	testOutput, err := os.ReadFile(filepath.Join(result, "test-output.txt"))
+	if err != nil {
+		t.Fatalf("read test output: %v", err)
+	}
+	if !strings.Contains(string(testOutput), "FAIL: TestLogin") {
+		t.Errorf("new diagnostics should contain test output, got:\n%s", string(testOutput))
+	}
+
+	content, err := os.ReadFile(filepath.Join(result, "summary.json"))
+	if err != nil {
+		t.Fatalf("read summary file: %v", err)
+	}
+
+	var summary diagnosticsSummary
+	if err := json.Unmarshal(content, &summary); err != nil {
+		t.Fatalf("unmarshal summary: %v", err)
+	}
+	if summary.Namespace != "my-namespace" {
+		t.Errorf("expected namespace my-namespace, got %q", summary.Namespace)
+	}
+	if !strings.Contains(summary.TestOutputLast200, "FAIL: TestLogin") {
+		t.Errorf("summary should contain test output, got:\n%s", summary.TestOutputLast200)
+	}
+}
+
+func TestAppendTestOutputToDiagnostics_WrappedTestError(t *testing.T) {
+	// The error is typically wrapped by deploy.Execute: "post-deployment tests failed: <TestError>".
+	// errors.As should still find the *TestError.
+	te := &deploy.TestError{
+		Err:    fmt.Errorf("test failures:\n  - integration: exit code 1"),
+		Output: "=== integration test output ===\nFAIL: TestAPI\n",
+	}
+	wrapped := fmt.Errorf("post-deployment tests failed: %w", te)
+
+	tmpDir := t.TempDir()
+	runDir := filepath.Join(tmpDir, "diagnostics", "test-ns", "20260306T130000Z")
+	if err := os.MkdirAll(filepath.Join(runDir, "logs"), 0o755); err != nil {
+		t.Fatalf("setup mkdir: %v", err)
+	}
+
+	summary := diagnosticsSummary{Namespace: "test-ns", CollectedAt: "2026-03-06T13:00:00Z", PodLogTailLines: diagnosticsPodTailLines}
+	b, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatalf("setup marshal: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "summary.json"), b, 0o644); err != nil {
+		t.Fatalf("setup write summary: %v", err)
+	}
+
+	result := appendTestOutputToDiagnostics(wrapped, "test-ns", runDir)
+	if result != runDir {
+		t.Errorf("expected same diagPath, got %q", result)
+	}
+
+	content, err := os.ReadFile(filepath.Join(runDir, "summary.json"))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+
+	var updated diagnosticsSummary
+	if err := json.Unmarshal(content, &updated); err != nil {
+		t.Fatalf("unmarshal updated summary: %v", err)
+	}
+	if !strings.Contains(updated.TestOutputLast200, "FAIL: TestAPI") {
+		t.Errorf("should extract test output through wrapping, got:\n%s", updated.TestOutputLast200)
+	}
 }
