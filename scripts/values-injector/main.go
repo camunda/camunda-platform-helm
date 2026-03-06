@@ -17,9 +17,9 @@ func main() {
 	}
 
 	// 2. Validate chart version and derive file path
-	validVersions := map[string]bool{"8.6": true, "8.7": true, "8.8": true, "8.9": true}
+	validVersions := map[string]bool{"8.6": true, "8.7": true, "8.8": true, "8.9": true, "8.10": true}
 	if !validVersions[chartVersion] {
-		log.Fatalf("unsupported CHART_VERSION: %s (supported: 8.6, 8.7, 8.8, 8.9)", chartVersion)
+		log.Fatalf("unsupported CHART_VERSION: %s (supported: 8.6, 8.7, 8.8, 8.9, 8.10)", chartVersion)
 	}
 
 	valuesFile := fmt.Sprintf("charts/camunda-platform-%s/values.yaml", chartVersion)
@@ -45,6 +45,9 @@ func main() {
 	case "8.9":
 		overrides := buildOverrides89()
 		result, err = injector.MergeImageTags89(string(content), overrides)
+	case "8.10":
+		overrides := buildOverrides810()
+		result, err = injector.MergeImageTags810(string(content), overrides)
 	}
 
 	if err != nil {
@@ -159,5 +162,11 @@ func buildOverrides88() *chartcomponents.ValuesYAML88 {
 // buildOverrides89 builds the overrides struct for chart 8.9 from environment variables
 // Chart 8.9 has the same structure as 8.8
 func buildOverrides89() *chartcomponents.ValuesYAML89 {
+	return buildOverrides88()
+}
+
+// buildOverrides810 builds the overrides struct for chart 8.10 from environment variables
+// Chart 8.10 has the same structure as 8.8
+func buildOverrides810() *chartcomponents.ValuesYAML810 {
 	return buildOverrides88()
 }

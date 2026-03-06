@@ -326,6 +326,23 @@ func TestMergeImageTags89_UsesChart88Logic(t *testing.T) {
 	}
 }
 
+func TestMergeImageTags810_UsesChart88Logic(t *testing.T) {
+	overrides := &chartcomponents.ValuesYAML810{
+		Orchestration: &chartcomponents.ComponentImage{
+			Image: chartcomponents.ImageTag{Tag: "8.10-test"},
+		},
+	}
+
+	result, err := MergeImageTags810(sampleValues88, overrides)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "8.10-test") {
+		t.Errorf("expected orchestration tag to be updated")
+	}
+}
+
 func TestMergeImageTags_InvalidYAML(t *testing.T) {
 	invalidYAML := `
 this is not valid yaml:
