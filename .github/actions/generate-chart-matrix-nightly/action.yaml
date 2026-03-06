@@ -37,7 +37,7 @@ runs:
             if [ "$enabled" = "false" ]; then
               continue
             fi
-            echo "  - version: ${camunda_version}" >> matrix_versions.txt
+            echo "  - version: \"${camunda_version}\"" >> matrix_versions.txt
             echo "    case: nightly" >> matrix_versions.txt
             echo "    scenario: $(echo "$nightlyScenario" | yq e '.name' -)" >> matrix_versions.txt
             echo "    auth: $(echo "$nightlyScenario" | yq e '.auth' -)" >> matrix_versions.txt
