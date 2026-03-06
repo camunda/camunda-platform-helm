@@ -1,8 +1,10 @@
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,16 +13,36 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
+
+// TestError wraps a test failure with the captured output from the test scripts.
+// Callers can use errors.As to extract the output for diagnostics.
+type TestError struct {
+	Err    error
+	Output string // Combined stdout+stderr from the test scripts.
+}
+
+func (e *TestError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *TestError) Unwrap() error {
+	return e.Err
+}
 
 // TestResult holds the result of a test execution.
 type TestResult struct {
-	Type  string // "integration" or "e2e"
-	Error error
+	Type   string // "integration" or "e2e"
+	Error  error
+	Output string // Captured stdout+stderr from the test script.
 }
 
 // RunTests executes tests after deployment based on flags.
 // Tests are run in parallel if both --test-it and --test-e2e (or --test-all) are specified.
+//
+// On failure, the returned error is a *TestError containing the captured output
+// from the test scripts. Callers can use errors.As to extract it.
 func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string) error {
 	runIT := flags.Test.RunIntegrationTests || flags.Test.RunAllTests
 	runE2E := flags.Test.RunE2ETests || flags.Test.RunAllTests
@@ -34,6 +56,20 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		Bool("e2eTests", runE2E).
 		Str("namespace", namespace).
 		Msg("Starting post-deployment tests")
+
+	// Bound total post-deployment test runtime so matrix entries cannot hang
+	// indefinitely after Helm has already completed.
+	testTimeout := time.Duration(flags.Deployment.Timeout) * time.Minute
+	if testTimeout <= 0 {
+		testTimeout = 15 * time.Minute
+	}
+	testCtx, cancel := context.WithTimeout(ctx, testTimeout)
+	defer cancel()
+
+	logging.Logger.Info().
+		Dur("timeout", testTimeout).
+		Str("namespace", namespace).
+		Msg("Post-deployment tests timeout configured")
 
 	// Resolve paths
 	repoRoot := flags.Chart.RepoRoot
@@ -59,8 +95,8 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := runIntegrationTests(ctx, repoRoot, chartPath, namespace, flags.Deployment.Platform, flags.Test.KubeContext, flags.Test.TestExclude, flags.Auth.Auth)
-			resultCh <- TestResult{Type: "integration", Error: err}
+			output, err := runIntegrationTests(testCtx, repoRoot, chartPath, namespace, flags.Deployment.Platform, flags.Test.KubeContext, flags.Test.TestExclude, flags.Auth.Auth)
+			resultCh <- TestResult{Type: "integration", Error: err, Output: output}
 		}()
 	}
 
@@ -68,8 +104,8 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := runE2ETests(ctx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude)
-			resultCh <- TestResult{Type: "e2e", Error: err}
+			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude)
+			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
 	}
 
@@ -79,6 +115,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 
 	// Collect results
 	var errors []string
+	var allOutput strings.Builder
 	for result := range resultCh {
 		if result.Error != nil {
 			logging.Logger.Error().
@@ -91,10 +128,16 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 				Str("testType", result.Type).
 				Msg("Test execution completed successfully")
 		}
+		if result.Output != "" {
+			fmt.Fprintf(&allOutput, "=== %s test output ===\n%s\n\n", result.Type, result.Output)
+		}
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("test failures:\n  - %s", strings.Join(errors, "\n  - "))
+		return &TestError{
+			Err:    fmt.Errorf("test failures:\n  - %s", strings.Join(errors, "\n  - ")),
+			Output: allOutput.String(),
+		}
 	}
 
 	logging.Logger.Info().Msg("All post-deployment tests passed")
@@ -102,11 +145,11 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 }
 
 // runIntegrationTests executes the integration test script.
-func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude, testAuthType string) error {
+func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude, testAuthType string) (string, error) {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-integration-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
-		return fmt.Errorf("integration test script not found at %s: %w", scriptPath, err)
+		return "", fmt.Errorf("integration test script not found at %s: %w", scriptPath, err)
 	}
 
 	logging.Logger.Info().
@@ -137,11 +180,11 @@ func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, pl
 }
 
 // runE2ETests executes the e2e test script.
-func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude string) error {
+func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude string) (string, error) {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-e2e-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
-		return fmt.Errorf("e2e test script not found at %s: %w", scriptPath, err)
+		return "", fmt.Errorf("e2e test script not found at %s: %w", scriptPath, err)
 	}
 
 	logging.Logger.Info().
@@ -167,7 +210,12 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 	return executeScript(ctx, scriptPath, args, "e2e")
 }
 
-// executeScript runs a shell script with the given arguments.
+// executeScript runs a shell script with the given arguments and returns the
+// captured combined output alongside any error.
+//
+// Output is tee'd: it streams to os.Stdout/os.Stderr in real time (so the user
+// sees live progress) and is simultaneously captured into a buffer. The buffer
+// contents are returned so callers can include them in diagnostics on failure.
 //
 // The subprocess is placed in its own process group (Setpgid) so that when
 // the context is cancelled (e.g. StopOnFailure, Ctrl+C) we can send SIGTERM
@@ -177,11 +225,16 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 // Without this, exec.CommandContext sends os.Kill (SIGKILL) only to the
 // direct child PID, and any grandchild processes (npx, playwright, tee, etc.)
 // continue running until they finish or the terminal is closed.
-func executeScript(ctx context.Context, scriptPath string, args []string, testType string) error {
+func executeScript(ctx context.Context, scriptPath string, args []string, testType string) (string, error) {
+	var buf bytes.Buffer
+
 	cmd := exec.CommandContext(ctx, scriptPath, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.MultiWriter(os.Stdout, &buf)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &buf)
 	cmd.Env = os.Environ()
+	// If context cancellation does not terminate children promptly, force-kill
+	// after a short grace period to prevent hung matrix entries.
+	cmd.WaitDelay = 15 * time.Second
 
 	// Place the child in its own process group so we can signal the whole tree.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -199,6 +252,22 @@ func executeScript(ctx context.Context, scriptPath string, args []string, testTy
 			Int("pgid", pgid).
 			Str("testType", testType).
 			Msg("Context cancelled, sending SIGTERM to process group")
+
+		// Escalate to SIGKILL after a grace period if the process group is still alive.
+		// Use a detached timer (not tied to ctx.Done) because ctx is already cancelled here.
+		go func() {
+			time.Sleep(10 * time.Second)
+			if cmd.ProcessState == nil || !cmd.ProcessState.Exited() {
+				// Signal 0 checks whether the process group still exists.
+				if err := syscall.Kill(-pgid, 0); err == nil {
+					logging.Logger.Warn().
+						Int("pgid", pgid).
+						Str("testType", testType).
+						Msg("Test process group still alive after SIGTERM grace period, sending SIGKILL")
+					_ = syscall.Kill(-pgid, syscall.SIGKILL)
+				}
+			}
+		}()
 		// Negative PID signals the entire process group.
 		return syscall.Kill(-pgid, syscall.SIGTERM)
 	}
@@ -210,16 +279,17 @@ func executeScript(ctx context.Context, scriptPath string, args []string, testTy
 		Msg("Executing test script")
 
 	if err := cmd.Run(); err != nil {
+		output := buf.String()
 		if ctx.Err() != nil {
-			return fmt.Errorf("%s tests cancelled: %w", testType, ctx.Err())
+			return output, fmt.Errorf("%s tests cancelled: %w", testType, ctx.Err())
 		}
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("%s tests failed with exit code %d", testType, exitErr.ExitCode())
+			return output, fmt.Errorf("%s tests failed with exit code %d", testType, exitErr.ExitCode())
 		}
-		return fmt.Errorf("failed to execute %s tests: %w", testType, err)
+		return output, fmt.Errorf("failed to execute %s tests: %w", testType, err)
 	}
 
-	return nil
+	return buf.String(), nil
 }
 
 // findRepoRoot attempts to find the repository root from a chart path.

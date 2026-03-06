@@ -183,10 +183,9 @@ identityKeycloak:
   # -- PostgreSQL: accelerate startup so Keycloak can connect sooner ----------
   postgresql:
     primary:
-      # No PVC needed for ephemeral CI tests — use emptyDir instead.
-      # Eliminates PV provisioning/binding latency.
+      # Use PVC for upgrade stability across pod replacements/restarts.
       persistence:
-        enabled: false
+        enabled: true
       # Bump PG resources: request enough CPU to get guaranteed capacity.
       resources:
         requests:

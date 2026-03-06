@@ -40,6 +40,17 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
+          auth: keycloak
+          shortname: eskee
+          flow: install
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
+        - name: elasticsearch
+          enabled: true
           flow: install,upgrade-minor
           auth: keycloak
           shortname: eske
@@ -105,7 +116,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch
+          persistence: elasticsearch-external
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
@@ -141,15 +152,19 @@ integration:
           infra-type:
             gke: arm
           flow: install
+          identity: keycloak-external
+          persistence: elasticsearch-external
+          features: [arm]
+          platforms: [gke]
         - name: noSecondaryStorage
           enabled: true
           auth: keycloak
           shortname: nosec
           exclude: []
           flow: install
-          identity: keycloak-external
-          persistence: elasticsearch-external
-          features: [arm]
+          identity: keycloak
+          persistence: no-elasticsearch
+          features: [no-secondary-storage]
           platforms: [gke]
     nightly:
       scenario:
