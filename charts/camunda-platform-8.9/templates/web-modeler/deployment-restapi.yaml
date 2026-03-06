@@ -75,7 +75,7 @@ spec:
             ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | default "/tmp/zeebe_client_cache.txt" | quote }}
-            {{- if .Values.global.documentStore.type.aws.enabled }}
+            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
                   "secretType" "accessKeyId"
