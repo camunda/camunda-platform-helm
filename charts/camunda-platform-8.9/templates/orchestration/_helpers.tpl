@@ -251,7 +251,14 @@ Authentication.
 {{- define "orchestration.enabledProfiles" -}}
     {{- $enabledProfiles := list -}}
     {{- range $key, $value := .Values.orchestration.profiles }}
-        {{- if eq $value true }}
+        {{- $isNoStorageProfile := and
+            (or
+                (eq $key "operate")
+                (eq $key "tasklist")
+            )
+            $.Values.global.noSecondaryStorage
+        }}
+        {{- if and (not $isNoStorageProfile) (eq $value true) }}
             {{- $enabledProfiles = append $enabledProfiles $key }}
         {{- end }}
     {{- end }}

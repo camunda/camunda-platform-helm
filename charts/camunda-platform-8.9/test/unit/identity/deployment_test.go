@@ -1129,6 +1129,31 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should not be present when orchestration is disabled")
 				}
 			},
+		}, {
+			// Test: Optimize disabled should NOT include optimize secret env vars
+			Name:                 "TestOptimizeDisabledExcludesOptimizeSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"optimize.enabled":                      "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				// Optimize secrets should NOT be present when optimize is disabled
+				for _, envVar := range env {
+					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET", envVar.Name,
+						"Optimize secret should not be present when optimize.enabled=false")
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_SECRET", envVar.Name,
+						"Optimize secret should not be present when optimize.enabled=false")
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_CLIENT_ID", envVar.Name,
+						"Optimize client ID should not be present when optimize.enabled=false")
+				}
+			},
 		},
 	}
 

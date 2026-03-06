@@ -1647,6 +1647,16 @@ webModeler:
       fromName: "Camunda 8"
     ## @extra webModeler.restapi.pusher configuration for Pusher integration
     pusher:
+      ## @extra webModeler.restapi.pusher.client configuration for the Pusher client
+      client:
+        ## @extra webModeler.restapi.pusher.client.secret configuration to provide the Pusher app key
+        secret:
+          ## @param webModeler.restapi.pusher.client.secret.inlineSecret can be used to provide the Pusher app key as a plain-text value for non-production usage
+          inlineSecret: ""
+          ## @param webModeler.restapi.pusher.client.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the Pusher app key
+          existingSecret: ""
+          ## @param webModeler.restapi.pusher.client.secret.existingSecretKey defines the key within the existing secret object
+          existingSecretKey: ""
       ## @extra webModeler.restapi.pusher.secret configuration to provide the Pusher app secret
       secret:
         ## @param webModeler.restapi.pusher.secret.inlineSecret can be used to provide the Pusher app secret as a plain-text value for non-production usage

@@ -54,10 +54,12 @@ spec:
                 "config"        .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
+            {{- if .Values.optimize.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
             ) | nindent 12 }}
+            {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"           "VALUES_KEYCLOAK_SETUP_PASSWORD"
                 "config"            (include "identity.keycloak.authPasswordConfig" . | fromYaml)
@@ -80,12 +82,14 @@ spec:
               "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
               "config" .Values.global.identity.auth.identity
             ) | nindent 12 }}
+            {{- if .Values.optimize.enabled }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "CAMUNDA_OPTIMIZE_SECRET"
               "config" .Values.global.identity.auth.optimize
             ) | nindent 12 }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- if .Values.identity.externalDatabase.enabled }}
