@@ -1245,7 +1245,11 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 			Str("kubeContext", result.KubeContext).
 			Msg("Deleting namespace (per-entry cleanup)")
 
-		if err := kube.DeleteNamespace(ctx, "", result.KubeContext, result.Namespace); err != nil {
+		// Do not let cleanup block matrix completion for too long.
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := kube.DeleteNamespace(cleanupCtx, "", result.KubeContext, result.Namespace); err != nil {
 			logging.Logger.Error().
 				Err(err).
 				Str("namespace", result.Namespace).

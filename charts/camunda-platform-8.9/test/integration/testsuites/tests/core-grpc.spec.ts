@@ -135,7 +135,9 @@ test.describe("orchestration-grpc", () => {
     ["test-inbound-process", "Inbound", "test-inbound-process.bpmn"],
   ] as const) {
     test(`Deploy and check model: ${label}`, async ({ request }) => {
-      test.setTimeout(3 * 60 * 1000); // 3 minutes, > polling window
+      test.setTimeout(
+        Number.parseInt(process.env.PLAYWRIGHT_TEST_TIMEOUT_MS || "45000", 10),
+      );
 
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
@@ -161,7 +163,10 @@ test.describe("orchestration-grpc", () => {
         { stdio: "inherit" },
       );
 
-      const timeoutMs = 2 * 60 * 1000;
+      const timeoutMs = Number.parseInt(
+        process.env.CORE_GRPC_DEPLOY_POLL_TIMEOUT_MS || "30000",
+        10,
+      );
       const intervalMs = 5 * 1000;
       const start = Date.now();
       let found = false;
@@ -204,7 +209,7 @@ test.describe("orchestration-grpc", () => {
     });
   }
 
-  test.afterAll(async ({}, testInfo) => {
+  test.afterAll(async (_ctx, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {

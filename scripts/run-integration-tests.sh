@@ -325,6 +325,16 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$PLATFORM" "$KUBE_CONTEXT"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
+# 8.9-specific fast-fail behavior for local matrix runs.
+# Keep retries very short so a failed IT run exits quickly instead of waiting minutes.
+if [[ "$TEST_SUITE_PATH" == *"camunda-platform-8.9"* ]]; then
+  export PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS="1"
+  export PLAYWRIGHT_POD_RETRY_TIMEOUT="30"
+  export PLAYWRIGHT_RETRIES="0"
+  export PLAYWRIGHT_TEST_TIMEOUT_MS="45000"
+  log "8.9 detected: using fast retry settings (attempts=${PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS}, timeout=${PLAYWRIGHT_POD_RETRY_TIMEOUT}s)"
+fi
+
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
 if [[ "$IS_CI" != "true" ]]; then

@@ -177,7 +177,7 @@ base.yaml -> base-upgrade.yaml (if upgrade flow) -> identity -> persistence -> p
 
 These live in `test/integration/scenarios/chart-full-setup/values/` per chart version. The `deploy-camunda` CLI handles resolution and merging automatically.
 
-**Critical: Helm arrays replace, they do not merge.** If a later layer sets `orchestration.env`, it completely replaces the array from `base.yaml`. Any env vars from base.yaml that are still needed must be re-included in the later layer. This is a common source of bugs when adding values to upgrade or feature layers.
+**Note on array merging:** The `deploy-camunda` CLI uses a deep merge strategy (`scripts/deploy-camunda/deploy/merge.go`) that intelligently merges arrays with `name`-keyed elements (like `env` arrays). Entries with matching `name` keys get their values overridden, and new entries are appended. This means feature layers do NOT need to re-include env vars from base.yaml — the merge logic handles it. This is different from raw Helm behavior (which replaces arrays entirely).
 
 For detailed documentation on how scenario resolution works, see `docs/integration-test-scenario-resolution.md`.
 
@@ -219,5 +219,6 @@ Both are needed when `ensureDockerHub` and `ensureDockerRegistry` are `true` in 
 
 ## Development tips
 
+- When debugging CI deployment failures, **always check the `diagnostics/` folder at the repo root first**. It contains output from the last `deploy-camunda matrix run` with pod status, events, and logs from failing pods. The folder is gitignored, so `glob` may not find it — use `read` on the repo root directory to see it.
 - Complex logic for CI pipelines (>20 lines) should be implemented as golang scripts inside the scripts directory and then called with github actions. Do not implement this in bash.
 - When writing any golang, the scripts must have unit tests

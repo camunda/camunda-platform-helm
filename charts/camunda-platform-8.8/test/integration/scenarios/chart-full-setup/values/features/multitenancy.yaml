@@ -22,3 +22,15 @@ orchestration:
         - mappingID: "tenant-b-mapping"
           claimName: "tenant"
           claimValue: "tenant-b"
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+      userPasswordKey: "identity-keycloak-postgresql-user-password"
+
+identity:
+  externalDatabase:
+    enabled: false

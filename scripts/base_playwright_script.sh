@@ -728,8 +728,16 @@ _dump_pod_status() {
 }
 
 # Configuration for pod failure retry logic
-_POD_RETRY_MAX_ATTEMPTS=2
-_POD_RETRY_TIMEOUT=420  # 7 minutes
+_POD_RETRY_MAX_ATTEMPTS="${PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS:-2}"
+_POD_RETRY_TIMEOUT="${PLAYWRIGHT_POD_RETRY_TIMEOUT:-420}"  # seconds
+
+# Guard against invalid overrides.
+if ! [[ "${_POD_RETRY_MAX_ATTEMPTS}" =~ ^[0-9]+$ ]]; then
+  _POD_RETRY_MAX_ATTEMPTS=2
+fi
+if ! [[ "${_POD_RETRY_TIMEOUT}" =~ ^[0-9]+$ ]]; then
+  _POD_RETRY_TIMEOUT=420
+fi
 
 # Run a playwright command with retry logic for pod failures (spot instance preemption)
 # This function will retry the test if:
