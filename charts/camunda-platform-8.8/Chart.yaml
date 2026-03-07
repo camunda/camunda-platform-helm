@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.5.2
+version: 13.5.3
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -71,4 +71,12 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Prevent invalid YAML when zeebe exporter enabled without camunda…"
+    - kind: fixed
+      description: "Make OIDC groups-claim optional in orchestration config"
+    - kind: fixed
+      description: "Gate optimize config in identity templates on optimize.enabled"
+    - kind: fixed
+      description: "Move pusher app key to secret and allow explicit configuration"
