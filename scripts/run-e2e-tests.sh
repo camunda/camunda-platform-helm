@@ -81,7 +81,7 @@ VERBOSE=false
 SHARD_INDEX=1
 SHARD_TOTAL=1
 TEST_EXCLUDE=""
-IS_CI=true
+IS_CI="${CI:-false}"
 RUN_SMOKE_TESTS=false
 IS_OPENSEARCH=false
 IS_RBA=false
@@ -169,17 +169,54 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
+# On CI the DNS records are already propagated by the time e2e tests start,
+# so skip the DNS resolution wait and ingress readiness polling.
+if [[ "$IS_CI" != "true" ]]; then
+  _wait_for_dns_resolution "$hostname" || exit 1
+  _wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
+
+  # Enable Node.js DNS fallback if the system resolver is stale
+  if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
+    _enable_dns_fallback "$hostname" "$_RESOLVED_IP"
+  fi
+fi
+
 log "DEBUG: Hostname: $hostname"
 log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 [[ "$IS_OPENSEARCH" == "true" ]] && log "IS_OPENSEARCH is set to true"
 [[ "$IS_RBA" == "true" ]] && log "IS_RBA is set to true"
 [[ "$IS_MT" == "true" ]] && log "IS_MT is set to true"
 
-render_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
+# ── Namespace-scoped .env to avoid collisions during parallel matrix runs ──
+# When multiple matrix entries target the same chart version, they share the
+# same TEST_SUITE_PATH.  Writing a single .env would cause a race condition.
+# Instead we write .env.<namespace> and source it into the process environment
+# so that Playwright inherits the values.  The dotenv() calls in test configs
+# are harmless no-ops because dotenv never overrides existing env vars.
+ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
+trap 'rm -f "$ENV_FILE"' EXIT
+
+render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
+
+# Export every variable from the namespace-scoped .env into the shell so that
+# the npx playwright subprocess inherits them without needing the .env file.
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+# ── Namespace-scoped Playwright output directories ──
+# Playwright defaults test artifacts to <cwd>/test-results and HTML reports to
+# <cwd>/playwright-report.  When parallel entries cd into the same test suite
+# directory these collide.  The env vars below isolate each run.
+export PLAYWRIGHT_TEST_OUTPUT="${TEST_SUITE_PATH}/test-results/${NAMESPACE}"
+export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
 log "DEBUG: Shard: $SHARD_INDEX/$SHARD_TOTAL, Exclude: $TEST_EXCLUDE, Debug: $PLAYWRIGHT_DEBUG"
+log "DEBUG: ENV_FILE='${ENV_FILE}'"
+log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
 RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"

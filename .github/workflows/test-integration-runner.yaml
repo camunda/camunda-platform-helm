@@ -103,6 +103,37 @@ on:
         required: false
         default: "elasticsearch"
         type: string
+      # =============================================================================
+      # Selection + Composition Model Inputs (New - Preferred)
+      # These inputs allow explicit configuration of identity, persistence, platform,
+      # and features instead of relying on scenario name parsing.
+      # =============================================================================
+      test-identity:
+        description: "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid"
+        required: false
+        type: string
+      test-persistence:
+        description: "Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle"
+        required: false
+        type: string
+      test-platform:
+        description: "Platform selection: gke, eks, openshift"
+        required: false
+        type: string
+      test-features:
+        description: "Features (comma-separated): multitenancy, rba, documentstore"
+        required: false
+        type: string
+      test-qa:
+        description: "Enable QA configuration"
+        required: false
+        default: false
+        type: boolean
+      test-upgrade:
+        description: "Enable upgrade flow configuration"
+        required: false
+        default: false
+        type: boolean
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -230,6 +261,9 @@ env:
   ENTRA_APP_DIRECTORY_ID: ${{ secrets.ENTRA_APP_DIRECTORY_ID }}
   ENTRA_APP_OBJECT_ID: ${{ secrets.ENTRA_APP_OBJECT_ID }}
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
+  # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.
+  VENOM_CLIENT_ID: venom
+  CONNECTORS_CLIENT_ID: connectors
   # Misc.
   AWS_PROFILE: distribution
   CLUSTER_NAME: camunda-ci-eks
@@ -372,16 +406,16 @@ jobs:
           flow: "${{ inputs.flow }}"
           camunda-version-previous: "${{ inputs.camunda-version-previous }}"
 
+      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/keycloak)
+      - name: CI Setup - Login to Docker Hub
+        run: |
+          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
+
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
           export chartPath="${{ env.CHART_PATH }}"
           make helm.repos-add
           make helm.dependency-update
-
-      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/postgresql)
-      - name: CI Setup - Login to Docker Hub
-        run: |
-          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
 
       - name: CI Setup - Start GitHub deployment
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
@@ -433,7 +467,8 @@ jobs:
           --namespace $TEST_NAMESPACE \
           --docker-server "registry.camunda.cloud" \
           --docker-username $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD \
-          --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD
+          --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD \
+          --dry-run=client -o yaml | kubectl apply -f -
 
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
         env:
@@ -453,7 +488,7 @@ jobs:
           namespace-prefix: ${{ env.NAMESPACE_PREFIX }}
 
       - name: Helm - Install - Configure Helm with Entra Values
-        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc') && inputs.values-config == '{}'
+        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -462,6 +497,11 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -469,8 +509,19 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.template-yaml
+          cd ./scripts/deploy-camunda
+          go run . entra update-redirect-uris \
+            --ingress-host "$TEST_INGRESS_HOST" \
+            --log-level info
+          go run . entra ensure-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info | tee /tmp/entra-output.txt
+          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
+          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
+          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
+          # Also export for the current step.
+          eval "$(grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt)"
+          eval "$(grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt)"
 
       - name: Helm - Install - Execute before install lifecycle tasks
         timeout-minutes: 5
@@ -481,6 +532,16 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
+          TEST_QA: ${{ inputs.test-qa }}
+          TEST_UPGRADE: ${{ inputs.test-upgrade }}
+          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -520,26 +581,10 @@ jobs:
 
           echo "TEST_CHART_VERSION=${HELM_CHART_VERSION}" >> "$GITHUB_ENV"
 
-      - name: Helm – prepare values from values-config
-        shell: bash
-        env:
-          VALS_CONFIG: ${{ inputs.values-config }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
-        run: |
-          IMAGE_TAGS_ARG=""
-          if [[ "${{ inputs.include-image-tags }}" == "true" ]]; then
-            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
-          fi
-
-          ./scripts/prepare-helm-values.sh \
-            --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
-            --scenario "${{ inputs.scenario }}" \
-            --values-config '${{ inputs.values-config }}' \
-            $IMAGE_TAGS_ARG \
-            --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --log-level debug \
-            --interactive false
+      # NOTE: The old "prepare-helm-values.sh" step has been removed.
+      # Env var substitution, image-tags inclusion, and deep-merge are now handled by
+      # "deploy-camunda prepare-values" called from the Taskfile's setup.exec task.
+      # License key is injected via --set in TEST_HELM_EXTRA_ARGS below.
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
         env:
@@ -550,6 +595,18 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           VALUES_CONFIG: ${{ inputs.values-config }}
+          # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          # License key for Camunda Platform (injected via --set in helm install)
+          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
+          TEST_QA: ${{ inputs.test-qa }}
+          TEST_UPGRADE: ${{ inputs.test-upgrade }}
+          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
@@ -739,6 +796,11 @@ jobs:
           flow: "${{ inputs.flow }}"
           camunda-version-previous: "${{ inputs.camunda-version-previous }}"
 
+      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/keycloak)
+      - name: CI Setup - Login to Docker Hub
+        run: |
+          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
+
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
           export chartPath="${{ env.CHART_PATH }}"
@@ -749,7 +811,7 @@ jobs:
       # Upgrade
       ##########################################################################################################
       - name: Helm - Install - Configure Helm with Entra Values
-        if: inputs.auth == 'oidc' && inputs.values-config == '{}'
+        if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
@@ -758,6 +820,11 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
@@ -765,7 +832,16 @@ jobs:
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup entra.update-redirect-uris
+          cd ./scripts/deploy-camunda
+          go run . entra update-redirect-uris \
+            --ingress-host "$TEST_INGRESS_HOST" \
+            --log-level info
+          go run . entra ensure-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info | tee /tmp/entra-output.txt
+          # Capture VENOM_CLIENT_ID and CONNECTORS_CLIENT_ID from Go CLI stdout.
+          grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
+          grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
 
       - name: CI Setup - Upgrade - Set test type vars
         id: test-type-vars-upgrade-minor
@@ -782,26 +858,10 @@ jobs:
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
 
-      - name: Helm – prepare values from values-config
-        shell: bash
-        env:
-          VALS_CONFIG: ${{ inputs.values-config }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
-        run: |
-          IMAGE_TAGS_ARG=""
-          if [[ "${{ inputs.include-image-tags }}" == "true" ]]; then
-            IMAGE_TAGS_ARG="--image-tags-file ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/scenarios/chart-full-setup/values-image-tags.yaml"
-          fi
-
-          ./scripts/prepare-helm-values.sh \
-            --chart-path "${{ env.ABSOLUTE_TEST_CHART_DIR }}" \
-            --scenario "${{ inputs.scenario }}" \
-            --values-config '${{ inputs.values-config }}' \
-            $IMAGE_TAGS_ARG \
-            --license-key "${E2E_TESTS_LICENSE_KEY}" \
-            --log-level debug \
-            --interactive false
+      # NOTE: The old "prepare-helm-values.sh" step has been removed.
+      # Env var substitution, image-tags inclusion, and deep-merge are now handled by
+      # "deploy-camunda prepare-values" called from the Taskfile's upgrade.exec task.
+      # License key is injected via --set in TEST_HELM_EXTRA_ARGS below.
 
       - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets
@@ -830,6 +890,19 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
+          # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          # License key for Camunda Platform (injected via --set in helm install)
+          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY }}
+          # Selection + composition model environment variables (new - preferred)
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
+          TEST_QA: ${{ inputs.test-qa }}
+          TEST_UPGRADE: ${{ inputs.test-upgrade }}
+          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
@@ -1273,6 +1346,15 @@ jobs:
           env: ${{ steps.vars.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
+      - name: CI Cleanup - Delete venom Entra app registration
+        if: always() && (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc')
+        continue-on-error: true
+        run: |
+          cd ./scripts/deploy-camunda
+          go run . entra cleanup-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info
+
       - name: CI Cleanup
         if: always() && inputs.always-delete-namespace
         run: |
@@ -1295,3 +1377,96 @@ jobs:
               scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
             fi
           fi
+
+      - name: CI Cleanup - Delete Elasticsearch templates for this CI run
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+
+          ES_URL="https://elasticsearch-21-6-3.ci.distro.ultrawombat.com"
+          ES_NS="distribution-elasticsearch-21-6-3"
+
+          # Extract the 6-char hex suffix from the namespace.
+          # Namespace patterns:
+          #   camunda-pr-XXXX-intg-X-X-gke-XXXXX-{hex}
+          #   {prefix}-{hex}-upgm
+          HEX_PREFIX="${TEST_NAMESPACE##*-}"
+          # For upgrade namespaces ending in -upgm, the hex is the second-to-last segment.
+          if [[ "$HEX_PREFIX" == "upgm" ]]; then
+            HEX_PREFIX="$(echo "$TEST_NAMESPACE" | sed 's/-upgm$//' | sed 's/.*-//')"
+          fi
+
+          # Validate it looks like a 6-char hex string.
+          if ! [[ "$HEX_PREFIX" =~ ^[0-9a-f]{6}$ ]]; then
+            echo "Warning: Could not extract a valid 6-char hex prefix from namespace '${TEST_NAMESPACE}' (got '${HEX_PREFIX}'). Skipping ES template cleanup."
+            exit 0
+          fi
+
+          echo "Cleaning up ES templates with hex prefix: ${HEX_PREFIX}"
+
+          # Get ES password from K8s secret.
+          ES_PASS="$(scripts/get-credientials-from-cluster.sh --namespace "$ES_NS")" || {
+            echo "Warning: Failed to retrieve ES credentials. Skipping ES template cleanup."
+            exit 0
+          }
+
+          CURL_AUTH=(-u "elastic:${ES_PASS}")
+          CURL_OPTS=(--silent --show-error --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 2 --retry-connrefused)
+
+          deleted_index=0
+          deleted_component=0
+          deleted_legacy=0
+          failed=0
+
+          # --- Delete V2 (composable) index templates matching the hex prefix ---
+          v2_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_index_template" | jq -r --arg pfx "$HEX_PREFIX" '.index_templates[]?.name // empty | select(startswith($pfx + "-"))') || true
+          if [[ -n "$v2_templates" ]]; then
+            echo "Found $(echo "$v2_templates" | wc -l | tr -d ' ') V2 index templates to delete"
+            # ES DELETE _index_template does not support comma-separated names, but supports wildcards.
+            # Delete using the hex prefix wildcard which matches all templates for this CI run.
+            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_index_template/${HEX_PREFIX}-*") || true
+            if [[ "$http_code" =~ ^2 ]]; then
+              deleted_index=$(echo "$v2_templates" | wc -l | tr -d ' ')
+              echo "Deleted ${deleted_index} V2 index templates"
+            else
+              echo "Warning: Failed to delete V2 index templates (HTTP ${http_code})"
+              ((failed++)) || true
+            fi
+          else
+            echo "No V2 index templates found for prefix ${HEX_PREFIX}"
+          fi
+
+          # --- Delete component templates matching the hex prefix ---
+          comp_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_component_template" | jq -r --arg pfx "$HEX_PREFIX" '.component_templates[]?.name // empty | select(startswith($pfx + "-"))') || true
+          if [[ -n "$comp_templates" ]]; then
+            echo "Found $(echo "$comp_templates" | wc -l | tr -d ' ') component templates to delete"
+            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_component_template/${HEX_PREFIX}-*") || true
+            if [[ "$http_code" =~ ^2 ]]; then
+              deleted_component=$(echo "$comp_templates" | wc -l | tr -d ' ')
+              echo "Deleted ${deleted_component} component templates"
+            else
+              echo "Warning: Failed to delete component templates (HTTP ${http_code})"
+              ((failed++)) || true
+            fi
+          else
+            echo "No component templates found for prefix ${HEX_PREFIX}"
+          fi
+
+          # --- Delete legacy (v1) templates matching the hex prefix ---
+          legacy_templates=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" "${ES_URL}/_template" | jq -r --arg pfx "$HEX_PREFIX" 'keys[] | select(startswith($pfx + "-"))') || true
+          if [[ -n "$legacy_templates" ]]; then
+            echo "Found $(echo "$legacy_templates" | wc -l | tr -d ' ') legacy templates to delete"
+            http_code=$(curl "${CURL_OPTS[@]}" "${CURL_AUTH[@]}" -o /dev/null -w "%{http_code}" -X DELETE "${ES_URL}/_template/${HEX_PREFIX}-*") || true
+            if [[ "$http_code" =~ ^2 ]]; then
+              deleted_legacy=$(echo "$legacy_templates" | wc -l | tr -d ' ')
+              echo "Deleted ${deleted_legacy} legacy templates"
+            else
+              echo "Warning: Failed to delete legacy templates (HTTP ${http_code})"
+              ((failed++)) || true
+            fi
+          else
+            echo "No legacy templates found for prefix ${HEX_PREFIX}"
+          fi
+
+          echo "ES template cleanup complete: v2_index=${deleted_index} component=${deleted_component} legacy=${deleted_legacy} failures=${failed}"

@@ -50,6 +50,12 @@ COLOR_MAGENTA='\033[0;35m'
 COLOR_CYAN='\033[0;36m'
 COLOR_GRAY='\033[0;90m'
 
+# Always-visible status output for long-running steps.
+# Use this instead of log() for messages the user must see regardless of -v.
+info() {
+  echo -e "${COLOR_CYAN}[$(date +'%H:%M:%S')]${COLOR_RESET} $*" >&2
+}
+
 log() {
   if $VERBOSE; then
     local message="$*"
@@ -85,12 +91,14 @@ get_ingress_hostname() {
     kubectl_cmd="kubectl --context=$kube_context"
   fi
 
+  info "Detecting ingress hostname in namespace ${namespace}..."
   hostname=$($kubectl_cmd -n "$namespace" get ingress -o json | jq -r '
     .items[]
     | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
     | ([.spec.rules[].host] | join(","))')
   if [[ -z "$hostname" ]]; then
     # might be using the Gateway api
+    log "No matching Ingress found, trying Gateway API..."
     hostname=$($kubectl_cmd -n "$namespace" get gateway -o json | jq -r '.items[].spec.listeners[].hostname')
   fi
 
@@ -99,11 +107,12 @@ get_ingress_hostname() {
     exit 1
   fi
 
+  info "Ingress hostname: ${hostname}"
   echo "$hostname"
 }
 
 check_required_cmds() {
-  required_cmds=(kubectl jq git envsubst npm npx)
+  required_cmds=(kubectl jq git envsubst npm npx curl)
   for cmd in "${required_cmds[@]}"; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       echo "Error: required command '$cmd' not found in PATH" >&2
@@ -112,11 +121,359 @@ check_required_cmds() {
   done
 }
 
+# Resolve a hostname to an IP address, trying the system resolver first,
+# falling back to public DNS servers, and finally querying authoritative
+# nameservers directly (which bypasses negative-cache TTLs entirely).
+# Prints the resolved IP on stdout.
+# Returns 0 on success, 1 if no resolver can find the host.
+_resolve_host() {
+  local hostname="$1"
+  local ip
+
+  # Try system resolver
+  ip=$(nslookup "$hostname" 2>/dev/null | awk '/^Address: / { print $2; exit }')
+  if [[ -n "$ip" ]]; then
+    echo "$ip"
+    return 0
+  fi
+
+  # Try multiple public DNS servers — any single one may have a stale NXDOMAIN
+  # cached (the SOA negative-cache TTL for this zone is 300s).
+  local resolver
+  for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
+    ip=$(nslookup "$hostname" "$resolver" 2>/dev/null | awk '/^Address: / { a=$2 } END { print a }')
+    if [[ -n "$ip" ]]; then
+      echo "$ip"
+      return 0
+    fi
+  done
+
+  # All recursive resolvers failed — they likely have a stale NXDOMAIN cached.
+  # Query the authoritative nameservers directly to bypass negative caching.
+  ip=$(_resolve_host_authoritative "$hostname")
+  if [[ -n "$ip" ]]; then
+    echo "$ip"
+    return 0
+  fi
+
+  return 1
+}
+
+# Query authoritative nameservers for a hostname, bypassing recursive caches.
+# Walks up the domain hierarchy to find the NS records for the zone, then
+# queries those nameservers directly.  This is the last-resort fallback when
+# all recursive resolvers have a stale NXDOMAIN cached.
+_resolve_host_authoritative() {
+  local hostname="$1"
+  local domain="$hostname"
+  local ns_servers=""
+
+  # Walk up the domain hierarchy to find authoritative NS records.
+  # e.g., for "foo.ci.distro.ultrawombat.com" try:
+  #   ci.distro.ultrawombat.com → distro.ultrawombat.com → ultrawombat.com
+  while [[ "$domain" == *.* ]]; do
+    domain="${domain#*.}"
+    ns_servers=$(nslookup -type=ns "$domain" 8.8.8.8 2>/dev/null \
+      | awk '/nameserver =/ { print $NF }' | sed 's/\.$//')
+    if [[ -n "$ns_servers" ]]; then
+      break
+    fi
+  done
+
+  if [[ -z "$ns_servers" ]]; then
+    return 1
+  fi
+
+  # Query each authoritative nameserver directly (no cache to poison).
+  local ns ip
+  for ns in $ns_servers; do
+    ip=$(nslookup "$hostname" "$ns" 2>/dev/null | awk '/^Address: / { a=$2 } END { print a }')
+    if [[ -n "$ip" ]]; then
+      echo "$ip"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# ── DNS fallback for Node.js/Playwright ──
+# When the system resolver has a stale NXDOMAIN but public DNS can resolve the
+# host, we inject a Node.js preload script via NODE_OPTIONS that monkey-patches
+# dns.lookup to fall back to public resolvers (1.1.1.1, 8.8.8.8, 9.9.9.9).
+# Additionally, when a hostname and resolved IP are available (from
+# _wait_for_dns_resolution), we pass them as DNS_FALLBACK_MAP so the Node.js
+# script can resolve them instantly without any network calls.
+# This avoids needing sudo or /etc/hosts edits.
+_DNS_FALLBACK_ENABLED=false
+
+# Usage: _enable_dns_fallback [hostname] [resolved_ip]
+# When hostname and resolved_ip are provided, the Node.js DNS fallback script
+# will use a static hostname→IP mapping for instant resolution.
+# Common hostname variants (grpc-*, zeebe-*) are automatically included.
+_enable_dns_fallback() {
+  local hostname="${1:-}"
+  local resolved_ip="${2:-}"
+  local fallback_script
+  fallback_script="$(dirname "${BASH_SOURCE[0]}")/dns-fallback.cjs"
+
+  if [[ ! -f "$fallback_script" ]]; then
+    info "${COLOR_YELLOW}WARNING:${COLOR_RESET} dns-fallback.cjs not found at ${fallback_script}. Playwright may fail with ENOTFOUND."
+    return 1
+  fi
+
+  # Use absolute path so it works regardless of cwd
+  fallback_script="$(cd "$(dirname "$fallback_script")" && pwd)/$(basename "$fallback_script")"
+
+  # Append to NODE_OPTIONS so we don't clobber existing values
+  export NODE_OPTIONS="${NODE_OPTIONS:+${NODE_OPTIONS} }--require ${fallback_script}"
+
+  # When we have a pre-resolved hostname→IP, export a static mapping so the
+  # Node.js fallback can resolve it instantly without network calls.
+  # Include common prefixed variants (grpc-*, zeebe-*) that share the same IP.
+  if [[ -n "$hostname" && -n "$resolved_ip" ]]; then
+    local map_entries="${hostname}=${resolved_ip}"
+    map_entries+=",grpc-${hostname}=${resolved_ip}"
+    map_entries+=",zeebe-${hostname}=${resolved_ip}"
+    export DNS_FALLBACK_MAP="$map_entries"
+    info "Enabled Node.js DNS fallback with static map: ${hostname} -> ${resolved_ip} (+ grpc-/zeebe- variants)"
+  else
+    info "Enabled Node.js DNS fallback (public resolvers only) via NODE_OPTIONS"
+  fi
+
+  _DNS_FALLBACK_ENABLED=true
+}
+
+# Wait for DNS resolution of a hostname before proceeding.
+# External-dns can take time to create records after ingress creation,
+# and DNS propagation adds additional delay.
+# Checks both the system resolver and multiple public DNS servers to avoid
+# getting stuck on stale negative (NXDOMAIN) caches.
+# On success, sets _RESOLVED_IP so callers (e.g. curl) can use --resolve to
+# bypass a broken local cache.  When the system resolver is stale, sets
+# _NEEDS_DNS_FALLBACK=true so callers can enable the Node.js DNS preload.
+# Args: hostname, [timeout_seconds=120]
+_RESOLVED_IP=""
+_NEEDS_DNS_FALLBACK=false
+_wait_for_dns_resolution() {
+  local hostname="$1"
+  local timeout="${2:-120}"
+  local elapsed=0
+  _RESOLVED_IP=""
+  _NEEDS_DNS_FALLBACK=false
+
+  # Skip if hostname is an IP address
+  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    _RESOLVED_IP="$hostname"
+    return 0
+  fi
+
+  info "Waiting for DNS resolution of ${hostname} (timeout ${timeout}s)..."
+
+  while true; do
+    local ip
+    ip=$(_resolve_host "$hostname") && {
+      _RESOLVED_IP="$ip"
+      # Flag when system resolver is stale so callers enable the DNS fallback
+      if ! nslookup "$hostname" >/dev/null 2>&1; then
+        _NEEDS_DNS_FALLBACK=true
+        info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Resolved via public DNS (-> ${ip}) but local resolver still returns NXDOMAIN."
+        info "  Will inject Node.js DNS fallback for Playwright."
+      fi
+      break
+    }
+
+    if [[ $elapsed -ge $timeout ]]; then
+      info "${COLOR_RED}ERROR:${COLOR_RESET} DNS resolution for '${hostname}' timed out after ${timeout}s (checked system + public DNS)"
+      return 1
+    fi
+    sleep 5
+    elapsed=$((elapsed + 5))
+    info "  DNS not yet resolved (${elapsed}s/${timeout}s)..."
+  done
+
+  info "DNS resolved: ${hostname} -> ${_RESOLVED_IP} (${elapsed}s)"
+}
+
+# Wait for ingress paths to return non-502/503/504 responses.
+# After DNS resolves, cloud load balancers (GKE NEG, EKS ALB, etc.) may still
+# need time to converge on backend health state. This function polls each
+# ingress context path until the LB routes traffic end-to-end.
+# Uses _RESOLVED_IP (set by _wait_for_dns_resolution) to add a curl --resolve
+# flag when the system resolver cannot resolve the hostname (stale NXDOMAIN).
+# Args: hostname, namespace, [timeout_seconds=120], [kube_context]
+_wait_for_ingress_ready() {
+  local hostname="$1"
+  local namespace="$2"
+  local timeout="${3:-120}"
+  local kube_context="${4:-}"
+  local kubectl_cmd="kubectl"
+
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
+
+  # Build --resolve flag for curl when the system resolver can't reach the host
+  local resolve_flag=()
+  if [[ -n "${_RESOLVED_IP:-}" ]] && ! nslookup "$hostname" >/dev/null 2>&1; then
+    resolve_flag=(--resolve "${hostname}:443:${_RESOLVED_IP}")
+    log "Using curl --resolve ${hostname}:443:${_RESOLVED_IP} (system DNS is stale)"
+  fi
+
+  # Extract unique context paths from ingress objects (filter out zeebe/grpc, same as get_ingress_hostname)
+  local paths
+  paths=$($kubectl_cmd -n "$namespace" get ingress -o json 2>/dev/null | jq -r '
+    [.items[]
+     | select(all(.spec.rules[].host; (contains("zeebe") or contains("grpc")) | not))
+     | .spec.rules[].http.paths[].path]
+    | map(ltrimstr("/") | split("/")[0] | "/" + .)
+    | unique
+    | .[]' 2>/dev/null)
+
+  # Fall back to HTTPRoute (Gateway API) if no ingress paths found
+  if [[ -z "$paths" ]]; then
+    paths=$($kubectl_cmd -n "$namespace" get httproute -o json 2>/dev/null | jq -r '
+      [.items[].spec.rules[].matches[]?.path.value // empty]
+      | map(ltrimstr("/") | split("/")[0] | "/" + .)
+      | unique
+      | .[]' 2>/dev/null)
+  fi
+
+  if [[ -z "$paths" ]]; then
+    info "${COLOR_YELLOW}WARNING:${COLOR_RESET} No ingress/httproute paths found in namespace '${namespace}', skipping readiness check"
+    return 0
+  fi
+
+  info "Waiting for ingress to become ready on ${hostname} (timeout ${timeout}s)..."
+  info "  Paths: $(echo "$paths" | tr '\n' ' ')"
+
+  local elapsed=0
+  while [[ $elapsed -lt $timeout ]]; do
+    local all_ready=true
+    local status_summary=""
+
+    while IFS= read -r path; do
+      [[ -z "$path" ]] && continue
+      local http_code
+      http_code=$(curl -sk -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 10 "${resolve_flag[@]}" "https://${hostname}${path}" 2>/dev/null || echo "000")
+      status_summary+=" ${path}=${http_code}"
+
+      # 502, 503, 504, 000 (connection failure) mean the LB is not ready
+      if [[ "$http_code" == "502" || "$http_code" == "503" || "$http_code" == "504" || "$http_code" == "000" ]]; then
+        all_ready=false
+      fi
+    done <<< "$paths"
+
+    if [[ "$all_ready" == "true" ]]; then
+      info "Ingress ready (${elapsed}s):${status_summary}"
+      return 0
+    fi
+
+    info "  Not ready yet (${elapsed}s/${timeout}s):${status_summary}"
+    sleep 5
+    elapsed=$((elapsed + 5))
+  done
+
+  info "${COLOR_RED}ERROR:${COLOR_RESET} Ingress readiness timed out after ${timeout}s on ${hostname}"
+  return 1
+}
+
 # ==============================================================================
 # Playwright Helper Functions
 # ==============================================================================
 
+# Portable file hash — abstracts md5sum (Linux) vs md5 (macOS) vs shasum (fallback)
+_portable_file_hash() {
+  local file="$1"
+  if command -v md5sum >/dev/null 2>&1; then
+    md5sum "$file" | cut -d' ' -f1
+  elif command -v md5 >/dev/null 2>&1; then
+    md5 -q "$file"
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum "$file" | cut -d' ' -f1
+  else
+    echo "none"
+  fi
+}
+
+# Check if node_modules matches the current package-lock.json hash
+_is_node_modules_current() {
+  [[ -d "node_modules" ]] && [[ -f "package-lock.json" ]] && [[ -f "node_modules/.package-lock-hash" ]] || return 1
+  local current_hash cached_hash
+  current_hash=$(_portable_file_hash "package-lock.json")
+  cached_hash=$(cat "node_modules/.package-lock-hash" 2>/dev/null || echo "")
+  [[ -n "$current_hash" ]] && [[ "$current_hash" != "none" ]] && [[ "$current_hash" == "$cached_hash" ]] || return 1
+
+  # Hash match alone is not enough — node_modules can be corrupt (e.g., a prior
+  # npm install was interrupted leaving only a fraction of files).  Verify that
+  # the key Playwright module can actually be loaded before trusting the cache.
+  # When corruption is detected we must remove node_modules entirely — npm
+  # trusts its own internal manifest (.package-lock.json) and will report
+  # "up to date" even when packages are incomplete.
+  if ! node -e "require('@playwright/test')" 2>/dev/null; then
+    log "node_modules hash matches but @playwright/test cannot be loaded — nuking node_modules to force clean reinstall"
+    rm -rf "node_modules"
+    return 1
+  fi
+}
+
+# mkdir-based mutual exclusion for npm install (POSIX-portable, no flock dependency)
+# Returns 0 if lock acquired, 1 on timeout (caller should proceed anyway)
+_acquire_npm_lock() {
+  local base_dir="$1"
+  local timeout="${2:-120}"
+  local lock_dir="${base_dir}/.npm-install-lock"
+  local elapsed=0
+
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    # Check for stale lock — owner PID no longer running
+    local lock_pid
+    lock_pid=$(cat "$lock_dir/pid" 2>/dev/null || echo "")
+    if [[ -n "$lock_pid" ]] && ! kill -0 "$lock_pid" 2>/dev/null; then
+      log "Stale npm install lock (PID $lock_pid is dead), removing"
+      rm -rf "$lock_dir"
+      continue
+    fi
+
+    # Age-based fallback for SIGKILL / zombie cases (>300s = stale)
+    if [[ -f "$lock_dir/pid" ]]; then
+      local lock_age
+      # stat -f %m = macOS, stat -c %Y = Linux
+      lock_age=$(( $(date +%s) - $(stat -f %m "$lock_dir/pid" 2>/dev/null || stat -c %Y "$lock_dir/pid" 2>/dev/null || echo "0") ))
+      if [[ $lock_age -gt 300 ]]; then
+        log "npm install lock is ${lock_age}s old (>300s), treating as stale"
+        rm -rf "$lock_dir"
+        continue
+      fi
+    fi
+
+    if [[ $elapsed -ge $timeout ]]; then
+      log "WARNING: Timed out waiting for npm install lock after ${timeout}s, proceeding anyway"
+      return 1
+    fi
+
+    log "Waiting for npm install lock (held by PID ${lock_pid:-unknown}, ${elapsed}s/${timeout}s)..."
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  echo $$ > "$lock_dir/pid"
+  log "Acquired npm install lock (PID $$)"
+  return 0
+}
+
+_release_npm_lock() {
+  local base_dir="$1"
+  local lock_dir="${base_dir}/.npm-install-lock"
+  rm -rf "$lock_dir"
+  log "Released npm install lock"
+}
+
 # Setup playwright environment: change directory, install dependencies, create test-results dir
+# Uses double-checked locking to prevent concurrent npm install corruption.
+# Before installing, updates @camunda/e2e-test-suite to the latest version from
+# the registry so that the "latest" tag in package.json is actually resolved
+# (npm install alone never upgrades past the version pinned in package-lock.json).
 # Args: test_suite_path, [silent=false]
 _setup_playwright_environment() {
   local test_suite_path="$1"
@@ -130,38 +487,59 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Check if we should skip npm install (node_modules exists and package-lock.json hasn't changed)
-  if [[ -d "node_modules" ]] && [[ -f "package-lock.json" ]]; then
-    # In CI with pre-configured containers, prefer using existing node_modules if available
-    if [[ "${CI:-false}" == "true" ]] && [[ -f "node_modules/.package-lock.json" ]]; then
-      log "node_modules exists in CI environment, checking if up to date..."
-      # Compare package-lock.json hash with cached version
-      local current_hash cached_hash
-      current_hash=$(md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 || echo "none")
-      cached_hash=$(cat node_modules/.package-lock-hash 2>/dev/null || echo "")
-      if [[ "$current_hash" == "$cached_hash" ]]; then
-        log "node_modules is up to date, skipping npm install"
-        mkdir -p "$test_suite_path/test-results"
-        return 0
-      fi
+  # Acquire the lock first — npm update and npm install both modify
+  # node_modules and package-lock.json, so they must be serialized.
+  local got_lock=true
+  _acquire_npm_lock "$test_suite_path" 120 || got_lock=false
+
+  # Update @camunda/e2e-test-suite to the latest version from the registry.
+  # npm install respects package-lock.json and never upgrades past the pinned
+  # version, so without this step the "latest" tag in package.json is ignored
+  # once a lock file exists.  npm update rewrites the lock file when a newer
+  # version is available, which also invalidates the hash cache below.
+  local suite_updated=false
+  if [[ -f "package.json" ]] && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
+    local pre_hash=""
+    [[ -f "package-lock.json" ]] && pre_hash=$(_portable_file_hash "package-lock.json")
+    info "Checking for newer @camunda/e2e-test-suite..."
+    # shellcheck disable=SC2086
+    npm update @camunda/e2e-test-suite $npm_flags 2>/dev/null || true
+    local post_hash=""
+    [[ -f "package-lock.json" ]] && post_hash=$(_portable_file_hash "package-lock.json")
+    if [[ "$pre_hash" != "$post_hash" ]]; then
+      suite_updated=true
+      info "@camunda/e2e-test-suite was updated — will run full npm install to reconcile dependencies"
     fi
   fi
 
-  # Use npm install in CI to handle package.json/lock file mismatches gracefully
-  if [[ "${CI:-false}" == "true" ]]; then
-    log "Running npm install (CI mode)..."
-    # shellcheck disable=SC2086
-    npm install $npm_flags
-    # Store hash for future comparison
-    md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 > node_modules/.package-lock-hash || true
-  else
-    # Force fresh install locally to always get the latest dependencies
-    log "Running npm install (local mode)..."
-    # shellcheck disable=SC2086
-    rm -rf node_modules package-lock.json && npm i $npm_flags
+  # If the test suite was updated, always run a full npm install to reconcile
+  # the entire dependency tree (npm update only touches the named package and
+  # can leave transitive deps like playwright in an inconsistent state).
+  # Otherwise, check whether node_modules already matches the lock file.
+  if [[ "$suite_updated" != "true" ]] && _is_node_modules_current; then
+    log "node_modules is up to date, skipping npm install"
+    [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
+    local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+    mkdir -p "$results_dir"
+    return 0
   fi
 
-  mkdir -p "$test_suite_path/test-results"
+  info "Installing npm dependencies..."
+  # shellcheck disable=SC2086
+  if npm install $npm_flags; then
+    # Store hash only on success — a partial/failed install must not be cached
+    # or future runs will skip reinstallation and inherit the broken state.
+    _portable_file_hash "package-lock.json" > node_modules/.package-lock-hash || true
+  else
+    info "npm install failed — removing hash cache to force reinstall on next run"
+    rm -f "node_modules/.package-lock-hash"
+  fi
+
+  [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
+
+  # Create the test-results directory; use namespace-scoped path when set.
+  local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+  mkdir -p "$results_dir"
 }
 
 # Install Playwright browsers (with deps on Linux)
@@ -189,7 +567,7 @@ _install_playwright_browsers() {
     fi
   fi
 
-  log "Installing Playwright browsers..."
+  info "Installing Playwright browsers..."
   if [[ "$(uname -s)" == "Linux" ]]; then
     npx playwright install --with-deps || exit 1
   else
@@ -312,14 +690,14 @@ _wait_for_pods_ready() {
     return 0
   fi
   
-  log "Waiting up to ${timeout}s for all pods in namespace $namespace to be Ready..."
+  info "Waiting for pods to be ready in ${namespace} (timeout ${timeout}s)..."
   
   # Exclude completed Jobs (status.phase=Succeeded) - they don't have Ready condition
   if $kubectl_cmd wait --for=condition=Ready pods --all \
        --field-selector=status.phase!=Succeeded \
        -n "$namespace" \
        --timeout="${timeout}s" 2>/dev/null; then
-    log "All pods in namespace $namespace are Ready"
+    info "All pods ready in ${namespace}"
     return 0
   else
     # kubectl wait failed - this can happen if:
@@ -379,11 +757,11 @@ _run_playwright_with_retry() {
     # Check pods are ready before running
     if [[ -n "$namespace" ]]; then
       if ! _check_all_pods_ready "$namespace" "$kube_context"; then
-        log "WARNING: Pods not ready before test attempt $attempt, waiting for recovery..."
+        info "${COLOR_YELLOW}Pods not ready before attempt ${attempt}, waiting for recovery...${COLOR_RESET}"
         if ! _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT" "$kube_context"; then
-          log "ERROR: Pods did not recover before test attempt $attempt"
+          info "${COLOR_RED}Pods did not recover before attempt ${attempt}${COLOR_RESET}"
           if [[ $attempt -ge $_POD_RETRY_MAX_ATTEMPTS ]]; then
-            log "ERROR: Max retry attempts reached, pods never recovered"
+            info "${COLOR_RED}Max retry attempts reached, pods never recovered${COLOR_RESET}"
             return 1
           fi
           log "Will continue to next attempt..."
@@ -393,7 +771,7 @@ _run_playwright_with_retry() {
     fi
     
     if [[ $attempt -gt 1 ]]; then
-      log "Retry attempt $attempt/$_POD_RETRY_MAX_ATTEMPTS after pod recovery..."
+      info "Retry attempt ${attempt}/${_POD_RETRY_MAX_ATTEMPTS} after pod recovery..."
     fi
     
     # Create temp file to capture output for connection error analysis
@@ -401,12 +779,18 @@ _run_playwright_with_retry() {
     rm -f "$output_file"
     output_file=$(mktemp)
     
-    # Run the playwright command, tee output to file for analysis
-    # Use pipefail to capture the actual playwright exit code
-    set -o pipefail
-    "${playwright_cmd[@]}" 2>&1 | tee "$output_file"
-    playwright_rc=${PIPESTATUS[0]}
-    set +o pipefail
+    # Run the playwright command, capturing output for analysis.
+    # IMPORTANT: We redirect to the file and separately stream to stdout
+    # instead of piping through `tee`.  A pipeline (`cmd | tee file`)
+    # keeps the pipe open until ALL writers close their inherited copy of
+    # the write-end file descriptor.  If npx/node spawns child processes
+    # (browser workers, etc.) that linger after the main process exits,
+    # `tee` — and therefore the whole pipeline — hangs until those orphan
+    # children terminate.  Using process substitution avoids this: the
+    # shell only waits for the main command, not for the tee background
+    # process.
+    "${playwright_cmd[@]}" > >(tee "$output_file") 2>&1
+    playwright_rc=$?
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then
@@ -414,13 +798,13 @@ _run_playwright_with_retry() {
     fi
     
     # Tests failed - analyze why
-    log "Tests failed with exit code $playwright_rc"
+    info "Tests failed (exit code ${playwright_rc}), checking infrastructure..."
     
     # Check for connection-related errors in output (infrastructure issues)
     local has_connection_error=false
     if grep -qiE "ECONNREFUSED|ECONNRESET|ETIMEDOUT|connection refused|connection reset|transport error|dial tcp.*connect:|Unavailable desc = connection error" "$output_file" 2>/dev/null; then
       has_connection_error=true
-      log "WARNING: Detected connection error in test output (likely infrastructure issue)"
+      info "${COLOR_YELLOW}Detected connection errors in test output (likely infrastructure issue)${COLOR_RESET}"
     fi
     
     if [[ -n "$namespace" ]]; then
@@ -428,34 +812,31 @@ _run_playwright_with_retry() {
       
       if ! _check_all_pods_ready "$namespace" "$kube_context"; then
         # Pods are not ready - this was likely a spot instance preemption
-        log "WARNING: Test failed and pods are not ready (possible spot instance preemption)"
+        info "${COLOR_YELLOW}Pods not ready after failure (possible spot preemption)${COLOR_RESET}"
         
         if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
-          log "Waiting for pods to recover before retry..."
+          info "Waiting for pods to recover before retry..."
           if _wait_for_pods_ready "$namespace" "$_POD_RETRY_TIMEOUT" "$kube_context"; then
-            log "Pods recovered, will retry tests..."
+            info "Pods recovered, retrying tests..."
             continue
           else
-            log "ERROR: Pods did not recover within timeout"
+            info "${COLOR_RED}Pods did not recover within timeout${COLOR_RESET}"
             return $playwright_rc
           fi
         else
-          log "ERROR: Max retry attempts reached, pods still not ready"
+          info "${COLOR_RED}Max retry attempts reached, pods still not ready${COLOR_RESET}"
           return $playwright_rc
         fi
       elif [[ "$has_connection_error" == "true" ]]; then
         # Pods are ready NOW, but we saw connection errors - likely recovered mid-test
-        log "WARNING: Pods are ready now, but connection errors occurred during test"
-        log "This suggests infrastructure disruption during test execution (pods may have recovered after failure)"
+        info "${COLOR_YELLOW}Pods are ready now but connection errors occurred during test${COLOR_RESET}"
         
         if [[ $attempt -lt $_POD_RETRY_MAX_ATTEMPTS ]]; then
-          log "Will retry due to connection errors..."
-          # Brief pause to ensure stability after recovery
-          log "Pausing 10s to ensure pod stability..."
+          info "Pausing 10s for stability, then retrying..."
           sleep 10
           continue
         else
-          log "ERROR: Max retry attempts reached"
+          info "${COLOR_RED}Max retry attempts reached${COLOR_RESET}"
           _dump_pod_status "$namespace"
           return $playwright_rc
         fi
@@ -512,9 +893,9 @@ run_playwright_tests() {
   local project="full-suite"
   if [[ "$run_smoke_tests" == "true" ]]; then
     project="smoke-tests"
-    log "Running smoke tests"
+    info "Running smoke tests..."
   else
-    log "Running full suite"
+    info "Running Playwright tests..."
   fi
 
   # Build the playwright command arguments
@@ -526,6 +907,8 @@ run_playwright_tests() {
   )
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
+  # Namespace-scoped output directory to avoid collisions during parallel matrix runs
+  [[ -n "${PLAYWRIGHT_TEST_OUTPUT:-}" ]] && playwright_args+=(--output="$PLAYWRIGHT_TEST_OUTPUT")
 
   # Run with retry logic for pod failures (spot instance preemption)
   PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/playwright-results.json \
@@ -534,7 +917,7 @@ run_playwright_tests() {
 
   # Only show HTML report locally, never in CI (it blocks waiting for Ctrl+C)
   if [[ "$show_html_report" == "true" && "${CI:-false}" != "true" ]]; then
-    npx playwright show-report
+    npx playwright show-report "${PLAYWRIGHT_HTML_REPORT:-playwright-report}"
   fi
 
   _handle_playwright_result "$playwright_rc" "All Playwright tests" "$rerun_cmd" "true"
@@ -552,7 +935,7 @@ run_playwright_tests_hybrid() {
   local kube_context="${7:-}"  # Optional: kubernetes context
   local rerun_cmd="${8:-}"  # Optional: command to rerun tests locally
 
-  log "Running hybrid tests: auth_type='$auth_type' test_files='$test_files'"
+  info "Running hybrid tests (auth=${auth_type}): ${test_files}"
   [[ -n "$namespace" ]] && log "Namespace for pod checks: $namespace"
   [[ -n "$kube_context" ]] && log "Kube context: $kube_context"
 
@@ -565,6 +948,8 @@ run_playwright_tests_hybrid() {
   # shellcheck disable=SC2206
   local -a playwright_args=(npx playwright test $test_files --project=full-suite --reporter="$reporter,json")
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
+  # Namespace-scoped output directory to avoid collisions during parallel matrix runs
+  [[ -n "${PLAYWRIGHT_TEST_OUTPUT:-}" ]] && playwright_args+=(--output="$PLAYWRIGHT_TEST_OUTPUT")
 
   # Run specific test files with the auth type set as environment variable
   # This overrides any TEST_AUTH_TYPE in .env file

@@ -1,0 +1,23 @@
+# Basic authentication
+# Layer 2: Auth method
+# Used when TEST_AUTH=basic
+
+global:
+  exporter:
+    zeebe:
+      enabled: false
+
+orchestration:
+  security:
+    authentication:
+      method: basic
+      authenticationRefreshInterval: "PT30S"
+
+connectors:
+  security:
+    authentication:
+      method: basic
+
+# Console requires OIDC, disable it for basic auth
+console:
+  enabled: false

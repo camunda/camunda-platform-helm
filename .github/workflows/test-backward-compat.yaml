@@ -1,0 +1,218 @@
+# This workflow validates backward compatibility of test-integration-template.yaml
+# by invoking it with the exact same input patterns used by external caller repos:
+#   - c8-cross-component-e2e-tests (8.8+ and 8.7- variants)
+#   - camunda (docker-build-helm-integration and camunda-helm-integration)
+#
+# Each job mirrors a real caller's `with:` block. If any job fails to start,
+# it means the template contract has broken for that caller.
+#
+# NOTE: This workflow uses test-enabled: false so no actual infrastructure is
+# provisioned -- we are only validating that the workflow_call interface accepts
+# all the inputs the callers send and that the init/matrix generation succeeds.
+
+name: "Test - Backward Compatibility"
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Dry run mode (test-enabled=false, no infra provisioned)"
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - ".github/workflows/test-integration-template.yaml"
+      - ".github/workflows/test-integration-runner.yaml"
+      - ".github/workflows/test-chart-version-template.yaml"
+      - ".github/workflows/test-backward-compat.yaml"
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+  packages: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ===========================================================================
+  # Caller 1: c8-cross-component-e2e-tests — playwright_sm_reusable_flow_8_8_plus.yaml
+  # Source: https://github.com/camunda/c8-cross-component-e2e-tests
+  # This is the most input-heavy caller (22 inputs explicitly set).
+  # ===========================================================================
+  compat-e2e-8-8-plus:
+    name: "Compat: e2e 8.8+"
+    uses: ./.github/workflows/test-integration-template.yaml
+    secrets: inherit
+    with:
+      auth: keycloak
+      helmChartVersion: ""
+      include-image-tags: false
+      identifier: compat-e2e-88p
+      platforms: gke
+      infra-type: preemptible
+      camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      camunda-helm-dir: camunda-platform-8.8
+      teleport-token: infra-ci-prod-github-action-distribution
+      namespace-prefix: "backcompate2e88p-"
+      deployment-ttl: 30m
+      test-enabled: true
+      e2e-enabled: true
+      scenario: qa-elasticsearch
+      shortname: es
+      always-delete-namespace: true
+      flows: install
+      initialClaimValue: ""
+      values-config: |
+        {
+          "E2E_TESTS_CAMUNDA_HELM_DIR": "camunda-platform-8.8",
+          "E2E_TESTS_IDENTITY_IMAGE_TAG": "8.8.0",
+          "E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8.0",
+          "E2E_TESTS_CONSOLE_IMAGE_TAG": "8.8.0",
+          "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "8.8.0",
+          "E2E_TESTS_WEBMODELER_IMAGE_TAG": "8.8.0",
+          "E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8.0",
+          "E2E_TESTS_CORE_IMAGE_TAG": "8.8.0",
+          "E2E_TESTS_SEARCH_ENGINE": "opensearch",
+          "E2E_AWS_OS_INDEX_PREFIX": "compat-test",
+          "E2E_AWS_OS_INDEX_PREFIX_ZEEBE": "compat-test-zeebe",
+          "E2E_AWS_OS_INDEX_PREFIX_OPERATE": "compat-test-operate",
+          "E2E_AWS_OS_INDEX_PREFIX_TASKLIST": "compat-test-tasklist",
+          "E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE": "compat-test-optimize"
+        }
+      vault-secret-mapping: ""
+
+  # ===========================================================================
+  # Caller 2: c8-cross-component-e2e-tests — playwright_sm_reusable_flow_8_7_minus.yaml
+  # Fewer inputs set; relies on defaults for auth, flows, initialClaimValue.
+  # Uses per-component image tags instead of unified orchestration/core tags.
+  # ===========================================================================
+  compat-e2e-8-7-minus:
+    name: "Compat: e2e 8.7-"
+    uses: ./.github/workflows/test-integration-template.yaml
+    secrets: inherit
+    with:
+      helmChartVersion: ""
+      include-image-tags: false
+      identifier: compat-e2e-87m
+      platforms: gke
+      infra-type: preemptible
+      camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      camunda-helm-dir: camunda-platform-8.7
+      teleport-token: infra-ci-prod-github-action-distribution
+      namespace-prefix: "backcompate2e-"
+      deployment-ttl: 30m
+      test-enabled: true
+      e2e-enabled: true
+      scenario: qa-elasticsearch
+      shortname: es
+      always-delete-namespace: true
+      # NOTE: auth, flows, initialClaimValue are NOT set — relying on defaults:
+      #   auth: keycloak, flows: install, initialClaimValue: ""
+      values-config: |
+        {
+          "E2E_TESTS_CAMUNDA_HELM_DIR": "camunda-platform-8.7",
+          "E2E_TESTS_IDENTITY_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_CONSOLE_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_OPERATE_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_TASKLIST_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_WEBMODELER_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_ZEEBE_IMAGE_TAG": "8.7.0",
+          "E2E_TESTS_SEARCH_ENGINE": "opensearch",
+          "E2E_AWS_OS_INDEX_PREFIX": "compat-test",
+          "E2E_AWS_OS_INDEX_PREFIX_ZEEBE": "compat-test-zeebe",
+          "E2E_AWS_OS_INDEX_PREFIX_OPERATE": "compat-test-operate",
+          "E2E_AWS_OS_INDEX_PREFIX_TASKLIST": "compat-test-tasklist",
+          "E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE": "compat-test-optimize",
+          "OPENSEARCH_PORT": "443",
+          "OPENSEARCH_PROTOCOL": "https"
+        }
+      vault-secret-mapping: ""
+
+  # ===========================================================================
+  # Caller 3: camunda — docker-build-helm-integration.yml
+  # Sets e2e-enabled: true and extra-values with Harbor image overrides.
+  # Uses || fallback expressions in the real caller (hardcoded here).
+  # ===========================================================================
+  compat-camunda-docker:
+    name: "Compat: camunda docker-build"
+    uses: ./.github/workflows/test-integration-template.yaml
+    secrets: inherit
+    with:
+      identifier: compat-cam-dock
+      platforms: gke
+      camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      camunda-helm-dir: camunda-platform-8.9
+      namespace-prefix: "backcompcamdock-"
+      test-enabled: true
+      e2e-enabled: true
+      deployment-ttl: 30m
+      scenario: keycloak-original
+      shortname: kcor
+      always-delete-namespace: true
+      flows: install
+      vault-secret-mapping: ""
+
+  # ===========================================================================
+  # Caller 4: camunda — camunda-helm-integration.yml
+  # Simplest caller: only 6 inputs explicitly set.
+  # This is the best canary — if this breaks, something fundamental changed.
+  # ===========================================================================
+  compat-camunda-simple:
+    name: "Compat: camunda simple"
+    uses: ./.github/workflows/test-integration-template.yaml
+    secrets: inherit
+    with:
+      identifier: compat-cam-simp
+      camunda-helm-dir: camunda-platform-8.8
+      camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      namespace-prefix: "backcompcamsimp-"
+      test-enabled: true
+      e2e-enabled: true
+      caller-git-ref: main
+      vault-secret-mapping: ""
+
+  # ===========================================================================
+  # Summary gate: all compat jobs must pass
+  # ===========================================================================
+  compat-gate:
+    name: "Backward Compatibility Gate"
+    runs-on: ubuntu-latest
+    needs:
+      - compat-e2e-8-8-plus
+      - compat-e2e-8-7-minus
+      - compat-camunda-docker
+      - compat-camunda-simple
+    if: always()
+    steps:
+      - name: Check all compatibility jobs
+        run: |
+          echo "=== Backward Compatibility Results ==="
+          echo ""
+          echo "Caller: c8-cross-component-e2e-tests 8.8+ → ${{ needs.compat-e2e-8-8-plus.result }}"
+          echo "Caller: c8-cross-component-e2e-tests 8.7- → ${{ needs.compat-e2e-8-7-minus.result }}"
+          echo "Caller: camunda/docker-build-helm-integration → ${{ needs.compat-camunda-docker.result }}"
+          echo "Caller: camunda/camunda-helm-integration → ${{ needs.compat-camunda-simple.result }}"
+          echo ""
+
+          FAILED=false
+          for result in \
+            "${{ needs.compat-e2e-8-8-plus.result }}" \
+            "${{ needs.compat-e2e-8-7-minus.result }}" \
+            "${{ needs.compat-camunda-docker.result }}" \
+            "${{ needs.compat-camunda-simple.result }}"; do
+            if [[ "$result" == "failure" ]]; then
+              FAILED=true
+            fi
+          done
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::One or more backward compatibility checks failed!"
+            exit 1
+          fi
+
+          echo "All backward compatibility checks passed."

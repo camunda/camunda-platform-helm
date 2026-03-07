@@ -8,16 +8,13 @@ dotenv(); // ← loads .env before anything else
 
 import { test, expect, APIRequestContext } from "@playwright/test";
 import { execFileSync } from "child_process";
+import { authHeader, fetchToken, requireEnv } from "./helper";
 
 // ---------- config & helpers ----------
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required env var: ${name}`);
-  return value;
-}
 
 // Grouped config for base URLs
 const config = {
+  authType: process.env.TEST_AUTH_TYPE || "keycloak",
   authURL: requireEnv("AUTH_URL"),
   base: {
     console: requireEnv("CONSOLE_BASE_URL"),
@@ -52,24 +49,11 @@ const config = {
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
+  tokenScope: process.env.TEST_TOKEN_SCOPE || "",
+  demoUser: process.env.DEMO_USER || "demo",
+  demoPass: process.env.DEMO_PASSWORD || "demo",
   fixturesDir: process.env.FIXTURES_DIR || "/mnt/fixtures",
 };
-
-// Helper to fetch a token
-async function fetchToken(id: string, sec: string, api: APIRequestContext) {
-  const r = await api.post(config.authURL, {
-    form: {
-      client_id: id,
-      client_secret: sec,
-      grant_type: "client_credentials",
-    },
-  });
-  expect(
-    r.ok(),
-    `Failed to get token for client_id=${id}: ${r.status()}`,
-  ).toBeTruthy();
-  return (await r.json()).access_token as string;
-}
 
 // ---------- tests ----------
 test.describe("Camunda core", () => {
@@ -78,20 +62,27 @@ test.describe("Camunda core", () => {
 
   test.beforeAll(async ({ playwright }) => {
     api = await playwright.request.newContext();
-    venomJWT = await fetchToken(config.venomID, config.venomSec, api);
+    venomJWT = await fetchToken(config.venomID, config.venomSec, api, config);
   });
 
   test("M2M tokens", async () => {
+    // Skip for basic auth (no OAuth) and OIDC auth (component secrets are
+    // Identity-generated client passwords, not Entra client credentials —
+    // sending client_id=connectors to the Entra token endpoint is invalid).
+    if (config.authType === "basic" || config.authType === "oidc") {
+      test.skip();
+      return;
+    }
     for (const [id, sec] of Object.entries(config.secrets)) {
       // ensure each call resolves and yields a non-empty JWT:
-      await expect(fetchToken(id, sec, api)).resolves.toMatch(
+      await expect(fetchToken(id, sec, api, config)).resolves.toMatch(
         /^[\w-]+\.[\w-]+\.[\w-]+$/,
       );
     }
   });
 
-  // Parameterized login page tests
-  for (const [name, url] of Object.entries({
+  // Parameterized login page tests — only for keycloak auth (Keycloak serves the login pages)
+  const keycloakLoginPages = {
     Console: config.base.console,
     Keycloak: config.base.keycloak,
     Identity: config.base.identity,
@@ -99,8 +90,15 @@ test.describe("Camunda core", () => {
     Optimize: config.base.optimize,
     Tasklist: config.base.tasklist,
     WebModeler: config.base.webModeler,
-  })) {
+  };
+
+  for (const [name, url] of Object.entries(keycloakLoginPages)) {
     test(`Login page: ${name}`, async () => {
+      // Skip Keycloak login page test when Keycloak is not deployed (OIDC mode)
+      if (name === "Keycloak" && config.authType !== "keycloak") {
+        test.skip();
+        return;
+      }
       const r = await api.get(`${url}${config.loginPath[name]}`, {
         timeout: 45_000,
       });
@@ -135,11 +133,17 @@ test.describe("Camunda core", () => {
     ],
   ] as const) {
     test(`API: ${label}`, async () => {
+      // In OIDC mode, Identity's REST API requires Identity-issued tokens
+      // (not Entra tokens), so this endpoint returns 404 or 401.
+      if (label === "Identity users" && config.authType === "oidc") {
+        test.skip();
+        return;
+      }
       const r = await api.fetch(url, {
         method,
         data: body || undefined,
         headers: {
-          Authorization: `Bearer ${venomJWT}`,
+          Authorization: await authHeader(api, config),
           "Content-Type": "application/json",
         },
       });
@@ -205,6 +209,7 @@ test.describe("Camunda core", () => {
   ] as const) {
     const extra =
       process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+    const scopeArgs = config.tokenScope ? ["--scope", config.tokenScope] : [];
     test(`Deploy BPMN: ${name}`, async () => {
       execFileSync(
         "zbctl",
@@ -221,6 +226,7 @@ test.describe("Camunda core", () => {
           config.authURL,
           "--address",
           config.base.zeebeGRPC,
+          ...scopeArgs,
           ...extra,
         ],
         { stdio: "inherit" },
@@ -238,6 +244,7 @@ test.describe("Camunda core", () => {
       test.setTimeout(3 * 60 * 1000); // > polling window
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+      const scopeArgs = config.tokenScope ? ["--scope", config.tokenScope] : [];
       execFileSync(
         "zbctl",
         [
@@ -253,6 +260,7 @@ test.describe("Camunda core", () => {
           config.authURL,
           "--address",
           config.base.zeebeGRPC,
+          ...scopeArgs,
           ...extra,
         ],
         { stdio: "inherit" },
@@ -273,7 +281,7 @@ test.describe("Camunda core", () => {
             // Send JSON, not a string. Empty object returns all items.
             data: {},
             headers: {
-              Authorization: `Bearer ${venomJWT}`,
+              Authorization: await authHeader(api, config),
               "Content-Type": "application/json",
             },
           },
@@ -302,4 +310,13 @@ test.describe("Camunda core", () => {
       ).toBeTruthy();
     });
   }
+
+  test.afterAll(async ({}, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+      console.error(
+        "\n===== CONFIG DUMP (test failed) =====\n" +
+          JSON.stringify(config, null, 2),
+      );
+    }
+  });
 });

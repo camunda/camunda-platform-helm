@@ -1,0 +1,73 @@
+# =============================================================================
+# OpenSearch Backend (8.6)
+# =============================================================================
+# Layer 3: Data backend - External OpenSearch
+# Used with: TEST_VALUES_BACKEND=opensearch
+# Note: 8.6 uses separate operate, tasklist, zeebe components
+# =============================================================================
+
+global:
+  elasticsearch:
+    enabled: false
+  exporter:
+    zeebe:
+      enabled: true
+  opensearch:
+    enabled: true
+    aws:
+      enabled: false
+    auth:
+      username: "$OPENSEARCH_USERNAME"
+      password: "$OPENSEARCH_PASSWORD"
+    url:
+      protocol: $OPENSEARCH_PROTOCOL
+      host: "$OPENSEARCH_HOST"
+      port: $OPENSEARCH_PORT
+    prefix: "custom-zeebe"
+
+# -----------------------------------------------------------------------------
+# Operate (OpenSearch backend)
+# -----------------------------------------------------------------------------
+operate:
+  env:
+    - name: CAMUNDA_OPERATE_OPENSEARCH_INDEX_PREFIX
+      value: custom
+
+# -----------------------------------------------------------------------------
+# Tasklist (OpenSearch backend)
+# -----------------------------------------------------------------------------
+tasklist:
+  env:
+    - name: CAMUNDA_TASKLIST_OPENSEARCH_INDEX_PREFIX
+      value: custom
+
+# -----------------------------------------------------------------------------
+# Zeebe (OpenSearch exporter)
+# -----------------------------------------------------------------------------
+zeebe:
+  env:
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+      value: custom-zeebe
+
+# -----------------------------------------------------------------------------
+# Optimize (OpenSearch backend - currently disabled)
+# -----------------------------------------------------------------------------
+optimize:
+  enabled: false
+  env:
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: custom-optimize
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+      value: custom-zeebe
+  migration:
+    env:
+      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+        value: custom-optimize
+      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+        value: custom-zeebe
+
+# -----------------------------------------------------------------------------
+# Elasticsearch disabled
+# -----------------------------------------------------------------------------
+elasticsearch:
+  enabled: false

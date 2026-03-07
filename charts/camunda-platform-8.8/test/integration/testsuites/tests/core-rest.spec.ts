@@ -49,6 +49,7 @@ const config = {
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
+  tokenScope: process.env.TEST_TOKEN_SCOPE || "",
   demoUser: "demo",
   demoPass: "demo",
 };

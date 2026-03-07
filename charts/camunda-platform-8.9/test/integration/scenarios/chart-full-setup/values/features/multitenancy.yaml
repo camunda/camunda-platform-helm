@@ -1,0 +1,24 @@
+# Multi-tenancy feature configuration for 8.9
+# Layer 4: Feature - Multi-tenancy
+
+global:
+  multitenancy:
+    enabled: true
+    checksEnabled: true
+    apiEnabled: true
+
+orchestration:
+  security:
+    authorization:
+      enabled: true
+    initialization:
+      mappings:
+        - mappingID: "admin-mapping"
+          claimName: "group"
+          claimValue: "admin"
+        - mappingID: "tenant-a-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-a"
+        - mappingID: "tenant-b-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-b"

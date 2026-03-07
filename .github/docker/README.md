@@ -29,6 +29,28 @@ Extended Playwright image with additional CI tools for running integration and E
 - Google Cloud CLI and AWS CLI for cluster authentication
 - System utilities (gettext-base for envsubst)
 
+### Keycloak CI (`keycloak-ci`)
+
+Pre-built Keycloak image for CI integration tests. Runs `kc.sh build` at image build time with the exact runtime config used in CI, so the container can start with `--optimized` and skip the ~30-40s Quarkus augmentation on every boot.
+
+**Registry:** `ghcr.io/camunda/team-distribution/keycloak-ci`
+
+**Base image:** `camunda/keycloak:26.3.3`
+
+**Pre-baked build-time options:**
+- `--cache=local` (single replica, no Infinispan)
+- `--db=postgres`
+- `--http-relative-path=/auth/`
+- `--health-enabled=true`
+- `--metrics-enabled=false`
+- `--features-disabled=ciba,client-policies,dpop,dynamic-scopes,kerberos,par,step-up-authentication,web-authn`
+- `--transaction-xa-enabled=false`
+- `--http-enabled=true`
+
+**Usage:** Set `identityKeycloak.image.repository` to `ghcr.io/camunda/team-distribution/keycloak-ci`, `production: true`, and `extraStartupArgs: "--optimized"` in test values.
+
+**Updating Keycloak version:** Change the `ARG KEYCLOAK_VERSION=` in the Dockerfile and push to `main`.
+
 ## Building Images
 
 Images are automatically built and pushed when:
@@ -48,12 +70,17 @@ docker build -t registry.camunda.cloud/team-distribution/ci-runner:latest .
 cd .github/docker/playwright-runner
 cp ../../../.tool-versions .
 docker build -t registry.camunda.cloud/team-distribution/playwright-runner:latest .
+
+# Build Keycloak CI (pre-built for fast startup)
+cd .github/docker/keycloak-ci
+docker build -t ghcr.io/camunda/team-distribution/keycloak-ci:latest .
 ```
 
 ## Image Tags
 
 - `latest` - Most recent build from main branch
 - `sha-XXXXXXXX` - Hash-based tag from `.tool-versions` content (first 8 chars of SHA256)
+- `<keycloak-version>` - Keycloak CI image is also tagged with the upstream Keycloak version (e.g. `26.3.3`)
 
 ## Usage in Workflows
 

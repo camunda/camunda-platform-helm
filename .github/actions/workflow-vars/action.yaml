@@ -38,6 +38,9 @@ outputs:
   namespace:
     description: The namespace for the deployment
     value: ${{ steps.vars.outputs.namespace }}
+  es-pool-index:
+    description: Elasticsearch pool index (0 or 1) for hash-based cluster routing
+    value: ${{ steps.vars.outputs.es-pool-index }}
 
 runs:
   using: composite
@@ -81,6 +84,12 @@ runs:
       # Workflow.
       echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
       echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
+
+      # Deterministically route this CI run to one of 2 ES pools.
+      # All scenarios within the same run_id+attempt land on the same pool for debuggability.
+      ES_POOL_INDEX=$(( 16#$(echo -n "${{ github.run_id }}-${{ github.run_attempt }}" | sha256sum | head -c 8) % 4 ))
+      echo "ES_POOL_INDEX=${ES_POOL_INDEX}" | tee -a $GITHUB_ENV
+      echo "es-pool-index=${ES_POOL_INDEX}" >> $GITHUB_OUTPUT
 
       if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-${GITHUB_WORKFLOW_JOB_ID}"

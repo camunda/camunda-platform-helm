@@ -49,6 +49,7 @@ const config = {
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
+  tokenScope: process.env.TEST_TOKEN_SCOPE || "",
 };
 
 // ---------- tests ----------
@@ -62,6 +63,13 @@ test.describe("orchestration-grpc", () => {
   });
 
   test("M2M tokens", async () => {
+    // Skip for OIDC auth: component secrets are Identity-generated client
+    // passwords, not Entra client credentials — sending client_id=connectors
+    // to the Entra token endpoint is invalid.
+    if (config.authType === "oidc") {
+      test.skip();
+      return;
+    }
     for (const [id, sec] of Object.entries(config.secrets)) {
       // ensure each call resolves and yields a non-empty JWT:
       await expect(fetchToken(id, sec, api, config)).resolves.toMatch(
@@ -136,6 +144,7 @@ test.describe("orchestration-grpc", () => {
 
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+      const scopeArgs = config.tokenScope ? ["--scope", config.tokenScope] : [];
       execFileSync(
         "zbctl",
         [
@@ -151,6 +160,7 @@ test.describe("orchestration-grpc", () => {
           config.authURL,
           "--address",
           config.base.zeebeGRPC,
+          ...scopeArgs,
           ...extra,
         ],
         { stdio: "inherit" },
