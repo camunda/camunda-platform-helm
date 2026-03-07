@@ -10,5 +10,8 @@ rules:
   - match: "==8.9"
     deny:
       - upgrade-patch
+  - match: "==8.10"
+    deny:
+      - upgrade-patch
 
 

@@ -281,6 +281,7 @@
       matchFileNames: [
         // bump these to whatever the latest alpha is
         'charts/camunda-platform-8.9/Chart.yaml',
+        'charts/camunda-platform-8.10/Chart.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
@@ -297,9 +298,6 @@
         'regex',
       ],
       matchFileNames: [
-        'charts/camunda-platform-8.2/Chart.yaml',
-        'charts/camunda-platform-8.2/values.yaml',
-        'charts/camunda-platform-8.2/values-latest.yaml',
         'charts/camunda-platform-8.3/Chart.yaml',
         'charts/camunda-platform-8.3/values.yaml',
         'charts/camunda-platform-8.3/values-latest.yaml',
@@ -340,6 +338,9 @@
         'charts/camunda-platform-8.9/Chart.yaml',
         'charts/camunda-platform-8.9/values.yaml',
         'charts/camunda-platform-8.9/values-latest.yaml',
+        'charts/camunda-platform-8.10/Chart.yaml',
+        'charts/camunda-platform-8.10/values.yaml',
+        'charts/camunda-platform-8.10/values-latest.yaml',
       ],
       matchUpdateTypes: ['major', 'minor', 'patch'],
       schedule: ['at any time'],
@@ -347,7 +348,7 @@
       prCreation: 'immediate',
     },
     {
-      description: 'Parse Camunda 8.9 image tags as semver so alpha updates work',
+      description: 'Parse Camunda 8.9 and 8.10 image tags as semver so alpha updates work',
       enabled: true,
       matchPackageNames: ['/.*camunda.*/'],
       matchDatasources: ['helmv3', 'helm-values', 'docker', 'regex'],
@@ -355,6 +356,9 @@
         'charts/camunda-platform-8.9/Chart.yaml',
         'charts/camunda-platform-8.9/values.yaml',
         'charts/camunda-platform-8.9/values-latest.yaml',
+        'charts/camunda-platform-8.10/Chart.yaml',
+        'charts/camunda-platform-8.10/values.yaml',
+        'charts/camunda-platform-8.10/values-latest.yaml',
       ],
       versioning: 'regex:^(?<major>\\d+)(.(?<minor>\\d+))(.(?<patch>\\d+))(-(?<prerelease>alpha[1-9]))$',
     },
@@ -372,6 +376,7 @@
       matchFileNames: [
         'charts/camunda-platform-8.8/values-digest.yaml',
         'charts/camunda-platform-8.9/values-digest.yaml',
+        'charts/camunda-platform-8.10/values-digest.yaml',
       ],
       matchUpdateTypes: ['digest'],
       schedule: ['at any time'],

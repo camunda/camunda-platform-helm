@@ -1,0 +1,71 @@
+identity:
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+
+orchestration:
+  env:
+    # Allow to upgrade from alpha or snapshot versions.
+    - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
+      value: "false"
+
+connectors:
+  initContainers:
+    - name: wait-for-orchestration
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Orchestration cluster to be healthy..."
+          until wget --spider -q http://integration-zeebe-gateway:9600/orchestration/actuator/health/readiness 2>/dev/null; do
+            echo "Orchestration cluster not ready yet, waiting..."
+            sleep 5
+          done
+          echo "Orchestration cluster is healthy!"
+      securityContext:
+        runAsUser: 1000
+  logging:
+    level:
+      io.camunda.client.job.worker: INFO
+      io.camunda.client.job.poller: INFO
+
+optimize:
+  livenessProbe:
+    enabled: true
+  initContainers:
+    - name: wait-for-orchestration
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Orchestration cluster to be healthy..."
+          until wget --spider -q http://integration-zeebe-gateway:9600/orchestration/actuator/health/readiness 2>/dev/null; do
+            echo "Orchestration cluster not ready yet, waiting..."
+            sleep 5
+          done
+          echo "Orchestration cluster is healthy!"
+      securityContext:
+        runAsUser: 1000

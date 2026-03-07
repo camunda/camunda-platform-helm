@@ -1,0 +1,38 @@
+{{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
+{{- if .Values.connectors.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-connectors
+  annotations:
+    {{- with .Values.global.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.global.gateway.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "camundaPlatform.labels" .)
+        .Values.global.gateway.labels
+      )
+      "context" .
+    ) | nindent 4 }}
+spec:
+  parentRefs:
+  - name: {{ include "camundaPlatform.fullname" . }}
+    sectionName: {{ if .Values.global.gateway.tls.enabled }}https{{ else }}http{{ end }}
+  hostnames:
+  - {{ tpl .Values.global.host $ | quote }}
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.connectors.contextPath }}
+    backendRefs:
+    - name: {{ template "connectors.fullname" . }}
+      namespace: {{ .Release.Namespace }}
+      port: {{ .Values.connectors.service.serverPort }}
+{{- end }}
+{{- end }}

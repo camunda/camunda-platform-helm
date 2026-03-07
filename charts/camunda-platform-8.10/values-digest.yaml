@@ -1,0 +1,65 @@
+#
+# Camunda - Digest
+#
+
+console:
+  # https://hub.docker.com/r/camunda/console/tags
+  image:
+    repository: camunda/console
+    tag: 8.9-SNAPSHOT
+    digest: "sha256:830f229285dff977caf3198bcc64acd44cfa2f69f4c0eb1925873170ec43806c"
+
+connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags
+  image:
+    repository: camunda/connectors-bundle
+    tag: SNAPSHOT
+    digest: "sha256:cfbacd127fd2023582a1444a883df527404022690c3478f8f125e2bb0d8f1797"
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
+  image:
+    repository: camunda/optimize
+    tag: 8-SNAPSHOT
+    digest: "sha256:2a6d57beb036e8437d55018aad93932df5bb35f4d8861da09250d0d04707fed4"
+
+#
+# Web Modeler
+#
+
+webModeler:
+  # https://hub.docker.com/r/camunda/web-modeler-restapi/tags
+  restapi:
+    image:
+      repository: camunda/web-modeler-restapi
+      tag: SNAPSHOT
+      digest: "sha256:635c7410f1f58450e65d56804948588b2bc675f2943515b6dc52e9730114d3e6"
+
+  # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
+  websockets:
+    image:
+      repository: camunda/web-modeler-websockets
+      tag: SNAPSHOT
+      digest: "sha256:45ef1b843cefd8874d9d4a36b4e92e7c1e43901b3c40aa02baadc94dae6160b5"
+
+#
+# Orchestration Cluster
+#
+
+orchestration:
+  # https://hub.docker.com/r/camunda/camunda/tags
+  image:
+    repository: camunda/camunda
+    tag: SNAPSHOT
+    digest: "sha256:f89fe5c9a61066b3014b0620b0d0870b2e7e29cc39d1315eec00886944535639"
+
+#
+# Identity
+#
+
+identity:
+  # https://hub.docker.com/r/camunda/identity/tags
+  image:
+    repository: camunda/identity
+    tag: SNAPSHOT
+    digest: "sha256:f9737ac1dfd1dcaaef125b5abe9489810bf4e80ef2787c08a35283aa3fef8fed"

@@ -52,7 +52,7 @@ get_first_version() {
   [ "$status" -eq 0 ]
   run bash -c 'yq -o=json ".matrix | [.[] | .version] | unique | sort" matrix_versions.txt | jq -c'
   assert_success
-  assert_output "[$v]"
+  assert_output "[\"$v\"]"
 }
 
 @test "changed-files for a single chart only includes that version" {
@@ -66,7 +66,7 @@ get_first_version() {
   [ "$status" -eq 0 ]
   run bash -c 'yq -o=json ".matrix | [.[] | .version] | unique | sort" matrix_versions.txt | jq -c'
   assert_success
-  assert_output "[$v]"
+  assert_output "[\"$v\"]"
 }
 
 
