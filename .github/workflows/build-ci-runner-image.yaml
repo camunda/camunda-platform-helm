@@ -80,7 +80,7 @@ jobs:
           cp .tool-versions .github/docker/ci-runner/.tool-versions
 
       - name: Build and push CI Runner image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
         with:
           context: .github/docker/ci-runner
           file: .github/docker/ci-runner/Dockerfile
@@ -97,7 +97,7 @@ jobs:
           cp .tool-versions .github/docker/playwright-runner/.tool-versions
 
       - name: Build and push Playwright Runner image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
         with:
           context: .github/docker/playwright-runner
           file: .github/docker/playwright-runner/Dockerfile
