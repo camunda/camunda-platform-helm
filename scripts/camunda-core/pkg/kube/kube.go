@@ -296,6 +296,26 @@ func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName
 		defaultApplyOptions(),
 	)
 	if err != nil {
+		// Retry once for transient network/API-server hiccups.
+		if isTransientKubeApplyError(err) {
+			logging.Logger.Warn().
+				Err(err).
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("transient error applying docker registry secret, retrying once")
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, ctx.Err())
+			case <-time.After(2 * time.Second):
+			}
+			_, err = c.clientset.CoreV1().Secrets(namespace).Apply(
+				ctx,
+				secretApply,
+				defaultApplyOptions(),
+			)
+		}
+	}
+	if err != nil {
 		// Check if error is due to namespace termination
 		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
 			return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, namespace, c.kubeContext, err)
@@ -335,6 +355,27 @@ func (c *Client) EnsureOpaqueSecret(ctx context.Context, namespace, secretName s
 	}
 
 	return nil
+}
+
+// GetSecretData reads a Kubernetes Secret and returns its data values as decoded strings.
+// If the secret does not exist, it returns (nil, nil) — callers should check for a nil map.
+// Only keys with non-empty values are included.
+func (c *Client) GetSecretData(ctx context.Context, namespace, secretName string) (map[string]string, error) {
+	secret, err := c.clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get secret %q in namespace %q: %w", secretName, namespace, err)
+	}
+
+	result := make(map[string]string, len(secret.Data))
+	for k, v := range secret.Data {
+		if len(v) > 0 {
+			result[k] = string(v)
+		}
+	}
+	return result, nil
 }
 
 func (c *Client) DeleteNamespace(ctx context.Context, namespace string) error {
@@ -849,6 +890,14 @@ func DeleteNamespace(ctx context.Context, kubeconfig, kubeContext, namespace str
 	if err != nil {
 		deleteOutputStr := strings.TrimSpace(string(deleteOutput))
 
+		if strings.Contains(strings.ToLower(deleteOutputStr), "deleted") || strings.Contains(strings.ToLower(deleteOutputStr), "not found") {
+			logging.Logger.Debug().
+				Str("namespace", namespace).
+				Str("output", deleteOutputStr).
+				Msg("namespace delete returned non-zero but namespace is already gone")
+			return nil
+		}
+
 		return fmt.Errorf("failed to delete namespace %q\n\n"+
 			"To delete manually, run:\n"+
 			"  %s\n\n"+
@@ -857,4 +906,27 @@ func DeleteNamespace(ctx context.Context, kubeconfig, kubeContext, namespace str
 
 	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace deleted successfully via kubectl")
 	return nil
+}
+
+func isTransientKubeApplyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	transientHints := []string{
+		"connection reset by peer",
+		"i/o timeout",
+		"tls handshake timeout",
+		"context deadline exceeded",
+		"temporarily unavailable",
+		"service unavailable",
+		"too many requests",
+		"eof",
+	}
+	for _, hint := range transientHints {
+		if strings.Contains(msg, hint) {
+			return true
+		}
+	}
+	return false
 }

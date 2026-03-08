@@ -194,7 +194,7 @@ identityKeycloak:
   postgresql:
     primary:
       persistence:
-        enabled: false
+        enabled: true
       resources:
         requests:
           cpu: "500m"

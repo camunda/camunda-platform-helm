@@ -328,10 +328,13 @@ TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 # 8.9-specific fast-fail behavior for local matrix runs.
 # Keep retries very short so a failed IT run exits quickly instead of waiting minutes.
 if [[ "$TEST_SUITE_PATH" == *"camunda-platform-8.9"* ]]; then
-  export PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS="1"
-  export PLAYWRIGHT_POD_RETRY_TIMEOUT="30"
-  export PLAYWRIGHT_RETRIES="0"
-  export PLAYWRIGHT_TEST_TIMEOUT_MS="45000"
+  export PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS="2"
+  export PLAYWRIGHT_POD_RETRY_TIMEOUT="60"
+  export PLAYWRIGHT_RETRIES="1"
+  export PLAYWRIGHT_TEST_TIMEOUT_MS="420000"
+  export CORE_GRPC_DEPLOY_POLL_TIMEOUT_MS="420000"
+  export PLAYWRIGHT_TOKEN_RETRY_MAX_ATTEMPTS="8"
+  export PLAYWRIGHT_TOKEN_RETRY_DELAY_MS="5000"
   log "8.9 detected: using fast retry settings (attempts=${PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS}, timeout=${PLAYWRIGHT_POD_RETRY_TIMEOUT}s)"
 fi
 

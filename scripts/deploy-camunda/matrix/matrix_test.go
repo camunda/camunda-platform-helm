@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -1437,5 +1438,104 @@ func TestAppendTestOutputToDiagnostics_WrappedTestError(t *testing.T) {
 	}
 	if !strings.Contains(updated.TestOutputLast200, "FAIL: TestAPI") {
 		t.Errorf("should extract test output through wrapping, got:\n%s", updated.TestOutputLast200)
+	}
+}
+
+// --- Bitnami PG password extraction tests ---
+
+func TestBitnamiPGPasswordMapping_AllKeysPresent(t *testing.T) {
+	// Verify that the mapping table covers all expected secret keys and Helm paths.
+	expectedKeys := []string{
+		"identity-keycloak-postgresql-user-password",
+		"identity-keycloak-postgresql-admin-password",
+		"webmodeler-postgresql-user-password",
+		"webmodeler-postgresql-admin-password",
+	}
+	for _, key := range expectedKeys {
+		if _, ok := bitnamiPGPasswordMapping[key]; !ok {
+			t.Errorf("bitnamiPGPasswordMapping missing expected key %q", key)
+		}
+	}
+}
+
+func TestBitnamiPGPasswordMapping_HelmPaths(t *testing.T) {
+	// Verify the exact Helm paths for each secret key.
+	tests := []struct {
+		secretKey     string
+		wantHelmPaths []string
+	}{
+		{
+			secretKey:     "identity-keycloak-postgresql-user-password",
+			wantHelmPaths: []string{"identityKeycloak.postgresql.auth.password", "identityPostgresql.auth.password"},
+		},
+		{
+			secretKey:     "identity-keycloak-postgresql-admin-password",
+			wantHelmPaths: []string{"identityKeycloak.postgresql.auth.postgresPassword", "identityPostgresql.auth.postgresPassword"},
+		},
+		{
+			secretKey:     "webmodeler-postgresql-user-password",
+			wantHelmPaths: []string{"webModelerPostgresql.auth.password"},
+		},
+		{
+			secretKey:     "webmodeler-postgresql-admin-password",
+			wantHelmPaths: []string{"webModelerPostgresql.auth.postgresPassword"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.secretKey, func(t *testing.T) {
+			helmPaths, ok := bitnamiPGPasswordMapping[tt.secretKey]
+			if !ok {
+				t.Fatalf("key %q not found in mapping", tt.secretKey)
+			}
+			if len(helmPaths) != len(tt.wantHelmPaths) {
+				t.Fatalf("expected %d helm paths, got %d", len(tt.wantHelmPaths), len(helmPaths))
+			}
+			for i, want := range tt.wantHelmPaths {
+				if helmPaths[i] != want {
+					t.Errorf("helm path [%d] = %q, want %q", i, helmPaths[i], want)
+				}
+			}
+		})
+	}
+}
+
+func TestBitnamiPGPasswordMapping_TotalOverrideCount(t *testing.T) {
+	// With all 4 secret keys present, we should get 6 Helm overrides:
+	// 2 (identityKeycloak + identityPostgresql) * 2 (user + admin) = 4, plus 2 webModeler = 6
+	totalPaths := 0
+	for _, paths := range bitnamiPGPasswordMapping {
+		totalPaths += len(paths)
+	}
+	if totalPaths != 6 {
+		t.Errorf("expected 6 total Helm paths across all mappings, got %d", totalPaths)
+	}
+}
+
+func TestExtractBitnamiPGPasswords_NoCluster(t *testing.T) {
+	// When there is no valid kube context, the function should return nil gracefully
+	// (not panic or error) because it's designed for lenient degradation.
+	result := extractBitnamiPGPasswords(context.Background(), "nonexistent-ns", "nonexistent-context")
+	if result != nil {
+		t.Errorf("expected nil when no cluster available, got %v", result)
+	}
+}
+
+func TestExtractBitnamiPGPasswords_MappingConsistency(t *testing.T) {
+	// Verify that all secret keys in the mapping produce unique, non-empty Helm paths.
+	allPaths := make(map[string]string) // helmPath -> secretKey
+	for secretKey, helmPaths := range bitnamiPGPasswordMapping {
+		if len(helmPaths) == 0 {
+			t.Errorf("secret key %q has no Helm paths", secretKey)
+		}
+		for _, hp := range helmPaths {
+			if hp == "" {
+				t.Errorf("secret key %q has empty Helm path", secretKey)
+			}
+			if prev, ok := allPaths[hp]; ok {
+				t.Errorf("Helm path %q is duplicated: mapped by both %q and %q", hp, prev, secretKey)
+			}
+			allPaths[hp] = secretKey
+		}
 	}
 }

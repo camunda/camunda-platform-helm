@@ -295,7 +295,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		NamespacePrefix:        flags.Deployment.NamespacePrefix,
 		RepoRoot:               flags.Chart.RepoRoot,
 		Identifier:             identifier,
-		TTL:                    "30m",
+		TTL:                    "60m",
 		LoadKeycloakRealm:      true,
 		KeycloakRealmName:      prepared.RealmName,
 		RenderTemplates:        flags.Deployment.RenderTemplates,

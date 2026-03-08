@@ -274,11 +274,47 @@ _wait_for_dns_resolution() {
     local ip
     ip=$(_resolve_host "$hostname") && {
       _RESOLVED_IP="$ip"
-      # Flag when system resolver is stale so callers enable the DNS fallback
+      # Check whether the system resolver can resolve (not just public DNS)
       if ! nslookup "$hostname" >/dev/null 2>&1; then
-        _NEEDS_DNS_FALLBACK=true
+        # Public DNS resolved but local resolver has stale NXDOMAIN.
+        # Wait for the local negative cache to expire (SOA minimum = 300s)
+        # so that non-Node.js tools (zbctl, curl without --resolve, etc.)
+        # can resolve the hostname via the normal OS resolver.
         info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Resolved via public DNS (-> ${ip}) but local resolver still returns NXDOMAIN."
-        info "  Will inject Node.js DNS fallback for Playwright."
+        info "  Flushing local DNS cache and waiting for system resolver (negative TTL ≤ 300s)..."
+
+        # Flush the macOS DNS cache (no sudo needed)
+        if command -v dscacheutil >/dev/null 2>&1; then
+          dscacheutil -flushcache 2>/dev/null || true
+        fi
+
+        # Poll the system resolver up to 360s (300s SOA minimum + 60s buffer).
+        # Check every 10s to balance responsiveness vs noise.
+        local local_timeout=360
+        local local_elapsed=0
+        local local_resolved=false
+        while [[ $local_elapsed -lt $local_timeout ]]; do
+          if nslookup "$hostname" >/dev/null 2>&1; then
+            local_resolved=true
+            info "System DNS resolver caught up after ${local_elapsed}s"
+            break
+          fi
+          sleep 10
+          local_elapsed=$((local_elapsed + 10))
+          # Re-flush every 60s in case the local cache re-populated
+          if (( local_elapsed % 60 == 0 )); then
+            if command -v dscacheutil >/dev/null 2>&1; then
+              dscacheutil -flushcache 2>/dev/null || true
+            fi
+            info "  Still waiting for system resolver (${local_elapsed}s/${local_timeout}s)..."
+          fi
+        done
+
+        if [[ "$local_resolved" != "true" ]]; then
+          _NEEDS_DNS_FALLBACK=true
+          info "${COLOR_YELLOW}WARNING:${COLOR_RESET} System resolver did not catch up after ${local_timeout}s."
+          info "  Will inject Node.js DNS fallback for Playwright (non-Node tools like zbctl may still fail)."
+        fi
       fi
       break
     }

@@ -5,10 +5,23 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"scripts/deploy-camunda/config"
 )
+
+var nonIdentifierChars = regexp.MustCompile(`[^a-z0-9-]`)
+
+func normalizeIdentifierPart(s string) string {
+	s = strings.ToLower(s)
+	s = nonIdentifierChars.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	if s == "" {
+		return "x"
+	}
+	return s
+}
 
 // ScenarioContext holds scenario-specific deployment configuration.
 type ScenarioContext struct {
@@ -78,31 +91,33 @@ func generateScenarioContext(scenario string, flags *config.RuntimeFlags) (*Scen
 	} else {
 		// Keycloak realm name has a maximum length of 36 characters
 		// Generate a compact name that fits within this limit
-		realmName = generateCompactRealmName(effectiveNs, scenario, suffix)
+		realmName = generateCompactRealmName(normalizeIdentifierPart(effectiveNs), normalizeIdentifierPart(scenario), suffix)
 	}
+
+	normalizedScenario := normalizeIdentifierPart(scenario)
 
 	if flags.Index.OptimizeIndexPrefix != "" && len(flags.Deployment.Scenarios) == 1 {
 		optimizePrefix = flags.Index.OptimizeIndexPrefix
 	} else {
-		optimizePrefix = fmt.Sprintf("opt-%s-%s", scenario, suffix)
+		optimizePrefix = fmt.Sprintf("opt-%s-%s", normalizedScenario, suffix)
 	}
 
 	if flags.Index.OrchestrationIndexPrefix != "" && len(flags.Deployment.Scenarios) == 1 {
 		orchestrationPrefix = flags.Index.OrchestrationIndexPrefix
 	} else {
-		orchestrationPrefix = fmt.Sprintf("orch-%s-%s", scenario, suffix)
+		orchestrationPrefix = fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
 	}
 
 	if flags.Index.TasklistIndexPrefix != "" && len(flags.Deployment.Scenarios) == 1 {
 		tasklistPrefix = flags.Index.TasklistIndexPrefix
 	} else {
-		tasklistPrefix = fmt.Sprintf("task-%s-%s", scenario, suffix)
+		tasklistPrefix = fmt.Sprintf("task-%s-%s", normalizedScenario, suffix)
 	}
 
 	if flags.Index.OperateIndexPrefix != "" && len(flags.Deployment.Scenarios) == 1 {
 		operatePrefix = flags.Index.OperateIndexPrefix
 	} else {
-		operatePrefix = fmt.Sprintf("op-%s-%s", scenario, suffix)
+		operatePrefix = fmt.Sprintf("op-%s-%s", normalizedScenario, suffix)
 	}
 
 	// Generate unique namespace for multi-scenario, but always use "integration" as release name
@@ -202,4 +217,51 @@ func keycloakVersionSuffix(host string) string {
 	version := strings.TrimPrefix(subdomain, "keycloak-")
 	// Replace hyphens with underscores for env var safety.
 	return strings.ReplaceAll(version, "-", "_")
+}
+
+// PinScenarioPrefixes generates a random suffix and writes index prefixes +
+// Keycloak realm name into flags so that subsequent calls to Execute() (which
+// internally call generateScenarioContext) will reuse the same values instead
+// of generating new random ones.
+//
+// This is critical for multi-step upgrade flows where Step 1 (install old
+// version) and Step 2 (upgrade to new version) must share the same index
+// prefixes, otherwise the upgraded components try to read/write indices that
+// don't match what Step 1 created.
+//
+// Only call this when len(flags.Deployment.Scenarios) == 1, which is always
+// true in the matrix runner.
+func PinScenarioPrefixes(scenario string, flags *config.RuntimeFlags) error {
+	suffix, err := generateRandomSuffix()
+	if err != nil {
+		return fmt.Errorf("failed to generate random suffix: %w", err)
+	}
+
+	normalizedScenario := normalizeIdentifierPart(scenario)
+	effectiveNs := flags.EffectiveNamespace()
+
+	// Pin index prefixes (only if not already set).
+	if flags.Index.OptimizeIndexPrefix == "" {
+		flags.Index.OptimizeIndexPrefix = fmt.Sprintf("opt-%s-%s", normalizedScenario, suffix)
+	}
+	if flags.Index.OrchestrationIndexPrefix == "" {
+		flags.Index.OrchestrationIndexPrefix = fmt.Sprintf("orch-%s-%s", normalizedScenario, suffix)
+	}
+	if flags.Index.TasklistIndexPrefix == "" {
+		flags.Index.TasklistIndexPrefix = fmt.Sprintf("task-%s-%s", normalizedScenario, suffix)
+	}
+	if flags.Index.OperateIndexPrefix == "" {
+		flags.Index.OperateIndexPrefix = fmt.Sprintf("op-%s-%s", normalizedScenario, suffix)
+	}
+
+	// Pin Keycloak realm name (only if not already set).
+	if flags.Auth.KeycloakRealm == "" {
+		flags.Auth.KeycloakRealm = generateCompactRealmName(
+			normalizeIdentifierPart(effectiveNs),
+			normalizedScenario,
+			suffix,
+		)
+	}
+
+	return nil
 }
