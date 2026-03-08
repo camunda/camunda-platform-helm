@@ -59,9 +59,16 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 
 	// Bound total post-deployment test runtime so matrix entries cannot hang
 	// indefinitely after Helm has already completed.
-	testTimeout := time.Duration(flags.Deployment.Timeout) * time.Minute
-	if testTimeout <= 0 {
-		testTimeout = 15 * time.Minute
+	// Keep this well above Helm timeout because integration tests (DNS + ingress
+	// readiness + Playwright retries) can legitimately run much longer on
+	// upgrade-minor flows for 8.9.
+	testTimeout := 30 * time.Minute
+	if flags.Deployment.Timeout > 0 {
+		helmTimeout := time.Duration(flags.Deployment.Timeout) * time.Minute
+		candidate := 4 * helmTimeout
+		if candidate > testTimeout {
+			testTimeout = candidate
+		}
 	}
 	testCtx, cancel := context.WithTimeout(ctx, testTimeout)
 	defer cancel()

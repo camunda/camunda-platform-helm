@@ -7,7 +7,7 @@
 import { config as dotenv } from "dotenv";
 dotenv(); // ← loads .env before anything else
 
-import { test, expect, APIRequestContext } from "@playwright/test";
+import { test, expect, APIRequestContext, APIResponse } from "@playwright/test";
 import { execFileSync } from "child_process";
 import { authHeader, fetchToken, requireEnv } from "./helper";
 
@@ -170,19 +170,29 @@ test.describe("orchestration-grpc", () => {
       const intervalMs = 5 * 1000;
       const start = Date.now();
       let found = false;
+      let lastPollError = "";
 
       /* eslint-disable no-await-in-loop */
       while (Date.now() - start < timeoutMs) {
-        const r = await request.post(
-          `${config.base.orchestrationOperate}/v2/process-definitions/search`,
-          {
-            data: {}, // send JSON, not a string
-            headers: {
-              Authorization: await authHeader(request, config),
-              "Content-Type": "application/json",
+        let r: APIResponse;
+        try {
+          r = await request.post(
+            `${config.base.orchestrationOperate}/v2/process-definitions/search`,
+            {
+              data: {}, // send JSON, not a string
+              timeout: 15_000,
+              headers: {
+                Authorization: await authHeader(request, config),
+                "Content-Type": "application/json",
+              },
             },
-          },
-        );
+          );
+        } catch (err) {
+          lastPollError = String(err);
+          console.warn(`Operate search ${label} request error: ${lastPollError}`);
+          await new Promise((res) => setTimeout(res, intervalMs));
+          continue;
+        }
 
         if (r.ok()) {
           const data = await r.json();
@@ -204,12 +214,12 @@ test.describe("orchestration-grpc", () => {
 
       expect(
         found,
-        `Process ${bpmnId} not found in Operate within ${timeoutMs / 1000}s`,
+        `Process ${bpmnId} not found in Operate within ${timeoutMs / 1000}s. Last poll error: ${lastPollError || "none"}`,
       ).toBeTruthy();
     });
   }
 
-  test.afterAll(async (_ctx, testInfo) => {
+  test.afterAll(async ({ request: _request }, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {
