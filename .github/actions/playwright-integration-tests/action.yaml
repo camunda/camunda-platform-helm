@@ -204,8 +204,8 @@ runs:
       uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
       with:
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/test-results/playwright-results.json
-        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner-${{ steps.report_date.outputs.date }}
+        name: playwright-results-json-${{ inputs.camunda-helm-dir }}
         if-no-files-found: error
-        retention-days: 5
+        retention-days: 90
 
 
