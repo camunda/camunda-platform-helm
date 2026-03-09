@@ -1,0 +1,7 @@
+node_modules/
+playwright-report/
+test-results/
+empty-test-dir/
+.env
+*/*.zip
+*.bak

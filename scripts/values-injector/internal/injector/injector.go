@@ -154,6 +154,12 @@ func MergeImageTags89(valuesYAML string, overrides *chartcomponents.ValuesYAML89
 	return MergeImageTags88(valuesYAML, overrides)
 }
 
+// MergeImageTags810 merges image tag overrides into a values.yaml string for chart 8.10
+// Chart 8.10 has the same structure as 8.8
+func MergeImageTags810(valuesYAML string, overrides *chartcomponents.ValuesYAML810) (string, error) {
+	return MergeImageTags88(valuesYAML, overrides)
+}
+
 // replaceImageTag replaces the image.tag value for a specific component
 // It first validates the component exists using YAML parsing, then uses
 // regex replacement to preserve the original formatting

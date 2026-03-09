@@ -80,7 +80,7 @@ setup_env_file() {
   export TEST_INGRESS_HOST="$hostname"
 
   # Only export TEST_AUTH_TYPE for 8.8+ where the template uses it
-  if [[ "$test_suite_path" == *"8.8"* ]]; then
+  if [[ "$test_suite_path" == *"8.8"* || "$test_suite_path" == *"8.9"* || "$test_suite_path" == *"8.10"* ]]; then
     export TEST_AUTH_TYPE="$test_auth_type"
   fi
 
@@ -110,7 +110,7 @@ setup_env_file() {
   # adding them to the .env file so that we can run the tests from any environment
   # with an authorized kubectl context.
 
-  if [[ "$test_suite_path" == *"8.8"* || "$test_suite_path" == *"8.9"* ]]; then
+  if [[ "$test_suite_path" == *"8.8"* || "$test_suite_path" == *"8.9"* || "$test_suite_path" == *"8.10"* ]]; then
     if [[ "${platform,,}" == "gke" ]]; then
       for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
         log "Fetching secret for service '$svc' (gke identity token)"

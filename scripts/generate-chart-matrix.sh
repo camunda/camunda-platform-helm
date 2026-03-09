@@ -186,8 +186,8 @@ write_matrix_entry() {
         else
           used_shortnames[$shortname]=1
         fi
-        echo "  - version: ${camunda_version}" >> matrix_versions.txt
-        echo "    camundaVersionPrevious: $(echo "$camunda_version_previous")" >> matrix_versions.txt
+        echo "  - version: \"${camunda_version}\"" >> matrix_versions.txt
+        echo "    camundaVersionPrevious: \"$(echo "$camunda_version_previous")\"" >> matrix_versions.txt
         echo "    case: pr" >> matrix_versions.txt
         platforms_value=$(echo "$prScenario" | yq e '.platforms | join(",")' -)
         if [ -z "$platforms_value" ] || [ "$platforms_value" = "null" ]; then
