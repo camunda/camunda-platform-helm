@@ -1380,7 +1380,11 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			TestExclude:         testExclude,
 			RunIntegrationTests: (opts.TestIT || opts.TestAll) && !entry.SkipIT,
 			RunE2ETests:         (opts.TestE2E || opts.TestAll) && !entry.SkipE2E,
-			RunAllTests:         opts.TestAll,
+			// Do NOT propagate RunAllTests here — RunE2ETests/RunIntegrationTests already
+			// encode the full decision (including skip-e2e/skip-it from ci-test-config.yaml).
+			// Setting RunAllTests would bypass the skip logic in deploy/test.go which ORs
+			// RunAllTests with each individual flag.
+			RunAllTests: false,
 		},
 		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.
 		// When set, these override MapScenarioToConfig name-based derivation in deploy.go.
