@@ -53,7 +53,6 @@ func TestDeploymentTemplate(t *testing.T) {
 func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Skip:                 true,
 			Name:                 "TestContainerWithExternalKeycloak",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -82,6 +81,115 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 								Key:                  "test-admin",
 							},
 						},
+					})
+			},
+		}, {
+			Name:                 "TestContainerWithExternalKeycloakNewSecretPattern",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"identityKeycloak.enabled":                               "false",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.keycloak.url.protocol":                  "https",
+				"global.identity.keycloak.url.host":                      "keycloak.prod.svc.cluster.local",
+				"global.identity.keycloak.url.port":                      "8443",
+				"global.identity.keycloak.auth.adminUser":                "testAdmin",
+				"global.identity.keycloak.auth.secret.existingSecret":    "newPatternSecret",
+				"global.identity.keycloak.auth.secret.existingSecretKey": "new-admin-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_SETUP_PASSWORD",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "newPatternSecret"},
+								Key:                  "new-admin-key",
+							},
+						},
+					})
+			},
+		}, {
+			Name:                 "TestContainerWithExternalKeycloakLegacyNoSecretKey",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                             "true",
+				"identityKeycloak.enabled":                     "false",
+				"global.identity.auth.enabled":                 "true",
+				"global.identity.keycloak.url.protocol":        "https",
+				"global.identity.keycloak.url.host":            "keycloak.prod.svc.cluster.local",
+				"global.identity.keycloak.url.port":            "8443",
+				"global.identity.keycloak.auth.adminUser":      "testAdmin",
+				"global.identity.keycloak.auth.existingSecret": "ownExistingSecretKeycloak",
+				// existingSecretKey intentionally omitted — should default to "admin-password"
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				// Secret key should default to "admin-password" via the authPasswordConfig normalizer
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_SETUP_PASSWORD",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecretKeycloak"},
+								Key:                  "admin-password",
+							},
+						},
+					})
+			},
+		}, {
+			Name:                 "TestContainerWithEmbeddedKeycloakDefaults",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":             "true",
+				"global.identity.auth.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name: "VALUES_KEYCLOAK_SETUP_PASSWORD",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-credentials"},
+								Key:                  "identity-keycloak-admin-password",
+							},
+						},
+					})
+			},
+		}, {
+			Name:                 "TestContainerWithExternalKeycloakInlineSecret",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                                  "true",
+				"identityKeycloak.enabled":                          "false",
+				"global.identity.auth.enabled":                      "true",
+				"global.identity.keycloak.url.protocol":             "https",
+				"global.identity.keycloak.url.host":                 "keycloak.prod.svc.cluster.local",
+				"global.identity.keycloak.url.port":                 "8443",
+				"global.identity.keycloak.auth.adminUser":           "testAdmin",
+				"global.identity.keycloak.auth.secret.inlineSecret": "my-plaintext-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env,
+					corev1.EnvVar{
+						Name:  "VALUES_KEYCLOAK_SETUP_PASSWORD",
+						Value: "my-plaintext-password",
 					})
 			},
 		}, {
@@ -1019,6 +1127,31 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 				for _, envVar := range env {
 					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET", envVar.Name,
 						"VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET should not be present when orchestration is disabled")
+				}
+			},
+		}, {
+			// Test: Optimize disabled should NOT include optimize secret env vars
+			Name:                 "TestOptimizeDisabledExcludesOptimizeSecretEnvVar",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.auth.enabled":          "true",
+				"global.security.authentication.method": "oidc",
+				"optimize.enabled":                      "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				// Optimize secrets should NOT be present when optimize is disabled
+				for _, envVar := range env {
+					s.Require().NotEqual("VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET", envVar.Name,
+						"Optimize secret should not be present when optimize.enabled=false")
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_SECRET", envVar.Name,
+						"Optimize secret should not be present when optimize.enabled=false")
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_CLIENT_ID", envVar.Name,
+						"Optimize client ID should not be present when optimize.enabled=false")
 				}
 			},
 		},

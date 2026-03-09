@@ -83,17 +83,6 @@ camunda:
         free-space:
           processing: {{ .Values.orchestration.data.disk.freeSpace.processing | quote }}
           replication: {{ .Values.orchestration.data.disk.freeSpace.replication | quote }}
-      {{- if .Values.orchestration.data.primaryStorage.backup.continuous }}
-      backup:
-        required: {{ .Values.orchestration.data.primaryStorage.backup.required | quote }}
-        continuous: {{ .Values.orchestration.data.primaryStorage.backup.continuous | quote }}
-        schedule: {{ .Values.orchestration.data.primaryStorage.backup.schedule | quote }}
-        checkpoint-interval: {{ .Values.orchestration.data.primaryStorage.backup.checkpointInterval | quote }}
-        offset: {{ .Values.orchestration.data.primaryStorage.backup.offset | int64 }}
-        retention:
-          window: {{ .Values.orchestration.data.primaryStorage.backup.retention.window | quote }}
-          cleanup-schedule: {{ .Values.orchestration.data.primaryStorage.backup.retention.cleanupSchedule | quote }}
-      {{- end }}
     secondary-storage:
       autoconfigure-camunda-exporter: {{ .Values.orchestration.exporters.camunda.enabled }}
       type: {{ include "orchestration.secondaryStorage" . | quote -}}
@@ -144,7 +133,9 @@ camunda:
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
         client-id-claim: {{ .Values.orchestration.security.authentication.oidc.clientIdClaim | quote }}
+        {{- if .Values.orchestration.security.authentication.oidc.groupsClaim }}
         groups-claim: {{ .Values.orchestration.security.authentication.oidc.groupsClaim | quote }}
+        {{- end }}
         client-id: {{ include "orchestration.authClientId" . | quote }}
         client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
         audiences:
@@ -366,10 +357,10 @@ zeebe:
             waitPeriodBeforeArchiving: {{ .Values.orchestration.history.waitPeriodBeforeArchiving | quote }}
             delayBetweenRuns: {{ .Values.orchestration.history.delayBetweenRuns }}
             maxDelayBetweenRuns: {{ .Values.orchestration.history.maxDelayBetweenRuns }}
+    {{- end }}
     {{- if eq (include "orchestration.hasAppIntegrations" .) "true" }}
       appIntegrations:
         args:
           apiKey: "${VALUES_EXPORTERS_APPINTEGRATIONS_APIKEY:}"
-    {{- end }}
     {{- end }}
 {{ end -}}

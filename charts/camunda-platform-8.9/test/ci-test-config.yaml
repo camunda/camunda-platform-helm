@@ -22,6 +22,7 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
+          flow: install,upgrade-minor
           auth: keycloak
           shortname: eske
           exclude: []
@@ -117,6 +118,12 @@ integration:
           exclude: []
           infra-type:
             gke: arm
+          flow: install
+        - name: noSecondaryStorage
+          enabled: true
+          auth: keycloak
+          shortname: nosec
+          exclude: []
           flow: install
     nightly:
       scenario:

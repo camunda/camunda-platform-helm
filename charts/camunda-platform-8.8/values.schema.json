@@ -790,6 +790,16 @@
                                             "description": "Enable AWS document store configuration.",
                                             "default": false
                                         },
+                                        "irsa": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "When set to true, no AWS credentials are injected into pods, allowing IRSA to be used for authentication. When false (default), credentials are required via existingSecret or accessKeyId/secretAccessKey configuration.",
+                                                    "default": false
+                                                }
+                                            }
+                                        },
                                         "storeId": {
                                             "type": "string",
                                             "description": "Custom prefix for AWS. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AWS_CLASS.",
@@ -1095,7 +1105,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.7"
+                            "default": "8.8.9"
                         },
                         "digest": {
                             "type": "string",
@@ -2281,7 +2291,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.99"
+                            "default": "8.8.113"
                         },
                         "digest": {
                             "type": "string",
@@ -2773,7 +2783,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.8"
+                            "default": "8.8.10"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4557,7 +4567,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.7"
+                            "default": "8.8.8"
                         },
                         "digest": {
                             "type": "string",
@@ -5115,7 +5125,7 @@
                                         "groupsClaim": {
                                             "type": "string",
                                             "description": "can be used to set group claim.",
-                                            "default": "groups"
+                                            "default": ""
                                         },
                                         "audience": {
                                             "type": "string",
@@ -5300,7 +5310,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.13"
+                            "default": "8.8.15"
                         },
                         "digest": {
                             "type": "string",
@@ -6490,7 +6500,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.6"
+                            "default": "8.8.7"
                         },
                         "digest": {
                             "type": "string",

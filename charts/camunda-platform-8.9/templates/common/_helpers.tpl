@@ -76,6 +76,42 @@ app.kubernetes.io/part-of: camunda-platform
 {{- end -}}
 
 {{/*
+[camunda-platform] Defines extra labels for a component (component name + version).
+
+Usage:
+{{ include "camundaPlatform.componentExtraLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentExtraLabels" -}}
+app.kubernetes.io/component: {{ .componentName }}
+app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .context.Values.global "overlay" (index .context.Values .componentValuesKey) "chart" .context.Chart) | quote }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Define common labels for a component, combining the platform labels and component extra labels.
+These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
+
+Usage:
+{{ include "camundaPlatform.componentLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentLabels" -}}
+    {{- include "camundaPlatform.labels" .context }}
+    {{- "\n" }}
+    {{- include "camundaPlatform.componentExtraLabels" . }}
+{{- end -}}
+
+{{/*
+[camunda-platform] Defines match labels for a component, which should be used in matchLabels selectors.
+
+Usage:
+{{ include "camundaPlatform.componentMatchLabels" (dict "componentName" "connectors" "context" $) }}
+*/}}
+{{- define "camundaPlatform.componentMatchLabels" -}}
+    {{- include "camundaPlatform.matchLabels" .context }}
+    {{- "\n" -}}
+app.kubernetes.io/component: {{ .componentName }}
+{{- end -}}
+
+{{/*
 Get image tag according the values of "base" or "overlay" values.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
 Usage: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
@@ -364,7 +400,7 @@ Operate templates.
 {{/*
 Get the external url for a given component.
 If the "overlay" values exist, they will override the "base" values, otherwise the "base" values will be used.
-Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "context" .) }}
+Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" "context" .) }}
 */}}
 {{- define "camundaPlatform.getExternalURL" -}}
   {{- if (index .context.Values .component "enabled") -}}
@@ -373,15 +409,10 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "operate" "
       {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context | default (tpl .context.Values.global.ingress.host .context)) (index .context.Values .component "contextPath") -}}
     {{- else -}}
       {{- $portMapping := (dict
-      "operate" "8081"
       "identity" "8080"
-      "tasklist" "8082"
       "optimize" "8083"
-      "webapp" "8084"
-      "websockets" "8085"
       "console" "8087"
       "connectors" "8086"
-      "zeebeGateway" "26500"
       ) -}}
       {{- printf "http://localhost:%s" (get $portMapping .component) -}}
     {{- end -}}
@@ -470,7 +501,7 @@ Web Modeler templates.
       {{- if eq .component "websockets" -}}
         {{- printf "http://localhost:8085" -}}
       {{- else -}}
-        {{- printf "http://localhost:8084" -}}
+        {{- printf "http://localhost:8070" -}}
       {{- end -}}
     {{- end -}}
   {{- end -}}
@@ -480,8 +511,8 @@ Web Modeler templates.
   {{- printf "%s" (include "camundaPlatform.getExternalURLModeler" (dict "component" "websockets" "context" .)) -}}
 {{- end -}}
 
-{{- define "camundaPlatform.webModelerWebAppExternalURL" }}
-  {{- printf "%s" (include "camundaPlatform.getExternalURLModeler" (dict "component" "webapp" "context" .)) -}}
+{{- define "camundaPlatform.webModelerExternalURL" }}
+  {{- printf "%s" (include "camundaPlatform.getExternalURLModeler" (dict "component" "" "context" .)) -}}
 {{- end -}}
 
 
@@ -679,14 +710,14 @@ Release templates.
   {{- end }}
 
   {{- if .Values.webModeler.enabled }}
-  {{-  $proto := (lower .Values.webModeler.webapp.readinessProbe.scheme) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.webapp.fullname" .) .Release.Namespace .Values.webModeler.webapp.service.managementPort }}
-  - name: WebModeler WebApp
+  {{-  $proto := (lower .Values.webModeler.restapi.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace .Values.webModeler.restapi.service.managementPort }}
+  - name: WebModeler
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
-    url: {{ include "camundaPlatform.webModelerWebAppExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s" $baseURLInternal .Values.webModeler.webapp.metrics.prometheus }}
+    url: {{ include "camundaPlatform.webModelerExternalURL" . }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.readinessProbe.probePath)) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.metrics.prometheus)) }}
   {{- end }}
 
   {{- if .Values.optimize.enabled }}

@@ -278,7 +278,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -649,7 +649,7 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -856,7 +856,7 @@ jobs:
   playwright-integration-tests-after-install:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [install]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -867,7 +867,7 @@ jobs:
       run:
         shell: bash
     timeout-minutes: 20
-    if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' }}
+    if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'nosec' }}
     permissions:
       contents: read
       id-token: write
@@ -884,7 +884,7 @@ jobs:
       PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -920,7 +920,7 @@ jobs:
   playwright-integration-tests-after-upgrade:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [upgrade]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -948,7 +948,7 @@ jobs:
       PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm
@@ -984,7 +984,7 @@ jobs:
   playwright-e2e-tests-after-install:
     name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [install]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -994,7 +994,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' && inputs.shortname != 'nosec' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1008,7 +1008,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1048,7 +1048,7 @@ jobs:
   playwright-e2e-tests-after-upgrade:
     name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
     needs: [upgrade]
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
       credentials:
@@ -1072,7 +1072,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1116,12 +1116,12 @@ jobs:
     needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
 
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: lts/*
 
@@ -1211,7 +1211,7 @@ jobs:
         uses: ./.github/actions/failed-pods-info
 
       - name: CI Setup - Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
           repository: camunda/camunda-platform-helm

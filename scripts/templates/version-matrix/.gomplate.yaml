@@ -14,3 +14,8 @@ plugins:
     args:
       - --chart-images-non-camunda
     timeout: 30s
+  chartImagesEnterprise:
+    cmd: scripts/generate-version-matrix.sh
+    args:
+      - --chart-images-enterprise
+    timeout: 30s

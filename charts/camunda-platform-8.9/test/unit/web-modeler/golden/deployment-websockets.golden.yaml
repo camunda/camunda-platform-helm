@@ -41,7 +41,7 @@ spec:
         []
       containers:
         - name: web-modeler-websockets
-          image: "camunda/web-modeler-websockets:8.9.0-alpha4"
+          image: "camunda/web-modeler-websockets:8.9.0-alpha5-rc1"
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -62,8 +62,8 @@ spec:
                   key: pusher-app-id
             - name: PUSHER_APP_KEY
               valueFrom:
-                configMapKeyRef:
-                  name: camunda-platform-test-web-modeler-configuration
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
                   key: pusher-app-key
             - name: PUSHER_APP_SECRET
               valueFrom:

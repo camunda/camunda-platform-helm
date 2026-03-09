@@ -85,13 +85,13 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndDefaultKey",
 			Values: map[string]string{
-				"identity.enabled":                                        "true",
-				"webModeler.enabled":                                      "true",
-				"webModeler.restapi.mail.fromAddress":                     "example@example.com",
-				"webModelerPostgresql.enabled":                            "false",
-				"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-				"webModeler.restapi.externalDatabase.user":                "modeler-user",
-				"webModeler.restapi.externalDatabase.secret.existingSecret": "my-secret",
+				"identity.enabled":                                             "true",
+				"webModeler.enabled":                                           "true",
+				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
+				"webModelerPostgresql.enabled":                                 "false",
+				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+				"webModeler.restapi.externalDatabase.user":                     "modeler-user",
+				"webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
 				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "database-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -114,12 +114,12 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerExternalDatabasePasswordSecretRefForExistingSecretAndCustomKey",
 			Values: map[string]string{
-				"identity.enabled":                                              "true",
-				"webModeler.enabled":                                            "true",
-				"webModeler.restapi.mail.fromAddress":                           "example@example.com",
-				"webModelerPostgresql.enabled":                                  "false",
-				"webModeler.restapi.externalDatabase.url":                       "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-				"webModeler.restapi.externalDatabase.user":                      "modeler-user",
+				"identity.enabled":                                             "true",
+				"webModeler.enabled":                                           "true",
+				"webModeler.restapi.mail.fromAddress":                          "example@example.com",
+				"webModelerPostgresql.enabled":                                 "false",
+				"webModeler.restapi.externalDatabase.url":                      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+				"webModeler.restapi.externalDatabase.user":                     "modeler-user",
 				"webModeler.restapi.externalDatabase.secret.existingSecret":    "my-secret",
 				"webModeler.restapi.externalDatabase.secret.existingSecretKey": "my-database-password-key",
 			},
@@ -253,10 +253,10 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSmtpPasswordSecretRefForExistingSecretAndDefaultKey",
 			Values: map[string]string{
-				"identity.enabled":                            "true",
-				"webModeler.enabled":                          "true",
-				"webModeler.restapi.mail.fromAddress":         "example@example.com",
-				"webModeler.restapi.mail.smtpUser":            "modeler-user",
+				"identity.enabled":                                 "true",
+				"webModeler.enabled":                               "true",
+				"webModeler.restapi.mail.fromAddress":              "example@example.com",
+				"webModeler.restapi.mail.smtpUser":                 "modeler-user",
 				"webModeler.restapi.mail.secret.existingSecret":    "my-secret",
 				"webModeler.restapi.mail.secret.existingSecretKey": "smtp-password",
 			},
@@ -280,11 +280,11 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerSmtpPasswordSecretRefForExistingSecretAndCustomKey",
 			Values: map[string]string{
-				"identity.enabled":                                  "true",
-				"webModeler.enabled":                                "true",
-				"webModeler.restapi.mail.fromAddress":               "example@example.com",
-				"webModeler.restapi.mail.smtpUser":                  "modeler-user",
-				"webModeler.restapi.mail.secret.existingSecret":       "my-secret",
+				"identity.enabled":                                 "true",
+				"webModeler.enabled":                               "true",
+				"webModeler.restapi.mail.fromAddress":              "example@example.com",
+				"webModeler.restapi.mail.smtpUser":                 "modeler-user",
+				"webModeler.restapi.mail.secret.existingSecret":    "my-secret",
 				"webModeler.restapi.mail.secret.existingSecretKey": "my-smtp-password-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -362,7 +362,6 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
 			},
 		}, {
-			// Web-Modeler REST API doesn't use contextPath for health endpoints.
 			Name: "TestContainerProbesWithContextPath",
 			Values: map[string]string{
 				"identity.enabled":                            "true",
@@ -383,9 +382,9 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				probe := deployment.Spec.Template.Spec.Containers[0]
 
-				s.Require().Equal("/start", probe.StartupProbe.HTTPGet.Path)
-				s.Require().Equal("/ready", probe.ReadinessProbe.HTTPGet.Path)
-				s.Require().Equal("/live", probe.LivenessProbe.HTTPGet.Path)
+				s.Require().Equal("/test/start", probe.StartupProbe.HTTPGet.Path)
+				s.Require().Equal("/test/ready", probe.ReadinessProbe.HTTPGet.Path)
+				s.Require().Equal("/test/live", probe.LivenessProbe.HTTPGet.Path)
 			},
 		}, {
 			Name: "TestContainerSetSidecar",
@@ -470,6 +469,57 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				}
 
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
+			},
+		}, {
+			Name: "TestRestapiPusherKeyUsesExistingSecret",
+			Values: map[string]string{
+				"identity.enabled":                                          "true",
+				"webModeler.enabled":                                        "true",
+				"webModeler.restapi.mail.fromAddress":                       "example@example.com",
+				"webModeler.restapi.pusher.client.secret.existingSecret":    "my-custom-app-key-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "my-pusher-app-key",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				var pusherKeyEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "RESTAPI_PUSHER_KEY" {
+						pusherKeyEnv = &env
+						break
+					}
+				}
+
+				s.Require().NotNil(pusherKeyEnv, "RESTAPI_PUSHER_KEY env var should exist")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom, "RESTAPI_PUSHER_KEY should use valueFrom")
+				s.Require().NotNil(pusherKeyEnv.ValueFrom.SecretKeyRef, "RESTAPI_PUSHER_KEY should use secretKeyRef")
+				s.Require().Equal("my-custom-app-key-secret", pusherKeyEnv.ValueFrom.SecretKeyRef.Name)
+				s.Require().Equal("my-pusher-app-key", pusherKeyEnv.ValueFrom.SecretKeyRef.Key)
+			},
+		}, {
+			Name: "TestRestapiPusherKeyUsesInlineSecret",
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"webModeler.enabled":                                     "true",
+				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
+				"webModeler.restapi.pusher.client.secret.inlineSecret":   "my-inline-app-key-value",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				var pusherKeyEnv *corev1.EnvVar
+				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "RESTAPI_PUSHER_KEY" {
+						pusherKeyEnv = &env
+						break
+					}
+				}
+
+				s.Require().NotNil(pusherKeyEnv, "RESTAPI_PUSHER_KEY env var should exist")
+				s.Require().Equal("my-inline-app-key-value", pusherKeyEnv.Value)
+				s.Require().Nil(pusherKeyEnv.ValueFrom, "RESTAPI_PUSHER_KEY should not use valueFrom for inline values")
 			},
 		},
 	}

@@ -7,26 +7,30 @@ metadata:
 apiVersion: v1
 data:
   environment-config.yaml: |
-    {{- $base := dict }}
-    {{- if .Values.optimize.configuration }}
-    {{- $base = .Values.optimize.configuration | fromYaml }}
-    {{- else }}
-    {{- $base = include "optimize.defaultConfig" . | fromYaml }}
-    {{- end }}
-    {{- range .Values.optimize.extraConfiguration }}
-    {{- $parsed := .content | fromYaml }}
-    {{- $base = mustMergeOverwrite $base $parsed }}
-    {{- end }}
-    {{- $base | toYaml | nindent 4 }}
-
-  {{- if .Values.global.identity.auth.enabled }}
+  {{- if .Values.optimize.configuration }}
+    {{ .Values.optimize.configuration | indent 4 | trim }}
+  {{- else }}
+    {{- include "optimize.defaultConfig" . | trim | nindent 4 }}
+  {{- end }}
+  {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
   application-ccsm.yaml: |
+    {{- if .Values.optimize.extraConfiguration }}
+    spring:
+      config:
+        import: {{ include "optimize.springConfigImport" . }}
+    {{- end }}
+    {{- if .Values.global.identity.auth.enabled }}
     camunda:
       identity:
         clientId: {{ include "optimize.authClientId" . | quote }}
         audience: {{ include "optimize.authAudience" . | quote }}
         issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
         issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+    {{- end }}
   {{- end }}
 
+  {{- range .Values.optimize.extraConfiguration }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
+  {{- end }}
 {{- end }}

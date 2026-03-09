@@ -86,3 +86,52 @@ Usage:
   {{- $pathsSanitized := regexReplaceAll "/+" $paths "/" | trimAll "/" }}
   {{- printf "/%s" $pathsSanitized -}}
 {{- end -}}
+
+{{/*
+camundaPlatform.renderExtraConfiguration
+Renders extraConfiguration entries as ConfigMap data keys.
+Supports both list format [{file, content}] and map format {filename: content}.
+
+Usage:
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" .Values.connectors.extraConfiguration) }}
+*/}}
+{{- define "camundaPlatform.renderExtraConfiguration" -}}
+  {{- if kindIs "slice" .extraConfig }}
+  {{- range .extraConfig }}
+  {{ .file }}: |
+    {{ .content | indent 4 | trim }}
+  {{- end }}
+  {{- else }}
+  {{- range $key, $val := .extraConfig }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+camundaPlatform.extraConfigurationVolumeMounts
+Renders volumeMounts for extraConfiguration entries.
+
+Usage:
+  {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict
+      "extraConfig" .Values.connectors.extraConfiguration
+      "volumeName" "config"
+      "basePath" "/config"
+  ) | nindent 12 }}
+*/}}
+{{- define "camundaPlatform.extraConfigurationVolumeMounts" -}}
+{{- if kindIs "slice" .extraConfig }}
+{{- range .extraConfig }}
+- name: {{ $.volumeName }}
+  mountPath: {{ $.basePath }}/{{ .file }}
+  subPath: {{ .file }}
+{{- end }}
+{{- else }}
+{{- range $key, $val := .extraConfig }}
+- name: {{ $.volumeName }}
+  mountPath: {{ $.basePath }}/{{ $key }}
+  subPath: {{ $key }}
+{{- end }}
+{{- end }}
+{{- end -}}

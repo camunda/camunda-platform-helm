@@ -2,7 +2,7 @@ module camunda-platform
 
 go 1.26
 
-toolchain go1.26.0
+toolchain go1.26.1
 
 require (
 	github.com/gruntwork-io/terratest v0.56.0
@@ -13,7 +13,7 @@ require (
 require k8s.io/apimachinery v0.35.0 // indirect
 
 require (
-	filippo.io/edwards25519 v1.1.0 // indirect
+	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.32.5 // indirect

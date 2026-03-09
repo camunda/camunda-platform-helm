@@ -54,15 +54,16 @@ spec:
                 "config"        .Values.orchestration.security.authentication.oidc
             ) | nindent 12 }}
             {{- end }}
+            {{- if .Values.optimize.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
                 "config"        .Values.global.identity.auth.optimize
             ) | nindent 12 }}
-            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "identity.keycloak.authExistingSecret" . }}
-                  key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+            {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"           "VALUES_KEYCLOAK_SETUP_PASSWORD"
+                "config"            (include "identity.keycloak.authPasswordConfig" . | fromYaml)
+            ) | nindent 12 }}
             {{- if .Values.identity.firstUser.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
@@ -81,12 +82,14 @@ spec:
               "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
               "config" .Values.global.identity.auth.identity
             ) | nindent 12 }}
+            {{- if .Values.optimize.enabled }}
             - name: CAMUNDA_OPTIMIZE_CLIENT_ID
               value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
               "envName" "CAMUNDA_OPTIMIZE_SECRET"
               "config" .Values.global.identity.auth.optimize
             ) | nindent 12 }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- if .Values.identity.externalDatabase.enabled }}
@@ -101,7 +104,7 @@ spec:
                   name: {{ include "identity.postgresql.secretName" . }}
                   key: {{ include "identity.postgresql.secretKey" . }}
             {{- end }}
-            {{- if .Values.global.documentStore.type.aws.enabled }}
+            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
                   "secretType" "accessKeyId"
@@ -211,10 +214,8 @@ spec:
             - name: config
               mountPath: /app/config/application.yaml
               subPath: application.yaml
-          {{- range .Values.identity.extraConfiguration }}
-            - name: config
-              mountPath: /app/config/{{ .file }}
-              subPath: {{ .file }}
+          {{- with .Values.identity.extraConfiguration }}
+          {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/app/config") | trim | nindent 12 }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume

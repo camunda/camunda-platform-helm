@@ -121,10 +121,8 @@ spec:
               subPath: application-ccsm.yaml
               name: environment-config
             {{- end }}
-            {{- range .Values.optimize.extraConfiguration }}
-            - name: environment-config
-              mountPath: /optimize/config/{{ .file }}
-              subPath: {{ .file }}
+            {{- with .Values.optimize.extraConfiguration }}
+            {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "environment-config" "basePath" "/optimize/config") | trim | nindent 12 }}
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
             - name: keystore
@@ -228,7 +226,7 @@ spec:
               value: {{ .Values.optimize.upgradeLogLevel | quote }}
             - name: ES_LOG_LEVEL
               value: {{ .Values.optimize.esLogLevel | quote }}
-            {{- if .Values.global.documentStore.type.aws.enabled }}
+            {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
                   "secretType" "accessKeyId"
@@ -318,10 +316,8 @@ spec:
               subPath: application-ccsm.yaml
               name: environment-config
             {{- end }}
-            {{- range .Values.optimize.extraConfiguration }}
-            - name: environment-config
-              mountPath: /optimize/config/{{ .file }}
-              subPath: {{ .file }}
+            {{- with .Values.optimize.extraConfiguration }}
+            {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "environment-config" "basePath" "/optimize/config") | trim | nindent 12 }}
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
             - name: keystore

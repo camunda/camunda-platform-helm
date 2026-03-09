@@ -18,28 +18,16 @@ If release name contains chart name it will be used as a full name.
     ) -}}
 {{- end -}}
 
-{{/*
-Defines extra labels for connectors.
-*/}}
 {{- define "connectors.extraLabels" -}}
-app.kubernetes.io/component: connectors
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict "base" .Values.global "overlay" .Values.connectors "chart" .Chart) | quote }}
+    {{- include "camundaPlatform.componentExtraLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) -}}
 {{- end -}}
 
-{{/*
-Define common labels for connectors, combining the match labels and transient labels, which might change on updating
-(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
-*/}}
 {{- define "connectors.labels" -}}
-{{- template "camundaPlatform.labels" . }}
-{{ template "connectors.extraLabels" . }}
+    {{- include "camundaPlatform.componentLabels" (dict "componentName" "connectors" "componentValuesKey" "connectors" "context" $) -}}
 {{- end -}}
-{{/*
-Defines match labels for connectors, which are extended by sub-charts and should be used in matchLabels selectors.
-*/}}
+
 {{- define "connectors.matchLabels" -}}
-{{- template "camundaPlatform.matchLabels" . }}
-app.kubernetes.io/component: connectors
+    {{- include "camundaPlatform.componentMatchLabels" (dict "componentName" "connectors" "context" $) -}}
 {{- end -}}
 
 {{/*
