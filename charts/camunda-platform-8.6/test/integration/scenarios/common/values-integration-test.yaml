@@ -67,12 +67,12 @@ connectors:
         - sh
         - -c
         - |
-          echo "Waiting for Orchestration cluster to be healthy..."
-          until wget --spider -q http://integration-zeebe-gateway:9600/orchestration/actuator/health/readiness 2>/dev/null; do
-            echo "Orchestration cluster not ready yet, waiting..."
+          echo "Waiting for zeebe to be healthy..."
+          until wget --spider -q http://integration-zeebe-gateway:9600/actuator/health/readiness 2>/dev/null; do
+            echo "zeebe not ready yet, waiting..."
             sleep 5
           done
-          echo "Orchestration cluster is healthy!"
+          echo "zeebe is healthy!"
       securityContext:
         runAsUser: 1000
   logging:
@@ -90,11 +90,11 @@ optimize:
         - sh
         - -c
         - |
-          echo "Waiting for Orchestration cluster to be healthy..."
-          until wget --spider -q http://integration-zeebe-gateway:9600/orchestration/actuator/health/readiness 2>/dev/null; do
-            echo "Orchestration cluster not ready yet, waiting..."
+          echo "Waiting for zeebe to be healthy..."
+          until wget --spider -q http://integration-zeebe-gateway:9600/actuator/health/readiness 2>/dev/null; do
+            echo "zeebe not ready yet, waiting..."
             sleep 5
           done
-          echo "Orchestration cluster is healthy!"
+          echo "zeebe is healthy!"
       securityContext:
         runAsUser: 1000
