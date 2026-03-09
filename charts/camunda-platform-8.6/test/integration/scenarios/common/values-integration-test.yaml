@@ -73,6 +73,13 @@ connectors:
             sleep 5
           done
           echo "zeebe is healthy!"
+
+          echo "Waiting for identity to be healthy..."
+          until wget --spider -q http://integration-identity:8082/actuator/health 2>/dev/null; do
+            echo "identity not ready yet, waiting..."
+            sleep 5
+          done
+          echo "identity is healthy!"
       securityContext:
         runAsUser: 1000
   logging:
