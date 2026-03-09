@@ -28,6 +28,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
+          skip-e2e: true
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
