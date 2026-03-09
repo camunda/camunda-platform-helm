@@ -217,6 +217,10 @@ write_matrix_entry() {
         echo "    features: ${features}" >> matrix_versions.txt
         echo "    qa: ${qa}" >> matrix_versions.txt
         echo "    upgrade: ${upgrade}" >> matrix_versions.txt
+        skip_e2e=$(echo "$prScenario" | yq e -r '.skip-e2e // false' -)
+        skip_it=$(echo "$prScenario" | yq e -r '.skip-it // false' -)
+        echo "    skipE2E: ${skip_e2e}" >> matrix_versions.txt
+        echo "    skipIT: ${skip_it}" >> matrix_versions.txt
       done
     done
     sed -i -e '$s/,$/]\n/' matrix_versions.txt

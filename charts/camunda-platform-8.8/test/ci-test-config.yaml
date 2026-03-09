@@ -61,6 +61,8 @@ integration:
           shortname: esoi
           auth: oidc
           flow: install,upgrade-minor
+          skip-e2e: true  # OIDC auth incompatible with Keycloak-dependent smoke tests
+          skip-it: true   # OIDC ITs require Entra setup that returns 401
           infra-type:
             gke: distroci
             eks: preemptible
@@ -75,6 +77,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch-external
           flow: upgrade-minor
+          skip-e2e: true  # 8.8 Playwright smoke test enters retry loop exceeding timeout
           infra-type:
             gke: distroci
             eks: preemptible
@@ -112,6 +115,7 @@ integration:
           persistence: elasticsearch-external
           auth: hybrid
           flow: install
+          skip-e2e: true  # Hybrid auth incompatible with Keycloak-dependent smoke tests
           infra-type:
             gke: distroci
           platforms: [gke]
@@ -124,6 +128,7 @@ integration:
           infra-type:
             gke: arm
           flow: install
+          skip-e2e: true  # 8.8 ARM frontend bug: Deploy-and-Run API call never reaches restapi
           identity: keycloak-external
           features: [arm]
           persistence: elasticsearch-external

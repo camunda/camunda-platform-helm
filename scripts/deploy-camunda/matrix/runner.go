@@ -1378,8 +1378,8 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Test: config.TestFlags{
 			KubeContext:         kubeCtx,
 			TestExclude:         testExclude,
-			RunIntegrationTests: opts.TestIT || opts.TestAll,
-			RunE2ETests:         opts.TestE2E || opts.TestAll,
+			RunIntegrationTests: (opts.TestIT || opts.TestAll) && !entry.SkipIT,
+			RunE2ETests:         (opts.TestE2E || opts.TestAll) && !entry.SkipE2E,
 			RunAllTests:         opts.TestAll,
 		},
 		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.

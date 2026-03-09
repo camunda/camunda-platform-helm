@@ -125,6 +125,16 @@ on:
         required: false
         default: false
         type: boolean
+      skip-e2e:
+        description: "Skip E2E (Playwright smoke) tests for this scenario"
+        required: false
+        default: false
+        type: boolean
+      skip-it:
+        description: "Skip integration (Playwright IT) tests for this scenario"
+        required: false
+        default: false
+        type: boolean
       shortname:
         required: false
         default: "es"
@@ -349,6 +359,8 @@ jobs:
       test-features: ${{ inputs.test-features }}
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
+      skip-e2e: ${{ inputs.skip-e2e }}
+      skip-it: ${{ inputs.skip-it }}
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
