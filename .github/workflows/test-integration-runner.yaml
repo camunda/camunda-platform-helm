@@ -134,6 +134,16 @@ on:
         required: false
         default: false
         type: boolean
+      skip-e2e:
+        description: "Skip E2E (Playwright smoke) tests for this scenario (declared in ci-test-config.yaml)"
+        required: false
+        default: false
+        type: boolean
+      skip-it:
+        description: "Skip integration (Playwright IT) tests for this scenario (declared in ci-test-config.yaml)"
+        required: false
+        default: false
+        type: boolean
       camunda-helm-post-render:
         description: Set to true if you would like to run the post-renderer script for OpenShift
         required: false
@@ -940,7 +950,7 @@ jobs:
       run:
         shell: bash
     timeout-minutes: 20
-    if: ${{ inputs.test-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'nosec' }}
+    if: ${{ inputs.test-enabled && inputs.flow == 'install' && !inputs.skip-it }}
     permissions:
       contents: read
       id-token: write
@@ -1004,7 +1014,7 @@ jobs:
       run:
         shell: bash
     timeout-minutes: 20
-    if: ${{ inputs.test-enabled && inputs.shortname != 'esoi' }}
+    if: ${{ inputs.test-enabled && !inputs.skip-it }}
     permissions:
       contents: read
       id-token: write
@@ -1067,7 +1077,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' && inputs.shortname != 'nosec' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1131,7 +1141,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && inputs.shortname != 'esoi' && inputs.shortname != 'eshy' && inputs.shortname != 'kemt' }}
+    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && !inputs.skip-e2e }}
     timeout-minutes: 30
     strategy:
       fail-fast: false

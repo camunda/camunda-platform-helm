@@ -112,6 +112,16 @@ on:
         required: false
         default: false
         type: boolean
+      skip-e2e:
+        description: "Skip E2E (Playwright smoke) tests for this scenario"
+        required: false
+        default: false
+        type: boolean
+      skip-it:
+        description: "Skip integration (Playwright IT) tests for this scenario"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -176,6 +186,8 @@ jobs:
       test-features: ${{ inputs.test-features }}
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
+      skip-e2e: ${{ inputs.skip-e2e }}
+      skip-it: ${{ inputs.skip-it }}
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
@@ -226,6 +238,8 @@ jobs:
       test-features: ${{ inputs.test-features }}
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
+      skip-e2e: ${{ inputs.skip-e2e }}
+      skip-it: ${{ inputs.skip-it }}
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
