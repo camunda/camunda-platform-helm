@@ -62,12 +62,6 @@ global:
       ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)
       ##
       adaptSecurityContext: disabled
-    ## Compatibility adaptations for Camunda Orchestration Cluster.
-    ##
-    orchestration:
-      ## @param global.compatibility.orchestration.enabled if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).
-      ##
-      enabled: true
 
   ## @extra global.config Config used in various places.
   config:
