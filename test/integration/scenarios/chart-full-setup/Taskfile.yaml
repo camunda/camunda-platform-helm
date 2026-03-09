@@ -76,6 +76,7 @@ tasks:
         
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
+          --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
           --identity "${TEST_IDENTITY:-keycloak}" \
           --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
           --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
@@ -109,6 +110,7 @@ tasks:
       
       MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
         --scenario-path "$SCENARIO_DIR" \
+        --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
         --identity "${TEST_IDENTITY:-keycloak}" \
         --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
         --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
@@ -237,6 +239,7 @@ tasks:
         
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
+          --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
           --identity "${TEST_IDENTITY:-keycloak}" \
           --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
           --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
@@ -316,6 +319,7 @@ tasks:
       
       MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
         --scenario-path "$SCENARIO_DIR" \
+        --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
         --identity "${TEST_IDENTITY:-keycloak}" \
         --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
         --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
