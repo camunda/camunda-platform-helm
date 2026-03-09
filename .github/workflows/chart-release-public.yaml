@@ -380,6 +380,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+          token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -435,6 +436,8 @@ jobs:
           head_ref="release-please--branches--main--components--camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
 
           # Rebase onto main so the branch is not behind (strict status checks).
+          git config user.name "distro-ci[bot]"
+          git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
           git fetch origin main "${head_ref}"
           if ! git merge-base --is-ancestor origin/main "origin/${head_ref}"; then
             git checkout -B "${head_ref}" "origin/${head_ref}"
