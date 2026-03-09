@@ -13,13 +13,13 @@ ingress:
       secretName: camunda-platform
 
 # --- CI-oriented Keycloak setup (non-production) ---
-replicaCount: 1
+replicaCount: 5
 
 resources:
   requests:
     memory: 1Gi
   limits:
-    memory: 2Gi
+    memory: 3Gi
 
 service:
   type: ClusterIP
