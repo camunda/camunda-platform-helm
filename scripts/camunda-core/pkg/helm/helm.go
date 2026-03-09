@@ -53,28 +53,6 @@ func DependencyUpdate(ctx context.Context, chartPath string) error {
 	return nil
 }
 
-func isTransientHelmError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	transientHints := []string{
-		"timeout",
-		"timed out",
-		"connection reset by peer",
-		"tls handshake timeout",
-		"i/o timeout",
-		"temporary failure",
-		"eof",
-	}
-	for _, hint := range transientHints {
-		if strings.Contains(msg, hint) {
-			return true
-		}
-	}
-	return false
-}
-
 // RepoAdd registers a Helm chart repository (helm repo add).
 // If the repo already exists, Helm treats this as a no-op update.
 func RepoAdd(ctx context.Context, name, url string) error {

@@ -673,13 +673,14 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, err)
 		}
 
-		// Check if error is due to webhook not being ready (retryable)
-		if !isWebhookNotReadyError(err) {
+		// Determine if the error is retryable (webhook not ready OR transient network error)
+		retryable := isWebhookNotReadyError(err) || isTransientKubeApplyError(err)
+		if !retryable {
 			// Non-retryable error, fail immediately
 			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d): %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, err)
 		}
 
-		// Webhook error - retry with exponential backoff
+		// Retryable error - retry with exponential backoff
 		if attempt == maxRetries {
 			// Exhausted all retries
 			logging.Logger.Error().
@@ -687,8 +688,8 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 				Str("name", unstructuredObj.GetName()).
 				Str("namespace", namespace).
 				Int("attempts", attempt).
-				Msg("webhook not ready after all retry attempts")
-			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d) after %d attempts (webhook not ready): %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, maxRetries, lastErr)
+				Msg("retryable error persists after all retry attempts")
+			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d) after %d attempts: %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, maxRetries, lastErr)
 		}
 
 		delay := initialDelay * time.Duration(1<<(attempt-1)) // Exponential backoff: 10s, 20s, 40s, 80s, 160s
@@ -700,7 +701,7 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 			Int("maxRetries", maxRetries).
 			Dur("retryDelay", delay).
 			Err(err).
-			Msg("webhook not ready, retrying...")
+			Msg("retryable error applying resource, retrying...")
 
 		select {
 		case <-ctx.Done():
