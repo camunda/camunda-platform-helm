@@ -141,6 +141,8 @@ identityPostgresql:
       adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
       userPasswordKey: identity-keycloak-postgresql-user-password
 
+zeebeGateway:
+  contextPath: "/zeebe"
 
 connectors:
   contextPath: "/connectors"
