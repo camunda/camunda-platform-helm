@@ -302,5 +302,5 @@ if [ "$(cat matrix_versions.txt)" = "matrix:" ]; then
 fi
 
 matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \
-  | jq -c 'walk(if type == "number" then tostring else . end)')"
+  | jq -c 'walk(if type == "number" or type == "boolean" then tostring else . end)')"
 echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
