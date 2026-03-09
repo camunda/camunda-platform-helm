@@ -13,7 +13,7 @@ ingress:
       secretName: camunda-platform
 
 # --- CI-oriented Keycloak setup (non-production) ---
-replicaCount: 3
+replicaCount: 5
 
 resources:
   requests:
