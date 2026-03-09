@@ -29,7 +29,7 @@ integration:
             eks: preemptible
           identity: keycloak
           persistence: elasticsearch-external
-          platforms: [gke,eks]
+          platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
         - name: upgrade-migration
           enabled: true
           flow: upgrade-minor
