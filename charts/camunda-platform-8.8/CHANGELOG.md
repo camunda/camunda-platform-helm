@@ -1,5 +1,37 @@
 # Changelog
 
+## [13.5.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.2...camunda-platform-8.8-13.5.3) (2026-03-06)
+
+
+### Bug Fixes
+
+* **documentStore:** allow IRSA AWS usage ([#5026](https://github.com/camunda/camunda-platform-helm/issues/5026)) ([b625076](https://github.com/camunda/camunda-platform-helm/commit/b6250760e1a41f4b477bb1cca408064153482b54))
+* gate optimize config in identity templates on optimize.enabled ([#5263](https://github.com/camunda/camunda-platform-helm/issues/5263)) ([e0ef936](https://github.com/camunda/camunda-platform-helm/commit/e0ef93612113074ada290c07324e3bd710691b95))
+* make OIDC groups-claim optional in orchestration config ([#5207](https://github.com/camunda/camunda-platform-helm/issues/5207)) ([1efc487](https://github.com/camunda/camunda-platform-helm/commit/1efc487d044be9a2beed075ad7a70a21ccc7bd44))
+* move pusher app key to secret and allow explicit configuration ([#5289](https://github.com/camunda/camunda-platform-helm/issues/5289)) ([64a0ed9](https://github.com/camunda/camunda-platform-helm/commit/64a0ed9c2fda2f3e71d83305b5787e138e86bc02))
+* **openshift:** when es is disabled, fix templating error of label ([#5020](https://github.com/camunda/camunda-platform-helm/issues/5020)) ([50552d7](https://github.com/camunda/camunda-platform-helm/commit/50552d7ed4f97b9706989a9c89e2956aa5d8fac5))
+* prevent invalid YAML when zeebe exporter enabled without camunda… ([#4962](https://github.com/camunda/camunda-platform-helm/issues/4962)) ([65db90a](https://github.com/camunda/camunda-platform-helm/commit/65db90a213f1534841314e9ff9a6e40fed9ee1d2))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5224](https://github.com/camunda/camunda-platform-helm/issues/5224)) ([b48ce94](https://github.com/camunda/camunda-platform-helm/commit/b48ce945aff8ec16f68b243992bb3a0e6507fc60))
+* update camunda-platform-digests ([#5233](https://github.com/camunda/camunda-platform-helm/issues/5233)) ([dfb1e0f](https://github.com/camunda/camunda-platform-helm/commit/dfb1e0fcd02dc5b815419ed9d4c3ceee03327cff))
+* update camunda-platform-digests ([#5249](https://github.com/camunda/camunda-platform-helm/issues/5249)) ([1e97ff1](https://github.com/camunda/camunda-platform-helm/commit/1e97ff1f66cc6f476860f2adf65fa6d210272f05))
+* update camunda-platform-digests ([#5264](https://github.com/camunda/camunda-platform-helm/issues/5264)) ([b8542e9](https://github.com/camunda/camunda-platform-helm/commit/b8542e9819712ab450e538f75bc445998c73a401))
+* update camunda-platform-digests ([#5283](https://github.com/camunda/camunda-platform-helm/issues/5283)) ([bb289fe](https://github.com/camunda/camunda-platform-helm/commit/bb289feea80c20b15b9f3c181df3dee2d4836542))
+* update camunda-platform-images (patch) ([#5225](https://github.com/camunda/camunda-platform-helm/issues/5225)) ([b72cf31](https://github.com/camunda/camunda-platform-helm/commit/b72cf31da48f181f4dfe8b7248dfb37e97ee1263))
+* update camunda-platform-images (patch) ([#5250](https://github.com/camunda/camunda-platform-helm/issues/5250)) ([d4c3c12](https://github.com/camunda/camunda-platform-helm/commit/d4c3c12a55123638377b94aa2f9b30966dfde4a5))
+* update camunda-platform-images (patch) ([#5255](https://github.com/camunda/camunda-platform-helm/issues/5255)) ([4e0e5b7](https://github.com/camunda/camunda-platform-helm/commit/4e0e5b7b9ee99c2d8254693284bb6bc2475eb4dd))
+* update camunda-platform-images (patch) ([#5265](https://github.com/camunda/camunda-platform-helm/issues/5265)) ([8dafa9f](https://github.com/camunda/camunda-platform-helm/commit/8dafa9f315d8fcd6e75e4268f9d0c15b70fd5e0b))
+* update camunda-platform-images (patch) ([#5284](https://github.com/camunda/camunda-platform-helm/issues/5284)) ([d46a9c8](https://github.com/camunda/camunda-platform-helm/commit/d46a9c8293afa477fe5fd491212684bb3cf79e62))
+* update camunda/console docker tag to v8.8.110 ([#5235](https://github.com/camunda/camunda-platform-helm/issues/5235)) ([b4f82ce](https://github.com/camunda/camunda-platform-helm/commit/b4f82ce8f448b85951b60536599aa380f4a1aeb0))
+* update camunda/console docker tag to v8.8.113 ([#5267](https://github.com/camunda/camunda-platform-helm/issues/5267)) ([e286a30](https://github.com/camunda/camunda-platform-helm/commit/e286a303868cf950d3420c80dddb43603f0bf873))
+* update camunda/optimize docker tag to v8.8.7 ([#5291](https://github.com/camunda/camunda-platform-helm/issues/5291)) ([a8b32ac](https://github.com/camunda/camunda-platform-helm/commit/a8b32ac8a91b9ce8066e4c51d38e22881faa2b64))
+* update minor-updates (minor) ([#5190](https://github.com/camunda/camunda-platform-helm/issues/5190)) ([23f46cc](https://github.com/camunda/camunda-platform-helm/commit/23f46cce8eb7a2c6d43b7b4dd1d90871183b8a59))
+* update module filippo.io/edwards25519 to v1.1.1 [security] ([#5166](https://github.com/camunda/camunda-platform-helm/issues/5166)) ([09f8c4e](https://github.com/camunda/camunda-platform-helm/commit/09f8c4e42beae75abe4ecd00218eb210c0a7498b))
+* update patch-updates (patch) ([#5183](https://github.com/camunda/camunda-platform-helm/issues/5183)) ([eef71ff](https://github.com/camunda/camunda-platform-helm/commit/eef71ffec59813cb48930eff516249043d603b79))
+
 ## [13.5.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.1...camunda-platform-8.8-13.5.2) (2026-02-26)
 
 
