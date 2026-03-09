@@ -269,6 +269,14 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid config with no-elasticsearch",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "no-elasticsearch",
+				Platform:    "gke",
+			},
+		},
+		{
 			name: "missing identity",
 			config: DeploymentConfig{
 				Persistence: "elasticsearch",

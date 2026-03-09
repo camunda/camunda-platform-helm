@@ -167,8 +167,8 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		effectivePlatform = pv.platform
 	}
 
-	// Build DeploymentConfig using the canonical builder.
-	deployConfig := scenarios.BuildDeploymentConfig(pv.scenario, scenarios.BuilderOverrides{
+	// Build DeploymentConfig using the canonical builder (validates automatically).
+	deployConfig, err := scenarios.BuildDeploymentConfig(pv.scenario, scenarios.BuilderOverrides{
 		Identity:     pv.identity,
 		Persistence:  pv.persistence,
 		Platform:     effectivePlatform,
@@ -180,10 +180,8 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		Upgrade:      pv.upgradeFlow,
 		ChartVersion: pv.chartVersion,
 	})
-
-	// Validate the deployment config.
-	if err := deployConfig.Validate(); err != nil {
-		return fmt.Errorf("deployment config validation failed: %w", err)
+	if err != nil {
+		return err
 	}
 
 	// Resolve all layer file paths.

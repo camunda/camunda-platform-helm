@@ -68,7 +68,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "opensearch", "rdbms", "rdbms-oracle"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "rdbms", "rdbms-oracle"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -403,10 +403,15 @@ type BuilderOverrides struct {
 
 // BuildDeploymentConfig is the single canonical constructor for DeploymentConfig.
 // It derives defaults from the scenario name via MapScenarioToConfig, then applies
-// any non-zero overrides. All call-sites that previously built a DeploymentConfig
-// inline should use this function instead, eliminating drift between the deploy,
-// dry-run, and buildDeploymentConfigFromFlags code paths.
-func BuildDeploymentConfig(scenario string, ov BuilderOverrides) *DeploymentConfig {
+// any non-zero overrides, and validates the result. All call-sites that previously
+// built a DeploymentConfig inline should use this function instead, eliminating
+// drift between the deploy, dry-run, and prepare-values code paths.
+//
+// Validation is performed here so that every code path — local matrix run, CI
+// prepare-values, dry-run, and coverage — goes through the same gate. This
+// prevents situations where a value (e.g. persistence: "no-elasticsearch") works
+// locally but fails in CI because only the CI path called Validate().
+func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentConfig, error) {
 	cfg := MapScenarioToConfig(scenario)
 
 	// Apply non-zero overrides.
@@ -441,7 +446,11 @@ func BuildDeploymentConfig(scenario string, ov BuilderOverrides) *DeploymentConf
 		cfg.ChartVersion = ov.ChartVersion
 	}
 
-	return cfg
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("deployment config validation failed for scenario %q: %w", scenario, err)
+	}
+
+	return cfg, nil
 }
 
 // LayeredConfig is deprecated - use DeploymentConfig instead.
