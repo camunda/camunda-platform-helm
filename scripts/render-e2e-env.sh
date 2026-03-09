@@ -239,9 +239,11 @@ render_env_file() {
   fi
   echo "::endgroup::"
   
-  # process the tokenUrl to get the host and protocol
-  keycloak_host=$(echo "$tokenUrl" | sed -n 's|^[^:]*://\([^/]*\)/auth/realms/.*/protocol/openid-connect/token$|\1|p')
+  # process the tokenUrl to get the host and protocol.
+  # The URL may be a Keycloak token URL (.../auth/realms/<realm>/protocol/openid-connect/token)
+  # or an external OIDC provider (e.g., Entra ID: .../oauth2/v2.0/token).
   keycloak_protocol=$(echo "$tokenUrl" | sed -n 's|^\([^:]*\)://.*|\1|p')
+  keycloak_host=$(echo "$tokenUrl" | sed -n 's|^[^:]*://\([^/]*\).*|\1|p')
   keycloak_realm=$(echo "$tokenUrl" | sed -n 's|^[^:]*://[^/]*/auth/realms/\([^/]*\)/protocol/openid-connect/token$|\1|p')
   if [[ -z "$keycloak_realm" ]]; then
     keycloak_realm="camunda-platform"

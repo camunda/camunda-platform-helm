@@ -988,7 +988,7 @@ func resolveIngressBaseDomain(opts RunOptions, platform string) string {
 // diagnosticsDir is the directory where per-namespace diagnostic files are written.
 const diagnosticsDir = "diagnostics"
 
-const diagnosticsPodTailLines = 50
+const diagnosticsPodTailLines = 500
 
 var diagnosticsFileSanitizer = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
 
