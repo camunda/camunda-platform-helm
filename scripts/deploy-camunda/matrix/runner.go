@@ -263,7 +263,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 
 			// Resolve deployment layers via the canonical builder (same logic as deploy.go prepareScenarioValues).
 			scenarioDir := filepath.Join(entry.ChartPath, "test/integration/scenarios/chart-full-setup")
-			deployConfig := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
+			deployConfig, buildErr := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
 				Identity:    entry.Identity,
 				Persistence: entry.Persistence,
 				Platform:    platform,
@@ -274,6 +274,13 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				ImageTags:   entry.ImageTags,
 				Upgrade:     entry.Upgrade,
 			})
+			if buildErr != nil {
+				results = append(results, RunResult{
+					Entry: entry,
+					Error: fmt.Errorf("deployment config validation failed: %w", buildErr),
+				})
+				continue
+			}
 
 			var layerFiles []string
 			if paths, err := deployConfig.ResolvePaths(scenarioDir); err == nil {
@@ -561,7 +568,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 			platform := resolvePlatform(opts, entry)
 
 			// Resolve deployment layers via the canonical builder.
-			deployConfig := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
+			deployConfig, buildErr := scenarios.BuildDeploymentConfig(entry.Scenario, scenarios.BuilderOverrides{
 				Identity:    entry.Identity,
 				Persistence: entry.Persistence,
 				Platform:    platform,
@@ -572,6 +579,13 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				ImageTags:   entry.ImageTags,
 				Upgrade:     entry.Upgrade,
 			})
+			if buildErr != nil {
+				results = append(results, RunResult{
+					Entry: entry,
+					Error: fmt.Errorf("deployment config validation failed: %w", buildErr),
+				})
+				continue
+			}
 
 			resolved = append(resolved, coverageEntry{
 				entry:       entry,

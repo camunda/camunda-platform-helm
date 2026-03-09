@@ -348,13 +348,13 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 // buildDeploymentConfigFromFlags creates a DeploymentConfig from RuntimeFlags.
 // It prefers the new selection flags (--identity, --persistence, etc.) over deprecated flags.
 // Returns nil if no explicit flags are set (use auto-detection from scenario name).
-func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) *scenarios.DeploymentConfig {
+func buildDeploymentConfigFromFlags(flags *config.RuntimeFlags, scenarioName string) (*scenarios.DeploymentConfig, error) {
 	// Migrate deprecated flags to new fields first
 	flags.MigrateDeprecatedFlags()
 
 	// Check if we have any explicit configuration
 	if !flags.HasExplicitSelectionConfig() && !flags.HasExplicitLayeredConfig() {
-		return nil
+		return nil, nil
 	}
 
 	return scenarios.BuildDeploymentConfig(scenarioName, scenarios.BuilderOverrides{
@@ -622,7 +622,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if effectivePlatform == "" {
 			effectivePlatform = flags.Deployment.Platform
 		}
-		deployConfig := scenarios.BuildDeploymentConfig(scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
+		deployConfig, err := scenarios.BuildDeploymentConfig(scenarioCtx.ScenarioName, scenarios.BuilderOverrides{
 			Identity:     flags.Selection.Identity,
 			Persistence:  flags.Selection.Persistence,
 			Platform:     effectivePlatform,
@@ -634,6 +634,10 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 			Upgrade:      flags.Selection.UpgradeFlow,
 			ChartVersion: flags.Chart.ChartVersion,
 		})
+		if err != nil {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("failed to build deployment config for scenario %q: %w", scenarioCtx.ScenarioName, err)
+		}
 
 		layeredFiles, err := deployConfig.ResolvePaths(effectiveScenarioDir)
 		if err != nil {
