@@ -380,6 +380,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+          token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
@@ -432,15 +433,23 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
           pr_number="${{ steps.mark-published.outputs.pr_number }}"
+          head_ref="release-please--branches--main--components--camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
 
-          # Update branch to include latest main.
-          # Required because strict status check policy blocks merge when behind.
-          gh api "repos/${{ github.repository }}/pulls/${pr_number}/update-branch" \
-            -X PUT \
-            -f expected_head_sha="$(gh pr view "${pr_number}" --json headRefOid --jq '.headRefOid')" \
-            || echo "::notice::Branch already up to date"
+          # Rebase onto main so the branch is not behind (strict status checks).
+          git config user.name "distro-ci[bot]"
+          git config user.email "122795778+distro-ci[bot]@users.noreply.github.com"
+          git fetch origin main "${head_ref}"
+          if ! git merge-base --is-ancestor origin/main "origin/${head_ref}"; then
+            git checkout -B "${head_ref}" "origin/${head_ref}"
+            git rebase origin/main
+            git push --force-with-lease origin "${head_ref}"
+          else
+            echo "::notice::Branch already up to date"
+          fi
 
-          gh pr review "${pr_number}" --approve
+          # Use GITHUB_TOKEN for approval (different identity from PR author).
+          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr review "${pr_number}" --approve
+
           gh pr merge "${pr_number}" --auto --squash
           echo "enabled=true" >> $GITHUB_OUTPUT
 
