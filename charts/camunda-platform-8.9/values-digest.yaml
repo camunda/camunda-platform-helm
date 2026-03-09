@@ -33,7 +33,7 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:6df3932e1d650a1875b14b9b96c85b5a5b954563a46892c2be48fb5776845d33"
+      digest: "sha256:e07429a30ba78d9502099afc2ee20f0f1b34e88f2d43e1d707985d368bc94a20"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
@@ -51,7 +51,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: SNAPSHOT
-    digest: "sha256:b8fd5d16496f27809286ce6b8da5f710a886756ef05855e52badb9a19414ed67"
+    digest: "sha256:6cb9a8687f5e5a3c64ce1bbe3736fc4abf00c7b54a0e6891866d8255bf299f0e"
 
 #
 # Identity
