@@ -51,7 +51,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: 8.9-SNAPSHOT
-    digest: "sha256:a1742281c81557fbac894bb73dcc89a9c9d2f87278395897d76ac75f2a003e8d"
+    digest: "sha256:123e0f3a21788356c33df7c32d3a75c8e219375fad1f4040a2a6bbd305b330bd"
 
 #
 # Identity
