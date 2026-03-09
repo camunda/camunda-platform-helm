@@ -156,18 +156,36 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		return fmt.Errorf("scenario directory %q does not exist or is not a directory", scenarioDir)
 	}
 
-	// Check for layered values.
-	if !scenarios.HasLayeredValues(scenarioDir) {
-		return fmt.Errorf("no layered values found in %q (expected values/base.yaml)", scenarioDir)
+	outputDir := pv.outputDir
+	if outputDir == "" {
+		var err error
+		outputDir, err = os.MkdirTemp("", "camunda-prepare-values-*")
+		if err != nil {
+			return fmt.Errorf("failed to create temp directory: %w", err)
+		}
+	} else {
+		if err := os.MkdirAll(outputDir, 0o755); err != nil {
+			return fmt.Errorf("failed to create output directory %q: %w", outputDir, err)
+		}
 	}
 
-	// Resolve the effective platform (--test-platform takes precedence over --platform).
+	isLayered := scenarios.HasLayeredValues(scenarioDir)
+
+	if isLayered {
+		// Layered values path: resolve all layer files, process each, deep-merge.
+		return runPrepareValuesLayered(pv, scenarioDir, outputDir)
+	}
+
+	// Legacy fallback: resolve the single monolithic values file.
+	return runPrepareValuesLegacy(pv, scenarioDir, outputDir)
+}
+
+func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir string) error {
 	effectivePlatform := pv.testPlatform
 	if effectivePlatform == "" {
 		effectivePlatform = pv.platform
 	}
 
-	// Build DeploymentConfig using the canonical builder (validates automatically).
 	deployConfig, err := scenarios.BuildDeploymentConfig(pv.scenario, scenarios.BuilderOverrides{
 		Identity:     pv.identity,
 		Persistence:  pv.persistence,
@@ -184,7 +202,6 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		return err
 	}
 
-	// Resolve all layer file paths.
 	layeredFiles, err := deployConfig.ResolvePaths(scenarioDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve layered values: %w", err)
@@ -194,7 +211,6 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		return fmt.Errorf("no values files resolved for the given configuration")
 	}
 
-	// Log resolved layers at INFO level for visibility.
 	shortFiles := make([]string, len(layeredFiles))
 	for i, f := range layeredFiles {
 		if rel, err := filepath.Rel(scenarioDir, f); err == nil {
@@ -211,21 +227,6 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		Strs("layerFiles", shortFiles).
 		Msg("Resolved deployment layers")
 
-	// Create output directory.
-	outputDir := pv.outputDir
-	if outputDir == "" {
-		outputDir, err = os.MkdirTemp("", "camunda-prepare-values-*")
-		if err != nil {
-			return fmt.Errorf("failed to create temp directory: %w", err)
-		}
-		// Do NOT clean up — the caller needs the files.
-	} else {
-		if err := os.MkdirAll(outputDir, 0o755); err != nil {
-			return fmt.Errorf("failed to create output directory %q: %w", outputDir, err)
-		}
-	}
-
-	// Process each layered file (env var substitution) into the output directory.
 	var processedFiles []string
 	for _, srcFile := range layeredFiles {
 		opts := values.Options{
@@ -248,8 +249,6 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		Strs("processedFiles", processedFiles).
 		Msg("All layered values files processed")
 
-	// Deep-merge all processed files into a single YAML file.
-	// This prevents Helm's shallow array replacement from silently dropping entries.
 	mergedFiles, err := deploy.MergeLayeredValues(processedFiles, outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to merge layered values: %w", err)
@@ -259,9 +258,35 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		return fmt.Errorf("merge produced no output files")
 	}
 
-	// Print the merged file path to stdout — this is the ONLY stdout output.
-	// The caller (Taskfile / CI runner) captures this path for --values.
 	fmt.Fprintln(os.Stdout, mergedFiles[0])
+	return nil
+}
 
+func runPrepareValuesLegacy(pv *prepareValuesFlags, scenarioDir, outputDir string) error {
+	legacyFile, err := scenarios.ResolvePath(scenarioDir, pv.scenario)
+	if err != nil {
+		return fmt.Errorf("no layered values and no legacy values file found in %q for scenario %q: %w", scenarioDir, pv.scenario, err)
+	}
+
+	logging.Logger.Info().
+		Str("scenario", pv.scenario).
+		Str("legacyFile", legacyFile).
+		Msg("Using legacy single-file values (no layered values/ directory found)")
+
+	opts := values.Options{
+		ChartPath:    pv.chartPath,
+		ScenarioDir:  scenarioDir,
+		ValuesConfig: pv.valuesConfig,
+		OutputDir:    outputDir,
+		Interactive:  pv.interactive,
+		EnvFile:      pv.envFile,
+	}
+
+	outputPath, _, procErr := values.Process(context.Background(), legacyFile, opts)
+	if procErr != nil {
+		return fmt.Errorf("failed to process legacy values file %q: %w", legacyFile, procErr)
+	}
+
+	fmt.Fprintln(os.Stdout, outputPath)
 	return nil
 }
