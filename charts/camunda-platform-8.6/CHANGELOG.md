@@ -1,5 +1,24 @@
 # Changelog
 
+## [11.12.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.12.0...camunda-platform-8.6-11.12.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **openshift:** when es is disabled, fix templating error of label ([#5020](https://github.com/camunda/camunda-platform-helm/issues/5020)) ([50552d7](https://github.com/camunda/camunda-platform-helm/commit/50552d7ed4f97b9706989a9c89e2956aa5d8fac5))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#5250](https://github.com/camunda/camunda-platform-helm/issues/5250)) ([d4c3c12](https://github.com/camunda/camunda-platform-helm/commit/d4c3c12a55123638377b94aa2f9b30966dfde4a5))
+* update camunda-platform-images (patch) ([#5255](https://github.com/camunda/camunda-platform-helm/issues/5255)) ([4e0e5b7](https://github.com/camunda/camunda-platform-helm/commit/4e0e5b7b9ee99c2d8254693284bb6bc2475eb4dd))
+* update camunda-platform-images (patch) ([#5265](https://github.com/camunda/camunda-platform-helm/issues/5265)) ([8dafa9f](https://github.com/camunda/camunda-platform-helm/commit/8dafa9f315d8fcd6e75e4268f9d0c15b70fd5e0b))
+* update camunda-platform-images (patch) ([#5284](https://github.com/camunda/camunda-platform-helm/issues/5284)) ([d46a9c8](https://github.com/camunda/camunda-platform-helm/commit/d46a9c8293afa477fe5fd491212684bb3cf79e62))
+* update camunda/connectors-bundle docker tag to v8.6.25 ([#5227](https://github.com/camunda/camunda-platform-helm/issues/5227)) ([dec085a](https://github.com/camunda/camunda-platform-helm/commit/dec085ac02662f2e79783d718cb362407ecff7db))
+* update minor-updates (minor) ([#5190](https://github.com/camunda/camunda-platform-helm/issues/5190)) ([23f46cc](https://github.com/camunda/camunda-platform-helm/commit/23f46cce8eb7a2c6d43b7b4dd1d90871183b8a59))
+* update module filippo.io/edwards25519 to v1.1.1 [security] ([#5166](https://github.com/camunda/camunda-platform-helm/issues/5166)) ([09f8c4e](https://github.com/camunda/camunda-platform-helm/commit/09f8c4e42beae75abe4ecd00218eb210c0a7498b))
+* update patch-updates (patch) ([#5183](https://github.com/camunda/camunda-platform-helm/issues/5183)) ([eef71ff](https://github.com/camunda/camunda-platform-helm/commit/eef71ffec59813cb48930eff516249043d603b79))
+
 ## [11.12.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.6-11.11.5...camunda-platform-8.6-11.12.0) (2026-02-26)
 
 
