@@ -25,6 +25,19 @@ data:
     {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_CLASS: {{ .Values.global.documentStore.type.gcp.class | quote }}
   DOCUMENT_STORE_{{ $gcpPrefix }}_BUCKET: {{ .Values.global.documentStore.type.gcp.bucket | quote }}
+  {{- else if eq $active "azure" }}
+    {{- $azurePrefix := upper (default "AZURE" .Values.global.documentStore.type.azure.storeId) }}
+  DOCUMENT_STORE_{{ $azurePrefix }}_CLASS: {{ .Values.global.documentStore.type.azure.class | quote }}
+  DOCUMENT_STORE_{{ $azurePrefix }}_CONTAINER: {{ .Values.global.documentStore.type.azure.container | quote }}
+  {{- if .Values.global.documentStore.type.azure.containerPath }}
+  DOCUMENT_STORE_{{ $azurePrefix }}_CONTAINER_PATH: {{ .Values.global.documentStore.type.azure.containerPath | quote }}
+  {{- end }}
+  {{- if .Values.global.documentStore.type.azure.containerTtl }}
+  DOCUMENT_STORE_{{ $azurePrefix }}_CONTAINER_TTL: {{ .Values.global.documentStore.type.azure.containerTtl | quote }}
+  {{- end }}
+  {{- if .Values.global.documentStore.type.azure.endpoint }}
+  DOCUMENT_STORE_{{ $azurePrefix }}_ENDPOINT: {{ .Values.global.documentStore.type.azure.endpoint | quote }}
+  {{- end }}
   {{- else if eq $active "inmemory" }}
     {{- $inmemPrefix := upper (default "INMEMORY" .Values.global.documentStore.type.inmemory.storeId) }}
   DOCUMENT_STORE_{{ $inmemPrefix }}_CLASS: {{ .Values.global.documentStore.type.inmemory.class | quote }}
