@@ -211,7 +211,7 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 		license := ensureMap(global, "license")
 		if strings.Contains(opts.ChartPath, "8.9") || strings.Contains(opts.ChartPath, "8.10") {
 			secret := ensureMap(license, "secret")
-			license["inlineSecret"] = opts.LicenseKey
+			secret["inlineSecret"] = opts.LicenseKey
 		} else {
 			license["key"] = opts.LicenseKey
 		}
