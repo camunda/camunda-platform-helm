@@ -6740,7 +6740,7 @@
                                 "minFetchIntervalSeconds": {
                                     "type": "number",
                                     "description": "defines the minimum interval between fetches from the database for the cache",
-                                    "default": 600000
+                                    "default": 300
                                 }
                             }
                         }

@@ -2291,7 +2291,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.116"
+                            "default": "8.8.117"
                         },
                         "digest": {
                             "type": "string",
@@ -7091,7 +7091,7 @@
                                 "minFetchIntervalSeconds": {
                                     "type": "number",
                                     "description": "defines the minimum interval between fetches from the database for the cache",
-                                    "default": 600000
+                                    "default": 300
                                 }
                             }
                         }
