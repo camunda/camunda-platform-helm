@@ -134,6 +134,10 @@ identity:
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
       value: venom
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
 connectors:
   env:
     - name: username

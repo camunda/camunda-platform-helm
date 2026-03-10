@@ -40,6 +40,9 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
 webModeler:
   enabled: true
   security:

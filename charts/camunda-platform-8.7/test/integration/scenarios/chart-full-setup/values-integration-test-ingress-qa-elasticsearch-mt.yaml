@@ -166,3 +166,7 @@ connectors:
       value: password
     - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
       value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300

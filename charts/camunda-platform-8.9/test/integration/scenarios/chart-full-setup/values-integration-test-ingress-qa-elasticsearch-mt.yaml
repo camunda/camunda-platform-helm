@@ -45,6 +45,9 @@ identityKeycloak:
   enabled: true
 optimize:
   enabled: true
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
   database:
     elasticsearch:
       enabled: true
