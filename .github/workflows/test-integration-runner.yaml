@@ -542,6 +542,7 @@ jobs:
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
           # Selection + composition model environment variables (new - preferred)
@@ -889,6 +890,18 @@ jobs:
       - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
+          VALUES_CONFIG: ${{ inputs.values-config }}
+          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          TEST_AUTH_TYPE: ${{ inputs.auth }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          TEST_IDENTITY: ${{ inputs.test-identity }}
+          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_FEATURES: ${{ inputs.test-features }}
+          TEST_QA: ${{ inputs.test-qa }}
+          TEST_UPGRADE: ${{ inputs.test-upgrade }}
+          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
 
