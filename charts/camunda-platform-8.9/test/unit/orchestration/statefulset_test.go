@@ -210,8 +210,7 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestContainerOverwriteGlobalImageTag",
 			Values: map[string]string{
-				"global.image.tag":        "a.b.c",
-				"orchestration.image.tag": "",
+				"global.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var statefulSet appsv1.StatefulSet
@@ -219,6 +218,23 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 
 				// then
 				expectedContainerImage := "camunda/camunda:a.b.c"
+				containers := statefulSet.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+				s.Require().Equal(expectedContainerImage, containers[0].Image)
+			},
+		}, {
+			// Regression test for https://github.com/camunda/camunda-platform-helm/issues/5293:
+			// global.image.tag must be respected even when orchestration.image.tag is not explicitly cleared.
+			Name: "TestContainerGlobalImageTagRespectedByDefault",
+			Values: map[string]string{
+				"global.image.tag": "8.9-SNAPSHOT",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then
+				expectedContainerImage := "camunda/camunda:8.9-SNAPSHOT"
 				containers := statefulSet.Spec.Template.Spec.Containers
 				s.Require().Equal(1, len(containers))
 				s.Require().Equal(expectedContainerImage, containers[0].Image)

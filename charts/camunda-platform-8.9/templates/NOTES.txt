@@ -24,11 +24,7 @@
 - Orchestration:
   - Enabled: {{ .Values.orchestration.enabled }}
   {{- if .Values.orchestration.enabled }}
-    {{- if .Values.orchestration.image.tag }}
-  - Docker Image used for Orchestration: {{ .Values.orchestration.image.repository }}:{{ .Values.orchestration.image.tag }}
-    {{- else }}
-  - Docker Image used for Orchestration: {{ .Values.orchestration.image.repository }}:{{ .Values.global.image.tag }}
-    {{- end }}
+  - Docker Image used for Orchestration: {{ .Values.orchestration.image.repository }}:{{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
   - Zeebe Cluster Name: {{ tpl .Values.global.zeebeClusterName . | quote }}
   - Prometheus ServiceMonitor Enabled: {{ .Values.prometheusServiceMonitor.enabled }}
   {{- end }}
