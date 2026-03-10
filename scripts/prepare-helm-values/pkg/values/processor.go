@@ -209,7 +209,12 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 		}
 		global := ensureMap(doc, "global")
 		license := ensureMap(global, "license")
-		license["key"] = opts.LicenseKey
+		if strings.Contains(opts.ChartPath, "8.9") || strings.Contains(opts.ChartPath, "8.10") {
+			secret := ensureMap(license, "secret")
+			license["inlineSecret"] = opts.LicenseKey
+		} else {
+			license["key"] = opts.LicenseKey
+		}
 		out, err := yaml.Marshal(doc)
 		if err != nil {
 			logging.Logger.Debug().Err(err).Msg("Failed to marshal YAML after license injection")
