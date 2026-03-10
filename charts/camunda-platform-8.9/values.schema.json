@@ -746,7 +746,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "The default document store to use. Valid values: inmemory, aws, and gcp.",
+                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, and azure.",
                             "default": "inmemory"
                         },
                         "type": {
@@ -957,7 +957,7 @@
                                         },
                                         "endpoint": {
                                             "type": "string",
-                                            "description": "(Optional) Azure storage account endpoint. Required when using DefaultAzureCredential (Managed Identity).",
+                                            "description": "(Optional) Azure storage account endpoint. Required when using DefaultAzureCredential (Managed Identity). Example: https://<account>.blob.core.windows.net",
                                             "default": ""
                                         },
                                         "connectionString": {
