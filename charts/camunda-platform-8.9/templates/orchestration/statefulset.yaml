@@ -108,6 +108,9 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
+            {{- if .Values.global.documentStore.type.azure.enabled }}
+            {{- include "camundaPlatform.emitAzureDocumentStoreSecret" . | nindent 12 }}
+            {{- end }}
             {{/*
             Variable substitution for passwords.
             */}}
