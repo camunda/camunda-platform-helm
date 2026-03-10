@@ -42,16 +42,6 @@
                                     "default": "disabled"
                                 }
                             }
-                        },
-                        "orchestration": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "description": "if true, enables compatibility layer for Camunda Orchestration Cluster between Camunda 8.7 chart (12.x.x) and Camunda 8.8 chart (13.x.x).",
-                                    "default": true
-                                }
-                            }
                         }
                     }
                 },
