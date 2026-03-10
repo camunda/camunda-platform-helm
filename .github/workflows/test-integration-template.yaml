@@ -258,8 +258,8 @@ jobs:
 
           cat "${CI_MATRIX_FILE}" | envsubst | tee /tmp/matrix.yaml
           # Read matrix YAML file.
-          matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
-          matrix="${CI_MATRIX_INPUT:-${matrix_defult}}"
+          matrix_default="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
+          matrix="${CI_MATRIX_INPUT:-${matrix_default}}"
           echo "\n"
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
