@@ -197,6 +197,20 @@ Fail with a message if Web Modeler is enabled but management Identity is not ena
     }}
   {{- end }}
 
+  {{ if and (.Values.webModeler.enabled)
+            (not .Values.webModeler.restapi.pusher.secret.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append
+        $existingSecretsNotConfigured "webModeler.restapi.pusher.secret.existingSecret"
+    }}
+  {{- end }}
+
+  {{ if and (.Values.webModeler.enabled)
+            (not .Values.webModeler.restapi.pusher.client.secret.existingSecret) }}
+    {{- $existingSecretsNotConfigured = append
+        $existingSecretsNotConfigured "webModeler.restapi.pusher.client.secret.existingSecret"
+    }}
+  {{- end }}
+
     {{- if $existingSecretsNotConfigured }}
       {{- if eq .Values.global.testDeprecationFlags.existingSecretsMustBeSet "warning" }}
         {{- $errorMessage := (printf "%s"
@@ -323,29 +337,6 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{/* Warn when webModeler pusher secret is auto-generated */}}
-  {{- if .Values.webModeler.enabled }}
-    {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}
-    {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "Web Modeler is using an auto-generated Pusher secret. This will produce a new random secret on every 'helm upgrade', causing WebSocket authentication failures."
-          "Please set 'webModeler.restapi.pusher.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.secret.inlineSecret'."
-          "Auto-generation will be removed in a future release."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-    {{- $pusherClientSecret := .Values.webModeler.restapi.pusher.client.secret }}
-    {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
-          "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
-          "Auto-generation will be removed in a future release."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end }}
-  {{- end }}
 {{- end }}
 
 {{/*

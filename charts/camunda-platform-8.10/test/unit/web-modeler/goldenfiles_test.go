@@ -35,7 +35,6 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 		"configmap-shared",
 		"deployment-restapi",
 		"deployment-websockets",
-		"secret-shared",
 		"service-restapi",
 		"service-websockets",
 		"serviceaccount",
@@ -62,8 +61,6 @@ func TestGoldenDefaultsTemplateWebModeler(t *testing.T) {
 				"elasticsearch.enabled":                                            "true",
 			},
 			IgnoredLines: []string{
-				`\s+pusher-app-key:\s+.*`,    // Auto-generated and need to be ignored.
-				`\s+pusher-app-secret:\s+.*`, // Auto-generated and need to be ignored.
 				`\s+.*-secret:\s+.*`,         // secrets are auto-generated and need to be ignored.
 				`\s+checksum/.+?:\s+.*`,      // ignore configmap checksum.
 			},

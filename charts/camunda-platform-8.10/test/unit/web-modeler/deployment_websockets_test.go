@@ -240,33 +240,6 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
 		}, {
-			Name: "TestPusherSecretUsesDefaultSecret",
-			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// Find the PUSHER_APP_SECRET environment variable
-				var pusherSecretEnv *corev1.EnvVar
-				for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
-					if env.Name == "PUSHER_APP_SECRET" {
-						pusherSecretEnv = &env
-						break
-					}
-				}
-
-				// Verify the secret reference
-				s.Require().NotNil(pusherSecretEnv, "PUSHER_APP_SECRET env var should exist")
-				s.Require().NotNil(pusherSecretEnv.ValueFrom, "PUSHER_APP_SECRET should use valueFrom")
-				s.Require().NotNil(pusherSecretEnv.ValueFrom.SecretKeyRef, "PUSHER_APP_SECRET should use secretKeyRef")
-				s.Require().Equal("camunda-platform-test-web-modeler", pusherSecretEnv.ValueFrom.SecretKeyRef.Name)
-				s.Require().Equal("pusher-app-secret", pusherSecretEnv.ValueFrom.SecretKeyRef.Key)
-			},
-		}, {
 			Name: "TestPusherSecretUsesExistingSecret",
 			Values: map[string]string{
 				"identity.enabled":                                   "true",

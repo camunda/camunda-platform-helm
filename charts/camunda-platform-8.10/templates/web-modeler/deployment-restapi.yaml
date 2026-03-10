@@ -64,14 +64,10 @@ spec:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_PUSHER_KEY"
                 "config" .Values.webModeler.restapi.pusher.client
-                "defaultSecretName" (include "webModeler.fullname" .)
-                "defaultSecretKey" "pusher-app-key"
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_PUSHER_SECRET"
                 "config" .Values.webModeler.restapi.pusher
-                "defaultSecretName" (include "webModeler.fullname" .)
-                "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | default "/tmp/zeebe_client_cache.txt" | quote }}
