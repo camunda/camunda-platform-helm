@@ -1,0 +1,23 @@
+global:
+  documentStore:
+    activeStoreId: "azure"
+    type:
+      azure:
+        enabled: true
+        storeId: "AZURE"
+        container: "camunda-ci-integration-test-container"
+        class: "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider"
+        connectionString:
+          secret:
+            existingSecret: "azure-storage-credentials"
+            existingSecretKey: "connection-string"
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+      elasticsearch:
+        url: "http://integration-elasticsearch:9200"
+
+elasticsearch:
+  enabled: true

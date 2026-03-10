@@ -617,7 +617,7 @@ global:
   ## Document Store Configuration
   ## @extra global.documentStore These parameters are used to configure the document storage backend across all Camunda components.
   documentStore:
-    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, and gcp.
+    ## @param global.documentStore.activeStoreId The default document store to use. Valid values: inmemory, aws, gcp, and azure.
     activeStoreId: "inmemory"
     type:
       aws:
@@ -685,6 +685,31 @@ global:
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+      azure:
+        ## @param global.documentStore.type.azure.enabled Enable Azure document store configuration.
+        enabled: false
+        ## @param global.documentStore.type.azure.storeId Custom prefix for Azure. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AZURE_CLASS.
+        storeId: "AZURE"
+        ## @param global.documentStore.type.azure.container Name of the Azure Blob Storage container.
+        container: "your-azure-container"
+        ## @param global.documentStore.type.azure.containerPath (Optional) Path/prefix within the container.
+        containerPath: ""
+        ## @param global.documentStore.type.azure.containerTtl (Optional) Time-to-live for documents in the container (number in days).
+        containerTtl: 0
+        ## @param global.documentStore.type.azure.class Fully qualified class name for the Azure document store provider.
+        class: "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider"
+        ## @param global.documentStore.type.azure.endpoint (Optional) Azure storage account endpoint. Required when using DefaultAzureCredential (Managed Identity). Example: https://<account>.blob.core.windows.net
+        endpoint: ""
+        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure connection string.
+        connectionString:
+          ## @extra global.documentStore.type.azure.connectionString.secret configuration to provide the Azure connection string as a secret.
+          secret:
+            ## @param global.documentStore.type.azure.connectionString.secret.inlineSecret can be used to provide the connection string as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.azure.connectionString.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the connection string.
+            existingSecret: ""
+            ## @param global.documentStore.type.azure.connectionString.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "connection-string"
 
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:
