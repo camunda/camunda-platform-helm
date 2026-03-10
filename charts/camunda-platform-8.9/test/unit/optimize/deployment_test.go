@@ -731,6 +731,28 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				// then
 				env := deployment.Spec.Template.Spec.Containers[0].Env
 				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED", Value: "true"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE", Value: "10000"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS", Value: "300"})
+			},
+		}, {
+			Name: "TestOptimizeCachesCloudTenantAuthorizationsOverride",
+			Values: map[string]string{
+				"identity.enabled":                                                  "true",
+				"global.identity.auth.enabled":                                      "true",
+				"optimize.enabled":                                                  "true",
+				"identity.multitenancy.enabled":                                     "true",
+				"identityPostgresql.enabled":                                        "true",
+				"optimize.caches.cloudTenantAuthorizations.maxSize":                 "5000",
+				"optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds": "60",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE", Value: "5000"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS", Value: "60"})
 			},
 		}, {
 			Name: "TestOptimizeWithConfiguration",

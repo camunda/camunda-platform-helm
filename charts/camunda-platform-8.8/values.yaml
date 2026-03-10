@@ -3339,7 +3339,7 @@ optimize:
       ## @param optimize.caches.cloudTenantAuthorizations.maxSize defines the maximum number of entries in the cache
       maxSize: 10000
       ## @param optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds defines the minimum interval between fetches from the database for the cache
-      minFetchIntervalSeconds: 600000
+      minFetchIntervalSeconds: 300
 
 #####################################################################################
 #######
