@@ -1,0 +1,35 @@
+{
+  "name": "helm-values-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Camunda Helm chart values.yaml and schema",
+  "main": "dist/entrypoint.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/entrypoint.js",
+    "start:local": "node dist/index.js",
+    "dev": "tsx src/entrypoint.ts",
+    "dev:local": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docker:build": "docker build -t helm-values-mcp .",
+    "docker:run": "docker run -i helm-values-mcp"
+  },
+  "keywords": [
+    "mcp",
+    "helm",
+    "camunda"
+  ],
+  "author": "Camunda",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
