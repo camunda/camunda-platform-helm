@@ -1277,8 +1277,7 @@ func cleanupEntry(ctx context.Context, result RunResult, opts RunOptions) {
 }
 
 // executeEntry deploys a single matrix entry by constructing RuntimeFlags and calling deploy.Execute().
-// The entryIndex is used for round-robin ES pool distribution when ES_POOL_INDEX is not
-// already set in the environment (i.e., not in CI where workflow-vars assigns a per-run pool).
+// The entryIndex is used for round-robin ES pool distribution across the 4-cluster pool infra.
 // The flow determines the execution strategy:
 //   - Two-step upgrade (upgrade-patch, upgrade-minor): Step 1 installs old version, Step 2 upgrades.
 //   - Upgrade-only (modular-upgrade-minor): Upgrades an already-running deployment (no install step).
@@ -1399,14 +1398,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		},
 	}
 
-	// Assign ES pool index for round-robin distribution across pools.
-	// In CI, ES_POOL_INDEX is set by workflow-vars (all entries in a run share one pool).
-	// For local matrix run, distribute entries across pools by round-robin on entry index.
-	if envPool := os.Getenv("ES_POOL_INDEX"); envPool != "" {
-		flags.ESPoolIndex = envPool
-	} else {
-		flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
-	}
+	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
 
 	// OIDC hook: provision a venom Entra app registration before deployment.
 	// The entra package is the canonical implementation for OIDC app provisioning,
