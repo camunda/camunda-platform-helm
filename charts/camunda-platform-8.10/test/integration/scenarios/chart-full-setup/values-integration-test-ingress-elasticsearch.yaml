@@ -3,6 +3,7 @@ elasticsearch:
   maxUnavailable: 0
 
 orchestration:
+  contextPath: "/orchestration"
   data:
     secondaryStorage:
       type: elasticsearch

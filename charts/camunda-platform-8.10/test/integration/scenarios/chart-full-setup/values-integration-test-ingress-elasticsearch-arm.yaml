@@ -59,6 +59,7 @@ console:
     realm: $KEYCLOAK_REALM
 
 orchestration:
+  contextPath: "/orchestration"
   index:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   data:
