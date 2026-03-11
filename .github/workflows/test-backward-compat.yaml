@@ -76,7 +76,6 @@ jobs:
     with:
       auth: ${{ matrix.scenario.auth || 'keycloak' }}
       helmChartVersion: ""
-      include-image-tags: false
       identifier: compat-88p-${{ matrix.scenario.shortname }}
       platforms: gke
       infra-type: preemptible
@@ -175,7 +174,6 @@ jobs:
     secrets: inherit
     with:
       helmChartVersion: ""
-      include-image-tags: false
       identifier: compat-87m-${{ matrix.scenario.shortname }}
       platforms: gke
       infra-type: preemptible
