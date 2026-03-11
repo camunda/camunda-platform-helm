@@ -49,7 +49,7 @@ integration:
             eks: preemptible
           identity: keycloak
           persistence: elasticsearch-external
-          platforms: [gke,eks]
+          platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
         - name: opensearch
           enabled: false
           auth: keycloak
