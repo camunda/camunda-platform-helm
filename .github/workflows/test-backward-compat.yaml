@@ -64,7 +64,7 @@ jobs:
             shortname: qaelmt
           - name: qa-license
             shortname: lic
-            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite CAMUNDA_LICENSE | E2E_TESTS_LICENSE_KEY;"
+            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite LICENSE_VALID_COMMERCIAL_UNLIMITED | E2E_TESTS_LICENSE_KEY;"
           - name: qa-entra
             shortname: qaen
             auth: oidc
@@ -170,7 +170,7 @@ jobs:
             shortname: qamt
           - name: qa-license
             shortname: lic
-            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite CAMUNDA_LICENSE | E2E_TESTS_LICENSE_KEY;"
+            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite LICENSE_VALID_COMMERCIAL_UNLIMITED | E2E_TESTS_LICENSE_KEY;"
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
