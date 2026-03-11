@@ -3,6 +3,9 @@
 zeebe:
   image:
     tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
+zeebeGateway:
+  image:
+    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
 operate:
   image:
     tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
