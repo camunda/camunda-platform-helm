@@ -112,7 +112,6 @@ postgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 zeebeGateway:
-  contextPath: "/zeebe"
   ingress:
     grpc:
       enabled: true
