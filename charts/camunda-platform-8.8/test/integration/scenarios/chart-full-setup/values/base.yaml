@@ -278,7 +278,7 @@ orchestration:
     enabled: true
     initialDelaySeconds: 60
     periodSeconds: 10
-    failureThreshold: 5
+    failureThreshold: 10
     timeoutSeconds: 5
   ingress:
     grpc:
