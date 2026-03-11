@@ -121,7 +121,7 @@ write_matrix_entry() {
   echo "⭐ Generating matrix for $camunda_version and chart $chart_dir"
   if [ -f "$chart_dir/test/ci-test-config.yaml" ]; then
     camunda_version_previous="$(echo "$camunda_version" | awk -F. '{printf "%d.%d", $1, $2-1}')"
-    chart_version_previous="$(yq '.version' "${CHARTS_DIR}/camunda-platform-${camunda_version_previous}/Chart.yaml")"
+    local config_file="${REPO_ROOT}/.github/config/permitted-flows.yaml"
     declare -A used_shortnames=()
 
     readarray prScenarios < <(yq e -o=j -I=0 '.integration.case.pr.scenario.[]' $chart_dir/test/ci-test-config.yaml)
@@ -131,7 +131,6 @@ write_matrix_entry() {
         continue
       fi
       if [[ "${MANUAL_SCENARIO}" != "none" && "${MANUAL_SCENARIO}" != "all" ]]; then
-        echo "$(echo "$prScenario" | yq e '.name' -)"
         if [[ "${MANUAL_SCENARIO}" != "$(echo "$prScenario" | yq e '.name' -)" ]]; then
           continue
         fi
@@ -145,9 +144,6 @@ write_matrix_entry() {
           flows_raw="install"
         fi
       fi
-      if [ -z "$flows_raw" ] || [ "$flows_raw" = "null" ]; then
-        flows_raw="install"
-      fi
       scenario_name=$(echo "$prScenario" | yq e -r '.name' -)
       IFS=',' read -r -a flow_items <<< "$flows_raw"
       for flow_item in "${flow_items[@]}"; do
@@ -155,6 +151,13 @@ write_matrix_entry() {
         if [ -z "$flow_trimmed" ] || [ "$flow_trimmed" = "null" ]; then
           flow_trimmed="install"
         fi
+        case "$flow_trimmed" in
+          install | upgrade-patch | upgrade-minor) ;;
+          *)
+            echo "❌ Invalid flow '$flow_trimmed'. Valid flows: install, upgrade-patch, upgrade-minor. We do have a flow called modular-upgrade-minor.. however this can only be called directly on integration-test-template.yaml." >&2
+            exit 1
+            ;;
+        esac
         # Filter out upgrade-patch for keycloak-original and keycloak-mt scenarios because the templates on the released chart don't support custom realm bootstrapping.
         if [ "$flow_trimmed" = "upgrade-patch" ] && { [ "$scenario_name" = "keycloak-original" ] || [ "$scenario_name" = "keycloak-mt" ]; }; then
           continue
@@ -164,17 +167,9 @@ write_matrix_entry() {
           continue
         fi
         # Filter flows according to YAML config rules (fallback to legacy rules if config absent)
-        config_file="${REPO_ROOT}/.github/config/permitted-flows.yaml"
         if ! is_flow_permitted "$flow_trimmed" "$camunda_version" "$config_file"; then
           continue
         fi
-        case "$flow_trimmed" in
-          install | upgrade-patch | upgrade-minor) ;;
-          *)
-            echo "❌ Invalid flow '$flow_trimmed'. Valid flows: install, upgrade-patch, upgrade-minor. We do have a flow called modular-upgrade-minor.. however this can only be called directly on integration-test-template.yaml." >&2
-            exit 1
-            ;;
-        esac
         base_shortname=$(echo "$prScenario" | yq e -r '.shortname' -)
         flow_slug=$(echo "$flow_trimmed" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-\+//;s/-\+$//')
         shortname="${base_shortname}-${flow_slug}"
@@ -198,7 +193,7 @@ write_matrix_entry() {
         echo "    shortname: $(echo "$prScenario" | yq e '.shortname' -)" >> matrix_versions.txt
         echo "    auth: $(echo "$prScenario" | yq e '.auth' -)" >> matrix_versions.txt
         echo "    flow: ${flow_trimmed}" >> matrix_versions.txt
-        echo "    exclude: $(echo "$prScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+        echo "    exclude: $(echo "$prScenario" | yq e '.exclude // [] | join("|")' -)" >> matrix_versions.txt
         # infra-type is a map (per-platform), e.g. {gke: distroci, eks: preemptible}.
         infra_type_gke=$(echo "$prScenario" | yq e -r '.infra-type.gke // "preemptible"' -)
         infra_type_eks=$(echo "$prScenario" | yq e -r '.infra-type.eks // "preemptible"' -)
@@ -269,7 +264,7 @@ else
   # If no global trigger matched, only rebuild the affected charts
   if [ "$build_all_triggered" = false ]; then
     for camunda_version in ${ACTIVE_VERSIONS}; do
-      if [[ $(echo ${ALL_MODIFIED_FILES} | grep "charts/camunda-platform-${camunda_version}") ]]; then
+      if [[ $(echo "${ALL_MODIFIED_FILES}" | grep "charts/camunda-platform-${camunda_version}") ]]; then
         chart_dir="${CHARTS_DIR}/camunda-platform-${camunda_version}"
         write_matrix_entry "$camunda_version" "$chart_dir"
       fi
@@ -286,4 +281,4 @@ fi
 
 matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \
   | jq -c 'walk(if type == "number" then tostring else . end)')"
-echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT
+echo "matrix=${matrix}" | tee -a "${GITHUB_OUTPUT:-/dev/null}"
