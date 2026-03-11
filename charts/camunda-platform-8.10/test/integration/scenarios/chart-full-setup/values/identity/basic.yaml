@@ -1,6 +1,5 @@
-# Basic authentication
-# Layer 2: Auth method
-# Used when TEST_AUTH=basic
+# Basic auth configuration for 8.9
+# Layer 2: Auth method - Basic authentication (no identity provider)
 
 global:
   exporter:
@@ -13,11 +12,10 @@ orchestration:
       method: basic
       authenticationRefreshInterval: "PT30S"
 
+console:
+  enabled: false
+
 connectors:
   security:
     authentication:
       method: basic
-
-# Console requires OIDC, disable it for basic auth
-console:
-  enabled: false
