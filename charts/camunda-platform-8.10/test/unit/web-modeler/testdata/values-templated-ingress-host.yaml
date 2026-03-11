@@ -1,8 +1,8 @@
-# Test values for global.ingress.host templating in Web-Modeler ConfigMaps
+# Test values for global.host templating in Web-Modeler ConfigMaps
 global:
+  host: "{{ .Release.Name }}.example.com"
   ingress:
     enabled: true
-    host: "{{ .Release.Name }}.example.com"
     tls:
       enabled: true
 

@@ -235,8 +235,33 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
-  {{/* Secret configuration warnings */}}
-  {{ include "camundaPlatform.secretConfigurationWarnings" . }}
+  {{/* Warn about insecure inlineSecret usage */}}
+  {{- $inlineSecretSections := list -}}
+  {{- range $k, $v := .Values -}}
+    {{- if kindIs "map" $v -}}
+      {{- if eq $k "global" -}}
+        {{/* Drill into global.* children for finer-grained reporting */}}
+        {{- range $gk, $gv := $v -}}
+          {{- if and (kindIs "map" $gv) (mustToJson $gv | regexMatch "\"inlineSecret\":\"[^\"]+\"") -}}
+            {{- $inlineSecretSections = append $inlineSecretSections (printf "global.%s" $gk) -}}
+          {{- end -}}
+        {{- end -}}
+      {{- else -}}
+        {{- if (mustToJson $v | regexMatch "\"inlineSecret\":\"[^\"]+\"") -}}
+          {{- $inlineSecretSections = append $inlineSecretSections $k -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if $inlineSecretSections -}}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        (printf "SECURITY: inlineSecret is set in: [%s]." (join ", " $inlineSecretSections))
+        "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
+        "For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 
   {{/* Bitnami subchart deprecation warnings */}}
   {{- $bitnamiSubchartsEnabled := list -}}
@@ -259,17 +284,6 @@ The following values inside your values.yaml need to be set but were not:
         (join ", " $bitnamiSubchartsEnabled | printf "[%s].")
         "Please migrate to externally managed services before upgrading to 8.10."
         "For more details: https://docs.camunda.io/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/"
-    -}}
-    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-  {{- end }}
-
-  {{/* Orchestration profile deprecation warnings */}}
-  {{- if .Values._deprecatedIdentityProfileUsed }}
-    {{- $warningMessage := printf "%s %s %s %s"
-        "[camunda][warning]"
-        "DEPRECATION: \"orchestration.profiles.identity\" has been renamed to \"orchestration.profiles.admin\"."
-        "The \"identity\" profile is deprecated and will be removed in a future version."
-        "Please update your values file to use \"orchestration.profiles.admin\" instead."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
@@ -333,91 +347,6 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 {{- end }}
-
-{{/*
-**************************************************************
-Secret configuration constraint helpers.
-
-These constraints validate new vs legacy secret configuration usage across Camunda components
-**************************************************************
-*/}}
-
-{{/*
-camundaPlatform.secretConfigurationWarnings
-Generates warnings for secret configuration issues.
-Usage: {{ include "camundaPlatform.secretConfigurationWarnings" . }}
-*/}}
-{{- define "camundaPlatform.secretConfigurationWarnings" -}}
-  {{- $secretConfigs := list
-    (dict "path" "global.elasticsearch.tls" "config" .Values.global.elasticsearch.tls "isTlsConfig" true)
-    (dict "path" "global.opensearch.tls" "config" .Values.global.opensearch.tls "isTlsConfig" true)
-    (dict "path" "console.tls" "config" .Values.console.tls "isTlsConfig" true)
-    (dict "path" "global.identity.keycloak.auth" "config" .Values.global.identity.keycloak.auth "isSecretConfig" true)
-  -}}
-
-  {{- range $secretConfigs -}}
-    {{- $config := .config -}}
-    {{- $path := .path -}}
-    {{- $component := $path -}}
-    {{- $plaintextKey := .plaintextKey | default "password" -}}
-    {{- $legacySecretKey := .legacySecretKey | default "existingSecret" -}}
-
-    {{/* Check if legacy configuration is used */}}
-    {{- $hasLegacyConfig := false -}}
-    {{- if or .isTlsConfig .isSecretConfig -}}
-      {{/* Check legacy existingSecret key (used by TLS configs and secret configs) */}}
-      {{- if and $config (kindOf $config | eq "map") -}}
-        {{- if and (hasKey $config $legacySecretKey) (ne (get $config $legacySecretKey | default "" | toString) "") (ne (get $config $legacySecretKey | toString) "") -}}
-          {{- $hasLegacyConfig = true -}}
-        {{- end -}}
-      {{- end -}}
-    {{- end -}}
-
-    {{/* Check if new configuration is used */}}
-    {{- $hasNewConfig := false -}}
-    {{- if and $config (kindOf $config | eq "map") (hasKey $config "secret") $config.secret -}}
-      {{- if or (ne ($config.secret.existingSecret | default "") "") (ne ($config.secret.inlineSecret | default "") "") -}}
-        {{- $hasNewConfig = true -}}
-      {{- end -}}
-    {{- end -}}
-
-    {{/* Warn about using old method instead of new */}}
-    {{- if and $hasLegacyConfig (not $hasNewConfig) -}}
-      {{- $warningMessage := printf "%s %s %s %s %s"
-          "[camunda][warning]"
-          (printf "DEPRECATION: %s is using legacy secret configuration at '%s'." $component $path)
-          "This method is deprecated and will be removed in a future version."
-          (printf "Please migrate to the new format: '%s.secret.existingSecret' for referencing secrets" $path)
-          (printf "or '%s.secret.inlineSecret' for plain-text values (non-production only)." $path)
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end -}}
-
-    {{/* Warn when both legacy and new are used */}}
-    {{- if and $hasLegacyConfig $hasNewConfig -}}
-      {{- $warningMessage := printf "%s %s %s %s"
-          "[camunda][warning]"
-          (printf "%s has both legacy and new secret configuration defined at '%s'." $component $path)
-          "The new configuration will take precedence and the legacy configuration will be ignored."
-          "Please remove the legacy configuration to avoid confusion."
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end -}}
-
-    {{/* Warn about insecure inlineSecret usage */}}
-    {{- if and $hasNewConfig (ne ($config.secret.inlineSecret | default "") "") -}}
-      {{- $warningMessage := printf "%s %s %s %s %s"
-          "[camunda][warning]"
-          (printf "SECURITY: %s is using 'inlineSecret' at '%s.secret.inlineSecret'." $component $path)
-          "This stores secrets as plain-text in the Helm values and is NOT suitable for production use."
-          "For production environments, please use Kubernetes Secrets"
-          (printf "with '%s.secret.existingSecret' and '%s.secret.existingSecretKey'." $path $path)
-      -}}
-      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
-    {{- end -}}
-
-  {{- end -}}
-{{- end -}}
 
 {{/*
 **************************************************************
@@ -700,6 +629,11 @@ Orchestration
   "oldName" "orchestration.security.authentication.oidc.existingSecretKey"
 ) }}
 
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.orchestration.profiles "identity")
+  "oldName" "orchestration.profiles.identity"
+) }}
+
 {{- end }}
 
 {{/*
@@ -740,6 +674,11 @@ Web Modeler
   "oldName" "webModeler.restapi.mail.existingSecretPasswordKey"
 ) }}
 
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "user")
+  "oldName" "webModeler.restapi.externalDatabase.user"
+) }}
+
 {{- end }}
 
 {{/*
@@ -775,4 +714,78 @@ Global
 {{ include "camundaPlatform.keyRemoved" (dict
   "condition" (and .Values.global.secrets (hasKey .Values.global.secrets "annotations"))
   "oldName" "global.secrets.annotations"
+) }}
+
+{{/*
+*******************************************************************************
+Camunda 8.10 cycle deprecated keys.
+*******************************************************************************
+Keys deprecated during the 8.9 cycle, removed in the 8.10 chart.
+Chart Version: 15.0.0
+*******************************************************************************
+*/}}
+
+{{/*
+*******************************************************************************
+Global - Ingress
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.ingress "host")
+  "oldName" "global.ingress.host"
+) }}
+
+{{/*
+*******************************************************************************
+Global - Identity Keycloak Auth
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.keycloak.auth "existingSecret")
+  "oldName" "global.identity.keycloak.auth.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.keycloak.auth "existingSecretKey")
+  "oldName" "global.identity.keycloak.auth.existingSecretKey"
+) }}
+
+{{/*
+*******************************************************************************
+Global - Elasticsearch TLS
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.elasticsearch.tls "existingSecret")
+  "oldName" "global.elasticsearch.tls.existingSecret"
+) }}
+
+{{/*
+*******************************************************************************
+Global - OpenSearch TLS
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.opensearch.tls "existingSecret")
+  "oldName" "global.opensearch.tls.existingSecret"
+) }}
+
+{{/*
+*******************************************************************************
+Console
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.console "overrideConfiguration")
+  "oldName" "console.overrideConfiguration"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.console.tls "existingSecret")
+  "oldName" "console.tls.existingSecret"
 ) }}

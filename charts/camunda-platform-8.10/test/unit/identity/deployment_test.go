@@ -53,37 +53,6 @@ func TestDeploymentTemplate(t *testing.T) {
 func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
-			Name:                 "TestContainerWithExternalKeycloak",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"identity.enabled":                                "true",
-				"identityKeycloak.enabled":                        "false",
-				"global.identity.auth.enabled":                    "true",
-				"global.identity.keycloak.url.protocol":           "https",
-				"global.identity.keycloak.url.host":               "keycloak.prod.svc.cluster.local",
-				"global.identity.keycloak.url.port":               "8443",
-				"global.identity.keycloak.auth.adminUser":         "testAdmin",
-				"global.identity.keycloak.auth.existingSecret":    "ownExistingSecretKeycloak",
-				"global.identity.keycloak.auth.existingSecretKey": "test-admin",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				// then
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "VALUES_KEYCLOAK_SETUP_PASSWORD",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecretKeycloak"},
-								Key:                  "test-admin",
-							},
-						},
-					})
-			},
-		}, {
 			Name:                 "TestContainerWithExternalKeycloakNewSecretPattern",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
@@ -110,60 +79,6 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 							SecretKeyRef: &corev1.SecretKeySelector{
 								LocalObjectReference: corev1.LocalObjectReference{Name: "newPatternSecret"},
 								Key:                  "new-admin-key",
-							},
-						},
-					})
-			},
-		}, {
-			Name:                 "TestContainerWithExternalKeycloakLegacyNoSecretKey",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"identity.enabled":                             "true",
-				"identityKeycloak.enabled":                     "false",
-				"global.identity.auth.enabled":                 "true",
-				"global.identity.keycloak.url.protocol":        "https",
-				"global.identity.keycloak.url.host":            "keycloak.prod.svc.cluster.local",
-				"global.identity.keycloak.url.port":            "8443",
-				"global.identity.keycloak.auth.adminUser":      "testAdmin",
-				"global.identity.keycloak.auth.existingSecret": "ownExistingSecretKeycloak",
-				// existingSecretKey intentionally omitted — should default to "admin-password"
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				// Secret key should default to "admin-password" via the authPasswordConfig normalizer
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "VALUES_KEYCLOAK_SETUP_PASSWORD",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "ownExistingSecretKeycloak"},
-								Key:                  "admin-password",
-							},
-						},
-					})
-			},
-		}, {
-			Name:                 "TestContainerWithEmbeddedKeycloakDefaults",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"identity.enabled":             "true",
-				"global.identity.auth.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env,
-					corev1.EnvVar{
-						Name: "VALUES_KEYCLOAK_SETUP_PASSWORD",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "camunda-credentials"},
-								Key:                  "identity-keycloak-admin-password",
 							},
 						},
 					})
@@ -667,9 +582,9 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretValue",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"global.identity.auth.enabled":                 "true",
+				"global.identity.auth.enabled":                        "true",
 				"global.identity.auth.optimize.secret.existingSecret": "secretValue",
-				"identity.enabled":                             "true",
+				"identity.enabled":                                    "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -693,8 +608,8 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestContainerShouldSetOptimizeIdentitySecretViaReference",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                  "true",
-				"global.identity.auth.enabled":                      "true",
+				"identity.enabled":                                    "true",
+				"global.identity.auth.enabled":                        "true",
 				"global.identity.auth.optimize.secret.existingSecret": "ownExistingSecret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -900,10 +815,10 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Skip: true,
 			Name: "TestContainerShouldSetExternalDatabaseExistingSecret",
 			Values: map[string]string{
-				"identity.enabled":                                    "true",
-				"identityPostgresql.enabled":                          "false",
-				"identity.externalDatabase.enabled":                   "true",
-				"identity.externalDatabase.secret.existingSecret":            "postgres-secret-ext",
+				"identity.enabled":                                   "true",
+				"identityPostgresql.enabled":                         "false",
+				"identity.externalDatabase.enabled":                  "true",
+				"identity.externalDatabase.secret.existingSecret":    "postgres-secret-ext",
 				"identity.externalDatabase.secret.existingSecretKey": "identity-password-ext",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1022,13 +937,13 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestGlobalOidcAuthIncludesBothOidcSecrets",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                               "true",
-				"global.identity.auth.enabled":                                   "true",
-				"global.security.authentication.method":                          "oidc",
-				"connectors.enabled":                                             "true",
-				"connectors.security.authentication.oidc.secret.existingSecret":    "connectors-oidc-secret",
+				"identity.enabled":                                                    "true",
+				"global.identity.auth.enabled":                                        "true",
+				"global.security.authentication.method":                               "oidc",
+				"connectors.enabled":                                                  "true",
+				"connectors.security.authentication.oidc.secret.existingSecret":       "connectors-oidc-secret",
 				"connectors.security.authentication.oidc.secret.existingSecretKey":    "identity-connectors-client-token",
-				"orchestration.security.authentication.oidc.secret.existingSecret": "orchestration-oidc-secret",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
 				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -1062,13 +977,13 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestHybridAuthConnectorsBasicOrchestrationOidc",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                               "true",
-				"global.identity.auth.enabled":                                   "true",
-				"global.security.authentication.method":                          "oidc",
-				"connectors.security.authentication.method":                      "basic",
-				"orchestration.security.authentication.oidc.secret.existingSecret": "orchestration-oidc-secret",
+				"identity.enabled":                                                    "true",
+				"global.identity.auth.enabled":                                        "true",
+				"global.security.authentication.method":                               "oidc",
+				"connectors.security.authentication.method":                           "basic",
+				"orchestration.security.authentication.oidc.secret.existingSecret":    "orchestration-oidc-secret",
 				"orchestration.security.authentication.oidc.secret.existingSecretKey": "identity-orchestration-client-token",
-				"connectors.enabled":                                             "true",
+				"connectors.enabled":                                                  "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

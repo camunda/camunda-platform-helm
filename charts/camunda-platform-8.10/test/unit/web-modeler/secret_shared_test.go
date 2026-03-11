@@ -70,10 +70,10 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestSecretOnlyContainsPusherAppKeyWhenSecretProvided",
 			Values: map[string]string{
-				"identity.enabled":                                "true",
-				"webModeler.enabled":                             "true",
-				"webModeler.restapi.mail.fromAddress":            "example@example.com",
-				"webModeler.restapi.pusher.secret.inlineSecret":  "my-inline-secret",
+				"identity.enabled":                              "true",
+				"webModeler.enabled":                            "true",
+				"webModeler.restapi.mail.fromAddress":           "example@example.com",
+				"webModeler.restapi.pusher.secret.inlineSecret": "my-inline-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret
@@ -87,10 +87,10 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestSecretOnlyContainsPusherAppSecretWhenAppKeyProvided",
 			Values: map[string]string{
-				"identity.enabled":                               "true",
-				"webModeler.enabled":                            "true",
-				"webModeler.restapi.mail.fromAddress":           "example@example.com",
-				"webModeler.restapi.pusher.client.secret.inlineSecret":                 "my-inline-app-key",
+				"identity.enabled":                                     "true",
+				"webModeler.enabled":                                   "true",
+				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"webModeler.restapi.pusher.client.secret.inlineSecret": "my-inline-app-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret
@@ -104,11 +104,11 @@ func (s *secretSharedTest) TestDifferentValuesInputs() {
 		{
 			Name: "TestSecretOnlyContainsPusherAppKeyWhenExistingSecretProvided",
 			Values: map[string]string{
-				"identity.enabled":                                    "true",
-				"webModeler.enabled":                                  "true",
-				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":     "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":  "my-pusher-key",
+				"identity.enabled":                                   "true",
+				"webModeler.enabled":                                 "true",
+				"webModeler.restapi.mail.fromAddress":                "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":    "my-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey": "my-pusher-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var secret coreV1.Secret

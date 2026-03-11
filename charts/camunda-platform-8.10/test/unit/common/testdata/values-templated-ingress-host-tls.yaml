@@ -1,8 +1,8 @@
-# Test values for global.ingress.host templating with TLS
+# Test values for global.host templating with TLS
 global:
+  host: "{{ .Release.Name }}.example.com"
   ingress:
     enabled: true
-    host: "{{ .Release.Name }}.example.com"
     tls:
       enabled: true
       secretName: tls-secret

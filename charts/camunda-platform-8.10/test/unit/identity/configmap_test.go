@@ -253,14 +253,15 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestKeycloakAdminUserCustom",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":                                "true",
-				"identityKeycloak.enabled":                        "false",
-				"global.identity.auth.enabled":                    "true",
-				"global.identity.keycloak.url.protocol":           "https",
-				"global.identity.keycloak.url.host":               "keycloak.example.com",
-				"global.identity.keycloak.url.port":               "8443",
-				"global.identity.keycloak.auth.adminUser":         "customAdmin",
-				"global.identity.keycloak.auth.existingSecret":    "some-secret",
+				"identity.enabled":                                       "true",
+				"identityKeycloak.enabled":                               "false",
+				"global.identity.auth.enabled":                           "true",
+				"global.identity.keycloak.url.protocol":                  "https",
+				"global.identity.keycloak.url.host":                      "keycloak.example.com",
+				"global.identity.keycloak.url.port":                      "8443",
+				"global.identity.keycloak.auth.adminUser":                "customAdmin",
+				"global.identity.keycloak.auth.secret.existingSecret":    "some-secret",
+				"global.identity.keycloak.auth.secret.existingSecretKey": "admin-password",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap

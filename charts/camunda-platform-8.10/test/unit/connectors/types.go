@@ -21,10 +21,10 @@ type ServletYAML struct {
 }
 
 type CamundaYAML struct {
-	Connector ConnectorYAML `yaml:"connector"`
-	Operate   OperateYAML   `yaml:"operate"`
-	Identity  IdentityYAML  `yaml:"identity"`
-	Client CamundaClientYAML `yaml:"client"`
+	Connector ConnectorYAML     `yaml:"connector"`
+	Operate   OperateYAML       `yaml:"operate"`
+	Identity  IdentityYAML      `yaml:"identity"`
+	Client    CamundaClientYAML `yaml:"client"`
 }
 
 type ConnectorYAML struct {

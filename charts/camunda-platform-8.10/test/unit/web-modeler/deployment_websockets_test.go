@@ -61,7 +61,7 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "/modeler",
 				"global.ingress.enabled":              "true",
-				"global.ingress.host":                 "c8.example.com",
+				"global.host":                         "c8.example.com",
 				"global.ingress.tls.enabled":          "false",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
@@ -269,11 +269,11 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPusherSecretUsesExistingSecret",
 			Values: map[string]string{
-				"identity.enabled":                                    "true",
-				"webModeler.enabled":                                  "true",
-				"webModeler.restapi.mail.fromAddress":                 "example@example.com",
-				"webModeler.restapi.pusher.secret.existingSecret":     "my-custom-secret",
-				"webModeler.restapi.pusher.secret.existingSecretKey":  "my-pusher-key",
+				"identity.enabled":                                   "true",
+				"webModeler.enabled":                                 "true",
+				"webModeler.restapi.mail.fromAddress":                "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":    "my-custom-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey": "my-pusher-key",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -298,10 +298,10 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPusherSecretUsesInlineSecret",
 			Values: map[string]string{
-				"identity.enabled":                               "true",
-				"webModeler.enabled":                             "true",
-				"webModeler.restapi.mail.fromAddress":            "example@example.com",
-				"webModeler.restapi.pusher.secret.inlineSecret":  "my-inline-secret-value",
+				"identity.enabled":                              "true",
+				"webModeler.enabled":                            "true",
+				"webModeler.restapi.mail.fromAddress":           "example@example.com",
+				"webModeler.restapi.pusher.secret.inlineSecret": "my-inline-secret-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
@@ -351,10 +351,10 @@ func (s *WebsocketsDeploymentTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestPusherAppKeyUsesInlineSecret",
 			Values: map[string]string{
-				"identity.enabled":                                       "true",
-				"webModeler.enabled":                                     "true",
-				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
-				"webModeler.restapi.pusher.client.secret.inlineSecret":   "my-inline-app-key-value",
+				"identity.enabled":                                     "true",
+				"webModeler.enabled":                                   "true",
+				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"webModeler.restapi.pusher.client.secret.inlineSecret": "my-inline-app-key-value",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment

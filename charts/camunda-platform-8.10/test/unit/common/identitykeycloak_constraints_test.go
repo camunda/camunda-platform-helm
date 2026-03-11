@@ -64,21 +64,6 @@ func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 				require.NoError(t, err, "[camunda][error] Identity is disabled but identityKeycloak is enabled")
 			},
 		}, {
-			Name: "TestKeycloakAuthLegacySecretRendersSuccessfully",
-			Values: map[string]string{
-				"identity.enabled":                             "true",
-				"identityKeycloak.enabled":                     "false",
-				"global.identity.keycloak.url.protocol":        "https",
-				"global.identity.keycloak.url.host":            "keycloak.prod.svc.cluster.local",
-				"global.identity.keycloak.url.port":            "8443",
-				"global.identity.keycloak.auth.adminUser":      "testAdmin",
-				"global.identity.keycloak.auth.existingSecret": "legacySecret",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// Legacy keycloak auth config should render successfully (warning in NOTES.txt, not a failure)
-				require.NoError(t, err)
-			},
-		}, {
 			Name: "TestKeycloakAuthNewSecretPatternRendersSuccessfully",
 			Values: map[string]string{
 				"identity.enabled":                                       "true",
@@ -96,12 +81,12 @@ func (s *ConstraintsTemplateTest) TestDifferentValuesInputs() {
 		}, {
 			Name: "TestKeycloakAuthAdminUserWithoutSecretFails",
 			Values: map[string]string{
-				"identity.enabled":                              "true",
-				"identityKeycloak.enabled":                      "false",
-				"global.identity.keycloak.url.protocol":         "https",
-				"global.identity.keycloak.url.host":             "keycloak.prod.svc.cluster.local",
-				"global.identity.keycloak.url.port":             "8443",
-				"global.identity.keycloak.auth.adminUser":       "testAdmin",
+				"identity.enabled":                        "true",
+				"identityKeycloak.enabled":                "false",
+				"global.identity.keycloak.url.protocol":   "https",
+				"global.identity.keycloak.url.host":       "keycloak.prod.svc.cluster.local",
+				"global.identity.keycloak.url.port":       "8443",
+				"global.identity.keycloak.auth.adminUser": "testAdmin",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.Error(t, err)

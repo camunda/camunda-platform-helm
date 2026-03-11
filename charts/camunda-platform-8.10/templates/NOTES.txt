@@ -160,7 +160,7 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 
 {{- if .Values.global.ingress.enabled }}
 {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-- Camunda REST API: {{ $proto }}://{{ tpl .Values.global.ingress.host $ }}
+- Camunda REST API: {{ $proto }}://{{ tpl .Values.global.host $ }}
 {{- end }}
 
 {{ if .Values.global.createReleaseInfo -}}

@@ -162,9 +162,6 @@ global:
       nginx.ingress.kubernetes.io/proxy-buffering: "on"
       # The proxy-body-size should be the same size as global.config.requestBodySize.
       nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    # Ingress.host can be used to define the host of the ingress rule. https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
-    ## @param global.ingress.host (DEPRECATED - use global.host instead) If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).
-    host: ""
     ## @param global.ingress.pathType can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
     pathType: Prefix
     ## @extra global.ingress.tls configuration for tls on the ingress resource https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
@@ -181,7 +178,6 @@ global:
   ## @param global.elasticsearch.external (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch or orchestration.data.secondaryStorage.elasticsearch) if true, tries to connect to an external elasticsearch
   ## @extra global.elasticsearch.tls (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls or orchestration.data.secondaryStorage.elasticsearch.tls)
   ## @param global.elasticsearch.tls.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.enabled or orchestration.data.secondaryStorage.elasticsearch.tls) if true, enable tls for external elasticsearch
-  ## @param global.elasticsearch.tls.existingSecret (DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch
   ## @extra global.elasticsearch.auth (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth or orchestration.data.secondaryStorage.elasticsearch.auth)
   ## @param global.elasticsearch.auth.username (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.username or orchestration.data.secondaryStorage.elasticsearch.auth.username) the username for external elasticsearch
   elasticsearch:
@@ -189,7 +185,6 @@ global:
     external: false
     tls:
       enabled: false
-      existingSecret: ""
       ## @extra global.elasticsearch.tls.secret (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret or orchestration.data.secondaryStorage.elasticsearch.tls.secret)
       secret:
         ## @param global.elasticsearch.tls.secret.existingSecret (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate
@@ -227,7 +222,6 @@ global:
   ## @param global.opensearch.aws.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.aws.enabled or orchestration.data.secondaryStorage.opensearch) Enabling AWS IRSA
   ## @extra global.opensearch.tls (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls or orchestration.data.secondaryStorage.opensearch.tls)
   ## @param global.opensearch.tls.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.enabled or orchestration.data.secondaryStorage.opensearch.tls) if true, enable tls for external opensearch
-  ## @param global.opensearch.tls.existingSecret (DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch
   ## @extra global.opensearch.auth (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth or orchestration.data.secondaryStorage.opensearch.auth)
   ## @param global.opensearch.auth.username (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.username or orchestration.data.secondaryStorage.opensearch.auth.username) the username for external opensearch
   opensearch:
@@ -236,7 +230,6 @@ global:
       enabled: false
     tls:
       enabled: false
-      existingSecret: ""
       ## @extra global.opensearch.tls.secret (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret or orchestration.data.secondaryStorage.opensearch.tls.secret)
       secret:
         ## @param global.opensearch.tls.secret.existingSecret (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate
@@ -443,10 +436,6 @@ global:
       auth:
         ## @param global.identity.keycloak.auth.adminUser defines the admin user to access existing Keycloak.
         adminUser: ""
-        ## @skip global.identity.keycloak.auth.existingSecret (DEPRECATED - use global.identity.keycloak.auth.secret instead) @skip because these are internal legacy keys, not public API.
-        existingSecret: ""
-        ## @skip global.identity.keycloak.auth.existingSecretKey (DEPRECATED - use global.identity.keycloak.auth.secret instead) @skip because these are internal legacy keys, not public API.
-        existingSecretKey: ""
         ## @extra global.identity.keycloak.auth.secret configuration to provide the Keycloak admin password secret.
         secret:
           ## @param global.identity.keycloak.auth.secret.inlineSecret can be used to provide the Keycloak admin password as a plain-text value for non-production usage.
@@ -1313,8 +1302,6 @@ console:
 
   ## @param console.configuration Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)
   configuration: ""
-  ##@param console.overrideConfiguration DEPRECATED Use console.extraConfiguration instead. When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`
-  overrideConfiguration: ""
   ## @param console.extraConfiguration if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.
   extraConfiguration: []
 
@@ -1345,8 +1332,6 @@ console:
   tls:
     ## @param console.tls.enabled if true, enable TLS traffic for console
     enabled: false
-    ## @param console.tls.existingSecret (DEPRECATED - use console.tls.secret instead) can be used to provide the name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.
-    existingSecret: ""
     ## @param console.tls.certKeyFilename defines certificate Key filename
     certKeyFilename: ""
     ## console.tls.secret New secret configuration pattern (>= 8.9)
@@ -1605,8 +1590,6 @@ webModeler:
       database: "web-modeler"
       ## @param webModeler.restapi.externalDatabase.username defines the database user
       username: ""
-      ## @param webModeler.restapi.externalDatabase.user (DEPRECATED - use webModeler.restapi.externalDatabase.username instead) defines the database user
-      user: ""
       ## @extra webModeler.restapi.externalDatabase.secret configuration to provide the database password secret.
       secret:
         ## @param webModeler.restapi.externalDatabase.secret.inlineSecret can be used to provide the password as a plain-text value for non-production usage.
@@ -2378,7 +2361,7 @@ orchestration:
   ## @param orchestration.debug if true, extra info is printed.
   debug: false
 
-  ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, admin, operate). Note: The "identity" profile has been renamed to "admin" in Camunda 8.9. Using "orchestration.profiles.identity" is deprecated.
+  ## @param orchestration.profiles [object] defines which components of the orchestration orchestration are enabled (e.g., broker, admin, operate).
   profiles:
     broker: true
     admin: true

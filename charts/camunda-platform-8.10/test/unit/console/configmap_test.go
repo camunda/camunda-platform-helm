@@ -75,12 +75,12 @@ func (s *configMapTemplateTest) TestContextPathRootDoesNotCreateDoubleSlashes() 
 		{
 			Name: "ContextPathRootShouldNotCauseDoubleSlashesInURLs",
 			Values: map[string]string{
-				"console.enabled":                       "true",
-				"identity.enabled":                      "true",
-				"orchestration.enabled":                 "true",
-				"global.ingress.enabled":                "true",
-				"global.ingress.host":                   "camunda.example.com",
-				"orchestration.contextPath":             "/",
+				"console.enabled":           "true",
+				"identity.enabled":          "true",
+				"orchestration.enabled":     "true",
+				"global.ingress.enabled":    "true",
+				"global.host":               "camunda.example.com",
+				"orchestration.contextPath": "/",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -105,7 +105,7 @@ func (s *configMapTemplateTest) TestGlobalIngressHostTemplating() {
 			ValuesFiles: []string{filepath.Join(s.chartPath, "test/unit/console/testdata/values-templated-ingress-host.yaml")},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
-				// Verify templated global.ingress.host is resolved in releaseInfo URLs
+				// Verify templated global.host is resolved in releaseInfo URLs
 				// The release name is "camunda-platform-test" so host should resolve to "camunda-platform-test.example.com"
 				require.Contains(t, output, "https://camunda-platform-test.example.com", "releaseInfo URLs should contain resolved templated host")
 				// Verify literal template syntax is NOT present (would indicate tpl was not called)
@@ -115,12 +115,12 @@ func (s *configMapTemplateTest) TestGlobalIngressHostTemplating() {
 		{
 			Name: "TestReleaseInfoURLsWithLiteralIngressHost",
 			Values: map[string]string{
-				"console.enabled":              "true",
-				"identity.enabled":             "true",
-				"orchestration.enabled":        "true",
-				"global.ingress.enabled":       "true",
-				"global.ingress.host":          "literal.example.com",
-				"global.ingress.tls.enabled":   "true",
+				"console.enabled":            "true",
+				"identity.enabled":           "true",
+				"orchestration.enabled":      "true",
+				"global.ingress.enabled":     "true",
+				"global.host":                "literal.example.com",
+				"global.ingress.tls.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
