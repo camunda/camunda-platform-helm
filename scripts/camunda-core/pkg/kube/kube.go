@@ -258,6 +258,10 @@ func (c *Client) EnsureDockerHubSecret(ctx context.Context, namespace, username,
 // EnsureRegistrySecret creates or updates a Docker registry pull secret with the given
 // secret name and registry URL in the specified namespace. Credentials are required;
 // if either username or password is empty the call returns an error.
+//
+// The function first attempts server-side apply (PATCH). If that fails with Forbidden
+// (e.g. Teleport proxies that reject apply-patch content types), it falls back to a
+// classic Get → Create/Update flow.
 func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName, registryURL, username, password string) error {
 	if username == "" || password == "" {
 		return fmt.Errorf("cannot create docker registry secret %q in namespace %q: credentials not provided (both username and password are required)", secretName, namespace)
@@ -269,17 +273,7 @@ func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName
 		Str("registry", registryURL).
 		Msg("creating/updating docker registry secret")
 
-	dockerConfig := map[string]any{
-		"auths": map[string]any{
-			registryURL: map[string]any{
-				"username": username,
-				"password": password,
-				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
-			},
-		},
-	}
-
-	dockerConfigJSON, err := json.Marshal(dockerConfig)
+	dockerConfigJSON, err := buildDockerConfigJSON(registryURL, username, password)
 	if err != nil {
 		return fmt.Errorf("failed to marshal docker config: %w", err)
 	}
@@ -316,9 +310,19 @@ func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName
 		}
 	}
 	if err != nil {
-		// Check if error is due to namespace termination
-		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+		if checkNamespaceTerminating(err) {
 			return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, namespace, c.kubeContext, err)
+		}
+		// Fall back to Create/Update when server-side apply is rejected (e.g. Teleport proxy).
+		if apierrors.IsForbidden(err) {
+			logging.Logger.Warn().
+				Err(err).
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("server-side apply forbidden (possible Teleport proxy limitation), falling back to create/update")
+			return c.createOrUpdateSecret(ctx, namespace, secretName, corev1.SecretTypeDockerConfigJson, map[string][]byte{
+				corev1.DockerConfigJsonKey: dockerConfigJSON,
+			})
 		}
 		return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
 	}
@@ -326,8 +330,73 @@ func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName
 	return nil
 }
 
+func buildDockerConfigJSON(registryURL, username, password string) ([]byte, error) {
+	dockerConfig := map[string]any{
+		"auths": map[string]any{
+			registryURL: map[string]any{
+				"username": username,
+				"password": password,
+				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+			},
+		},
+	}
+	return json.Marshal(dockerConfig)
+}
+
+func checkNamespaceTerminating(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "is being terminated") || strings.Contains(msg, "because it is being terminated")
+}
+
+// createOrUpdateSecret performs a classic Get → Create/Update flow for a Secret.
+// This is used as a fallback when server-side apply is rejected (e.g. by Teleport proxies
+// that don't support the PATCH apply-patch+yaml content type).
+func (c *Client) createOrUpdateSecret(ctx context.Context, namespace, secretName string, secretType corev1.SecretType, data map[string][]byte) error {
+	secretsClient := c.clientset.CoreV1().Secrets(namespace)
+
+	existing, err := secretsClient.Get(ctx, secretName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: namespace,
+			},
+			Type: secretType,
+			Data: data,
+		}
+		_, createErr := secretsClient.Create(ctx, secret, metav1.CreateOptions{})
+		if createErr != nil {
+			return fmt.Errorf("failed to create secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, createErr)
+		}
+		logging.Logger.Info().
+			Str("namespace", namespace).
+			Str("secret", secretName).
+			Msg("created secret via fallback create")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
+	}
+
+	existing.Data = data
+	existing.Type = secretType
+	_, updateErr := secretsClient.Update(ctx, existing, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return fmt.Errorf("failed to update secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, updateErr)
+	}
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Str("secret", secretName).
+		Msg("updated secret via fallback update")
+	return nil
+}
+
 // EnsureOpaqueSecret creates or updates an Opaque secret with string data in the
-// specified namespace using server-side apply.
+// specified namespace. Attempts server-side apply first, falling back to Create/Update
+// if Forbidden (e.g. Teleport proxy).
 func (c *Client) EnsureOpaqueSecret(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
 	if secretName == "" {
 		return errors.New("secret name must not be empty")
@@ -348,12 +417,59 @@ func (c *Client) EnsureOpaqueSecret(ctx context.Context, namespace, secretName s
 		defaultApplyOptions(),
 	)
 	if err != nil {
-		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
+		if checkNamespaceTerminating(err) {
 			return fmt.Errorf("failed to apply opaque secret %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, namespace, c.kubeContext, err)
+		}
+		if apierrors.IsForbidden(err) {
+			logging.Logger.Warn().
+				Err(err).
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("server-side apply forbidden, falling back to create/update")
+			return c.createOrUpdateOpaqueSecret(ctx, namespace, secretName, stringData)
 		}
 		return fmt.Errorf("failed to apply opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
 	}
 
+	return nil
+}
+
+func (c *Client) createOrUpdateOpaqueSecret(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	secretsClient := c.clientset.CoreV1().Secrets(namespace)
+
+	existing, err := secretsClient.Get(ctx, secretName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: namespace,
+			},
+			Type:       corev1.SecretTypeOpaque,
+			StringData: stringData,
+		}
+		_, createErr := secretsClient.Create(ctx, secret, metav1.CreateOptions{})
+		if createErr != nil {
+			return fmt.Errorf("failed to create opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, createErr)
+		}
+		logging.Logger.Info().
+			Str("namespace", namespace).
+			Str("secret", secretName).
+			Msg("created opaque secret via fallback create")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
+	}
+
+	existing.StringData = stringData
+	_, updateErr := secretsClient.Update(ctx, existing, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return fmt.Errorf("failed to update opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, updateErr)
+	}
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Str("secret", secretName).
+		Msg("updated opaque secret via fallback update")
 	return nil
 }
 
