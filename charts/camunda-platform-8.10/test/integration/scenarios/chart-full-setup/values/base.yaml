@@ -254,11 +254,7 @@ orchestration:
     failureThreshold: 5
     timeoutSeconds: 5
   livenessProbe:
-    enabled: true
-    initialDelaySeconds: 60
-    periodSeconds: 10
-    failureThreshold: 10
-    timeoutSeconds: 5
+    enabled: false
   ingress:
     grpc:
       enabled: true
