@@ -106,6 +106,9 @@ identityKeycloak:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX-$FLOW
