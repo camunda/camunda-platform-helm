@@ -6,9 +6,13 @@
 # Each job mirrors a real caller's `with:` block. If any job fails to start,
 # it means the template contract has broken for that caller.
 #
-# NOTE: This workflow uses test-enabled: false so no actual infrastructure is
+# NOTE: This workflow uses test-enabled: true so no actual infrastructure is
 # provisioned -- we are only validating that the workflow_call interface accepts
 # all the inputs the callers send and that the init/matrix generation succeeds.
+#
+# Scenario matrices are derived from the simple (install-only) sm-manual
+# workflows in c8-cross-component-e2e-tests. Each unique scenario/shortname
+# combination is tested to ensure the template accepts that input pattern.
 
 name: "Test - Backward Compatibility"
 
@@ -40,31 +44,53 @@ jobs:
   # ===========================================================================
   # Caller 1: c8-cross-component-e2e-tests — playwright_sm_reusable_flow_8_8_plus.yaml
   # Source: https://github.com/camunda/c8-cross-component-e2e-tests
-  # This is the most input-heavy caller (22 inputs explicitly set).
+  #
+  # Matrix of unique scenario/shortname combinations from simple install-only
+  # sm-manual workflows targeting 8.8+.
   # ===========================================================================
   compat-e2e-8-8-plus:
-    name: "Compat: e2e 8.8+"
+    name: "Compat: e2e 8.8+ (${{ matrix.scenario.shortname }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - name: qa-elasticsearch
+            shortname: qael
+          - name: qa-opensearch
+            shortname: qaos
+          - name: qa-elasticsearch-rba
+            shortname: qaelrba
+          - name: qa-elasticsearch-mt
+            shortname: qaelmt
+          - name: qa-license
+            shortname: lic
+          - name: qa-entra
+            shortname: qaen
+            auth: oidc
+            initialClaimValue: placeholder-for-compat-test
+          - name: qa-document-store
+            shortname: qadoc
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
-      auth: keycloak
+      auth: ${{ matrix.scenario.auth || 'keycloak' }}
       helmChartVersion: ""
       include-image-tags: false
-      identifier: compat-e2e-88p
+      identifier: compat-88p-${{ matrix.scenario.shortname }}
       platforms: gke
       infra-type: preemptible
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       camunda-helm-dir: camunda-platform-8.8
       teleport-token: infra-ci-prod-github-action-distribution
-      namespace-prefix: "backcompate2e88p-"
+      namespace-prefix: "bc88p${{ matrix.scenario.shortname }}-"
       deployment-ttl: 30m
       test-enabled: true
       e2e-enabled: true
-      scenario: qa-elasticsearch
-      shortname: es
+      scenario: ${{ matrix.scenario.name }}
+      shortname: ${{ matrix.scenario.shortname }}
       always-delete-namespace: true
       flows: install
-      initialClaimValue: ""
+      initialClaimValue: ${{ matrix.scenario.initialClaimValue || '' }}
       values-config: |
         {
           "E2E_TESTS_CAMUNDA_HELM_DIR": "camunda-platform-8.8",
@@ -86,28 +112,45 @@ jobs:
 
   # ===========================================================================
   # Caller 2: c8-cross-component-e2e-tests — playwright_sm_reusable_flow_8_7_minus.yaml
-  # Fewer inputs set; relies on defaults for auth, flows, initialClaimValue.
+  # Source: https://github.com/camunda/c8-cross-component-e2e-tests
+  #
+  # Matrix of unique scenario/shortname combinations from simple install-only
+  # sm-manual workflows targeting 8.7-.
   # Uses per-component image tags instead of unified orchestration/core tags.
   # ===========================================================================
   compat-e2e-8-7-minus:
-    name: "Compat: e2e 8.7-"
+    name: "Compat: e2e 8.7- (${{ matrix.scenario.shortname }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - name: qa-elasticsearch
+            shortname: qael
+          - name: qa-opensearch
+            shortname: qaos
+          - name: qa-elasticsearch-rba
+            shortname: qarba
+          - name: qa-elasticsearch-mt
+            shortname: qamt
+          - name: qa-license
+            shortname: lic
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
       helmChartVersion: ""
       include-image-tags: false
-      identifier: compat-e2e-87m
+      identifier: compat-87m-${{ matrix.scenario.shortname }}
       platforms: gke
       infra-type: preemptible
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       camunda-helm-dir: camunda-platform-8.7
       teleport-token: infra-ci-prod-github-action-distribution
-      namespace-prefix: "backcompate2e-"
+      namespace-prefix: "bc87m${{ matrix.scenario.shortname }}-"
       deployment-ttl: 30m
       test-enabled: true
       e2e-enabled: true
-      scenario: qa-elasticsearch
-      shortname: es
+      scenario: ${{ matrix.scenario.name }}
+      shortname: ${{ matrix.scenario.shortname }}
       always-delete-namespace: true
       # NOTE: auth, flows, initialClaimValue are NOT set — relying on defaults:
       #   auth: keycloak, flows: install, initialClaimValue: ""
