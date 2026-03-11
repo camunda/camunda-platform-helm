@@ -206,6 +206,6 @@ runs:
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/test-results/playwright-results.json
         name: playwright-results-json-${{ inputs.camunda-helm-dir }}
         if-no-files-found: error
-        retention-days: 90
+        retention-days: 30
 
 
