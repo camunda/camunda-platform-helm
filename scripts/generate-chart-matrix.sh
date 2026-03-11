@@ -189,7 +189,7 @@ write_matrix_entry() {
         echo "  - version: \"${camunda_version}\"" >> matrix_versions.txt
         echo "    camundaVersionPrevious: \"$(echo "$camunda_version_previous")\"" >> matrix_versions.txt
         echo "    case: pr" >> matrix_versions.txt
-        platforms_value=$(echo "$prScenario" | yq e '.platforms | join(",")' -)
+        platforms_value=$(echo "$prScenario" | yq e '.platforms // [] | join(",")' -)
         if [ -z "$platforms_value" ] || [ "$platforms_value" = "null" ]; then
           platforms_value="gke"
         fi
