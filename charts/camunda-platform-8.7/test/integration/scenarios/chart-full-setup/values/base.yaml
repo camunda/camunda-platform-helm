@@ -38,9 +38,6 @@ identity:
         -XX:+UseStringDeduplication
         -Xms512m
         -Xmx1536m
-    # Virtual threads (JDK 21+): reduces thread-pool initialization overhead for I/O-bound tasks.
-    - name: SPRING_THREADS_VIRTUAL_ENABLED
-      value: "true"
   startupProbe:
     enabled: true
     initialDelaySeconds: 5
@@ -109,9 +106,6 @@ operate:
     -XX:+UseStringDeduplication
     -Xms512m
     -Xmx1536m
-  env:
-    - name: SPRING_THREADS_VIRTUAL_ENABLED
-      value: "true"
   startupProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -139,9 +133,6 @@ optimize:
     -XX:+UseStringDeduplication
     -Xms512m
     -Xmx1536m
-  env:
-    - name: SPRING_THREADS_VIRTUAL_ENABLED
-      value: "true"
   startupProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -169,9 +160,6 @@ tasklist:
     -XX:+UseStringDeduplication
     -Xms512m
     -Xmx1536m
-  env:
-    - name: SPRING_THREADS_VIRTUAL_ENABLED
-      value: "true"
   startupProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -227,9 +215,6 @@ webModeler:
       -XX:TieredStopAtLevel=1
       -XX:+UseG1GC
       -XX:+UseStringDeduplication
-    env:
-      - name: SPRING_THREADS_VIRTUAL_ENABLED
-        value: "true"
     # Wait for PostgreSQL to accept connections before starting restapi.
     # Prevents restapi from failing on DB connection during Spring context init.
     initContainers:
@@ -317,9 +302,6 @@ zeebe:
     -XX:+UseStringDeduplication
     -Xms1024m
     -Xmx2048m
-  env:
-    - name: SPRING_THREADS_VIRTUAL_ENABLED
-      value: "true"
   resources:
     requests:
       cpu: 2000m
@@ -355,9 +337,6 @@ zeebeGateway:
     -XX:+UseStringDeduplication
     -Xms512m
     -Xmx1536m
-  env:
-    - name: SPRING_THREADS_VIRTUAL_ENABLED
-      value: "true"
   startupProbe:
     enabled: true
     initialDelaySeconds: 10

@@ -8,7 +8,5 @@
 # env list, so we must re-include any base env vars that are still needed.
 orchestration:
   env:
-    - name: SPRING_THREADS_VIRTUAL_ENABLED
-      value: "true"
     - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
       value: "false"
