@@ -224,3 +224,81 @@ func TestRunPrepareValues_LegacyWithPlaceholders(t *testing.T) {
 		t.Errorf("placeholder not substituted, got:\n%s", string(data))
 	}
 }
+
+func TestRunPrepareValues_ImageTagsAutoEnabled(t *testing.T) {
+	scenarioDir := t.TempDir()
+	outputDir := t.TempDir()
+
+	writeTempFile(t, scenarioDir, "values/base.yaml", `global:
+  image:
+    tag: "default"
+`)
+	writeTempFile(t, scenarioDir, "values/base-image-tags.yaml", `orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+`)
+
+	pv := &prepareValuesFlags{
+		scenarioPath: scenarioDir,
+		scenario:     "qa-elasticsearch",
+		identity:     "keycloak",
+		persistence:  "elasticsearch",
+		platform:     "gke",
+		imageTags:    false,
+		valuesConfig: `{"E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8.0-auto"}`,
+		outputDir:    outputDir,
+		logLevel:     "error",
+	}
+
+	stdout, err := captureStdout(t, func() error { return runPrepareValues(pv) })
+	if err != nil {
+		t.Fatalf("runPrepareValues (image tags auto) failed: %v", err)
+	}
+
+	data, readErr := os.ReadFile(stdout)
+	if readErr != nil {
+		t.Fatalf("failed to read output: %v", readErr)
+	}
+	if !strings.Contains(string(data), "8.8.0-auto") {
+		t.Errorf("image tag not substituted (auto-detection failed), got:\n%s", string(data))
+	}
+}
+
+func TestRunPrepareValues_ImageTagsNotAutoEnabledWithoutTagKeys(t *testing.T) {
+	scenarioDir := t.TempDir()
+	outputDir := t.TempDir()
+
+	writeTempFile(t, scenarioDir, "values/base.yaml", `global:
+  image:
+    tag: "default"
+`)
+	writeTempFile(t, scenarioDir, "values/base-image-tags.yaml", `orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+`)
+
+	pv := &prepareValuesFlags{
+		scenarioPath: scenarioDir,
+		scenario:     "qa-elasticsearch",
+		identity:     "keycloak",
+		persistence:  "elasticsearch",
+		platform:     "gke",
+		imageTags:    false,
+		valuesConfig: `{"E2E_TESTS_SEARCH_ENGINE": "opensearch"}`,
+		outputDir:    outputDir,
+		logLevel:     "error",
+	}
+
+	stdout, err := captureStdout(t, func() error { return runPrepareValues(pv) })
+	if err != nil {
+		t.Fatalf("runPrepareValues (no auto image tags) failed: %v", err)
+	}
+
+	data, readErr := os.ReadFile(stdout)
+	if readErr != nil {
+		t.Fatalf("failed to read output: %v", readErr)
+	}
+	if strings.Contains(string(data), "E2E_TESTS_ORCHESTRATION_IMAGE_TAG") || strings.Contains(string(data), "orchestration") {
+		t.Errorf("image tags layer should not be included, got:\n%s", string(data))
+	}
+}
