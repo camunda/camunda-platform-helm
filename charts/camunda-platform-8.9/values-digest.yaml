@@ -7,7 +7,7 @@ console:
   image:
     repository: camunda/console
     tag: 8.9-SNAPSHOT
-    digest: "sha256:c56705a46db0de522a41025d74018eafca475ac0462ede2423b57b0874460793"
+    digest: "sha256:5f736cc33b64db149ef9870c6ae7b45babe339cd9be44164bf4218cba29c1313"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
@@ -33,7 +33,7 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:19e5f018f3221706dee9c82df9ffddbec093c0088d2d4679437f1eedcba3ccbb"
+      digest: "sha256:25528703068ede2e44ea3ca46c22f825d2ac8c50fd3dc81138b90f9c99ca6510"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
