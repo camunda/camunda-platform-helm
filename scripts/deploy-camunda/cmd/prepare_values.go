@@ -197,6 +197,7 @@ func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir stri
 		ImageTags:    pv.imageTags,
 		Upgrade:      pv.upgradeFlow,
 		ChartVersion: pv.chartVersion,
+		ValuesConfig: pv.valuesConfig,
 	})
 	if err != nil {
 		return err

@@ -693,3 +693,79 @@ func containsSubstring(s, substr string) bool {
 func containsSuffix(s, suffix string) bool {
 	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }
+
+func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
+	tests := []struct {
+		name          string
+		imageTags     bool
+		valuesConfig  string
+		wantImageTags bool
+	}{
+		{
+			name:          "explicit true stays true",
+			imageTags:     true,
+			valuesConfig:  `{}`,
+			wantImageTags: true,
+		},
+		{
+			name:          "false with empty config stays false",
+			imageTags:     false,
+			valuesConfig:  `{}`,
+			wantImageTags: false,
+		},
+		{
+			name:          "false with no config stays false",
+			imageTags:     false,
+			valuesConfig:  "",
+			wantImageTags: false,
+		},
+		{
+			name:          "auto-enabled when values-config has IMAGE_TAG key",
+			imageTags:     false,
+			valuesConfig:  `{"E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8.0", "SOME_OTHER_KEY": "val"}`,
+			wantImageTags: true,
+		},
+		{
+			name:          "auto-enabled with multiple IMAGE_TAG keys",
+			imageTags:     false,
+			valuesConfig:  `{"E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8.0", "E2E_TESTS_CONSOLE_IMAGE_TAG": "8.8.0"}`,
+			wantImageTags: true,
+		},
+		{
+			name:          "not enabled for non-IMAGE_TAG keys",
+			imageTags:     false,
+			valuesConfig:  `{"E2E_TESTS_SEARCH_ENGINE": "opensearch", "SOME_PREFIX": "val"}`,
+			wantImageTags: false,
+		},
+		{
+			name:          "not enabled for partial suffix match",
+			imageTags:     false,
+			valuesConfig:  `{"MY_IMAGE_TAGGER": "val"}`,
+			wantImageTags: false,
+		},
+		{
+			name:          "invalid JSON does not enable",
+			imageTags:     false,
+			valuesConfig:  `not valid json`,
+			wantImageTags: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := BuildDeploymentConfig("qa-elasticsearch", BuilderOverrides{
+				Identity:     "keycloak",
+				Persistence:  "elasticsearch",
+				Platform:     "gke",
+				ImageTags:    tt.imageTags,
+				ValuesConfig: tt.valuesConfig,
+			})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.ImageTags != tt.wantImageTags {
+				t.Errorf("ImageTags = %v, want %v", cfg.ImageTags, tt.wantImageTags)
+			}
+		})
+	}
+}

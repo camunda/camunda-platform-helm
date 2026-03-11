@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -399,6 +400,7 @@ type BuilderOverrides struct {
 	ImageTags    bool
 	Upgrade      bool
 	ChartVersion string
+	ValuesConfig string // JSON config string; if it contains *_IMAGE_TAG keys, ImageTags is auto-enabled
 }
 
 // BuildDeploymentConfig is the single canonical constructor for DeploymentConfig.
@@ -439,6 +441,9 @@ func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentCon
 	if ov.ImageTags {
 		cfg.ImageTags = true
 	}
+	if !cfg.ImageTags && valuesConfigHasImageTags(ov.ValuesConfig) {
+		cfg.ImageTags = true
+	}
 	if ov.Upgrade {
 		cfg.Upgrade = true
 	}
@@ -451,6 +456,22 @@ func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentCon
 	}
 
 	return cfg, nil
+}
+
+func valuesConfigHasImageTags(valuesConfig string) bool {
+	if valuesConfig == "" || valuesConfig == "{}" {
+		return false
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(valuesConfig), &m); err != nil {
+		return false
+	}
+	for k := range m {
+		if strings.HasSuffix(k, "_IMAGE_TAG") {
+			return true
+		}
+	}
+	return false
 }
 
 // LayeredConfig is deprecated - use DeploymentConfig instead.
