@@ -64,6 +64,7 @@ jobs:
             shortname: qaelmt
           - name: qa-license
             shortname: lic
+            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite CAMUNDA_LICENSE | E2E_TESTS_LICENSE_KEY;"
           - name: qa-entra
             shortname: qaen
             auth: oidc
@@ -108,7 +109,42 @@ jobs:
           "E2E_AWS_OS_INDEX_PREFIX_TASKLIST": "compat-test-tasklist",
           "E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE": "compat-test-optimize"
         }
-      vault-secret-mapping: ""
+      vault-secret-mapping: |
+        secret/data/products/qa/ci/common DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
+        secret/data/products/qa/ci/common DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
+        secret/data/products/qa/ci/common HARBOR_USERNAME | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
+        secret/data/products/qa/ci/common HARBOR_PASSWORD | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_ADMIN_SECRET;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_USERNAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_ACCESSKEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_BUCKET_NAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_REGION;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_SECRETKEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_SERVICE_ACCOUNT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_VERTEX_BUCKET_NAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_VERTEX_PROJECT_ID;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_DOCUMENT_AI_PROJECT_ID;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_DOCUMENT_AI_PROCESSOR_ID;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_DOCUMENT_AI_REGION;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_VERTEX_REGION;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_AI_FOUNDRY_ENDPOINT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_AI_FOUNDRY_KEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_OPEN_AI_ENDPOINT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_OPEN_AI_KEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENAI_API_KEY;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+        ${{ matrix.scenario.licenseVaultMapping }}
 
   # ===========================================================================
   # Caller 2: c8-cross-component-e2e-tests — playwright_sm_reusable_flow_8_7_minus.yaml
@@ -134,6 +170,7 @@ jobs:
             shortname: qamt
           - name: qa-license
             shortname: lic
+            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite CAMUNDA_LICENSE | E2E_TESTS_LICENSE_KEY;"
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
@@ -152,8 +189,6 @@ jobs:
       scenario: ${{ matrix.scenario.name }}
       shortname: ${{ matrix.scenario.shortname }}
       always-delete-namespace: true
-      # NOTE: auth, flows, initialClaimValue are NOT set — relying on defaults:
-      #   auth: keycloak, flows: install, initialClaimValue: ""
       values-config: |
         {
           "E2E_TESTS_CAMUNDA_HELM_DIR": "camunda-platform-8.7",
@@ -174,7 +209,25 @@ jobs:
           "OPENSEARCH_PORT": "443",
           "OPENSEARCH_PROTOCOL": "https"
         }
-      vault-secret-mapping: ""
+      vault-secret-mapping: |
+        secret/data/products/qa/ci/common DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
+        secret/data/products/qa/ci/common DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
+        secret/data/products/qa/ci/common HARBOR_USERNAME | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
+        secret/data/products/qa/ci/common HARBOR_PASSWORD | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_ADMIN_SECRET;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_USERNAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_PASSWORD;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL | OPENSEARCH_HOST;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+        ${{ matrix.scenario.licenseVaultMapping }}
 
   # ===========================================================================
   # Caller 3: camunda — docker-build-helm-integration.yml
