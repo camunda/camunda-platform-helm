@@ -93,6 +93,8 @@ annotations:
       description: "Warn when web modeler pusher secret is auto-generated"
     - kind: added
       description: "Remove Web Modeler webapp component"
+    - kind: added
+      description: "Create Camunda 8.10 chart v15.0.0-alpha0 and EOL 8.2"
     - kind: changed
       description: "Deprecate webModeler.restapi.externalDatabase.user for .username"
     - kind: changed
@@ -139,3 +141,9 @@ annotations:
       description: "Remove helm workaround for optimize extraConfig"
     - kind: fixed
       description: "Disable operate and taskist profiles when noSecondaryStorage is enabled"
+    - kind: fixed
+      description: "Add tpl support for global.identity.auth.issuer"
+    - kind: fixed
+      description: "Use 8.9-SNAPSHOT for values-digest"
+    - kind: fixed
+      description: "Prepare-values does not use correct config option for 8.9 and 8.10"

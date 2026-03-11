@@ -1,6 +1,6 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-14.0.0-alpha5](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-14.0.0-alpha5) (2026-03-09)
+## [camunda-platform-8.9-14.0.0-alpha5](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.0.0-alpha5) (2026-03-11)
 
 ### ⚠ BREAKING CHANGES
 
@@ -18,6 +18,7 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 - Copy global.es/os options to optimize and deprecate global.es/os (#5171)
 - Warn when web modeler pusher secret is auto-generated (#5168)
 - Remove Web Modeler webapp component (#5193)
+- Create Camunda 8.10 chart v15.0.0-alpha0 and EOL 8.2 (#5312)
 
 ### Refactor
 
@@ -47,6 +48,9 @@ The changelog is automatically generated and it follows [Conventional Commits](h
 - Move pusher app key to secret and allow explicit configuration (#5289)
 - Remove helm workaround for optimize extraConfig (#5245)
 - Disable operate and taskist profiles when noSecondaryStorage is enabled (#5234)
+- Add tpl support for global.identity.auth.issuer (#5348)
+- Use 8.9-SNAPSHOT for values-digest (#5360)
+- Prepare-values does not use correct config option for 8.9 and 8.10 (#5389)
 
 ### Documentation
 
