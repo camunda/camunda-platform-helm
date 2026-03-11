@@ -1,0 +1,14 @@
+# ARM nodes (c4a-standard-8) don't support pd-balanced disks.
+# Use hyperdisk-balanced for all StatefulSet PVCs.
+orchestration:
+  pvcStorageClassName: hyperdisk-balanced
+
+identityPostgresql:
+  primary:
+    persistence:
+      storageClass: hyperdisk-balanced
+
+webModelerPostgresql:
+  primary:
+    persistence:
+      storageClass: hyperdisk-balanced
