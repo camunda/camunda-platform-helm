@@ -446,7 +446,10 @@ jobs:
               echo "Namespace exists and was created by this run, deleting and recreating..."
               kubectl delete ns $TEST_NAMESPACE
             else
-              echo "Namespace exists but was created by a different run (run-id: $EXISTING_RUN_ID), reusing it..."
+              echo "Namespace exists but was created by a different run (run-id: $EXISTING_RUN_ID), cleaning up stale release..."
+              # Remove any stale Helm release left behind by a cancelled/completed previous run.
+              # Without this, 'helm install' fails with "cannot re-use a name that is still in use".
+              helm uninstall integration --namespace $TEST_NAMESPACE --wait --timeout 2m0s 2>/dev/null || true
             fi
           fi
           kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
