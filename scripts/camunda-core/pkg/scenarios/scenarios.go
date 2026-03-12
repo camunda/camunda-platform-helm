@@ -375,6 +375,9 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	if strings.Contains(s, "document") {
 		config.Features = append(config.Features, "documentstore")
 	}
+	if strings.Contains(s, "license") {
+		config.Features = append(config.Features, "license")
+	}
 	if strings.Contains(s, "tasklist-v1") {
 		config.Features = append(config.Features, "tasklist-v1")
 	}
