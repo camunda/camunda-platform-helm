@@ -100,7 +100,7 @@ jobs:
           no-cache: ${{ inputs.force-rebuild == true }}
           cache-from: type=gha,scope=ci-runner
           cache-to: type=gha,mode=max,scope=ci-runner
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           provenance: false
 
       - name: Copy .tool-versions for Playwright Runner build
@@ -117,7 +117,7 @@ jobs:
           no-cache: ${{ inputs.force-rebuild == true }}
           cache-from: type=gha,scope=playwright-runner
           cache-to: type=gha,mode=max,scope=playwright-runner
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           provenance: false
 
       - name: Build and push Keycloak CI image
