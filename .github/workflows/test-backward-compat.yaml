@@ -184,7 +184,7 @@ jobs:
       namespace-prefix: "bc87m${{ matrix.scenario.shortname }}-"
       deployment-ttl: 30m
       test-enabled: true
-      e2e-enabled: false
+      e2e-enabled: true
       scenario: ${{ matrix.scenario.name }}
       shortname: ${{ matrix.scenario.shortname }}
       always-delete-namespace: true
