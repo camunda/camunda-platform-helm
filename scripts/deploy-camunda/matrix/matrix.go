@@ -34,10 +34,6 @@ type Entry struct {
 	ImageTags  bool `json:"imageTags,omitempty"`
 	Upgrade    bool `json:"upgrade,omitempty"`
 	Enterprise bool `json:"enterprise,omitempty"`
-
-	// Test skip flags — declarative controls from ci-test-config.yaml.
-	SkipE2E bool `json:"skipE2E,omitempty"`
-	SkipIT  bool `json:"skipIT,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -172,8 +168,6 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						ImageTags:   scenario.ImageTags,
 						Upgrade:     scenario.Upgrade,
 						Enterprise:  scenario.Enterprise,
-						SkipE2E:     scenario.SkipE2E,
-						SkipIT:      scenario.SkipIT,
 					})
 				}
 			}

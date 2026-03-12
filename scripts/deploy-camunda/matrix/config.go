@@ -87,12 +87,6 @@ type CIScenario struct {
 	ImageTags  bool `yaml:"image-tags,omitempty"`
 	Upgrade    bool `yaml:"upgrade,omitempty"`
 	Enterprise bool `yaml:"enterprise,omitempty"`
-
-	// Test skip flags — declarative controls read from ci-test-config.yaml.
-	// When set, these prevent the corresponding test types from running for this scenario,
-	// replacing hardcoded shortname-based skip logic in both the Go CLI and GHA workflows.
-	SkipE2E bool `yaml:"skip-e2e,omitempty"`
-	SkipIT  bool `yaml:"skip-it,omitempty"`
 }
 
 // LoadCITestConfig reads and parses the ci-test-config.yaml for a given chart directory.

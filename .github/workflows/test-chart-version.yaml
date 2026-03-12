@@ -219,5 +219,3 @@ jobs:
       test-features: ${{ matrix.features }}
       test-qa: ${{ matrix.qa == 'true' }}
       test-upgrade: ${{ matrix.upgrade == 'true' }}
-      skip-e2e: ${{ matrix.skipE2E == 'true' }}
-      skip-it: ${{ matrix.skipIT == 'true' }}
