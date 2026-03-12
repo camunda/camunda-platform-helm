@@ -589,11 +589,58 @@ _patch_sm87_modeler_home_page() {
   }
 }
 
+# Replace the npm-installed @camunda/e2e-test-suite with a copy of the local
+# checkout's dist/ so Playwright resolves test files from within the e2e
+# node_modules tree (avoiding a second @playwright/test from the local
+# checkout's own node_modules).
+# The local checkout must have been built (npm run build) so dist/ exists.
+# Args: test_suite_path, local_dir
+_link_local_test_suite() {
+  local test_suite_path="$1"
+  local local_dir="$2"
+
+  local_dir="${local_dir%/}"
+
+  if [[ ! -d "$local_dir" ]]; then
+    echo "Error: --local-test-suite directory does not exist: $local_dir" >&2
+    exit 1
+  fi
+
+  if [[ ! -f "$local_dir/package.json" ]]; then
+    echo "Error: --local-test-suite directory has no package.json: $local_dir" >&2
+    exit 1
+  fi
+
+  local pkg_name
+  pkg_name=$(node -p "require('$local_dir/package.json').name" 2>/dev/null)
+  if [[ "$pkg_name" != "@camunda/e2e-test-suite" ]]; then
+    echo "Error: --local-test-suite package name is '$pkg_name', expected '@camunda/e2e-test-suite'" >&2
+    exit 1
+  fi
+
+  if [[ ! -d "$local_dir/dist" ]]; then
+    echo "Error: --local-test-suite has no dist/ directory — run 'npm run build' in $local_dir first" >&2
+    exit 1
+  fi
+
+  local target="$test_suite_path/node_modules/@camunda/e2e-test-suite"
+  rm -rf "$target"
+  mkdir -p "$target"
+  cp "$local_dir/package.json" "$target/package.json"
+  cp -R "$local_dir/dist" "$target/dist"
+  info "Copied local test suite dist into $target from $local_dir"
+}
+
 # Setup playwright environment: change directory, install dependencies, create test-results dir
 # Uses double-checked locking to prevent concurrent npm install corruption.
 # Before installing, updates @camunda/e2e-test-suite to the latest version from
 # the registry so that the "latest" tag in package.json is actually resolved
 # (npm install alone never upgrades past the version pinned in package-lock.json).
+#
+# When PLAYWRIGHT_E2E_LOCAL_TEST_SUITE is set, symlinks the local checkout into
+# node_modules instead of using the npm-published package. This allows iterating
+# on the test suite source directly.  The SM-8.7 ModelerHomePage patch is skipped
+# in this mode because the user can modify their local source.
 # Args: test_suite_path, [silent=false]
 _setup_playwright_environment() {
   local test_suite_path="$1"
@@ -639,10 +686,14 @@ _setup_playwright_environment() {
   if [[ "$suite_updated" != "true" ]] && _is_node_modules_current; then
     log "node_modules is up to date, skipping npm install"
     [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
-    # Apply SM-8.7 patch even when npm install is skipped — the patch modifies
-    # node_modules in-place and is idempotent, so it must run on every invocation
-    # to handle the case where node_modules was cached before the patch existed.
-    _patch_sm87_modeler_home_page "$test_suite_path"
+    if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
+      _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
+    else
+      # Apply SM-8.7 patch even when npm install is skipped — the patch modifies
+      # node_modules in-place and is idempotent, so it must run on every invocation
+      # to handle the case where node_modules was cached before the patch existed.
+      _patch_sm87_modeler_home_page "$test_suite_path"
+    fi
     local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
     mkdir -p "$results_dir"
     return 0
@@ -661,13 +712,17 @@ _setup_playwright_environment() {
 
   [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
 
-  # Patch SM-8.7 ModelerHomePage: add banner-dismissal logic missing from the
-  # upstream @camunda/e2e-test-suite package.  The SM-8.8 page object already
-  # has clickMessageBanner() / createCrossComponentProjectFolder() with banner
-  # handling, but SM-8.7 does not.  Web Modeler now shows a top banner that
-  # blocks the "New project" button, causing all 8.7 smoke tests to fail.
-  # Remove this workaround once the upstream package ships a fix.
-  _patch_sm87_modeler_home_page "$test_suite_path"
+  if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
+    _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
+  else
+    # Patch SM-8.7 ModelerHomePage: add banner-dismissal logic missing from the
+    # upstream @camunda/e2e-test-suite package.  The SM-8.8 page object already
+    # has clickMessageBanner() / createCrossComponentProjectFolder() with banner
+    # handling, but SM-8.7 does not.  Web Modeler now shows a top banner that
+    # blocks the "New project" button, causing all 8.7 smoke tests to fail.
+    # Remove this workaround once the upstream package ships a fix.
+    _patch_sm87_modeler_home_page "$test_suite_path"
+  fi
 
   # Create the test-results directory; use namespace-scoped path when set.
   local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
@@ -883,7 +938,7 @@ _run_playwright_with_retry() {
   local kube_context="$2"
   shift 2
   local playwright_cmd=("$@")
-  
+
   local attempt=0
   local playwright_rc=0
   local output_file=""
@@ -1026,7 +1081,9 @@ run_playwright_tests() {
   local trace_flag=""
   if [[ "$enable_debug" == "true" ]]; then
     export DEBUG="${DEBUG:-pw:api,pw:browser*}"
-    trace_flag="--trace=retain-on-failure"
+    if [[ -z "${PLAYWRIGHT_E2E_TRACE:-}" ]]; then
+      trace_flag="--trace=retain-on-failure"
+    fi
     log "Playwright DEBUG enabled: $DEBUG"
   fi
 
@@ -1047,6 +1104,9 @@ run_playwright_tests() {
   )
   [[ -n "$test_exclude" ]] && playwright_args+=(--grep-invert="$test_exclude")
   [[ -n "$trace_flag" ]] && playwright_args+=($trace_flag)
+  [[ -n "${PLAYWRIGHT_E2E_VIDEO:-}" ]] && playwright_args+=(--video="$PLAYWRIGHT_E2E_VIDEO")
+  [[ -n "${PLAYWRIGHT_E2E_TRACE:-}" ]] && playwright_args+=(--trace="$PLAYWRIGHT_E2E_TRACE")
+  [[ -n "${PLAYWRIGHT_E2E_RETRIES:-}" ]] && playwright_args+=(--retries="$PLAYWRIGHT_E2E_RETRIES")
   # Namespace-scoped output directory to avoid collisions during parallel matrix runs
   [[ -n "${PLAYWRIGHT_TEST_OUTPUT:-}" ]] && playwright_args+=(--output="$PLAYWRIGHT_TEST_OUTPUT")
 
