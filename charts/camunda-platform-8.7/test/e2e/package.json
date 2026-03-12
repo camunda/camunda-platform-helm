@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "devDependencies": {
+  "dependencies": {
     "@camunda/e2e-test-suite": "latest",
     "@eslint/js": "^9.26.0",
     "@playwright/test": "^1.58.0",
