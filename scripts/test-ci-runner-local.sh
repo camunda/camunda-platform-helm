@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test the CI Runner Docker images locally
-# Usage: ./scripts/test-ci-runner-local.sh [--ci-runner | --playwright-runner | --both]
+# Usage: ./scripts/test-ci-runner-local.sh [--ci-runner | --playwright-runner | --keycloak-ci | --both | --all]
 #
 # This script tests the Docker images with the same setup as GitHub Actions
 
@@ -9,10 +9,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Image configuration
 REGISTRY="registry.camunda.cloud"
 CI_RUNNER_IMAGE="${REGISTRY}/team-distribution/ci-runner:latest"
 PLAYWRIGHT_RUNNER_IMAGE="${REGISTRY}/team-distribution/playwright-runner:latest"
+KEYCLOAK_CI_IMAGE="ghcr.io/camunda/team-distribution/keycloak-ci:latest"
 
 # Colors for output
 RED='\033[0;31m'
@@ -23,22 +23,27 @@ NC='\033[0m' # No Color
 # Parse arguments
 TEST_CI=false
 TEST_PLAYWRIGHT=false
+TEST_KEYCLOAK=false
 USE_LOCAL=false
 
 for arg in "$@"; do
     case "$arg" in
         --ci-runner) TEST_CI=true ;;
         --playwright-runner) TEST_PLAYWRIGHT=true ;;
+        --keycloak-ci) TEST_KEYCLOAK=true ;;
         --both) TEST_CI=true; TEST_PLAYWRIGHT=true ;;
+        --all) TEST_CI=true; TEST_PLAYWRIGHT=true; TEST_KEYCLOAK=true ;;
         --local) USE_LOCAL=true ;;
         --help|-h)
-            echo "Usage: $0 [--ci-runner | --playwright-runner | --both] [--local]"
+            echo "Usage: $0 [--ci-runner | --playwright-runner | --keycloak-ci | --both | --all] [--local]"
             echo ""
             echo "Options:"
             echo "  --ci-runner         Test the CI runner image"
             echo "  --playwright-runner Test the Playwright runner image"
-            echo "  --both              Test both images"
-            echo "  --local             Use locally built images (ci-runner-test, playwright-runner-test)"
+            echo "  --keycloak-ci       Test the Keycloak CI image"
+            echo "  --both              Test CI runner and Playwright runner"
+            echo "  --all               Test all images"
+            echo "  --local             Use locally built images (ci-runner-test, playwright-runner-test, keycloak-ci-test)"
             echo ""
             echo "If no option specified, defaults to --ci-runner"
             exit 0
@@ -47,14 +52,14 @@ for arg in "$@"; do
 done
 
 # Default to CI runner if nothing specified
-if [[ "$TEST_CI" == "false" && "$TEST_PLAYWRIGHT" == "false" ]]; then
+if [[ "$TEST_CI" == "false" && "$TEST_PLAYWRIGHT" == "false" && "$TEST_KEYCLOAK" == "false" ]]; then
     TEST_CI=true
 fi
 
-# Use local image names if --local specified
 if [[ "$USE_LOCAL" == "true" ]]; then
     CI_RUNNER_IMAGE="ci-runner-test"
     PLAYWRIGHT_RUNNER_IMAGE="playwright-runner-test"
+    KEYCLOAK_CI_IMAGE="keycloak-ci-test"
     echo -e "${YELLOW}Using locally built images${NC}"
 fi
 
@@ -180,6 +185,38 @@ test_playwright_runner() {
     fi
 }
 
+test_keycloak_ci() {
+    local image="$1"
+    echo ""
+    echo "=========================================="
+    echo "Testing Keycloak CI Image"
+    echo "=========================================="
+    echo "Image: $image"
+    echo ""
+
+    if ! docker image inspect "$image" &>/dev/null; then
+        echo -e "${YELLOW}Image not found locally, attempting to pull...${NC}"
+        if ! docker pull "$image"; then
+            echo -e "${RED}Failed to pull image.${NC}"
+            return 1
+        fi
+    fi
+
+    echo "Running Keycloak verification tests..."
+
+    local failed=0
+
+    run_test "keycloak-optimized-build" "docker run --rm --entrypoint '' $image /opt/bitnami/keycloak/bin/kc.sh show-config" || ((failed++))
+
+    echo ""
+    if [[ $failed -eq 0 ]]; then
+        echo -e "${GREEN}All Keycloak CI tests passed!${NC}"
+    else
+        echo -e "${RED}$failed test(s) failed${NC}"
+        return 1
+    fi
+}
+
 # Main
 echo "=========================================="
 echo "CI Runner Docker Image Test Suite"
@@ -193,6 +230,10 @@ fi
 
 if [[ "$TEST_PLAYWRIGHT" == "true" ]]; then
     test_playwright_runner "$PLAYWRIGHT_RUNNER_IMAGE" || exit_code=1
+fi
+
+if [[ "$TEST_KEYCLOAK" == "true" ]]; then
+    test_keycloak_ci "$KEYCLOAK_CI_IMAGE" || exit_code=1
 fi
 
 echo ""
