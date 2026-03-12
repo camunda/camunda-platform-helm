@@ -63,10 +63,6 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --playwright-debug                          Enable Playwright API debug logs and traces
-  --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
-  --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
-  --retries N                                 Number of test retries (overrides playwright.config value)
-  --local-test-suite DIR                      Use a local checkout of c8-cross-component-e2e-tests instead of the npm package
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -91,10 +87,6 @@ IS_OPENSEARCH=false
 IS_RBA=false
 IS_MT=false
 PLAYWRIGHT_DEBUG=false
-VIDEO_MODE=""
-TRACE_MODE=""
-RETRIES=""
-LOCAL_TEST_SUITE=""
 
 check_required_cmds
 
@@ -152,22 +144,6 @@ while [[ $# -gt 0 ]]; do
     --playwright-debug)
       PLAYWRIGHT_DEBUG=true
       shift
-      ;;
-    --video)
-      VIDEO_MODE="$2"
-      shift 2
-      ;;
-    --trace)
-      TRACE_MODE="$2"
-      shift 2
-      ;;
-    --retries)
-      RETRIES="$2"
-      shift 2
-      ;;
-    --local-test-suite)
-      LOCAL_TEST_SUITE="$2"
-      shift 2
       ;;
     -v | --verbose)
       VERBOSE=true
@@ -235,10 +211,6 @@ set +a
 # directory these collide.  The env vars below isolate each run.
 export PLAYWRIGHT_TEST_OUTPUT="${TEST_SUITE_PATH}/test-results/${NAMESPACE}"
 export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}"
-[[ -n "$VIDEO_MODE" ]] && export PLAYWRIGHT_E2E_VIDEO="$VIDEO_MODE"
-[[ -n "$TRACE_MODE" ]] && export PLAYWRIGHT_E2E_TRACE="$TRACE_MODE"
-[[ -n "$RETRIES" ]] && export PLAYWRIGHT_E2E_RETRIES="$RETRIES"
-[[ -n "$LOCAL_TEST_SUITE" ]] && export PLAYWRIGHT_E2E_LOCAL_TEST_SUITE="$LOCAL_TEST_SUITE"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
@@ -254,10 +226,6 @@ RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PAT
 [[ "$IS_OPENSEARCH" == "true" ]] && RERUN_CMD+=" --opensearch"
 [[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
 [[ "$IS_MT" == "true" ]] && RERUN_CMD+=" --mt"
-[[ -n "$VIDEO_MODE" ]] && RERUN_CMD+=" --video ${VIDEO_MODE}"
-[[ -n "$TRACE_MODE" ]] && RERUN_CMD+=" --trace ${TRACE_MODE}"
-[[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
-[[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD"
 
