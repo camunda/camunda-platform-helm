@@ -29,6 +29,10 @@ env:
   PLAYWRIGHT_RUNNER_IMAGE: ghcr.io/camunda/team-distribution/playwright-runner
   KEYCLOAK_CI_IMAGE: ghcr.io/camunda/team-distribution/keycloak-ci
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-ci-runner:
     name: Build CI Runner Image
