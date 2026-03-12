@@ -5760,12 +5760,12 @@
                     "properties": {
                         "prefix": {
                             "type": "string",
-                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for the new exporter and Orchestration Cluster. For old exporter or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
+                            "description": "if specified, defines an index prefix in Elasticsearch/OpenSearch for Orchestration Cluster indices. For ES/OS exporters or Optimize use the \"global.elasticsearch.prefix\" or OpenSearch equivalent.",
                             "default": ""
                         },
                         "replicas": {
                             "type": "number",
-                            "description": "can be used to specify the number of replicas for indices in Elasticsearch/OpenSearch",
+                            "description": "can be used to specify the number of replicas for Orchestration Cluster indices.",
                             "default": 1
                         }
                     }
