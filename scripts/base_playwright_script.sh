@@ -505,89 +505,6 @@ _release_npm_lock() {
   log "Released npm install lock"
 }
 
-# Patch the SM-8.7 ModelerHomePage page object to add banner dismissal.
-# The upstream @camunda/e2e-test-suite@0.0.242 ships SM-8.8 with clickMessageBanner()
-# but the SM-8.7 variant is missing it.  Web Modeler now shows a top banner that
-# overlays the "New project" button, so all SM-8.7 smoke tests that navigate to the
-# Modeler home page fail with "Failed to assert visibility".
-# This function is idempotent — it detects whether the patch was already applied.
-_patch_sm87_modeler_home_page() {
-  local test_suite_path="$1"
-  local target="$test_suite_path/node_modules/@camunda/e2e-test-suite/dist/pages/SM-8.7/ModelerHomePage.js"
-  [[ -f "$target" ]] || return 0
-
-  # Skip if the patch was already applied (clickMessageBanner already exists).
-  if grep -q 'clickMessageBanner' "$target" 2>/dev/null; then
-    log "SM-8.7 ModelerHomePage already patched, skipping"
-    return 0
-  fi
-
-  info "Patching SM-8.7 ModelerHomePage to add banner dismissal..."
-
-  # We need to:
-  # 1. Add messageBanner and closeButton locators in the constructor
-  # 2. Add clickMessageBanner() method
-  # 3. Update clickCreateNewProjectButton() to dismiss banners before checking visibility
-  # 4. Update createCrossComponentProjectFolder() to dismiss banners first
-
-  # Use node to do a reliable AST-free patch via string replacement.
-  node -e "
-    const fs = require('fs');
-    let src = fs.readFileSync('$target', 'utf8');
-
-    // 1. Add locator fields in constructor (after uploadFilesButton assignment)
-    src = src.replace(
-      /this\.uploadFilesButton = page\.getByRole\('menuitem', \{ name: 'Upload files' \}\);/,
-      \`this.uploadFilesButton = page.getByRole('menuitem', { name: 'Upload files' });
-        this.messageBanner = page.locator('[data-test=\"close-top-banner\"]');
-        this.closeButton = page.getByRole('button', { name: 'Got it - Dismiss' });\`
-    );
-
-    // 2. Patch clickCreateNewProjectButton to dismiss banners first
-    src = src.replace(
-      /async clickCreateNewProjectButton\(\) \{/,
-      \`async clickCreateNewProjectButton() {
-        await this.clickMessageBanner();\`
-    );
-
-    // 3. Replace createCrossComponentProjectFolder to call clickMessageBanner first
-    src = src.replace(
-      /async createCrossComponentProjectFolder\(\) \{\s*await this\.enterNewProjectName\(this\.defaultFolderName\);\s*\}/,
-      \`async createCrossComponentProjectFolder() {
-        await this.clickMessageBanner();
-        if (await this.crossComponentProjectFolder.isVisible()) {
-            console.log('Cross Component Project folder already exists. Clicking into it');
-            await this.clickCrossComponentProjectFolder();
-            return;
-        }
-        await this.clickCreateNewProjectButton();
-        await this.enterNewProjectName(this.defaultFolderName);
-    }\`
-    );
-
-    // 4. Add clickMessageBanner method (before clickCrossComponentProjectFolder)
-    src = src.replace(
-      /async clickCrossComponentProjectFolder\(\)/,
-      \`async clickMessageBanner() {
-        try {
-            await Promise.race([
-                this.messageBanner.click(),
-                this.closeButton.click(),
-            ]);
-        }
-        catch {
-            console.log('No banner or close button found to click');
-        }
-    }
-    async clickCrossComponentProjectFolder()\`
-    );
-
-    fs.writeFileSync('$target', src);
-    console.log('SM-8.7 ModelerHomePage patched successfully');
-  " || {
-    info "WARNING: Failed to patch SM-8.7 ModelerHomePage — E2E tests may fail"
-  }
-}
 
 # Replace the npm-installed @camunda/e2e-test-suite with a copy of the local
 # checkout's dist/ so Playwright resolves test files from within the e2e
@@ -688,11 +605,6 @@ _setup_playwright_environment() {
     [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
     if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
       _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
-    else
-      # Apply SM-8.7 patch even when npm install is skipped — the patch modifies
-      # node_modules in-place and is idempotent, so it must run on every invocation
-      # to handle the case where node_modules was cached before the patch existed.
-      _patch_sm87_modeler_home_page "$test_suite_path"
     fi
     local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
     mkdir -p "$results_dir"
@@ -714,14 +626,6 @@ _setup_playwright_environment() {
 
   if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
     _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
-  else
-    # Patch SM-8.7 ModelerHomePage: add banner-dismissal logic missing from the
-    # upstream @camunda/e2e-test-suite package.  The SM-8.8 page object already
-    # has clickMessageBanner() / createCrossComponentProjectFolder() with banner
-    # handling, but SM-8.7 does not.  Web Modeler now shows a top banner that
-    # blocks the "New project" button, causing all 8.7 smoke tests to fail.
-    # Remove this workaround once the upstream package ships a fix.
-    _patch_sm87_modeler_home_page "$test_suite_path"
   fi
 
   # Create the test-results directory; use namespace-scoped path when set.
