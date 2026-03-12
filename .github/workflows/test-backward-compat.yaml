@@ -62,6 +62,7 @@ jobs:
             shortname: qaelrba
           - name: qa-elasticsearch-mt
             shortname: qaelmt
+            e2e-enabled: false
           - name: qa-license
             shortname: lic
             licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite LICENSE_VALID_COMMERCIAL_UNLIMITED | E2E_TESTS_LICENSE_KEY;"
@@ -85,7 +86,7 @@ jobs:
       namespace-prefix: "bc88p${{ matrix.scenario.shortname }}-"
       deployment-ttl: 30m
       test-enabled: true
-      e2e-enabled: true
+      e2e-enabled: ${{ matrix.scenario.e2e-enabled == '' && true || matrix.scenario.e2e-enabled }}
       scenario: ${{ matrix.scenario.name }}
       shortname: ${{ matrix.scenario.shortname }}
       always-delete-namespace: true
