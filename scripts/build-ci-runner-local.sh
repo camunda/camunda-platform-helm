@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Build the CI Runner Docker images locally and push to GitHub Container Registry
-# Usage: ./scripts/build-ci-runner-local.sh [--push] [--test] [--login] [--ci-only] [--playwright-only]
+# Usage: ./scripts/build-ci-runner-local.sh [--push] [--test] [--login] [--ci-only] [--playwright-only] [--keycloak-only]
 #
 # Options:
 #   --push             Build and push the images to ghcr.io
 #   --test             Test the images after building (before pushing)
 #   --login            Force re-authentication to ghcr.io (uses gh CLI or prompts for PAT)
-#   --ci-only          Build only the CI runner image
-#   --playwright-only  Build only the Playwright runner image
+#   --ci-only          Build only the CI runner image (combinable with other --*-only flags)
+#   --playwright-only  Build only the Playwright runner image (combinable with other --*-only flags)
+#   --keycloak-only    Build only the Keycloak CI image (combinable with other --*-only flags)
 #
 # Note: Images are built for linux/amd64 platform to match CI runners
 
@@ -16,66 +17,84 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Image configuration
 REGISTRY="ghcr.io"
 GITHUB_ORG="camunda"
 CI_IMAGE_NAME="team-distribution/ci-runner"
 PLAYWRIGHT_IMAGE_NAME="team-distribution/playwright-runner"
+KEYCLOAK_IMAGE_NAME="team-distribution/keycloak-ci"
 CI_FULL_IMAGE="${REGISTRY}/${GITHUB_ORG}/${CI_IMAGE_NAME}"
 PLAYWRIGHT_FULL_IMAGE="${REGISTRY}/${GITHUB_ORG}/${PLAYWRIGHT_IMAGE_NAME}"
+KEYCLOAK_REGISTRY="registry.camunda.cloud"
+KEYCLOAK_FULL_IMAGE="${KEYCLOAK_REGISTRY}/${KEYCLOAK_IMAGE_NAME}"
 
-# Local test image names
 CI_TEST_IMAGE="ci-runner-test"
 PLAYWRIGHT_TEST_IMAGE="playwright-runner-test"
+KEYCLOAK_TEST_IMAGE="keycloak-ci-test"
 
-# Target platform - CI runners are linux/amd64
 TARGET_PLATFORM="linux/amd64"
 
-# Parse arguments
 DO_PUSH=false
 DO_TEST=false
 FORCE_LOGIN=false
 BUILD_CI=true
 BUILD_PLAYWRIGHT=true
+BUILD_KEYCLOAK=true
 USE_BUILDX=true
+HAS_ONLY_FLAG=false
 
 for arg in "$@"; do
     case "$arg" in
         --push) DO_PUSH=true ;;
         --test) DO_TEST=true ;;
         --login) FORCE_LOGIN=true ;;
-        --ci-only) BUILD_PLAYWRIGHT=false ;;
-        --playwright-only) BUILD_CI=false ;;
+        --ci-only|--playwright-only|--keycloak-only) HAS_ONLY_FLAG=true ;;
         --no-buildx) USE_BUILDX=false ;;
         --help|-h)
-            echo "Usage: $0 [--push] [--test] [--login] [--ci-only] [--playwright-only] [--no-buildx]"
+            echo "Usage: $0 [--push] [--test] [--login] [--ci-only] [--playwright-only] [--keycloak-only] [--no-buildx]"
             echo ""
             echo "Options:"
             echo "  --push             Build and push the images to ghcr.io"
             echo "  --test             Test the images after building (before pushing)"
             echo "  --login            Force re-authentication to ghcr.io (uses gh CLI or prompts for PAT)"
-            echo "  --ci-only          Build only the CI runner image"
-            echo "  --playwright-only  Build only the Playwright runner image"
+            echo "  --ci-only          Build only the CI runner image (combinable with other --*-only flags)"
+            echo "  --playwright-only  Build only the Playwright runner image (combinable with other --*-only flags)"
+            echo "  --keycloak-only    Build only the Keycloak CI image (combinable with other --*-only flags)"
             echo "  --no-buildx        Use standard docker build instead of buildx (ignored with --push)"
             echo ""
             echo "Images (built for ${TARGET_PLATFORM}):"
             echo "  CI Runner:         ${CI_FULL_IMAGE}"
             echo "  Playwright Runner: ${PLAYWRIGHT_FULL_IMAGE}"
+            echo "  Keycloak CI:       ${KEYCLOAK_FULL_IMAGE}"
             echo ""
             echo "Authentication:"
             echo "  Set GITHUB_TOKEN or GHCR_TOKEN environment variable, or use 'gh auth login'"
             echo "  Alternatively, create a PAT at: https://github.com/settings/tokens/new?scopes=write:packages"
             echo ""
             echo "Examples:"
-            echo "  $0 --test              # Build and test locally"
-            echo "  $0 --test --push       # Build, test, then push if tests pass"
-            echo "  $0 --ci-only --test    # Build and test only CI runner"
-            echo "  $0 --test --no-buildx  # Build locally without buildx (avoids cache issues)"
+            echo "  $0 --test                           # Build and test all images locally"
+            echo "  $0 --test --push                    # Build, test, then push if tests pass"
+            echo "  $0 --ci-only --test                 # Build and test only CI runner"
+            echo "  $0 --keycloak-only                  # Build only Keycloak CI image"
+            echo "  $0 --ci-only --keycloak-only --test # Build and test CI runner + Keycloak"
+            echo "  $0 --test --no-buildx               # Build locally without buildx (avoids cache issues)"
             echo ""
             exit 0
             ;;
     esac
 done
+
+if [[ "$HAS_ONLY_FLAG" == "true" ]]; then
+    BUILD_CI=false
+    BUILD_PLAYWRIGHT=false
+    BUILD_KEYCLOAK=false
+    for arg in "$@"; do
+        case "$arg" in
+            --ci-only) BUILD_CI=true ;;
+            --playwright-only) BUILD_PLAYWRIGHT=true ;;
+            --keycloak-only) BUILD_KEYCLOAK=true ;;
+        esac
+    done
+fi
 
 # Test function - runs the test script
 run_tests() {
@@ -92,6 +111,10 @@ run_tests() {
         test_args="$test_args --ci-runner"
     elif [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
         test_args="$test_args --playwright-runner"
+    fi
+
+    if [[ "$BUILD_KEYCLOAK" == "true" ]]; then
+        test_args="$test_args --keycloak-ci"
     fi
 
     if "${SCRIPT_DIR}/test-ci-runner-local.sh" $test_args; then
@@ -245,6 +268,8 @@ PW_BUILD_ARGS="--build-arg HELM_VERSION=${HELM_VERSION} \
     --build-arg OC_VERSION=${OC_VERSION} \
     --build-arg ZBCTL_VERSION=${ZBCTL_VERSION}"
 
+KEYCLOAK_VERSION=$(sed -n 's/^ARG KEYCLOAK_VERSION=//p' "$REPO_ROOT/.github/docker/keycloak-ci/Dockerfile")
+
 echo "=========================================="
 echo "Building CI Runner Docker Images"
 echo "=========================================="
@@ -264,6 +289,7 @@ echo ""
 echo "Images to build:"
 [[ "$BUILD_CI" == "true" ]] && echo "  - CI Runner: ${CI_FULL_IMAGE}"
 [[ "$BUILD_PLAYWRIGHT" == "true" ]] && echo "  - Playwright Runner: ${PLAYWRIGHT_FULL_IMAGE}"
+[[ "$BUILD_KEYCLOAK" == "true" ]] && echo "  - Keycloak CI: ${KEYCLOAK_FULL_IMAGE} (v${KEYCLOAK_VERSION})"
 echo ""
 
 # Setup buildx for cross-platform builds (only if using buildx)
@@ -417,6 +443,46 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     echo "✅ Playwright Runner build complete!"
 fi
 
+# Build Keycloak CI image
+if [[ "$BUILD_KEYCLOAK" == "true" ]]; then
+    echo ""
+    echo "=========================================="
+    echo "Building Keycloak CI Image (v${KEYCLOAK_VERSION})"
+    echo "=========================================="
+
+    if [[ "$DO_TEST" == "true" ]]; then
+        KC_BUILD_TAGS="-t ${KEYCLOAK_TEST_IMAGE}:latest"
+    else
+        KC_BUILD_TAGS="-t ${KEYCLOAK_FULL_IMAGE}:latest -t ${KEYCLOAK_FULL_IMAGE}:${KEYCLOAK_VERSION} -t ${KEYCLOAK_FULL_IMAGE}:${DATE_TAG}"
+    fi
+
+    echo "Building image for ${TARGET_PLATFORM}..."
+    if [[ "$USE_BUILDX" == "true" ]]; then
+        docker buildx build \
+            --platform "${TARGET_PLATFORM}" \
+            ${KC_BUILD_TAGS} \
+            -f "$REPO_ROOT/.github/docker/keycloak-ci/Dockerfile" \
+            ${BUILD_OUTPUT} \
+            "$REPO_ROOT/.github/docker/keycloak-ci"
+    else
+        docker build \
+            --platform "${TARGET_PLATFORM}" \
+            ${KC_BUILD_TAGS} \
+            -f "$REPO_ROOT/.github/docker/keycloak-ci/Dockerfile" \
+            "$REPO_ROOT/.github/docker/keycloak-ci"
+
+        if [[ "$DO_PUSH" == "true" && "$DO_TEST" == "false" ]]; then
+            echo "Pushing Keycloak CI images..."
+            docker push "${KEYCLOAK_FULL_IMAGE}:latest"
+            docker push "${KEYCLOAK_FULL_IMAGE}:${KEYCLOAK_VERSION}"
+            docker push "${KEYCLOAK_FULL_IMAGE}:${DATE_TAG}"
+        fi
+    fi
+
+    echo ""
+    echo "✅ Keycloak CI build complete!"
+fi
+
 # Run tests if requested
 if [[ "$DO_TEST" == "true" ]]; then
     if ! run_tests; then
@@ -452,6 +518,16 @@ if [[ "$DO_TEST" == "true" ]]; then
             docker push "${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}"
             docker push "${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
         fi
+
+        if [[ "$BUILD_KEYCLOAK" == "true" ]]; then
+            echo "Tagging and pushing Keycloak CI..."
+            docker tag "${KEYCLOAK_TEST_IMAGE}:latest" "${KEYCLOAK_FULL_IMAGE}:latest"
+            docker tag "${KEYCLOAK_TEST_IMAGE}:latest" "${KEYCLOAK_FULL_IMAGE}:${KEYCLOAK_VERSION}"
+            docker tag "${KEYCLOAK_TEST_IMAGE}:latest" "${KEYCLOAK_FULL_IMAGE}:${DATE_TAG}"
+            docker push "${KEYCLOAK_FULL_IMAGE}:latest"
+            docker push "${KEYCLOAK_FULL_IMAGE}:${KEYCLOAK_VERSION}"
+            docker push "${KEYCLOAK_FULL_IMAGE}:${DATE_TAG}"
+        fi
     fi
 fi
 
@@ -474,6 +550,12 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     echo "  - ${PLAYWRIGHT_FULL_IMAGE}:sha-${TOOLS_HASH}"
     echo "  - ${PLAYWRIGHT_FULL_IMAGE}:${DATE_TAG}"
 fi
+if [[ "$BUILD_KEYCLOAK" == "true" ]]; then
+    echo "Keycloak CI:"
+    echo "  - ${KEYCLOAK_FULL_IMAGE}:latest"
+    echo "  - ${KEYCLOAK_FULL_IMAGE}:${KEYCLOAK_VERSION}"
+    echo "  - ${KEYCLOAK_FULL_IMAGE}:${DATE_TAG}"
+fi
 echo ""
 
 if [[ "$DO_PUSH" == "true" ]]; then
@@ -482,6 +564,7 @@ elif [[ "$DO_TEST" == "true" ]]; then
     echo "✅ Tests passed! Images built locally as:"
     [[ "$BUILD_CI" == "true" ]] && echo "  - ${CI_TEST_IMAGE}:latest"
     [[ "$BUILD_PLAYWRIGHT" == "true" ]] && echo "  - ${PLAYWRIGHT_TEST_IMAGE}:latest"
+    [[ "$BUILD_KEYCLOAK" == "true" ]] && echo "  - ${KEYCLOAK_TEST_IMAGE}:latest"
     echo ""
     echo "To push to registry, run:"
     echo "  $0 --test --push"
