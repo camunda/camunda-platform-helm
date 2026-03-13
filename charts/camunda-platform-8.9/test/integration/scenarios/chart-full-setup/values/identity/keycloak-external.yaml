@@ -73,6 +73,11 @@ identityKeycloak:
 
 identityPostgresql:
   enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-postgresql-admin-password"
+      userPasswordKey: "identity-postgresql-user-password"
 
 optimize:
   caches:

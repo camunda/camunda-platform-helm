@@ -154,7 +154,7 @@ integration:
           infra-type:
             gke: arm
           flow: install
-          identity: keycloak
+          identity: keycloak-external
           persistence: elasticsearch-external
           features: [arm]
           platforms: [gke]
