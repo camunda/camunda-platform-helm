@@ -1,4 +1,5 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,17 +10,17 @@ metadata:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.webModeler.restapi.service.annotations}}
-      {{- toYaml .Values.webModeler.restapi.service.annotations | nindent 4 }}
+    {{- if $wmVals.restapi.service.annotations}}
+      {{- toYaml $wmVals.restapi.service.annotations | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ .Values.webModeler.restapi.service.type }}
+  type: {{ $wmVals.restapi.service.type }}
   ports:
-    - port: {{ .Values.webModeler.restapi.service.port }}
+    - port: {{ $wmVals.restapi.service.port }}
       name: http
       targetPort: 8081
       protocol: TCP
-    - port: {{ .Values.webModeler.restapi.service.managementPort }}
+    - port: {{ $wmVals.restapi.service.managementPort }}
       name: http-management
       targetPort: 8091
       protocol: TCP

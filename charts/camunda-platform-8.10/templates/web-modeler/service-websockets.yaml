@@ -1,4 +1,5 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,13 +10,13 @@ metadata:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.webModeler.websockets.service.annotations}}
-      {{- toYaml .Values.webModeler.websockets.service.annotations | nindent 4 }}
+    {{- if $wmVals.websockets.service.annotations}}
+      {{- toYaml $wmVals.websockets.service.annotations | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ .Values.webModeler.websockets.service.type }}
+  type: {{ $wmVals.websockets.service.type }}
   ports:
-    - port: {{ .Values.webModeler.websockets.service.port }}
+    - port: {{ $wmVals.websockets.service.port }}
       name: http
       targetPort: 8060
       protocol: TCP
