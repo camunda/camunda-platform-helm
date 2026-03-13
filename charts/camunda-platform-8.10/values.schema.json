@@ -2666,6 +2666,16 @@
                 }
             }
         },
+        "camundaHub": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.",
+                    "default": false
+                }
+            }
+        },
         "webModeler": {
             "type": "object",
             "properties": {

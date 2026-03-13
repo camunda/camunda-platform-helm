@@ -575,9 +575,9 @@ global:
       ## When camundaHub.enabled is true, these values override the legacy console and webModeler
       ## auth sections above. If not set, falls back to the legacy sections.
       camundaHub:
-        ## @extra global.identity.auth.camundaHub.console Console auth overrides when using camundaHub.
+        ## @skip global.identity.auth.camundaHub.console Console auth overrides when using camundaHub.
         console: {}
-        ## @extra global.identity.auth.camundaHub.webModeler WebModeler auth overrides when using camundaHub.
+        ## @skip global.identity.auth.camundaHub.webModeler WebModeler auth overrides when using camundaHub.
         webModeler: {}
 
       #####################
@@ -1543,12 +1543,12 @@ camundaHub:
   ## When enabled, this takes precedence over the individual console.enabled and webModeler.enabled flags.
   enabled: false
 
-  ## @extra camundaHub.console Override values for the Console sub-component when using Camunda Hub.
+  ## @skip camundaHub.console Override values for the Console sub-component when using Camunda Hub.
   ## Any values set here take precedence over the legacy top-level console.* values.
   ## The structure mirrors the top-level console.* configuration exactly.
   console: {}
 
-  ## @extra camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
+  ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
   ## Any values set here take precedence over the legacy top-level webModeler.* values.
   ## The structure mirrors the top-level webModeler.* configuration exactly.
   webModeler: {}
