@@ -404,6 +404,18 @@ jobs:
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
 
+      # Charts older than 8.10 use global.ingress.host, while 8.10+ uses global.host
+      # and rejects global.ingress.host via a keyRemoved constraint.
+      - name: CI Setup - Compute legacy ingress host arg
+        id: legacy-ingress
+        run: |
+          MINOR=$(echo "${{ inputs.camunda-helm-dir }}" | grep -oP '8\.\K\d+')
+          if [[ "$MINOR" -lt 10 ]]; then
+            echo "arg=--set global.ingress.host=${{ steps.vars.outputs.ingress-host }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "arg=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: CI Setup - ℹ️ Set test type vars ℹ️
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
@@ -517,6 +529,7 @@ jobs:
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
+            ${{ steps.legacy-ingress.outputs.arg }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
@@ -557,6 +570,7 @@ jobs:
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
+            ${{ steps.legacy-ingress.outputs.arg }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           # Configure OpenSearch environment if using opensearch scenario
@@ -620,6 +634,7 @@ jobs:
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
+            ${{ steps.legacy-ingress.outputs.arg }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
@@ -795,6 +810,18 @@ jobs:
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
 
+      # Charts older than 8.10 use global.ingress.host, while 8.10+ uses global.host
+      # and rejects global.ingress.host via a keyRemoved constraint.
+      - name: CI Setup - Compute legacy ingress host arg
+        id: legacy-ingress
+        run: |
+          MINOR=$(echo "${{ inputs.camunda-helm-dir }}" | grep -oP '8\.\K\d+')
+          if [[ "$MINOR" -lt 10 ]]; then
+            echo "arg=--set global.ingress.host=${{ steps.vars.outputs.ingress-host }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "arg=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: CI Setup - ℹ️ Set test type vars ℹ️
         id: test-type-vars
         uses: ./.github/actions/test-type-vars
@@ -838,6 +865,7 @@ jobs:
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
+            ${{ steps.legacy-ingress.outputs.arg }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
@@ -926,6 +954,7 @@ jobs:
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
+            ${{ steps.legacy-ingress.outputs.arg }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
