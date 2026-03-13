@@ -11,6 +11,7 @@ import (
 	"scripts/deploy-camunda/deploy"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/values"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -169,18 +170,47 @@ func runPrepareValues(pv *prepareValuesFlags) error {
 		}
 	}
 
+	envMap, err := buildPrepareValuesEnv(pv)
+	if err != nil {
+		return fmt.Errorf("failed to build environment map: %w", err)
+	}
+
 	isLayered := scenarios.HasLayeredValues(scenarioDir)
 
 	if isLayered {
-		// Layered values path: resolve all layer files, process each, deep-merge.
-		return runPrepareValuesLayered(pv, scenarioDir, outputDir)
+		return runPrepareValuesLayered(pv, scenarioDir, outputDir, envMap)
 	}
 
-	// Legacy fallback: resolve the single monolithic values file.
-	return runPrepareValuesLegacy(pv, scenarioDir, outputDir)
+	return runPrepareValuesLegacy(pv, scenarioDir, outputDir, envMap)
 }
 
-func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir string) error {
+// buildPrepareValuesEnv snapshots the process environment into an isolated map,
+// mirroring deploy/values.go buildScenarioEnv. Must be called after env.Load()
+// so that .env vars are included. The returned map is passed as EnvOverrides to
+// values.Process, ensuring placeholders like CAMUNDA_HOSTNAME are resolved from
+// the caller's environment rather than requiring ScenarioContext.
+func buildPrepareValuesEnv(pv *prepareValuesFlags) (map[string]string, error) {
+	envMap := make(map[string]string)
+	for _, entry := range os.Environ() {
+		if k, v, ok := strings.Cut(entry, "="); ok {
+			envMap[k] = v
+		}
+	}
+
+	if pv.envFile != "" {
+		dotenvMap, err := env.ReadFile(pv.envFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read env file %q: %w", pv.envFile, err)
+		}
+		for k, v := range dotenvMap {
+			envMap[k] = v
+		}
+	}
+
+	return envMap, nil
+}
+
+func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir string, envMap map[string]string) error {
 	effectivePlatform := pv.testPlatform
 	if effectivePlatform == "" {
 		effectivePlatform = pv.platform
@@ -237,6 +267,7 @@ func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir stri
 			OutputDir:    outputDir,
 			Interactive:  pv.interactive,
 			EnvFile:      pv.envFile,
+			EnvOverrides: envMap,
 		}
 
 		outputPath, _, procErr := values.Process(context.Background(), srcFile, opts)
@@ -263,7 +294,7 @@ func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir stri
 	return nil
 }
 
-func runPrepareValuesLegacy(pv *prepareValuesFlags, scenarioDir, outputDir string) error {
+func runPrepareValuesLegacy(pv *prepareValuesFlags, scenarioDir, outputDir string, envMap map[string]string) error {
 	legacyFile, err := scenarios.ResolvePath(scenarioDir, pv.scenario)
 	if err != nil {
 		return fmt.Errorf("no layered values and no legacy values file found in %q for scenario %q: %w", scenarioDir, pv.scenario, err)
@@ -281,6 +312,7 @@ func runPrepareValuesLegacy(pv *prepareValuesFlags, scenarioDir, outputDir strin
 		OutputDir:    outputDir,
 		Interactive:  pv.interactive,
 		EnvFile:      pv.envFile,
+		EnvOverrides: envMap,
 	}
 
 	outputPath, _, procErr := values.Process(context.Background(), legacyFile, opts)
