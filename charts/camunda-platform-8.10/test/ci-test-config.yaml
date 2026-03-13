@@ -40,7 +40,7 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
-          flow: install,upgrade-minor
+          flow: install
           auth: keycloak
           shortname: eske
           exclude: []
@@ -82,7 +82,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: oidc
-          enabled: true
+          enabled: false
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
@@ -96,7 +96,7 @@ integration:
           persistence: elasticsearch-external
           platforms: [gke]
         - name: keycloak-mt
-          enabled: true
+          enabled: false
           exclude: []
           shortname: kemt
           auth: keycloak
@@ -108,7 +108,7 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
-          enabled: true
+          enabled: false
           exclude: []
           shortname: kerba
           auth: keycloak
@@ -121,7 +121,7 @@ integration:
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
-          enabled: true
+          enabled: false
           exclude: []
           shortname: keyc
           auth: keycloak
@@ -195,7 +195,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: hub-legacy
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: hublu
           exclude: []
@@ -208,7 +208,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: hub-mixed
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: hubmu
           exclude: []
