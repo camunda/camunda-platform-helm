@@ -1,4 +1,5 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,24 +15,24 @@ spec:
   template:
     metadata:
       labels: {{- include "webModeler.websockets.labels" . | nindent 8 }}
-      {{- if .Values.webModeler.websockets.podLabels }}
-      {{- tpl (toYaml .Values.webModeler.websockets.podLabels) $ | nindent 8 }}
+      {{- if $wmVals.websockets.podLabels }}
+      {{- tpl (toYaml $wmVals.websockets.podLabels) $ | nindent 8 }}
       {{- end }}
-      {{- if .Values.webModeler.websockets.podAnnotations }}
+      {{- if $wmVals.websockets.podAnnotations }}
       annotations:
-        {{- tpl (toYaml .Values.webModeler.websockets.podAnnotations) $ | nindent 8 }}
+        {{- tpl (toYaml $wmVals.websockets.podAnnotations) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.webModeler.websockets.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- tpl ($wmVals.websockets.initContainers | default list | toYaml | nindent 8) $ }}
       containers:
         - name: {{ include "webModeler.name" . }}-websockets
           image: {{ include "webModeler.websockets.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-          {{- if .Values.webModeler.websockets.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.websockets.containerSecurityContext "context" $) | nindent 12 }}
+          {{- if $wmVals.websockets.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $wmVals.websockets.containerSecurityContext "context" $) | nindent 12 }}
           {{- end }}
           env:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -47,107 +48,111 @@ spec:
                   key: pusher-app-id
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "PUSHER_APP_KEY"
-                "config" .Values.webModeler.restapi.pusher.client
+                "config" $wmVals.restapi.pusher.client
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-key"
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "PUSHER_APP_SECRET"
-                "config" .Values.webModeler.restapi.pusher
+                "config" $wmVals.restapi.pusher
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
-            {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+            {{- if and .Values.global.ingress.enabled $wmVals.contextPath }}
             - name: PUSHER_APP_PATH
               value: {{ include "webModeler.websocketContextPath" . | quote }}
             {{- end }}
-          {{- with .Values.webModeler.websockets.env }}
+          {{- with $wmVals.websockets.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
-          {{- if .Values.webModeler.websockets.envFrom }}
+          {{- if $wmVals.websockets.envFrom }}
           envFrom:
-            {{- .Values.webModeler.websockets.envFrom | toYaml | nindent 12 }}
+            {{- $wmVals.websockets.envFrom | toYaml | nindent 12 }}
           {{- end }}
-          {{- if .Values.webModeler.websockets.command}}
-          command: {{ toYaml .Values.webModeler.websockets.command | nindent 10 }}
+          {{- if $wmVals.websockets.command}}
+          command: {{ toYaml $wmVals.websockets.command | nindent 10 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.webModeler.websockets.resources | nindent 12 }}
+            {{- toYaml $wmVals.websockets.resources | nindent 12 }}
           ports:
             - containerPort: 8060
               name: http
               protocol: TCP
-          {{- if .Values.webModeler.websockets.startupProbe.enabled }}
+          {{- if $wmVals.websockets.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: {{ .Values.webModeler.websockets.startupProbe.probePath }}
-              scheme: {{ .Values.webModeler.websockets.startupProbe.scheme }}
+              path: {{ $wmVals.websockets.startupProbe.probePath }}
+              scheme: {{ $wmVals.websockets.startupProbe.scheme }}
               port: http
-            initialDelaySeconds: {{ .Values.webModeler.websockets.startupProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.webModeler.websockets.startupProbe.periodSeconds }}
-            successThreshold: {{ .Values.webModeler.websockets.startupProbe.successThreshold }}
-            failureThreshold: {{ .Values.webModeler.websockets.startupProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.webModeler.websockets.startupProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ $wmVals.websockets.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ $wmVals.websockets.startupProbe.periodSeconds }}
+            successThreshold: {{ $wmVals.websockets.startupProbe.successThreshold }}
+            failureThreshold: {{ $wmVals.websockets.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ $wmVals.websockets.startupProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.webModeler.websockets.readinessProbe.enabled }}
+          {{- if $wmVals.websockets.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.webModeler.websockets.readinessProbe.probePath }}
-              scheme: {{ .Values.webModeler.websockets.readinessProbe.scheme }}
+              path: {{ $wmVals.websockets.readinessProbe.probePath }}
+              scheme: {{ $wmVals.websockets.readinessProbe.scheme }}
               port: http
-            initialDelaySeconds: {{ .Values.webModeler.websockets.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.webModeler.websockets.readinessProbe.periodSeconds }}
-            successThreshold: {{ .Values.webModeler.websockets.readinessProbe.successThreshold }}
-            failureThreshold: {{ .Values.webModeler.websockets.readinessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.webModeler.websockets.readinessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ $wmVals.websockets.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $wmVals.websockets.readinessProbe.periodSeconds }}
+            successThreshold: {{ $wmVals.websockets.readinessProbe.successThreshold }}
+            failureThreshold: {{ $wmVals.websockets.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ $wmVals.websockets.readinessProbe.timeoutSeconds }}
           {{- end }}
-          {{- if .Values.webModeler.websockets.livenessProbe.enabled }}
+          {{- if $wmVals.websockets.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.webModeler.websockets.livenessProbe.probePath }}
-              scheme: {{ .Values.webModeler.websockets.livenessProbe.scheme }}
+              path: {{ $wmVals.websockets.livenessProbe.probePath }}
+              scheme: {{ $wmVals.websockets.livenessProbe.scheme }}
               port: http
-            initialDelaySeconds: {{ .Values.webModeler.websockets.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.webModeler.websockets.livenessProbe.periodSeconds }}
-            successThreshold: {{ .Values.webModeler.websockets.livenessProbe.successThreshold }}
-            failureThreshold: {{ .Values.webModeler.websockets.livenessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.webModeler.websockets.livenessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ $wmVals.websockets.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $wmVals.websockets.livenessProbe.periodSeconds }}
+            successThreshold: {{ $wmVals.websockets.livenessProbe.successThreshold }}
+            failureThreshold: {{ $wmVals.websockets.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ $wmVals.websockets.livenessProbe.timeoutSeconds }}
           {{- end }}
           volumeMounts:
             - name: config
               mountPath: /home/webapp/config/application.yaml
               subPath: application.yaml
-          {{- with .Values.webModeler.websockets.extraConfiguration }}
+          {{- with $wmVals.websockets.extraConfiguration }}
           {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/webapp/config") | trim | nindent 12 }}
           {{- end }}
-          {{- if .Values.webModeler.websockets.extraVolumeMounts }}
-          {{- .Values.webModeler.websockets.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- if $wmVals.websockets.extraVolumeMounts }}
+          {{- $wmVals.websockets.extraVolumeMounts | toYaml | nindent 12 }}
           {{- end }}
-        {{- if .Values.webModeler.websockets.sidecars }}
-        {{- .Values.webModeler.websockets.sidecars | toYaml | nindent 8 }}
+        {{- if $wmVals.websockets.sidecars }}
+        {{- $wmVals.websockets.sidecars | toYaml | nindent 8 }}
         {{- end }}
       volumes:
         - name: config
           configMap:
             name: {{ include "webModeler.fullname" . }}-websockets-configuration
-      {{- if .Values.webModeler.websockets.extraVolumes }}
-      {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 8 }}
+      {{- if $wmVals.websockets.extraVolumes }}
+      {{- $wmVals.websockets.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
-      {{- if .Values.webModeler.websockets.dnsConfig }}
-      dnsConfig: {{- toYaml .Values.webModeler.websockets.dnsConfig | nindent 8 }}
+      {{- if $wmVals.websockets.dnsConfig }}
+      dnsConfig: {{- toYaml $wmVals.websockets.dnsConfig | nindent 8 }}
       {{- end }}
-      {{- if .Values.webModeler.websockets.dnsPolicy }}
-      dnsPolicy: {{ .Values.webModeler.websockets.dnsPolicy | quote }}
+      {{- if $wmVals.websockets.dnsPolicy }}
+      dnsPolicy: {{ $wmVals.websockets.dnsPolicy | quote }}
       {{- end }}
-      {{- if .Values.webModeler.websockets.podSecurityContext }}
-      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.websockets.podSecurityContext "context" $) | nindent 8 }}
+      {{- if $wmVals.websockets.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $wmVals.websockets.podSecurityContext "context" $) | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.websockets.nodeSelector | default .Values.global.nodeSelector }}
+      {{- with $wmVals.websockets.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.websockets.affinity }}
+      {{- with $wmVals.websockets.affinity }}
       affinity:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.websockets.tolerations }}
+      {{- with $wmVals.websockets.tolerations }}
       tolerations:
         {{ toYaml . | nindent 8 }}
       {{- end }}

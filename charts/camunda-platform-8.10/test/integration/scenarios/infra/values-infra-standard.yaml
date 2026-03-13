@@ -36,15 +36,33 @@ identityPostgresql:
       operator: Equal
       value: standard
 
-# Web Apps.
-console:
-  nodeSelector:
-    workload: standard
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: standard
+# Camunda Hub.
+camundaHub:
+  console:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+  webModeler:
+    restapi:
+      nodeSelector:
+        workload: standard
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: standard
+    websockets:
+      nodeSelector:
+        workload: standard
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: standard
 connectors:
   nodeSelector:
     workload: standard
@@ -81,24 +99,6 @@ optimize:
     requests:
       cpu: 2000m
 
-# Web Modeler.
-webModeler:
-  restapi:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
-  websockets:
-    nodeSelector:
-      workload: standard
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: standard
 webModelerPostgresql:
   primary:
     nodeSelector:
