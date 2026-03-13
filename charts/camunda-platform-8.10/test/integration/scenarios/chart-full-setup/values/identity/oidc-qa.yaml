@@ -1,4 +1,4 @@
-# QA OIDC auth configuration for 8.9 (Entra ID)
+# QA OIDC auth configuration for 8.10 (Entra ID)
 # Layer 2: Auth method - External OIDC provider (Microsoft Entra) for QA
 # Expects: base.yaml + base-qa.yaml to be applied alongside this file
 
@@ -78,7 +78,8 @@ connectors:
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
-console:
-  env:
-    - name: CAMUNDA_IDENTITY_JWKS_URL
-      value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+camundaHub:
+  console:
+    env:
+      - name: CAMUNDA_IDENTITY_JWKS_URL
+        value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys

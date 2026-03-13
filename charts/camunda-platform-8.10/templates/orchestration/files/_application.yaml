@@ -144,7 +144,7 @@ camunda:
           {{- end }}
           - {{ include "orchestration.authClientId" . | quote }}
           - {{ include "orchestration.authAudience" . | quote }}
-          - {{ .Values.global.identity.auth.webModeler.clientApiAudience | quote }}
+          - {{ (include "camundaHub.webModelerAuthValues" . | fromYaml).clientApiAudience | quote }}
         {{- if (include "orchestration.authIssuerUrl" .) }}
         issuer-uri: {{ include "orchestration.authIssuerUrl" . | quote }}
         {{- else }}
