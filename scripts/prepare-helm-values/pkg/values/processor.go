@@ -1,6 +1,7 @@
 package values
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,6 +28,14 @@ type Options struct {
 	Interactive   bool
 	EnvFile       string
 	ImageTagsFile string
+
+	// EnvOverrides, when non-nil, provides an explicit set of environment
+	// variables for placeholder substitution. It replaces the process
+	// environment entirely — os.LookupEnv is NOT consulted. This allows
+	// concurrent callers to each supply an isolated env map, eliminating
+	// the need for a process-global mutex around os.Setenv/os.Getenv.
+	// When nil (the default), the process environment is used as before.
+	EnvOverrides map[string]string
 }
 
 type MissingEnvError struct {
@@ -97,7 +106,8 @@ func computeOutputPath(sourceValuesFile string, opts Options) (string, error) {
 
 // Process performs substitution and optional license injection, writing once to disk and
 // returning the output path and final content as a string.
-func Process(valuesFile string, opts Options) (string, string, error) {
+// The context is used to allow cancellation of interactive prompts (e.g., Ctrl+C).
+func Process(ctx context.Context, valuesFile string, opts Options) (string, string, error) {
 	logging.Logger.Debug().Str("values-file", valuesFile).Msg("Starting values processing for")
 
 	// Build overlay env from JSON config (stringified)
@@ -133,6 +143,10 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 		if v, ok := configEnv[name]; ok {
 			return v, true
 		}
+		if opts.EnvOverrides != nil {
+			v, ok := opts.EnvOverrides[name]
+			return v, ok
+		}
 		v, ok := os.LookupEnv(name)
 		return v, ok
 	}
@@ -158,15 +172,19 @@ func Process(valuesFile string, opts Options) (string, string, error) {
 			if opts.Interactive {
 				// Try to guess a default or just empty
 				defVal := ""
-				val, err := env.Prompt(p, defVal)
+				val, err := env.Prompt(ctx, p, defVal)
 				if err != nil {
 					logging.Logger.Error().Err(err).Msg("Failed to read input")
 					missing = append(missing, p)
 					continue
 				}
 				if val != "" {
-					// Set in current environment so subsequent lookups find it
-					os.Setenv(p, val)
+					// Store in the appropriate env source so subsequent lookups find it
+					if opts.EnvOverrides != nil {
+						opts.EnvOverrides[p] = val
+					} else {
+						os.Setenv(p, val)
+					}
 					// Also persist to .env file if configured
 					if opts.EnvFile != "" {
 						if err := env.Append(opts.EnvFile, p, val); err != nil {
@@ -300,6 +318,10 @@ func ProcessImageTags(opts Options) (string, error) {
 	getVal := func(name string) (string, bool) {
 		if v, ok := configEnv[name]; ok {
 			return v, true
+		}
+		if opts.EnvOverrides != nil {
+			v, ok := opts.EnvOverrides[name]
+			return v, ok
 		}
 		v, ok := os.LookupEnv(name)
 		return v, ok

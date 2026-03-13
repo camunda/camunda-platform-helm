@@ -247,32 +247,38 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 }
 
 func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, username, password string) error {
+	return c.EnsureRegistrySecret(ctx, namespace, "registry-camunda-cloud", "registry.camunda.cloud", username, password)
+}
+
+// EnsureDockerHubSecret creates or updates the "index-docker-io" pull secret for Docker Hub.
+func (c *Client) EnsureDockerHubSecret(ctx context.Context, namespace, username, password string) error {
+	return c.EnsureRegistrySecret(ctx, namespace, "index-docker-io", "https://index.docker.io/v1/", username, password)
+}
+
+// EnsureRegistrySecret creates or updates a Docker registry pull secret with the given
+// secret name and registry URL in the specified namespace. Credentials are required;
+// if either username or password is empty the call returns an error.
+//
+// The function first attempts server-side apply (PATCH). If that fails with Forbidden
+// (e.g. Teleport proxies that reject apply-patch content types), it falls back to a
+// classic Get → Create/Update flow.
+func (c *Client) EnsureRegistrySecret(ctx context.Context, namespace, secretName, registryURL, username, password string) error {
 	if username == "" || password == "" {
-		logging.Logger.Debug().Str("namespace", namespace).Msg("skipping docker registry secret creation (credentials not provided)")
-		return nil
+		return fmt.Errorf("cannot create docker registry secret %q in namespace %q: credentials not provided (both username and password are required)", secretName, namespace)
 	}
 
 	logging.Logger.Debug().
 		Str("namespace", namespace).
-		Str("secret", "registry-camunda-cloud").
+		Str("secret", secretName).
+		Str("registry", registryURL).
 		Msg("creating/updating docker registry secret")
 
-	dockerConfig := map[string]any{
-		"auths": map[string]any{
-			"registry.camunda.cloud": map[string]any{
-				"username": username,
-				"password": password,
-				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
-			},
-		},
-	}
-
-	dockerConfigJSON, err := json.Marshal(dockerConfig)
+	dockerConfigJSON, err := buildDockerConfigJSON(registryURL, username, password)
 	if err != nil {
 		return fmt.Errorf("failed to marshal docker config: %w", err)
 	}
 
-	secretApply := corev1apply.Secret("registry-camunda-cloud", namespace).
+	secretApply := corev1apply.Secret(secretName, namespace).
 		WithType(corev1.SecretTypeDockerConfigJson).
 		WithData(map[string][]byte{
 			corev1.DockerConfigJsonKey: dockerConfigJSON,
@@ -284,14 +290,208 @@ func (c *Client) EnsureDockerRegistrySecret(ctx context.Context, namespace, user
 		defaultApplyOptions(),
 	)
 	if err != nil {
-		// Check if error is due to namespace termination
-		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
-			return fmt.Errorf("failed to apply docker registry secret in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", namespace, c.kubeContext, err)
+		// Retry once for transient network/API-server hiccups.
+		if isTransientKubeApplyError(err) {
+			logging.Logger.Warn().
+				Err(err).
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("transient error applying docker registry secret, retrying once")
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, ctx.Err())
+			case <-time.After(2 * time.Second):
+			}
+			_, err = c.clientset.CoreV1().Secrets(namespace).Apply(
+				ctx,
+				secretApply,
+				defaultApplyOptions(),
+			)
 		}
-		return fmt.Errorf("failed to apply docker registry secret in namespace %q (context=%q): %w", namespace, c.kubeContext, err)
+	}
+	if err != nil {
+		if checkNamespaceTerminating(err) {
+			return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, namespace, c.kubeContext, err)
+		}
+		// Fall back to Create/Update when server-side apply is rejected (e.g. Teleport proxy).
+		if apierrors.IsForbidden(err) {
+			logging.Logger.Warn().
+				Err(err).
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("server-side apply forbidden (possible Teleport proxy limitation), falling back to create/update")
+			return c.createOrUpdateSecret(ctx, namespace, secretName, corev1.SecretTypeDockerConfigJson, map[string][]byte{
+				corev1.DockerConfigJsonKey: dockerConfigJSON,
+			})
+		}
+		return fmt.Errorf("failed to apply docker registry secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
 	}
 
 	return nil
+}
+
+func buildDockerConfigJSON(registryURL, username, password string) ([]byte, error) {
+	dockerConfig := map[string]any{
+		"auths": map[string]any{
+			registryURL: map[string]any{
+				"username": username,
+				"password": password,
+				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+			},
+		},
+	}
+	return json.Marshal(dockerConfig)
+}
+
+func checkNamespaceTerminating(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "is being terminated") || strings.Contains(msg, "because it is being terminated")
+}
+
+// createOrUpdateSecret performs a classic Get → Create/Update flow for a Secret.
+// This is used as a fallback when server-side apply is rejected (e.g. by Teleport proxies
+// that don't support the PATCH apply-patch+yaml content type).
+func (c *Client) createOrUpdateSecret(ctx context.Context, namespace, secretName string, secretType corev1.SecretType, data map[string][]byte) error {
+	secretsClient := c.clientset.CoreV1().Secrets(namespace)
+
+	existing, err := secretsClient.Get(ctx, secretName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: namespace,
+			},
+			Type: secretType,
+			Data: data,
+		}
+		_, createErr := secretsClient.Create(ctx, secret, metav1.CreateOptions{})
+		if createErr != nil {
+			return fmt.Errorf("failed to create secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, createErr)
+		}
+		logging.Logger.Info().
+			Str("namespace", namespace).
+			Str("secret", secretName).
+			Msg("created secret via fallback create")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
+	}
+
+	existing.Data = data
+	existing.Type = secretType
+	_, updateErr := secretsClient.Update(ctx, existing, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return fmt.Errorf("failed to update secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, updateErr)
+	}
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Str("secret", secretName).
+		Msg("updated secret via fallback update")
+	return nil
+}
+
+// EnsureOpaqueSecret creates or updates an Opaque secret with string data in the
+// specified namespace. Attempts server-side apply first, falling back to Create/Update
+// if Forbidden (e.g. Teleport proxy).
+func (c *Client) EnsureOpaqueSecret(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	if secretName == "" {
+		return errors.New("secret name must not be empty")
+	}
+
+	logging.Logger.Debug().
+		Str("namespace", namespace).
+		Str("secret", secretName).
+		Msg("creating/updating opaque secret")
+
+	secretApply := corev1apply.Secret(secretName, namespace).
+		WithType(corev1.SecretTypeOpaque).
+		WithStringData(stringData)
+
+	_, err := c.clientset.CoreV1().Secrets(namespace).Apply(
+		ctx,
+		secretApply,
+		defaultApplyOptions(),
+	)
+	if err != nil {
+		if checkNamespaceTerminating(err) {
+			return fmt.Errorf("failed to apply opaque secret %q in namespace %q (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", secretName, namespace, c.kubeContext, err)
+		}
+		if apierrors.IsForbidden(err) {
+			logging.Logger.Warn().
+				Err(err).
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("server-side apply forbidden, falling back to create/update")
+			return c.createOrUpdateOpaqueSecret(ctx, namespace, secretName, stringData)
+		}
+		return fmt.Errorf("failed to apply opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
+	}
+
+	return nil
+}
+
+func (c *Client) createOrUpdateOpaqueSecret(ctx context.Context, namespace, secretName string, stringData map[string]string) error {
+	secretsClient := c.clientset.CoreV1().Secrets(namespace)
+
+	existing, err := secretsClient.Get(ctx, secretName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: namespace,
+			},
+			Type:       corev1.SecretTypeOpaque,
+			StringData: stringData,
+		}
+		_, createErr := secretsClient.Create(ctx, secret, metav1.CreateOptions{})
+		if createErr != nil {
+			return fmt.Errorf("failed to create opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, createErr)
+		}
+		logging.Logger.Info().
+			Str("namespace", namespace).
+			Str("secret", secretName).
+			Msg("created opaque secret via fallback create")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, err)
+	}
+
+	existing.StringData = stringData
+	_, updateErr := secretsClient.Update(ctx, existing, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return fmt.Errorf("failed to update opaque secret %q in namespace %q (context=%q): %w", secretName, namespace, c.kubeContext, updateErr)
+	}
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Str("secret", secretName).
+		Msg("updated opaque secret via fallback update")
+	return nil
+}
+
+// GetSecretData reads a Kubernetes Secret and returns its data values as decoded strings.
+// If the secret does not exist, it returns (nil, nil) — callers should check for a nil map.
+// Only keys with non-empty values are included.
+func (c *Client) GetSecretData(ctx context.Context, namespace, secretName string) (map[string]string, error) {
+	secret, err := c.clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get secret %q in namespace %q: %w", secretName, namespace, err)
+	}
+
+	result := make(map[string]string, len(secret.Data))
+	for k, v := range secret.Data {
+		if len(v) > 0 {
+			result[k] = string(v)
+		}
+	}
+	return result, nil
 }
 
 func (c *Client) DeleteNamespace(ctx context.Context, namespace string) error {
@@ -589,13 +789,14 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, err)
 		}
 
-		// Check if error is due to webhook not being ready (retryable)
-		if !isWebhookNotReadyError(err) {
+		// Determine if the error is retryable (webhook not ready OR transient network error)
+		retryable := isWebhookNotReadyError(err) || isTransientKubeApplyError(err)
+		if !retryable {
 			// Non-retryable error, fail immediately
 			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d): %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, err)
 		}
 
-		// Webhook error - retry with exponential backoff
+		// Retryable error - retry with exponential backoff
 		if attempt == maxRetries {
 			// Exhausted all retries
 			logging.Logger.Error().
@@ -603,8 +804,8 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 				Str("name", unstructuredObj.GetName()).
 				Str("namespace", namespace).
 				Int("attempts", attempt).
-				Msg("webhook not ready after all retry attempts")
-			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d) after %d attempts (webhook not ready): %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, maxRetries, lastErr)
+				Msg("retryable error persists after all retry attempts")
+			return fmt.Errorf("failed to apply %s %q in namespace %q (document %d) after %d attempts: %w", gvk.Kind, unstructuredObj.GetName(), namespace, docNum, maxRetries, lastErr)
 		}
 
 		delay := initialDelay * time.Duration(1<<(attempt-1)) // Exponential backoff: 10s, 20s, 40s, 80s, 160s
@@ -616,7 +817,7 @@ func applySingleManifestObject(ctx context.Context, client *Client, namespace st
 			Int("maxRetries", maxRetries).
 			Dur("retryDelay", delay).
 			Err(err).
-			Msg("webhook not ready, retrying...")
+			Msg("retryable error applying resource, retrying...")
 
 		select {
 		case <-ctx.Done():
@@ -806,6 +1007,14 @@ func DeleteNamespace(ctx context.Context, kubeconfig, kubeContext, namespace str
 	if err != nil {
 		deleteOutputStr := strings.TrimSpace(string(deleteOutput))
 
+		if strings.Contains(strings.ToLower(deleteOutputStr), "deleted") || strings.Contains(strings.ToLower(deleteOutputStr), "not found") {
+			logging.Logger.Debug().
+				Str("namespace", namespace).
+				Str("output", deleteOutputStr).
+				Msg("namespace delete returned non-zero but namespace is already gone")
+			return nil
+		}
+
 		return fmt.Errorf("failed to delete namespace %q\n\n"+
 			"To delete manually, run:\n"+
 			"  %s\n\n"+
@@ -814,4 +1023,27 @@ func DeleteNamespace(ctx context.Context, kubeconfig, kubeContext, namespace str
 
 	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace deleted successfully via kubectl")
 	return nil
+}
+
+func isTransientKubeApplyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	transientHints := []string{
+		"connection reset by peer",
+		"i/o timeout",
+		"tls handshake timeout",
+		"context deadline exceeded",
+		"temporarily unavailable",
+		"service unavailable",
+		"too many requests",
+		"eof",
+	}
+	for _, hint := range transientHints {
+		if strings.Contains(msg, hint) {
+			return true
+		}
+	}
+	return false
 }

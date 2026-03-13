@@ -6,6 +6,7 @@ import (
 	"scripts/camunda-core/pkg/executil"
 	"scripts/camunda-core/pkg/logging"
 	"strings"
+	"time"
 )
 
 func Run(ctx context.Context, args []string, workDir string) error {
@@ -23,9 +24,50 @@ func DependencyUpdate(ctx context.Context, chartPath string) error {
 	}
 
 	args := []string{"dependency", "update"}
-	err := Run(ctx, args, chartPath)
-	if err != nil {
+	var err error
+	for attempt := 1; attempt <= 2; attempt++ {
+		err = Run(ctx, args, chartPath)
+		if err == nil {
+			return nil
+		}
+		// Always retry once on failure. The `helm dependency update` command is idempotent,
+		// so retrying is always safe. We retry unconditionally because the error returned by
+		// exec.Cmd is typically just "exit status 1" — the actual failure details (e.g., OCI
+		// rate-limit, network timeout) are in stderr which is logged but not part of err.Error().
+		// The isTransientHelmError check cannot reliably detect transient failures from exit codes alone.
+		if attempt == 1 {
+			logging.Logger.Warn().
+				Err(err).
+				Int("attempt", attempt).
+				Str("chartPath", chartPath).
+				Msg("helm dependency update failed, retrying once (command is idempotent)")
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("helm dependency update failed: command: helm %s (in %s): %w", strings.Join(args, " "), chartPath, ctx.Err())
+			case <-time.After(3 * time.Second):
+			}
+			continue
+		}
 		return fmt.Errorf("helm dependency update failed: command: helm %s (in %s): %w", strings.Join(args, " "), chartPath, err)
+	}
+	return nil
+}
+
+// RepoAdd registers a Helm chart repository (helm repo add).
+// If the repo already exists, Helm treats this as a no-op update.
+func RepoAdd(ctx context.Context, name, url string) error {
+	args := []string{"repo", "add", name, url}
+	if err := Run(ctx, args, ""); err != nil {
+		return fmt.Errorf("helm repo add %s %s failed: %w", name, url, err)
+	}
+	return nil
+}
+
+// RepoUpdate runs helm repo update to fetch the latest chart index.
+func RepoUpdate(ctx context.Context) error {
+	args := []string{"repo", "update"}
+	if err := Run(ctx, args, ""); err != nil {
+		return fmt.Errorf("helm repo update failed: %w", err)
 	}
 	return nil
 }

@@ -1,0 +1,59 @@
+# =============================================================================
+# External Elasticsearch Backend (8.6)
+# =============================================================================
+# Layer 3: Data backend - Elasticsearch (external)
+# Connects to a shared CI Elasticsearch cluster instead of the bundled one.
+# Note: 8.6 uses separate operate, tasklist, zeebe components (pre-orchestration)
+# =============================================================================
+
+global:
+  elasticsearch:
+    external: true
+    prefix: $ZEEBE_INDEX_PREFIX-$FLOW
+    auth:
+      username: elastic
+      secret:
+        existingSecret: infra-credentials
+        existingSecretKey: elasticsearch-password
+    url:
+      protocol: https
+      host: elasticsearch-21-6-3-pool-${ES_POOL_INDEX}.ci.distro.ultrawombat.com
+      port: 443
+
+# -----------------------------------------------------------------------------
+# Operate (with custom index prefix)
+# -----------------------------------------------------------------------------
+operate:
+  env:
+    - name: CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# -----------------------------------------------------------------------------
+# Tasklist (with custom index prefix)
+# -----------------------------------------------------------------------------
+tasklist:
+  env:
+    - name: CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# -----------------------------------------------------------------------------
+# Zeebe (with custom index prefix)
+# -----------------------------------------------------------------------------
+zeebe:
+  env:
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# -----------------------------------------------------------------------------
+# Optimize (with custom index prefix)
+# -----------------------------------------------------------------------------
+optimize:
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: $ZEEBE_INDEX_PREFIX-$FLOW
+
+# Disable bundled Elasticsearch
+elasticsearch:
+  enabled: false

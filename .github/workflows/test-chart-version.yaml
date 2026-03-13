@@ -11,6 +11,7 @@ on:
       - ".github/workflows/test-chart-version-template.yaml"
       - ".github/workflows/test-chart-version.yaml"
       - ".github/config/external-secret/**"
+      - "!.github/workflows/test-backward-compat.yaml"
       - "scripts/**"
       - ".tool-versions"
       - "charts/camunda-platform-8*/**"
@@ -212,3 +213,11 @@ jobs:
       always-delete-namespace: ${{ inputs.always-delete-namespace || true }}
       infra-type-gke: ${{ matrix.infraTypeGke || 'preemptible' }}
       infra-type-eks: ${{ matrix.infraTypeEks || 'preemptible' }}
+      # Selection + composition model fields from CI matrix
+      test-identity: ${{ matrix.identity }}
+      test-persistence: ${{ matrix.persistence }}
+      test-features: ${{ matrix.features }}
+      test-qa: ${{ matrix.qa == 'true' }}
+      test-upgrade: ${{ matrix.upgrade == 'true' }}
+      skip-e2e: ${{ matrix.skipE2E == 'true' }}
+      skip-it: ${{ matrix.skipIT == 'true' }}

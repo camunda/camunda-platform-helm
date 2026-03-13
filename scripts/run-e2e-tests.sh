@@ -63,6 +63,10 @@ Options:
   --rba                                       Run the rba tests
   --mt                                        Run the mt tests
   --playwright-debug                          Enable Playwright API debug logs and traces
+  --video MODE                                Record video: on, off, retain-on-failure, on-first-retry (default: off)
+  --trace MODE                                Record trace: on, off, retain-on-failure, on-first-retry (default: off)
+  --retries N                                 Number of test retries (overrides playwright.config value)
+  --local-test-suite DIR                      Use a local checkout of c8-cross-component-e2e-tests instead of the npm package
   -v | --verbose                              Show verbose output.
   -h | --help                                 Show this help message and exit.
 EOF
@@ -81,12 +85,16 @@ VERBOSE=false
 SHARD_INDEX=1
 SHARD_TOTAL=1
 TEST_EXCLUDE=""
-IS_CI=true
+IS_CI="${CI:-false}"
 RUN_SMOKE_TESTS=false
 IS_OPENSEARCH=false
 IS_RBA=false
 IS_MT=false
 PLAYWRIGHT_DEBUG=false
+VIDEO_MODE=""
+TRACE_MODE=""
+RETRIES=""
+LOCAL_TEST_SUITE=""
 
 check_required_cmds
 
@@ -145,6 +153,22 @@ while [[ $# -gt 0 ]]; do
       PLAYWRIGHT_DEBUG=true
       shift
       ;;
+    --video)
+      VIDEO_MODE="$2"
+      shift 2
+      ;;
+    --trace)
+      TRACE_MODE="$2"
+      shift 2
+      ;;
+    --retries)
+      RETRIES="$2"
+      shift 2
+      ;;
+    --local-test-suite)
+      LOCAL_TEST_SUITE="$2"
+      shift 2
+      ;;
     -v | --verbose)
       VERBOSE=true
       shift
@@ -169,17 +193,58 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$KUBE_CONTEXT"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/e2e"
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
+# On CI the DNS records are already propagated by the time e2e tests start,
+# so skip the DNS resolution wait and ingress readiness polling.
+if [[ "$IS_CI" != "true" ]]; then
+  _wait_for_dns_resolution "$hostname" || exit 1
+  _wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
+
+  # Enable Node.js DNS fallback if the system resolver is stale
+  if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
+    _enable_dns_fallback "$hostname" "$_RESOLVED_IP"
+  fi
+fi
+
 log "DEBUG: Hostname: $hostname"
 log "DEBUG: Test suite path: $TEST_SUITE_PATH"
 [[ "$IS_OPENSEARCH" == "true" ]] && log "IS_OPENSEARCH is set to true"
 [[ "$IS_RBA" == "true" ]] && log "IS_RBA is set to true"
 [[ "$IS_MT" == "true" ]] && log "IS_MT is set to true"
 
-render_env_file "$TEST_SUITE_PATH/.env" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
+# ── Namespace-scoped .env to avoid collisions during parallel matrix runs ──
+# When multiple matrix entries target the same chart version, they share the
+# same TEST_SUITE_PATH.  Writing a single .env would cause a race condition.
+# Instead we write .env.<namespace> and source it into the process environment
+# so that Playwright inherits the values.  The dotenv() calls in test configs
+# are harmless no-ops because dotenv never overrides existing env vars.
+ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
+trap 'rm -f "$ENV_FILE"' EXIT
+
+render_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$NAMESPACE" "$IS_CI" "$IS_OPENSEARCH" "$IS_RBA" "$IS_MT" "$RUN_SMOKE_TESTS" "$KUBE_CONTEXT"
+
+# Export every variable from the namespace-scoped .env into the shell so that
+# the npx playwright subprocess inherits them without needing the .env file.
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+# ── Namespace-scoped Playwright output directories ──
+# Playwright defaults test artifacts to <cwd>/test-results and HTML reports to
+# <cwd>/playwright-report.  When parallel entries cd into the same test suite
+# directory these collide.  The env vars below isolate each run.
+export PLAYWRIGHT_TEST_OUTPUT="${TEST_SUITE_PATH}/test-results/${NAMESPACE}"
+export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}"
+[[ -n "$VIDEO_MODE" ]] && export PLAYWRIGHT_E2E_VIDEO="$VIDEO_MODE"
+[[ -n "$TRACE_MODE" ]] && export PLAYWRIGHT_E2E_TRACE="$TRACE_MODE"
+[[ -n "$RETRIES" ]] && export PLAYWRIGHT_E2E_RETRIES="$RETRIES"
+[[ -n "$LOCAL_TEST_SUITE" ]] && export PLAYWRIGHT_E2E_LOCAL_TEST_SUITE="$LOCAL_TEST_SUITE"
 
 log "$TEST_SUITE_PATH"
 log "Running smoke tests: $RUN_SMOKE_TESTS"
 log "DEBUG: Shard: $SHARD_INDEX/$SHARD_TOTAL, Exclude: $TEST_EXCLUDE, Debug: $PLAYWRIGHT_DEBUG"
+log "DEBUG: ENV_FILE='${ENV_FILE}'"
+log "DEBUG: PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
 RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE}"
@@ -189,6 +254,10 @@ RERUN_CMD="./scripts/run-e2e-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PAT
 [[ "$IS_OPENSEARCH" == "true" ]] && RERUN_CMD+=" --opensearch"
 [[ "$IS_RBA" == "true" ]] && RERUN_CMD+=" --rba"
 [[ "$IS_MT" == "true" ]] && RERUN_CMD+=" --mt"
+[[ -n "$VIDEO_MODE" ]] && RERUN_CMD+=" --video ${VIDEO_MODE}"
+[[ -n "$TRACE_MODE" ]] && RERUN_CMD+=" --trace ${TRACE_MODE}"
+[[ -n "$RETRIES" ]] && RERUN_CMD+=" --retries ${RETRIES}"
+[[ -n "$LOCAL_TEST_SUITE" ]] && RERUN_CMD+=" --local-test-suite ${LOCAL_TEST_SUITE}"
 
 run_playwright_tests "$TEST_SUITE_PATH" "$SHOW_HTML_REPORT" "$SHARD_INDEX" "$SHARD_TOTAL" "blob" "$TEST_EXCLUDE" "$RUN_SMOKE_TESTS" "$PLAYWRIGHT_DEBUG" "$NAMESPACE" "$KUBE_CONTEXT" "$RERUN_CMD"
 

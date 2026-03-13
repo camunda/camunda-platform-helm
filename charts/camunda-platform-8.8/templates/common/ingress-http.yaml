@@ -82,7 +82,7 @@ spec:
             path: {{ .Values.orchestration.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
-          {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
+          {{- if and .Values.optimize.enabled .Values.optimize.contextPath (not .Values.global.noSecondaryStorage) }}
           # Optimize.
           - backend:
               service:

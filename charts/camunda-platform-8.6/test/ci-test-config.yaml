@@ -26,6 +26,9 @@ integration:
           exclude: []
           shortname: es
           auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          skip-e2e: true
           flow: install,upgrade-patch
           infra-type:
             gke: distroci
@@ -43,6 +46,9 @@ integration:
           exclude: []
           shortname: mt
           auth: keycloak
+          identity: keycloak-external
+          persistence: elasticsearch
+          features: [multitenancy]
         - name: opensearch
           enabled: true
           exclude: []

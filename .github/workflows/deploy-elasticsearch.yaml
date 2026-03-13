@@ -13,6 +13,11 @@ on:
         required: false
         default: "21.6.3"
         type: string
+      pool-index:
+        description: "ES pool index (0-3)"
+        required: false
+        default: ""
+        type: string
   workflow_dispatch:
     inputs:
       distro-platform:
@@ -26,6 +31,11 @@ on:
         default: "21.6.3"
         type: choice
         options: ["21.6.3"]
+      pool-index:
+        description: "ES pool index (0-3); leave empty for legacy single-cluster"
+        required: false
+        default: ""
+        type: string
 
 jobs:
   deploy:
@@ -84,4 +94,8 @@ jobs:
       - name: Deploy Elasticsearch
         shell: bash
         run: |
-          scripts/deploy-elasticsearch.sh --version "${{ inputs.chart-version }}"
+          POOL_INDEX_FLAG=""
+          if [[ -n "${{ inputs.pool-index }}" ]]; then
+            POOL_INDEX_FLAG="--pool-index ${{ inputs.pool-index }}"
+          fi
+          scripts/deploy-elasticsearch.sh --version "${{ inputs.chart-version }}" $POOL_INDEX_FLAG

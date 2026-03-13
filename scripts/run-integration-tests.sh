@@ -83,17 +83,38 @@ setup_env_file() {
   if [[ "$test_suite_path" == *"8.8"* || "$test_suite_path" == *"8.9"* || "$test_suite_path" == *"8.10"* ]]; then
     export TEST_AUTH_TYPE="$test_auth_type"
   fi
+  export TEST_AUTH_TYPE="$test_auth_type"
 
   log "Rendering env template: '$test_suite_path/vars/playwright/files/playwright-job-vars.env.template' -> '$env_file'"
   keycloakUrl=$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity -o jsonpath="{.items[0].metadata.annotations.keycloak-token-url}")
   host=""
-  echo "::group::Keycloak URL parsing"
+  echo "::group::Token URL resolution"
   if [[ -n "$keycloakUrl" ]]; then
-    # This parses out the host from the keycloakUrl
     tokenUrl="${keycloakUrl}"
-    echo "Resolved tokenUrl: $tokenUrl"
+    echo "Resolved tokenUrl from annotation: $tokenUrl"
+  elif [[ "$test_auth_type" == "oidc" ]]; then
+    # OIDC mode: try Helm release values, then ENTRA_APP_DIRECTORY_ID env var
+    local releaseName
+    releaseName=$($kubectl_cmd -n "$namespace" get deployment -l app.kubernetes.io/component=identity \
+      -o jsonpath="{.items[0].metadata.labels.app\.kubernetes\.io/instance}" 2>/dev/null || true)
+    local helmTokenUrl=""
+    if [[ -n "$releaseName" ]] && command -v helm &>/dev/null; then
+      helmTokenUrl=$(helm -n "$namespace" ${kube_context:+--kube-context=$kube_context} \
+        get values "$releaseName" -a -o jsonpath='{.global.identity.auth.tokenUrl}' 2>/dev/null || true)
+    fi
+    if [[ -n "$helmTokenUrl" ]]; then
+      tokenUrl="${helmTokenUrl}"
+      echo "Resolved tokenUrl from Helm release values: $tokenUrl"
+    elif [[ -n "${ENTRA_APP_DIRECTORY_ID:-}" ]]; then
+      tokenUrl="https://login.microsoftonline.com/${ENTRA_APP_DIRECTORY_ID}/oauth2/v2.0/token"
+      echo "Resolved tokenUrl from ENTRA_APP_DIRECTORY_ID: $tokenUrl"
+    else
+      echo "WARNING: OIDC mode but no token URL found. Tried: annotation, Helm values, ENTRA_APP_DIRECTORY_ID env var."
+      echo "Set ENTRA_APP_DIRECTORY_ID or redeploy with updated OIDC values to add the keycloak-token-url annotation."
+      tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
+      echo "Falling back to Keycloak tokenUrl (will likely fail): $tokenUrl"
+    fi
   else
-    # This parses out the host from the keycloakUrl
     tokenUrl="https://${hostname}/auth/realms/camunda-platform/protocol/openid-connect/token"
     echo "Resolved tokenUrl: $tokenUrl"
   fi
@@ -134,17 +155,10 @@ setup_env_file() {
 
   if [[ "$test_suite_path" == *"8.7"* || "$test_suite_path" == *"8.6"* ]]; then
     for svc in CONNECTORS TASKLIST OPTIMIZE OPERATE ZEEBE ORCHESTRATION; do
-      if [[ "$PLATFORM" == "gke" ]]; then
-        log "Fetching secret for service '$svc' (gke identity password)"
-        secret=$($kubectl_cmd -n "$namespace" \
-          get secret integration-test-credentials \
-          -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
-      else
-        log "Fetching secret for service '$svc' (legacy secret key)"
-        secret=$($kubectl_cmd -n "$namespace" \
-          get secret integration-test-credentials \
-          -o jsonpath="{.data.${svc,,}-secret}" | base64 -d)
-      fi
+      log "Fetching secret for service '$svc' (identity client password)"
+      secret=$($kubectl_cmd -n "$namespace" \
+        get secret integration-test-credentials \
+        -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
       mask_secret "$secret"
       echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
     done
@@ -156,6 +170,38 @@ setup_env_file() {
     -o jsonpath="{.data.identity-admin-client-password}" | base64 -d)
   mask_secret "$secret"
   echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${secret}" >> "$env_file"
+
+  # For OIDC mode, fetch venom Entra app credentials from the K8s secret created
+  # by the "deploy-camunda entra ensure-venom-app" CLI command. This provides the
+  # test client with a real Entra app registration (simulating a third-party API consumer).
+  if [[ "$test_auth_type" == "oidc" ]]; then
+    log "Fetching venom Entra credentials for OIDC mode"
+    if $kubectl_cmd -n "$namespace" get secret venom-entra-credentials > /dev/null 2>&1; then
+      local venom_client_id venom_client_secret venom_audience
+      venom_client_id=$($kubectl_cmd -n "$namespace" \
+        get secret venom-entra-credentials \
+        -o jsonpath="{.data.client-id}" | base64 -d)
+      venom_client_secret=$($kubectl_cmd -n "$namespace" \
+        get secret venom-entra-credentials \
+        -o jsonpath="{.data.client-secret}" | base64 -d)
+      venom_audience=$($kubectl_cmd -n "$namespace" \
+        get secret venom-entra-credentials \
+        -o jsonpath="{.data.audience}" | base64 -d)
+      if [[ -z "$venom_client_id" || -z "$venom_client_secret" || -z "$venom_audience" ]]; then
+        log "ERROR: venom-entra-credentials secret exists but one or more fields are empty"
+        log "  client-id='${venom_client_id}' client-secret=[masked] audience='${venom_audience}'"
+        return 1
+      fi
+      mask_secret "$venom_client_secret"
+      echo "TEST_CLIENT_ID=${venom_client_id}" >> "$env_file"
+      echo "PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET=${venom_client_secret}" >> "$env_file"
+      echo "TEST_TOKEN_SCOPE=${venom_audience}/.default" >> "$env_file"
+      log "Venom Entra credentials written to env file (client_id=${venom_client_id})"
+    else
+      log "WARNING: venom-entra-credentials secret not found in namespace '$namespace'."
+      log "OIDC tests will use fallback credentials (may fail if venom is not registered in Entra)."
+    fi
+  fi
 
   # fixtures are the *.bpmn files that are used to test the platform. This is likely to change
   # to be more flexible in what we are testing.
@@ -209,7 +255,7 @@ SHOW_HTML_REPORT=false
 VERBOSE=false
 TEST_AUTH_TYPE="${TEST_AUTH_TYPE:-keycloak}"
 TEST_EXCLUDE="${TEST_EXCLUDE:-}"
-IS_CI=true
+IS_CI="${CI:-false}"
 
 check_required_cmds
 
@@ -279,12 +325,67 @@ validate_args "$ABSOLUTE_CHART_PATH" "$NAMESPACE" "$PLATFORM" "$KUBE_CONTEXT"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 TEST_SUITE_PATH="${ABSOLUTE_CHART_PATH%/}/test/integration/testsuites"
 
+# 8.9-specific fast-fail behavior for local matrix runs.
+# Keep retries very short so a failed IT run exits quickly instead of waiting minutes.
+if [[ "$TEST_SUITE_PATH" == *"camunda-platform-8.9"* ]]; then
+  export PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS="2"
+  export PLAYWRIGHT_POD_RETRY_TIMEOUT="60"
+  export PLAYWRIGHT_RETRIES="1"
+  export PLAYWRIGHT_TEST_TIMEOUT_MS="420000"
+  export CORE_GRPC_DEPLOY_POLL_TIMEOUT_MS="420000"
+  export PLAYWRIGHT_TOKEN_RETRY_MAX_ATTEMPTS="8"
+  export PLAYWRIGHT_TOKEN_RETRY_DELAY_MS="5000"
+  log "8.9 detected: using fast retry settings (attempts=${PLAYWRIGHT_POD_RETRY_MAX_ATTEMPTS}, timeout=${PLAYWRIGHT_POD_RETRY_TIMEOUT}s)"
+fi
+
 hostname=$(get_ingress_hostname "$NAMESPACE" "$KUBE_CONTEXT")
 
-setup_env_file "${TEST_SUITE_PATH%/}/.env" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM" "$KUBE_CONTEXT"
+if [[ "$IS_CI" != "true" ]]; then
+  _wait_for_dns_resolution "$hostname" || exit 1
+  _wait_for_ingress_ready "$hostname" "$NAMESPACE" 120 "$KUBE_CONTEXT" || exit 1
+
+  # Enable Node.js DNS fallback if the system resolver is stale
+  if [[ "$_NEEDS_DNS_FALLBACK" == "true" ]]; then
+    _enable_dns_fallback "$hostname" "$_RESOLVED_IP"
+  fi
+else
+  log "CI detected — skipping DNS resolution and ingress readiness checks"
+fi
+
+# ── Namespace-scoped .env to avoid collisions during parallel matrix runs ──
+# When multiple matrix entries target the same chart version, they share the
+# same TEST_SUITE_PATH.  Writing a single .env would cause a race condition.
+# Instead we write .env.<namespace> and source it into the process environment
+# so that Playwright inherits the values.  The dotenv() calls in test specs
+# are harmless no-ops because dotenv never overrides existing env vars.
+ENV_FILE="${TEST_SUITE_PATH%/}/.env.${NAMESPACE}"
+trap 'rm -f "$ENV_FILE"' EXIT
+
+# Export TEST_EXCLUDE so envsubst inside setup_env_file can substitute it
+# into the .env template (playwright-job-vars.env.template line: TEST_EXCLUDE=${TEST_EXCLUDE}).
+export TEST_EXCLUDE
+
+setup_env_file "$ENV_FILE" "$TEST_SUITE_PATH" "$hostname" "$REPO_ROOT" "$NAMESPACE" "$TEST_AUTH_TYPE" "$IS_CI" "$PLATFORM" "$KUBE_CONTEXT"
+
+# Export every variable from the namespace-scoped .env into the shell so that
+# the npx playwright subprocess inherits them without needing the .env file.
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+# ── Namespace-scoped Playwright output directories ──
+# Playwright defaults test artifacts to <cwd>/test-results and HTML reports to
+# <cwd>/playwright-report.  When parallel entries cd into the same test suite
+# directory these collide.  The env vars below isolate each run.
+export PLAYWRIGHT_TEST_OUTPUT="${TEST_SUITE_PATH}/test-results/${NAMESPACE}"
+export PLAYWRIGHT_HTML_REPORT="${TEST_SUITE_PATH}/playwright-report/${NAMESPACE}"
+export PLAYWRIGHT_JUNIT_OUTPUT_FILE="${TEST_SUITE_PATH}/test-results/${NAMESPACE}/results.xml"
 
 log "Invoking Playwright tests with:"
 log "  TEST_SUITE_PATH='${TEST_SUITE_PATH}' SHOW_HTML_REPORT='${SHOW_HTML_REPORT}' TEST_EXCLUDE='${TEST_EXCLUDE}'"
+log "  ENV_FILE='${ENV_FILE}'"
+log "  PLAYWRIGHT_HTML_REPORT='${PLAYWRIGHT_HTML_REPORT}'"
 
 # Build the rerun command for display on failure
 RERUN_CMD="./scripts/run-integration-tests.sh --absolute-chart-path ${ABSOLUTE_CHART_PATH} --namespace ${NAMESPACE} --platform ${PLATFORM}"

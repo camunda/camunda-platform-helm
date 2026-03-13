@@ -7,7 +7,7 @@
 import { config as dotenv } from "dotenv";
 dotenv(); // ← loads .env before anything else
 
-import { test, expect, APIRequestContext } from "@playwright/test";
+import { test, expect, APIRequestContext, APIResponse } from "@playwright/test";
 import { execFileSync } from "child_process";
 import { authHeader, fetchToken, requireEnv } from "./helper";
 
@@ -49,6 +49,7 @@ const config = {
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
+  tokenScope: process.env.TEST_TOKEN_SCOPE || "",
 };
 
 // ---------- tests ----------
@@ -62,6 +63,13 @@ test.describe("orchestration-grpc", () => {
   });
 
   test("M2M tokens", async () => {
+    // Skip for OIDC auth: component secrets are Identity-generated client
+    // passwords, not Entra client credentials — sending client_id=connectors
+    // to the Entra token endpoint is invalid.
+    if (config.authType === "oidc") {
+      test.skip();
+      return;
+    }
     for (const [id, sec] of Object.entries(config.secrets)) {
       // ensure each call resolves and yields a non-empty JWT:
       await expect(fetchToken(id, sec, api, config)).resolves.toMatch(
@@ -127,10 +135,13 @@ test.describe("orchestration-grpc", () => {
     ["test-inbound-process", "Inbound", "test-inbound-process.bpmn"],
   ] as const) {
     test(`Deploy and check model: ${label}`, async ({ request }) => {
-      test.setTimeout(3 * 60 * 1000); // 3 minutes, > polling window
+      test.setTimeout(
+        Number.parseInt(process.env.PLAYWRIGHT_TEST_TIMEOUT_MS || "45000", 10),
+      );
 
       const extra =
         process.env.ZBCTL_EXTRA_ARGS?.trim().split(/\s+/).filter(Boolean) ?? [];
+      const scopeArgs = config.tokenScope ? ["--scope", config.tokenScope] : [];
       execFileSync(
         "zbctl",
         [
@@ -146,28 +157,42 @@ test.describe("orchestration-grpc", () => {
           config.authURL,
           "--address",
           config.base.zeebeGRPC,
+          ...scopeArgs,
           ...extra,
         ],
         { stdio: "inherit" },
       );
 
-      const timeoutMs = 2 * 60 * 1000;
+      const timeoutMs = Number.parseInt(
+        process.env.CORE_GRPC_DEPLOY_POLL_TIMEOUT_MS || "30000",
+        10,
+      );
       const intervalMs = 5 * 1000;
       const start = Date.now();
       let found = false;
+      let lastPollError = "";
 
       /* eslint-disable no-await-in-loop */
       while (Date.now() - start < timeoutMs) {
-        const r = await request.post(
-          `${config.base.orchestrationOperate}/v2/process-definitions/search`,
-          {
-            data: {}, // send JSON, not a string
-            headers: {
-              Authorization: await authHeader(request, config),
-              "Content-Type": "application/json",
+        let r: APIResponse;
+        try {
+          r = await request.post(
+            `${config.base.orchestrationOperate}/v2/process-definitions/search`,
+            {
+              data: {}, // send JSON, not a string
+              timeout: 15_000,
+              headers: {
+                Authorization: await authHeader(request, config),
+                "Content-Type": "application/json",
+              },
             },
-          },
-        );
+          );
+        } catch (err) {
+          lastPollError = String(err);
+          console.warn(`Operate search ${label} request error: ${lastPollError}`);
+          await new Promise((res) => setTimeout(res, intervalMs));
+          continue;
+        }
 
         if (r.ok()) {
           const data = await r.json();
@@ -189,12 +214,12 @@ test.describe("orchestration-grpc", () => {
 
       expect(
         found,
-        `Process ${bpmnId} not found in Operate within ${timeoutMs / 1000}s`,
+        `Process ${bpmnId} not found in Operate within ${timeoutMs / 1000}s. Last poll error: ${lastPollError || "none"}`,
       ).toBeTruthy();
     });
   }
 
-  test.afterAll(async ({}, testInfo) => {
+  test.afterAll(async ({ request: _request }, testInfo) => {
     // If the test outcome is different from what was expected (i.e. the test failed),
     // dump the resolved configuration so that it is visible in the Playwright output.
     if (testInfo.status !== testInfo.expectedStatus) {

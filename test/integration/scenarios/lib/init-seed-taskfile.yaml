@@ -16,7 +16,8 @@ tasks:
           kubectl create secret docker-registry index-docker-io \
             --namespace {{ .TEST_NAMESPACE }} \
             --docker-username "${TEST_DOCKER_USERNAME}" \
-            --docker-password "${TEST_DOCKER_PASSWORD}"
+            --docker-password "${TEST_DOCKER_PASSWORD}" \
+            --dry-run=client -o yaml | kubectl apply -f -
         fi
 
   default:

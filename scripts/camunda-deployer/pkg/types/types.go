@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type ValuesInput struct {
 	ChartPath string
@@ -34,9 +37,12 @@ type Options struct {
 	CIMetadata CIMetadata
 
 	// Registry/cluster behaviors
-	EnsureDockerRegistry   bool
-	DockerRegistryUsername string
-	DockerRegistryPassword string
+	EnsureDockerRegistry   bool   // Create registry-camunda-cloud pull secret (Harbor)
+	DockerRegistryUsername string // Harbor username (falls back to HARBOR_USERNAME, TEST_DOCKER_USERNAME_CAMUNDA_CLOUD, NEXUS_USERNAME)
+	DockerRegistryPassword string // Harbor password (falls back to HARBOR_PASSWORD, TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD, NEXUS_PASSWORD)
+	EnsureDockerHub        bool   // Create index-docker-io pull secret (Docker Hub)
+	DockerHubUsername      string // Docker Hub username (falls back to DOCKERHUB_USERNAME, TEST_DOCKER_USERNAME)
+	DockerHubPassword      string // Docker Hub password (falls back to DOCKERHUB_PASSWORD, TEST_DOCKER_PASSWORD)
 	SkipDockerLogin        bool
 	SkipDependencyUpdate   bool
 	ApplyIntegrationCreds  bool
@@ -61,6 +67,13 @@ type Options struct {
 	RenderTemplates bool
 	RenderOutputDir string
 	IncludeCRDs     bool
+
+	// PreInstallHooks are functions called after the namespace and registry
+	// secrets are set up but before helm upgrade/install. This allows callers
+	// to create K8s resources (e.g., OIDC credential secrets) that must exist
+	// in the namespace at install time but cannot be created earlier because
+	// the namespace may not yet exist or may be recreated.
+	PreInstallHooks []func(ctx context.Context) error
 }
 
 type CIMetadata struct {

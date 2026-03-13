@@ -81,7 +81,7 @@ runs:
 
         else
           echo "🔧 Running in EKS mode"
-          # Check if secret already exists in target namespace (e.g., during upgrade flow)
+          # Copy TLS certificate from certs namespace (EKS uses a pre-provisioned secret, not an ExternalSecret)
           if kubectl get secret aws-camunda-cloud-tls -n "$TEST_NAMESPACE" &>/dev/null; then
             echo "✅ Secret aws-camunda-cloud-tls already exists in $TEST_NAMESPACE, skipping copy"
           else
@@ -89,10 +89,44 @@ runs:
             sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
             kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
           fi
+
+          # EKS uses vault-backed ExternalSecrets (ClusterSecretStore: vault-backend)
+          echo "🔧 Applying vault-backed external secrets for EKS"
+
+          # Apply infra secrets (creates infra-credentials secret)
+          apply_external_secret_with_retry \
+            ".github/config/external-secret/external-secret-infra-vault.yaml" \
+            "$TEST_NAMESPACE"
+
+          # Apply credentials secrets (creates integration-test secret, for backward compat)
+          apply_external_secret_with_retry \
+            ".github/config/external-secret/external-secret-credentials-vault.yaml" \
+            "$TEST_NAMESPACE"
+
+          # Apply integration test credentials (creates integration-test-credentials secret)
+          # Check for chart-specific vault external secret first
+          CHART_SPECIFIC_VAULT_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials-vault.yaml"
+
+          if [[ -f "$CHART_SPECIFIC_VAULT_FILE" ]]; then
+            echo "✅ Applying chart-specific vault external secret for integration tests: $CHART_SPECIFIC_VAULT_FILE"
+            apply_external_secret_with_retry "$CHART_SPECIFIC_VAULT_FILE" "$TEST_NAMESPACE"
+          else
+            echo "⚠️ Chart-specific vault external secret not found, using fallback"
+            apply_external_secret_with_retry \
+              ".github/config/external-secret/external-secret-integration-test-credentials-vault.yaml" \
+              "$TEST_NAMESPACE"
+          fi
+
+          # Wait for all ExternalSecrets to become Ready
+          for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+            echo "⏳ Waiting for ExternalSecret: $secret"
+            kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+          done
         fi
 
         if [[ "$DISTRO_PLATFORM" == "eks" ]]; then
-          echo "⚠️ Skipping external secret infra configuration for EKS (ExternalSecret CRD not available)"
+          echo "✅ Infra secrets already applied via vault-backed ExternalSecrets above"
         else
           echo "🔧 Applying external secret infra configuration"
           apply_external_secret_with_retry \

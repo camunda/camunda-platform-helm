@@ -204,6 +204,23 @@ write_matrix_entry() {
         infra_type_eks=$(echo "$prScenario" | yq e -r '.infra-type.eks // "preemptible"' -)
         echo "    infraTypeGke: ${infra_type_gke}" >> matrix_versions.txt
         echo "    infraTypeEks: ${infra_type_eks}" >> matrix_versions.txt
+        # Selection + Composition model fields.
+        # These propagate through test-chart-version.yaml -> test-chart-version-template.yaml
+        # -> test-integration-template.yaml -> test-integration-runner.yaml -> Taskfile env vars.
+        identity=$(echo "$prScenario" | yq e -r '.identity // ""' -)
+        persistence=$(echo "$prScenario" | yq e -r '.persistence // ""' -)
+        features=$(echo "$prScenario" | yq e -r '(.features // []) | join(",")' -)
+        qa=$(echo "$prScenario" | yq e -r '.qa // false' -)
+        upgrade=$(echo "$prScenario" | yq e -r '.upgrade // false' -)
+        echo "    identity: ${identity}" >> matrix_versions.txt
+        echo "    persistence: ${persistence}" >> matrix_versions.txt
+        echo "    features: ${features}" >> matrix_versions.txt
+        echo "    qa: ${qa}" >> matrix_versions.txt
+        echo "    upgrade: ${upgrade}" >> matrix_versions.txt
+        skip_e2e=$(echo "$prScenario" | yq e -r '.skip-e2e // false' -)
+        skip_it=$(echo "$prScenario" | yq e -r '.skip-it // false' -)
+        echo "    skipE2E: ${skip_e2e}" >> matrix_versions.txt
+        echo "    skipIT: ${skip_it}" >> matrix_versions.txt
       done
     done
     sed -i -e '$s/,$/]\n/' matrix_versions.txt
@@ -285,5 +302,5 @@ if [ "$(cat matrix_versions.txt)" = "matrix:" ]; then
 fi
 
 matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' \
-  | jq -c 'walk(if type == "number" then tostring else . end)')"
+  | jq -c 'walk(if type == "number" or type == "boolean" then tostring else . end)')"
 echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT

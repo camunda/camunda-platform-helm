@@ -25,6 +25,7 @@ const config = {
   },
   venomID: process.env.TEST_CLIENT_ID ?? "venom",
   venomSec: requireEnv("PLAYWRIGHT_VAR_ADMIN_CLIENT_SECRET"),
+  tokenScope: process.env.TEST_TOKEN_SCOPE || "",
 };
 
 // ---------- tests ----------
@@ -39,6 +40,12 @@ test.describe("console", () => {
 
   // Parameterized API endpoint tests
   test("API: Console clusters", async ({ request }) => {
+    // In OIDC mode, Console is not deployed (excluded in ci-test-config).
+    // When running manually without --test-exclude, skip gracefully.
+    if (config.authType === "oidc") {
+      test.skip();
+      return;
+    }
     const url = `${config.base.console}/api/clusters`;
     const method = "GET";
     const body = "";

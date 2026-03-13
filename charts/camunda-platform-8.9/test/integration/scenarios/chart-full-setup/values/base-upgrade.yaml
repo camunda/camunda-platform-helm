@@ -1,0 +1,12 @@
+# Upgrade feature configuration for 8.9
+# Layer 2: Base modifier - Upgrade/migration test configuration
+# Used when testing upgrades from previous versions (upgrade-minor, upgrade-patch)
+
+# Disable the schema version check restriction so that the schema manager
+# can run migrations across minor versions (e.g. 8.8 -> 8.9).
+# NOTE: orchestration.env is a Helm array and replaces (not merges) the base.yaml
+# env list, so we must re-include any base env vars that are still needed.
+orchestration:
+  env:
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
