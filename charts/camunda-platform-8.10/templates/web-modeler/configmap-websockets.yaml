@@ -1,5 +1,4 @@
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
-{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,11 +6,11 @@ metadata:
   labels: {{- include "webModeler.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
-  {{- if $wmVals.websockets.configuration }}
+  {{- if (dig "webModeler" "websockets" "configuration" .Values.webModeler.websockets.configuration .Values.camundaHub) }}
   application.yaml: |
-    {{ $wmVals.websockets.configuration | indent 4 | trim }}
+    {{ (dig "webModeler" "websockets" "configuration" .Values.webModeler.websockets.configuration .Values.camundaHub) | indent 4 | trim }}
   {{- else }}
   application.yaml: |
   {{- end }}
-  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" $wmVals.websockets.extraConfiguration) }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" (dig "webModeler" "websockets" "extraConfiguration" .Values.webModeler.websockets.extraConfiguration .Values.camundaHub)) }}
 {{- end }}

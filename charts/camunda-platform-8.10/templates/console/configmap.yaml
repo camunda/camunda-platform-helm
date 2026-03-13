@@ -1,5 +1,4 @@
 {{- if eq (include "camundaHub.consoleEnabled" .) "true" -}}
-{{- $consoleVals := include "camundaHub.consoleValues" . | fromYaml -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,29 +7,28 @@ metadata:
     {{- include "console.labels" . | nindent 4 }}
 data:
   application.yaml: |-
-    {{- if $consoleVals.configuration }}
-      {{- include "common.tplvalues.render" ( dict "value" $consoleVals.configuration "context" $ ) | nindent 4 }}
+    {{- if (or .Values.camundaHub.console.configuration .Values.console.configuration) }}
+      {{- include "common.tplvalues.render" ( dict "value" (or .Values.camundaHub.console.configuration .Values.console.configuration) "context" $ ) | nindent 4 }}
     {{- else }}
     # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
     camunda:
       console:
         oAuth:
-          {{- $consoleAuth := include "camundaHub.consoleAuthValues" . | fromYaml }}
-          audience: {{ $consoleAuth.audience | quote }}
-          clientId: {{ $consoleAuth.clientId | quote }}
+          audience: {{ (or .Values.global.identity.auth.camundaHub.console.audience .Values.global.identity.auth.console.audience) | quote }}
+          clientId: {{ (or .Values.global.identity.auth.camundaHub.console.clientId .Values.global.identity.auth.console.clientId) | quote }}
           issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
           jwksUri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
           type: {{ include "camundaPlatform.authIssuerType" . | quote }}
-          wellKnown: {{ $consoleAuth.wellKnown | quote }}
+          wellKnown: {{ (or .Values.global.identity.auth.camundaHub.console.wellKnown .Values.global.identity.auth.console.wellKnown) | quote }}
         managed:
           method: plain
           releases:
             {{- include "camundaPlatform.releaseInfo" . | nindent 10 }}
     {{- end }}
-  {{- if $consoleVals.extraConfiguration }}
+  {{- if (or .Values.camundaHub.console.extraConfiguration .Values.console.extraConfiguration) }}
   application-override.yaml: |
     {{- $merged := dict }}
-    {{- range $consoleVals.extraConfiguration }}
+    {{- range (or .Values.camundaHub.console.extraConfiguration .Values.console.extraConfiguration) }}
     {{- $parsed := .content | fromYaml }}
     {{- $merged = mustMergeOverwrite $merged $parsed }}
     {{- end }}

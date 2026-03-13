@@ -639,52 +639,6 @@ Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
   {{- end -}}
 {{- end -}}
 
-{{/*
-[camunda-hub] Resolve Console values with camundaHub.console overrides.
-Returns a merged dict where camundaHub.console.* values take precedence over
-the legacy console.* values.
-Usage: {{- $consoleValues := include "camundaHub.consoleValues" . | fromYaml -}}
-*/}}
-{{- define "camundaHub.consoleValues" -}}
-  {{- $legacy := .Values.console -}}
-  {{- $override := .Values.camundaHub.console | default dict -}}
-  {{- mustMergeOverwrite (deepCopy $legacy) $override | toYaml -}}
-{{- end -}}
-
-{{/*
-[camunda-hub] Resolve WebModeler values with camundaHub.webModeler overrides.
-Returns a merged dict where camundaHub.webModeler.* values take precedence over
-the legacy webModeler.* values.
-Usage: {{- $webModelerValues := include "camundaHub.webModelerValues" . | fromYaml -}}
-*/}}
-{{- define "camundaHub.webModelerValues" -}}
-  {{- $legacy := .Values.webModeler -}}
-  {{- $override := .Values.camundaHub.webModeler | default dict -}}
-  {{- mustMergeOverwrite (deepCopy $legacy) $override | toYaml -}}
-{{- end -}}
-
-{{/*
-[camunda-hub] Resolve Console auth values with camundaHub auth overrides.
-Merges global.identity.auth.camundaHub.console over global.identity.auth.console.
-Usage: {{- $consoleAuth := include "camundaHub.consoleAuthValues" . | fromYaml -}}
-*/}}
-{{- define "camundaHub.consoleAuthValues" -}}
-  {{- $legacy := .Values.global.identity.auth.console -}}
-  {{- $override := .Values.global.identity.auth.camundaHub.console | default dict -}}
-  {{- mustMergeOverwrite (deepCopy $legacy) $override | toYaml -}}
-{{- end -}}
-
-{{/*
-[camunda-hub] Resolve WebModeler auth values with camundaHub auth overrides.
-Merges global.identity.auth.camundaHub.webModeler over global.identity.auth.webModeler.
-Usage: {{- $webModelerAuth := include "camundaHub.webModelerAuthValues" . | fromYaml -}}
-*/}}
-{{- define "camundaHub.webModelerAuthValues" -}}
-  {{- $legacy := .Values.global.identity.auth.webModeler -}}
-  {{- $override := .Values.global.identity.auth.camundaHub.webModeler | default dict -}}
-  {{- mustMergeOverwrite (deepCopy $legacy) $override | toYaml -}}
-{{- end -}}
-
 
 {{/*
 ********************************************************************************
@@ -760,8 +714,6 @@ Release templates.
 */}}
 
 {{ define "camundaPlatform.releaseInfo" -}}
-{{- $consoleVals := include "camundaHub.consoleValues" . | fromYaml -}}
-{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
 - name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   version: {{ .Chart.Version }}
@@ -773,14 +725,14 @@ Release templates.
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
   {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-  {{-  $proto := (lower $consoleVals.readinessProbe.scheme) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace $consoleVals.service.managementPort }}
+  {{-  $proto := (lower (dig "console" "readinessProbe" "scheme" .Values.console.readinessProbe.scheme .Values.camundaHub)) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace (dig "console" "service" "managementPort" .Values.console.service.managementPort .Values.camundaHub) }}
   - name: Console
     id: console
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" $consoleVals) }}
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict))) }}
     url: {{ include "camundaPlatform.consoleExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal $consoleVals.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s" $baseURLInternal $consoleVals.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (dig "console" "readinessProbe" "probePath" .Values.console.readinessProbe.probePath .Values.camundaHub) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (dig "console" "metrics" "prometheus" .Values.console.metrics.prometheus .Values.camundaHub) }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
@@ -798,14 +750,14 @@ Release templates.
   {{- end }}
 
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-  {{-  $proto := (lower $wmVals.restapi.readinessProbe.scheme) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace $wmVals.restapi.service.managementPort }}
+  {{-  $proto := (lower (dig "webModeler" "restapi" "readinessProbe" "scheme" .Values.webModeler.restapi.readinessProbe.scheme .Values.camundaHub)) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (dig "webModeler" "restapi" "service" "managementPort" .Values.webModeler.restapi.service.managementPort .Values.camundaHub) }}
   - name: WebModeler
     id: webModelerWebApp
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" $wmVals) }}
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict))) }}
     url: {{ include "camundaPlatform.webModelerExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list $wmVals.contextPath $wmVals.restapi.readinessProbe.probePath)) }}
-    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list $wmVals.contextPath $wmVals.restapi.metrics.prometheus)) }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "readinessProbe" "probePath" .Values.webModeler.restapi.readinessProbe.probePath .Values.camundaHub))) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "metrics" "prometheus" .Values.webModeler.restapi.metrics.prometheus .Values.camundaHub))) }}
   {{- end }}
 
   {{- if .Values.optimize.enabled }}
