@@ -21,20 +21,20 @@ global:
         secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
         initialClaimValue: $INITIAL_CLAIM_VALUE
-        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.identity.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
-        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.optimize.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.optimize.contextPath }}"
       webModeler:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         publicApiAudience: $ENTRA_APP_CLIENT_ID
-        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.webModeler.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.webModeler.contextPath }}"
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
         clientId: $ENTRA_APP_CLIENT_ID
@@ -43,7 +43,7 @@ global:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
-        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.console.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.console.contextPath }}"
 
 identityKeycloak:
   enabled: false
@@ -53,7 +53,7 @@ orchestration:
     authentication:
       unprotectedApi: false
       oidc:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}{{ .Values.orchestration.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.orchestration.contextPath }}"
         usernameClaim: oid
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID

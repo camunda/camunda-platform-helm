@@ -62,7 +62,7 @@ spec:
             {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName"           "VALUES_KEYCLOAK_SETUP_PASSWORD"
-                "config"            (include "identity.keycloak.authPasswordConfig" . | fromYaml)
+                "config"            .Values.global.identity.keycloak.auth
             ) | nindent 12 }}
             {{- if .Values.identity.firstUser.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict

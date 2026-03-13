@@ -63,10 +63,10 @@ For more details, please check Camunda Helm chart documentation.
     {{- $_ := required $keycloakFailMessage .Values.global.identity.keycloak.url.port -}}
 {{- end -}}
 
-{{- $hasNewSecret := and .Values.global.identity.keycloak.auth.secret (or .Values.global.identity.keycloak.auth.secret.existingSecret .Values.global.identity.keycloak.auth.secret.inlineSecret) -}}
-{{- if or .Values.global.identity.keycloak.auth.adminUser .Values.global.identity.keycloak.auth.existingSecret $hasNewSecret -}}
+{{- $hasSecret := and .Values.global.identity.keycloak.auth.secret (or .Values.global.identity.keycloak.auth.secret.existingSecret .Values.global.identity.keycloak.auth.secret.inlineSecret) -}}
+{{- if or .Values.global.identity.keycloak.auth.adminUser $hasSecret -}}
     {{- $_ := required $keycloakFailMessage .Values.global.identity.keycloak.auth.adminUser -}}
-    {{- if not (or .Values.global.identity.keycloak.auth.existingSecret $hasNewSecret) -}}
+    {{- if not $hasSecret -}}
         {{- fail $keycloakFailMessage -}}
     {{- end -}}
 {{- end -}}

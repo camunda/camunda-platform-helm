@@ -17,7 +17,7 @@
     {{- else -}}
         {{- if or .Values.global.ingress.enabled .Values.global.gateway.enabled -}}
             {{- $proto := ternary "https" "http" (or .Values.global.ingress.tls.enabled .Values.global.gateway.tls.enabled) -}}
-            {{- $host := (tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $)) -}}
+            {{- $host := (tpl .Values.global.host $) -}}
             {{- $path := .Values.identity.contextPath | default "" -}}
             {{- printf "%s://%s%s" $proto $host $path -}}
         {{- else -}}
@@ -170,47 +170,6 @@ setting any key in the auth map causes all helpers to switch source.
     {{- else -}}
         {{- .Values.identityKeycloak.auth.adminUser -}}
     {{- end -}}
-{{- end -}}
-
-{{/*
-[identity] Resolve the default Kubernetes Secret name for keycloak admin password
-from identityKeycloak subchart values.
-*/}}
-{{- define "identity.keycloak.defaultAuthSecretName" -}}
-    {{- .Values.identityKeycloak.auth.existingSecret | default (printf "%s-keycloak" .Release.Name) -}}
-{{- end -}}
-
-{{/*
-[identity] Resolve the default key within the Kubernetes Secret for keycloak admin password
-from identityKeycloak subchart values.
-*/}}
-{{- define "identity.keycloak.defaultAuthSecretKey" -}}
-    {{- .Values.identityKeycloak.auth.passwordSecretKey | default "admin-password" -}}
-{{- end -}}
-
-{{/*
-[identity] Normalize keycloak auth password configuration into the standard secret config format
-expected by camundaPlatform.normalizeSecretConfiguration.
-Priority: new .secret.* keys > legacy existingSecret/existingSecretKey > identityKeycloak subchart defaults
-*/}}
-{{- define "identity.keycloak.authPasswordConfig" -}}
-{{- $auth := .Values.global.identity.keycloak.auth -}}
-{{- $config := dict -}}
-{{/* New standard keys take priority */}}
-{{- if and $auth.secret (or $auth.secret.existingSecret $auth.secret.inlineSecret) -}}
-  {{- $_ := set $config "secret" $auth.secret -}}
-{{- else if $auth.existingSecret -}}
-  {{- $_ := set $config "secret" (dict
-      "existingSecret" $auth.existingSecret
-      "existingSecretKey" ($auth.existingSecretKey | default "admin-password")
-  ) -}}
-{{- else -}}
-  {{- $_ := set $config "secret" (dict
-      "existingSecret" (include "identity.keycloak.defaultAuthSecretName" .)
-      "existingSecretKey" (include "identity.keycloak.defaultAuthSecretKey" .)
-  ) -}}
-{{- end -}}
-{{- toYaml $config -}}
 {{- end -}}
 
 {{/*

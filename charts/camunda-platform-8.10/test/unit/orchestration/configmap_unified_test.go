@@ -105,25 +105,6 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
-		{
-			Name: "TestApplicationYamlShouldContainEnabledProfilesWithDeprecatedIdentityProfile",
-			Values: map[string]string{
-				"orchestration.profiles.identity": "true",
-				"orchestration.profiles.admin":    "false",
-			},
-			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "broker,operate,tasklist,consolidated-auth",
-			},
-		},
-		{
-			Name: "TestApplicationYamlShouldMigrateDeprecatedIdentityProfileWhenAdminNotSet",
-			Values: map[string]string{
-				"orchestration.profiles.identity": "true",
-			},
-			Expected: map[string]string{
-				"configmapApplication.spring.profiles.active": "admin,broker,operate,tasklist,consolidated-auth",
-			},
-		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -223,8 +204,8 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenDefault",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":      "oidc",
-				"orchestration.data.secondaryStorage.type":          "elasticsearch",
+				"orchestration.security.authentication.method": "oidc",
+				"orchestration.data.secondaryStorage.type":     "elasticsearch",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -234,7 +215,7 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldNotContainGroupsClaimWhenExplicitlyEmpty",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "",
 				"orchestration.data.secondaryStorage.type":               "elasticsearch",
 			},
@@ -246,7 +227,7 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 		{
 			Name: "TestApplicationYamlShouldContainGroupsClaimWhenSet",
 			Values: map[string]string{
-				"orchestration.security.authentication.method":            "oidc",
+				"orchestration.security.authentication.method":           "oidc",
 				"orchestration.security.authentication.oidc.groupsClaim": "custom-groups",
 				"orchestration.data.secondaryStorage.type":               "elasticsearch",
 			},

@@ -2,36 +2,41 @@
 # Layer 2: Auth method - Internal Keycloak
 
 global:
+  host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: true
     className: nginx
-    # The Ingress host will be added via CLI.
-    host: "$CAMUNDA_HOSTNAME"
     tls:
       enabled: true
       # A wildcard certificate will be used.
       
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
+      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
+    keycloak:
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-keycloak-admin-password"
     auth:
       enabled: true
-      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://{{ .Values.global.host }}/auth/realms/camunda-platform"
       admin:
         enabled: true
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-admin-client-token"
       webModeler:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+        redirectUrl: "https://{{ .Values.global.host }}/modeler"
       console:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        redirectUrl: "https://{{ .Values.global.host }}"
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-console-client-token"
       optimize:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        redirectUrl: "https://{{ .Values.global.host }}/optimize"
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-optimize-client-token"
@@ -39,7 +44,7 @@ global:
       ## TODO: Remove this section after the 8.8 release.
       ## START pre-install-upgrade.sh COMMENT
       # orchestration:
-      #   redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+      #   redirectUrl: "https://{{ .Values.global.host }}/orchestration"
       #   secret:
       #     existingSecret: "integration-test-credentials"
       #     existingSecretKey: "identity-orchestration-client-token"
@@ -273,7 +278,7 @@ orchestration:
       method: oidc
       authenticationRefreshInterval: "PT30S"
       oidc:
-        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        redirectUrl: "https://{{ .Values.global.host }}/orchestration"
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-orchestration-client-token"

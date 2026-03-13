@@ -327,7 +327,7 @@ Get the external url for keycloak
     {{- printf "%s://%s%s" $proto .Values.identityKeycloak.ingress.hostname .Values.identityKeycloak.httpRelativePath -}}
   {{ else if .Values.identityKeycloak.enabled -}}
     {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default (tpl .Values.global.ingress.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
+    {{- printf "%s://%s%s" $proto ((tpl .Values.global.host $) | default "localhost:18080") .Values.global.identity.keycloak.contextPath -}}
   {{- end -}}
 {{- end -}}
 
@@ -406,7 +406,7 @@ Usage: {{ include "camundaPlatform.getExternalURL" (dict "component" "identity" 
   {{- if (index .context.Values .component "enabled") -}}
     {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
-      {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context | default (tpl .context.Values.global.ingress.host .context)) (index .context.Values .component "contextPath") -}}
+      {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (index .context.Values .component "contextPath") -}}
     {{- else -}}
       {{- $portMapping := (dict
       "identity" "8080"
@@ -493,9 +493,9 @@ Web Modeler templates.
     {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- if eq .component "websockets" }}
-        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context | default (tpl .context.Values.global.ingress.host .context)) (include "webModeler.websocketContextPath" .context) -}}
+        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
-        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context | default (tpl .context.Values.global.ingress.host .context)) (index .context.Values.webModeler "contextPath") -}}
+        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (index .context.Values.webModeler "contextPath") -}}
       {{- end -}}
     {{- else -}}
       {{- if eq .component "websockets" -}}
@@ -627,7 +627,7 @@ Zeebe templates.
 {{- define "camundaPlatform.orchestrationExternalURL" }}
   {{- if .Values.global.ingress.enabled -}}
     {{ $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-    {{- printf "%s://%s%s" $proto (tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $)) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
+    {{- printf "%s://%s%s" $proto (tpl .Values.global.host $) (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath)) -}}
   {{- else -}}
     {{- printf "http://localhost:8080" -}}
   {{- end -}}
@@ -682,7 +682,7 @@ Release templates.
   custom-properties: []
   components:
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
-  {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $)) }}
+  {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
   {{- if .Values.console.enabled }}
   {{-  $proto := (lower .Values.console.readinessProbe.scheme) -}}
@@ -777,7 +777,7 @@ Release templates.
 
 {{/*
 normalizeSecretConfiguration
-Normalizes secret configuration from various input formats to a standardized output format.
+Resolves secret configuration to a standardized output format.
 Returns a dict with "ref" and "plaintext" keys.
 - "ref": dict with "name" and "key" fields for Kubernetes secret reference, or nil if not using secret
 - "plaintext": string value for inline plaintext, or empty string if using secret reference
@@ -795,25 +795,13 @@ Usage:
 
 {{- $result := dict "ref" nil "plaintext" "" -}}
 
-{{/* New (>= 8.8): existingSecret + existingSecretKey */}}
 {{- if and $config.secret $config.secret.existingSecret $config.secret.existingSecretKey -}}
   {{- $_ := set $result "ref" (dict "name" $config.secret.existingSecret "key" $config.secret.existingSecretKey) -}}
-
-{{/* New (>= 8.8): inlineSecret for plaintext values */}}
 {{- else if and $config.secret $config.secret.inlineSecret -}}
   {{- $_ := set $result "plaintext" $config.secret.inlineSecret -}}
-
-{{/* Legacy: string existingSecret (still used by TLS hasSecretConfig) */}}
-{{- else if and
-    (hasKey $config "existingSecret")
-    (kindIs "string" $config.existingSecret)
-    $config.existingSecret
--}}
-  {{- $_ := set $result "plaintext" $config.existingSecret -}}
-
 {{- end }}
 
-{{/* Final fallback to the caller‑supplied default */}}
+{{/* Fallback to the caller‑supplied default */}}
 {{- if and (not $result.ref) (not $result.plaintext) $defName -}}
   {{- $_ := set $result "ref" (dict "name" $defName "key" $defKey) -}}
 {{- end }}
@@ -866,8 +854,7 @@ false
 
 {{/*
 emitAwsDocumentStoreSecret
-Emits AWS Document Store environment variable handling both legacy and new secret patterns.
-Prioritizes new pattern over legacy pattern.
+Emits AWS Document Store environment variable secret configuration.
 Usage:
   - name: AWS_ACCESS_KEY_ID
     {{ include "camundaPlatform.emitAwsDocumentStoreSecret" (dict "secretType" "accessKeyId" "context" .) }}
@@ -918,7 +905,6 @@ Usage:
 {{/*
 emitTlsVolumeFromSecretConfig
 Emits volume definition for TLS secrets.
-Handles both legacy (< 8.9) and new (>= 8.9) secret patterns.
 Usage:
   {{ include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
       "volumeName" "keystore"
@@ -927,20 +913,10 @@ Usage:
 */}}
 {{- define "camundaPlatform.emitTlsVolumeFromSecretConfig" -}}
 {{- $config := .config | default dict -}}
-{{- $secretName := "" -}}
-
-{{/* New (>= 8.9): config.secret.existingSecret */}}
-{{- if and $config.secret $config.secret.existingSecret -}}
-  {{- $secretName = $config.secret.existingSecret -}}
-{{/* Legacy (< 8.9): config.existingSecret */}}
-{{- else if and $config.existingSecret (kindIs "string" $config.existingSecret) -}}
-  {{- $secretName = $config.existingSecret -}}
-{{- end -}}
-
-{{- if $secretName }}
+{{- if and $config.secret $config.secret.existingSecret }}
 - name: {{ .volumeName }}
   secret:
-    secretName: {{ $secretName | quote }}
+    secretName: {{ $config.secret.existingSecret | quote }}
     optional: false
 {{- end }}
 {{- end -}}
@@ -948,7 +924,7 @@ Usage:
 {{/*
 getTlsSecretKey
 Returns the secret key name from TLS config.
-New pattern uses config.secret.existingSecretKey, legacy defaults to "externaldb.jks".
+Uses config.secret.existingSecretKey.
 Accepts root context (.) and uses the enabled database type (ES or OS).
 Usage:
   {{ include "camundaPlatform.getTlsSecretKey" . }}
@@ -957,12 +933,9 @@ Usage:
 {{- define "camundaPlatform.getTlsSecretKey" -}}
 {{- $config := dict -}}
 
-{{/* If caller passes .config dict, use it directly for backwards compatibility */}}
 {{- if .config -}}
   {{- $config = .config -}}
-{{/* Otherwise, determine which database TLS config to use from root context */}}
 {{- else if .Values -}}
-  {{/* Use OpenSearch if enabled, otherwise Elasticsearch */}}
   {{- if .Values.global.opensearch.enabled -}}
     {{- $config = .Values.global.opensearch.tls -}}
   {{- else -}}
@@ -970,15 +943,9 @@ Usage:
   {{- end -}}
 {{- end -}}
 
-{{- $secretKey := "" -}}
-{{/* New (>= 8.9): config.secret.existingSecretKey */}}
 {{- if and $config.secret $config.secret.existingSecretKey -}}
-  {{- $secretKey = $config.secret.existingSecretKey -}}
-{{/* Legacy (< 8.9): config.existingSecret - use hardcoded default */}}
-{{- else if and $config.existingSecret (kindIs "string" $config.existingSecret) -}}
-  {{- $secretKey = "externaldb.jks" -}}
+  {{- $config.secret.existingSecretKey -}}
 {{- end -}}
-{{- $secretKey -}}
 {{- end -}}
 
 {{/*

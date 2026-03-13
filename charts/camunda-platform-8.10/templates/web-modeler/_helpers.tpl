@@ -148,7 +148,7 @@ app.kubernetes.io/component: {{ .componentName }}
   {{- if .Values.webModelerPostgresql.enabled -}}
     {{- .Values.webModelerPostgresql.auth.username -}}
   {{- else -}}
-    {{- .Values.webModeler.restapi.externalDatabase.username | default .Values.webModeler.restapi.externalDatabase.user -}}
+    {{- .Values.webModeler.restapi.externalDatabase.username -}}
   {{- end -}}
 {{- end -}}
 
@@ -184,7 +184,7 @@ app.kubernetes.io/component: {{ .componentName }}
 */}}
 {{- define "webModeler.publicWebsocketHost" -}}
   {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
-    {{- tpl .Values.global.host $ | default (tpl .Values.global.ingress.host $) }}
+    {{- tpl .Values.global.host $ }}
   {{- else -}}
     {{- .Values.webModeler.websockets.publicHost }}
   {{- end }}

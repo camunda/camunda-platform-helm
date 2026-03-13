@@ -204,11 +204,6 @@
                             "description": "Ingress.className defines the class or configuration of ingress which should be used by the controller",
                             "default": "nginx"
                         },
-                        "host": {
-                            "type": "string",
-                            "description": "(DEPRECATED - use global.host instead) If not specified the rules applies to all inbound http traffic, if specified the rule applies to that host. Supports templating (e.g., {{ .Release.Name }}.example.com).",
-                            "default": ""
-                        },
                         "pathType": {
                             "type": "string",
                             "description": "can be used to define the Ingress path type. https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types",
@@ -251,11 +246,6 @@
                                     "type": "boolean",
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.enabled or orchestration.data.secondaryStorage.elasticsearch.tls) if true, enable tls for external elasticsearch",
                                     "default": false
-                                },
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED - use global.elasticsearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external elasticsearch",
-                                    "default": ""
                                 },
                                 "secret": {
                                     "type": "object",
@@ -366,11 +356,6 @@
                                     "type": "boolean",
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.enabled or orchestration.data.secondaryStorage.opensearch.tls) if true, enable tls for external opensearch",
                                     "default": false
-                                },
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED - use global.opensearch.tls.secret instead) can be used to provide an already existing tls secret for connecting to external opensearch",
-                                    "default": ""
                                 },
                                 "secret": {
                                     "type": "object",
@@ -2191,11 +2176,6 @@
                     "description": "Configuration passed directly to Console as YAML file. More details on [Console official documenations](https://docs.camunda.io/docs/self-managed/console-deployment/configuration/)",
                     "default": ""
                 },
-                "overrideConfiguration": {
-                    "type": "string",
-                    "description": "DEPRECATED Use console.extraConfiguration instead. When populated, it will override the configuration passed to Console, either auto-generated configuration or passed via `console.configuration`",
-                    "default": ""
-                },
                 "extraConfiguration": {
                     "type": "array",
                     "description": "if specified, contents will be used for an extra configuration file. All files will be concatenated into one. Make sure there are no duplicate values between files.",
@@ -2256,11 +2236,6 @@
                             "type": "boolean",
                             "description": "if true, enable TLS traffic for console",
                             "default": false
-                        },
-                        "existingSecret": {
-                            "type": "string",
-                            "description": "(DEPRECATED - use console.tls.secret instead) can be used to provide the name of the existing secret that contains the TLS certificates. Each key of the secret corresponds to a certificate filename, and each value of a key corresponds to the content of the certificate file.",
-                            "default": ""
                         },
                         "certKeyFilename": {
                             "type": "string",
@@ -2806,11 +2781,6 @@
                                 "username": {
                                     "type": "string",
                                     "description": "defines the database user",
-                                    "default": ""
-                                },
-                                "user": {
-                                    "type": "string",
-                                    "description": "(DEPRECATED - use webModeler.restapi.externalDatabase.username instead) defines the database user",
                                     "default": ""
                                 },
                                 "secret": {

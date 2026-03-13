@@ -56,11 +56,7 @@ spec:
               type: RuntimeDefault
           env:
             
-            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-keycloak-admin-password
+            
             
           envFrom:
             - configMapRef:

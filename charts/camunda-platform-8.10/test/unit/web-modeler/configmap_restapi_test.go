@@ -357,12 +357,12 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseConfiguration() {
 	// given
 	values := map[string]string{
-		"identity.enabled":                         "true",
-		"webModelerPostgresql.enabled":             "false",
-		"webModeler.restapi.externalDatabase.url":  "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.user": "modeler-user",
-		"global.elasticsearch.enabled":             "true",
-		"elasticsearch.enabled":                    "true",
+		"identity.enabled":                             "true",
+		"webModelerPostgresql.enabled":                 "false",
+		"webModeler.restapi.externalDatabase.url":      "jdbc:postgresql://postgres.example.com:65432/modeler-database",
+		"webModeler.restapi.externalDatabase.username": "modeler-user",
+		"global.elasticsearch.enabled":                 "true",
+		"elasticsearch.enabled":                        "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
 	options := &helm.Options{
@@ -419,40 +419,6 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	s.Require().Equal("modeler-user-new", configmapApplication.Spring.Datasource.Username)
 }
 
-func (s *configmapRestAPITemplateTest) TestContainerShouldPrioritizeUsernameOverUser() {
-	// given - test that username takes precedence when both are set
-	values := map[string]string{
-		"identity.enabled":                                        "true",
-		"webModelerPostgresql.enabled":                            "false",
-		"webModeler.restapi.externalDatabase.url":                 "jdbc:postgresql://postgres.example.com:65432/modeler-database",
-		"webModeler.restapi.externalDatabase.user":                "old-user",
-		"webModeler.restapi.externalDatabase.username":            "new-username",
-		"webModeler.restapi.externalDatabase.secret.inlineSecret": "modeler-password",
-		"global.elasticsearch.enabled":                            "true",
-		"elasticsearch.enabled":                                   "true",
-	}
-	maps.Insert(values, maps.All(requiredValues))
-	options := &helm.Options{
-		SetValues:      values,
-		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
-	}
-
-	// when
-	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
-	var configmap corev1.ConfigMap
-	var configmapApplication WebModelerRestAPIApplicationYAML
-	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-	if err != nil {
-		s.Fail("Failed to unmarshal yaml. error=", err)
-	}
-
-	// then - should use username, not user
-	s.Require().Equal("jdbc:postgresql://postgres.example.com:65432/modeler-database", configmapApplication.Spring.Datasource.Url)
-	s.Require().Equal("new-username", configmapApplication.Spring.Datasource.Username)
-}
-
 func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSameHelmInstallationWithCustomValues() {
 	// given
 	testCases := []struct {
@@ -490,7 +456,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 				"global.identity.auth.enabled":                  tc.authEnabled,
 				"global.ingress.enabled":                        "true",
 				"global.ingress.tls.enabled":                    "true",
-				"global.ingress.host":                           "example.com",
+				"global.host":                                   "example.com",
 				"webModeler.security.authentication.method":     tc.authMethod,
 				"orchestration.image.tag":                       "8.8.x-alpha1",
 				"orchestration.contextPath":                     "/orchestration",
@@ -859,7 +825,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 		"elasticsearch.enabled":        "true",
 		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
-		"global.ingress.host":          "c8.example.com",
+		"global.host":                  "c8.example.com",
 		"global.ingress.tls.enabled":   "false",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -895,7 +861,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 		"elasticsearch.enabled":        "true",
 		"webModeler.contextPath":       "/modeler",
 		"global.ingress.enabled":       "true",
-		"global.ingress.host":          "c8.example.com",
+		"global.host":                  "c8.example.com",
 		"global.ingress.tls.enabled":   "true",
 	}
 	maps.Insert(values, maps.All(requiredValues))
@@ -937,7 +903,7 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
 
-				// Verify templated global.ingress.host is resolved
+				// Verify templated global.host is resolved
 				// The release name is "camunda-platform-test" so host should resolve to "camunda-platform-test.example.com"
 				s.Require().Equal("camunda-platform-test.example.com", configmapApplication.Camunda.Modeler.Pusher.Client.Host, "Pusher host should contain resolved templated host")
 			},
@@ -950,7 +916,7 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.contextPath":              "/modeler",
 				"global.ingress.enabled":              "true",
-				"global.ingress.host":                 "literal.example.com",
+				"global.host":                         "literal.example.com",
 				"global.ingress.tls.enabled":          "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

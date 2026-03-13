@@ -17,8 +17,8 @@ metadata:
 spec:
   ingressClassName: {{ .Values.global.ingress.className }}
   rules:
-    {{- if .Values.global.ingress.host }}
-    - host: {{ tpl .Values.global.ingress.host $ }}
+    {{- if .Values.global.host }}
+    - host: {{ tpl .Values.global.host $ }}
       http:
     {{- else }}
     - http:
@@ -110,7 +110,7 @@ spec:
     - {}
     {{- else }}
     - hosts:
-        - {{ tpl .Values.global.ingress.host $ }}
+        - {{ tpl .Values.global.host $ }}
       {{- if .Values.global.ingress.tls.secretName }}
       secretName: {{ .Values.global.ingress.tls.secretName }}
       {{- end }}
