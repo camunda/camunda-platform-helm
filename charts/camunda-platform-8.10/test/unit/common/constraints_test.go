@@ -165,6 +165,59 @@ func (s *ConstraintTemplateTest) TestSecondaryStorageConstraint() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestPusherSecretConstraintErrorWhenNotSet",
+			Values: map[string]string{
+				"identity.enabled":                                     "true",
+				"webModeler.enabled":                                   "true",
+				"webModeler.restapi.mail.fromAddress":                  "example@example.com",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+				s.Require().Contains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+			},
+		},
+		{
+			Name: "TestPusherSecretConstraintDoesNotListSetSecrets",
+			Values: map[string]string{
+				"identity.enabled":                                       "true",
+				"webModeler.enabled":                                     "true",
+				"webModeler.restapi.mail.fromAddress":                    "example@example.com",
+				"webModeler.restapi.pusher.secret.existingSecret":        "my-pusher-secret",
+				"webModeler.restapi.pusher.secret.existingSecretKey":     "secret-key",
+				"webModeler.restapi.pusher.client.secret.existingSecret": "my-pusher-client-secret",
+				"webModeler.restapi.pusher.client.secret.existingSecretKey": "client-key",
+				"global.testDeprecationFlags.existingSecretsMustBeSet":      "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				if err != nil {
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.secret.existingSecret")
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher.client.secret.existingSecret")
+				}
+			},
+		},
+		{
+			Name: "TestPusherSecretConstraintNotCheckedWhenWebModelerDisabled",
+			Values: map[string]string{
+				"webModeler.enabled":                                   "false",
+				"global.testDeprecationFlags.existingSecretsMustBeSet": "error",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				if err != nil {
+					s.Require().NotContains(err.Error(), "webModeler.restapi.pusher")
+				}
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+
 func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
 		{
