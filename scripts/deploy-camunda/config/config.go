@@ -266,8 +266,12 @@ func MergeStringField(target *string, depVal, rootVal string) {
 	}
 }
 
-// MergeBoolField applies deployment/root value to target if target pointer is nil.
-func MergeBoolField(target *bool, depVal, rootVal *bool) {
+// MergeBoolField applies deployment/root value to target unless the flag was explicitly set on the CLI.
+// If flagName is non-empty and changedFlags contains it, the CLI value takes precedence.
+func MergeBoolField(target *bool, depVal, rootVal *bool, flagName string, changedFlags map[string]bool) {
+	if changedFlags != nil && changedFlags[flagName] {
+		return // CLI flag was explicitly set; do not overwrite
+	}
 	if depVal != nil {
 		*target = *depVal
 	} else if rootVal != nil {

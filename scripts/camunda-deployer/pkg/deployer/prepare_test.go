@@ -384,10 +384,61 @@ func TestResolveCommonValues(t *testing.T) {
 	}
 }
 
+func TestBuildValuesListAuthSameAsScenario(t *testing.T) {
+	// When auth == scenario, BuildValuesList will produce duplicate entries.
+	// This test documents that behavior — the caller (deploy-camunda CLI)
+	// is responsible for passing auth="" when auth matches the scenario.
+	tmpDir := t.TempDir()
+	scenarioBase := filepath.Join(tmpDir, "scenarios", "chart-full-setup")
+
+	if err := os.MkdirAll(scenarioBase, 0755); err != nil {
+		t.Fatalf("failed to create test directory: %v", err)
+	}
+
+	// Create an oidc scenario file
+	oidcFile := filepath.Join(scenarioBase, "values-integration-test-ingress-oidc.yaml")
+	if err := os.WriteFile(oidcFile, []byte("# oidc"), 0644); err != nil {
+		t.Fatalf("failed to create oidc file: %v", err)
+	}
+
+	// When auth == scenario and both are "oidc", BuildValuesList adds it twice
+	got, err := BuildValuesList(scenarioBase, []string{"oidc"}, "oidc", false, false, nil, []string{})
+	if err != nil {
+		t.Fatalf("BuildValuesList() unexpected error: %v", err)
+	}
+
+	// This is the raw behavior: auth and scenario both add the same file
+	oidcCount := 0
+	for _, f := range got {
+		if filepath.Base(f) == "values-integration-test-ingress-oidc.yaml" {
+			oidcCount++
+		}
+	}
+	if oidcCount != 2 {
+		t.Errorf("BuildValuesList() with auth==scenario should add oidc file twice (caller deduplicates), got %d in: %v", oidcCount, got)
+	}
+
+	// When the caller passes auth="" (as deploy-camunda CLI now does), no duplicate
+	gotDeduped, err := BuildValuesList(scenarioBase, []string{"oidc"}, "", false, false, nil, []string{})
+	if err != nil {
+		t.Fatalf("BuildValuesList() unexpected error: %v", err)
+	}
+
+	oidcCountDeduped := 0
+	for _, f := range gotDeduped {
+		if filepath.Base(f) == "values-integration-test-ingress-oidc.yaml" {
+			oidcCountDeduped++
+		}
+	}
+	if oidcCountDeduped != 1 {
+		t.Errorf("BuildValuesList() with empty auth should have oidc file exactly once, got %d in: %v", oidcCountDeduped, gotDeduped)
+	}
+}
+
 func TestOverlayIfExists(t *testing.T) {
 	tmpDir := t.TempDir()
 	scenarioDir := filepath.Join(tmpDir, "scenarios")
-	
+
 	if err := os.MkdirAll(scenarioDir, 0755); err != nil {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
@@ -427,4 +478,3 @@ func TestOverlayIfExists(t *testing.T) {
 		})
 	}
 }
-
