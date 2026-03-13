@@ -77,9 +77,9 @@ tasks:
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
           --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
-          --identity "${TEST_IDENTITY:-keycloak}" \
-          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
-          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          ${TEST_IDENTITY:+--identity "${TEST_IDENTITY}"} \
+          ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
+          ${TEST_PLATFORM:+--test-platform "${TEST_PLATFORM}"} \
           --features "${TEST_FEATURES:-}" \
           --qa="${TEST_QA:-false}" \
           --image-tags="${TEST_IMAGE_TAGS:-false}" \
@@ -111,9 +111,9 @@ tasks:
       MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
         --scenario-path "$SCENARIO_DIR" \
         --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
-        --identity "${TEST_IDENTITY:-keycloak}" \
-        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
-        --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+        ${TEST_IDENTITY:+--identity "${TEST_IDENTITY}"} \
+        ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
+        ${TEST_PLATFORM:+--test-platform "${TEST_PLATFORM}"} \
         --features "${TEST_FEATURES:-}" \
         --qa="${TEST_QA:-false}" \
         --image-tags="${TEST_IMAGE_TAGS:-false}" \
@@ -144,7 +144,7 @@ tasks:
       VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
       
       IDENTITY="${TEST_IDENTITY:-keycloak}"
-      PERSISTENCE="${TEST_PERSISTENCE:-elasticsearch}"
+      PERSISTENCE="${TEST_PERSISTENCE:-$(if [ "$ES_ENABLED" = "true" ]; then echo "elasticsearch"; else echo "opensearch"; fi)}"
       
       echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
       echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
@@ -240,9 +240,9 @@ tasks:
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
           --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
-          --identity "${TEST_IDENTITY:-keycloak}" \
-          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
-          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          ${TEST_IDENTITY:+--identity "${TEST_IDENTITY}"} \
+          ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
+          ${TEST_PLATFORM:+--test-platform "${TEST_PLATFORM}"} \
           --features "${TEST_FEATURES:-}" \
           --qa="${TEST_QA:-false}" \
           --image-tags="${TEST_IMAGE_TAGS:-false}" \
@@ -320,9 +320,9 @@ tasks:
       MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
         --scenario-path "$SCENARIO_DIR" \
         --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
-        --identity "${TEST_IDENTITY:-keycloak}" \
-        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
-        --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+        ${TEST_IDENTITY:+--identity "${TEST_IDENTITY}"} \
+        ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
+        ${TEST_PLATFORM:+--test-platform "${TEST_PLATFORM}"} \
         --features "${TEST_FEATURES:-}" \
         --qa="${TEST_QA:-false}" \
         --image-tags="${TEST_IMAGE_TAGS:-false}" \

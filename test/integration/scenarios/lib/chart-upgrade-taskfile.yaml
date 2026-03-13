@@ -67,9 +67,9 @@ tasks:
         
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
-          --identity "${TEST_IDENTITY:-keycloak}" \
-          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
-          --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
+          ${TEST_IDENTITY:+--identity "${TEST_IDENTITY}"} \
+          ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
+          ${TEST_PLATFORM:+--test-platform "${TEST_PLATFORM}"} \
           --features "${TEST_FEATURES:-}" \
           --qa="${TEST_QA:-false}" \
           --image-tags="${TEST_IMAGE_TAGS:-false}" \
