@@ -84,7 +84,6 @@ jobs:
       camunda-helm-dir: camunda-platform-8.8
       teleport-token: infra-ci-prod-github-action-distribution
       namespace-prefix: "bc88p${{ matrix.scenario.shortname }}-"
-      deployment-ttl: 30m
       test-enabled: true
       e2e-enabled: ${{ matrix.scenario.e2e-enabled != false }}
       scenario: ${{ matrix.scenario.name }}
@@ -182,7 +181,6 @@ jobs:
       camunda-helm-dir: camunda-platform-8.7
       teleport-token: infra-ci-prod-github-action-distribution
       namespace-prefix: "bc87m${{ matrix.scenario.shortname }}-"
-      deployment-ttl: 30m
       test-enabled: true
       e2e-enabled: false
       scenario: ${{ matrix.scenario.name }}
@@ -245,7 +243,6 @@ jobs:
       namespace-prefix: "backcompcamdock-"
       test-enabled: true
       e2e-enabled: true
-      deployment-ttl: 30m
       scenario: keycloak-original
       shortname: kcor
       always-delete-namespace: true
