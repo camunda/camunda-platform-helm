@@ -299,6 +299,7 @@ elasticsearch:
         cpu: 2000m
         memory: 2560Mi
 
+
 prometheusServiceMonitor:
   enabled: true
   labels:
