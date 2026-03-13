@@ -207,7 +207,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: hub-legacy
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: hublu
           exclude: []
@@ -220,7 +220,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: hub-mixed
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: hubmu
           exclude: []
