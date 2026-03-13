@@ -14,6 +14,12 @@ global:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
+    keycloak:
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: "integration-test-credentials"
+          existingSecretKey: "identity-keycloak-admin-password"
     auth:
       enabled: true
       publicIssuerUrl: "https://{{ .Values.global.host }}/auth/realms/camunda-platform"
