@@ -95,9 +95,9 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 		args = append(args, "--timeout", fmt.Sprintf("%ds", int(o.Timeout.Seconds())))
 	}
 
-	// Deployer convention: set global.ingress.host for Camunda Platform
+	// Deployer convention: set global.host for Camunda Platform
 	if o.IngressHost != "" {
-		args = append(args, "--set", "global.ingress.host="+o.IngressHost)
+		args = append(args, "--set", "global.host="+o.IngressHost)
 	}
 
 	// Optional post-renderer

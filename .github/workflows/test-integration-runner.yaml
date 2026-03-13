@@ -517,7 +517,6 @@ jobs:
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
@@ -558,7 +557,6 @@ jobs:
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           # Configure OpenSearch environment if using opensearch scenario
@@ -622,7 +620,6 @@ jobs:
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
@@ -841,7 +838,6 @@ jobs:
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
@@ -930,7 +926,6 @@ jobs:
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
-            --set global.ingress.host=${{ steps.vars.outputs.ingress-host }}
             --set global.host=${{ steps.vars.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
