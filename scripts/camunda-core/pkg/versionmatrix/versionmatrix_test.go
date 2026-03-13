@@ -3,6 +3,7 @@ package versionmatrix
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -50,6 +51,37 @@ func TestCompareChartVersions(t *testing.T) {
 			got := CompareChartVersions(tt.a, tt.b)
 			if got != tt.want {
 				t.Errorf("CompareChartVersions(%q, %q) = %d, want %d", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCompareChartVersionsFull(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want int
+	}{
+		{"13.5.0", "13.5.0", 0},
+		{"13.5.0", "13.4.0", 1},
+		{"13.4.0", "13.5.0", -1},
+		// Stable > pre-release at same numeric version.
+		{"13.0.0", "13.0.0-alpha2", 1},
+		{"13.0.0-alpha2", "13.0.0", -1},
+		// Pre-release suffix ordering (lexicographic).
+		{"14.0.0-alpha1", "14.0.0-alpha2", -1},
+		{"14.0.0-alpha5", "14.0.0-alpha1", 1},
+		{"14.0.0-alpha5", "14.0.0-alpha5", 0},
+		// Different numeric parts dominate regardless of suffix.
+		{"14.1.0-alpha1", "14.0.0-alpha5", 1},
+		{"14.0.0-alpha5", "14.1.0-alpha1", -1},
+		// rc vs alpha (lexicographic: "rc1" > "alpha5").
+		{"13.0.0-rc1", "13.0.0-alpha5", 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.a+"_vs_"+tt.b, func(t *testing.T) {
+			got := CompareChartVersionsFull(tt.a, tt.b)
+			if got != tt.want {
+				t.Errorf("CompareChartVersionsFull(%q, %q) = %d, want %d", tt.a, tt.b, got, tt.want)
 			}
 		})
 	}
@@ -123,6 +155,82 @@ func TestLatestStableVersion(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("LatestStableVersion() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLatestVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		entries []ChartEntry
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "all alpha returns highest",
+			entries: []ChartEntry{
+				{ChartVersion: "14.0.0-alpha1"},
+				{ChartVersion: "14.0.0-alpha2"},
+				{ChartVersion: "14.0.0-alpha5"},
+				{ChartVersion: "14.0.0-alpha3"},
+			},
+			want: "14.0.0-alpha5",
+		},
+		{
+			name: "mixed stable and alpha prefers stable at same numeric",
+			entries: []ChartEntry{
+				{ChartVersion: "13.0.0-alpha2"},
+				{ChartVersion: "13.0.0"},
+				{ChartVersion: "13.1.0"},
+			},
+			want: "13.1.0",
+		},
+		{
+			name: "higher numeric alpha beats lower stable",
+			entries: []ChartEntry{
+				{ChartVersion: "13.5.0"},
+				{ChartVersion: "14.0.0-alpha1"},
+			},
+			want: "14.0.0-alpha1",
+		},
+		{
+			name: "alpha with different minor versions",
+			entries: []ChartEntry{
+				{ChartVersion: "14.0.0-alpha1"},
+				{ChartVersion: "14.0.0-alpha5"},
+				{ChartVersion: "14.1.0-alpha1"},
+			},
+			want: "14.1.0-alpha1",
+		},
+		{
+			name:    "empty",
+			entries: []ChartEntry{},
+			wantErr: true,
+		},
+		{
+			name: "single entry",
+			entries: []ChartEntry{
+				{ChartVersion: "14.0.0-alpha1"},
+			},
+			want: "14.0.0-alpha1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := LatestVersion(tt.entries)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("LatestVersion() = %q, want error", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("LatestVersion() error = %v", err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("LatestVersion() = %q, want %q", got, tt.want)
 			}
 		})
 	}
@@ -296,6 +404,23 @@ func TestResolveUpgradeFromVersion(t *testing.T) {
 				parts := parseChartVersion(version)
 				if parts[0] != 12 {
 					t.Errorf("expected major 12 for 8.8 modular-upgrade-minor, got %d (version %q)", parts[0], version)
+				}
+			},
+		},
+		{
+			name:       "upgrade-minor 8.10 falls back to alpha (8.9 has no stable)",
+			appVersion: "8.10",
+			flow:       "upgrade-minor",
+			checkFn: func(t *testing.T, version string) {
+				parts := parseChartVersion(version)
+				if parts[0] != 14 {
+					t.Errorf("expected major 14 for 8.10 minor upgrade from 8.9, got %d (version %q)", parts[0], version)
+				}
+				if IsStableVersion(version) {
+					return // stable is fine too (8.9 went GA)
+				}
+				if !strings.Contains(version, "-") {
+					t.Errorf("expected pre-release version, got %q", version)
 				}
 			},
 		},
