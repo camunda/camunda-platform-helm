@@ -1,4 +1,6 @@
 {{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) -}}
+{{- $consoleVals := include "camundaHub.consoleValues" . | fromYaml -}}
+{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -25,13 +27,13 @@ spec:
     {{- end }}
         paths:
         {{- /* Management Group */ -}}
-          {{- if and .Values.console.enabled .Values.console.contextPath }}
+          {{- if and (eq (include "camundaHub.consoleEnabled" .) "true") $consoleVals.contextPath }}
           - backend:
               service:
                 name: {{ template "console.fullname" . }}
                 port:
-                  number: {{ .Values.console.service.port }}
-            path: {{ .Values.console.contextPath }}
+                  number: {{ $consoleVals.service.port }}
+            path: {{ $consoleVals.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- if .Values.identity.enabled }}
@@ -55,19 +57,19 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- end }}
-          {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
+          {{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") $wmVals.contextPath }}
           - backend:
               service:
                 name: {{ template "webModeler.restapi.fullname" . }}
                 port:
-                  number: {{ .Values.webModeler.restapi.service.port }}
-            path: {{ .Values.webModeler.contextPath }}
+                  number: {{ $wmVals.restapi.service.port }}
+            path: {{ $wmVals.contextPath }}
             pathType: {{ .Values.global.ingress.pathType }}
           - backend:
               service:
                 name: {{ template "webModeler.websockets.fullname" . }}
                 port:
-                  number:  {{ .Values.webModeler.websockets.service.port }}
+                  number:  {{ $wmVals.websockets.service.port }}
             path: {{ template "webModeler.websocketContextPath" . }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}

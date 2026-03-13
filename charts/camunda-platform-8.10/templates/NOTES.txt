@@ -13,8 +13,8 @@
 ## Installed Services:
 
 - Console:
-  - Enabled: {{ .Values.console.enabled }}
-  {{- if .Values.console.enabled }}
+  - Enabled: {{ eq (include "camundaHub.consoleEnabled" .) "true" }}
+  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
     {{- if .Values.console.image.tag }}
   - Docker Image used for Console: {{ .Values.console.image.repository }}:{{ .Values.console.image.tag }}
     {{- end }}
@@ -51,8 +51,8 @@
   {{- end }}
   {{- end }}
 - Web Modeler:
-  - Enabled: {{ .Values.webModeler.enabled }}
-  {{- if .Values.webModeler.enabled }}
+  - Enabled: {{ eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
   - Docker images used for Web Modeler:
     - {{ include "webModeler.restapi.image" . }}
     - {{ include "webModeler.websockets.image" . }}
@@ -87,7 +87,7 @@ Identity:
 Optimize:
 > kubectl port-forward svc/{{ .Release.Name }}-optimize 8083:80
 {{- end }}
-{{ if .Values.webModeler.enabled -}}
+{{ if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 Web Modeler:
 > kubectl port-forward svc/{{ include "webModeler.restapi.fullname" . }} 8070:80
 > kubectl port-forward svc/{{ include "webModeler.websockets.fullname" . }} 8085:80
@@ -96,7 +96,7 @@ Web Modeler:
 Connectors:
 > kubectl port-forward svc/{{ .Release.Name }}-connectors 8086:8080
 {{- end }}
-{{ if .Values.console.enabled -}}
+{{ if eq (include "camundaHub.consoleEnabled" .) "true" -}}
 Console:
 > kubectl port-forward svc/{{ .Release.Name }}-console 8087:80
 {{- end }}
@@ -131,15 +131,15 @@ Default user and password: "{{ .Values.identity.firstUser.username -}}/{{ .Value
 {{ if .Values.identityKeycloak.enabled -}}
 - Keycloak Authentication: {{ include "camundaPlatform.keycloakExternalURL" . }}
 {{- end }}
-{{- if or (.Values.identity.enabled) (.Values.webModeler.enabled) }}
+{{- if or (.Values.identity.enabled) (eq (include "camundaHub.webModelerEnabled" .) "true") }}
 - Web Applications:
-  {{ if .Values.console.enabled -}}
+  {{ if eq (include "camundaHub.consoleEnabled" .) "true" -}}
   - Console: {{ include "camundaPlatform.consoleExternalURL" . }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
   - Identity: {{ include "camundaPlatform.identityExternalURL" . }}
   {{- end }}
-  {{ if .Values.webModeler.enabled -}}
+  {{ if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
   - WebModeler: {{ include "camundaPlatform.webModelerExternalURL" . }}
   - WebModeler WebSockets: {{ include "camundaPlatform.webModelerWebSocketsExternalURL" . }}
   {{- end }}

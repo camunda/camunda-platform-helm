@@ -1,7 +1,8 @@
 {{- define "console.fullname" -}}
+    {{- $consoleVals := include "camundaHub.consoleValues" . | fromYaml -}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "console"
-        "componentValues" .Values.console
+        "componentValues" $consoleVals
         "context" $
     ) -}}
 {{- end -}}
@@ -42,5 +43,5 @@ Get the image pull secrets.
 [console] Define variables related to authentication.
 */}}
 {{- define "console.authAudience" -}}
-  {{- .Values.global.identity.auth.console.audience | default "console-api" -}}
+  {{- (include "camundaHub.consoleAuthValues" . | fromYaml).audience | default "console-api" -}}
 {{- end -}}

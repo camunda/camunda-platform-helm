@@ -1,4 +1,4 @@
-# OIDC auth configuration for 8.9 (Entra ID)
+# OIDC auth configuration for 8.10 (Entra ID)
 # Layer 2: Auth method - External OIDC provider (Microsoft Entra)
 
 global:
@@ -75,10 +75,15 @@ global:
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.host }}/"
 
-console:
-  env:
-    - name: CAMUNDA_IDENTITY_JWKS_URL
-      value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+camundaHub:
+  console:
+    env:
+      - name: CAMUNDA_IDENTITY_JWKS_URL
+        value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+  webModeler:
+    security:
+      authentication:
+        method: oidc
 
 identityPostgresql:
   enabled: true
@@ -103,11 +108,6 @@ connectors:
           existingSecret: integration-test-credentials
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
-
-webModeler:
-  security:
-    authentication:
-      method: oidc
 
 orchestration:
   security:
