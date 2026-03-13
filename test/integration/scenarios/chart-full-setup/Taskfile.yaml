@@ -78,7 +78,7 @@ tasks:
           --scenario-path "$SCENARIO_DIR" \
           --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
           --identity "${TEST_IDENTITY:-keycloak}" \
-          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+          ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
           --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
           --features "${TEST_FEATURES:-}" \
           --qa="${TEST_QA:-false}" \
@@ -112,7 +112,7 @@ tasks:
         --scenario-path "$SCENARIO_DIR" \
         --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
         --identity "${TEST_IDENTITY:-keycloak}" \
-        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+        ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
         --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
         --features "${TEST_FEATURES:-}" \
         --qa="${TEST_QA:-false}" \
@@ -241,7 +241,7 @@ tasks:
           --scenario-path "$SCENARIO_DIR" \
           --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
           --identity "${TEST_IDENTITY:-keycloak}" \
-          --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+          ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
           --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
           --features "${TEST_FEATURES:-}" \
           --qa="${TEST_QA:-false}" \
@@ -321,7 +321,7 @@ tasks:
         --scenario-path "$SCENARIO_DIR" \
         --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
         --identity "${TEST_IDENTITY:-keycloak}" \
-        --persistence "${TEST_PERSISTENCE:-elasticsearch}" \
+        ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
         --test-platform "${TEST_PLATFORM:-${PLATFORM:-gke}}" \
         --features "${TEST_FEATURES:-}" \
         --qa="${TEST_QA:-false}" \
