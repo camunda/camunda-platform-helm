@@ -1,6 +1,5 @@
 {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
 {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-{{- $consoleVals := include "camundaHub.consoleValues" . | fromYaml -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -30,10 +29,10 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: {{ $consoleVals.contextPath }}
+        value: {{ (or .Values.camundaHub.console.contextPath .Values.console.contextPath) }}
     backendRefs:
     - name: {{ template "console.fullname" . }}
       namespace: {{ .Release.Namespace }}
-      port: {{ $consoleVals.service.port }}
+      port: {{ (dig "console" "service" "port" .Values.console.service.port .Values.camundaHub) }}
 {{- end }}
 {{- end }}

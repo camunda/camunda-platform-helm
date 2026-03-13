@@ -1,6 +1,5 @@
 {{- if and .Values.global.gateway.enabled (not .Values.global.gateway.external) -}}
 {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -30,11 +29,11 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: {{ $wmVals.contextPath }}
+        value: {{ (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
     backendRefs:
     - name: {{ template "webModeler.restapi.fullname" . }}
       namespace: {{ .Release.Namespace }}
-      port: {{ $wmVals.restapi.service.port }}
+      port: {{ (dig "webModeler" "restapi" "service" "port" .Values.webModeler.restapi.service.port .Values.camundaHub) }}
   - matches:
     - path:
         type: PathPrefix
@@ -42,6 +41,6 @@ spec:
     backendRefs:
     - name: {{ template "webModeler.websockets.fullname" . }}
       namespace: {{ .Release.Namespace }}
-      port: {{ $wmVals.websockets.service.port }}
+      port: {{ (dig "webModeler" "websockets" "service" "port" .Values.webModeler.websockets.service.port .Values.camundaHub) }}
 {{- end }}
 {{- end }}

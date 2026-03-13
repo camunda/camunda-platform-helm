@@ -11,10 +11,9 @@ web-modeler
 Create a default fully qualified app name.
 */}}
 {{- define "webModeler.fullname" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
   {{- include "camundaPlatform.componentFullname" (dict
       "componentName" "web-modeler"
-      "componentValues" $wmVals
+      "componentValues" (or .Values.camundaHub.webModeler .Values.webModeler)
       "context" $
   ) -}}
 {{- end -}}
@@ -42,8 +41,7 @@ Create a fully qualified name for the websockets objects.
 Define common labels for all Web Modeler components.
 */}}
 {{- define "webModeler.commonLabels" -}}
-{{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-{{- $values := merge (deepCopy .Values) (dict "nameOverride" (include "webModeler.name" .) "image" $wmVals.image) }}
+{{- $values := merge (deepCopy .Values) (dict "nameOverride" (include "webModeler.name" .) "image" (or .Values.camundaHub.webModeler.image .Values.webModeler.image)) }}
 {{- template "camundaPlatform.labels" (dict "Chart" .Chart "Release" .Release "Values" $values) }}
 {{- end -}}
 
@@ -96,24 +94,21 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the image pull secrets.
 */}}
 {{- define "webModeler.imagePullSecrets" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-  {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" $wmVals.image)) }}
+  {{- include "camundaPlatform.subChartImagePullSecrets" (dict "Values" (set (deepCopy .Values) "image" (or .Values.camundaHub.webModeler.image .Values.webModeler.image))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the restapi Docker image
 */}}
 {{- define "webModeler.restapi.image" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy $wmVals.image | merge $wmVals.restapi.image))) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.webModeler.image .Values.webModeler.image) | merge (dig "webModeler" "restapi" "image" .Values.webModeler.restapi.image .Values.camundaHub)))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the websockets Docker image
 */}}
 {{- define "webModeler.websockets.image" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy $wmVals.image | merge $wmVals.websockets.image))) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.webModeler.image .Values.webModeler.image) | merge (dig "webModeler" "websockets" "image" .Values.webModeler.websockets.image .Values.camundaHub)))) }}
 {{- end }}
 
 {{/*
@@ -130,19 +125,18 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the database JDBC url, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUrl" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
   {{- if .Values.webModelerPostgresql.enabled -}}
     {{- printf "jdbc:postgresql://%s:5432/%s"
         (include "webModeler.postgresql.fullname" .)
         (.Values.webModelerPostgresql.auth.database)
       -}}
-  {{- else if $wmVals.restapi.externalDatabase.url -}}
-    {{- $wmVals.restapi.externalDatabase.url -}}
-  {{- else if $wmVals.restapi.externalDatabase.host -}}
+  {{- else if (dig "webModeler" "restapi" "externalDatabase" "url" .Values.webModeler.restapi.externalDatabase.url .Values.camundaHub) -}}
+    {{- (dig "webModeler" "restapi" "externalDatabase" "url" .Values.webModeler.restapi.externalDatabase.url .Values.camundaHub) -}}
+  {{- else if (dig "webModeler" "restapi" "externalDatabase" "host" .Values.webModeler.restapi.externalDatabase.host .Values.camundaHub) -}}
     {{- printf "jdbc:postgresql://%s:%s/%s"
-        $wmVals.restapi.externalDatabase.host
-        (toString ($wmVals.restapi.externalDatabase.port))
-        ($wmVals.restapi.externalDatabase.database)
+        (dig "webModeler" "restapi" "externalDatabase" "host" .Values.webModeler.restapi.externalDatabase.host .Values.camundaHub)
+        (toString ((dig "webModeler" "restapi" "externalDatabase" "port" .Values.webModeler.restapi.externalDatabase.port .Values.camundaHub)))
+        ((dig "webModeler" "restapi" "externalDatabase" "database" .Values.webModeler.restapi.externalDatabase.database .Values.camundaHub))
       -}}
   {{- end -}}
 {{- end -}}
@@ -151,11 +145,10 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the database user, depending on whether the postgresql dependency chart is enabled.
 */}}
 {{- define "webModeler.restapi.databaseUser" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
   {{- if .Values.webModelerPostgresql.enabled -}}
     {{- .Values.webModelerPostgresql.auth.username -}}
   {{- else -}}
-    {{- .Values.webModeler.restapi.externalDatabase.username -}}
+    {{- (dig "webModeler" "restapi" "externalDatabase" "username" .Values.webModeler.restapi.externalDatabase.username .Values.camundaHub) -}}
   {{- end -}}
 {{- end -}}
 
@@ -163,10 +156,9 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Check if username and password is provided for the SMTP server
 */}}
 {{- define "webModeler.restapi.mail.authEnabled" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
   {{- $authEnabled := false -}}
-  {{- if and (typeIs "string" $wmVals.restapi.mail.smtpUser) (ne $wmVals.restapi.mail.smtpUser "") }}
-    {{- if or (and (typeIs "string" $wmVals.restapi.mail.smtpPassword) (ne $wmVals.restapi.mail.smtpPassword "")) $wmVals.restapi.mail.existingSecret }}
+  {{- if and (typeIs "string" (dig "webModeler" "restapi" "mail" "smtpUser" .Values.webModeler.restapi.mail.smtpUser .Values.camundaHub)) (ne (dig "webModeler" "restapi" "mail" "smtpUser" .Values.webModeler.restapi.mail.smtpUser .Values.camundaHub) "") }}
+    {{- if or (and (typeIs "string" (dig "webModeler" "restapi" "mail" "smtpPassword" .Values.webModeler.restapi.mail.smtpPassword .Values.camundaHub)) (ne (dig "webModeler" "restapi" "mail" "smtpPassword" .Values.webModeler.restapi.mail.smtpPassword .Values.camundaHub) "")) (dig "webModeler" "restapi" "mail" "existingSecret" .Values.webModeler.restapi.mail.existingSecret .Values.camundaHub) }}
       {{- $authEnabled = true }}
     {{- end }}
   {{- end }}
@@ -184,19 +176,17 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Create the context path for the WebSocket app (= configured context path + suffix "-ws").
 */}}
 {{- define "webModeler.websocketContextPath" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-  {{- $wmVals.contextPath }}-ws
+  {{- (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}-ws
 {{- end -}}
 
 {{/*
 [web-modeler] Get the host name on which the WebSocket server is reachable from the client.
 */}}
 {{- define "webModeler.publicWebsocketHost" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-  {{- if and .Values.global.ingress.enabled $wmVals.contextPath }}
+  {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
     {{- tpl .Values.global.host $ }}
   {{- else -}}
-    {{- $wmVals.websockets.publicHost }}
+    {{- (dig "webModeler" "websockets" "publicHost" .Values.webModeler.websockets.publicHost .Values.camundaHub) }}
   {{- end }}
 {{- end -}}
 
@@ -204,11 +194,10 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the port number on which the WebSocket server is reachable from the client.
 */}}
 {{- define "webModeler.publicWebsocketPort" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-  {{- if and .Values.global.ingress.enabled $wmVals.contextPath }}
+  {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
     {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
   {{- else }}
-    {{- $wmVals.websockets.publicPort }}
+    {{- (dig "webModeler" "websockets" "publicPort" .Values.webModeler.websockets.publicPort .Values.camundaHub) }}
   {{- end }}
 {{- end -}}
 
@@ -216,8 +205,7 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Check if TLS must be enabled for WebSocket connections from the client.
 */}}
 {{- define "webModeler.websocketTlsEnabled" -}}
-  {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-  {{- if and .Values.global.ingress.enabled $wmVals.contextPath }}
+  {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
     {{- .Values.global.ingress.tls.enabled }}
   {{- else -}}
     false
@@ -228,20 +216,19 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Define variables related to authentication.
 */}}
 {{- define "webModeler.authClientId" -}}
-  {{- (include "camundaHub.webModelerAuthValues" . | fromYaml).clientId | default "web-modeler" -}}
+  {{- (or .Values.global.identity.auth.camundaHub.webModeler.clientId .Values.global.identity.auth.webModeler.clientId) | default "web-modeler" -}}
 {{- end -}}
 
 {{- define "webModeler.authClientApiAudience" -}}
-  {{- (include "camundaHub.webModelerAuthValues" . | fromYaml).clientApiAudience | default "web-modeler-api" -}}
+  {{- (or .Values.global.identity.auth.camundaHub.webModeler.clientApiAudience .Values.global.identity.auth.webModeler.clientApiAudience) | default "web-modeler-api" -}}
 {{- end -}}
 
 {{- define "webModeler.authPublicApiAudience" -}}
-  {{- (include "camundaHub.webModelerAuthValues" . | fromYaml).publicApiAudience | default "web-modeler-public-api" -}}
+  {{- (or .Values.global.identity.auth.camundaHub.webModeler.publicApiAudience .Values.global.identity.auth.webModeler.publicApiAudience) | default "web-modeler-public-api" -}}
 {{- end -}}
 
 {{- define "webModeler.authMethod" -}}
-    {{- $wmVals := include "camundaHub.webModelerValues" . | fromYaml -}}
-    {{- $wmVals.security.authentication.method | default (
+    {{- (dig "webModeler" "security" "authentication" "method" .Values.webModeler.security.authentication.method .Values.camundaHub) | default (
         .Values.global.security.authentication.method | default "none"
     ) -}}
 {{- end -}}
