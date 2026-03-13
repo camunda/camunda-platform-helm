@@ -181,6 +181,45 @@ integration:
           persistence: no-elasticsearch
           features: [no-secondary-storage]
           platforms: [gke]
+        - name: hub-legacy
+          enabled: true
+          auth: keycloak
+          shortname: huble
+          exclude: []
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch-external
+          features: [hub-legacy]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+            eks: preemptible
+        - name: hub-legacy
+          enabled: true
+          auth: keycloak
+          shortname: hublu
+          exclude: []
+          flow: upgrade-minor
+          identity: keycloak
+          persistence: elasticsearch-external
+          features: [hub-legacy]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+            eks: preemptible
+        - name: hub-mixed
+          enabled: true
+          auth: keycloak
+          shortname: hubmu
+          exclude: []
+          flow: upgrade-minor
+          identity: keycloak
+          persistence: elasticsearch-external
+          features: [hub-mixed]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+            eks: preemptible
     nightly:
       scenario:
         - name: elasticsearch
