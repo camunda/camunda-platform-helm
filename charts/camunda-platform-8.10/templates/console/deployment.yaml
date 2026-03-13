@@ -1,5 +1,4 @@
 {{- if eq (include "camundaHub.consoleEnabled" .) "true" -}}
-{{- $consoleVals := include "camundaHub.consoleValues" . | fromYaml -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -11,7 +10,7 @@ metadata:
 spec:
   strategy:
     type: RollingUpdate
-  replicas: {{ $consoleVals.replicas }}
+  replicas: {{ (or .Values.camundaHub.console.replicas .Values.console.replicas) }}
   selector:
     matchLabels:
       {{- include "console.matchLabels" . | nindent 6 }}
@@ -19,33 +18,33 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/console/configmap.yaml") . | sha256sum }}
-      {{- with $consoleVals.podAnnotations }}
+      {{- with (or .Values.camundaHub.console.podAnnotations .Values.console.podAnnotations) }}
         {{- tpl (toYaml .) $ | nindent 8 }}
       {{- end }}
       labels:
         {{- include "console.matchLabels" . | nindent 8 }}
-        {{- if $consoleVals.podLabels }}
-          {{- tpl (toYaml $consoleVals.podLabels) $ | nindent 8 }}
+        {{- if (or .Values.camundaHub.console.podLabels .Values.console.podLabels) }}
+          {{- tpl (toYaml (or .Values.camundaHub.console.podLabels .Values.console.podLabels)) $ | nindent 8 }}
         {{- end }}
     spec:
       imagePullSecrets:
         {{- include "console.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ($consoleVals.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- tpl ((or .Values.camundaHub.console.initContainers .Values.console.initContainers) | default list | toYaml | nindent 8) $ }}
       serviceAccountName: {{ include "console.serviceAccountName" . }}
-      {{- if $consoleVals.dnsConfig }}
-      dnsConfig: {{- toYaml $consoleVals.dnsConfig | nindent 8 }}
+      {{- if (or .Values.camundaHub.console.dnsConfig .Values.console.dnsConfig) }}
+      dnsConfig: {{- toYaml (or .Values.camundaHub.console.dnsConfig .Values.console.dnsConfig) | nindent 8 }}
       {{- end }}
-      {{- if $consoleVals.dnsPolicy }}
-      dnsPolicy: {{ $consoleVals.dnsPolicy | quote }}
+      {{- if (or .Values.camundaHub.console.dnsPolicy .Values.console.dnsPolicy) }}
+      dnsPolicy: {{ (or .Values.camundaHub.console.dnsPolicy .Values.console.dnsPolicy) | quote }}
       {{- end }}
-      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $consoleVals.podSecurityContext "context" $) | nindent 8 }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (or .Values.camundaHub.console.podSecurityContext .Values.console.podSecurityContext) "context" $) | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" $consoleVals) }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict))) }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-          {{- if $consoleVals.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $consoleVals.containerSecurityContext "context" $) | nindent 12 }}
+          {{- if (or .Values.camundaHub.console.containerSecurityContext .Values.console.containerSecurityContext) }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (or .Values.camundaHub.console.containerSecurityContext .Values.console.containerSecurityContext) "context" $) | nindent 12 }}
           {{- end }}
           env:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -53,24 +52,23 @@ spec:
                 "config" .Values.global.license
             ) | nindent 12 }}
             - name: NODE_EXTRA_CA_CERTS
-              value: {{ printf "/usr/local/console/certificates/%s" $consoleVals.tls.certKeyFilename | quote }}
+              value: {{ printf "/usr/local/console/certificates/%s" (dig "console" "tls" "certKeyFilename" .Values.console.tls.certKeyFilename .Values.camundaHub) | quote }}
             - name: NODE_ENV
-              value: {{ $consoleVals.nodeEnv | default "prod" | quote }}
+              value: {{ (or .Values.camundaHub.console.nodeEnv .Values.console.nodeEnv) | default "prod" | quote }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
             - name: KEYCLOAK_INTERNAL_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
             - name: KEYCLOAK_BASE_URL
               value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrlWithFallback" .) "" | quote }}
             - name: KEYCLOAK_REALM
-              value: {{ $consoleVals.keycloak.realm | quote }}
+              value: {{ dig "console" "keycloak" "realm" .Values.console.keycloak.realm .Values.camundaHub | quote }}
             {{- end }}
-            {{- $consoleAuth := include "camundaHub.consoleAuthValues" . | fromYaml }}
             - name: CAMUNDA_IDENTITY_AUDIENCE
-              value: {{ $consoleAuth.audience | default "console-api" }}
+              value: {{ (or .Values.global.identity.auth.camundaHub.console.audience .Values.global.identity.auth.console.audience) | default "console-api" }}
             - name: CAMUNDA_IDENTITY_CLIENT_ID
-              value: {{ $consoleAuth.clientId | default "console" }}
+              value: {{ (or .Values.global.identity.auth.camundaHub.console.clientId .Values.global.identity.auth.console.clientId) | default "console" }}
             - name: CAMUNDA_CONSOLE_CONTEXT_PATH
-              value: {{ $consoleVals.contextPath | quote }}
+              value: {{ dig "console" "contextPath" .Values.console.contextPath .Values.camundaHub | quote }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
@@ -87,14 +85,14 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
-          {{- if $consoleVals.env}}
-            {{ $consoleVals.env | toYaml | nindent 12 }}
+          {{- if (or .Values.camundaHub.console.env .Values.console.env) }}
+            {{ (or .Values.camundaHub.console.env .Values.console.env) | toYaml | nindent 12 }}
           {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
-          {{- if $consoleVals.envFrom }}
-            {{- $consoleVals.envFrom | toYaml | nindent 12 }}
+          {{- if (or .Values.camundaHub.console.envFrom .Values.console.envFrom) }}
+            {{- (or .Values.camundaHub.console.envFrom .Values.console.envFrom) | toYaml | nindent 12 }}
           {{- end }}
           ports:
             - name: http
@@ -103,51 +101,51 @@ spec:
             - name: management
               containerPort: 9100
               protocol: TCP
-          {{- if $consoleVals.startupProbe.enabled }}
+          {{- if (dig "console" "startupProbe" "enabled" .Values.console.startupProbe.enabled .Values.camundaHub) }}
           startupProbe:
             httpGet:
-              path: {{ $consoleVals.startupProbe.probePath }}
-              scheme: {{ $consoleVals.startupProbe.scheme }}
+              path: {{ (dig "console" "startupProbe" "probePath" .Values.console.startupProbe.probePath .Values.camundaHub) }}
+              scheme: {{ (dig "console" "startupProbe" "scheme" .Values.console.startupProbe.scheme .Values.camundaHub) }}
               port: management
-            initialDelaySeconds: {{ $consoleVals.startupProbe.initialDelaySeconds }}
-            periodSeconds: {{ $consoleVals.startupProbe.periodSeconds }}
-            successThreshold: {{ $consoleVals.startupProbe.successThreshold }}
-            failureThreshold: {{ $consoleVals.startupProbe.failureThreshold }}
-            timeoutSeconds: {{ $consoleVals.startupProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ (dig "console" "startupProbe" "initialDelaySeconds" .Values.console.startupProbe.initialDelaySeconds .Values.camundaHub) }}
+            periodSeconds: {{ (dig "console" "startupProbe" "periodSeconds" .Values.console.startupProbe.periodSeconds .Values.camundaHub) }}
+            successThreshold: {{ (dig "console" "startupProbe" "successThreshold" .Values.console.startupProbe.successThreshold .Values.camundaHub) }}
+            failureThreshold: {{ (dig "console" "startupProbe" "failureThreshold" .Values.console.startupProbe.failureThreshold .Values.camundaHub) }}
+            timeoutSeconds: {{ (dig "console" "startupProbe" "timeoutSeconds" .Values.console.startupProbe.timeoutSeconds .Values.camundaHub) }}
           {{- end }}
-          {{- if $consoleVals.readinessProbe.enabled }}
+          {{- if (dig "console" "readinessProbe" "enabled" .Values.console.readinessProbe.enabled .Values.camundaHub) }}
           readinessProbe:
             httpGet:
-              path: {{ $consoleVals.readinessProbe.probePath }}
-              scheme: {{ $consoleVals.readinessProbe.scheme }}
+              path: {{ (dig "console" "readinessProbe" "probePath" .Values.console.readinessProbe.probePath .Values.camundaHub) }}
+              scheme: {{ (dig "console" "readinessProbe" "scheme" .Values.console.readinessProbe.scheme .Values.camundaHub) }}
               port: management
-            initialDelaySeconds: {{ $consoleVals.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ $consoleVals.readinessProbe.periodSeconds }}
-            successThreshold: {{ $consoleVals.readinessProbe.successThreshold }}
-            failureThreshold: {{ $consoleVals.readinessProbe.failureThreshold }}
-            timeoutSeconds: {{ $consoleVals.readinessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ (dig "console" "readinessProbe" "initialDelaySeconds" .Values.console.readinessProbe.initialDelaySeconds .Values.camundaHub) }}
+            periodSeconds: {{ (dig "console" "readinessProbe" "periodSeconds" .Values.console.readinessProbe.periodSeconds .Values.camundaHub) }}
+            successThreshold: {{ (dig "console" "readinessProbe" "successThreshold" .Values.console.readinessProbe.successThreshold .Values.camundaHub) }}
+            failureThreshold: {{ (dig "console" "readinessProbe" "failureThreshold" .Values.console.readinessProbe.failureThreshold .Values.camundaHub) }}
+            timeoutSeconds: {{ (dig "console" "readinessProbe" "timeoutSeconds" .Values.console.readinessProbe.timeoutSeconds .Values.camundaHub) }}
           {{- end }}
-          {{- if $consoleVals.livenessProbe.enabled }}
+          {{- if (dig "console" "livenessProbe" "enabled" .Values.console.livenessProbe.enabled .Values.camundaHub) }}
           livenessProbe:
             httpGet:
-              path: {{ $consoleVals.livenessProbe.probePath }}
-              scheme: {{ $consoleVals.livenessProbe.scheme }}
+              path: {{ (dig "console" "livenessProbe" "probePath" .Values.console.livenessProbe.probePath .Values.camundaHub) }}
+              scheme: {{ (dig "console" "livenessProbe" "scheme" .Values.console.livenessProbe.scheme .Values.camundaHub) }}
               port: management
-            initialDelaySeconds: {{ $consoleVals.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ $consoleVals.livenessProbe.periodSeconds }}
-            successThreshold: {{ $consoleVals.livenessProbe.successThreshold }}
-            failureThreshold: {{ $consoleVals.livenessProbe.failureThreshold }}
-            timeoutSeconds: {{ $consoleVals.livenessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ (dig "console" "livenessProbe" "initialDelaySeconds" .Values.console.livenessProbe.initialDelaySeconds .Values.camundaHub) }}
+            periodSeconds: {{ (dig "console" "livenessProbe" "periodSeconds" .Values.console.livenessProbe.periodSeconds .Values.camundaHub) }}
+            successThreshold: {{ (dig "console" "livenessProbe" "successThreshold" .Values.console.livenessProbe.successThreshold .Values.camundaHub) }}
+            failureThreshold: {{ (dig "console" "livenessProbe" "failureThreshold" .Values.console.livenessProbe.failureThreshold .Values.camundaHub) }}
+            timeoutSeconds: {{ (dig "console" "livenessProbe" "timeoutSeconds" .Values.console.livenessProbe.timeoutSeconds .Values.camundaHub) }}
           {{- end }}
-          {{- if $consoleVals.command}}
-          command: {{ toYaml $consoleVals.command | nindent 10 }}
+          {{- if (or .Values.camundaHub.console.command .Values.console.command) }}
+          command: {{ toYaml (or .Values.camundaHub.console.command .Values.console.command) | nindent 10 }}
           {{- end }}
           resources:
-            {{- toYaml $consoleVals.resources | nindent 12 }}
+            {{- toYaml (or .Values.camundaHub.console.resources .Values.console.resources) | nindent 12 }}
           volumeMounts:
             - name: console-configuration
               mountPath: /var/run/config
-          {{- if $consoleVals.tls.enabled }}
+          {{- if (dig "console" "tls" "enabled" .Values.console.tls.enabled .Values.camundaHub) }}
             - name: console-certificates
               mountPath: /usr/local/console/certificates
               readOnly: true
@@ -157,11 +155,11 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
-          {{- if $consoleVals.extraVolumeMounts }}
-            {{- $consoleVals.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- if (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) }}
+            {{- (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) | toYaml | nindent 12 }}
           {{- end }}
-      {{- if $consoleVals.sidecars }}
-        {{- $consoleVals.sidecars | toYaml | nindent 8 }}
+      {{- if (or .Values.camundaHub.console.sidecars .Values.console.sidecars) }}
+        {{- (or .Values.camundaHub.console.sidecars .Values.console.sidecars) | toYaml | nindent 8 }}
       {{- end }}
       volumes:
         - name: console-configuration
@@ -169,7 +167,7 @@ spec:
             name: {{ include "console.fullname" . }}-configuration
         {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
             "volumeName" "console-certificates"
-            "config" $consoleVals.tls
+            "config" (or .Values.camundaHub.console.tls .Values.console.tls)
         ) | nindent 8 }}
         {{- if .Values.global.documentStore.type.gcp.enabled }}
         {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
@@ -178,18 +176,18 @@ spec:
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}
-      {{- if $consoleVals.extraVolumes }}
-        {{- $consoleVals.extraVolumes | toYaml | nindent 8 }}
+      {{- if (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) }}
+        {{- (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) | toYaml | nindent 8 }}
       {{- end }}
-      {{- with $consoleVals.nodeSelector | default .Values.global.nodeSelector }}
+      {{- with (or .Values.camundaHub.console.nodeSelector .Values.console.nodeSelector) | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with $consoleVals.affinity }}
+      {{- with (or .Values.camundaHub.console.affinity .Values.console.affinity) }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with $consoleVals.tolerations }}
+      {{- with (or .Values.camundaHub.console.tolerations .Values.console.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
