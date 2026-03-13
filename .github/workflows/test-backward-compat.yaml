@@ -84,6 +84,7 @@ jobs:
       camunda-helm-dir: camunda-platform-8.8
       teleport-token: infra-ci-prod-github-action-distribution
       namespace-prefix: "bc88p${{ matrix.scenario.shortname }}-"
+      deployment-ttl: ""
       test-enabled: true
       e2e-enabled: ${{ matrix.scenario.e2e-enabled != false }}
       scenario: ${{ matrix.scenario.name }}
@@ -181,6 +182,7 @@ jobs:
       camunda-helm-dir: camunda-platform-8.7
       teleport-token: infra-ci-prod-github-action-distribution
       namespace-prefix: "bc87m${{ matrix.scenario.shortname }}-"
+      deployment-ttl: ""
       test-enabled: true
       e2e-enabled: false
       scenario: ${{ matrix.scenario.name }}
@@ -241,6 +243,7 @@ jobs:
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       camunda-helm-dir: camunda-platform-8.9
       namespace-prefix: "backcompcamdock-"
+      deployment-ttl: ""
       test-enabled: true
       e2e-enabled: true
       scenario: keycloak-original
@@ -263,6 +266,7 @@ jobs:
       camunda-helm-dir: camunda-platform-8.8
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       namespace-prefix: "backcompcamsimp-"
+      deployment-ttl: ""
       test-enabled: true
       e2e-enabled: true
       caller-git-ref: main
