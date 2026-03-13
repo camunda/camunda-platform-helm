@@ -18,6 +18,25 @@ CHART_SOURCE="${CHART_SOURCE:-camunda/$CHART_NAME}"
 # Add unsupported Camunda version to reduce generation time.
 CAMUNDA_APPS_UNSUPPORTED_VERSIONS_REGEX='(1.*|8.[0123])'
 
+# Build the --values arguments for helm template.
+# Composes the layered values files (base + identity/keycloak + persistence/elasticsearch)
+# needed to enable all components for image discovery.
+get_helm_values_args () {
+    local chart_dir="${1}"
+    local scenario_dir="${chart_dir}/test/integration/scenarios/chart-full-setup"
+    local values_args=""
+
+    for layer_file in \
+      "${scenario_dir}/values/base.yaml" \
+      "${scenario_dir}/values/identity/keycloak.yaml" \
+      "${scenario_dir}/values/persistence/elasticsearch.yaml"; do
+      if [[ -f "${layer_file}" ]]; then
+        values_args="${values_args} --values ${layer_file}"
+      fi
+    done
+    echo "${values_args}"
+}
+
 # Update Helm and Git repos to get the latest versions.
 init_updates () {
     helm repo update > /dev/null
@@ -68,9 +87,10 @@ get_chart_images () {
       else
         helm_version_arg="--version ${chart_version}"
       fi
+      helm_values_args="$(get_helm_values_args "${CHART_DIR}")"
       chart_images="$(
         helm template --skip-tests camunda "${CHART_SOURCE}" ${helm_version_arg} \
-          --values "${CHART_DIR}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-keycloak.yaml" 2> /dev/null |
+          ${helm_values_args} 2> /dev/null |
         tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
         sort | uniq;
       )"
@@ -121,23 +141,16 @@ get_chart_enterprise_images () {
         helm_version_arg="--version ${chart_version}"
       fi
       # Enable all optional components and subcharts to ensure all enterprise images are listed.
-      # Detect correct postgres key (renamed from postgresql to webModelerPostgresql in 8.8+).
-      if yq -e 'has("postgresql")' "${CHART_DIR}/values.yaml" > /dev/null 2>&1; then
-        webmodeler_pg_flag="--set postgresql.enabled=true"
-      else
-        webmodeler_pg_flag="--set webModelerPostgresql.enabled=true"
-      fi
+      # The layered values handle component configuration; explicitly enable every
+      # conditional subchart so helm renders their templates regardless of layer defaults.
+      helm_values_args="$(get_helm_values_args "${CHART_DIR}")"
       chart_enterprise_images="$(
         helm template --skip-tests camunda "${CHART_SOURCE}" ${helm_version_arg} \
-          --set webModeler.enabled=true \
-          --set webModeler.restapi.mail.fromAddress=noreply@example.com \
-          --set console.enabled=true \
-          --set identity.enabled=true \
+          ${helm_values_args} \
+          --set elasticsearch.enabled=true \
           --set identityKeycloak.enabled=true \
           --set identityPostgresql.enabled=true \
-          --set elasticsearch.enabled=true \
-          --set orchestration.data.secondaryStorage.type=elasticsearch \
-          ${webmodeler_pg_flag} \
+          --set webModelerPostgresql.enabled=true \
           --values "${enterprise_values_file}" 2> /dev/null |
         tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
         sort | uniq;
