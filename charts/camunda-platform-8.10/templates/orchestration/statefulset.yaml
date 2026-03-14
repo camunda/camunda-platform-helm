@@ -290,7 +290,9 @@ spec:
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
+      {{- if not (kindIs "invalid" .Values.orchestration.automountServiceAccountToken) }}
       automountServiceAccountToken: {{ .Values.orchestration.automountServiceAccountToken }}
+      {{- end }}
       {{- if .Values.orchestration.dnsConfig }}
       dnsConfig: {{- toYaml .Values.orchestration.dnsConfig | nindent 8 }}
       {{- end }}

@@ -132,7 +132,6 @@ spec:
         - name: tmp
           emptyDir: {}
       serviceAccountName: camunda-platform-test-zeebe
-      automountServiceAccountToken: false
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

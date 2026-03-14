@@ -99,7 +99,6 @@ spec:
           configMap:
             name: camunda-platform-test-identity-configuration
       serviceAccountName: camunda-platform-test-identity
-      automountServiceAccountToken: true
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
