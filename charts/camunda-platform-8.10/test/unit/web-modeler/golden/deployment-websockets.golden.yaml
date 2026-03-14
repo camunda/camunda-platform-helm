@@ -92,6 +92,7 @@ spec:
           configMap:
             name: camunda-platform-test-web-modeler-websockets-configuration
       serviceAccountName: camunda-platform-test-web-modeler
+      automountServiceAccountToken: false
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

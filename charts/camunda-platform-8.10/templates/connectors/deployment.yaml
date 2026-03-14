@@ -164,6 +164,7 @@ spec:
         {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "connectors.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.connectors.automountServiceAccountToken }}
       {{- if .Values.connectors.dnsConfig }}
       dnsConfig: {{- toYaml .Values.connectors.dnsConfig | nindent 8 }}
       {{- end }}

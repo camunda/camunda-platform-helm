@@ -144,6 +144,7 @@ spec:
             name: camunda-platform-test-optimize-configuration
             defaultMode: 492
       serviceAccountName: camunda-platform-test-optimize
+      automountServiceAccountToken: false
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

@@ -521,6 +521,23 @@ func (s *RestapiDeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("my-inline-app-key-value", pusherKeyEnv.Value)
 				s.Require().Nil(pusherKeyEnv.ValueFrom, "RESTAPI_PUSHER_KEY should not use valueFrom for inline values")
 			},
+		}, {
+			Name: "TestPodSetAutomountServiceAccountToken",
+			Values: map[string]string{
+				"identity.enabled":                        "true",
+				"webModeler.enabled":                      "true",
+				"webModeler.restapi.mail.fromAddress":     "example@example.com",
+				"webModeler.automountServiceAccountToken": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				expected := false
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().Equal(expected, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
 		},
 	}
 

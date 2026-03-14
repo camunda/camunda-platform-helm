@@ -663,6 +663,22 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
+		}, {
+			Name: "TestPodSetAutomountServiceAccountToken",
+			Values: map[string]string{
+				"identity.enabled":                       "true",
+				"console.enabled":                        "true",
+				"console.automountServiceAccountToken":   "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				expected := false
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().Equal(expected, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
 		},
 	}
 
