@@ -370,7 +370,7 @@ func (s *OpenShiftIngressTLSTest) TestGrpcIngressOpenShiftTLSAutoManagement() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, nil, testCases)
 }
 
-// TestOpenShiftCombinedFeaturesTest verifies that all OpenShift features can be
+// OpenShiftCombinedFeaturesTest verifies that all OpenShift features can be
 // enabled simultaneously and the chart renders correctly end-to-end.
 type OpenShiftCombinedFeaturesTest struct {
 	suite.Suite
