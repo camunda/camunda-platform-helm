@@ -40,7 +40,7 @@ webModeler:
     image:
       repository: camunda/web-modeler-websockets
       tag: SNAPSHOT
-      digest: "sha256:7fc8ba387563573a2a0e650f6b617f49a1a891011b0730de709babbf35eae355"
+      digest: "sha256:e579f09d857bf13cc4cb36f3997b42a982660defb3c8e2e5227972c93d45d098"
 
 #
 # Orchestration Cluster
@@ -51,7 +51,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: 8.9-SNAPSHOT
-    digest: "sha256:cf479c5b15e0833f9e87519486b2f34d1b9785f7494cfa2a879c2b780a61c2bb"
+    digest: "sha256:7ca16744d13afe47c13d1d0e9eae1b49f420fa291a32a33ccd6457a8fdacd4ac"
 
 #
 # Identity
