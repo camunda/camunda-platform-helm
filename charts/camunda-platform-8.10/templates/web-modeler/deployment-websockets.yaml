@@ -130,6 +130,7 @@ spec:
       {{- .Values.webModeler.websockets.extraVolumes | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.webModeler.automountServiceAccountToken }}
       {{- if .Values.webModeler.websockets.dnsConfig }}
       dnsConfig: {{- toYaml .Values.webModeler.websockets.dnsConfig | nindent 8 }}
       {{- end }}

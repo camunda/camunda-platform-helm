@@ -384,6 +384,7 @@ spec:
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "optimize.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.optimize.automountServiceAccountToken }}
       {{- if .Values.optimize.dnsConfig }}
       dnsConfig: {{- toYaml .Values.optimize.dnsConfig | nindent 8 }}
       {{- end }}

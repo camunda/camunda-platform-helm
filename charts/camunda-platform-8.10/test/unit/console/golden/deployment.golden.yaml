@@ -42,6 +42,7 @@ spec:
       initContainers:
         []
       serviceAccountName: camunda-platform-test-console
+      automountServiceAccountToken: false
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true

@@ -958,6 +958,9 @@ identity:
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: true
 
+  ## @param identity.automountServiceAccountToken if set, overrides the automountServiceAccountToken field on the pod spec
+  automountServiceAccountToken: true
+
   ## External PostgreSQL configuration
   ## All of these values are only used when postgresql.enabled is set to false
   ## @param identity.externalDatabase.enabled
@@ -1470,6 +1473,9 @@ console:
     annotations: {}
     ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
+
+  ## @param console.automountServiceAccountToken if set, overrides the automountServiceAccountToken field on the pod spec
+  automountServiceAccountToken: false
 
   ## @extra console.podSecurityContext defines the security options the Console broker pod should be run with
   podSecurityContext:
@@ -1994,6 +2000,9 @@ webModeler:
     ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
+  ## @param webModeler.automountServiceAccountToken if set, overrides the automountServiceAccountToken field on the pod spec
+  automountServiceAccountToken: false
+
   ## @extra webModeler.persistence configuration for optional PVC creation
   persistence:
     ## @param webModeler.persistence.enabled can be used to create a PVC for persistent storage instead of using emptyDir
@@ -2279,6 +2288,9 @@ connectors:
     annotations: {}
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
+
+  ## @param connectors.automountServiceAccountToken if set, overrides the automountServiceAccountToken field on the pod spec
+  automountServiceAccountToken: false
 
   ## @extra connectors.podSecurityContext defines the security options the Connectors pod should be run with
   podSecurityContext:
@@ -2600,6 +2612,9 @@ orchestration:
     annotations: {}
     ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
+
+  ## @param orchestration.automountServiceAccountToken if set, overrides the automountServiceAccountToken field on the pod spec
+  automountServiceAccountToken: false
 
   gateway:
     grpc:
@@ -3161,6 +3176,9 @@ optimize:
     annotations: {}
     ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
+
+  ## @param optimize.automountServiceAccountToken if set, overrides the automountServiceAccountToken field on the pod spec
+  automountServiceAccountToken: false
 
   ## @extra optimize.service configuration to configure the Optimize service.
   service:

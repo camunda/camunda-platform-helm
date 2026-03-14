@@ -32,6 +32,7 @@ spec:
       initContainers:
         {{- tpl (.Values.console.initContainers | default list | toYaml | nindent 8) $ }}
       serviceAccountName: {{ include "console.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.console.automountServiceAccountToken }}
       {{- if .Values.console.dnsConfig }}
       dnsConfig: {{- toYaml .Values.console.dnsConfig | nindent 8 }}
       {{- end }}

@@ -93,6 +93,7 @@ spec:
           configMap:
             name: camunda-platform-test-connectors-configuration
       serviceAccountName: camunda-platform-test-connectors
+      automountServiceAccountToken: false
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
