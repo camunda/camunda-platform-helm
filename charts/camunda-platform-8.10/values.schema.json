@@ -1077,11 +1077,6 @@
                     "description": "can be used to define extra Management Identity pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
-                "automountServiceAccountToken": {
-                    "type": "boolean",
-                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
-                    "default": true
-                },
                 "logging": {
                     "type": "object",
                     "properties": {
@@ -1470,6 +1465,11 @@
                             "default": true
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
+                    "default": true
                 },
                 "externalDatabase": {
                     "type": "object",
@@ -2290,11 +2290,6 @@
                     "description": "can be used to define extra Console pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
-                "automountServiceAccountToken": {
-                    "type": "boolean",
-                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
-                    "default": false
-                },
                 "logging": {
                     "type": "object",
                     "description": "configuration for the Console logging. This template will be directly included in the configuration YAML file",
@@ -2582,6 +2577,11 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
+                    "default": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -3681,19 +3681,19 @@
                             "description": "can be used to set the annotations of the WebModeler service account",
                             "default": {}
                         },
-                         "automountServiceAccountToken": {
-                             "type": "boolean",
-                             "description": "can be used to control whether the service account token should be automatically mounted",
-                             "default": false
-                         }
-                     }
-                 },
-                 "automountServiceAccountToken": {
-                     "type": "boolean",
-                     "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
-                     "default": false
-                 },
-                 "persistence": {
+                        "automountServiceAccountToken": {
+                            "type": "boolean",
+                            "description": "can be used to control whether the service account token should be automatically mounted",
+                            "default": false
+                        }
+                    }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
+                    "default": false
+                },
+                "persistence": {
                     "type": "object",
                     "properties": {
                         "enabled": {
@@ -4113,11 +4113,6 @@
                     "description": "can be used to define extra Connectors pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
-                "automountServiceAccountToken": {
-                    "type": "boolean",
-                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
-                    "default": false
-                },
                 "service": {
                     "type": "object",
                     "properties": {
@@ -4395,6 +4390,11 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
+                    "default": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -5075,6 +5075,11 @@
                         }
                     }
                 },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
+                    "default": false
+                },
                 "gateway": {
                     "type": "object",
                     "properties": {
@@ -5463,11 +5468,6 @@
                     "type": "object",
                     "description": "can be used to define extra broker pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
-                },
-                "automountServiceAccountToken": {
-                    "type": "boolean",
-                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
-                    "default": false
                 },
                 "podDisruptionBudget": {
                     "type": "object",
@@ -6240,11 +6240,6 @@
                     "description": "can be used to define extra Optimize pod labels. Supports templating (e.g., {{ .Release.Name }}).",
                     "default": {}
                 },
-                "automountServiceAccountToken": {
-                    "type": "boolean",
-                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
-                    "default": false
-                },
                 "logLevel": {
                     "type": "string",
                     "description": "configuration for the optimize runtime environment. https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/",
@@ -6353,6 +6348,11 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec",
+                    "default": false
                 },
                 "service": {
                     "type": "object",
