@@ -1,4 +1,4 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,30 +8,30 @@ metadata:
 spec:
   strategy:
     type: RollingUpdate
-  replicas: {{ .Values.webModeler.restapi.replicas }}
+  replicas: {{ (dig "webModeler" "restapi" "replicas" .Values.webModeler.restapi.replicas .Values.camundaHub) }}
   selector:
     matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels: {{- include "webModeler.restapi.labels" . | nindent 8 }}
-      {{- if .Values.webModeler.restapi.podLabels }}
-      {{- tpl (toYaml .Values.webModeler.restapi.podLabels) $ | nindent 8 }}
+      {{- if (dig "webModeler" "restapi" "podLabels" .Values.webModeler.restapi.podLabels .Values.camundaHub) }}
+      {{- tpl (toYaml (dig "webModeler" "restapi" "podLabels" .Values.webModeler.restapi.podLabels .Values.camundaHub)) $ | nindent 8 }}
       {{- end }}
-      {{- if .Values.webModeler.restapi.podAnnotations }}
+      {{- if (dig "webModeler" "restapi" "podAnnotations" .Values.webModeler.restapi.podAnnotations .Values.camundaHub) }}
       annotations:
-        {{- tpl (toYaml .Values.webModeler.restapi.podAnnotations) $ | nindent 8 }}
+        {{- tpl (toYaml (dig "webModeler" "restapi" "podAnnotations" .Values.webModeler.restapi.podAnnotations .Values.camundaHub)) $ | nindent 8 }}
       {{- end }}
     spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.webModeler.restapi.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- tpl ((dig "webModeler" "restapi" "initContainers" .Values.webModeler.restapi.initContainers .Values.camundaHub) | default list | toYaml | nindent 8) $ }}
       containers:
         - name: {{ include "webModeler.name" . }}-restapi
           image: {{ include "webModeler.restapi.image" . | quote }}
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-          {{- if .Values.webModeler.restapi.containerSecurityContext }}
-          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.restapi.containerSecurityContext "context" $) | nindent 12 }}
+          {{- if (dig "webModeler" "restapi" "containerSecurityContext" .Values.webModeler.restapi.containerSecurityContext .Values.camundaHub) }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (dig "webModeler" "restapi" "containerSecurityContext" .Values.webModeler.restapi.containerSecurityContext .Values.camundaHub) "context" $) | nindent 12 }}
           {{- end }}
           env:
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
@@ -39,11 +39,11 @@ spec:
                 "config" .Values.global.license
             ) | nindent 12 }}
             - name: JAVA_OPTIONS
-              value: {{ .Values.webModeler.restapi.javaOpts | default "-XX:MaxRAMPercentage=80.0" | quote }}
+              value: {{ (dig "webModeler" "restapi" "javaOpts" .Values.webModeler.restapi.javaOpts .Values.camundaHub) | default "-XX:MaxRAMPercentage=80.0" | quote }}
             {{- if not .Values.webModelerPostgresql.enabled }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "SPRING_DATASOURCE_PASSWORD"
-                "config" .Values.webModeler.restapi.externalDatabase
+                "config" (dig "webModeler" "restapi" "externalDatabase" .Values.webModeler.restapi.externalDatabase .Values.camundaHub)
             ) | nindent 12 }}
             {{- else }}
             - name: SPRING_DATASOURCE_PASSWORD
@@ -54,7 +54,7 @@ spec:
             {{- end }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_MAIL_PASSWORD"
-                "config" .Values.webModeler.restapi.mail
+                "config" (dig "webModeler" "restapi" "mail" .Values.webModeler.restapi.mail .Values.camundaHub)
             ) | nindent 12 }}
             - name: RESTAPI_PUSHER_APP_ID
               valueFrom:
@@ -63,14 +63,18 @@ spec:
                   key: pusher-app-id
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_PUSHER_KEY"
-                "config" .Values.webModeler.restapi.pusher.client
+                "config" (dig "webModeler" "restapi" "pusher" "client" .Values.webModeler.restapi.pusher.client .Values.camundaHub)
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-key"
             ) | nindent 12 }}
             {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
                 "envName" "RESTAPI_PUSHER_SECRET"
-                "config" .Values.webModeler.restapi.pusher
+                "config" (dig "webModeler" "restapi" "pusher" .Values.webModeler.restapi.pusher .Values.camundaHub)
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
             ) | nindent 12 }}
             - name: ZEEBE_CLIENT_CONFIG_PATH
-              value: {{ .Values.webModeler.restapi.zeebeClientConfigPath | default "/tmp/zeebe_client_cache.txt" | quote }}
+              value: {{ (dig "webModeler" "restapi" "zeebeClientConfigPath" .Values.webModeler.restapi.zeebeClientConfigPath .Values.camundaHub) | default "/tmp/zeebe_client_cache.txt" | quote }}
             {{- if and .Values.global.documentStore.type.aws.enabled (not .Values.global.documentStore.type.aws.irsa.enabled) }}
             - name: AWS_ACCESS_KEY_ID
               {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
@@ -87,20 +91,20 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
-          {{- with .Values.webModeler.restapi.env }}
+          {{- with (dig "webModeler" "restapi" "env" .Values.webModeler.restapi.env .Values.camundaHub) }}
             {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
-          {{- if .Values.webModeler.restapi.envFrom }}
-            {{- .Values.webModeler.restapi.envFrom | toYaml | nindent 12 }}
+          {{- if (dig "webModeler" "restapi" "envFrom" .Values.webModeler.restapi.envFrom .Values.camundaHub) }}
+            {{- (dig "webModeler" "restapi" "envFrom" .Values.webModeler.restapi.envFrom .Values.camundaHub) | toYaml | nindent 12 }}
           {{- end }}
-          {{- if .Values.webModeler.restapi.command }}
-          command: {{ toYaml .Values.webModeler.restapi.command | nindent 10 }}
+          {{- if (dig "webModeler" "restapi" "command" .Values.webModeler.restapi.command .Values.camundaHub) }}
+          command: {{ toYaml (dig "webModeler" "restapi" "command" .Values.webModeler.restapi.command .Values.camundaHub) | nindent 10 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.webModeler.restapi.resources | nindent 12 }}
+            {{- toYaml (dig "webModeler" "restapi" "resources" .Values.webModeler.restapi.resources .Values.camundaHub) | nindent 12 }}
           ports:
             - containerPort: 8081
               name: http
@@ -108,41 +112,41 @@ spec:
             - containerPort: 8091
               name: http-management
               protocol: TCP
-          {{- if .Values.webModeler.restapi.startupProbe.enabled }}
+          {{- if (dig "webModeler" "restapi" "startupProbe" "enabled" .Values.webModeler.restapi.startupProbe.enabled .Values.camundaHub) }}
           startupProbe:
             httpGet:
-              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.startupProbe.probePath) }}
-              scheme: {{ .Values.webModeler.restapi.startupProbe.scheme }}
+              path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "startupProbe" "probePath" .Values.webModeler.restapi.startupProbe.probePath .Values.camundaHub)) }}
+              scheme: {{ (dig "webModeler" "restapi" "startupProbe" "scheme" .Values.webModeler.restapi.startupProbe.scheme .Values.camundaHub) }}
               port: http-management
-            initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.webModeler.restapi.startupProbe.periodSeconds }}
-            successThreshold: {{ .Values.webModeler.restapi.startupProbe.successThreshold }}
-            failureThreshold: {{ .Values.webModeler.restapi.startupProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.webModeler.restapi.startupProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ (dig "webModeler" "restapi" "startupProbe" "initialDelaySeconds" .Values.webModeler.restapi.startupProbe.initialDelaySeconds .Values.camundaHub) }}
+            periodSeconds: {{ (dig "webModeler" "restapi" "startupProbe" "periodSeconds" .Values.webModeler.restapi.startupProbe.periodSeconds .Values.camundaHub) }}
+            successThreshold: {{ (dig "webModeler" "restapi" "startupProbe" "successThreshold" .Values.webModeler.restapi.startupProbe.successThreshold .Values.camundaHub) }}
+            failureThreshold: {{ (dig "webModeler" "restapi" "startupProbe" "failureThreshold" .Values.webModeler.restapi.startupProbe.failureThreshold .Values.camundaHub) }}
+            timeoutSeconds: {{ (dig "webModeler" "restapi" "startupProbe" "timeoutSeconds" .Values.webModeler.restapi.startupProbe.timeoutSeconds .Values.camundaHub) }}
           {{- end }}
-          {{- if .Values.webModeler.restapi.readinessProbe.enabled }}
+          {{- if (dig "webModeler" "restapi" "readinessProbe" "enabled" .Values.webModeler.restapi.readinessProbe.enabled .Values.camundaHub) }}
           readinessProbe:
             httpGet:
-              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.readinessProbe.probePath) }}
-              scheme: {{ .Values.webModeler.restapi.readinessProbe.scheme }}
+              path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "readinessProbe" "probePath" .Values.webModeler.restapi.readinessProbe.probePath .Values.camundaHub)) }}
+              scheme: {{ (dig "webModeler" "restapi" "readinessProbe" "scheme" .Values.webModeler.restapi.readinessProbe.scheme .Values.camundaHub) }}
               port: http-management
-            initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.webModeler.restapi.readinessProbe.periodSeconds }}
-            successThreshold: {{ .Values.webModeler.restapi.readinessProbe.successThreshold }}
-            failureThreshold: {{ .Values.webModeler.restapi.readinessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.webModeler.restapi.readinessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ (dig "webModeler" "restapi" "readinessProbe" "initialDelaySeconds" .Values.webModeler.restapi.readinessProbe.initialDelaySeconds .Values.camundaHub) }}
+            periodSeconds: {{ (dig "webModeler" "restapi" "readinessProbe" "periodSeconds" .Values.webModeler.restapi.readinessProbe.periodSeconds .Values.camundaHub) }}
+            successThreshold: {{ (dig "webModeler" "restapi" "readinessProbe" "successThreshold" .Values.webModeler.restapi.readinessProbe.successThreshold .Values.camundaHub) }}
+            failureThreshold: {{ (dig "webModeler" "restapi" "readinessProbe" "failureThreshold" .Values.webModeler.restapi.readinessProbe.failureThreshold .Values.camundaHub) }}
+            timeoutSeconds: {{ (dig "webModeler" "restapi" "readinessProbe" "timeoutSeconds" .Values.webModeler.restapi.readinessProbe.timeoutSeconds .Values.camundaHub) }}
           {{- end }}
-          {{- if .Values.webModeler.restapi.livenessProbe.enabled }}
+          {{- if (dig "webModeler" "restapi" "livenessProbe" "enabled" .Values.webModeler.restapi.livenessProbe.enabled .Values.camundaHub) }}
           livenessProbe:
             httpGet:
-              path: {{ include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.livenessProbe.probePath) }}
-              scheme: {{ .Values.webModeler.restapi.livenessProbe.scheme }}
+              path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "livenessProbe" "probePath" .Values.webModeler.restapi.livenessProbe.probePath .Values.camundaHub)) }}
+              scheme: {{ (dig "webModeler" "restapi" "livenessProbe" "scheme" .Values.webModeler.restapi.livenessProbe.scheme .Values.camundaHub) }}
               port: http-management
-            initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.webModeler.restapi.livenessProbe.periodSeconds }}
-            successThreshold: {{ .Values.webModeler.restapi.livenessProbe.successThreshold }}
-            failureThreshold: {{ .Values.webModeler.restapi.livenessProbe.failureThreshold }}
-            timeoutSeconds: {{ .Values.webModeler.restapi.livenessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ (dig "webModeler" "restapi" "livenessProbe" "initialDelaySeconds" .Values.webModeler.restapi.livenessProbe.initialDelaySeconds .Values.camundaHub) }}
+            periodSeconds: {{ (dig "webModeler" "restapi" "livenessProbe" "periodSeconds" .Values.webModeler.restapi.livenessProbe.periodSeconds .Values.camundaHub) }}
+            successThreshold: {{ (dig "webModeler" "restapi" "livenessProbe" "successThreshold" .Values.webModeler.restapi.livenessProbe.successThreshold .Values.camundaHub) }}
+            failureThreshold: {{ (dig "webModeler" "restapi" "livenessProbe" "failureThreshold" .Values.webModeler.restapi.livenessProbe.failureThreshold .Values.camundaHub) }}
+            timeoutSeconds: {{ (dig "webModeler" "restapi" "livenessProbe" "timeoutSeconds" .Values.webModeler.restapi.livenessProbe.timeoutSeconds .Values.camundaHub) }}
           {{- end }}
           volumeMounts:
             - name: tmp
@@ -150,7 +154,7 @@ spec:
             - name: config
               mountPath: /home/runner/config/application.yaml
               subPath: application.yaml
-          {{- with .Values.webModeler.restapi.extraConfiguration }}
+          {{- with (dig "webModeler" "restapi" "extraConfiguration" .Values.webModeler.restapi.extraConfiguration .Values.camundaHub) }}
           {{- include "camundaPlatform.extraConfigurationVolumeMounts" (dict "extraConfig" . "volumeName" "config" "basePath" "/home/runner/config") | trim | nindent 12 }}
           {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
@@ -158,18 +162,18 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
-            {{- if .Values.webModeler.restapi.extraVolumeMounts }}
-            {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- if (dig "webModeler" "restapi" "extraVolumeMounts" .Values.webModeler.restapi.extraVolumeMounts .Values.camundaHub) }}
+            {{- (dig "webModeler" "restapi" "extraVolumeMounts" .Values.webModeler.restapi.extraVolumeMounts .Values.camundaHub) | toYaml | nindent 12 }}
             {{- end }}
-        {{- if .Values.webModeler.restapi.sidecars }}
-        {{- .Values.webModeler.restapi.sidecars | toYaml | nindent 8 }}
+        {{- if (dig "webModeler" "restapi" "sidecars" .Values.webModeler.restapi.sidecars .Values.camundaHub) }}
+        {{- (dig "webModeler" "restapi" "sidecars" .Values.webModeler.restapi.sidecars .Values.camundaHub) | toYaml | nindent 8 }}
         {{- end }}
       volumes:
         - name: tmp
-          {{- if and .Values.webModeler.persistence.enabled .Values.webModeler.persistence.existingClaim }}
+          {{- if and (dig "webModeler" "persistence" "enabled" .Values.webModeler.persistence.enabled .Values.camundaHub) (dig "webModeler" "persistence" "existingClaim" .Values.webModeler.persistence.existingClaim .Values.camundaHub) }}
           persistentVolumeClaim:
-            claimName: {{ .Values.webModeler.persistence.existingClaim }}
-          {{- else if .Values.webModeler.persistence.enabled }}
+            claimName: {{ (dig "webModeler" "persistence" "existingClaim" .Values.webModeler.persistence.existingClaim .Values.camundaHub) }}
+          {{- else if (dig "webModeler" "persistence" "enabled" .Values.webModeler.persistence.enabled .Values.camundaHub) }}
           persistentVolumeClaim:
             claimName: {{ include "camundaPlatform.fullname" . }}-webModeler-data
           {{- else }}
@@ -185,28 +189,28 @@ spec:
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}
-        {{- if .Values.webModeler.restapi.extraVolumes }}
-        {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
+        {{- if (dig "webModeler" "restapi" "extraVolumes" .Values.webModeler.restapi.extraVolumes .Values.camundaHub) }}
+        {{- (dig "webModeler" "restapi" "extraVolumes" .Values.webModeler.restapi.extraVolumes .Values.camundaHub) | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
-      {{- if .Values.webModeler.restapi.dnsConfig }}
-      dnsConfig: {{- toYaml .Values.webModeler.restapi.dnsConfig | nindent 8 }}
+      {{- if (dig "webModeler" "restapi" "dnsConfig" .Values.webModeler.restapi.dnsConfig .Values.camundaHub) }}
+      dnsConfig: {{- toYaml (dig "webModeler" "restapi" "dnsConfig" .Values.webModeler.restapi.dnsConfig .Values.camundaHub) | nindent 8 }}
       {{- end }}
-      {{- if .Values.webModeler.restapi.dnsPolicy }}
-      dnsPolicy: {{ .Values.webModeler.restapi.dnsPolicy | quote }}
+      {{- if (dig "webModeler" "restapi" "dnsPolicy" .Values.webModeler.restapi.dnsPolicy .Values.camundaHub) }}
+      dnsPolicy: {{ (dig "webModeler" "restapi" "dnsPolicy" .Values.webModeler.restapi.dnsPolicy .Values.camundaHub) | quote }}
       {{- end }}
-      {{- if .Values.webModeler.restapi.podSecurityContext }}
-      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.restapi.podSecurityContext "context" $) | nindent 8 }}
+      {{- if (dig "webModeler" "restapi" "podSecurityContext" .Values.webModeler.restapi.podSecurityContext .Values.camundaHub) }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" (dig "webModeler" "restapi" "podSecurityContext" .Values.webModeler.restapi.podSecurityContext .Values.camundaHub) "context" $) | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.restapi.nodeSelector | default .Values.global.nodeSelector }}
+      {{- with (dig "webModeler" "restapi" "nodeSelector" .Values.webModeler.restapi.nodeSelector .Values.camundaHub) | default .Values.global.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.restapi.affinity }}
+      {{- with (dig "webModeler" "restapi" "affinity" .Values.webModeler.restapi.affinity .Values.camundaHub) }}
       affinity:
         {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.webModeler.restapi.tolerations }}
+      {{- with (dig "webModeler" "restapi" "tolerations" .Values.webModeler.restapi.tolerations .Values.camundaHub) }}
       tolerations:
         {{ toYaml . | nindent 8 }}
       {{- end }}

@@ -568,6 +568,19 @@ global:
         redirectUrl: "http://localhost:8070"
 
       #####################
+      # Camunda Hub (alias for Console + WebModeler auth)
+      #####################
+
+      ## @extra global.identity.auth.camundaHub auth configuration alias for Camunda Hub.
+      ## When camundaHub.enabled is true, these values override the legacy console and webModeler
+      ## auth sections above. If not set, falls back to the legacy sections.
+      camundaHub:
+        ## @skip global.identity.auth.camundaHub.console Console auth overrides when using camundaHub.
+        console: {}
+        ## @skip global.identity.auth.camundaHub.webModeler WebModeler auth overrides when using camundaHub.
+        webModeler: {}
+
+      #####################
       # Optimize
       #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
@@ -1510,6 +1523,35 @@ console:
   dnsPolicy: ""
   ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+
+###############################################################################
+#  #####                                              #     #
+# #     #   ##   #    # #    # #    # #####    ##     #     # #    # #####
+# #        #  #  ##  ## #    # ##   # #    #  #  #    #     # #    # #    #
+# #       #    # # ## # #    # # #  # #    # #    #   ####### #    # #####
+# #       ###### #    # #    # #  # # #    # ######   #     # #    # #    #
+# #     # #    # #    # #    # #   ## #    # #    #   #     # #    # #    #
+#  #####  #    # #    #  ####  #    # #####  #    #   #     #  ####  #####
+###############################################################################
+## @section CamundaHub Parameters
+## @extra camundaHub configuration for the consolidated Console + WebModeler component.
+## When camundaHub.enabled is true, both Console and WebModeler are deployed as sub-components
+## of Camunda Hub. The legacy top-level console.* and webModeler.* keys still work for
+## backward compatibility but emit deprecation warnings when camundaHub is also enabled.
+camundaHub:
+  ## @param camundaHub.enabled if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.
+  ## When enabled, this takes precedence over the individual console.enabled and webModeler.enabled flags.
+  enabled: false
+
+  ## @skip camundaHub.console Override values for the Console sub-component when using Camunda Hub.
+  ## Any values set here take precedence over the legacy top-level console.* values.
+  ## The structure mirrors the top-level console.* configuration exactly.
+  console: {}
+
+  ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
+  ## Any values set here take precedence over the legacy top-level webModeler.* values.
+  ## The structure mirrors the top-level webModeler.* configuration exactly.
+  webModeler: {}
 
 #######################################################################
 #     #               #     #

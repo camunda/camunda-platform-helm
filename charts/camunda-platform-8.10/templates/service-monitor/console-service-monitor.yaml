@@ -1,4 +1,4 @@
-{{- if  and .Values.prometheusServiceMonitor.enabled .Values.console.enabled -}}
+{{- if and .Values.prometheusServiceMonitor.enabled (eq (include "camundaHub.consoleEnabled" .) "true") -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: console
   endpoints:
     - honorLabels: true
-      path: {{ include "camundaPlatform.joinpath" (list .Values.console.contextPath .Values.console.metrics.prometheus) }}
+      path: {{ include "camundaPlatform.joinpath" (list (or .Values.camundaHub.console.contextPath .Values.console.contextPath) (dig "console" "metrics" "prometheus" .Values.console.metrics.prometheus .Values.camundaHub)) }}
       port: metrics
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

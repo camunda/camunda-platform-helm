@@ -1,4 +1,4 @@
-{{- if and .Values.prometheusServiceMonitor.enabled .Values.webModeler.enabled -}}
+{{- if and .Values.prometheusServiceMonitor.enabled (eq (include "camundaHub.webModelerEnabled" .) "true") -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/component: restapi
   endpoints:
     - honorLabels: true
-      path: {{ .Values.webModeler.restapi.metrics.prometheus }}
+      path: {{ (dig "webModeler" "restapi" "metrics" "prometheus" .Values.webModeler.restapi.metrics.prometheus .Values.camundaHub) }}
       port: http-management
       interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
 {{- end }}

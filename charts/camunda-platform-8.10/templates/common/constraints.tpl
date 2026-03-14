@@ -109,7 +109,7 @@ Fail with a message if Identity is disabled and identityKeycloak is enabled.
 {{/*
 Fail with a message if Console is enabled but management Identity is not enabled.
 */}}
-{{- if and .Values.console.enabled (not .Values.identity.enabled) }}
+{{- if and (eq (include "camundaHub.consoleEnabled" .) "true") (not .Values.identity.enabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
       "Console is enabled but management Identity is not enabled."
       "Please ensure that if Console is enabled, management Identity must also be enabled."
@@ -120,7 +120,7 @@ Fail with a message if Console is enabled but management Identity is not enabled
 {{/*
 Fail with a message if Web Modeler is enabled but management Identity is not enabled.
 */}}
-{{- if and .Values.webModeler.enabled (not .Values.identity.enabled) }}
+{{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (not .Values.identity.enabled) }}
   {{- $errorMessage := printf "[camunda][error] %s %s"
       "Web Modeler is enabled but management Identity is not enabled."
       "Please ensure that if Web Modeler is enabled, management Identity must also be enabled."
@@ -337,6 +337,50 @@ The following values inside your values.yaml need to be set but were not:
     {{- end }}
   {{- end }}
 
+  {{/* Warn when webModeler pusher secret is auto-generated */}}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+    {{- $pusherSecret := .Values.webModeler.restapi.pusher.secret }}
+    {{- if not (or $pusherSecret.existingSecret $pusherSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher secret. This will produce a new random secret on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+    {{- $pusherClientSecret := .Values.webModeler.restapi.pusher.client.secret }}
+    {{- if not (or $pusherClientSecret.existingSecret $pusherClientSecret.inlineSecret) }}
+      {{- $warningMessage := printf "%s %s %s %s"
+          "[camunda][warning]"
+          "Web Modeler is using an auto-generated Pusher app key. This will produce a new random key on every 'helm upgrade', causing WebSocket authentication failures."
+          "Please set 'webModeler.restapi.pusher.client.secret.existingSecret' (recommended) or 'webModeler.restapi.pusher.client.secret.inlineSecret'."
+          "Auto-generation will be removed in a future release."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
+  {{- end }}
+
+  {{/* Camunda Hub consolidation deprecation warnings */}}
+  {{- if .Values.console.enabled }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"console.enabled\" is deprecated and will be removed in a future version."
+        "Console has been consolidated into Camunda Hub. Please use \"camundaHub.enabled: true\" instead."
+        "Any console-specific overrides can be placed under \"camundaHub.console.*\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
+
+  {{- if .Values.webModeler.enabled }}
+    {{- $warningMessage := printf "%s %s %s %s"
+        "[camunda][warning]"
+        "DEPRECATION: \"webModeler.enabled\" is deprecated and will be removed in a future version."
+        "Web Modeler has been consolidated into Camunda Hub. Please use \"camundaHub.enabled: true\" instead."
+        "Any web-modeler-specific overrides can be placed under \"camundaHub.webModeler.*\"."
+    -}}
+    {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+  {{- end }}
 {{- end }}
 
 {{/*
@@ -401,6 +445,265 @@ Ingress and Gateway API should not be enabled at the same time.
       "Please ensure that either \"global.gateway.enabled: true\" or \"global.ingress.enabled: true\" is set, but not both."
   -}}
   {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
+*******************************************************************************
+Camunda 8.8 cycle deprecated keys (removed in 8.9).
+*******************************************************************************
+Fail with a message when old values syntax is used.
+Chart Version: 14.0.0
+*******************************************************************************
+*/}}
+
+{{/*
+*******************************************************************************
+Global - License
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.license "key")
+  "oldName" "global.license.key"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.license "existingSecret")
+  "oldName" "global.license.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.license "existingSecretKey")
+  "oldName" "global.license.existingSecretKey"
+) }}
+
+{{/*
+*******************************************************************************
+Global - Elasticsearch Auth
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.elasticsearch.auth "password")
+  "oldName" "global.elasticsearch.auth.password"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.elasticsearch.auth "existingSecret")
+  "oldName" "global.elasticsearch.auth.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.elasticsearch.auth "existingSecretKey")
+  "oldName" "global.elasticsearch.auth.existingSecretKey"
+) }}
+
+{{/*
+*******************************************************************************
+Global - OpenSearch Auth
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.opensearch.auth "password")
+  "oldName" "global.opensearch.auth.password"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.opensearch.auth "existingSecret")
+  "oldName" "global.opensearch.auth.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.opensearch.auth "existingSecretKey")
+  "oldName" "global.opensearch.auth.existingSecretKey"
+) }}
+
+{{/*
+*******************************************************************************
+Global - Identity Auth
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.auth.admin "existingSecret")
+  "oldName" "global.identity.auth.admin.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.auth.admin "existingSecretKey")
+  "oldName" "global.identity.auth.admin.existingSecretKey"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.auth.identity "existingSecret")
+  "oldName" "global.identity.auth.identity.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.auth.identity "existingSecretKey")
+  "oldName" "global.identity.auth.identity.existingSecretKey"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.auth.optimize "existingSecret")
+  "oldName" "global.identity.auth.optimize.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.identity.auth.optimize "existingSecretKey")
+  "oldName" "global.identity.auth.optimize.existingSecretKey"
+) }}
+
+{{/*
+*******************************************************************************
+Global - Document Store
+*******************************************************************************
+*/}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.documentStore.type.aws "existingSecret")
+  "oldName" "global.documentStore.type.aws.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.documentStore.type.aws "accessKeyIdKey")
+  "oldName" "global.documentStore.type.aws.accessKeyIdKey"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.documentStore.type.aws "secretAccessKeyKey")
+  "oldName" "global.documentStore.type.aws.secretAccessKeyKey"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.documentStore.type.gcp "existingSecret")
+  "oldName" "global.documentStore.type.gcp.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.global.documentStore.type.gcp "credentialsKey")
+  "oldName" "global.documentStore.type.gcp.credentialsKey"
+) }}
+
+{{/*
+*******************************************************************************
+Identity
+*******************************************************************************
+*/}}
+
+{{- if .Values.identity.enabled -}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.identity.firstUser "password")
+  "oldName" "identity.firstUser.password"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.identity.firstUser "existingSecret")
+  "oldName" "identity.firstUser.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.identity.firstUser "existingSecretKey")
+  "oldName" "identity.firstUser.existingSecretKey"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.identity.externalDatabase "password")
+  "oldName" "identity.externalDatabase.password"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.identity.externalDatabase "existingSecret")
+  "oldName" "identity.externalDatabase.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.identity.externalDatabase "existingSecretPasswordKey")
+  "oldName" "identity.externalDatabase.existingSecretPasswordKey"
+) }}
+
+{{- end }}
+
+{{/*
+*******************************************************************************
+Connectors
+*******************************************************************************
+*/}}
+
+{{- if .Values.connectors.enabled -}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecret")
+  "oldName" "connectors.security.authentication.oidc.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.connectors.security.authentication.oidc "existingSecretKey")
+  "oldName" "connectors.security.authentication.oidc.existingSecretKey"
+) }}
+
+{{- end }}
+
+{{/*
+*******************************************************************************
+Orchestration
+*******************************************************************************
+*/}}
+
+{{- if .Values.orchestration.enabled -}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecret")
+  "oldName" "orchestration.security.authentication.oidc.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.orchestration.security.authentication.oidc "existingSecretKey")
+  "oldName" "orchestration.security.authentication.oidc.existingSecretKey"
+) }}
+
+{{- end }}
+
+{{/*
+*******************************************************************************
+Web Modeler
+*******************************************************************************
+*/}}
+
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "password")
+  "oldName" "webModeler.restapi.externalDatabase.password"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "existingSecret")
+  "oldName" "webModeler.restapi.externalDatabase.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.webModeler.restapi.externalDatabase "existingSecretPasswordKey")
+  "oldName" "webModeler.restapi.externalDatabase.existingSecretPasswordKey"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.webModeler.restapi.mail "smtpPassword")
+  "oldName" "webModeler.restapi.mail.smtpPassword"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.webModeler.restapi.mail "existingSecret")
+  "oldName" "webModeler.restapi.mail.existingSecret"
+) }}
+
+{{ include "camundaPlatform.keyRemoved" (dict
+  "condition" (hasKey .Values.webModeler.restapi.mail "existingSecretPasswordKey")
+  "oldName" "webModeler.restapi.mail.existingSecretPasswordKey"
+) }}
+
 {{- end }}
 
 {{/*

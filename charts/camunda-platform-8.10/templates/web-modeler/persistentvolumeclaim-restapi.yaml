@@ -1,21 +1,21 @@
-{{- if and .Values.webModeler.enabled .Values.webModeler.persistence.enabled (not .Values.webModeler.persistence.existingClaim) }}
+{{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") .Values.webModeler.persistence.enabled (not .Values.webModeler.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "camundaPlatform.fullname" . }}-webmodeler-data
   labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
-  {{- with .Values.webModeler.persistence.annotations }}
+  {{- with (dig "webModeler" "persistence" "annotations" .Values.webModeler.persistence.annotations .Values.camundaHub) }}
   annotations: {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  accessModes: {{ .Values.webModeler.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 4 }}
-  {{- with .Values.webModeler.persistence.storageClassName }}
+  accessModes: {{ (dig "webModeler" "persistence" "accessModes" .Values.webModeler.persistence.accessModes .Values.camundaHub) | default (list "ReadWriteOnce") | toYaml | nindent 4 }}
+  {{- with (dig "webModeler" "persistence" "storageClassName" .Values.webModeler.persistence.storageClassName .Values.camundaHub) }}
   storageClassName: {{ . | quote }}
   {{- end }}
-  {{- with .Values.webModeler.persistence.selector }}
+  {{- with (dig "webModeler" "persistence" "selector" .Values.webModeler.persistence.selector .Values.camundaHub) }}
   selector: {{- toYaml . | nindent 4 }}
   {{- end }}
   resources:
     requests:
-      storage: {{ .Values.webModeler.persistence.size | default "1Gi" | quote }}
+      storage: {{ (dig "webModeler" "persistence" "size" .Values.webModeler.persistence.size .Values.camundaHub) | default "1Gi" | quote }}
 {{- end }}

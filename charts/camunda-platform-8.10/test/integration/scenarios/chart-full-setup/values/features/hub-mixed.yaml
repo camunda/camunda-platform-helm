@@ -1,0 +1,52 @@
+# Hub Mixed feature layer — camundaHub.enabled=true with detail config under legacy keys.
+# Layer 6: Feature - Validates shim merge (camundaHub umbrella + legacy detail keys).
+#
+# camundaHub.enabled is true (from base.yaml), but all detail configuration is
+# provided under webModeler.* and console.* keys. The shim helpers merge these
+# on top, so templates see the combined result.
+
+console:
+  contextPath: "/"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+
+webModeler:
+  contextPath: "/modeler"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  restapi:
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+      -XX:+TieredCompilation
+      -XX:TieredStopAtLevel=1
+      -XX:+UseG1GC
+      -XX:+UseStringDeduplication
+    initContainers:
+      - name: wait-for-postgresql
+        image: busybox:1.36
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for PostgreSQL at {{ .Release.Name }}-postgresql-web-modeler:5432 ..."
+            until nc -z "{{ .Release.Name }}-postgresql-web-modeler" 5432; do
+              sleep 2
+            done
+            echo "PostgreSQL is ready"
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      failureThreshold: 30
+      timeoutSeconds: 1
+    mail:
+      fromAddress: noreply@example.com

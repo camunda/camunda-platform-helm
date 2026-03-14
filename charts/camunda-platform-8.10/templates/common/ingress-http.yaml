@@ -25,13 +25,13 @@ spec:
     {{- end }}
         paths:
         {{- /* Management Group */ -}}
-          {{- if and .Values.console.enabled .Values.console.contextPath }}
+          {{- if and (eq (include "camundaHub.consoleEnabled" .) "true") (or .Values.camundaHub.console.contextPath .Values.console.contextPath) }}
           - backend:
               service:
                 name: {{ template "console.fullname" . }}
                 port:
-                  number: {{ .Values.console.service.port }}
-            path: {{ .Values.console.contextPath }}
+                  number: {{ (dig "console" "service" "port" .Values.console.service.port .Values.camundaHub) }}
+            path: {{ (or .Values.camundaHub.console.contextPath .Values.console.contextPath) }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- if .Values.identity.enabled }}
@@ -55,19 +55,19 @@ spec:
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
           {{- end }}
-          {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
+          {{- if and (eq (include "camundaHub.webModelerEnabled" .) "true") (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
           - backend:
               service:
                 name: {{ template "webModeler.restapi.fullname" . }}
                 port:
-                  number: {{ .Values.webModeler.restapi.service.port }}
-            path: {{ .Values.webModeler.contextPath }}
+                  number: {{ (dig "webModeler" "restapi" "service" "port" .Values.webModeler.restapi.service.port .Values.camundaHub) }}
+            path: {{ (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
             pathType: {{ .Values.global.ingress.pathType }}
           - backend:
               service:
                 name: {{ template "webModeler.websockets.fullname" . }}
                 port:
-                  number:  {{ .Values.webModeler.websockets.service.port }}
+                  number:  {{ (dig "webModeler" "websockets" "service" "port" .Values.webModeler.websockets.service.port .Values.camundaHub) }}
             path: {{ template "webModeler.websocketContextPath" . }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
