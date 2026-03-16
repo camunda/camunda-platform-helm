@@ -53,20 +53,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - dir: camunda-platform-8.8
-            tag: "88"
-            snapshot: "8.8-SNAPSHOT"
-            webmodeler: "8.8"
-          - dir: camunda-platform-8.9
-            tag: "89"
-            snapshot: "8.9-SNAPSHOT"
-            webmodeler: "8.9"
-          - dir: camunda-platform-8.10
-            tag: "810"
-            snapshot: "8.10-SNAPSHOT"
-            webmodeler: "8.10"
-        scenario:
+         version:
+           - dir: camunda-platform-8.8
+             tag: "88"
+             snapshot: "8.8-SNAPSHOT"
+             identity: "8.8-SNAPSHOT"
+             webmodeler: "8.8"
+           - dir: camunda-platform-8.9
+             tag: "89"
+             snapshot: "8.9-SNAPSHOT"
+             identity: "SNAPSHOT"
+             webmodeler: "8.9"
+           - dir: camunda-platform-8.10
+             tag: "810"
+             snapshot: "8.10-SNAPSHOT"
+             identity: "SNAPSHOT"
+             webmodeler: "8.10"
+         scenario:
           - name: qa-elasticsearch
             shortname: qael
           - name: qa-opensearch
@@ -114,7 +117,7 @@ jobs:
       values-config: |
         {
           "E2E_TESTS_CAMUNDA_HELM_DIR": "${{ matrix.version.dir }}",
-          "E2E_TESTS_IDENTITY_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_IDENTITY_IMAGE_TAG": "${{ matrix.version.identity }}",
           "E2E_TESTS_CONNECTORS_IMAGE_TAG": "${{ matrix.version.snapshot }}",
           "E2E_TESTS_CONSOLE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
           "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
@@ -312,14 +315,17 @@ jobs:
           - dir: camunda-platform-8.8
             tag: "88"
             snapshot: "8.8-SNAPSHOT"
+            identity: "8.8-SNAPSHOT"
             webmodeler: "8.8"
           - dir: camunda-platform-8.9
             tag: "89"
             snapshot: "8.9-SNAPSHOT"
+            identity: "SNAPSHOT"
             webmodeler: "8.9"
           - dir: camunda-platform-8.10
             tag: "810"
             snapshot: "8.10-SNAPSHOT"
+            identity: "SNAPSHOT"
             webmodeler: "8.10"
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
@@ -344,7 +350,7 @@ jobs:
       values-config: |
         {
           "E2E_TESTS_CAMUNDA_HELM_DIR": "${{ matrix.version.dir }}",
-          "E2E_TESTS_IDENTITY_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_IDENTITY_IMAGE_TAG": "${{ matrix.version.identity }}",
           "E2E_TESTS_CONNECTORS_IMAGE_TAG": "${{ matrix.version.snapshot }}",
           "E2E_TESTS_CONSOLE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
           "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
