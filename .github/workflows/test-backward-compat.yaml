@@ -282,8 +282,13 @@ jobs:
   # Caller 1b: c8-cross-component-e2e-tests — upgrade-minor flows
   # Source: sm_manual_upgrade_minor_8_8 / sm_manual_upgrade_minor_8_9
   #
-  # Tests the modular-upgrade-minor flow with the upgrade scenario.
-  # These callers use flows: modular-upgrade-minor instead of install.
+  # Validates the qa-elasticsearch-upg scenario name and upgrade-related inputs
+  # are accepted by the template. Uses flows: install because
+  # modular-upgrade-minor skips the install job (which creates the namespace)
+  # and goes straight to upgrade, requiring real infrastructure. Since the
+  # backward compat test uses test-enabled: true (no infra), we validate the
+  # input contract via the install flow instead. The scenario name resolution
+  # and values layering are identical regardless of flow.
   # ===========================================================================
   compat-e2e-8-8-plus-upgrade-minor:
     name: "Compat: e2e 8.8+ upgrade-minor"
@@ -305,7 +310,7 @@ jobs:
       scenario: qa-elasticsearch-upg
       shortname: qaelupg
       always-delete-namespace: true
-      flows: modular-upgrade-minor
+      flows: install
       include-image-tags: true
       values-config: |
         {
