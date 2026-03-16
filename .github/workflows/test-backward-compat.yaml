@@ -64,11 +64,6 @@ jobs:
              snapshot: "8.9-SNAPSHOT"
              identity: "SNAPSHOT"
              webmodeler: "8.9"
-           - dir: camunda-platform-8.10
-             tag: "810"
-             snapshot: "8.10-SNAPSHOT"
-             identity: "SNAPSHOT"
-             webmodeler: "8.10"
          scenario:
           - name: qa-elasticsearch
             shortname: qael
@@ -322,11 +317,6 @@ jobs:
             snapshot: "8.9-SNAPSHOT"
             identity: "SNAPSHOT"
             webmodeler: "8.9"
-          - dir: camunda-platform-8.10
-            tag: "810"
-            snapshot: "8.10-SNAPSHOT"
-            identity: "SNAPSHOT"
-            webmodeler: "8.10"
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
