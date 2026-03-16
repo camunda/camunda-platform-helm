@@ -49,10 +49,23 @@ jobs:
   # sm-manual workflows targeting 8.8+.
   # ===========================================================================
   compat-e2e-8-8-plus:
-    name: "Compat: e2e 8.8+ (${{ matrix.scenario.shortname }})"
+    name: "Compat: e2e 8.8+ (${{ matrix.version.tag }}-${{ matrix.scenario.shortname }})"
     strategy:
       fail-fast: false
       matrix:
+        version:
+          - dir: camunda-platform-8.8
+            tag: "88"
+            snapshot: "8.8-SNAPSHOT"
+            webmodeler: "8.8"
+          - dir: camunda-platform-8.9
+            tag: "89"
+            snapshot: "8.9-SNAPSHOT"
+            webmodeler: "8.9"
+          - dir: camunda-platform-8.10
+            tag: "810"
+            snapshot: "8.10-SNAPSHOT"
+            webmodeler: "8.10"
         scenario:
           - name: qa-elasticsearch
             shortname: qael
@@ -70,6 +83,7 @@ jobs:
             shortname: qaen
             auth: oidc
             initialClaimValue: placeholder-for-compat-test
+            it-enabled: false
           - name: qa-document-store
             shortname: qadoc
           - name: qa-elasticsearch-tasklist-v1
@@ -81,15 +95,15 @@ jobs:
     with:
       auth: ${{ matrix.scenario.auth || 'keycloak' }}
       helmChartVersion: ""
-      identifier: compat-88p-${{ matrix.scenario.shortname }}
+      identifier: compat-88p-${{ matrix.version.tag }}-${{ matrix.scenario.shortname }}
       platforms: gke
       infra-type: preemptible
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      camunda-helm-dir: camunda-platform-8.8
+      camunda-helm-dir: ${{ matrix.version.dir }}
       teleport-token: infra-ci-prod-github-action-distribution
-      namespace-prefix: "bc88p${{ matrix.scenario.shortname }}-"
+      namespace-prefix: "bc88p${{ matrix.version.tag }}${{ matrix.scenario.shortname }}-"
       deployment-ttl: ""
-      test-enabled: true
+      test-enabled: ${{ matrix.scenario.it-enabled != false }}
       e2e-enabled: ${{ matrix.scenario.e2e-enabled != false }}
       scenario: ${{ matrix.scenario.name }}
       shortname: ${{ matrix.scenario.shortname }}
@@ -99,20 +113,19 @@ jobs:
       initialClaimValue: ${{ matrix.scenario.initialClaimValue || '' }}
       values-config: |
         {
-          "E2E_TESTS_CAMUNDA_HELM_DIR": "camunda-platform-8.8",
-          "E2E_TESTS_IDENTITY_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_CONSOLE_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_WEBMODELER_IMAGE_TAG": "8.8",
-          "E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_CORE_IMAGE_TAG": "8.8-SNAPSHOT",
+          "E2E_TESTS_CAMUNDA_HELM_DIR": "${{ matrix.version.dir }}",
+          "E2E_TESTS_IDENTITY_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_CONNECTORS_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_CONSOLE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_WEBMODELER_IMAGE_TAG": "${{ matrix.version.webmodeler }}",
+          "E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_CORE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
           "E2E_TESTS_SEARCH_ENGINE": "opensearch",
-          "E2E_AWS_OS_INDEX_PREFIX": "compat-test",
-          "E2E_AWS_OS_INDEX_PREFIX_ZEEBE": "compat-test-zeebe",
-          "E2E_AWS_OS_INDEX_PREFIX_OPERATE": "compat-test-operate",
-          "E2E_AWS_OS_INDEX_PREFIX_TASKLIST": "compat-test-tasklist",
-          "E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE": "compat-test-optimize"
+          "OPERATE_INDEX_PREFIX": "compat-test-operate",
+          "TASKLIST_INDEX_PREFIX": "compat-test-tasklist",
+          "OPTIMIZE_INDEX_PREFIX": "compat-test-optimize",
+          "ORCHESTRATION_INDEX_PREFIX": "compat-test-orchestration"
         }
       vault-secret-mapping: |
         secret/data/products/qa/ci/common DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
@@ -206,11 +219,11 @@ jobs:
           "E2E_TESTS_WEBMODELER_IMAGE_TAG": "8.7.16",
           "E2E_TESTS_ZEEBE_IMAGE_TAG": "8.7-SNAPSHOT",
           "E2E_TESTS_SEARCH_ENGINE": "opensearch",
-          "E2E_AWS_OS_INDEX_PREFIX": "compat-test",
-          "E2E_AWS_OS_INDEX_PREFIX_ZEEBE": "compat-test-zeebe",
-          "E2E_AWS_OS_INDEX_PREFIX_OPERATE": "compat-test-operate",
-          "E2E_AWS_OS_INDEX_PREFIX_TASKLIST": "compat-test-tasklist",
-          "E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE": "compat-test-optimize",
+          "ZEEBE_INDEX_PREFIX": "compat-test-zeebe",
+          "OPERATE_INDEX_PREFIX": "compat-test-operate",
+          "TASKLIST_INDEX_PREFIX": "compat-test-tasklist",
+          "OPTIMIZE_INDEX_PREFIX": "compat-test-optimize",
+          "ORCHESTRATION_INDEX_PREFIX": "compat-test-orchestration",
           "OPENSEARCH_PORT": "443",
           "OPENSEARCH_PROTOCOL": "https"
         }
@@ -291,19 +304,35 @@ jobs:
   # and values layering are identical regardless of flow.
   # ===========================================================================
   compat-e2e-8-8-plus-upgrade-minor:
-    name: "Compat: e2e 8.8+ upgrade-minor"
+    name: "Compat: e2e 8.8+ upgrade-minor (${{ matrix.version.tag }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - dir: camunda-platform-8.8
+            tag: "88"
+            snapshot: "8.8-SNAPSHOT"
+            webmodeler: "8.8"
+          - dir: camunda-platform-8.9
+            tag: "89"
+            snapshot: "8.9-SNAPSHOT"
+            webmodeler: "8.9"
+          - dir: camunda-platform-8.10
+            tag: "810"
+            snapshot: "8.10-SNAPSHOT"
+            webmodeler: "8.10"
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
       auth: keycloak
       helmChartVersion: ""
-      identifier: compat-88p-upgmin
+      identifier: compat-88p-upgmin-${{ matrix.version.tag }}
       platforms: gke
       infra-type: preemptible
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      camunda-helm-dir: camunda-platform-8.8
+      camunda-helm-dir: ${{ matrix.version.dir }}
       teleport-token: infra-ci-prod-github-action-distribution
-      namespace-prefix: "bc88pupgmin-"
+      namespace-prefix: "bc88pupgmin${{ matrix.version.tag }}-"
       deployment-ttl: ""
       test-enabled: true
       e2e-enabled: false
@@ -314,20 +343,19 @@ jobs:
       include-image-tags: true
       values-config: |
         {
-          "E2E_TESTS_CAMUNDA_HELM_DIR": "camunda-platform-8.8",
-          "E2E_TESTS_IDENTITY_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_CONSOLE_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_WEBMODELER_IMAGE_TAG": "8.8",
-          "E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "8.8-SNAPSHOT",
-          "E2E_TESTS_CORE_IMAGE_TAG": "8.8-SNAPSHOT",
+          "E2E_TESTS_CAMUNDA_HELM_DIR": "${{ matrix.version.dir }}",
+          "E2E_TESTS_IDENTITY_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_CONNECTORS_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_CONSOLE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_WEBMODELER_IMAGE_TAG": "${{ matrix.version.webmodeler }}",
+          "E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "${{ matrix.version.snapshot }}",
+          "E2E_TESTS_CORE_IMAGE_TAG": "${{ matrix.version.snapshot }}",
           "E2E_TESTS_SEARCH_ENGINE": "opensearch",
-          "E2E_AWS_OS_INDEX_PREFIX": "compat-test",
-          "E2E_AWS_OS_INDEX_PREFIX_ZEEBE": "compat-test-zeebe",
-          "E2E_AWS_OS_INDEX_PREFIX_OPERATE": "compat-test-operate",
-          "E2E_AWS_OS_INDEX_PREFIX_TASKLIST": "compat-test-tasklist",
-          "E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE": "compat-test-optimize"
+          "OPERATE_INDEX_PREFIX": "compat-test-operate",
+          "TASKLIST_INDEX_PREFIX": "compat-test-tasklist",
+          "OPTIMIZE_INDEX_PREFIX": "compat-test-optimize",
+          "ORCHESTRATION_INDEX_PREFIX": "compat-test-orchestration"
         }
       vault-secret-mapping: |
         secret/data/products/qa/ci/common DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
