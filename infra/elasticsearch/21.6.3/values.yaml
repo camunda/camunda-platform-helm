@@ -1,5 +1,5 @@
 master:
-  replicaCount: 12
+  replicaCount: 3
   resources:
     requests: { cpu: "3000m", memory: "6Gi" }
     limits: { cpu: "6000m", memory: "6Gi" }
@@ -40,7 +40,7 @@ master:
     periodSeconds: 20
 
 data:
-  replicaCount: 12
+  replicaCount: 4
   heapSize: 1536m
   resources:
     requests: { cpu: "2000m", memory: "4Gi" }
