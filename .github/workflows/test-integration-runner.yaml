@@ -285,9 +285,9 @@ jobs:
       run:
         shell: bash
     outputs:
-      vars-identifier: ${{ steps.vars.outputs.identifier }}
-      vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
-      vars-namespace: ${{ steps.vars.outputs.namespace }}
+      vars-identifier: ${{ steps.setup.outputs.identifier }}
+      vars-ingress-host: ${{ steps.setup.outputs.ingress-host }}
+      vars-namespace: ${{ steps.setup.outputs.namespace }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -327,128 +327,44 @@ jobs:
       # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
 
-      # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
-      # and populate environment variables from Vault
-      - name: CI Setup - Import Vault secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        if: inputs.vault-secret-mapping != ''
+      - name: CI Setup - Shared integration test setup
+        id: setup
+        uses: ./.github/actions/integration-test-setup
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: ${{ inputs.vault-secret-mapping }}
-          exportEnv: true
-
-      - name: Generate Secret manifest from Vault mapping
-        if: inputs.vault-secret-mapping != ''
+          vault-secret-mapping:        ${{ inputs.vault-secret-mapping }}
+          distro-platform:             ${{ inputs.distro-platform }}
+          auth-data:                   ${{ inputs.auth-data }}
+          deployment-ttl:              ${{ env.CI_DEPLOYMENT_TTL }}
+          flow:                        ${{ inputs.flow }}
+          identifier:                  ${{ inputs.identifier }}
+          ingress-hostname-base:       ${{ env.CI_HOSTNAME_BASE }}
+          camunda-helm-dir:            ${{ inputs.camunda-helm-dir }}
+          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          namespace-prefix:            ${{ inputs.namespace-prefix }}
+          infra-type:                  ${{ inputs.infra-type }}
+          values-enterprise:           ${{ inputs.values-enterprise }}
+          values-digest:               ${{ inputs.values-digest }}
+          camunda-version-previous:    ${{ inputs.camunda-version-previous }}
         env:
-          VSM: ${{ inputs.vault-secret-mapping }}
-        run: |
-          (cd ./scripts/vault-secret-mapper && go mod tidy && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
-
-
-      - name: Import Vault secrets
-        id: test-credentials-secret
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci NEXUS_USERNAME;
-            secret/data/products/distribution/ci NEXUS_PASSWORD;
-            secret/data/products/distribution/ci HARBOR_REGISTRY_USER | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
-            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
-            secret/data/products/distribution/ci DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
-            secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
-            secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
-            secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
-            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
-            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
-            secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
-            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-          exportEnv: true
-
-      - name: CI Setup - Authenticate to cluster
-        id: cluster-auth
-        uses: ./.github/actions/cluster-auth
-        with:
-          platform: ${{ inputs.distro-platform }}
-          auth-data: ${{ inputs.auth-data }}
-        env:
+          VAULT_ADDR:       ${{ secrets.VAULT_ADDR }}
+          VAULT_ROLE_ID:    ${{ secrets.VAULT_ROLE_ID }}
+          VAULT_SECRET_ID:  ${{ secrets.VAULT_SECRET_ID }}
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
-        id: vars
-        uses: ./.github/actions/workflow-vars
-        with:
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          setup-flow: ${{ inputs.flow }}
-          platform: ${{ inputs.distro-platform }}
-          identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-          chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          prefix: ${{ inputs.namespace-prefix }}
-
-      # Charts older than 8.10 use global.ingress.host, while 8.10+ uses global.host
-      # and rejects global.ingress.host via a keyRemoved constraint.
-      - name: CI Setup - Compute legacy ingress host arg
-        id: legacy-ingress
-        run: |
-          MINOR=$(echo "${{ inputs.camunda-helm-dir }}" | grep -oP '8\.\K\d+')
-          if [[ "$MINOR" -lt 10 ]]; then
-            echo "arg=--set global.ingress.host=${{ steps.vars.outputs.ingress-host }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "arg=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: CI Setup - ℹ️ Set test type vars ℹ️
-        id: test-type-vars
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
-          values-enterprise: "${{ inputs.values-enterprise }}"
-          values-digest: "${{ inputs.values-digest }}"
-          flow: "${{ inputs.flow }}"
-          camunda-version-previous: "${{ inputs.camunda-version-previous }}"
-
-      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/keycloak)
-      - name: CI Setup - Login to Docker Hub
-        run: |
-          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
-
-      - name: CI Setup - Add Helm repos and update Helm dependencies
-        run: |
-          export chartPath="${{ env.CHART_PATH }}"
-          make helm.repos-add
-          make helm.dependency-update
+          DISTRO_CI_DOCKER_USERNAME_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
+          DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
 
       - name: CI Setup - Start GitHub deployment
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         id: deployment
         with:
           step: start
-          token: ${{ steps.cluster-auth.outputs.token }}
-          env: ${{ steps.vars.outputs.identifier }}
+          token: ${{ steps.setup.outputs.cluster-auth-token }}
+          env: ${{ steps.setup.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
       - name: Cluster Setup - Configure the namespace
@@ -468,7 +384,7 @@ jobs:
             fi
           fi
           kubectl create ns $TEST_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.vars.outputs.identifier }} --overwrite
+          kubectl label ns $TEST_NAMESPACE github-id=${{ steps.setup.outputs.identifier }} --overwrite
           kubectl label ns $TEST_NAMESPACE test-flow=${{ inputs.flow }} --overwrite
           kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID --overwrite
           kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID --overwrite
@@ -525,7 +441,7 @@ jobs:
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
-          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
@@ -537,8 +453,8 @@ jobs:
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
-            ${{ steps.legacy-ingress.outputs.arg }}
-            --set global.host=${{ steps.vars.outputs.ingress-host }}
+            ${{ steps.setup.outputs.legacy-ingress-arg }}
+            --set global.host=${{ steps.setup.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
@@ -560,14 +476,14 @@ jobs:
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
-          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
           VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
@@ -578,8 +494,8 @@ jobs:
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
-            ${{ steps.legacy-ingress.outputs.arg }}
-            --set global.host=${{ steps.vars.outputs.ingress-host }}
+            ${{ steps.setup.outputs.legacy-ingress-arg }}
+            --set global.host=${{ steps.setup.outputs.ingress-host }}
         run: |
           # Configure OpenSearch environment if using opensearch scenario
           if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
@@ -630,7 +546,7 @@ jobs:
           INFRA_TYPE: ${{ inputs.infra-type }}
           VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
           # License key for Camunda Platform (injected via --set in helm install).
           # Use the GitHub secret if available, otherwise fall back to the Vault-exported env var.
           E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
@@ -643,8 +559,8 @@ jobs:
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
-            ${{ steps.legacy-ingress.outputs.arg }}
-            --set global.host=${{ steps.vars.outputs.ingress-host }}
+            ${{ steps.setup.outputs.legacy-ingress-arg }}
+            --set global.host=${{ steps.setup.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
 
@@ -673,11 +589,11 @@ jobs:
         uses: bobheadxi/deployments@648679e8e4915b27893bd7dbc35cb504dc915bc8 # v1
         with:
           step: finish
-          token: ${{ steps.cluster-auth.outputs.token }}
+          token: ${{ steps.setup.outputs.cluster-auth-token }}
           status: ${{ job.status }}
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
-          env_url: https://${{ steps.vars.outputs.ingress-host }}
-          env: ${{ steps.vars.outputs.identifier }}
+          env_url: https://${{ steps.setup.outputs.ingress-host }}
+          env: ${{ steps.setup.outputs.identifier }}
           ref: ${{ inputs.caller-git-ref }}
 
       - name: Calculate Playwright sharding matrix
@@ -714,9 +630,9 @@ jobs:
         shell: bash
     needs: [install]
     outputs:
-      vars-identifier: ${{ steps.vars.outputs.identifier }}
-      vars-ingress-host: ${{ steps.vars.outputs.ingress-host }}
-      vars-namespace: ${{ steps.vars.outputs.namespace }}
+      vars-identifier: ${{ steps.setup.outputs.identifier }}
+      vars-ingress-host: ${{ steps.setup.outputs.ingress-host }}
+      vars-namespace: ${{ steps.setup.outputs.namespace }}
       SHARD_TOTAL: ${{ env.SHARD_TOTAL }}
       SHARD_INDEX: ${{ env.SHARD_INDEX }}
     permissions:
@@ -753,117 +669,36 @@ jobs:
       # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
 
-      # When there is a vault-secret-mapping input given, use Vault instead of GitHub secrets
-      # and populate environment variables from Vault
-      - name: CI Setup - Import Vault secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        if: inputs.vault-secret-mapping != ''
+      - name: CI Setup - Shared integration test setup
+        id: setup
+        uses: ./.github/actions/integration-test-setup
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: ${{ inputs.vault-secret-mapping }}
-          exportEnv: true
-
-      - name: Generate Secret manifest from Vault mapping
-        if: inputs.vault-secret-mapping != ''
+          vault-secret-mapping:        ${{ inputs.vault-secret-mapping }}
+          distro-platform:             ${{ inputs.distro-platform }}
+          auth-data:                   ${{ inputs.auth-data }}
+          deployment-ttl:              ${{ env.CI_DEPLOYMENT_TTL }}
+          flow:                        ${{ inputs.flow }}
+          identifier:                  ${{ inputs.identifier }}
+          ingress-hostname-base:       ${{ env.CI_HOSTNAME_BASE }}
+          camunda-helm-dir:            ${{ inputs.camunda-helm-dir }}
+          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          namespace-prefix:            ${{ inputs.namespace-prefix }}
+          infra-type:                  ${{ inputs.infra-type }}
+          values-enterprise:           ${{ inputs.values-enterprise }}
+          values-digest:               ${{ inputs.values-digest }}
+          camunda-version-previous:    ${{ inputs.camunda-version-previous }}
         env:
-          VSM: ${{ inputs.vault-secret-mapping }}
-        run: |
-          (cd ./scripts/vault-secret-mapper && go mod tidy && go run . --mapping "$VSM" --secret-name vault-mapped-secrets --output /tmp/vault-mapped-secrets.yaml)
-
-      - name: Import Vault secrets
-        id: test-credentials-secret
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci NEXUS_USERNAME;
-            secret/data/products/distribution/ci NEXUS_PASSWORD;
-            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
-            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
-            secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
-            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
-            secret/data/products/distribution/ci DOCKERHUB_USERNAME | TEST_DOCKER_USERNAME;
-            secret/data/products/distribution/ci DOCKERHUB_PASSWORD | TEST_DOCKER_PASSWORD;
-            secret/data/products/distribution/ci RDBMS_POSTGRESQL_USERNAME;
-            secret/data/products/distribution/ci RDBMS_POSTGRESQL_PASSWORD;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
-            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-          exportEnv: true
-
-      - name: CI Setup - Authenticate to cluster
-        id: cluster-auth
-        uses: ./.github/actions/cluster-auth
-        with:
-          platform: ${{ inputs.distro-platform }}
-          auth-data: ${{ inputs.auth-data }}
-        env:
+          VAULT_ADDR:       ${{ secrets.VAULT_ADDR }}
+          VAULT_ROLE_ID:    ${{ secrets.VAULT_ROLE_ID }}
+          VAULT_SECRET_ID:  ${{ secrets.VAULT_SECRET_ID }}
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
-        id: vars
-        uses: ./.github/actions/workflow-vars
-        with:
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          setup-flow: ${{ inputs.flow }}
-          platform: ${{ inputs.distro-platform }}
-          identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-          chart-dir: ${{ inputs.camunda-helm-dir }}
-          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          prefix: ${{ inputs.namespace-prefix }}
-
-      # Charts older than 8.10 use global.ingress.host, while 8.10+ uses global.host
-      # and rejects global.ingress.host via a keyRemoved constraint.
-      - name: CI Setup - Compute legacy ingress host arg
-        id: legacy-ingress
-        run: |
-          MINOR=$(echo "${{ inputs.camunda-helm-dir }}" | grep -oP '8\.\K\d+')
-          if [[ "$MINOR" -lt 10 ]]; then
-            echo "arg=--set global.ingress.host=${{ steps.vars.outputs.ingress-host }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "arg=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: CI Setup - ℹ️ Set test type vars ℹ️
-        id: test-type-vars
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
-          values-enterprise: "${{ inputs.values-enterprise }}"
-          values-digest: "${{ inputs.values-digest }}"
-          flow: "${{ inputs.flow }}"
-          camunda-version-previous: "${{ inputs.camunda-version-previous }}"
-
-      # Login to Docker Hub to avoid rate limits when pulling Helm chart dependencies (e.g., bitnamicharts/keycloak)
-      - name: CI Setup - Login to Docker Hub
-        run: |
-          echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
-
-      - name: CI Setup - Add Helm repos and update Helm dependencies
-        run: |
-          export chartPath="${{ env.CHART_PATH }}"
-          make helm.repos-add
-          make helm.dependency-update
+          DISTRO_CI_DOCKER_USERNAME_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
+          DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
 
       ##########################################################################################################
       # Upgrade
@@ -873,7 +708,7 @@ jobs:
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
-          TEST_INGRESS_HOST: ${{ steps.vars.outputs.ingress-host }}
+          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
@@ -885,8 +720,8 @@ jobs:
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
-            ${{ steps.legacy-ingress.outputs.arg }}
-            --set global.host=${{ steps.vars.outputs.ingress-host }}
+            ${{ steps.setup.outputs.legacy-ingress-arg }}
+            --set global.host=${{ steps.setup.outputs.ingress-host }}
         run: |
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
@@ -927,7 +762,7 @@ jobs:
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           VALUES_CONFIG: ${{ inputs.values-config }}
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
@@ -951,7 +786,7 @@ jobs:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
-          CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
+          CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
           # License key for Camunda Platform (injected via --set in helm install).
           # Use the GitHub secret if available, otherwise fall back to the Vault-exported env var.
           E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
@@ -964,8 +799,8 @@ jobs:
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
           TEST_HELM_EXTRA_ARGS: >-
-            ${{ steps.legacy-ingress.outputs.arg }}
-            --set global.host=${{ steps.vars.outputs.ingress-host }}
+            ${{ steps.setup.outputs.legacy-ingress-arg }}
+            --set global.host=${{ steps.setup.outputs.ingress-host }}
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
 
