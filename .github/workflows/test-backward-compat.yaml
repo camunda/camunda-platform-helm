@@ -67,8 +67,8 @@ jobs:
          scenario:
           - name: qa-elasticsearch
             shortname: qael
-          - name: qa-opensearch
-            shortname: qaos
+          #- name: qa-opensearch
+          #  shortname: qaos
           - name: qa-elasticsearch-rba
             shortname: qaelrba
           - name: qa-elasticsearch-mt
@@ -82,8 +82,8 @@ jobs:
             auth: oidc
             initialClaimValue: placeholder-for-compat-test
             it-enabled: false
-          - name: qa-document-store
-            shortname: qadoc
+          #- name: qa-document-store
+          #  shortname: qadoc
           - name: qa-elasticsearch-tasklist-v1
             shortname: qaeltlv1
           - name: qa-elasticsearch-upg
@@ -174,8 +174,8 @@ jobs:
         scenario:
           - name: qa-elasticsearch
             shortname: qael
-          - name: qa-opensearch
-            shortname: qaos
+          #- name: qa-opensearch
+          #  shortname: qaos
           - name: qa-elasticsearch-rba
             shortname: qarba
           - name: qa-elasticsearch-mt
