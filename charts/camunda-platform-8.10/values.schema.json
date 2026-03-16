@@ -1466,6 +1466,10 @@
                         }
                     }
                 },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "externalDatabase": {
                     "type": "object",
                     "properties": {
@@ -2573,6 +2577,10 @@
                         }
                     }
                 },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "podSecurityContext": {
                     "type": "object",
                     "properties": {
@@ -3678,6 +3686,10 @@
                         }
                     }
                 },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "persistence": {
                     "type": "object",
                     "properties": {
@@ -4376,6 +4388,10 @@
                         }
                     }
                 },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "podSecurityContext": {
                     "type": "object",
                     "properties": {
@@ -5054,6 +5070,10 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 },
                 "gateway": {
                     "type": "object",
@@ -6323,6 +6343,10 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 },
                 "service": {
                     "type": "object",
