@@ -63,7 +63,7 @@ jobs:
              tag: "89"
              snapshot: "8.9-SNAPSHOT"
              identity: "SNAPSHOT"
-             webmodeler: "8-SNAPSHOT"
+             webmodeler: "SNAPSHOT"
          scenario:
           - name: qa-elasticsearch
             shortname: qael
@@ -316,7 +316,7 @@ jobs:
             tag: "89"
             snapshot: "8.9-SNAPSHOT"
             identity: "SNAPSHOT"
-            webmodeler: "8-SNAPSHOT"
+            webmodeler: "SNAPSHOT"
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
