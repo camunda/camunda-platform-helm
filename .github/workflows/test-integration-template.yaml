@@ -257,41 +257,39 @@ jobs:
         id: generate-workflow-matrix
         env:
           CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
-          # Use GH env to safly load JSON matrix input.
+          # Use GH env to safely load JSON matrix input.
           CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
+          CI_PLATFORMS: "${{ inputs.platforms }}"
+          CI_FLOWS: "${{ inputs.flows }}"
         run: |
-          # TODO: Find a better way to handle GitHub Actions expressions substitution.
-          # Substitute vars.
-          export INPUTS_PLATFORMS_GKE=${{ contains(inputs.platforms, 'gke') }}
-          export INPUTS_PLATFORMS_EKS=${{ contains(inputs.platforms, 'eks') }}
-          export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
-          # Split flows string and check exact matches to avoid substring collisions
-          export INPUTS_FLOWS="${{ inputs.flows }}"
-          # Convert comma-separated list to array (no trimming)
-          IFS=',' read -r -a CI_FLOWS_ARR <<< "$INPUTS_FLOWS"
+          # Build yq select expressions from comma-separated platform and flow inputs.
+          # This replaces the previous envsubst + exclude hack, which silently turned
+          # unset variables into empty strings and relied on a non-standard 'if' field.
 
-          # Helper to check if array contains a value
-          flow_has() {
-            local needle="$1"
-            for f in "${CI_FLOWS_ARR[@]}"; do
-              if [[ "$f" == "$needle" ]]; then
-                return 0
-              fi
-            done
-            return 1
-          }
+          # Build platform filter: ".platform == \"gke\" or .platform == \"eks\""
+          platform_expr=""
+          IFS=',' read -r -a platforms_arr <<< "${CI_PLATFORMS}"
+          for p in "${platforms_arr[@]}"; do
+            [ -n "$platform_expr" ] && platform_expr="${platform_expr} or "
+            platform_expr="${platform_expr}.platform == \"${p}\""
+          done
 
-          # Set flow flags
-          export INPUTS_FLOWS_INSTALL=$(flow_has "install" && echo true || echo false)
-          export INPUTS_FLOWS_UPGRADE_PATCH=$(flow_has "upgrade-patch" && echo true || echo false)
-          export INPUTS_FLOWS_UPGRADE_MINOR=$(flow_has "upgrade-minor" && echo true || echo false)
-          export INPUTS_FLOWS_MODULAR_UPGRADE_MINOR=$(flow_has "modular-upgrade-minor" && echo true || echo false)
+          # Build flow filter: ".flow == \"install\" or .flow == \"upgrade-patch\""
+          flow_expr=""
+          IFS=',' read -r -a flows_arr <<< "${CI_FLOWS}"
+          for f in "${flows_arr[@]}"; do
+            [ -n "$flow_expr" ] && flow_expr="${flow_expr} or "
+            flow_expr="${flow_expr}.flow == \"${f}\""
+          done
 
-          cat "${CI_MATRIX_FILE}" | envsubst | tee /tmp/matrix.yaml
+          # Filter distro and scenario entries using yq select(); no envsubst or exclude needed.
+          yq ".matrix.distro |= map(select(${platform_expr})) | .matrix.scenario |= map(select(${flow_expr}))" \
+            "${CI_MATRIX_FILE}" | tee /tmp/matrix.yaml
+
           # Read matrix YAML file.
           matrix_default="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
           matrix="${CI_MATRIX_INPUT:-${matrix_default}}"
-          echo "\n"
+          echo ""
           # Print and set matrix JSON object as an output.
           echo "${matrix}" | jq
           echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
