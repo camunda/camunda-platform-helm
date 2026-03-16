@@ -354,6 +354,7 @@ tasks:
         --values /tmp/extra-values-file.yaml \
         --values "$MERGED_VALUES" \
         ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
+        --set orchestration.upgrade.allowPreReleaseImages=true \
         --timeout 20m0s \
         --wait \
         --wait-for-jobs \
