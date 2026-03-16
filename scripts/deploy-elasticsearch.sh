@@ -226,6 +226,9 @@ else
   echo "[configmap] WARN: $CLEANUP_SCRIPT not found — skipping ConfigMap creation."
 fi
 
+# Directory containing CronJob and RBAC manifests for this chart version.
+CRONJOB_DIR="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}"
+
 # Apply cluster-scoped RBAC (ClusterRole + ClusterRoleBinding) that covers all
 # ES pools. This file is NOT subject to per-pool sed replacement; it lists every
 # pool's ServiceAccount as a subject so they can all list namespaces.
@@ -239,7 +242,6 @@ fi
 # Apply all CronJob manifests (*-cronjob.yaml) from the infra directory for this chart version.
 # Each manifest contains per-namespace resources (ServiceAccount, Role, RoleBinding, CronJob).
 # Cluster-scoped RBAC is handled separately above.
-CRONJOB_DIR="$REPO_ROOT/infra/elasticsearch/${CHART_VERSION}"
 cronjob_found=false
 for CRONJOB_FILE in "${CRONJOB_DIR}"/*-cronjob.yaml; do
   [[ -f "$CRONJOB_FILE" ]] || continue
