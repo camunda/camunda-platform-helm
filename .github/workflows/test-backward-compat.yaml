@@ -86,6 +86,16 @@ jobs:
             shortname: qadoc
           - name: qa-elasticsearch-tasklist-v1
             shortname: qaeltlv1
+          - name: qa-opensearch-tasklist-v1
+            shortname: qaosupg
+          - name: qa-elasticsearch-rba-tasklist-v1
+            shortname: qaelrbaupg
+          - name: qa-elasticsearch-mt-tasklist-v1
+            shortname: qaelmtupg
+            e2e-enabled: false
+          - name: qa-license-tasklist-v1
+            shortname: licupg
+            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite LICENSE_VALID_COMMERCIAL_UNLIMITED | E2E_TESTS_LICENSE_KEY;"
           - name: qa-elasticsearch-upg
             shortname: qaelupg
           - name: qa-opensearch-upg
