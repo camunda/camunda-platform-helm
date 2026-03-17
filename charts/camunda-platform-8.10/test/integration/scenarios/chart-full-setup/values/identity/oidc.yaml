@@ -103,11 +103,6 @@ connectors:
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
-webModeler:
-  security:
-    authentication:
-      pass: true
-
 orchestration:
   security:
     authentication:
