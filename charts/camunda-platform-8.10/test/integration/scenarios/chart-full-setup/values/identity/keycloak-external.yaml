@@ -1,4 +1,4 @@
-# External Keycloak auth configuration for 8.9
+# External Keycloak auth configuration for 8.10
 # Layer 2: Auth method - External Keycloak (for multi-tenancy scenarios)
 
 global:
@@ -110,9 +110,10 @@ orchestration:
           - tasklist-api
           - zeebe-api
 
-console:
-  keycloak:
-    realm: $KEYCLOAK_REALM
+camundaHub:
+  console:
+    keycloak:
+      realm: $KEYCLOAK_REALM
 
 prometheusServiceMonitor:
   enabled: true

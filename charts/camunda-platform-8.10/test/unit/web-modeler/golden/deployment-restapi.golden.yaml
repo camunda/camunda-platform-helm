@@ -66,8 +66,16 @@ spec:
                 configMapKeyRef:
                   name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-id
-            
-            
+            - name: RESTAPI_PUSHER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-key
+            - name: RESTAPI_PUSHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: "/tmp/zeebe_client_cache.txt"
           envFrom:
