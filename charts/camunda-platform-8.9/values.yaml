@@ -83,9 +83,9 @@ global:
     ## @extra global.security.authentication
     authentication:
       ## @param global.security.authentication.method defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.
-      # This is the global default. Each component can override it via its own security.authentication.method.
-      # When using an External OIDC provider, components that should authenticate via the external
-      # provider must either set this globally to "oidc" or override per-component.
+      # This is the global default authentication method that applies to all components.
+      # Set this to "oidc" when using an External OIDC provider, and all components will automatically use OIDC.
+      # Individual components can override this if needed via their own security.authentication.method setting.
       # See the "Identity / Authentication Modes" overview below global.identity for details.
       method: "basic"
 
@@ -2132,8 +2132,9 @@ connectors:
     ## @extra connectors.security.authentication
     authentication:
       ## @param connectors.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
-      # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
-      # When set to "oidc", also configure oidc.clientId, audience, and secret below.
+      # Leave empty (default) to inherit from global.security.authentication.method.
+      # Only set this value if you need to override the global authentication method for Connectors specifically.
+      # When OIDC is enabled (globally or here), also configure oidc.clientId, audience, and secret below.
       method: ""
       oidc:
         ## @param connectors.security.authentication.oidc.clientId defines the client id, which is used by Connectors in authentication flows.
@@ -2393,8 +2394,9 @@ orchestration:
     ## @extra orchestration.security.authentication
     authentication:
       ## @param orchestration.security.authentication.method defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.
-      # In External OIDC, must resolve to "oidc" (either set here or via global.security.authentication.method).
-      # When set to "oidc", also configure oidc.clientId, audience, and secret below.
+      # Leave empty (default) to inherit from global.security.authentication.method.
+      # Only set this value if you need to override the global authentication method for Orchestration specifically.
+      # When OIDC is enabled (globally or here), also configure oidc.clientId, audience, and secret below.
       method: ""
       ## @param orchestration.security.authentication.unprotectedApi if true, then allow unauthenticated API access.
       unprotectedApi: false
