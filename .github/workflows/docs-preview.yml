@@ -1,0 +1,55 @@
+# Build a preview of the Docusaurus docs site for every PR that touches
+# docs/** or helm-docs-site/**, then post the preview URL as a PR comment.
+#
+# Preview URL pattern:
+#   https://helm.camunda.io/camunda-platform-helm/pr-preview/pr-<number>/
+#
+# The BASE_URL env var overrides the default /camunda-platform-helm/ baseUrl so
+# that assets resolve correctly from the preview sub-path.
+name: "Docs - PR Preview"
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "helm-docs-site/**"
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Build and deploy PR preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: helm-docs-site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: helm-docs-site
+
+      - name: Build site (PR preview base URL)
+        run: npm run build
+        working-directory: helm-docs-site
+        env:
+          BASE_URL: /camunda-platform-helm/pr-preview/pr-${{ github.event.number }}/
+
+      - name: Deploy PR preview
+        uses: rossjrw/pr-preview-action@f31d5aa7b364955ea86228b9dcd346dc3f29c408 # v1
+        with:
+          source-dir: helm-docs-site/build
+          preview-branch: gh-pages
+          # Scope previews to the camunda-platform-helm sub-path so they don't
+          # collide with the Helm chart index at the gh-pages root.
+          umbrella-dir: camunda-platform-helm/pr-preview
