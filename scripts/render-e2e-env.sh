@@ -176,14 +176,30 @@ resolve_identity_passwords() {
 
   log "DEBUG: Resolving identity user passwords"
 
-  # Check if vault-mapped-secrets has the identity password key
-  local vault_firstuser_pw
-  vault_firstuser_pw=$($kubectl_cmd -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' 2> /dev/null | base64 -d || true)
-  log "DEBUG: Using identity deployment env vars"
+  # Try VALUES_* env vars from identity deployment first
+  log "DEBUG: Trying identity deployment env vars"
   DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_FIRSTUSER_PASSWORD" "$kube_context")"
   DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_SECONDUSER_PASSWORD" "$kube_context")"
   DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD="$(resolve_env_password "$namespace" "VALUES_IDENTITY_THIRDUSER_PASSWORD" "$kube_context")"
   DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET="$(resolve_env_password "$namespace" "VALUES_TEST_CLIENT_SECRET" "$kube_context")"
+
+  # Fallback to DISTRO_QA_E2E_TESTS_* keys in vault-mapped-secrets if VALUES_* resolved blank
+  if [[ -z "$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD" ]]; then
+    log "DEBUG: Falling back to vault-mapped-secrets for DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
+    DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD=$($kubectl_cmd -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD}' 2> /dev/null | base64 -d || true)
+  fi
+  if [[ -z "$DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD" ]]; then
+    log "DEBUG: Falling back to vault-mapped-secrets for DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD"
+    DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD=$($kubectl_cmd -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD}' 2> /dev/null | base64 -d || true)
+  fi
+  if [[ -z "$DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD" ]]; then
+    log "DEBUG: Falling back to vault-mapped-secrets for DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD"
+    DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD=$($kubectl_cmd -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD}' 2> /dev/null | base64 -d || true)
+  fi
+  if [[ -z "$DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET" ]]; then
+    log "DEBUG: Falling back to vault-mapped-secrets for DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET"
+    DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=$($kubectl_cmd -n "$namespace" get secret vault-mapped-secrets -o jsonpath='{.data.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET}' 2> /dev/null | base64 -d || true)
+  fi
 
   # Mask sensitive values in CI logs (these should go to stdout for GitHub Actions)
   mask_secret "$DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD"
