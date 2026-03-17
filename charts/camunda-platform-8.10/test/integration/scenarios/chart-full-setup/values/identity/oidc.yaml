@@ -94,7 +94,6 @@ identityKeycloak:
 connectors:
   security:
     authentication:
-      # method: oidc - inherited from global.security.authentication.method
       oidc:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
@@ -107,13 +106,11 @@ connectors:
 webModeler:
   security:
     authentication:
-      # method: oidc - inherited from global.security.authentication.method
       pass: true
 
 orchestration:
   security:
     authentication:
-      # method: oidc - inherited from global.security.authentication.method
       unprotectedApi: false
       oidc:
         backwardsCompatibleAudiences:
