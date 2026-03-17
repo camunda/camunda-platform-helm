@@ -249,7 +249,6 @@ optimize:
 connectors:
   security:
     authentication:
-      # method: oidc - inherited from global.security.authentication.method
       oidc:
         secret:
           existingSecret: "integration-test-credentials"
@@ -258,7 +257,6 @@ connectors:
 webModeler:
   security:
     authentication:
-      # method: oidc - inherited from global.security.authentication.method
       pass: true
 
 orchestration:
@@ -271,7 +269,6 @@ orchestration:
           clients:
             - venom
     authentication:
-      # method: oidc - inherited from global.security.authentication.method
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
