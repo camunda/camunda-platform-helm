@@ -5664,8 +5664,8 @@
                         },
                         "probePath": {
                             "type": "string",
-                            "description": "defines the liveness probe route used on the app. The path is intended to be the same as the readinessProbe. Refer to this issue for more details: https://github.com/camunda/camunda-platform-helm/issues/1849",
-                            "default": "/actuator/health/readiness"
+                            "description": "defines the liveness probe route used on the app.",
+                            "default": "/actuator/health/liveness"
                         },
                         "initialDelaySeconds": {
                             "type": "number",
