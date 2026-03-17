@@ -240,11 +240,6 @@ connectors:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-connectors-client-token"
 
-webModeler:
-  security:
-    authentication:
-      method: oidc
-
 orchestration:
   security:
     initialization:
