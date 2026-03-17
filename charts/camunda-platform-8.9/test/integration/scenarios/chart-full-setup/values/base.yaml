@@ -26,16 +26,6 @@ global:
 identity:
   enabled: true
   contextPath: "/identity"
-  env:
-    # JVM startup optimizations: identity has no javaOpts field, so JAVA_TOOL_OPTIONS must be set via env.
-    - name: JAVA_TOOL_OPTIONS
-      value: >-
-        -XX:+TieredCompilation
-        -XX:TieredStopAtLevel=1
-        -XX:+UseG1GC
-        -XX:+UseStringDeduplication
-        -Xms512m
-        -Xmx1536m
   startupProbe:
     enabled: true
     initialDelaySeconds: 5
@@ -85,13 +75,6 @@ identity:
 optimize:
   enabled: true
   contextPath: "/optimize"
-  javaOpts: >-
-    -XX:+TieredCompilation
-    -XX:TieredStopAtLevel=1
-    -XX:+UseG1GC
-    -XX:+UseStringDeduplication
-    -Xms512m
-    -Xmx1536m
   startupProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -112,9 +95,6 @@ optimize:
 
 connectors:
   contextPath: "/connectors"
-  env:
-    - name: JAVA_TOOL_OPTIONS
-      value: "-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx1536m"
   startupProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -141,12 +121,6 @@ webModeler:
       - name: index-docker-io
       - name: registry-camunda-cloud
   restapi:
-    javaOpts: >-
-      -XX:MaxRAMPercentage=80.0
-      -XX:+TieredCompilation
-      -XX:TieredStopAtLevel=1
-      -XX:+UseG1GC
-      -XX:+UseStringDeduplication
     # Wait for PostgreSQL to accept connections before starting restapi.
     # Prevents restapi from failing on DB connection during Spring context init.
     initContainers:
@@ -211,17 +185,6 @@ orchestration:
   contextPath: "/orchestration"
   # JVM startup optimizations: TieredStopAtLevel=1 skips C2 compiler for ~30-50% faster startup,
   # pre-sized heap avoids resizing overhead, G1GC with string deduplication for efficiency.
-  javaOpts: >-
-    -XX:+HeapDumpOnOutOfMemoryError
-    -XX:HeapDumpPath=/usr/local/camunda/data
-    -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
-    -XX:+ExitOnOutOfMemoryError
-    -XX:+TieredCompilation
-    -XX:TieredStopAtLevel=1
-    -XX:+UseG1GC
-    -XX:+UseStringDeduplication
-    -Xms1024m
-    -Xmx2048m
   resources:
     requests:
       cpu: 2000m

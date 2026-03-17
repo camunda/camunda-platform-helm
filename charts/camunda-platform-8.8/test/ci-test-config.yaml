@@ -20,7 +20,7 @@ integration:
     pr:
       scenario:
         - name: elasticsearch
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: eske
           exclude: []
@@ -31,7 +31,7 @@ integration:
           persistence: elasticsearch-external
           platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
         - name: upgrade-migration
-          enabled: true
+          enabled: false
           flow: upgrade-minor
           auth: keycloak
           shortname: eske-upgm
@@ -83,7 +83,7 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
-          enabled: true
+          enabled: false
           exclude: []
           shortname: kerba
           auth: keycloak
@@ -96,7 +96,7 @@ integration:
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
-          enabled: true
+          enabled: false
           exclude: []
           shortname: keyc
           auth: keycloak

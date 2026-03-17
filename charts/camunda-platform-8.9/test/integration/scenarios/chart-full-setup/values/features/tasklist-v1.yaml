@@ -1,0 +1,7 @@
+# Tasklist v1 API mode configuration.
+# This feature file disables Tasklist V2 mode, forcing the system to use
+# the legacy Tasklist V1 implementation.
+orchestration:
+  env:
+    - name: CAMUNDA_TASKLIST_V2_MODE_ENABLED
+      value: "false"

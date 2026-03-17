@@ -210,6 +210,26 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPlatform:    "openshift",
 			wantUpgrade:     true,
 		},
+
+		// Backward-compat: scenarios used by c8-cross-component-e2e-tests sm-manual workflows
+		{
+			name:            "qa-elasticsearch-tasklist-v1 maps to QA + tasklist-v1 feature",
+			scenario:        "qa-elasticsearch-tasklist-v1",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"tasklist-v1"},
+			wantQA:          true,
+		},
+		{
+			name:            "qa-elasticsearch-upg maps to QA + upgrade mode",
+			scenario:        "qa-elasticsearch-upg",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantQA:          true,
+			wantUpgrade:     true,
+		},
 	}
 
 	for _, tt := range tests {

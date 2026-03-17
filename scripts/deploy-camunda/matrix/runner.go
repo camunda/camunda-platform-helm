@@ -387,6 +387,10 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 
 // resolveChartRootOverlaysQuiet returns the list of chart-root overlays that exist on disk.
 // This is a dry-run helper — best-effort, silently filters to existing files only.
+// enterprise is composable (changes registry/repo, not tags).
+// digest, latest, and image-tags are mutually exclusive for image version resolution:
+//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
+//   - digest is the CI default when image-tags is not active
 func resolveChartRootOverlaysQuiet(chartPath string, entry Entry) []string {
 	if chartPath == "" {
 		return nil
@@ -395,7 +399,9 @@ func resolveChartRootOverlaysQuiet(chartPath string, entry Entry) []string {
 	if entry.Enterprise {
 		overlays = append(overlays, "enterprise")
 	}
-	overlays = append(overlays, "digest")
+	if !entry.ImageTags {
+		overlays = append(overlays, "digest")
+	}
 	// Filter to only overlays whose files exist on disk.
 	var existing []string
 	for _, name := range overlays {
@@ -1323,13 +1329,19 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			ChartPath:            entry.ChartPath,
 			SkipDependencyUpdate: opts.SkipDependencyUpdate,
 			RepoRoot:             opts.RepoRoot,
-			// Build chart-root overlays: enterprise (if flagged) + digest (always in CI).
+			// Build chart-root overlays.
+			// enterprise is composable (changes registry/repo, not tags).
+			// digest, latest, and image-tags are mutually exclusive for image version resolution:
+			//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
+			//   - digest is the CI default when image-tags is not active
 			ChartRootOverlays: func() []string {
 				var overlays []string
 				if entry.Enterprise {
 					overlays = append(overlays, "enterprise")
 				}
-				overlays = append(overlays, "digest") // CI default: always pin image digests.
+				if !entry.ImageTags {
+					overlays = append(overlays, "digest")
+				}
 				return overlays
 			}(),
 		},
