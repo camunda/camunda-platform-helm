@@ -265,11 +265,6 @@ connectors:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-connectors-client-token"
 
-webModeler:
-  security:
-    authentication:
-      pass: true
-
 orchestration:
   security:
     initialization:
