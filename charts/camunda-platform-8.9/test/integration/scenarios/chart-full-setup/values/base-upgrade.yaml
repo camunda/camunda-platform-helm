@@ -10,3 +10,7 @@ orchestration:
   env:
     - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
       value: "false"
+    # Replayed from common/values-integration-test.yaml because orchestration.env
+    # is a YAML array and this layer replaces the one from common.
+    - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
+      value: "false"

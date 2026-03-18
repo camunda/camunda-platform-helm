@@ -35,6 +35,14 @@ orchestration:
       value: "$ORCHESTRATION_INDEX_PREFIX-operate-$FLOW"
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
       value: "$ORCHESTRATION_INDEX_PREFIX-operate-$FLOW"
+    # Upgrade-compat: these env vars are set in common/values-integration-test.yaml
+    # but must be replayed here because orchestration.env is a YAML array and this
+    # layer replaces (not merges) the one from common.
+    - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
+      value: "false"
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
+
 optimize:
   enabled: true
   env:
