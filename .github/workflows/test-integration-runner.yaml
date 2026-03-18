@@ -525,7 +525,7 @@ jobs:
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
@@ -563,7 +563,7 @@ jobs:
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
@@ -628,7 +628,7 @@ jobs:
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
@@ -861,7 +861,7 @@ jobs:
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_HELM_EXTRA_ARGS: >-
             ${{ env.TEST_HELM_EXTRA_ARGS }}
@@ -924,7 +924,7 @@ jobs:
           INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
@@ -948,7 +948,7 @@ jobs:
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform }}
+          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
           TEST_FEATURES: ${{ inputs.test-features }}
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
