@@ -68,7 +68,7 @@ connectors:
         - -c
         - |
           echo "Waiting for zeebe to be healthy..."
-          until wget --spider -q http://integration-zeebe-gateway:9600/actuator/health/readiness 2>/dev/null; do
+          until wget --spider -q http://integration-zeebe-gateway:9600/zeebe/actuator/health/readiness 2>/dev/null; do
             echo "zeebe not ready yet, waiting..."
             sleep 5
           done
