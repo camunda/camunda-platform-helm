@@ -190,9 +190,14 @@ Authentication.
 
 {{- define "orchestration.authMethod" -}}
     {{- if .Values.orchestration.enabled -}}
-        {{- .Values.orchestration.security.authentication.method | default (
-            .Values.global.security.authentication.method | default "none"
-        ) -}}
+        {{- if .Values.global.noSecondaryStorage -}}
+            {{- /* When noSecondaryStorage is enabled, OIDC is required for Orchestration */ -}}
+            oidc
+        {{- else -}}
+            {{- .Values.orchestration.security.authentication.method | default (
+                .Values.global.security.authentication.method | default "none"
+            ) -}}
+        {{- end -}}
     {{- else -}}
         {{- "none" -}}
     {{- end -}}
