@@ -34,3 +34,32 @@ identityPostgresql:
 identity:
   externalDatabase:
     enabled: false
+  env:
+    - name: IDENTITY_TENANTS_0_NAME
+      value: Default
+    - name: IDENTITY_TENANTS_0_TENANTID
+      value: <default>
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_TYPE
+      value: USER
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_USERNAME
+      value: demo
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_APPLICATIONID
+      value: operate
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
+      value: test
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
+      value: connectors
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
+      value: zeebe
+
+connectors:
+  - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
+    value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
