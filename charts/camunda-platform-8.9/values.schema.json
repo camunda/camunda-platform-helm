@@ -924,41 +924,12 @@
                                 },
                                 "azure": {
                                     "type": "object",
+                                    "description": "Azure Blob Storage document store. Only the connection string secret is managed here; all other Azure config (container, class, endpoint, etc.) should be provided via orchestration.extraConfiguration / connectors.extraConfiguration.",
                                     "properties": {
                                         "enabled": {
                                             "type": "boolean",
-                                            "description": "Enable Azure document store configuration.",
+                                            "description": "Enable Azure document store secret injection.",
                                             "default": false
-                                        },
-                                        "storeId": {
-                                            "type": "string",
-                                            "description": "Custom prefix for Azure. Default will generate env vars containing 'storeId' such as DOCUMENT_STORE_AZURE_CLASS.",
-                                            "default": "AZURE"
-                                        },
-                                        "container": {
-                                            "type": "string",
-                                            "description": "Name of the Azure Blob Storage container.",
-                                            "default": "your-azure-container"
-                                        },
-                                        "containerPath": {
-                                            "type": "string",
-                                            "description": "(Optional) Path/prefix within the container.",
-                                            "default": ""
-                                        },
-                                        "containerTtl": {
-                                            "type": "number",
-                                            "description": "(Optional) Time-to-live for documents in the container (number in days).",
-                                            "default": 0
-                                        },
-                                        "class": {
-                                            "type": "string",
-                                            "description": "Fully qualified class name for the Azure document store provider.",
-                                            "default": "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider"
-                                        },
-                                        "endpoint": {
-                                            "type": "string",
-                                            "description": "(Optional) Azure storage account endpoint. Required when using DefaultAzureCredential (Managed Identity). Example: https://<account>.blob.core.windows.net",
-                                            "default": ""
                                         },
                                         "connectionString": {
                                             "type": "object",
@@ -968,17 +939,17 @@
                                                     "properties": {
                                                         "inlineSecret": {
                                                             "type": "string",
-                                                            "description": "can be used to provide the connection string as a plain-text value for non-production usage.",
+                                                            "description": "Can be used to provide the connection string as a plain-text value for non-production usage.",
                                                             "default": ""
                                                         },
                                                         "existingSecret": {
                                                             "type": "string",
-                                                            "description": "can be used to reference an existing Kubernetes Secret containing the connection string.",
+                                                            "description": "Can be used to reference an existing Kubernetes Secret containing the connection string.",
                                                             "default": ""
                                                         },
                                                         "existingSecretKey": {
                                                             "type": "string",
-                                                            "description": "defines the key within the existing secret object.",
+                                                            "description": "Defines the key within the existing secret object.",
                                                             "default": "connection-string"
                                                         }
                                                     }

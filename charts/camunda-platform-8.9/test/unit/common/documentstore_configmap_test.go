@@ -104,46 +104,6 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 				"DOCUMENT_STORE_INMEMORY_CLASS": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
 			},
 		},
-		{
-			Name: "Document Handling: Azure (connection string)",
-			Values: map[string]string{
-				"global.documentStore.activeStoreId":                                "azure",
-				"global.documentStore.type.azure.enabled":                           "true",
-				"global.documentStore.type.azure.storeId":                           "AZURE",
-				"global.documentStore.type.azure.class":                             "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
-				"global.documentStore.type.azure.container":                         "my-container",
-				"global.documentStore.type.azure.containerPath":                     "documents/",
-				"identity.enabled":                                                  "true",
-				"connectors.security.authentication.oidc.secret.existingSecret":     "foo",
-				"orchestration.security.authentication.oidc.secret.existingSecret":  "bar",
-			},
-			Expected: map[string]string{
-				"DOCUMENT_DEFAULT_STORE_ID":            "azure",
-				"DOCUMENT_STORE_AZURE_CLASS":           "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
-				"DOCUMENT_STORE_AZURE_CONTAINER":       "my-container",
-				"DOCUMENT_STORE_AZURE_CONTAINER_PATH":  "documents/",
-			},
-		},
-		{
-			Name: "Document Handling: Azure (DefaultAzureCredential / Managed Identity)",
-			Values: map[string]string{
-				"global.documentStore.activeStoreId":                                "azure",
-				"global.documentStore.type.azure.enabled":                           "true",
-				"global.documentStore.type.azure.storeId":                           "AZURE",
-				"global.documentStore.type.azure.class":                             "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
-				"global.documentStore.type.azure.container":                         "my-container",
-				"global.documentStore.type.azure.endpoint":                          "https://myaccount.blob.core.windows.net",
-				"identity.enabled":                                                  "true",
-				"connectors.security.authentication.oidc.secret.existingSecret":     "foo",
-				"orchestration.security.authentication.oidc.secret.existingSecret":  "bar",
-			},
-			Expected: map[string]string{
-				"DOCUMENT_DEFAULT_STORE_ID":        "azure",
-				"DOCUMENT_STORE_AZURE_CLASS":       "io.camunda.document.store.azure.AzureBlobDocumentStoreProvider",
-				"DOCUMENT_STORE_AZURE_CONTAINER":   "my-container",
-				"DOCUMENT_STORE_AZURE_ENDPOINT":    "https://myaccount.blob.core.windows.net",
-			},
-		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
