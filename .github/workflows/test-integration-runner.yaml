@@ -976,9 +976,9 @@ jobs:
         if: failure()
         uses: ./.github/actions/failed-pods-info
 
-  playwright-integration-tests-after-install:
+  playwright-integration-tests:
     name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [install]
+    needs: [install, upgrade]
     runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
@@ -990,19 +990,22 @@ jobs:
       run:
         shell: bash
     timeout-minutes: 20
-    if: ${{ inputs.test-enabled && inputs.flow == 'install' && !inputs.skip-it }}
+    if: >-
+      !cancelled() &&
+      inputs.test-enabled && !inputs.skip-it &&
+      (needs.install.result == 'success' || needs.upgrade.result == 'success')
     permissions:
       contents: read
       id-token: write
       deployments: write
       packages: read
     env:
-      CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
-      TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
-      TEST_VALUES_BASE_DIR: ${{ needs.install.outputs.TEST_VALUES_BASE_DIR }}
-      TEST_INGRESS_HOST: ${{ needs.install.outputs.vars-ingress-host }}
-      TEST_NAMESPACE: ${{ needs.install.outputs.TEST_NAMESPACE }}
-      ABSOLUTE_TEST_CHART_DIR: ${{ needs.install.outputs.ABSOLUTE_TEST_CHART_DIR }}
+      CI_TASKS_BASE_DIR: ${{ needs.install.result == 'success' && needs.install.outputs.CI_TASKS_BASE_DIR || needs.upgrade.outputs.CI_TASKS_BASE_DIR }}
+      TEST_CHART_DIR: ${{ needs.install.result == 'success' && needs.install.outputs.TEST_CHART_DIR || needs.upgrade.outputs.TEST_CHART_DIR }}
+      TEST_VALUES_BASE_DIR: ${{ needs.install.result == 'success' && needs.install.outputs.TEST_VALUES_BASE_DIR || needs.upgrade.outputs.TEST_VALUES_BASE_DIR }}
+      TEST_INGRESS_HOST: ${{ needs.install.result == 'success' && needs.install.outputs.vars-ingress-host || needs.upgrade.outputs.vars-ingress-host }}
+      TEST_NAMESPACE: ${{ needs.install.result == 'success' && needs.install.outputs.TEST_NAMESPACE || needs.upgrade.outputs.TEST_NAMESPACE }}
+      ABSOLUTE_TEST_CHART_DIR: ${{ needs.install.result == 'success' && needs.install.outputs.ABSOLUTE_TEST_CHART_DIR || needs.upgrade.outputs.ABSOLUTE_TEST_CHART_DIR }}
       TEST_EXCLUDE: ${{ inputs.exclude }}
       PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
@@ -1040,9 +1043,9 @@ jobs:
           ROSA_PASS:        ${{ secrets[inputs.password] }}
           CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
-  playwright-integration-tests-after-upgrade:
-    name: Playwright ITs - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [upgrade]
+  playwright-e2e-tests:
+    name: Playwright e2e - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
+    needs: [install, upgrade]
     runs-on: gcp-core-8-release
     container:
       image: ghcr.io/camunda/team-distribution/playwright-runner:latest
@@ -1053,71 +1056,10 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 20
-    if: ${{ inputs.test-enabled && !inputs.skip-it }}
-    permissions:
-      contents: read
-      id-token: write
-      deployments: write
-      packages: read
-    env:
-      CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
-      TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
-      TEST_VALUES_BASE_DIR: ${{ needs.install.outputs.TEST_VALUES_BASE_DIR }}
-      TEST_INGRESS_HOST: ${{ needs.install.outputs.vars-ingress-host }}
-      TEST_NAMESPACE: ${{ needs.install.outputs.TEST_NAMESPACE }}
-      ABSOLUTE_TEST_CHART_DIR: ${{ needs.install.outputs.ABSOLUTE_TEST_CHART_DIR }}
-      TEST_EXCLUDE: ${{ inputs.exclude }}
-      PLATFORM: ${{ inputs.distro-platform }}
-      TEST_AUTH_TYPE: ${{ inputs.auth }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
-          repository: camunda/camunda-platform-helm
-          ref: ${{ inputs.camunda-helm-git-ref }}
-      - name: Playwright integration tests
-        uses: ./.github/actions/playwright-integration-tests
-        with:
-          camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
-          camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
-          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          flow: ${{ inputs.flow }}
-          distro-platform: ${{ inputs.distro-platform }}
-          infra-type: ${{ inputs.infra-type }}
-          identifier: ${{ inputs.identifier }}
-          namespace-prefix: ${{ inputs.namespace-prefix }}
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          auth: ${{ inputs.auth }}
-          auth-data: ${{ inputs.auth-data }}
-          exclude: ${{ inputs.exclude }}
-        env:
-          CI_HOSTNAME_BASE: ${{ env.CI_HOSTNAME_BASE }}
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
-          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
-          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
-          GKE_SA:           ${{ secrets[inputs.service-account] }}
-          ROSA_URL:         ${{ secrets[inputs.server-url] }}
-          ROSA_USER:        ${{ secrets[inputs.username] }}
-          ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-  playwright-e2e-tests-after-install:
-    name: Playwright e2e after install - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
-    needs: [install]
-    runs-on: gcp-core-8-release
-    container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-      options: --ipc=host --user root
-    defaults:
-      run:
-        shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow == 'install' && !inputs.skip-e2e }}
+    if: >-
+      !cancelled() &&
+      inputs.test-enabled && inputs.e2e-enabled && !inputs.skip-e2e &&
+      (needs.install.result == 'success' || needs.upgrade.result == 'success')
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1164,79 +1106,15 @@ jobs:
           auth: ${{ inputs.auth }}
           auth-data: ${{ inputs.auth-data }}
           exclude: ${{ inputs.exclude }}
-          test-stage: after-install
-          shard-index: ${{ matrix.shardIndex }}
-          scenario: ${{ inputs.scenario }}
-
-  playwright-e2e-tests-after-upgrade:
-    name: Playwright e2e after upgrade - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }} (${{ matrix.shardIndex }} of ${{ matrix.shardTotal }})
-    needs: [upgrade]
-    runs-on: gcp-core-8-release
-    container:
-      image: ghcr.io/camunda/team-distribution/playwright-runner:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-      options: --ipc=host --user root
-    defaults:
-      run:
-        shell: bash
-    if: ${{ inputs.test-enabled && inputs.e2e-enabled && inputs.flow != 'install' && !inputs.skip-e2e }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        shardIndex: [1]
-        shardTotal: [1]
-    permissions:
-      contents: read
-      id-token: write
-      deployments: write
-      packages: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          repository: camunda/camunda-platform-helm
-          ref: ${{ inputs.camunda-helm-git-ref }}
-
-      - name: Run Playwright E2E Tests
-        uses: ./.github/actions/playwright-e2e-tests
-        env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ secrets[inputs.cluster-name] }}
-          GKE_CLUSTER_LOC:  ${{ secrets[inputs.cluster-location] }}
-          GKE_WIP:          ${{ secrets[inputs.workload-identity-provider] }}
-          GKE_SA:           ${{ secrets[inputs.service-account] }}
-          ROSA_URL:         ${{ secrets[inputs.server-url] }}
-          ROSA_USER:        ${{ secrets[inputs.username] }}
-          ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-          CI_HOSTNAME_BASE: ${{ env.CI_HOSTNAME_BASE }}
-          CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
-        with:
-          camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
-          camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
-          camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-          flow: ${{ inputs.flow }}
-          distro-platform: ${{ inputs.distro-platform }}
-          infra-type: ${{ inputs.infra-type }}
-          identifier: ${{ inputs.identifier }}
-          namespace-prefix: ${{ inputs.namespace-prefix }}
-          deployment-ttl: ${{ env.CI_DEPLOYMENT_TTL }}
-          auth: ${{ inputs.auth }}
-          auth-data: ${{ inputs.auth-data }}
-          exclude: ${{ inputs.exclude }}
-          test-stage: after-upgrade
+          test-stage: ${{ inputs.flow == 'install' && 'after-install' || 'after-upgrade' }}
           shard-index: ${{ matrix.shardIndex }}
           scenario: ${{ inputs.scenario }}
 
   merge-e2e-reports:
     name: Merge E2E Reports - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    # Run if e2e is enabled AND at least one test job completed (success or failure, not skipped/cancelled)
-    if: ${{ !cancelled() && inputs.e2e-enabled && (needs.playwright-e2e-tests-after-install.result == 'success' || needs.playwright-e2e-tests-after-install.result == 'failure' || needs.playwright-e2e-tests-after-upgrade.result == 'success' || needs.playwright-e2e-tests-after-upgrade.result == 'failure') }}
-    needs: [playwright-e2e-tests-after-install, playwright-e2e-tests-after-upgrade]
+    # Run if e2e is enabled AND the test job completed (success or failure, not skipped/cancelled)
+    if: ${{ !cancelled() && inputs.e2e-enabled && (needs.playwright-e2e-tests.result == 'success' || needs.playwright-e2e-tests.result == 'failure') }}
+    needs: [playwright-e2e-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -1311,7 +1189,7 @@ jobs:
 
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
-    needs: [merge-e2e-reports, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
+    needs: [merge-e2e-reports, playwright-integration-tests]
     if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     container:
