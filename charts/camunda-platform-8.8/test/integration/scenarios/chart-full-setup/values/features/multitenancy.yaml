@@ -1,28 +1,6 @@
-# Multi-tenancy feature configuration for 8.8
-# Layer 4: Feature - Multi-tenancy
-
 global:
   multitenancy:
     enabled: true
-    checksEnabled: true
-    apiEnabled: true
-
-orchestration:
-  security:
-    authorization:
-      enabled: true
-    initialization:
-      mappings:
-        - mappingID: "admin-mapping"
-          claimName: "group"
-          claimValue: "admin"
-        - mappingID: "tenant-a-mapping"
-          claimName: "tenant"
-          claimValue: "tenant-a"
-        - mappingID: "tenant-b-mapping"
-          claimName: "tenant"
-          claimValue: "tenant-b"
-
 identityPostgresql:
   enabled: true
   auth:
@@ -30,7 +8,6 @@ identityPostgresql:
     secretKeys:
       adminPasswordKey: "identity-keycloak-postgresql-admin-password"
       userPasswordKey: "identity-keycloak-postgresql-user-password"
-
 identity:
   externalDatabase:
     enabled: false
@@ -59,7 +36,10 @@ identity:
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
-
 connectors:
-  - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
-    value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
+  security:
+    authentication:
+      method: oidc
+  env:
+    - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
+      value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"

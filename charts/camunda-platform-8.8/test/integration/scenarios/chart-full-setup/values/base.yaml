@@ -98,6 +98,9 @@ optimize:
     periodSeconds: 10
     failureThreshold: 3
     timeoutSeconds: 5
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
 
 connectors:
   contextPath: "/connectors"
@@ -118,6 +121,11 @@ connectors:
     periodSeconds: 10
     failureThreshold: 5
     timeoutSeconds: 1
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
 
 webModeler:
   enabled: true
@@ -244,6 +252,9 @@ console:
   replicas: 2
   enabled: true
   contextPath: "/"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: 'true'
   image:
     pullSecrets:
       - name: index-docker-io
