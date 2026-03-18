@@ -11,22 +11,6 @@ global:
     pullPolicy: Always
 
 # -----------------------------------------------------------------------------
-# Operate (RBA for QA)
-# -----------------------------------------------------------------------------
-operate:
-  env:
-    - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
-      value: 'true'
-
-# -----------------------------------------------------------------------------
-# Tasklist (RBA for QA)
-# -----------------------------------------------------------------------------
-tasklist:
-  env:
-    - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
-      value: 'true'
-
-# -----------------------------------------------------------------------------
 # Identity (QA users and clients)
 # -----------------------------------------------------------------------------
 identity:
@@ -129,9 +113,6 @@ identity:
         - Web Modeler Admin
         - Console
         - Zeebe
-  env:
-    - name: RESOURCE_PERMISSIONS_ENABLED
-      value: 'true'
 
 optimize:
   caches:
