@@ -143,6 +143,23 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"documentstore"},
 		},
+		{
+			name:            "mcp maps to mcp feature",
+			scenario:        "mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+		},
+		{
+			name:            "qa-elasticsearch-mcp enables QA and MCP",
+			scenario:        "qa-elasticsearch-mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+			wantQA:          true,
+		},
 
 		// QA and upgrade modifiers
 		{

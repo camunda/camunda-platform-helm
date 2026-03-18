@@ -155,6 +155,7 @@ scenario name is parsed by `MapScenarioToConfig()` using substring matching:
 | `-mt`, `multitenancy` | `multitenancy` |
 | `rba` | `rba` |
 | `document` | `documentstore` |
+| `mcp` | `mcp` |
 
 ### Other flags
 
