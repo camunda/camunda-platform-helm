@@ -381,6 +381,9 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	if strings.Contains(s, "tasklist-v1") {
 		config.Features = append(config.Features, "tasklist-v1")
 	}
+	if strings.Contains(s, "mcp") {
+		config.Features = append(config.Features, "mcp")
+	}
 
 	// Derive upgrade mode
 	if strings.Contains(s, "upgrade") || strings.Contains(s, "-upg") {

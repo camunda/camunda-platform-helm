@@ -1,0 +1,27 @@
+# MCP (Model Context Protocol) feature configuration for 8.9
+# Layer 4: Feature - MCP
+
+# Enable Elasticsearch (required for MCP secondary storage)
+global:
+  elasticsearch:
+    enabled: true
+
+elasticsearch:
+  enabled: true
+
+# Configure orchestration with MCP enabled
+orchestration:
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  
+  extraConfiguration:
+    - file: mcp-gateway.yaml
+      content: |
+        camunda:
+          mcp:
+            enabled: true
+
+# Enable connectors (required for MCP client connector)
+connectors:
+  enabled: true
