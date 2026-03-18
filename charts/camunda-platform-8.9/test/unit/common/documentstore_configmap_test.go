@@ -91,13 +91,13 @@ func (s *documentStoreConfigMapTest) TestDifferentValuesInputs() {
 		{
 			Name: "Document Handling: In Memory",
 			Values: map[string]string{
-				"global.documentStore.activeStoreId":                                "inmemory",
-				"global.documentStore.type.inmemory.enabled":                        "true",
-				"global.documentStore.type.inmemory.storeId":                        "INMEMORY",
-				"global.documentStore.type.inmemory.class":                          "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
-				"identity.enabled":                                                  "true",
-				"connectors.security.authentication.oidc.secret.existingSecret":     "foo",
-				"orchestration.security.authentication.oidc.secret.existingSecret":  "bar",
+				"global.documentStore.activeStoreId":                  "inmemory",
+				"global.documentStore.type.inmemory.enabled":              "true",
+				"global.documentStore.type.inmemory.storeId":           "INMEMORY",
+				"global.documentStore.type.inmemory.class":             "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider",
+				"identity.enabled":                                     "true",
+				"connectors.security.authentication.oidc.secret.existingSecret":    "foo",
+				"orchestration.security.authentication.oidc.secret.existingSecret": "bar",
 			},
 			Expected: map[string]string{
 				"DOCUMENT_DEFAULT_STORE_ID":     "inmemory",

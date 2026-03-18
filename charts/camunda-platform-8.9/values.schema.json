@@ -924,11 +924,10 @@
                                 },
                                 "azure": {
                                     "type": "object",
-                                    "description": "Azure Blob Storage document store. Only the connection string secret is managed here; all other Azure config (container, class, endpoint, etc.) should be provided via orchestration.extraConfiguration / connectors.extraConfiguration.",
                                     "properties": {
                                         "enabled": {
                                             "type": "boolean",
-                                            "description": "Enable Azure document store secret injection.",
+                                            "description": "Enable Azure document store secret injection. When true, the connection string secret is injected into components. Application-level configuration (container, class, endpoint, etc.) should be set via orchestration.extraConfiguration / connectors.extraConfiguration.",
                                             "default": false
                                         },
                                         "connectionString": {
@@ -939,17 +938,17 @@
                                                     "properties": {
                                                         "inlineSecret": {
                                                             "type": "string",
-                                                            "description": "Can be used to provide the connection string as a plain-text value for non-production usage.",
+                                                            "description": "can be used to provide the connection string as a plain-text value for non-production usage.",
                                                             "default": ""
                                                         },
                                                         "existingSecret": {
                                                             "type": "string",
-                                                            "description": "Can be used to reference an existing Kubernetes Secret containing the connection string.",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the connection string.",
                                                             "default": ""
                                                         },
                                                         "existingSecretKey": {
                                                             "type": "string",
-                                                            "description": "Defines the key within the existing secret object.",
+                                                            "description": "defines the key within the existing secret object.",
                                                             "default": "connection-string"
                                                         }
                                                     }
