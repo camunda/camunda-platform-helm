@@ -7,32 +7,32 @@ Please also refer to the [documentation](https://docs.camunda.io/docs/self-manag
 - [Dependencies](#dependencies)
 - [Versioning](#versioning)
 - [Installation](#installation)
-  - [Local Kubernetes](#local-kubernetes)
-  - [OpenShift](#openshift)
+    - [Local Kubernetes](#local-kubernetes)
+    - [OpenShift](#openshift)
 - [Backporting](#backporting)
 - [Uninstalling Charts](#uninstalling-charts)
 - [Configuration](#configuration)
 - [Notes on Configuration](#notes-on-configuration)
-  - [Web Modeler](#web-modeler)
-  - [Elasticsearch](#elasticsearch)
-  - [Keycloak](#keycloak)
+    - [Web Modeler](#web-modeler)
+    - [Elasticsearch](#elasticsearch)
+    - [Keycloak](#keycloak)
 - [Development](#development)
 - [Releasing the Charts](#releasing-the-charts)
 - [Parameters](#parameters)
-  - [Global parameters](#global-parameters)
-  - [Identity Parameters](#identity-parameters)
-  - [Identity - PostgreSQL Parameters](#identity---postgresql-parameters)
-  - [Identity - Keycloak Parameters](#identity---keycloak-parameters)
-  - [Console Parameters](#console-parameters)
-  - [WebModeler Parameters](#webmodeler-parameters)
-  - [WebModeler - RestAPI Parameters](#webmodeler---restapi-parameters)
-  - [WebModeler - WebSockets Parameters](#webmodeler---websockets-parameters)
-  - [WebModeler - PostgreSQL Parameters](#webmodeler---postgresql-parameters)
-  - [Connectors Parameters](#connectors-parameters)
-  - [Orchestration Cluster Parameters](#orchestration-core-parameters)
-  - [Optimize Parameters](#optimize-parameters)
-  - [Elasticsearch Parameters](#elasticsearch-parameters)
-  - [Prometheus Parameters](#prometheus-parameters)
+    - [Global parameters](#global-parameters)
+    - [Identity Parameters](#identity-parameters)
+    - [Identity - PostgreSQL Parameters](#identity---postgresql-parameters)
+    - [Identity - Keycloak Parameters](#identity---keycloak-parameters)
+    - [Console Parameters](#console-parameters)
+    - [WebModeler Parameters](#webmodeler-parameters)
+    - [WebModeler - RestAPI Parameters](#webmodeler---restapi-parameters)
+    - [WebModeler - WebSockets Parameters](#webmodeler---websockets-parameters)
+    - [WebModeler - PostgreSQL Parameters](#webmodeler---postgresql-parameters)
+    - [Connectors Parameters](#connectors-parameters)
+    - [Orchestration Cluster Parameters](#orchestration-core-parameters)
+    - [Optimize Parameters](#optimize-parameters)
+    - [Elasticsearch Parameters](#elasticsearch-parameters)
+    - [Prometheus Parameters](#prometheus-parameters)
 
 ## Architecture
 
@@ -43,9 +43,9 @@ See [Camunda 8 reference architectures](https://docs.camunda.io/docs/next/self-m
 - [Helm](https://helm.sh/) >= 3.9.x
 - Kubernetes >= 1.20+
 - Minimum cluster requirements include the following to run this chart with default settings.
-  - All of these settings are configurable.
-  - Three Kubernetes nodes to respect the default "hard" affinity settings
-  - 2GB of RAM for the JVM heap
+    - All of these settings are configurable.
+    - Three Kubernetes nodes to respect the default "hard" affinity settings
+    - 2GB of RAM for the JVM heap
 
 ## Dependencies
 
