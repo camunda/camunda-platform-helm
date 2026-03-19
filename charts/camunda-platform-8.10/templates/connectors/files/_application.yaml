@@ -72,6 +72,12 @@ camunda:
       enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
     agenticai:
       enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+  {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.documentStore.type.azure.connectionString)) "true" }}
+  document:
+    store:
+      azure:
+        connection-string: "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}"
+  {{- end }}
 
 logging:
   {{- include "common.tplvalues.render" ( dict "value" .Values.connectors.logging "context" $ ) | nindent 2 }}
