@@ -63,7 +63,6 @@ zeebe:
 # Optimize (OpenSearch backend - currently disabled)
 # -----------------------------------------------------------------------------
 optimize:
-  enabled: false
   env:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
       value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
