@@ -141,6 +141,103 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedOpenSearchAWS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledFalseByDefault",
+			Values: map[string]string{
+				"global.opensearch.enabled":  "true",
+				"global.opensearch.url.host": "opensearch.example.com",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "false",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaSecondaryStorage",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                         "true",
+				"global.opensearch.url.host":                                        "opensearch.example.com",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled":         "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainOpenSearchAwsEnabledViaDeprecatedGlobal",
+			Values: map[string]string{
+				"global.opensearch.enabled":     "true",
+				"global.opensearch.url.host":    "opensearch.example.com",
+				"global.opensearch.aws.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.opensearch.aws-enabled": "true",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedElasticsearchAWS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledFalseByDefault",
+			Values: map[string]string{
+				"global.elasticsearch.enabled": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.aws-enabled": "false",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainElasticsearchAwsEnabledViaSecondaryStorage",
+			Values: map[string]string{
+				"global.elasticsearch.enabled":                                            "true",
+				"orchestration.data.secondaryStorage.elasticsearch.aws.enabled":            "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.elasticsearch.aws-enabled": "true",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMSAWS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainRDBMSAwsEnabledFalseByDefault",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.rdbms.aws-enabled": "false",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainRDBMSAwsEnabledViaSecondaryStorage",
+			Values: map[string]string{
+				"orchestration.exporters.rdbms.enabled":                         "true",
+				"orchestration.data.secondaryStorage.rdbms.aws.enabled":         "true",
+				"orchestration.data.secondaryStorage.rdbms.url":                 "jdbc:postgresql://localhost:5432/camunda",
+				"orchestration.data.secondaryStorage.rdbms.username":            "camunda",
+				"orchestration.data.secondaryStorage.rdbms.secret.inlineSecret": "my-password",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.data.secondary-storage.rdbms.aws-enabled": "true",
+			},
+		},
+	}
+
+	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 	testCases := []testhelpers.TestCase{
 		{
