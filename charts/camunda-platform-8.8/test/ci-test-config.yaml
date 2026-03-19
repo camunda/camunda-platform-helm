@@ -132,6 +132,15 @@ integration:
           identity: keycloak-external
           features: [arm]
           persistence: elasticsearch-external
+        - name: opensearch
+          enabled: true
+          exclude: []
+          shortname: oske
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: false
+          flow: install
     nightly:
       scenario:
         - name: elasticsearch
@@ -165,10 +174,14 @@ integration:
           features: [multitenancy]
           # not supported
         - name: opensearch
-          enabled: false
+          enabled: true
           exclude: []
           shortname: oske
           auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          flow: install
         - name: opensearch
           enabled: true
           shortname: osba

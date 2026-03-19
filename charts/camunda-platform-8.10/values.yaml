@@ -673,6 +673,17 @@ global:
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+      azure:
+        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string.
+        connectionString:
+          ## @extra global.documentStore.type.azure.connectionString.secret configuration to provide the Azure connection string as a secret.
+          secret:
+            ## @param global.documentStore.type.azure.connectionString.secret.inlineSecret can be used to provide the connection string as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.azure.connectionString.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the connection string.
+            existingSecret: ""
+            ## @param global.documentStore.type.azure.connectionString.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "connection-string"
 
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:

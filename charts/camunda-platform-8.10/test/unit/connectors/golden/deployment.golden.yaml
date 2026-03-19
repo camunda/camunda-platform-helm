@@ -60,6 +60,7 @@ spec:
               protocol: TCP
           env:
             
+            
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
