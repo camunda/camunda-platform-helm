@@ -100,6 +100,7 @@ data:
             enabled: true
             minimum-age: "30d"
           elasticsearch:
+            aws-enabled: false
             url: "http://camunda-platform-test-elasticsearch:9200"
             cluster-name: "elasticsearch"
             username: ""
