@@ -321,6 +321,8 @@ zeebe:
           index:
             prefix: {{ .Values.global.opensearch.prefix | quote }}
             numberOfReplicas: {{ .Values.orchestration.index.replicas | quote }}
+          bulk:
+            requestTimeout: 120
           {{- if .Values.global.opensearch.aws.enabled }}
           aws:
             enabled: true
