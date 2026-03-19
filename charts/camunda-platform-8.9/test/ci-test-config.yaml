@@ -115,10 +115,12 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           flow: upgrade-minor
+          persistence: elasticsearch-external
+          flow: install
           infra-type:
             gke: distroci
-            eks: preemptible
           platforms: [gke]
+          features: [multitenancy]
         - name: keycloak-rba
           enabled: true
           exclude: []
