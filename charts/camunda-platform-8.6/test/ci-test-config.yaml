@@ -34,6 +34,17 @@ integration:
             gke: distroci
             eks: preemptible
           platforms: [gke,eks]
+        - name: multitenancy
+          enabled: true
+          exclude: []
+          shortname: kemt
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch-external
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch

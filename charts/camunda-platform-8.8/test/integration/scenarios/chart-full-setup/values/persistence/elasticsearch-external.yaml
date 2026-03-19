@@ -19,6 +19,9 @@ global:
       port: 443
 
 optimize:
+  database:
+    elasticsearch:
+      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   env:
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX
       value: $OPTIMIZE_INDEX_PREFIX-$FLOW

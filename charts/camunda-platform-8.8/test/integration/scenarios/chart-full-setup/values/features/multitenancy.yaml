@@ -1,6 +1,15 @@
+# Multi-tenancy feature configuration for 8.8
+# Layer 4: Feature - Multi-tenancy
+
 global:
   multitenancy:
     enabled: true
+
+orchestration:
+  security:
+    authorization:
+      enabled: true
+
 identityPostgresql:
   enabled: true
   auth:
@@ -8,6 +17,7 @@ identityPostgresql:
     secretKeys:
       adminPasswordKey: "identity-keycloak-postgresql-admin-password"
       userPasswordKey: "identity-keycloak-postgresql-user-password"
+
 identity:
   externalDatabase:
     enabled: false
@@ -36,6 +46,7 @@ identity:
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
+
 connectors:
   security:
     authentication:

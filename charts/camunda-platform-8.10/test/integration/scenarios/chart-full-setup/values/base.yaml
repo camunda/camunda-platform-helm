@@ -89,6 +89,9 @@ optimize:
     periodSeconds: 10
     failureThreshold: 3
     timeoutSeconds: 5
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
 
 connectors:
   contextPath: "/connectors"
