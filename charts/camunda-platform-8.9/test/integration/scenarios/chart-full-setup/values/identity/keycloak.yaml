@@ -249,16 +249,10 @@ optimize:
 connectors:
   security:
     authentication:
-      method: oidc
       oidc:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-connectors-client-token"
-
-webModeler:
-  security:
-    authentication:
-      method: oidc
 
 orchestration:
   security:
@@ -270,7 +264,6 @@ orchestration:
           clients:
             - venom
     authentication:
-      method: oidc
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
