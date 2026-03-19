@@ -746,7 +746,7 @@
                     "properties": {
                         "activeStoreId": {
                             "type": "string",
-                            "description": "The default document store to use. Valid values: inmemory, aws, and gcp.",
+                            "description": "The default document store to use. Valid values: inmemory, aws, gcp, and azure.",
                             "default": "inmemory"
                         },
                         "type": {
@@ -919,6 +919,36 @@
                                             "type": "string",
                                             "description": "Fully qualified class name for the in-memory document store provider.",
                                             "default": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+                                        }
+                                    }
+                                },
+                                "azure": {
+                                    "type": "object",
+                                    "properties": {
+                                        "connectionString": {
+                                            "type": "object",
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "inlineSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to provide the connection string as a plain-text value for non-production usage.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecret": {
+                                                            "type": "string",
+                                                            "description": "can be used to reference an existing Kubernetes Secret containing the connection string.",
+                                                            "default": ""
+                                                        },
+                                                        "existingSecretKey": {
+                                                            "type": "string",
+                                                            "description": "defines the key within the existing secret object.",
+                                                            "default": "connection-string"
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
