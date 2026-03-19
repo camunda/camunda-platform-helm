@@ -340,6 +340,46 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "mcp with elasticsearch is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with elasticsearch-external is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch-external",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with opensearch fails validation",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "opensearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "mcp with rdbms fails validation",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "rdbms",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
