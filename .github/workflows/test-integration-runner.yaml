@@ -623,8 +623,9 @@ jobs:
           VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
-          # License key for Camunda Platform (injected via --set in helm install)
-          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY }}
+          # License key for Camunda Platform (injected via --set in helm install).
+          # Use the GitHub secret if available, otherwise fall back to the Vault-exported env var.
+          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
@@ -943,8 +944,9 @@ jobs:
           VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
           CAMUNDA_HOSTNAME: ${{ steps.vars.outputs.ingress-host }}
-          # License key for Camunda Platform (injected via --set in helm install)
-          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY }}
+          # License key for Camunda Platform (injected via --set in helm install).
+          # Use the GitHub secret if available, otherwise fall back to the Vault-exported env var.
+          E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
           # Selection + composition model environment variables (new - preferred)
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
