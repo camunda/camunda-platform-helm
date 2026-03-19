@@ -332,12 +332,21 @@ tasks:
         --interactive=false \
         --log-level info)
       
+      # Write license key to a file and use --set-file to avoid shell word-splitting.
+      # License keys contain spaces and semicolons which break --set via shell expansion.
+      LICENSE_KEY_ARGS=""
+      if [ -n "${E2E_TESTS_LICENSE_KEY:-}" ]; then
+        LICENSE_KEY_FILE="/tmp/license-key.txt"
+        printf '%s' "${E2E_TESTS_LICENSE_KEY}" > "$LICENSE_KEY_FILE"
+        LICENSE_KEY_ARGS="--set-file global.license.key=$LICENSE_KEY_FILE"
+      fi
+
       echo ""
       echo "=========================================="
       echo "Merged values file: $MERGED_VALUES"
       echo "Final helm install command:"
       echo "=========================================="
-      
+
       # Helm values precedence: last --values wins.
       # Order: common → digest (overlay) → extra → scenario (highest precedence).
       # This ensures scenario-specific values (e.g., CI Keycloak image) override
@@ -353,7 +362,7 @@ tasks:
         {{ end -}}
         --values /tmp/extra-values-file.yaml \
         --values "$MERGED_VALUES" \
-        ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
+        $LICENSE_KEY_ARGS \
         --set orchestration.upgrade.allowPreReleaseImages=true \
         --timeout 20m0s \
         --wait \
