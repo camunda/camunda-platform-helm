@@ -5329,7 +5329,7 @@
                                             "properties": {
                                                 "enabled": {
                                                     "type": "boolean",
-                                                    "description": "enable AWS IRSA for elasticsearch connection",
+                                                    "description": "enable AWS IRSA for Elasticsearch connection",
                                                     "default": false
                                                 }
                                             }
@@ -5399,7 +5399,7 @@
                                             "properties": {
                                                 "enabled": {
                                                     "type": "boolean",
-                                                    "description": "enable AWS IRSA for opensearch connection",
+                                                    "description": "enable AWS IRSA for OpenSearch connection",
                                                     "default": false
                                                 }
                                             }
