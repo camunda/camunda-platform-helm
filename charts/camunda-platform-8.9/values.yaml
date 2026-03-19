@@ -686,8 +686,6 @@ global:
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
       azure:
-        ## @param global.documentStore.type.azure.enabled Enable Azure document store secret injection. When true, the connection string secret is injected into components. Application-level configuration (container, class, endpoint, etc.) should be set via orchestration.extraConfiguration / connectors.extraConfiguration.
-        enabled: false
         ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string.
         connectionString:
           ## @extra global.documentStore.type.azure.connectionString.secret configuration to provide the Azure connection string as a secret.

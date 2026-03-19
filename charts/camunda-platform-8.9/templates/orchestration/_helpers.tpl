@@ -345,6 +345,10 @@ and
 {{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.exporters.appIntegrations.apiKey) -}}
 {{- end -}}
 
+{{- define "orchestration.hasAzureDocumentStore" -}}
+{{- include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.documentStore.type.azure.connectionString) -}}
+{{- end -}}
+
 
 {{/*
 ********************************************************************************

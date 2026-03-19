@@ -925,11 +925,6 @@
                                 "azure": {
                                     "type": "object",
                                     "properties": {
-                                        "enabled": {
-                                            "type": "boolean",
-                                            "description": "Enable Azure document store secret injection. When true, the connection string secret is injected into components. Application-level configuration (container, class, endpoint, etc.) should be set via orchestration.extraConfiguration / connectors.extraConfiguration.",
-                                            "default": false
-                                        },
                                         "connectionString": {
                                             "type": "object",
                                             "properties": {

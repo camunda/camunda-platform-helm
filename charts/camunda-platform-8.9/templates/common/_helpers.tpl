@@ -894,20 +894,6 @@ value: {{ $secretConfig.secret.inlineSecret | quote }}
 {{- end -}}
 
 {{/*
-emitAzureDocumentStoreSecret
-Emits Azure Document Store connection string secret env var.
-Usage:
-  {{- include "camundaPlatform.emitAzureDocumentStoreSecret" . | nindent 12 }}
-*/}}
-{{- define "camundaPlatform.emitAzureDocumentStoreSecret" -}}
-  {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
-      "envName" "DOCUMENT_STORE_AZURE_CONNECTION_STRING"
-      "config"  .Values.global.documentStore.type.azure.connectionString
-      "context" .
-  ) -}}
-{{- end -}}
-
-{{/*
 emitVolumeFromSecretConfig
 Emits volume definition using normalized secret configuration.
 Usage:
