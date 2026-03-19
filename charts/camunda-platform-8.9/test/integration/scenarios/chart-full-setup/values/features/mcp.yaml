@@ -8,17 +8,9 @@
 
 # Configure orchestration with MCP enabled
 orchestration:
-  data:
-    secondaryStorage:
-      type: elasticsearch
-
   extraConfiguration:
     - file: mcp-gateway.yaml
       content: |
         camunda:
           mcp:
             enabled: true
-
-# Enable connectors (required for MCP client connector)
-connectors:
-  enabled: true
