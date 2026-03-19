@@ -2,6 +2,8 @@
 # Layer 3: Backend - OpenSearch (external)
 
 global:
+  elasticsearch:
+    enabled: false
   exporter:
     zeebe:
       enabled: true
