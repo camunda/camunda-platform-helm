@@ -11,10 +11,10 @@ optimize:
   caches:
     cloudTenantAuthorizations:
       minFetchIntervalSeconds: 300
+identityPostgresql:
+  enabled: true
 identity:
   enabled: true
-  externalDatabase:
-    enabled: false
   env:
     - name: IDENTITY_TENANTS_0_NAME
       value: Default
