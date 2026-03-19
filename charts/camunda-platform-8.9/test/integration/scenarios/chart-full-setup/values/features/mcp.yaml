@@ -1,12 +1,10 @@
 # MCP (Model Context Protocol) feature configuration for 8.9
 # Layer 4: Feature - MCP
 #
-# Note: MCP works with any secondary storage type (elasticsearch, opensearch, or rdbms).
-# The secondary storage deployment is controlled by the persistence layer selection.
-# This feature file configures MCP-specific settings only and relies on the
-# persistence layer for storage configuration.
+# This feature file only enables the MCP gateway. It works with any secondary
+# storage type (elasticsearch, opensearch, rdbms) controlled by the persistence layer.
 
-# Configure orchestration with MCP enabled
+# Enable MCP gateway
 orchestration:
   extraConfiguration:
     - file: mcp-gateway.yaml
