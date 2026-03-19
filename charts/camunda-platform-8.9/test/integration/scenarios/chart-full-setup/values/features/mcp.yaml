@@ -1,10 +1,10 @@
 # MCP (Model Context Protocol) feature configuration for 8.9
 # Layer 4: Feature - MCP
 #
-# Note: MCP requires Elasticsearch for secondary storage.
-# The Elasticsearch deployment is controlled by the persistence layer selection
-# (elasticsearch or elasticsearch-external). This feature file configures MCP-specific
-# settings only and relies on the persistence layer for ES configuration.
+# Note: MCP works with any secondary storage type (elasticsearch, opensearch, or rdbms).
+# The secondary storage deployment is controlled by the persistence layer selection.
+# This feature file configures MCP-specific settings only and relies on the
+# persistence layer for storage configuration.
 
 # Configure orchestration with MCP enabled
 orchestration:

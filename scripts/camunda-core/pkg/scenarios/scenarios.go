@@ -85,13 +85,6 @@ func (c *DeploymentConfig) Validate() error {
 		return errors.New("multitenancy and rba cannot be combined")
 	}
 
-	// MCP requires Elasticsearch for secondary storage
-	if contains(c.Features, "mcp") {
-		if c.Persistence != "elasticsearch" && c.Persistence != "elasticsearch-external" {
-			return fmt.Errorf("mcp feature requires elasticsearch or elasticsearch-external persistence, got: %s", c.Persistence)
-		}
-	}
-
 	return nil
 }
 
