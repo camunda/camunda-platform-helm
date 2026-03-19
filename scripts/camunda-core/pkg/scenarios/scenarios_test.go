@@ -369,24 +369,24 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "mcp with opensearch fails validation",
+			name: "mcp with opensearch is valid",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
 				Persistence: "opensearch",
 				Platform:    "gke",
 				Features:    []string{"mcp"},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "mcp with rdbms fails validation",
+			name: "mcp with rdbms is valid",
 			config: DeploymentConfig{
 				Identity:    "keycloak",
 				Persistence: "rdbms",
 				Platform:    "gke",
 				Features:    []string{"mcp"},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
