@@ -135,10 +135,11 @@ scenario name is parsed by `MapScenarioToConfig()` using substring matching:
 | Scenario name contains | Persistence assigned |
 |------------------------|----------------------|
 | `keycloak-original` (exact) | `elasticsearch-external` (early return) |
+| `elasticsearch` (exact) | `elasticsearch-external` (early return) |
 | `opensearch` | `opensearch` |
 | `rdbms` + `oracle` | `rdbms-oracle` |
 | `rdbms` | `rdbms` |
-| _(default)_ | `elasticsearch` |
+| _(default)_ | `elasticsearch-external` |
 
 ### Platform derivation
 
