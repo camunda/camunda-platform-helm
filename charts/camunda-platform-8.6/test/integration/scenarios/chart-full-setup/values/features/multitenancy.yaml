@@ -40,6 +40,10 @@ identity:
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
+      value: venom
 
 connectors:
   security:
