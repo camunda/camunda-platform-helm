@@ -1,0 +1,8 @@
+# Test values for global.host fallback with TLS (no global.ingress.host set)
+global:
+  host: "{{ .Release.Name }}.example.com"
+  ingress:
+    enabled: true
+    tls:
+      enabled: true
+      secretName: tls-secret
