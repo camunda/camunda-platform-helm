@@ -495,10 +495,19 @@ jobs:
           --docker-password $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD \
           --dry-run=client -o yaml | kubectl apply -f -
 
+          kubectl create secret docker-registry ghcr-io \
+          --namespace $TEST_NAMESPACE \
+          --docker-server "ghcr.io" \
+          --docker-username $GITHUB_ACTOR \
+          --docker-password $GITHUB_TOKEN \
+          --dry-run=client -o yaml | kubectl apply -f -
+
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
         env:
           TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       ##########################################################################################################
       # Install

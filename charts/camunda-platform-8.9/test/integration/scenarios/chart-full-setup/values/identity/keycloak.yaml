@@ -89,13 +89,13 @@ identityKeycloak:
   image:
     # registry must be empty: the Bitnami chart concatenates registry/repository,
     # and the default registry is docker.io, which would produce
-    # "docker.io/registry.camunda.cloud/..." — an invalid reference.
+    # "docker.io/ghcr.io/..." — an invalid reference.
     registry: ""
-    repository: registry.camunda.cloud/team-distribution/keycloak-ci
+    repository: ghcr.io/camunda/team-distribution/keycloak-ci
     tag: "26.3.3"
     pullSecrets:
       - name: index-docker-io
-      - name: registry-camunda-cloud
+      - name: ghcr-io
   # Production mode: runs `kc.sh start` (not start-dev). Required for
   # --optimized to work.
   production: true
