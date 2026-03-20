@@ -8,7 +8,7 @@ This directory contains Dockerfiles for building custom CI runner images used in
 
 The main CI runner image used for `install`, `upgrade`, and `cleanup` jobs in the integration test workflow.
 
-**Registry:** `registry.camunda.cloud/team-distribution/ci-runner`
+**Registry:** `ghcr.io/camunda/team-distribution/ci-runner`
 
 **Included tools:**
 - All tools from `.tool-versions` (golang, helm, kubectl, oc, task, yq, zbctl, jq, bats, kustomize, etc.)
@@ -20,7 +20,7 @@ The main CI runner image used for `install`, `upgrade`, and `cleanup` jobs in th
 
 Extended Playwright image with additional CI tools for running integration and E2E tests.
 
-**Registry:** `registry.camunda.cloud/team-distribution/playwright-runner`
+**Registry:** `ghcr.io/camunda/team-distribution/playwright-runner`
 
 **Base image:** `mcr.microsoft.com/playwright:v1.57.0-noble`
 
@@ -64,12 +64,12 @@ Images are automatically built and pushed when:
 # Build CI Runner
 cd .github/docker/ci-runner
 cp ../../../.tool-versions .
-docker build -t registry.camunda.cloud/team-distribution/ci-runner:latest .
+docker build -t ghcr.io/camunda/team-distribution/ci-runner:latest .
 
 # Build Playwright Runner
 cd .github/docker/playwright-runner
 cp ../../../.tool-versions .
-docker build -t registry.camunda.cloud/team-distribution/playwright-runner:latest .
+docker build -t ghcr.io/camunda/team-distribution/playwright-runner:latest .
 
 # Build Keycloak CI (pre-built for fast startup)
 cd .github/docker/keycloak-ci
@@ -91,10 +91,10 @@ jobs:
   install:
     runs-on: ubuntu-latest
     container:
-      image: registry.camunda.cloud/team-distribution/ci-runner:latest
+      image: ghcr.io/camunda/team-distribution/ci-runner:latest
       credentials:
-        username: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-        password: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Script Optimizations
