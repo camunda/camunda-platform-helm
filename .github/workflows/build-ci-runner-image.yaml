@@ -51,6 +51,8 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          repositories: '["team-distribution"]'
+          permissions: '{"packages": "write"}'
 
       - name: Generate image tags
         id: tags
@@ -186,6 +188,8 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          repositories: '["team-distribution"]'
+          permissions: '{"packages": "read"}'
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
