@@ -274,6 +274,65 @@ func (s *IngressTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("tls-secret", ingress.Spec.TLS[0].SecretName)
 			},
 		},
+		{
+			Name:                 "TestIngressFallsBackToGlobalHost",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+				"global.host":            "global.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - global.host should be used when global.ingress.host is not set
+				s.Require().Equal("global.example.com", ingress.Spec.Rules[0].Host)
+			},
+		},
+		{
+			Name:                 "TestIngressHostTakesPrecedenceOverGlobalHost",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+				"global.ingress.host":    "ingress.example.com",
+				"global.host":            "global.example.com",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - global.ingress.host should take precedence over global.host
+				s.Require().Equal("ingress.example.com", ingress.Spec.Rules[0].Host)
+			},
+		},
+		{
+			Name:                 "TestIngressGlobalHostFallbackWithTLS",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			ValuesFiles:          []string{filepath.Join(s.chartPath, "test/unit/common/testdata/values-global-host-tls.yaml")},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - global.host should be used in both rules and TLS when global.ingress.host is not set
+				s.Require().Equal("camunda-platform-test.example.com", ingress.Spec.Rules[0].Host)
+				s.Require().Equal("camunda-platform-test.example.com", ingress.Spec.TLS[0].Hosts[0])
+				s.Require().Equal("tls-secret", ingress.Spec.TLS[0].SecretName)
+			},
+		},
+		{
+			Name:                 "TestIngressNoHostWhenBothEmpty",
+			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
+			Values: map[string]string{
+				"global.ingress.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var ingress netv1.Ingress
+				helm.UnmarshalK8SYaml(t, output, &ingress)
+
+				// then - no host should be set when both global.host and global.ingress.host are empty
+				s.Require().Empty(ingress.Spec.Rules[0].Host)
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

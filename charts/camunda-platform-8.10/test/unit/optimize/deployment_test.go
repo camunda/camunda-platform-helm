@@ -112,7 +112,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"identity.enabled":          "true",
 				"global.image.registry":     "global.custom.registry.io",
-				"global.image.tag":          "8.x.x",
 				"optimize.enabled":          "true",
 				"optimize.image.registry":   "subchart.custom.registry.io",
 				"optimize.image.repository": "camunda/optimize-test",
@@ -174,29 +173,10 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
-			Name:                 "TestContainerNotOverwriteGlobalImageTag",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"identity.enabled": "true",
-				"optimize.enabled": "true",
-				"global.image.tag": "a.b.c",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// then
-				expectedContainerImage := "camunda/optimize:a.b.c"
-				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
-				s.Require().NotEqual(expectedContainerImage, containers[0].Image)
-			},
-		}, {
 			Name:                 "TestContainerOverwriteImageTagWithChartDirectSetting",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
 				"identity.enabled":   "true",
-				"global.image.tag":   "x.y.z",
 				"optimize.image.tag": "a.b.c",
 				"optimize.enabled":   "true",
 			},

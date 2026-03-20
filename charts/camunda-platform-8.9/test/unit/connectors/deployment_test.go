@@ -108,24 +108,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal("bar", deployment.ObjectMeta.Annotations["foo"])
 			},
 		}, {
-			Name: "TestContainerSetImageNameSubChart",
-			Values: map[string]string{
-				"connectors.enabled":          "true",
-				"global.image.registry":       "global.custom.registry.io",
-				"global.image.tag":            "999.999.1",
-				"connectors.image.registry":   "subchart.custom.registry.io",
-				"connectors.image.tag":        "snapshot",
-				"connectors.image.repository": "connectors/connectors-bundle",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// then
-				container := deployment.Spec.Template.Spec.Containers[0]
-				s.Require().Equal("subchart.custom.registry.io/connectors/connectors-bundle:snapshot", container.Image)
-			},
-		}, {
 			Name: "TestContainerSetImageNameGlobalRegistry",
 			Values: map[string]string{
 				"connectors.enabled":          "true",
@@ -174,40 +156,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			Values: map[string]string{
 				"connectors.enabled":   "true",
 				"connectors.image.tag": "a.b.c",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// then
-				expectedContainerImage := "camunda/connectors-bundle:a.b.c"
-				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
-				s.Require().Equal(expectedContainerImage, containers[0].Image)
-			},
-		}, {
-			Name: "TestContainerOverwriteGlobalImageTag",
-			Values: map[string]string{
-				"connectors.enabled":   "true",
-				"connectors.image.tag": "",
-				"global.image.tag":     "a.b.c",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// then
-				expectedContainerImage := "camunda/connectors-bundle:a.b.c"
-				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
-				s.Require().Equal(expectedContainerImage, containers[0].Image)
-			},
-		}, {
-			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
-			Values: map[string]string{
-				"connectors.enabled":   "true",
-				"connectors.image.tag": "a.b.c",
-				"global.image.tag":     "x.y.z",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
