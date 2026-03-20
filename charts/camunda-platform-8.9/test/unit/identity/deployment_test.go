@@ -252,7 +252,6 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
 				"global.image.registry":     "global.custom.registry.io",
-				"global.image.tag":          "8.x.x",
 				"identity.enabled":          "true",
 				"identity.image.registry":   "subchart.custom.registry.io",
 				"identity.image.repository": "camunda/identity-test",
@@ -314,27 +313,8 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 		}, {
 			Skip: true,
-			Name: "TestContainerOverwriteGlobalImageTag",
-			Values: map[string]string{
-				"global.image.tag":   "a.b.c",
-				"identity.enabled":   "true",
-				"identity.image.tag": "",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(t, output, &deployment)
-
-				// then
-				expectedContainerImage := "camunda/identity:a.b.c"
-				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
-				s.Require().Equal(expectedContainerImage, containers[0].Image)
-			},
-		}, {
-			Skip: true,
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
-				"global.image.tag":   "x.y.z",
 				"identity.enabled":   "true",
 				"identity.image.tag": "a.b.c",
 			},

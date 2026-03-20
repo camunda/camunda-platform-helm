@@ -118,28 +118,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 			},
 		},
 		{
-			Skip:                 true,
-			Name:                 "TestContainerSetImageNameGlobal",
-			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
-			Values: map[string]string{
-				"global.image.registry":   "global.custom.registry.io",
-				"global.image.tag":        "8.x.x",
-				"connectors.image.tag":    "",
-				"identity.image.tag":      "",
-				"optimize.image.tag":      "",
-				"orchestration.image.tag": "",
-				"identity.enabled":        "true",
-				"optimize.enabled":        "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				// then
-				require.Contains(t, output, "image: global.custom.registry.io/camunda/connectors-bundle:8.x.x")
-				require.Contains(t, output, "image: global.custom.registry.io/camunda/identity:8.x.x")
-				require.Contains(t, output, "image: global.custom.registry.io/camunda/optimize:8.x.x")
-				require.Contains(t, output, "image: global.custom.registry.io/camunda/camunda:8.x.x")
-			},
-		},
-		{
 			Skip: true,
 			Name: "TestComponentDigestOverridesTag",
 			Values: map[string]string{
