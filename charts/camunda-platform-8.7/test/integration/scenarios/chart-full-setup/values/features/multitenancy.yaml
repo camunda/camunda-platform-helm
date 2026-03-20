@@ -1,11 +1,20 @@
-# Multi-tenancy feature configuration for 8.7
-# Layer 4: Feature - Multi-tenancy
-
 global:
   multitenancy:
     enabled: true
-
+orchestration:
+  security:
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+optimize:
+  enabled: true
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
+identityPostgresql:
+  enabled: true
 identity:
+  enabled: true
   env:
     - name: IDENTITY_TENANTS_0_NAME
       value: Default
@@ -22,7 +31,7 @@ identity:
     - name: IDENTITY_TENANTS_0_MEMBERS_2_TYPE
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
-      value: venom
+      value: test
     - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
@@ -31,3 +40,14 @@ identity:
       value: APPLICATION
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
+      value: venom
+connectors:
+  security:
+    authentication:
+      method: oidc
+  env:
+    - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
+      value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"

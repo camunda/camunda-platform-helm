@@ -41,12 +41,12 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch-external
-          flow: install,upgrade-patch
+          flow: install
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
             gke: distroci
-            eks: preemptible
           platforms: [gke]
+          features: [multitenancy]
         - name: keycloak-rba
           enabled: true
           shortname: kerba
@@ -59,6 +59,7 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+          features: [rba]
         - name: oidc
           enabled: true
           shortname: esoi

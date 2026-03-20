@@ -102,11 +102,11 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch-external
-          flow: upgrade-minor
+          flow: install
           infra-type:
             gke: distroci
-            eks: preemptible
           platforms: [gke]
+          features: [multitenancy]
         - name: keycloak-rba
           enabled: true
           exclude: []

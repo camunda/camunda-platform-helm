@@ -1,12 +1,6 @@
 # QA-specific configuration for 8.8
 # Layer 5: QA additions - Extra users, clients, and test configuration
 
-optimize:
-  enabled: true
-  caches:
-    cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
-
 identity:
   firstUser:
     user: demo
@@ -67,13 +61,6 @@ identity:
         - Console
         - Orchestration
 
-connectors:
-  env:
-    - name: username
-      value: username
-    - name: password
-      value: password
-
 console:
   overrideConfiguration: |
     camunda:
@@ -95,6 +82,3 @@ console:
                       url: "https://camunda.com"
                     - name: "Camunda Docs"
                       url: "https://docs.camunda.io"
-  env:
-    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
-      value: 'true'
