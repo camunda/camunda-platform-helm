@@ -403,7 +403,7 @@ func (s *OpenShiftCombinedFeaturesTest) TestAllOpenShiftFeaturesEnabled() {
 				"global.ingress.enabled":                              "true",
 				"global.ingress.tls.enabled":                          "true",
 				"global.ingress.tls.secretName":                       "-",
-				"global.ingress.host":                                 "camunda.example.com",
+				"global.host":                                         "camunda.example.com",
 				"elasticsearch.enabled":                               "true",
 			},
 			Template: "templates/common/ingress-http.yaml",
