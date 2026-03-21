@@ -116,7 +116,7 @@ integration:
           auth: keycloak
           enterprise: true
         - name: documentstore
-          enabled: false
+          enabled: true
           exclude: []
           shortname: docstr
           auth: keycloak
