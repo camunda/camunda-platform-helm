@@ -687,6 +687,20 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 				s.Require().Contains(podContainers, expectedContainer)
 			},
+		}, {
+			Name: "TestPodSetAutomountServiceAccountToken",
+			Values: map[string]string{
+				"connectors.automountServiceAccountToken": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				expected := false
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().Equal(expected, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
 		},
 	}
 

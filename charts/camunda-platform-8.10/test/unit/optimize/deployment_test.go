@@ -1296,6 +1296,22 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 					},
 				})
 			},
+		}, {
+			Name: "TestPodSetAutomountServiceAccountToken",
+			Values: map[string]string{
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"optimize.automountServiceAccountToken":   "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				expected := false
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().Equal(expected, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
 		},
 	}
 
