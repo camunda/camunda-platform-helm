@@ -290,7 +290,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 */}}
 {{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
   {{- if or .Values.global.identity.auth.authUrl -}}
-    {{- .Values.global.identity.auth.authUrl -}}
+    {{- tpl .Values.global.identity.auth.authUrl . -}}
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerUrlWithFallback" . -}}/protocol/openid-connect/auth
   {{- end -}}
@@ -301,7 +301,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
   {{- if .Values.global.identity.auth.tokenUrl -}}
-    {{- .Values.global.identity.auth.tokenUrl -}}
+    {{- tpl .Values.global.identity.auth.tokenUrl . -}}
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
   {{- end -}}
@@ -312,7 +312,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
   {{- if .Values.global.identity.auth.jwksUrl -}}
-    {{- .Values.global.identity.auth.jwksUrl -}}
+    {{- tpl .Values.global.identity.auth.jwksUrl . -}}
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
   {{- end -}}

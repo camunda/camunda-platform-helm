@@ -554,22 +554,22 @@
                                 },
                                 "issuerBackendUrl": {
                                     "type": "string",
-                                    "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.",
+                                    "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "authUrl": {
                                     "type": "string",
-                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access.",
+                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "tokenUrl": {
                                     "type": "string",
-                                    "description": "defines the token URL, which is used by the services to request JWT tokens.",
+                                    "description": "defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "jwksUrl": {
                                     "type": "string",
-                                    "description": "defines the JWKS URL, which is used by the services to validate the JWT tokens.",
+                                    "description": "defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "type": {
@@ -5094,17 +5094,17 @@
                                         },
                                         "authUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.authUrl`.",
+                                            "description": "can be used to override `global.identity.auth.authUrl`. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "tokenUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.tokenUrl`.",
+                                            "description": "can be used to override `global.identity.auth.tokenUrl`. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "jwksUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.jwksUrl`.",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "usernameClaim": {
