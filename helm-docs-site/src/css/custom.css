@@ -1,0 +1,75 @@
+/**
+ * Camunda orange theme + IBM Plex Sans font for Docusaurus.
+ *
+ * Camunda brand colours:
+ *   Orange (primary):  #FC5D0D
+ *   Dark orange:       #E04B00
+ *   Off-black:         #1C1C1C
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* Primary / accent colour — Camunda orange */
+  --ifm-color-primary: #fc5d0d;
+  --ifm-color-primary-dark: #e85000;
+  --ifm-color-primary-darker: #db4c00;
+  --ifm-color-primary-darkest: #b53e00;
+  --ifm-color-primary-light: #fd6f26;
+  --ifm-color-primary-lighter: #fd7633;
+  --ifm-color-primary-lightest: #fe8f57;
+
+  --ifm-font-family-base: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --ifm-font-family-monospace: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --ifm-code-font-size: 93%;
+
+  /* Navbar */
+  --ifm-navbar-background-color: #1c1c1c;
+  --ifm-navbar-link-color: #f5f5f5;
+  --ifm-navbar-link-hover-color: #fc5d0d;
+
+  /* Footer */
+  --ifm-footer-background-color: #1c1c1c;
+  --ifm-footer-color: #c0c0c0;
+  --ifm-footer-link-color: #f5f5f5;
+  --ifm-footer-link-hover-color: #fc5d0d;
+
+  /* Sidebar */
+  --ifm-menu-color-active: #fc5d0d;
+
+  /* Code blocks */
+  --docusaurus-highlighted-code-line-bg: rgba(252, 93, 13, 0.12);
+}
+
+/* Dark-mode overrides */
+[data-theme='dark'] {
+  --ifm-color-primary: #fd7a35;
+  --ifm-color-primary-dark: #fc6920;
+  --ifm-color-primary-darker: #fc6015;
+  --ifm-color-primary-darkest: #e04b00;
+  --ifm-color-primary-light: #fd8b4a;
+  --ifm-color-primary-lighter: #fd935a;
+  --ifm-color-primary-lightest: #feae84;
+
+  --ifm-background-color: #1c1c1c;
+  --ifm-navbar-background-color: #111111;
+  --ifm-footer-background-color: #111111;
+  --docusaurus-highlighted-code-line-bg: rgba(253, 122, 53, 0.15);
+}
+
+/* Navbar logo sizing */
+.navbar__logo img {
+  height: 28px;
+}
+
+/* Slightly tighten the sidebar font */
+.menu__link {
+  font-size: 0.9rem;
+}
+
+/* Active sidebar item gets orange left border */
+.menu__link--active {
+  border-left: 3px solid var(--ifm-color-primary);
+  padding-left: calc(var(--ifm-menu-link-padding-horizontal) - 3px);
+}
