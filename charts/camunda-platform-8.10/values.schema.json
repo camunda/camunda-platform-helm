@@ -5279,6 +5279,16 @@
                                 "rdbms": {
                                     "type": "object",
                                     "properties": {
+                                        "aws": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "enable AWS IAM Database Authentication for RDBMS connection",
+                                                    "default": false
+                                                }
+                                            }
+                                        },
                                         "url": {
                                             "type": "string",
                                             "description": "the JDBC connection URL for the RDBMS database",
@@ -5314,6 +5324,16 @@
                                 "elasticsearch": {
                                     "type": "object",
                                     "properties": {
+                                        "aws": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "enable AWS IRSA for Elasticsearch connection",
+                                                    "default": false
+                                                }
+                                            }
+                                        },
                                         "url": {
                                             "type": "string",
                                             "description": "the URL for the elasticsearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200",
@@ -5374,6 +5394,16 @@
                                 "opensearch": {
                                     "type": "object",
                                     "properties": {
+                                        "aws": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": {
+                                                    "type": "boolean",
+                                                    "description": "enable AWS IRSA for OpenSearch connection",
+                                                    "default": false
+                                                }
+                                            }
+                                        },
                                         "url": {
                                             "type": "string",
                                             "description": "the URL for the opensearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200",
