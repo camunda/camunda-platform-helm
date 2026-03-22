@@ -1,0 +1,127 @@
+matrix:
+  - version: "8.9"
+    camundaVersionPrevious: "8.8"
+    case: pr
+    platforms: gke
+    scenario: elasticsearch
+    shortname: eskee
+    auth: keycloak
+    flow: install
+    exclude: 
+    infraTypeGke: distroci
+    infraTypeEks: preemptible
+    identity: keycloak
+    persistence: elasticsearch
+    features: 
+    qa: false
+    upgrade: false
+    skipE2E: false
+    skipIT: false
+  - version: "8.9"
+    camundaVersionPrevious: "8.8"
+    case: pr
+    platforms: gke
+    scenario: elasticsearch
+    shortname: eske
+    auth: keycloak
+    flow: install
+    exclude: 
+    infraTypeGke: distroci
+    infraTypeEks: preemptible
+    identity: keycloak
+    persistence: elasticsearch-external
+    features: 
+    qa: false
+    upgrade: false
+    skipE2E: false
+    skipIT: false
+  - version: "8.9"
+    camundaVersionPrevious: "8.8"
+    case: pr
+    platforms: gke
+    scenario: oidc
+    shortname: esoi
+    auth: oidc
+    flow: install
+    exclude: identity|console|orchestration-grpc
+    infraTypeGke: distroci
+    infraTypeEks: preemptible
+    identity: oidc
+    persistence: elasticsearch-external
+    features: 
+    qa: false
+    upgrade: false
+    skipE2E: true
+    skipIT: true
+  - version: "8.9"
+    camundaVersionPrevious: "8.8"
+    case: pr
+    platforms: gke
+    scenario: keycloak-original
+    shortname: keorg
+    auth: keycloak
+    flow: install
+    exclude: 
+    infraTypeGke: distroci
+    infraTypeEks: preemptible
+    identity: keycloak
+    persistence: elasticsearch-external
+    features: 
+    qa: false
+    upgrade: false
+    skipE2E: false
+    skipIT: false
+  - version: "8.9"
+    camundaVersionPrevious: "8.8"
+    case: pr
+    platforms: gke
+    scenario: gateway-keycloak
+    shortname: gatkc
+    auth: keycloak
+    flow: install
+    exclude: 
+    infraTypeGke: distroci
+    infraTypeEks: preemptible
+    identity: keycloak
+    persistence: elasticsearch-external
+    features: gateway
+    qa: false
+    upgrade: false
+    skipE2E: false
+    skipIT: false
+  - version: "8.9"
+    camundaVersionPrevious: "8.8"
+    case: pr
+    platforms: gke
+    scenario: elasticsearch-arm
+    shortname: esarm
+    auth: keycloak
+    flow: install
+    exclude: 
+    infraTypeGke: arm
+    infraTypeEks: preemptible
+    identity: keycloak-external
+    persistence: elasticsearch-external
+    features: arm
+    qa: false
+    upgrade: false
+    skipE2E: true
+    skipIT: false
+  - version: "8.9"
+    camundaVersionPrevious: "8.8"
+    case: pr
+    platforms: gke
+    scenario: noSecondaryStorage
+    shortname: nosec
+    auth: keycloak
+    flow: install
+    exclude: 
+    infraTypeGke: preemptible
+    infraTypeEks: preemptible
+    identity: keycloak
+    persistence: no-elasticsearch
+    features: no-secondary-storage
+    qa: false
+    upgrade: false
+    skipE2E: true
+    skipIT: true
