@@ -107,13 +107,14 @@ otherwise falls back to global.elasticsearch.auth.
 
 {{/*
 [optimize] Resolve zeebe prefix.
-When Elasticsearch is active (or neither is explicitly active), prefer the ES chain:
-  optimize.database.elasticsearch.prefix -> global.elasticsearch.prefix -> "zeebe-record"
-When OpenSearch is active (and ES is not), prefer the OS chain:
-  optimize.database.opensearch.prefix -> global.opensearch.prefix -> "zeebe-record"
+Precedence matches optimize.defaultConfig: ES is checked first, OS only when ES is off.
+  ES chain: optimize.database.elasticsearch.prefix -> global.elasticsearch.prefix -> "zeebe-record"
+  OS chain: optimize.database.opensearch.prefix -> global.opensearch.prefix -> "zeebe-record"
 */}}
 {{- define "optimize.indexPrefix" -}}
-{{- if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
+{{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
+  {{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | default "zeebe-record" -}}
+{{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
   {{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | default "zeebe-record" -}}
 {{- else -}}
   {{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | default "zeebe-record" -}}
