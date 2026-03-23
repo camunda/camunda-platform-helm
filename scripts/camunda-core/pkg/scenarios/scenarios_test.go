@@ -718,12 +718,14 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 	tests := []struct {
 		name          string
 		imageTags     bool
+		imageTagsSet  bool
 		valuesConfig  string
 		wantImageTags bool
 	}{
 		{
 			name:          "explicit true stays true",
 			imageTags:     true,
+			imageTagsSet:  true,
 			valuesConfig:  `{}`,
 			wantImageTags: true,
 		},
@@ -769,6 +771,13 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 			valuesConfig:  `not valid json`,
 			wantImageTags: false,
 		},
+		{
+			name:          "explicit false not overridden by IMAGE_TAG keys",
+			imageTags:     false,
+			imageTagsSet:  true,
+			valuesConfig:  `{"E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8.0", "SOME_OTHER_KEY": "val"}`,
+			wantImageTags: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -778,6 +787,7 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 				Persistence:  "elasticsearch",
 				Platform:     "gke",
 				ImageTags:    tt.imageTags,
+				ImageTagsSet: tt.imageTagsSet,
 				ValuesConfig: tt.valuesConfig,
 			})
 			if err != nil {
