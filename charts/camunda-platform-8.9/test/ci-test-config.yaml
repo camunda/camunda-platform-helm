@@ -59,7 +59,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
         - name: opensearch
           enabled: false
@@ -94,7 +94,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: oidc
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
           enabled: true
@@ -102,7 +102,7 @@ integration:
           shortname: kemt
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           flow: upgrade-minor
           infra-type:
             gke: distroci
@@ -118,7 +118,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
@@ -131,7 +131,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
         - name: gateway-keycloak
           enabled: true
@@ -140,7 +140,7 @@ integration:
           auth: keycloak
           flow: install
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [gateway]
           infra-type:
             gke: distroci
@@ -156,7 +156,7 @@ integration:
           flow: install
           skip-e2e: true # Test are unstable
           identity: keycloak-external
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [arm]
           platforms: [gke]
         - name: noSecondaryStorage

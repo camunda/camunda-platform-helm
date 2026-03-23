@@ -28,7 +28,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
         - name: upgrade-migration
           enabled: false
@@ -41,7 +41,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
         - name: elasticsearch-basic
           enabled: false
@@ -49,7 +49,7 @@ integration:
           auth: basic
           flow: install
           identity: basic
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           exclude: [identity,console,orchestration-grpc]
           infra-type:
             gke: distroci
@@ -67,7 +67,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: oidc
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
           enabled: true
@@ -75,7 +75,7 @@ integration:
           shortname: kemt
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           flow: upgrade-minor
           skip-e2e: true  # 8.8 Playwright smoke test enters retry loop exceeding timeout
           infra-type:
@@ -92,7 +92,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
@@ -105,14 +105,14 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
         - name: elasticsearch
           enabled: false
           exclude: [orchestration-grpc]
           shortname: eshy
           identity: hybrid
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           auth: hybrid
           flow: install
           skip-e2e: true  # Hybrid auth incompatible with Keycloak-dependent smoke tests
@@ -131,7 +131,7 @@ integration:
           skip-e2e: true  # 8.8 ARM frontend bug: Deploy-and-Run API call never reaches restapi
           identity: keycloak-external
           features: [arm]
-          persistence: elasticsearch-external
+          persistence: elasticsearch
         - name: opensearch
           enabled: true
           exclude: []

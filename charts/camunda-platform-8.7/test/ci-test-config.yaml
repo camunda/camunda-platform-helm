@@ -27,7 +27,7 @@ integration:
           exclude: []
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           flow: install
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
@@ -40,7 +40,7 @@ integration:
           exclude: []
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           flow: install,upgrade-patch
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
@@ -53,7 +53,7 @@ integration:
           exclude: []
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           flow: install
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
@@ -64,7 +64,7 @@ integration:
           shortname: esoi
           exclude: []
           auth: oidc
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           flow: install,upgrade-patch
           skip-e2e: true  # 8.7 web-modeler-restapi bug + OIDC incompatible with Keycloak-dependent smoke tests
           skip-it: true   # OIDC ITs require Entra setup that returns 401
@@ -83,7 +83,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
     nightly:
       scenario:
