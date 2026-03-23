@@ -319,14 +319,14 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// so it must keep working.
 	if s == "keycloak-original" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 		config.Platform = "gke"
 		return config
 	}
 
 	if s == "elasticsearch" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 		config.Platform = "gke"
 		return config
 	}
@@ -352,7 +352,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "rdbms"):
 		config.Persistence = "rdbms"
 	default:
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 	}
 
 	// Derive platform (default to gke)
