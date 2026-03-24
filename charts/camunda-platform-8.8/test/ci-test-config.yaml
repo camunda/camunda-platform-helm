@@ -30,7 +30,6 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
-          qa: true
         - name: upgrade-migration
           enabled: false
           flow: upgrade-minor
