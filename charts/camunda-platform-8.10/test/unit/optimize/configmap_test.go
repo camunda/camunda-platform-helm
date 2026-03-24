@@ -63,9 +63,9 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestCustomZeebeName",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":            "true",
-				"optimize.enabled":            "true",
-				"global.elasticsearch.prefix": "custom-prefix",
+				"identity.enabled":                       "true",
+				"optimize.enabled":                       "true",
+				"optimize.database.elasticsearch.prefix": "custom-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -111,11 +111,12 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestElasticsearchPrefixFallsBackToGlobal",
+			Name: "TestElasticsearchPrefixUsesComponentKeyDirectly",
 			Values: map[string]string{
-				"identity.enabled":            "true",
-				"optimize.enabled":            "true",
-				"global.elasticsearch.prefix": "global-prefix",
+				"identity.enabled":                       "true",
+				"optimize.enabled":                       "true",
+				"global.elasticsearch.prefix":            "global-prefix",
+				"optimize.database.elasticsearch.prefix": "component-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -128,7 +129,8 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
 
-				s.Require().Equal("global-prefix", configmapApplication.Zeebe.Name)
+				// In 8.10 global keys are deprecated; component key takes effect directly
+				s.Require().Equal("component-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
 		{
@@ -261,15 +263,15 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestOpensearchPrefixFallsBackThroughChain",
+			Name: "TestOpensearchPrefixUsesComponentKeyDirectly",
 			Values: map[string]string{
-				"identity.enabled":             "true",
-				"optimize.enabled":             "true",
-				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
-				"global.opensearch.enabled":    "true",
-				"global.opensearch.url.host":   "opensearch-host",
-				"global.opensearch.prefix":     "os-prefix",
+				"identity.enabled":                    "true",
+				"optimize.enabled":                    "true",
+				"global.elasticsearch.enabled":        "false",
+				"elasticsearch.enabled":               "false",
+				"global.opensearch.enabled":           "true",
+				"global.opensearch.url.host":          "opensearch-host",
+				"optimize.database.opensearch.prefix": "os-component-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -282,7 +284,8 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
 
-				s.Require().Equal("os-prefix", configmapApplication.Zeebe.Name)
+				// In 8.10 global keys are deprecated; component key takes effect directly
+				s.Require().Equal("os-component-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
 		{

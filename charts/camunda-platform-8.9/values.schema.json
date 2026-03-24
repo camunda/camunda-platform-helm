@@ -6081,8 +6081,8 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize. Falls back to global.elasticsearch.prefix.",
-                                    "default": "zeebe-record"
+                                    "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize. If empty, falls back to global.elasticsearch.prefix.",
+                                    "default": ""
                                 }
                             }
                         },
@@ -6181,8 +6181,8 @@
                                 },
                                 "prefix": {
                                     "type": "string",
-                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize. Falls back to global.opensearch.prefix.",
-                                    "default": "zeebe-record"
+                                    "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize. If empty, falls back to global.opensearch.prefix.",
+                                    "default": ""
                                 }
                             }
                         }
