@@ -110,6 +110,7 @@ otherwise falls back to global.elasticsearch.auth.
 Precedence matches optimize.defaultConfig: ES is checked first, OS only when ES is off.
   ES chain: optimize.database.elasticsearch.prefix -> global.elasticsearch.prefix -> "zeebe-record"
   OS chain: optimize.database.opensearch.prefix -> global.opensearch.prefix -> "zeebe-record"
+When neither backend is explicitly enabled, falls back to "zeebe-record".
 */}}
 {{- define "optimize.indexPrefix" -}}
 {{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
@@ -117,7 +118,7 @@ Precedence matches optimize.defaultConfig: ES is checked first, OS only when ES 
 {{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
   {{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | default "zeebe-record" -}}
 {{- else -}}
-  {{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | default "zeebe-record" -}}
+  {{- "zeebe-record" -}}
 {{- end -}}
 {{- end -}}
 
