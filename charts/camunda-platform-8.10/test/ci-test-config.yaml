@@ -166,7 +166,7 @@ integration:
             gke: arm
           flow: install
           identity: keycloak-external
-          persistence: elasticsearch
+          persistence: elasticsearch-external
           features: [arm]
           platforms: [gke]
         - name: noSecondaryStorage

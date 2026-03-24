@@ -156,7 +156,7 @@ integration:
           flow: install
           skip-e2e: true # Test are unstable
           identity: keycloak-external
-          persistence: elasticsearch
+          persistence: elasticsearch-external
           features: [arm]
           platforms: [gke]
         - name: noSecondaryStorage

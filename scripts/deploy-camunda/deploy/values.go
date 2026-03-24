@@ -751,7 +751,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if mapping == "" {
 			mapping = envMap["vault_secret_mapping"]
 		}
-		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath); err != nil {
+		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
 			os.RemoveAll(tempDir) // Cleanup on error
 			return nil, fmt.Errorf("failed to generate vault secrets: %w", err)
 		}

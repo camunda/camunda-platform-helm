@@ -20,16 +20,17 @@ integration:
     pr:
       scenario:
         - name: elasticsearch
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: eske
           exclude: []
           infra-type:
             gke: distroci
-            eks: preemptible
+          flow: install
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
+          qa: true
         - name: upgrade-migration
           enabled: false
           flow: upgrade-minor
@@ -131,7 +132,7 @@ integration:
           skip-e2e: true  # 8.8 ARM frontend bug: Deploy-and-Run API call never reaches restapi
           identity: keycloak-external
           features: [arm]
-          persistence: elasticsearch
+          persistence: elasticsearch-external
         - name: opensearch
           enabled: true
           exclude: []

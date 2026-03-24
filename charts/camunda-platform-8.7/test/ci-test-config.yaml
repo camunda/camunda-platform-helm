@@ -23,7 +23,7 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
-          shortname: es
+          shortname: eske
           exclude: []
           auth: keycloak
           identity: keycloak
