@@ -78,39 +78,6 @@ spec:
                   key: pusher-app-secret
             - name: ZEEBE_CLIENT_CONFIG_PATH
               value: "/tmp/zeebe_client_cache.txt"
-            # -- Pusher (WebSocket) configuration env vars --
-            # Required because the in-JAR application-self-managed.yml uses ${ENV_VAR:} placeholders
-            # that must be resolved via environment variables (not overridable via external configmap).
-            - name: RESTAPI_PUSHER_HOST
-              value: "camunda-platform-test-web-modeler-websockets"
-            - name: RESTAPI_PUSHER_PORT
-              value: "80"
-            - name: CLIENT_PUSHER_HOST
-              value: "localhost"
-            - name: CLIENT_PUSHER_PORT
-              value: "8085"
-            - name: CLIENT_PUSHER_FORCE_TLS
-              value: "false"
-            # -- Server configuration env vars --
-            - name: RESTAPI_SERVER_URL
-              value: "http://localhost:8070"
-            - name: SERVER_HTTPS_ONLY
-              value: "false"
-            # -- OAuth2 / Identity env vars --
-            - name: OAUTH2_CLIENT_ID
-              value: "web-modeler"
-            # -- Mail env vars --
-            - name: RESTAPI_MAIL_FROM_ADDRESS
-              value: "example@example.com"
-            - name: RESTAPI_MAIL_FROM_NAME
-              value: "Camunda 8"
-            # -- Identity / Auth env vars (conditional) --
-            - name: RESTAPI_IDENTITY_BASE_URL
-              value: "http://camunda-platform-test-identity:80"
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER
-              value: "http://localhost:18080/auth/realms/camunda-platform"
-            - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
-              value: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
           envFrom:
             - configMapRef:
                 name: camunda-platform-test-documentstore-env-vars
