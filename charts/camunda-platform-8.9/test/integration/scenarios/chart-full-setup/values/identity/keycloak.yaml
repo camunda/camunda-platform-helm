@@ -87,11 +87,8 @@ identityKeycloak:
   # options we need, so `--optimized` can skip augmentation entirely.
   # Dockerfile: .github/docker/keycloak-ci/Dockerfile
   image:
-    # registry must be empty: the Bitnami chart concatenates registry/repository,
-    # and the default registry is docker.io, which would produce
-    # "docker.io/ghcr.io/..." — an invalid reference.
-    registry: ""
-    repository: ghcr.io/camunda/team-distribution/keycloak-ci
+    registry: registry.camunda.cloud
+    repository: team-distribution/keycloak-ci
     tag: "26.3.3"
     pullSecrets:
       - name: index-docker-io
