@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.20.0"
+  camunda.io/helmCLIVersion: "3.20.1"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -71,4 +71,6 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Restore backward compatibility for 3rd party e2e callers and fix 8.9 documentstore corruption"
