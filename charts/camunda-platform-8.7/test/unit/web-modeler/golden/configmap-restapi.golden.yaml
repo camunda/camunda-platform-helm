@@ -15,7 +15,7 @@ metadata:
   annotations:
     {}
 data:
-  application.yaml: |
+  application-self-managed.yaml: |
     camunda:
       identity:
         base-url: "http://camunda-platform-test-identity:80"

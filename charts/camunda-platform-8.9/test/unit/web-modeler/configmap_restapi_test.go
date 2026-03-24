@@ -66,7 +66,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientAp
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -96,7 +96,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthPublicAp
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -126,7 +126,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthClientId
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -156,7 +156,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectAuthTokenUse
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -186,7 +186,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -216,7 +216,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityServ
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -252,7 +252,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectIdentityType
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -284,7 +284,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -316,7 +316,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectKeycloakServ
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -345,7 +345,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetSmtpCredentials() {
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -376,7 +376,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -409,7 +409,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetExternalDatabaseCon
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -443,7 +443,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldPrioritizeUsernameOver
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -512,7 +512,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldConfigureClusterFromSa
 			var configmapApplication WebModelerRestAPIApplicationYAML
 			helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-			err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+			err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 			if err != nil {
 				s.Fail("Failed to unmarshal yaml. error=", err)
 			}
@@ -573,7 +573,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldUseClustersFromCustomC
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -623,7 +623,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldNotConfigureClustersIf
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -653,7 +653,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromJwksUr
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -683,7 +683,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromIssuer
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -717,7 +717,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJwkSetUriFromKeyclo
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -749,7 +749,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetJdbcUrlFromHostPort
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -779,7 +779,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectServerUrlAnd
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -810,7 +810,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectContextPath(
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -841,7 +841,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -874,7 +874,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -910,7 +910,7 @@ func (s *configmapRestAPITemplateTest) TestContainerShouldSetCorrectClientPusher
 	var configmapApplication WebModelerRestAPIApplicationYAML
 	helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-	err := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+	err := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 	if err != nil {
 		s.Fail("Failed to unmarshal yaml. error=", err)
 	}
@@ -932,7 +932,7 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 				var configmapApplication WebModelerRestAPIApplicationYAML
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				e := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 				if e != nil {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
@@ -958,7 +958,7 @@ func (s *configmapRestAPITemplateTest) TestGlobalIngressHostTemplating() {
 				var configmapApplication WebModelerRestAPIApplicationYAML
 				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
 
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
+				e := yaml.Unmarshal([]byte(configmap.Data["application-self-managed.yaml"]), &configmapApplication)
 				if e != nil {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}

@@ -7,10 +7,10 @@ metadata:
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
   {{- if .Values.webModeler.restapi.configuration }}
-  application.yaml: |
+  application-self-managed.yaml: |
     {{ .Values.webModeler.restapi.configuration | indent 4 | trim }}
   {{- else }}
-  application.yaml: |
+  application-self-managed.yaml: |
     camunda:
       identity:
     {{- if .Values.identity.enabled }}

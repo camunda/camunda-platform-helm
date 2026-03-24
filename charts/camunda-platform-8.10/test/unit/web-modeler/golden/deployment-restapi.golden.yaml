@@ -101,8 +101,8 @@ spec:
             - name: tmp
               mountPath: /tmp
             - name: config
-              mountPath: /home/runner/config/application.yaml
-              subPath: application.yaml
+              mountPath: /home/runner/config/application-self-managed.yaml
+              subPath: application-self-managed.yaml
       volumes:
         - name: tmp
           emptyDir: {}
