@@ -1,0 +1,94 @@
+# External OpenSearch backend configuration for 8.10
+# Layer 3: Backend - OpenSearch (external, pool-routed)
+#
+# Uses one of 4 internal OpenSearch pools (pool-0 through pool-3) based on
+# the $OS_POOL_INDEX variable, mirroring the Elasticsearch external pool pattern.
+
+global:
+  elasticsearch:
+    enabled: false
+  exporter:
+    zeebe:
+      enabled: true
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: opensearch
+      opensearch:
+        url: "https://opensearch-2-19-pool-${OS_POOL_INDEX}.ci.distro.ultrawombat.com:443"
+        auth:
+          username: admin
+          secret:
+            existingSecret: infra-credentials
+            existingSecretKey: opensearch-password
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+  env:
+    - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
+      value: $OPERATE_INDEX_PREFIX-$FLOW
+    # group2
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX
+      value: custom-zeebe
+    # Security mapping rules for orchestration authorization.
+    # Uses env var placeholders so the same file works for both keycloak and OIDC:
+    #   keycloak: VENOM_CLIENT_ID=venom, CONNECTORS_CLIENT_ID=connectors
+    #   OIDC (Entra): VENOM_CLIENT_ID=<entra-app-guid>, CONNECTORS_CLIENT_ID=<entra-child-app-guid>
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+      value: "$VENOM_CLIENT_ID"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
+      value: "$CONNECTORS_CLIENT_ID"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: false
+    opensearch:
+      enabled: true
+      aws:
+        enabled: false
+      auth:
+        username: admin
+        secret:
+          existingSecret: infra-credentials
+          existingSecretKey: opensearch-password
+      url:
+        protocol: https
+        host: "opensearch-2-19-pool-${OS_POOL_INDEX}.ci.distro.ultrawombat.com"
+        port: 443
+      prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+  env:
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+  migration:
+    env:
+      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+        value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+        value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+
+elasticsearch:
+  enabled: false

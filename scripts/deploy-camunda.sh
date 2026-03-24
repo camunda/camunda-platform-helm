@@ -263,6 +263,7 @@ export OPTIMIZE_INDEX_PREFIX="$OPTIMIZE_PREFIX"
 export ORCHESTRATION_INDEX_PREFIX="$ORCHESTRATION_PREFIX"
 export FLOW="$FLOW"
 export ES_POOL_INDEX="${ES_POOL_INDEX:-0}"
+export OS_POOL_INDEX="${OS_POOL_INDEX:-0}"
 
 # Only export Keycloak host if provided (required for some platforms)
 if [[ -n "$KEYCLOAK_EXT_HOST" ]]; then

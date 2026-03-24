@@ -71,6 +71,17 @@ integration:
             gke: distroci
             eks: preemptible
           platforms: [gke]
+        - name: opensearch-external
+          enabled: true
+          shortname: osex
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch-external
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
         - name: elasticsearch-basic
           enabled: false
           shortname: esba
