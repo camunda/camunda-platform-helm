@@ -141,6 +141,9 @@ type RunOptions struct {
 	// When true, the deployer performs docker login and creates an index-docker-io
 	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
 	EnsureDockerHub bool
+	// UseLatest applies values-latest.yaml from each chart root instead of values-digest.yaml.
+	// This overrides the default digest-based image pinning with the latest available tags.
+	UseLatest bool
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -313,7 +316,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				preUpgradeScript:     resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
 				upgradeOnly:          versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
 				step1ValuesFrom:      resolveStep1ValuesFromQuiet(entry),
-				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry),
+				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts.UseLatest),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -390,8 +393,9 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 // enterprise is composable (changes registry/repo, not tags).
 // digest, latest, and image-tags are mutually exclusive for image version resolution:
 //   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-//   - digest is the CI default when image-tags is not active
-func resolveChartRootOverlaysQuiet(chartPath string, entry Entry) []string {
+//   - useLatest selects values-latest.yaml instead of values-digest.yaml
+//   - digest is the CI default when neither image-tags nor useLatest is active
+func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, useLatest bool) []string {
 	if chartPath == "" {
 		return nil
 	}
@@ -400,7 +404,11 @@ func resolveChartRootOverlaysQuiet(chartPath string, entry Entry) []string {
 		overlays = append(overlays, "enterprise")
 	}
 	if !entry.ImageTags {
-		overlays = append(overlays, "digest")
+		if useLatest {
+			overlays = append(overlays, "latest")
+		} else {
+			overlays = append(overlays, "digest")
+		}
 	}
 	// Filter to only overlays whose files exist on disk.
 	var existing []string
@@ -1333,14 +1341,19 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			// enterprise is composable (changes registry/repo, not tags).
 			// digest, latest, and image-tags are mutually exclusive for image version resolution:
 			//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-			//   - digest is the CI default when image-tags is not active
+			//   - useLatest selects values-latest.yaml instead of values-digest.yaml
+			//   - digest is the CI default when neither image-tags nor useLatest is active
 			ChartRootOverlays: func() []string {
 				var overlays []string
 				if entry.Enterprise {
 					overlays = append(overlays, "enterprise")
 				}
 				if !entry.ImageTags {
-					overlays = append(overlays, "digest")
+					if opts.UseLatest {
+						overlays = append(overlays, "latest")
+					} else {
+						overlays = append(overlays, "digest")
+					}
 				}
 				return overlays
 			}(),

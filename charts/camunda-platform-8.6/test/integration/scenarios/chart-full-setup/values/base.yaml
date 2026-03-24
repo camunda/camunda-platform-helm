@@ -12,6 +12,7 @@ global:
   # for bitnami images
   imagePullSecrets:
     - index-docker-io
+    - registry-camunda-cloud
   # for camunda images
   image:
     pullSecrets:

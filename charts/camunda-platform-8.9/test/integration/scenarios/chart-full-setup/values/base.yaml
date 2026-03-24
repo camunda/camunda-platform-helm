@@ -2,6 +2,10 @@
 # Layer 1: Common configuration shared across all scenarios
 
 global:
+  # for bitnami images
+  imagePullSecrets:
+    - index-docker-io
+    - registry-camunda-cloud
   elasticsearch:
     enabled: true
   exporter:

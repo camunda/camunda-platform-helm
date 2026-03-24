@@ -27,7 +27,7 @@ env:
   REGISTRY: ghcr.io
   CI_RUNNER_IMAGE: ghcr.io/camunda/team-distribution/ci-runner
   PLAYWRIGHT_RUNNER_IMAGE: ghcr.io/camunda/team-distribution/playwright-runner
-  KEYCLOAK_CI_IMAGE: ghcr.io/camunda/team-distribution/keycloak-ci
+  KEYCLOAK_CI_IMAGE: registry.camunda.cloud/team-distribution/keycloak-ci
 
 permissions:
   contents: read
