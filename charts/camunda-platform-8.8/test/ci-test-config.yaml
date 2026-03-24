@@ -181,7 +181,6 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: opensearch
-          qa: true
           flow: install
         - name: opensearch
           enabled: true
