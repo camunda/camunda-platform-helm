@@ -34,6 +34,10 @@ import (
 // are distributed via round-robin. This matches the 4-cluster pool infra.
 const numESPools = 4
 
+// numOSPools is the number of OpenSearch pools across which matrix entries
+// are distributed via round-robin. This matches the 4-cluster pool infra.
+const numOSPools = 4
+
 // RunOptions controls matrix execution.
 type RunOptions struct {
 	// DryRun logs what would be done without executing.
@@ -1424,6 +1428,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	}
 
 	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
+	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
 
 	// OIDC hook: provision a venom Entra app registration before deployment.
 	// The entra package is the canonical implementation for OIDC app provisioning,
@@ -1517,6 +1522,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Strs("features", entry.Features).
 		Bool("vaultBackedSecrets", useVault).
 		Str("esPoolIndex", flags.ESPoolIndex).
+		Str("osPoolIndex", flags.OSPoolIndex).
 		Msg("Deploying matrix entry")
 
 	// Execute the deployment (deploy + tests run inside deploy.Execute).

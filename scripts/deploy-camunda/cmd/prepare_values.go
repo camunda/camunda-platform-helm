@@ -89,7 +89,7 @@ All diagnostic output goes to stderr via the logger.`,
 	f.StringVar(&pv.chartPath, "chart-path", "", "Path to the Camunda chart directory (used to derive scenario-path if not set)")
 	f.StringVar(&pv.scenario, "scenario", "chart-full-setup", "Scenario name (used to derive defaults from naming conventions)")
 	f.StringVar(&pv.identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-external, opensearch, rdbms, rdbms-oracle")
+	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-external, opensearch, opensearch-external, rdbms, rdbms-oracle")
 	f.StringVar(&pv.testPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
 	f.StringVar(&pv.platform, "platform", "gke", "Deploy platform: gke, rosa, eks (fallback for --test-platform)")
 	f.StringSliceVar(&pv.features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")

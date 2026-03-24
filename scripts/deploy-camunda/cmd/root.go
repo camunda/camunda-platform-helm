@@ -229,7 +229,7 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
 	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, opensearch, rdbms, rdbms-oracle")
+	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, opensearch, opensearch-external, rdbms, rdbms-oracle")
 	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
 	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
 	f.BoolVar(&flags.Selection.QA, "qa", false, "Enable QA configuration (test users, etc.)")
