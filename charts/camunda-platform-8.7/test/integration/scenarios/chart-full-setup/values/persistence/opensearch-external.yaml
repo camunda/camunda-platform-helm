@@ -11,7 +11,8 @@ global:
     enabled: true
     auth:
       username: admin
-      password: ""
+      existingSecret: infra-credentials
+      existingSecretKey: opensearch-password
     url:
       protocol: https
       host: "opensearch-2-19-pool-${OS_POOL_INDEX}.ci.distro.ultrawombat.com"
