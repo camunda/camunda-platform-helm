@@ -69,7 +69,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "rdbms", "rdbms-oracle"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "opensearch-external", "rdbms", "rdbms-oracle"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
