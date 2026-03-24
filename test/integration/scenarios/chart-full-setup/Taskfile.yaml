@@ -30,21 +30,6 @@ includes:
       TEST_CLUSTER_TYPE: "{{ .TEST_CLUSTER_TYPE }}"
       TEST_HELM_EXTRA_ARGS: "{{ .TEST_HELM_EXTRA_ARGS }}"
       VALUES_CONFIG: "{{ .VALUES_CONFIG }}"
-  test.preflight:
-    taskfile: ../lib/testsuite-deploy-taskfile.yaml
-    vars:
-      testID: preflight
-      chartDir: "{{ .TEST_CHART_DIR }}"
-  test.core:
-    taskfile: ../lib/testsuite-deploy-taskfile.yaml
-    vars:
-      testID: core
-      chartDir: "{{ .TEST_CHART_DIR }}"
-  test.playwright.core:
-    taskfile: ../lib/testsuite-deploy-taskfile-playwright.yaml
-    vars:
-      testID: playwright.core
-      chartDir: "{{ .TEST_CHART_DIR }}"
 
 tasks:
   # =============================================================================
@@ -93,17 +78,12 @@ tasks:
 
   setup.pre:
     env:
-      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
       # Needed for sub scripts.
       TEST_VALUES_BASE_DIR: "{{ .TEST_VALUES_BASE_DIR }}"
       TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
     cmds:
     # Set Venom vars.
     - |
-      echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
-      
       # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
       REPO_ROOT="$(git rev-parse --show-toplevel)"
       SCENARIO_DIR="$(cd "{{ .LAYERED_VALUES_DIR }}/.." && pwd)"
@@ -147,13 +127,6 @@ tasks:
       PERSISTENCE="${TEST_PERSISTENCE:-$(if [ "$ES_ENABLED" = "true" ]; then echo "elasticsearch"; else echo "opensearch"; fi)}"
       
       echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
-      echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-      echo "VENOM_VAR_SKIP_TEST_KEYCLOAK=$( [ "${PERSISTENCE}" = "elasticsearch" ] && [ "${IDENTITY}" = "keycloak" ] || echo false )" >> "${VARIABLES_ENV_FILE}"
-      echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
-      echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
-      # In case the Zeebe version has not been released officially yet.
-      echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
-      cat "${VARIABLES_ENV_FILE}"
     - |
       {{ if eq .TEST_CHART_FLOW "upgrade-patch" }}
         # Extract OpenShift values from released chart for upgrade test.
@@ -225,13 +198,8 @@ tasks:
   setup.venom.env:
     preconditions:
       - test -n "${TEST_INGRESS_HOST}"
-    env:
-      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
       - |
-        echo "VENOM_VAR_SKIP_TEST_INGRESS=false" >> "${VARIABLES_ENV_FILE}"
-        echo "VENOM_VAR_TEST_INGRESS_HOST=${TEST_INGRESS_HOST}" >> "${VARIABLES_ENV_FILE}"
-        echo "VENOM_VAR_SKIP_TEST_WEBMODELER=false" >> "${VARIABLES_ENV_FILE}"
         
         # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.
         REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -273,12 +241,6 @@ tasks:
         VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$(echo "$ES_ENABLED" | yq 'not')
         
         echo "Skip Elasticsearch test: $VENOM_VAR_SKIP_TEST_ELASTICSEARCH"
-        echo "VENOM_VAR_SKIP_TEST_ELASTICSEARCH=$VENOM_VAR_SKIP_TEST_ELASTICSEARCH" >> "$VARIABLES_ENV_FILE"
-        echo "VENOM_EXTRA_ARGS=--var-from-file=./vars/variables-ingress-combined.yaml" >> "${VARIABLES_ENV_FILE}"
-        echo "ZEEBE_VERSION=$(yq '.zeebe.image.tag' {{ .TEST_CHART_DIR }}/values.yaml)" >> "${VARIABLES_ENV_FILE}"
-        # In case the Zeebe version has not been released officially yet.
-        echo "ZEEBE_VERSION_FALLBACK=$(grep zbctl ../../../../.tool-versions | cut -d " " -f 2)" >> "${VARIABLES_ENV_FILE}"
-        cat ${VARIABLES_ENV_FILE}
 
   # =============================================================================
   # setup.exec - Uses selection + composition model (default)
@@ -306,8 +268,6 @@ tasks:
   # =============================================================================
   setup.exec:
     desc: "Install helm chart using selection + composition configuration"
-    env:
-      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - |
       set -o pipefail
@@ -381,8 +341,6 @@ tasks:
   # =============================================================================
   setup.exec.layered:
     desc: "DEPRECATED: Use setup.exec instead. Install helm chart using layered values configuration"
-    env:
-      VARIABLES_ENV_FILE: "{{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env"
     cmds:
     - task: setup.exec
 
@@ -412,7 +370,6 @@ tasks:
   setup.clean:
     cmds:
     - kubectl delete secret registry-camunda-cloud --ignore-not-found=true
-    - git checkout {{ .TEST_CHART_DIR }}/test/integration/testsuites/vars/files/variables.env
 
   entra.update-redirect-uris:
     desc: "Update Entra application redirect URIs for current TEST_INGRESS_HOST"
