@@ -82,10 +82,10 @@ func TestMapScenarioToConfig(t *testing.T) {
 
 		// Persistence derivation
 		{
-			name:            "opensearch maps to opensearch persistence",
+			name:            "opensearch maps to opensearch-external persistence",
 			scenario:        "opensearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch",
+			wantPersistence: "opensearch-external",
 			wantPlatform:    "gke",
 		},
 		{
@@ -198,7 +198,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "combined qa + opensearch + eks",
 			scenario:        "qa-opensearch-eks",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch",
+			wantPersistence: "opensearch-external",
 			wantPlatform:    "eks",
 			wantQA:          true,
 		},
@@ -489,7 +489,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch.yaml, eks.yaml
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch-external.yaml, eks.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
@@ -498,7 +498,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			"values/base.yaml",
 			"values/base-qa.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/opensearch.yaml",
+			"values/persistence/opensearch-external.yaml",
 			"values/platform/eks.yaml",
 		}
 		for i, suffix := range expectedSuffixes {

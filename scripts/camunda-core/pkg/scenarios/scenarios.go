@@ -347,7 +347,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive persistence
 	switch {
 	case strings.Contains(s, "opensearch"):
-		config.Persistence = "opensearch"
+		config.Persistence = "opensearch-external"
 	case strings.Contains(s, "rdbms") && strings.Contains(s, "oracle"):
 		config.Persistence = "rdbms-oracle"
 	case strings.Contains(s, "rdbms"):
