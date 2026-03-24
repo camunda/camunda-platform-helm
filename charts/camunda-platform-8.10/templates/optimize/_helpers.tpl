@@ -108,16 +108,16 @@ otherwise falls back to global.elasticsearch.auth.
 {{/*
 [optimize] Resolve zeebe prefix.
 Precedence matches optimize.defaultConfig: ES is checked first, OS only when ES is off.
-  ES chain: optimize.database.elasticsearch.prefix -> global.elasticsearch.prefix -> "zeebe-record"
-  OS chain: optimize.database.opensearch.prefix -> global.opensearch.prefix -> "zeebe-record"
+In 8.10 the global prefix keys are deprecated, so this helper uses the component-specific
+key directly (optimize.database.<backend>.prefix) with a hardcoded "zeebe-record" fallback.
 */}}
 {{- define "optimize.indexPrefix" -}}
 {{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
-  {{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | default "zeebe-record" -}}
+  {{- .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" -}}
 {{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
-  {{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | default "zeebe-record" -}}
+  {{- .Values.optimize.database.opensearch.prefix | default "zeebe-record" -}}
 {{- else -}}
-  {{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | default "zeebe-record" -}}
+  {{- .Values.optimize.database.elasticsearch.prefix | default "zeebe-record" -}}
 {{- end -}}
 {{- end -}}
 
