@@ -7,8 +7,8 @@ camundaVersions:
   supportStandard:
     - "8.8"
     - "8.7"
-  supportExtended:
     - "8.6"
+  supportExtended:
     - "8.5"
     - "8.4"
     - "8.3"
