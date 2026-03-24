@@ -184,6 +184,11 @@ type RuntimeFlags struct {
 	// When empty, prepareScenarioValues falls back to the ES_POOL_INDEX env var, then "0".
 	ESPoolIndex string
 
+	// OSPoolIndex specifies which OpenSearch pool to target (e.g., "0", "1", "2", or "3").
+	// When set, this value is used directly for $OS_POOL_INDEX substitution in values files.
+	// When empty, prepareScenarioValues falls back to the OS_POOL_INDEX env var, then "0".
+	OSPoolIndex string
+
 	// ChangedFlags tracks which CLI flags were explicitly set by the user.
 	// When populated, merge functions will not overwrite these flags with
 	// config-file values. This is essential for boolean flags whose zero
