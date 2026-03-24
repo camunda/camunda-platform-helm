@@ -310,6 +310,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive QA mode from prefix
 	if strings.HasPrefix(s, "qa-") {
 		config.QA = true
+		config.Persistence = "elasticsearch"
 	}
 
 	// Handle well-known composite scenarios that can't be derived from name parsing alone.
@@ -401,7 +402,7 @@ type BuilderOverrides struct {
 	Flow         string   // install, upgrade-patch, upgrade-minor
 	QA           bool
 	ImageTags    bool
-	ImageTagsSet bool   // true when --image-tags was explicitly provided (prevents auto-detection override)
+	ImageTagsSet bool // true when --image-tags was explicitly provided (prevents auto-detection override)
 	Upgrade      bool
 	ChartVersion string
 	ValuesConfig string // JSON config string; if it contains *_IMAGE_TAG keys, ImageTags is auto-enabled (only when ImageTagsSet is false)
