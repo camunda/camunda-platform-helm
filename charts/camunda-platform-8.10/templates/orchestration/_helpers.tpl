@@ -300,7 +300,7 @@ Authentication.
 
 
 {{- define "orchestration.hasCamundaExporter" -}}
-{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled (not .Values.orchestration.exporters.rdbms.enabled) -}}
+{{- and (not (eq (include "orchestration.secondaryStorage" .) "none")) .Values.orchestration.exporters.camunda.enabled -}}
 {{- end -}}
 
 {{- define "orchestration.hasNoExporter" -}}
@@ -315,7 +315,7 @@ and
 {{- define "orchestration.hasLegacyElasticsearchExporter" -}}
 {{- and
       (or 
-        (and .Values.orchestration.exporters.rdbms.enabled .Values.optimize.enabled)
+        .Values.optimize.enabled
         (or
           (and .Values.global.elasticsearch.enabled .Values.orchestration.exporters.zeebe.enabled)
           (and (or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled) .Values.optimize.enabled)

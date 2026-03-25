@@ -32,11 +32,6 @@ management:
     base-path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath) | quote }}
 
 camunda:
-  {{- if .Values.orchestration.exporters.rdbms.enabled }}
-  backup:
-    webapps:
-      enabled: false
-  {{- end }}
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
   {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
