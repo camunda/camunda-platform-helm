@@ -365,8 +365,8 @@ tasks:
         {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values /tmp/extra-values-file.yaml \
         --values "$MERGED_VALUES" \
+        --values /tmp/extra-values-file.yaml \
         $LICENSE_KEY_ARGS \
         --set orchestration.upgrade.allowPreReleaseImages=true \
         --timeout 20m0s \
