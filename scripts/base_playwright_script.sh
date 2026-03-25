@@ -1075,6 +1075,11 @@ run_playwright_tests() {
   _setup_playwright_environment "$test_suite_path" "false"
   _install_playwright_browsers
 
+  # Log the installed e2e test suite version for debugging
+  local e2e_suite_version
+  e2e_suite_version=$(npm ls @camunda/e2e-test-suite --json 2>/dev/null | jq -r '.dependencies["@camunda/e2e-test-suite"].version // "unknown"') || e2e_suite_version="unknown"
+  info "E2E test suite version: ${e2e_suite_version}"
+
   reporter=$(_get_reporter "$reporter" "$show_html_report")
 
   # Enable Playwright debug and traces if requested
@@ -1140,6 +1145,11 @@ run_playwright_tests_hybrid() {
   [[ -n "$kube_context" ]] && log "Kube context: $kube_context"
 
   _setup_playwright_environment "$test_suite_path" "true"
+
+  # Log the installed e2e test suite version for debugging
+  local e2e_suite_version
+  e2e_suite_version=$(npm ls @camunda/e2e-test-suite --json 2>/dev/null | jq -r '.dependencies["@camunda/e2e-test-suite"].version // "unknown"') || e2e_suite_version="unknown"
+  info "E2E test suite version: ${e2e_suite_version}"
 
   local reporter
   reporter=$(_get_reporter "html" "$show_html_report")
