@@ -171,7 +171,7 @@ func acquireBearerToken(ctx context.Context, opts *Options) (string, error) {
 }
 
 const (
-	graphMaxAttempts = 10
+	graphMaxAttempts = 5
 )
 
 // graphBackoff waits an exponentially increasing duration before a retry.
