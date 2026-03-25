@@ -891,17 +891,6 @@ jobs:
           grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
           grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
 
-      - name: CI Setup - Upgrade - Set test type vars
-        id: test-type-vars-upgrade-minor
-        uses: ./.github/actions/test-type-vars
-        with:
-          chart-dir: "${{ inputs.camunda-helm-dir }}"
-          infra-type: "${{ inputs.infra-type }}"
-          platform: "${{ inputs.distro-platform }}"
-          values-enterprise: "${{ inputs.values-enterprise }}"
-          values-digest: "${{ inputs.values-digest }}"
-          flow: "${{ inputs.flow }}"
-
       - name: Helm - Upgrade - Package
         run: |
           task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
