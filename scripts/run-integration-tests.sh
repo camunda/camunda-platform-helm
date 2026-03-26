@@ -140,10 +140,15 @@ setup_env_file() {
       # Fallback to 8.7-style key name for upgrade scenarios (8.7 → 8.8)
       # where the secret was created by the previous chart version.
       if [[ -z "$secret" ]]; then
-        log "Key 'identity-${svc,,}-client-token' not found, falling back to 'identity-${svc,,}-client-password' (upgrade scenario)"
+        # In 8.7, "orchestration" was called "zeebe", so map the fallback key accordingly.
+        local fallback_svc="${svc,,}"
+        if [[ "$fallback_svc" == "orchestration" ]]; then
+          fallback_svc="zeebe"
+        fi
+        log "Key 'identity-${svc,,}-client-token' not found, falling back to 'identity-${fallback_svc}-client-password' (upgrade scenario)"
         secret=$($kubectl_cmd -n "$namespace" \
           get secret integration-test-credentials \
-          -o jsonpath="{.data.identity-${svc,,}-client-password}" | base64 -d)
+          -o jsonpath="{.data.identity-${fallback_svc}-client-password}" | base64 -d)
       fi
       mask_secret "$secret"
       echo "PLAYWRIGHT_VAR_${svc}_CLIENT_SECRET=${secret}" >> "$env_file"
