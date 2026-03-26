@@ -173,6 +173,7 @@ integration:
           auth: keycloak
           shortname: esarm
           exclude: []
+          skip-e2e: true  # The smoke tests in 8.10 don't support the external keycloak
           infra-type:
             gke: arm
           flow: install

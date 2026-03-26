@@ -172,6 +172,7 @@ func newMatrixRunCommand() *cobra.Command {
 		dockerHubPassword        string
 		ensureDockerHub          bool
 		useLatest                bool
+		useQA                    bool
 		yes                      bool
 	)
 
@@ -427,6 +428,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 				DockerHubPassword:     dockerHubPassword,
 				EnsureDockerHub:       ensureDockerHub,
 				UseLatest:             useLatest,
+				UseQA:                 useQA,
 			})
 
 			// Print summary (skip for dry-run/coverage since they print their own output)
@@ -483,6 +485,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
 	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
+	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 
 	registerMatrixShortnameCompletion(cmd)
