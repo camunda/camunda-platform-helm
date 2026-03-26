@@ -8,6 +8,7 @@ Chart.lock
 # exceptions
 !scripts/*.tgz
 .env*
+!.env.template
 **/*.png
 
 node_modules/

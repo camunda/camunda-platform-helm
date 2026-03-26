@@ -133,7 +133,7 @@ integration:
           features: [arm]
           persistence: elasticsearch-external
         - name: opensearch
-          enabled: true
+          enabled: false
           exclude: []
           shortname: oske
           auth: keycloak
@@ -142,7 +142,7 @@ integration:
           qa: false
           flow: install
         - name: opensearch-external
-          enabled: true
+          enabled: false
           shortname: osex
           exclude: []
           auth: keycloak
