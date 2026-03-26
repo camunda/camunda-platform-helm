@@ -40,15 +40,26 @@
 # systems mark the job as failed.
 # ============================================================================
 
-# Color definitions
-COLOR_RESET='\033[0m'
-COLOR_RED='\033[0;31m'
-COLOR_GREEN='\033[0;32m'
-COLOR_YELLOW='\033[0;33m'
-COLOR_BLUE='\033[0;34m'
-COLOR_MAGENTA='\033[0;35m'
-COLOR_CYAN='\033[0;36m'
-COLOR_GRAY='\033[0;90m'
+# Color definitions — disabled when stderr is not a terminal (e.g., redirected to a log file)
+if [[ -t 2 ]]; then
+  COLOR_RESET='\033[0m'
+  COLOR_RED='\033[0;31m'
+  COLOR_GREEN='\033[0;32m'
+  COLOR_YELLOW='\033[0;33m'
+  COLOR_BLUE='\033[0;34m'
+  COLOR_MAGENTA='\033[0;35m'
+  COLOR_CYAN='\033[0;36m'
+  COLOR_GRAY='\033[0;90m'
+else
+  COLOR_RESET=''
+  COLOR_RED=''
+  COLOR_GREEN=''
+  COLOR_YELLOW=''
+  COLOR_BLUE=''
+  COLOR_MAGENTA=''
+  COLOR_CYAN=''
+  COLOR_GRAY=''
+fi
 
 # Always-visible status output for long-running steps.
 # Use this instead of log() for messages the user must see regardless of -v.
@@ -262,8 +273,8 @@ _wait_for_dns_resolution() {
   _RESOLVED_IP=""
   _NEEDS_DNS_FALLBACK=false
 
-  # Skip if hostname is an IP address
-  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  # Skip if hostname is an IP address (IPv4 or IPv6)
+  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ "$hostname" == *:* ]]; then
     _RESOLVED_IP="$hostname"
     return 0
   fi
@@ -729,7 +740,6 @@ _get_reporter() {
 # For pods to be considered ready:
 #   - Completed/Succeeded pods (Jobs) are always considered ready
 #   - Running pods must have all containers ready (e.g., 1/1, 2/2)
-# Args: namespace
 # Args: namespace, [kube_context]
 _check_all_pods_ready() {
   local namespace="$1"
@@ -750,7 +760,7 @@ _check_all_pods_ready() {
   # READY column (field 2) shows "X/Y" - we need X==Y for ready
   # STATUS column (field 3) shows Running, Completed, Succeeded, etc.
   local not_ready_pods
-  not_ready_pods=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | awk '
+  not_ready_pods=$($kubectl_cmd get pods -n "$namespace" --no-headers 2>/dev/null | awk '
     # Skip completed jobs - they are always considered ready
     $3 == "Completed" || $3 == "Succeeded" { next }
     # For other pods, check if READY column shows all containers ready AND status is Running
@@ -761,8 +771,6 @@ _check_all_pods_ready() {
       }
     }
   ')
-  local not_ready
-  not_ready=$($kubectl_cmd get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || true)
   
   if [[ -z "$not_ready_pods" ]]; then
     return 0
@@ -818,16 +826,24 @@ _wait_for_pods_ready() {
     fi
     
     log "ERROR: Timeout waiting for pods to be Ready in namespace $namespace"
-    _dump_pod_status "$namespace"
+    _dump_pod_status "$namespace" "$kube_context"
     return 1
   fi
 }
 
 # Helper to dump pod status for diagnostics
+# Args: namespace, [kube_context]
 _dump_pod_status() {
   local namespace="$1"
+  local kube_context="${2:-}"
+  local kubectl_cmd="kubectl"
+
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
+
   log "Current pod status in namespace $namespace:"
-  kubectl get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
+  $kubectl_cmd get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
     log "  $line"
   done
 }
@@ -902,8 +918,12 @@ _run_playwright_with_retry() {
     # children terminate.  Using process substitution avoids this: the
     # shell only waits for the main command, not for the tee background
     # process.
+    #
+    # After the command exits we give the background `tee` a moment to
+    # flush remaining output so the subsequent grep sees complete data.
     "${playwright_cmd[@]}" > >(tee "$output_file") 2>&1
     playwright_rc=$?
+    sleep 1  # allow process-substitution tee to flush
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then
@@ -950,13 +970,13 @@ _run_playwright_with_retry() {
           continue
         else
           info "${COLOR_RED}Max retry attempts reached${COLOR_RESET}"
-          _dump_pod_status "$namespace"
+          _dump_pod_status "$namespace" "$kube_context"
           return $playwright_rc
         fi
       else
         # Pods are ready and no connection errors - legitimate test failure
         log "Pods are healthy and no connection errors detected - this appears to be a legitimate test failure"
-        _dump_pod_status "$namespace"
+        _dump_pod_status "$namespace" "$kube_context"
         return $playwright_rc
       fi
     else
