@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -208,6 +209,20 @@ type RuntimeFlags struct {
 	// run concurrently — each entry carries its own VENOM_CLIENT_ID and
 	// CONNECTORS_CLIENT_ID in an isolated map instead of relying on os.Setenv.
 	ExtraEnv map[string]string
+
+	// OnPhase is called when the deployment transitions to a new phase
+	// (e.g., "deploying", "testing"). Used by the matrix status display to
+	// show fine-grained progress. Nil disables the callback.
+	OnPhase func(phase string)
+
+	// ITOutputWriter, when non-nil, replaces os.Stdout/os.Stderr for
+	// integration test script output. Used by the matrix runner to redirect
+	// IT output to a per-entry log file instead of polluting the terminal.
+	ITOutputWriter io.Writer
+	// E2EOutputWriter, when non-nil, replaces os.Stdout/os.Stderr for
+	// e2e test script output. Used by the matrix runner to redirect
+	// e2e output to a per-entry log file instead of polluting the terminal.
+	E2EOutputWriter io.Writer
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".

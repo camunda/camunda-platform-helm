@@ -51,6 +51,10 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		return nil
 	}
 
+	if flags.OnPhase != nil {
+		flags.OnPhase("testing")
+	}
+
 	logging.Logger.Info().
 		Bool("integrationTests", runIT).
 		Bool("e2eTests", runE2E).
@@ -102,7 +106,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			output, err := runIntegrationTests(testCtx, repoRoot, chartPath, namespace, flags.Deployment.Platform, flags.Test.KubeContext, flags.Test.TestExclude, flags.Auth.Auth)
+			output, err := runIntegrationTests(testCtx, repoRoot, chartPath, namespace, flags.Deployment.Platform, flags.Test.KubeContext, flags.Test.TestExclude, flags.Auth.Auth, flags.ITOutputWriter)
 			resultCh <- TestResult{Type: "integration", Error: err, Output: output}
 		}()
 	}
@@ -111,7 +115,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude)
+			output, err := runE2ETests(testCtx, repoRoot, chartPath, namespace, flags.Test.KubeContext, flags.Test.TestExclude, flags.E2EOutputWriter)
 			resultCh <- TestResult{Type: "e2e", Error: err, Output: output}
 		}()
 	}
@@ -152,7 +156,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 }
 
 // runIntegrationTests executes the integration test script.
-func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude, testAuthType string) (string, error) {
+func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude, testAuthType string, outputSink io.Writer) (string, error) {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-integration-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
@@ -183,11 +187,11 @@ func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, pl
 		args = append(args, "--test-auth-type", testAuthType)
 	}
 
-	return executeScript(ctx, scriptPath, args, "integration")
+	return executeScript(ctx, scriptPath, args, "integration", outputSink)
 }
 
 // runE2ETests executes the e2e test script.
-func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude string) (string, error) {
+func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContext, testExclude string, outputSink io.Writer) (string, error) {
 	scriptPath := filepath.Join(repoRoot, "scripts", "run-e2e-tests.sh")
 
 	if _, err := os.Stat(scriptPath); err != nil {
@@ -214,14 +218,14 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 		args = append(args, "--test-exclude", testExclude)
 	}
 
-	return executeScript(ctx, scriptPath, args, "e2e")
+	return executeScript(ctx, scriptPath, args, "e2e", outputSink)
 }
 
 // executeScript runs a shell script with the given arguments and returns the
 // captured combined output alongside any error.
 //
-// Output is tee'd: it streams to os.Stdout/os.Stderr in real time (so the user
-// sees live progress) and is simultaneously captured into a buffer. The buffer
+// Output is tee'd: it streams to the provided outputSink (or os.Stdout/os.Stderr
+// when nil) in real time and is simultaneously captured into a buffer. The buffer
 // contents are returned so callers can include them in diagnostics on failure.
 //
 // The subprocess is placed in its own process group (Setpgid) so that when
@@ -232,12 +236,19 @@ func runE2ETests(ctx context.Context, repoRoot, chartPath, namespace, kubeContex
 // Without this, exec.CommandContext sends os.Kill (SIGKILL) only to the
 // direct child PID, and any grandchild processes (npx, playwright, tee, etc.)
 // continue running until they finish or the terminal is closed.
-func executeScript(ctx context.Context, scriptPath string, args []string, testType string) (string, error) {
+func executeScript(ctx context.Context, scriptPath string, args []string, testType string, outputSink io.Writer) (string, error) {
 	var buf bytes.Buffer
 
+	stdoutW := io.Writer(os.Stdout)
+	stderrW := io.Writer(os.Stderr)
+	if outputSink != nil {
+		stdoutW = outputSink
+		stderrW = outputSink
+	}
+
 	cmd := exec.CommandContext(ctx, scriptPath, args...)
-	cmd.Stdout = io.MultiWriter(os.Stdout, &buf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &buf)
+	cmd.Stdout = io.MultiWriter(stdoutW, &buf)
+	cmd.Stderr = io.MultiWriter(stderrW, &buf)
 	cmd.Env = os.Environ()
 	// If context cancellation does not terminate children promptly, force-kill
 	// after a short grace period to prevent hung matrix entries.
