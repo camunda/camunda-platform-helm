@@ -2438,11 +2438,11 @@ orchestration:
         type: ""
         ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
         issuer: ""
-        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`. Supports templating (e.g., {{ .Release.Name }}).
+        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         authUrl: ""
-        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`. Supports templating (e.g., {{ .Release.Name }}).
+        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         tokenUrl: ""
-        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Supports templating (e.g., {{ .Release.Name }}).
+        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
         ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
         usernameClaim: preferred_username
