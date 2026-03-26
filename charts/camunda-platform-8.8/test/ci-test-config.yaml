@@ -142,7 +142,7 @@ integration:
           qa: false
           flow: install
         - name: opensearch-external
-          enabled: false
+          enabled: true
           shortname: osex
           exclude: []
           auth: keycloak

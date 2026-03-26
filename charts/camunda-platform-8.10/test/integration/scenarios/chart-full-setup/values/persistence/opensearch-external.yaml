@@ -26,38 +26,10 @@ orchestration:
     prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
   env:
     - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
-      value: $OPERATE_INDEX_PREFIX-$FLOW
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
     # group2
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX
-      value: custom-zeebe
-    # Security mapping rules for orchestration authorization.
-    # Uses env var placeholders so the same file works for both keycloak and OIDC:
-    #   keycloak: VENOM_CLIENT_ID=venom, CONNECTORS_CLIENT_ID=connectors
-    #   OIDC (Entra): VENOM_CLIENT_ID=<entra-app-guid>, CONNECTORS_CLIENT_ID=<entra-child-app-guid>
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "preferred_username"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: "demo"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "$VENOM_CLIENT_ID"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
-      value: "$CONNECTORS_CLIENT_ID"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
-      value: "connectors-client-mapping-rule"
+      value: $ORCHESTRATION_INDEX_PREFIX-$FLOW
 
 optimize:
   enabled: true
