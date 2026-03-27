@@ -179,6 +179,10 @@ camunda:
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
       {{- end }}
+      {{- if .Values.orchestration.security.initialization.mappingRules }}
+      mapping-rules:
+        {{- .Values.orchestration.security.initialization.mappingRules | toYaml | nindent 8 }}
+      {{- end }}
       {{- if .Values.orchestration.security.initialization.authorizations }}
       authorizations:
         {{- .Values.orchestration.security.initialization.authorizations | toYaml | nindent 8 }}
