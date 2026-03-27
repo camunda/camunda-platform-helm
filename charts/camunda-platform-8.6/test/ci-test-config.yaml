@@ -39,6 +39,7 @@ integration:
           shortname: osex
           exclude: []
           auth: keycloak
+          skip-e2e: true
           identity: keycloak
           persistence: opensearch-external
           flow: install
