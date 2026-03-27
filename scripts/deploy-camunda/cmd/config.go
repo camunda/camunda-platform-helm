@@ -24,6 +24,7 @@ func newConfigCommand() *cobra.Command {
 	configCmd.AddCommand(newSetCommand())
 	configCmd.AddCommand(newGetCommand())
 	configCmd.AddCommand(newCreateCommand())
+	configCmd.AddCommand(newInitCommand())
 
 	return configCmd
 }
