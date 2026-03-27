@@ -2690,7 +2690,10 @@ identityKeycloak:
         adaptSecurityContext: "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
   ## @param identityKeycloak.nameOverride the name used for Keycloak.
   nameOverride: "keycloak"
-
+  ## @extra identityKeycloak.networkPolicy networkPolicy configuration.
+  networkPolicy:
+    ## @param identityKeycloak.networkPolicy.enabled disables default keycloak network policy
+    enabled: false
   ## @extra identityKeycloak.image configuration.
   # https://hub.docker.com/r/bitnami/keycloak/tags
   image:
