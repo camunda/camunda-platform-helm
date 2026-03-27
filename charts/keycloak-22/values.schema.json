@@ -1076,7 +1076,7 @@
                     "description": "List of possible endpoints to kube-apiserver (limit to your cluster settings to increase security)",
                     "default": "[]",
                     "items": {
-                        "type": "string"
+                        "type": "number"
                     }
                 },
                 "extraIngress": {
@@ -1235,7 +1235,7 @@
                                     "description": "HPA scaling policies when scaling down",
                                     "default": "[]",
                                     "items": {
-                                        "type": "string"
+                                        "type": "object"
                                     }
                                 }
                             }
@@ -1293,7 +1293,7 @@
                             "description": "The endpoint configuration of the ServiceMonitor. Path is mandatory. Interval, timeout and labellings can be overwritten.",
                             "default": "[]",
                             "items": {
-                                "type": "string"
+                                "type": "object"
                             }
                         },
                         "path": {

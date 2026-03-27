@@ -45,6 +45,7 @@ func (s *TemplateGoldenTest) TestDifferentValuesInputs() {
 			Values:                  s.SetValues,
 			RenderTemplateExtraArgs: s.ExtraHelmArgs,
 			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().NoError(err, "Failed to render")
 				s.IgnoredLines = append(s.IgnoredLines, `\s+helm.sh/chart:\s+.*`)
 				bytes := []byte(output)
 				for _, ignoredLine := range s.IgnoredLines {
