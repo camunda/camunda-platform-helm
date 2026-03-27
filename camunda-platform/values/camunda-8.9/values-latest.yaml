@@ -18,13 +18,13 @@ connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: SNAPSHOT
+    tag: 8.9-SNAPSHOT
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8-latest
+    tag: 8.9-SNAPSHOT
 
 webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
@@ -40,7 +40,7 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: SNAPSHOT
+    tag: 8.9-SNAPSHOT
 
 #
 # Identity
@@ -50,7 +50,7 @@ identity:
   # https://hub.docker.com/r/camunda/identity/tags
   image:
     repository: camunda/identity
-    tag: SNAPSHOT
+    tag: 8.9-SNAPSHOT
 
 identityKeycloak:
   # https://hub.docker.com/r/bitnami/keycloak/tags
