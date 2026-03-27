@@ -9,34 +9,36 @@ import (
 	"github.com/charmbracelet/huh"
 )
 
-// stepConfigLocation asks where to save the config file.
-func stepConfigLocation(configPath *string) *huh.Group {
-	return huh.NewGroup(
-		huh.NewSelect[string]().
-			Title("Where should your config live?").
-			Description("Project-local configs are great for per-repo settings; global configs apply everywhere.").
-			Options(
-				huh.NewOption(".camunda-deploy.yaml (this project)", "local"),
-				huh.NewOption("~/.config/camunda/deploy.yaml (global)", "global"),
-				huh.NewOption("Custom path", "custom"),
-			).
-			Value(configPath),
-	)
+// k8sNameValidator validates Kubernetes-compatible names (RFC 1123 DNS labels).
+func k8sNameValidator(fieldName string) func(string) error {
+	return func(s string) error {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return fmt.Errorf("%s cannot be empty", fieldName)
+		}
+		if len(s) > 63 {
+			return fmt.Errorf("%s must be 63 characters or fewer", fieldName)
+		}
+		for i, c := range s {
+			if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c == '-' && i > 0 && i < len(s)-1)) {
+				if c == '-' {
+					return fmt.Errorf("%s cannot start or end with a hyphen", fieldName)
+				}
+				return fmt.Errorf("%s must contain only lowercase letters, numbers, and hyphens", fieldName)
+			}
+		}
+		return nil
+	}
 }
 
-// stepCustomPath asks for a custom config file path.
-func stepCustomPath(customPath *string) *huh.Group {
+// stepWelcome shows the wizard introduction.
+func stepWelcome() *huh.Group {
 	return huh.NewGroup(
-		huh.NewInput().
-			Title("Config file path").
-			Placeholder("/path/to/deploy.yaml").
-			Value(customPath).
-			Validate(func(s string) error {
-				if strings.TrimSpace(s) == "" {
-					return fmt.Errorf("path cannot be empty")
-				}
-				return nil
-			}),
+		huh.NewNote().
+			Title("Camunda Platform — Deployment Config Wizard").
+			Description("This wizard will guide you through creating a deployment\nconfiguration for Camunda Platform.\n\nYou'll configure:\n  • Platform and chart source\n  • Namespace, release, and scenario\n  • Optionally: ingress, auth, and secrets\n").
+			Next(true).
+			NextLabel("Let's go →"),
 	)
 }
 
@@ -44,22 +46,12 @@ func stepCustomPath(customPath *string) *huh.Group {
 func stepDeploymentProfile(deploymentName *string) *huh.Group {
 	return huh.NewGroup(
 		huh.NewInput().
-			Title("Deployment profile name").
-			Description("A name for this deployment configuration (e.g., dev, staging, prod).").
+			Title("Name this deployment").
+			Description("A short label for this configuration (e.g., dev, staging, prod).\nYou can have multiple deployment profiles.").
 			Placeholder("default").
 			Value(deploymentName).
-			Validate(func(s string) error {
-				if strings.TrimSpace(s) == "" {
-					return fmt.Errorf("name cannot be empty")
-				}
-				for _, c := range s {
-					if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
-						return fmt.Errorf("use lowercase letters, numbers, and hyphens only")
-					}
-				}
-				return nil
-			}),
-	)
+			Validate(k8sNameValidator("deployment name")),
+	).Title("Getting Started  (1/5)")
 }
 
 // stepPlatform asks for the deployment platform.
@@ -69,11 +61,11 @@ func stepPlatform(platform *string, ds DataSource) *huh.Group {
 		label := p
 		switch p {
 		case "gke":
-			label = "gke (Google Kubernetes Engine)"
+			label = "gke — Google Kubernetes Engine"
 		case "eks":
-			label = "eks (Amazon EKS)"
+			label = "eks — Amazon EKS"
 		case "rosa":
-			label = "rosa (Red Hat OpenShift on AWS)"
+			label = "rosa — Red Hat OpenShift on AWS"
 		}
 		options = append(options, huh.NewOption(label, p))
 	}
@@ -83,7 +75,7 @@ func stepPlatform(platform *string, ds DataSource) *huh.Group {
 			Title("Target platform").
 			Options(options...).
 			Value(platform),
-	)
+	).Title("Platform  (2/5)")
 }
 
 // chartSourceChoice tracks which chart source mode the user picked.
@@ -98,28 +90,28 @@ type chartSourceChoice struct {
 func stepChartSource(cs *chartSourceChoice) *huh.Group {
 	return huh.NewGroup(
 		huh.NewSelect[string]().
-			Title("Chart source").
-			Description("How do you want to specify the Helm chart?").
+			Title("How should we find the Helm chart?").
+			Description("Local path if you have a repo checkout; remote for OCI/Helm registry.").
 			Options(
-				huh.NewOption("Local chart path (from repo checkout)", "local"),
+				huh.NewOption("Local chart path (repo checkout)", "local"),
 				huh.NewOption("Remote chart (OCI registry / Helm repo)", "remote"),
 			).
 			Value(&cs.Mode),
-	)
+	).Title("Chart Source  (3/5)")
 }
 
 // stepChartLocal asks for the local chart path.
 func stepChartLocal(cs *chartSourceChoice, repoRoot string) *huh.Group {
-	defaultPath := ""
+	placeholder := "path/to/charts/camunda-platform"
 	if repoRoot != "" {
-		defaultPath = filepath.Join(repoRoot, "charts", "camunda-platform")
+		placeholder = filepath.Join(repoRoot, "charts", "camunda-platform")
 	}
 
 	return huh.NewGroup(
 		huh.NewInput().
 			Title("Chart path").
 			Description("Path to the local Helm chart directory.").
-			Placeholder(defaultPath).
+			Placeholder(placeholder).
 			Value(&cs.ChartPath).
 			Validate(func(s string) error {
 				if strings.TrimSpace(s) == "" {
@@ -152,38 +144,51 @@ func stepChartRemote(cs *chartSourceChoice) *huh.Group {
 	)
 }
 
-// stepDeploymentIdentity asks for namespace, release, scenario, and flow.
-func stepDeploymentIdentity(ns, release, scenario *string, flow *string, ds DataSource, repoRoot string) *huh.Group {
+// stepDeploymentIdentity asks for namespace, release, and flow.
+func stepDeploymentIdentity(ns, release *string, flow *string) *huh.Group {
 	flowOptions := []huh.Option[string]{
-		huh.NewOption("install (fresh deployment)", "install"),
-		huh.NewOption("upgrade (upgrade existing)", "upgrade"),
+		huh.NewOption("Install — fresh deployment", "install"),
+		huh.NewOption("Upgrade — upgrade existing deployment", "upgrade"),
 	}
 
 	return huh.NewGroup(
 		huh.NewInput().
 			Title("Kubernetes namespace").
-			Placeholder("camunda").
 			Value(ns).
-			Validate(func(s string) error {
-				if strings.TrimSpace(s) == "" {
-					return fmt.Errorf("namespace cannot be empty")
-				}
-				return nil
-			}),
+			Validate(k8sNameValidator("namespace")),
 		huh.NewInput().
 			Title("Helm release name").
-			Placeholder("camunda").
 			Value(release).
-			Validate(func(s string) error {
-				if strings.TrimSpace(s) == "" {
-					return fmt.Errorf("release name cannot be empty")
-				}
-				return nil
-			}),
+			Validate(k8sNameValidator("release name")),
+		huh.NewSelect[string]().
+			Title("What do you want to do?").
+			Options(flowOptions...).
+			Value(flow),
+	).Title("Deployment Identity  (4/5)")
+}
+
+// stepScenarioSelect shows a select when scenarios are discoverable.
+func stepScenarioSelect(scenario *string, scenarios []string) *huh.Group {
+	opts := make([]huh.Option[string], len(scenarios))
+	for i, s := range scenarios {
+		opts[i] = huh.NewOption(s, s)
+	}
+	return huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("Deployment scenario").
+			Description("Select a scenario from the repository.").
+			Options(opts...).
+			Filtering(true).
+			Value(scenario),
+	)
+}
+
+// stepScenarioInput shows a text input when scenarios can't be discovered.
+func stepScenarioInput(scenario *string) *huh.Group {
+	return huh.NewGroup(
 		huh.NewInput().
-			Title("Scenario").
-			Description("Deployment scenario name (e.g., default, keycloak-mt).").
-			Placeholder("default").
+			Title("Deployment scenario").
+			Description("Scenario name (e.g., default, keycloak-mt).").
 			Value(scenario).
 			Validate(func(s string) error {
 				if strings.TrimSpace(s) == "" {
@@ -191,10 +196,6 @@ func stepDeploymentIdentity(ns, release, scenario *string, flow *string, ds Data
 				}
 				return nil
 			}),
-		huh.NewSelect[string]().
-			Title("Flow").
-			Options(flowOptions...).
-			Value(flow),
 	)
 }
 
@@ -203,25 +204,25 @@ func stepAdvancedPrompt(wantAdvanced *bool) *huh.Group {
 	return huh.NewGroup(
 		huh.NewConfirm().
 			Title("Configure advanced settings?").
-			Description("Ingress, auth, secrets, and testing options.").
+			Description("Ingress, authentication, and secrets.").
 			Affirmative("Yes").
-			Negative("No").
+			Negative("No, use defaults").
 			Value(wantAdvanced),
-	)
+	).Title("Advanced Settings  (5/5)")
 }
 
 // stepIngress asks for ingress configuration.
-func stepIngress(ingressMode *string, hostname, subdomain, baseDomain *string) *huh.Group {
+func stepIngress(ingressMode *string, ingressHost, ingressSub, ingressBase *string) *huh.Group {
 	return huh.NewGroup(
 		huh.NewSelect[string]().
 			Title("Ingress configuration").
 			Options(
-				huh.NewOption("Skip (no ingress)", "skip"),
-				huh.NewOption("Full hostname", "hostname"),
+				huh.NewOption("Skip — no ingress", "skip"),
+				huh.NewOption("Full hostname (e.g., camunda.example.com)", "hostname"),
 				huh.NewOption("Subdomain + base domain", "subdomain"),
 			).
 			Value(ingressMode),
-	)
+	).Title("Ingress")
 }
 
 // stepIngressHostname asks for the full ingress hostname.
@@ -271,14 +272,14 @@ func stepAuth(auth *string) *huh.Group {
 		huh.NewSelect[string]().
 			Title("Authentication").
 			Options(
-				huh.NewOption("keycloak (default, bundled Keycloak)", "keycloak"),
-				huh.NewOption("keycloak-external (external Keycloak)", "keycloak-external"),
-				huh.NewOption("oidc (generic OIDC provider)", "oidc"),
-				huh.NewOption("basic (basic auth)", "basic"),
-				huh.NewOption("hybrid (combined)", "hybrid"),
+				huh.NewOption("Bundled Keycloak (default)", "keycloak"),
+				huh.NewOption("External Keycloak", "keycloak-external"),
+				huh.NewOption("Generic OIDC provider", "oidc"),
+				huh.NewOption("Basic authentication", "basic"),
+				huh.NewOption("Hybrid (combined)", "hybrid"),
 			).
 			Value(auth),
-	)
+	).Title("Authentication")
 }
 
 // stepSecrets asks for secrets configuration.
@@ -296,6 +297,47 @@ func stepSecrets(externalSecrets, autoGenerate *bool) *huh.Group {
 			Affirmative("Yes").
 			Negative("No").
 			Value(autoGenerate),
+	).Title("Secrets")
+}
+
+// stepConfigLocation asks where to save the config file.
+func stepConfigLocation(configPath *string) *huh.Group {
+	return huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("Where should your config live?").
+			Description("Project-local configs are great for per-repo settings;\nglobal configs apply everywhere.").
+			Options(
+				huh.NewOption(".camunda-deploy.yaml (this project)", "local"),
+				huh.NewOption("~/.config/camunda/deploy.yaml (global)", "global"),
+				huh.NewOption("Custom path", "custom"),
+			).
+			Value(configPath),
+	).Title("Save Location")
+}
+
+// stepCustomPath asks for a custom config file path.
+func stepCustomPath(customPath *string) *huh.Group {
+	return huh.NewGroup(
+		huh.NewInput().
+			Title("Config file path").
+			Placeholder("/path/to/deploy.yaml").
+			Value(customPath).
+			Validate(func(s string) error {
+				if strings.TrimSpace(s) == "" {
+					return fmt.Errorf("path cannot be empty")
+				}
+				return nil
+			}),
 	)
 }
 
+// stepSummary shows a preview of the config before writing.
+func stepSummary(summaryFn func() string) *huh.Group {
+	return huh.NewGroup(
+		huh.NewNote().
+			Title("Review Your Configuration").
+			DescriptionFunc(summaryFn, nil).
+			Next(true).
+			NextLabel("Write config →"),
+	).Title("Confirm")
+}

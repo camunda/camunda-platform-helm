@@ -6,6 +6,7 @@ import (
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/wizard"
 
+	"github.com/jwalton/gchalk"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -62,7 +63,8 @@ Examples:
 				data, readErr := os.ReadFile(cfgPath)
 				if readErr == nil {
 					_ = os.WriteFile(backupPath, data, 0o644)
-					fmt.Fprintf(os.Stdout, "Backed up existing config to %s\n", backupPath)
+					fmt.Fprintf(os.Stdout, "%s Existing config backed up to %s\n",
+						gchalk.Yellow("!"), backupPath)
 				}
 			}
 
@@ -71,9 +73,8 @@ Examples:
 				return fmt.Errorf("failed to write config: %w", err)
 			}
 
-			fmt.Fprintf(os.Stdout, "\nConfig written to %s\n", cfgPath)
-			fmt.Fprintf(os.Stdout, "Active deployment: %s\n", rc.Current)
-			fmt.Fprintf(os.Stdout, "\nRun 'deploy-camunda config show' to review, or 'deploy-camunda' to deploy.\n")
+			// Styled completion output
+			printCompletion(rc, cfgPath)
 
 			return nil
 		},
@@ -83,4 +84,36 @@ Examples:
 	cmd.Flags().BoolVar(&accessible, "accessible", false, "Use plain prompts instead of TUI (for non-TTY environments)")
 
 	return cmd
+}
+
+// printCompletion shows a styled success message after the wizard completes.
+func printCompletion(rc *config.RootConfig, cfgPath string) {
+	check := gchalk.Green("✓")
+	label := func(s string) string { return gchalk.Cyan(s) }
+	value := func(s string) string { return gchalk.Magenta(s) }
+
+	fmt.Fprintf(os.Stdout, "\n%s Configuration saved to %s\n\n", check, gchalk.Bold(cfgPath))
+
+	if rc.Current != "" {
+		if dep, ok := rc.Deployments[rc.Current]; ok {
+			fmt.Fprintf(os.Stdout, "  %s  %s\n", label("Profile:"), value(rc.Current))
+			fmt.Fprintf(os.Stdout, "  %s %s\n", label("Platform:"), value(dep.Platform))
+			if dep.ChartPath != "" {
+				fmt.Fprintf(os.Stdout, "  %s    %s\n", label("Chart:"), value(dep.ChartPath))
+			} else if dep.Chart != "" {
+				v := dep.Chart
+				if dep.Version != "" {
+					v += "@" + dep.Version
+				}
+				fmt.Fprintf(os.Stdout, "  %s    %s\n", label("Chart:"), value(v))
+			}
+			fmt.Fprintf(os.Stdout, "  %s    %s/%s\n", label("Where:"), value(dep.Namespace), value(dep.Release))
+			fmt.Fprintf(os.Stdout, "  %s %s\n", label("Scenario:"), value(dep.Scenario))
+			fmt.Fprintf(os.Stdout, "  %s     %s\n", label("Flow:"), value(dep.Flow))
+		}
+	}
+
+	fmt.Fprintf(os.Stdout, "\n%s\n", gchalk.Dim("Next steps:"))
+	fmt.Fprintf(os.Stdout, "  %s    Review your config\n", gchalk.Cyan("deploy-camunda config show"))
+	fmt.Fprintf(os.Stdout, "  %s                Start deployment\n", gchalk.Cyan("deploy-camunda"))
 }

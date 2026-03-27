@@ -26,16 +26,16 @@ func NewWizard(ds DataSource, existing *config.RootConfig, accessible bool) *Wiz
 // Run executes the interactive wizard and returns the populated config.
 // It does NOT write to disk — the caller owns the write.
 func (w *Wizard) Run() (rc *config.RootConfig, configPath string, err error) {
-	// --- answers ---
+	// --- answers with sensible defaults ---
 	var (
 		configChoice   = "local"
 		customPath     string
 		deploymentName = "default"
 		platform       = "gke"
 		cs             = chartSourceChoice{Mode: "local"}
-		namespace      string
-		release        string
-		scenario       string
+		namespace      = "camunda"
+		release        = "camunda"
+		scenario       = "default"
 		flow           = "install"
 		wantAdvanced   bool
 		ingressMode    = "skip"
@@ -50,7 +50,29 @@ func (w *Wizard) Run() (rc *config.RootConfig, configPath string, err error) {
 	// Auto-detect repo root for chart path default
 	repoRoot, _ := w.ds.DetectRepoRoot()
 
-	// Pre-populate defaults from existing config (edit mode)
+	// Pre-fill chart path from repo root when available
+	if repoRoot != "" {
+		cs.ChartPath = filepath.Join(repoRoot, "charts", "camunda-platform")
+	}
+
+	// Auto-detect platform from current kube context
+	if contexts, err := w.ds.KubeContexts(); err == nil {
+		for _, ctx := range contexts {
+			lower := strings.ToLower(ctx)
+			if strings.Contains(lower, "gke") {
+				platform = "gke"
+				break
+			} else if strings.Contains(lower, "eks") {
+				platform = "eks"
+				break
+			} else if strings.Contains(lower, "rosa") || strings.Contains(lower, "openshift") {
+				platform = "rosa"
+				break
+			}
+		}
+	}
+
+	// Pre-populate from existing config in edit mode
 	if w.existing != nil {
 		if w.existing.Platform != "" {
 			platform = w.existing.Platform
@@ -58,15 +80,72 @@ func (w *Wizard) Run() (rc *config.RootConfig, configPath string, err error) {
 		if w.existing.Flow != "" {
 			flow = w.existing.Flow
 		}
+		// Pre-populate from current deployment
+		if w.existing.Current != "" {
+			deploymentName = w.existing.Current
+			if dep, ok := w.existing.Deployments[w.existing.Current]; ok {
+				if dep.Namespace != "" {
+					namespace = dep.Namespace
+				}
+				if dep.Release != "" {
+					release = dep.Release
+				}
+				if dep.Scenario != "" {
+					scenario = dep.Scenario
+				}
+				if dep.Platform != "" {
+					platform = dep.Platform
+				}
+				if dep.Flow != "" {
+					flow = dep.Flow
+				}
+				if dep.ChartPath != "" {
+					cs.Mode = "local"
+					cs.ChartPath = dep.ChartPath
+				}
+				if dep.Chart != "" {
+					cs.Mode = "remote"
+					cs.Chart = dep.Chart
+					cs.Version = dep.Version
+				}
+				if dep.Auth != "" {
+					auth = dep.Auth
+				}
+				if dep.IngressHost != "" {
+					ingressMode = "hostname"
+					ingressHost = dep.IngressHost
+					wantAdvanced = true
+				}
+				if dep.IngressSubdomain != "" {
+					ingressMode = "subdomain"
+					ingressSub = dep.IngressSubdomain
+					ingressBase = dep.IngressBaseDomain
+					wantAdvanced = true
+				}
+				if dep.ExternalSecrets != nil {
+					extSecrets = *dep.ExternalSecrets
+					wantAdvanced = true
+				}
+				if dep.AutoGenerateSecrets != nil {
+					autoGenSecrets = *dep.AutoGenerateSecrets
+					wantAdvanced = true
+				}
+			}
+		}
 	}
 
-	// Build a single form with conditional groups via WithHideFunc.
-	// This avoids stdin buffering issues with sequential forms in accessible mode.
+	// Discover scenarios from repo
+	var discoveredScenarios []string
+	if repoRoot != "" {
+		scenarioPath := filepath.Join(repoRoot, "test", "integration", "scenarios")
+		if s, err := w.ds.ListScenarios(scenarioPath); err == nil && len(s) > 0 {
+			discoveredScenarios = s
+		}
+	}
+
+	// --- Build the form ---
 	form := huh.NewForm(
-		// --- Core settings ---
-		stepConfigLocation(&configChoice),
-		stepCustomPath(&customPath).
-			WithHideFunc(func() bool { return configChoice != "custom" }),
+		stepWelcome(),
 		stepDeploymentProfile(&deploymentName),
 		stepPlatform(&platform, w.ds),
 		stepChartSource(&cs),
@@ -74,9 +153,13 @@ func (w *Wizard) Run() (rc *config.RootConfig, configPath string, err error) {
 			WithHideFunc(func() bool { return cs.Mode != "local" }),
 		stepChartRemote(&cs).
 			WithHideFunc(func() bool { return cs.Mode != "remote" }),
-		stepDeploymentIdentity(&namespace, &release, &scenario, &flow, w.ds, repoRoot),
-
-		// --- Advanced settings ---
+		func() *huh.Group {
+			if len(discoveredScenarios) > 0 {
+				return stepScenarioSelect(&scenario, discoveredScenarios)
+			}
+			return stepScenarioInput(&scenario)
+		}(),
+		stepDeploymentIdentity(&namespace, &release, &flow),
 		stepAdvancedPrompt(&wantAdvanced),
 		stepIngress(&ingressMode, &ingressHost, &ingressSub, &ingressBase).
 			WithHideFunc(func() bool { return !wantAdvanced }),
@@ -88,7 +171,18 @@ func (w *Wizard) Run() (rc *config.RootConfig, configPath string, err error) {
 			WithHideFunc(func() bool { return !wantAdvanced }),
 		stepSecrets(&extSecrets, &autoGenSecrets).
 			WithHideFunc(func() bool { return !wantAdvanced }),
-	).WithTheme(camundaTheme()).WithAccessible(w.accessible)
+		stepConfigLocation(&configChoice),
+		stepCustomPath(&customPath).
+			WithHideFunc(func() bool { return configChoice != "custom" }),
+		stepSummary(func() string {
+			return buildSummary(deploymentName, platform, &cs, namespace, release, scenario, flow,
+				ingressMode, ingressHost, ingressSub, ingressBase, auth, extSecrets)
+		}),
+	).
+		WithTheme(camundaTheme()).
+		WithAccessible(w.accessible).
+		WithWidth(80).
+		WithShowHelp(true)
 
 	if err := form.Run(); err != nil {
 		return nil, "", fmt.Errorf("wizard cancelled: %w", err)
@@ -170,7 +264,7 @@ func (w *Wizard) Run() (rc *config.RootConfig, configPath string, err error) {
 	return rc, configPath, nil
 }
 
-// buildSummary produces a human-readable summary of the wizard answers.
+// buildSummary produces a human-readable YAML preview of the wizard answers.
 func buildSummary(name, platform string, cs *chartSourceChoice, ns, release, scenario, flow string,
 	ingressMode, ingressHost, ingressSub, ingressBase, auth string, extSecrets bool) string {
 
@@ -211,5 +305,5 @@ func buildSummary(name, platform string, cs *chartSourceChoice, ns, release, sce
 		return fmt.Sprintf("Error generating preview: %v", err)
 	}
 
-	return fmt.Sprintf("\nConfig preview:\n\n%s", strings.TrimSpace(string(out)))
+	return strings.TrimSpace(string(out))
 }
