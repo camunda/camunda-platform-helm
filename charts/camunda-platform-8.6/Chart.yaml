@@ -29,12 +29,12 @@ dependencies:
   # Identity Dependencies.
   - name: keycloak
     alias: identityKeycloak
-    repository: "file://../keycloak-22"
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 22.2.6
     condition: "identity.keycloak.enabled,identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
-    repository: "file://../identity-postgresql-15"
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 15.x.x
     condition: "identity.postgresql.enabled,identityPostgresql.enabled"
   # WebModeler Dependencies.
@@ -45,12 +45,12 @@ dependencies:
     condition: "postgresql.enabled"
   # Shared Dependencies.
   - name: elasticsearch
-    repository: "file://../elasticsearch-21"
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 21.6.3
     condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
-    repository: "file://../common-2"
+    repository: oci://registry-1.docker.io/bitnamicharts
     version: 2.x.x
 maintainers:
   - name: aabouzaid
