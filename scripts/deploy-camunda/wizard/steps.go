@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"scripts/deploy-camunda/config"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -298,6 +299,156 @@ func stepSecrets(externalSecrets, autoGenerate *bool) *huh.Group {
 			Negative("No").
 			Value(autoGenerate),
 	).Title("Secrets")
+}
+
+// --- Matrix steps ---
+
+// stepMatrixPrompt asks if the user wants to configure the matrix runner.
+func stepMatrixPrompt(wantMatrix *bool) *huh.Group {
+	return huh.NewGroup(
+		huh.NewConfirm().
+			Title("Configure matrix runner?").
+			Description("The matrix runner executes deployments across multiple versions\nand scenarios in parallel. Skip if you only deploy a single config.").
+			Affirmative("Yes").
+			Negative("No, skip").
+			Value(wantMatrix),
+	).Title("Matrix Runner")
+}
+
+// stepMatrixFiltering configures which versions and scenarios the matrix targets.
+func stepMatrixFiltering(versions, scenarioFilter, flowFilter *string) *huh.Group {
+	return huh.NewGroup(
+		huh.NewInput().
+			Title("Chart versions").
+			Description("Comma-separated list of versions to test (e.g., 8.6, 8.7, 8.8).").
+			Placeholder("8.6, 8.7").
+			Value(versions),
+		huh.NewInput().
+			Title("Scenario filter").
+			Description("Regex to match scenario names. Leave empty for all scenarios.").
+			Placeholder("").
+			Value(scenarioFilter),
+		huh.NewInput().
+			Title("Flow filter").
+			Description("Regex to match flow types (install, upgrade). Leave empty for all.").
+			Placeholder("").
+			Value(flowFilter),
+	).Title("Matrix — Filtering")
+}
+
+// stepMatrixExecution configures parallelism, timeouts, and behavior.
+func stepMatrixExecution(maxParallel, helmTimeout *string, stopOnFailure, cleanup, dryRun *bool) *huh.Group {
+	return huh.NewGroup(
+		huh.NewInput().
+			Title("Max parallel deployments").
+			Description("How many deployments to run concurrently.").
+			Value(maxParallel).
+			Validate(intStringValidator("max parallel", 1, 32)),
+		huh.NewInput().
+			Title("Helm timeout (minutes)").
+			Description("Timeout for each Helm install/upgrade operation.").
+			Value(helmTimeout).
+			Validate(intStringValidator("helm timeout", 1, 120)),
+		huh.NewConfirm().
+			Title("Stop on first failure?").
+			Description("Abort remaining deployments when one fails.").
+			Affirmative("Yes").
+			Negative("No, continue").
+			Value(stopOnFailure),
+		huh.NewConfirm().
+			Title("Clean up after run?").
+			Description("Delete namespaces after the matrix run completes.").
+			Affirmative("Yes").
+			Negative("No, keep").
+			Value(cleanup),
+		huh.NewConfirm().
+			Title("Dry run?").
+			Description("Simulate the matrix run without deploying.").
+			Affirmative("Yes").
+			Negative("No").
+			Value(dryRun),
+	).Title("Matrix — Execution")
+}
+
+// stepMatrixTests configures which tests to run after matrix deployments.
+func stepMatrixTests(testIT, testE2E *bool) *huh.Group {
+	return huh.NewGroup(
+		huh.NewConfirm().
+			Title("Run integration tests?").
+			Description("Execute integration tests after each deployment.").
+			Affirmative("Yes").
+			Negative("No").
+			Value(testIT),
+		huh.NewConfirm().
+			Title("Run E2E tests?").
+			Description("Execute end-to-end tests after each deployment.").
+			Affirmative("Yes").
+			Negative("No").
+			Value(testE2E),
+	).Title("Matrix — Tests")
+}
+
+// stepMatrixInfra configures optional infrastructure overrides for the matrix runner.
+func stepMatrixInfra(nsPrefix, platform, logLevel *string) *huh.Group {
+	platformOptions := []huh.Option[string]{
+		huh.NewOption("(inherit from deployment)", ""),
+	}
+	for _, p := range config.DeployPlatforms {
+		label := p
+		switch p {
+		case "gke":
+			label = "gke — Google Kubernetes Engine"
+		case "eks":
+			label = "eks — Amazon EKS"
+		case "rosa":
+			label = "rosa — Red Hat OpenShift on AWS"
+		}
+		platformOptions = append(platformOptions, huh.NewOption(label, p))
+	}
+
+	logOptions := []huh.Option[string]{
+		huh.NewOption("(inherit from deployment)", ""),
+		huh.NewOption("debug", "debug"),
+		huh.NewOption("info", "info"),
+		huh.NewOption("warn", "warn"),
+		huh.NewOption("error", "error"),
+	}
+
+	return huh.NewGroup(
+		huh.NewInput().
+			Title("Namespace prefix").
+			Description("Prefix for matrix-created namespaces (e.g., 'distribution').").
+			Placeholder("").
+			Value(nsPrefix),
+		huh.NewSelect[string]().
+			Title("Platform override").
+			Description("Override the platform for all matrix deployments.").
+			Options(platformOptions...).
+			Value(platform),
+		huh.NewSelect[string]().
+			Title("Log level").
+			Description("Override the log level for matrix runs.").
+			Options(logOptions...).
+			Value(logLevel),
+	).Title("Matrix — Infrastructure")
+}
+
+// intStringValidator validates that a string represents an integer within [min, max].
+func intStringValidator(fieldName string, min, max int) func(string) error {
+	return func(s string) error {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return fmt.Errorf("%s cannot be empty", fieldName)
+		}
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return fmt.Errorf("%s must be a number", fieldName)
+		}
+		if n < min || n > max {
+			return fmt.Errorf("%s must be between %d and %d", fieldName, min, max)
+		}
+		return nil
+	}
 }
 
 // stepConfigLocation asks where to save the config file.

@@ -8,7 +8,8 @@ import (
 func TestBuildSummary(t *testing.T) {
 	cs := &chartSourceChoice{Mode: "local", ChartPath: "/path/to/chart"}
 	summary := buildSummary("dev", "gke", cs, "my-ns", "my-release", "default", "install",
-		"skip", "", "", "", "keycloak", true)
+		"skip", "", "", "", "keycloak", true,
+		false, "", "4", "20", true, true)
 
 	if summary == "" {
 		t.Fatal("expected non-empty summary")
@@ -30,7 +31,8 @@ func TestBuildSummary(t *testing.T) {
 func TestBuildSummaryRemoteChart(t *testing.T) {
 	cs := &chartSourceChoice{Mode: "remote", Chart: "oci://ghcr.io/camunda/helm/camunda-platform", Version: "11.0.0"}
 	summary := buildSummary("prod", "eks", cs, "prod-ns", "camunda", "default", "upgrade",
-		"hostname", "camunda.example.com", "", "", "oidc", false)
+		"hostname", "camunda.example.com", "", "", "oidc", false,
+		false, "", "4", "20", true, true)
 
 	for _, want := range []string{"prod", "eks", "prod-ns", "camunda", "oci://ghcr.io", "11.0.0", "upgrade", "camunda.example.com", "oidc"} {
 		if !contains(summary, want) {

@@ -113,6 +113,20 @@ func printCompletion(rc *config.RootConfig, cfgPath string) {
 		}
 	}
 
+	// Matrix section
+	if len(rc.Matrix.Versions) > 0 || rc.Matrix.MaxParallel != nil {
+		fmt.Fprintf(os.Stdout, "\n  %s\n", gchalk.Bold("Matrix:"))
+		if len(rc.Matrix.Versions) > 0 {
+			fmt.Fprintf(os.Stdout, "  %s %s\n", label("Versions:"), value(fmt.Sprintf("%v", rc.Matrix.Versions)))
+		}
+		if rc.Matrix.MaxParallel != nil {
+			fmt.Fprintf(os.Stdout, "  %s %s\n", label("Parallel:"), value(fmt.Sprintf("%d", *rc.Matrix.MaxParallel)))
+		}
+		if rc.Matrix.HelmTimeout != nil {
+			fmt.Fprintf(os.Stdout, "  %s  %s min\n", label("Timeout:"), value(fmt.Sprintf("%d", *rc.Matrix.HelmTimeout)))
+		}
+	}
+
 	fmt.Fprintf(os.Stdout, "\n%s\n", gchalk.Dim("Next steps:"))
 	fmt.Fprintf(os.Stdout, "  %s    Review your config\n", gchalk.Cyan("deploy-camunda config show"))
 	fmt.Fprintf(os.Stdout, "  %s                Start deployment\n", gchalk.Cyan("deploy-camunda"))
