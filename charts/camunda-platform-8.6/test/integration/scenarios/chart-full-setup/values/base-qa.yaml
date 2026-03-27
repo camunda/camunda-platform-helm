@@ -114,10 +114,6 @@ identity:
         - Console
         - Zeebe
 
-optimize:
-  caches:
-    cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
 
 # -----------------------------------------------------------------------------
 # Connectors (QA env vars)

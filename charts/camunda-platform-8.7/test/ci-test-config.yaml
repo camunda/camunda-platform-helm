@@ -85,6 +85,18 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+        - name: opensearch-external
+          enabled: true
+          shortname: osex
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
+          persistence: opensearch-external
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
