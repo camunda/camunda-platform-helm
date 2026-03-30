@@ -1,5 +1,26 @@
 # Changelog
 
+## [13.6.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.5...camunda-platform-8.8-13.6.0) (2026-03-30)
+
+
+### Features
+
+* add tpl rendering for global identity auth URL values ([#5508](https://github.com/camunda/camunda-platform-helm/issues/5508)) ([4eb3b5c](https://github.com/camunda/camunda-platform-helm/commit/4eb3b5cda6914d7578ffd965772d772a6b52f51d))
+
+
+### Bug Fixes
+
+* reference bitnami subcharts internally rather than relying on external repositories ([#5565](https://github.com/camunda/camunda-platform-helm/issues/5565)) ([f59f837](https://github.com/camunda/camunda-platform-helm/commit/f59f837d1b901909cde938b281873c12fe947a1c))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5591](https://github.com/camunda/camunda-platform-helm/issues/5591)) ([ef254f0](https://github.com/camunda/camunda-platform-helm/commit/ef254f03085a85683c0cd400c00e84f14373f0a4))
+* update camunda-platform-digests ([#5601](https://github.com/camunda/camunda-platform-helm/issues/5601)) ([0d9ce41](https://github.com/camunda/camunda-platform-helm/commit/0d9ce41f9227c6a7e2fdfc7b3cf015575836120d))
+* update camunda-platform-images (patch) ([#5592](https://github.com/camunda/camunda-platform-helm/issues/5592)) ([a83b976](https://github.com/camunda/camunda-platform-helm/commit/a83b97661385f0381cd882948ca0ddb65da26de1))
+* update camunda-platform-images (patch) ([#5603](https://github.com/camunda/camunda-platform-helm/issues/5603)) ([39fb7e2](https://github.com/camunda/camunda-platform-helm/commit/39fb7e2ae9d3a8cd9c66fa5bc5df674eedc74cfe))
+* update patch-updates (patch) ([#5518](https://github.com/camunda/camunda-platform-helm/issues/5518)) ([520fe5b](https://github.com/camunda/camunda-platform-helm/commit/520fe5b5b3d2cfc1e9ae807a989f1f4edda956aa))
+
 ## [13.5.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.4...camunda-platform-8.8-13.5.5) (2026-03-24)
 
 
