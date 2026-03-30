@@ -152,6 +152,15 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+        - name: documentstore
+          enabled: true
+          exclude: []
+          shortname: docstr
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          platforms: [eks]
     nightly:
       scenario:
         - name: elasticsearch
