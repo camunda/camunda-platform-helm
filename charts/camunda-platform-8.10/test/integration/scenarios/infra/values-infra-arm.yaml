@@ -52,19 +52,45 @@ identityPostgresql:
       operator: Equal
       value: arm64
 
-# Web Apps.
-console:
-  nodeSelector:
-    workload: arm-processor
-  tolerations:
-  - effect: NoSchedule
-    key: workload
-    operator: Equal
-    value: arm-processor
-  - effect: NoSchedule
-    key: kubernetes.io/arch
-    operator: Equal
-    value: arm64
+# Camunda Hub.
+camundaHub:
+  console:
+    nodeSelector:
+      workload: arm-processor
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: arm-processor
+    - effect: NoSchedule
+      key: kubernetes.io/arch
+      operator: Equal
+      value: arm64
+  webModeler:
+    restapi:
+      nodeSelector:
+        workload: arm-processor
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: arm-processor
+      - effect: NoSchedule
+        key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
+    websockets:
+      nodeSelector:
+        workload: arm-processor
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: arm-processor
+      - effect: NoSchedule
+        key: kubernetes.io/arch
+        operator: Equal
+        value: arm64
 connectors:
   nodeSelector:
     workload: arm-processor
@@ -114,32 +140,6 @@ optimize:
     operator: Equal
     value: arm64
 
-# Web Modeler.
-webModeler:
-  restapi:
-    nodeSelector:
-      workload: arm-processor
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: arm-processor
-    - effect: NoSchedule
-      key: kubernetes.io/arch
-      operator: Equal
-      value: arm64
-  websockets:
-    nodeSelector:
-      workload: arm-processor
-    tolerations:
-    - effect: NoSchedule
-      key: workload
-      operator: Equal
-      value: arm-processor
-    - effect: NoSchedule
-      key: kubernetes.io/arch
-      operator: Equal
-      value: arm64
 webModelerPostgresql:
   primary:
     nodeSelector:

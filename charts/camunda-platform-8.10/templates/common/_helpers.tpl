@@ -489,7 +489,7 @@ Web Modeler templates.
 */}}
 
 {{- define "camundaPlatform.getExternalURLModeler" -}}
-  {{- if .context.Values.webModeler.enabled -}}
+  {{- if eq (include "camundaHub.webModelerEnabled" .context) "true" -}}
     {{- if $.context.Values.global.ingress.enabled -}}
       {{ $proto := ternary "https" "http" .context.Values.global.ingress.tls.enabled -}}
       {{- if eq .component "websockets" }}
@@ -602,6 +602,46 @@ Console templates.
 
 {{/*
 ********************************************************************************
+Camunda Hub backward-compatibility shim helpers.
+These helpers support the consolidation of Console and WebModeler into a single
+"camundaHub" component while maintaining full backward compatibility with
+the legacy console.* and webModeler.* top-level keys.
+
+When camundaHub.enabled=true, both sub-components are enabled regardless of
+their individual .enabled flags. The camundaHub.console.* and
+camundaHub.webModeler.* overrides take precedence over the legacy keys.
+********************************************************************************
+*/}}
+
+{{/*
+[camunda-hub] Check if the Console sub-component should be enabled.
+Returns "true" if camundaHub.enabled OR console.enabled.
+Usage: {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
+*/}}
+{{- define "camundaHub.consoleEnabled" -}}
+  {{- if or .Values.camundaHub.enabled .Values.console.enabled -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-hub] Check if the WebModeler sub-component should be enabled.
+Returns "true" if camundaHub.enabled OR webModeler.enabled.
+Usage: {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+*/}}
+{{- define "camundaHub.webModelerEnabled" -}}
+  {{- if or .Values.camundaHub.enabled .Values.webModeler.enabled -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+
+{{/*
+********************************************************************************
 Orchestration templates.
 ********************************************************************************
 */}}
@@ -684,15 +724,15 @@ Release templates.
   {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
-  {{- if .Values.console.enabled }}
-  {{-  $proto := (lower .Values.console.readinessProbe.scheme) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace .Values.console.service.managementPort }}
+  {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
+  {{-  $proto := (lower (dig "console" "readinessProbe" "scheme" .Values.console.readinessProbe.scheme .Values.camundaHub)) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace (dig "console" "service" "managementPort" .Values.console.service.managementPort .Values.camundaHub) }}
   - name: Console
     id: console
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict))) }}
     url: {{ include "camundaPlatform.consoleExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal .Values.console.readinessProbe.probePath }}
-    metrics: {{ printf "%s%s" $baseURLInternal .Values.console.metrics.prometheus }}
+    readiness: {{ printf "%s%s" $baseURLInternal (dig "console" "readinessProbe" "probePath" .Values.console.readinessProbe.probePath .Values.camundaHub) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (dig "console" "metrics" "prometheus" .Values.console.metrics.prometheus .Values.camundaHub) }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
@@ -709,15 +749,15 @@ Release templates.
     metrics: {{ printf "%s%s" $baseURLInternal .Values.identity.metrics.prometheus }}
   {{- end }}
 
-  {{- if .Values.webModeler.enabled }}
-  {{-  $proto := (lower .Values.webModeler.restapi.readinessProbe.scheme) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace .Values.webModeler.restapi.service.managementPort }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+  {{-  $proto := (lower (dig "webModeler" "restapi" "readinessProbe" "scheme" .Values.webModeler.restapi.readinessProbe.scheme .Values.camundaHub)) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (dig "webModeler" "restapi" "service" "managementPort" .Values.webModeler.restapi.service.managementPort .Values.camundaHub) }}
   - name: WebModeler
     id: webModelerWebApp
-    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler) }}
+    version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict))) }}
     url: {{ include "camundaPlatform.webModelerExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.readinessProbe.probePath)) }}
-    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.webModeler.contextPath .Values.webModeler.restapi.metrics.prometheus)) }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "readinessProbe" "probePath" .Values.webModeler.restapi.readinessProbe.probePath .Values.camundaHub))) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "metrics" "prometheus" .Values.webModeler.restapi.metrics.prometheus .Values.camundaHub))) }}
   {{- end }}
 
   {{- if .Values.optimize.enabled }}

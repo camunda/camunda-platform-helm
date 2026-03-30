@@ -1,4 +1,4 @@
-{{- if .Values.console.enabled -}}
+{{- if eq (include "camundaHub.consoleEnabled" .) "true" -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,17 +9,17 @@ metadata:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.console.service.annotations}}
-      {{- toYaml .Values.console.service.annotations | nindent 4 }}
+    {{- if (dig "console" "service" "annotations" .Values.console.service.annotations .Values.camundaHub) }}
+      {{- toYaml (dig "console" "service" "annotations" .Values.console.service.annotations .Values.camundaHub) | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ .Values.console.service.type }}
+  type: {{ (dig "console" "service" "type" .Values.console.service.type .Values.camundaHub) }}
   ports:
-    - port: {{ .Values.console.service.port }}
+    - port: {{ (dig "console" "service" "port" .Values.console.service.port .Values.camundaHub) }}
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ .Values.console.service.managementPort }}
+    - port: {{ (dig "console" "service" "managementPort" .Values.console.service.managementPort .Values.camundaHub) }}
       name: management
       targetPort: management
       protocol: TCP

@@ -1,4 +1,4 @@
-# Base values for all 8.9 integration test deployments
+# Base values for all 8.10 integration test deployments
 # Layer 1: Common configuration shared across all scenarios
 
 global:
@@ -113,49 +113,56 @@ connectors:
     failureThreshold: 5
     timeoutSeconds: 1
 
-webModeler:
+camundaHub:
   enabled: true
-  contextPath: "/modeler"
-  image:
-    pullSecrets:
-      - name: index-docker-io
-      - name: registry-camunda-cloud
-  restapi:
-    # Wait for PostgreSQL to accept connections before starting restapi.
-    # Prevents restapi from failing on DB connection during Spring context init.
-    initContainers:
-      - name: wait-for-postgresql
-        image: busybox:1.36
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-        command:
-          - sh
-          - -c
-          - |
-            echo "Waiting for PostgreSQL at {{ .Release.Name }}-postgresql-web-modeler:5432 ..."
-            until nc -z "{{ .Release.Name }}-postgresql-web-modeler" 5432; do
-              sleep 2
-            done
-            echo "PostgreSQL is ready"
-    startupProbe:
-      enabled: true
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      failureThreshold: 30
-      timeoutSeconds: 1
-    pusher:
-      secret:
-        existingSecret: "integration-test-credentials"
-        existingSecretKey: "webmodeler-pusher-app-secret"
-      client:
+  webModeler:
+    contextPath: "/modeler"
+    image:
+      pullSecrets:
+        - name: index-docker-io
+        - name: registry-camunda-cloud
+    restapi:
+      # Wait for PostgreSQL to accept connections before starting restapi.
+      # Prevents restapi from failing on DB connection during Spring context init.
+      initContainers:
+        - name: wait-for-postgresql
+          image: busybox:1.36
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL at {{ .Release.Name }}-postgresql-web-modeler:5432 ..."
+              until nc -z "{{ .Release.Name }}-postgresql-web-modeler" 5432; do
+                sleep 2
+              done
+              echo "PostgreSQL is ready"
+      startupProbe:
+        enabled: true
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        failureThreshold: 30
+        timeoutSeconds: 1
+      pusher:
         secret:
           existingSecret: "integration-test-credentials"
-          existingSecretKey: "webmodeler-pusher-app-key"
-    mail:
-      fromAddress: noreply@example.com
+          existingSecretKey: "webmodeler-pusher-app-secret"
+        client:
+          secret:
+            existingSecret: "integration-test-credentials"
+            existingSecretKey: "webmodeler-pusher-app-key"
+      mail:
+        fromAddress: noreply@example.com
+  console:
+    contextPath: "/"
+    image:
+      pullSecrets:
+        - name: index-docker-io
+        - name: registry-camunda-cloud
 
 webModelerPostgresql:
   enabled: true
@@ -227,13 +234,6 @@ orchestration:
   importer:
     enabled: true
 
-console:
-  enabled: true
-  contextPath: "/"
-  image:
-    pullSecrets:
-      - name: index-docker-io
-      - name: registry-camunda-cloud
 
 prometheusServiceMonitor:
   enabled: true

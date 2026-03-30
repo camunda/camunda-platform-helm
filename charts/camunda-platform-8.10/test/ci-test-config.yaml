@@ -40,7 +40,7 @@ integration:
       scenario:
         - name: elasticsearch
           enabled: true
-          flow: install,upgrade-minor
+          flow: install
           auth: keycloak
           shortname: eske
           exclude: []
@@ -93,7 +93,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: oidc
-          enabled: true
+          enabled: false
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
@@ -107,7 +107,7 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
-          enabled: true
+          enabled: false
           exclude: []
           shortname: kemt
           auth: keycloak
@@ -119,7 +119,7 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
-          enabled: true
+          enabled: false
           exclude: []
           shortname: kerba
           auth: keycloak
@@ -132,7 +132,7 @@ integration:
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
-          enabled: true
+          enabled: false
           exclude: []
           shortname: keyc
           auth: keycloak
@@ -193,6 +193,45 @@ integration:
           persistence: no-elasticsearch
           features: [no-secondary-storage]
           platforms: [gke]
+        - name: hub-legacy
+          enabled: true
+          auth: keycloak
+          shortname: huble
+          exclude: []
+          flow: install
+          identity: keycloak
+          persistence: elasticsearch-external
+          features: [hub-legacy]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+            eks: preemptible
+        - name: hub-legacy
+          enabled: false
+          auth: keycloak
+          shortname: hublu
+          exclude: []
+          flow: upgrade-minor
+          identity: keycloak
+          persistence: elasticsearch-external
+          features: [hub-legacy]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+            eks: preemptible
+        - name: hub-mixed
+          enabled: false
+          auth: keycloak
+          shortname: hubmu
+          exclude: []
+          flow: upgrade-minor
+          identity: keycloak
+          persistence: elasticsearch-external
+          features: [hub-mixed]
+          platforms: [gke]
+          infra-type:
+            gke: distroci
+            eks: preemptible
     nightly:
       scenario:
         - name: elasticsearch

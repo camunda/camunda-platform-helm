@@ -60,8 +60,16 @@ spec:
                 configMapKeyRef:
                   name: camunda-platform-test-web-modeler-configuration
                   key: pusher-app-id
-            
-            
+            - name: PUSHER_APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-key
+            - name: PUSHER_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-secret
           resources:
             limits:
               cpu: 200m
