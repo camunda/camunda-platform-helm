@@ -1025,6 +1025,21 @@ func DeleteNamespace(ctx context.Context, kubeconfig, kubeContext, namespace str
 	return nil
 }
 
+// CheckConnectivity performs a lightweight API call (ServerVersion) to verify
+// that the given kube context has valid credentials. For Teleport-managed
+// clusters this triggers the interactive browser login if needed, ensuring
+// subsequent parallel calls don't race on the login prompt.
+func CheckConnectivity(ctx context.Context, kubeContext string) error {
+	client, err := NewClient("", kubeContext)
+	if err != nil {
+		return fmt.Errorf("kube context %q: %w", kubeContext, err)
+	}
+	if _, err := client.clientset.Discovery().ServerVersion(); err != nil {
+		return fmt.Errorf("kube context %q: failed to connect: %w", kubeContext, err)
+	}
+	return nil
+}
+
 func isTransientKubeApplyError(err error) bool {
 	if err == nil {
 		return false

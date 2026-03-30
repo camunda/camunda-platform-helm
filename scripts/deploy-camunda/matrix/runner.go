@@ -219,6 +219,14 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 		}
 	}
 
+	// Warm up each unique kube context ONCE before dispatching entries.
+	// For Teleport-managed clusters (EKS), the first API call may trigger
+	// an interactive browser login. Doing this sequentially ensures only one
+	// login prompt per context, rather than N parallel goroutines racing.
+	if err := warmUpKubeContexts(ctx, entries, opts); err != nil {
+		return nil, err
+	}
+
 	parallel := opts.MaxParallel > 1
 	if parallel {
 		logging.Logger.Info().
@@ -998,6 +1006,30 @@ func resolveKubeContext(opts RunOptions, platform string) string {
 		return ctx
 	}
 	return opts.KubeContext
+}
+
+// warmUpKubeContexts makes a lightweight API call to each unique kube context
+// used by the matrix entries. This triggers any pending interactive login
+// (e.g., Teleport browser SSO) sequentially, before parallel dispatch begins.
+func warmUpKubeContexts(ctx context.Context, entries []Entry, opts RunOptions) error {
+	seen := make(map[string]bool)
+	for _, entry := range entries {
+		platform := resolvePlatform(opts, entry)
+		kubeCtx := resolveKubeContext(opts, platform)
+		if kubeCtx == "" || seen[kubeCtx] {
+			continue
+		}
+		seen[kubeCtx] = true
+
+		logging.Logger.Info().
+			Str("kubeContext", kubeCtx).
+			Msg("Verifying cluster connectivity")
+
+		if err := kube.CheckConnectivity(ctx, kubeCtx); err != nil {
+			return fmt.Errorf("cluster connectivity check failed: %w", err)
+		}
+	}
+	return nil
 }
 
 // resolveEnvFile returns the .env file path for a matrix entry's version.
