@@ -229,7 +229,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
       {{-
         printf "%s://%s:%v%s"
           .Values.global.identity.keycloak.url.protocol
-          .Values.global.identity.keycloak.url.host
+          (include "identity.keycloak.host" .)
           .Values.global.identity.keycloak.url.port
           (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
       -}}

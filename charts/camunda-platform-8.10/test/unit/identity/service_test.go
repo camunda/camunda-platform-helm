@@ -127,6 +127,28 @@ func (s *KeycloakServiceTest) TestKeycloakDifferentServiceValuesInputs() {
 				s.Require().Equal("keycloak.prod.svc.cluster.local", service.Spec.ExternalName)
 			},
 		},
+		{
+			Name: "TestKeycloakExternalServiceWithTemplatedHost",
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"global.identity.keycloak.internal":     "true",
+				"global.identity.keycloak.url.protocol": "https",
+				"global.identity.keycloak.url.host":     "keycloak.{{ .Release.Namespace }}.svc.cluster.local",
+				"global.identity.keycloak.url.port":     "8443",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var service coreV1.Service
+				helm.UnmarshalK8SYaml(t, output, &service)
+
+				// then
+				s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
+				// The namespace is dynamically generated in the test, so we check the pattern
+				s.Require().Contains(service.Spec.ExternalName, "keycloak.")
+				s.Require().Contains(service.Spec.ExternalName, ".svc.cluster.local")
+				s.Require().NotContains(service.Spec.ExternalName, "{{")
+				s.Require().NotContains(service.Spec.ExternalName, "}}")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
