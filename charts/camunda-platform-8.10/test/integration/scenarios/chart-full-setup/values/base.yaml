@@ -146,14 +146,6 @@ webModeler:
       periodSeconds: 5
       failureThreshold: 30
       timeoutSeconds: 1
-    pusher:
-      secret:
-        existingSecret: "integration-test-credentials"
-        existingSecretKey: "webmodeler-pusher-app-secret"
-      client:
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "webmodeler-pusher-app-key"
     mail:
       fromAddress: noreply@example.com
 
