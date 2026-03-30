@@ -1,0 +1,147 @@
+# ============================================================================
+# deploy-camunda Configuration File
+# ============================================================================
+#
+# Copy this file and customize for your environment:
+#   cp .camunda-deploy.yaml.template .camunda-deploy.yaml
+#
+# Config file resolution order:
+#   1. .camunda-deploy.yaml in the current directory
+#   2. .camunda-deploy.yaml in the git repo root
+#   3. ~/.config/camunda/deploy.yaml
+#
+# CLI flags always take precedence over config file values.
+#
+# Manage deployments with:
+#   deploy-camunda config create <name>     # create a new deployment profile
+#   deploy-camunda config use <name>        # switch active deployment
+#   deploy-camunda config set <key> <val>   # set a config value
+#   deploy-camunda config get <key>         # read a config value
+#   deploy-camunda config show              # show resolved config
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Root-level defaults (inherited by all deployments unless overridden)
+# ---------------------------------------------------------------------------
+platform: gke                        # Target platform: gke, eks, rosa
+# repoRoot: /path/to/camunda-platform-helm  # Auto-detected from git
+# logLevel: info                     # Log level: trace, debug, info, warn, error
+
+# Active deployment profile
+current: my-dev
+
+# ---------------------------------------------------------------------------
+# Deployment profiles
+# ---------------------------------------------------------------------------
+deployments:
+
+  # =========================================================================
+  # Example: Local chart with selection flags (recommended)
+  # =========================================================================
+  # Selection flags let you compose deployments from layers:
+  #   identity + persistence + platform + features
+  # When selection flags are set, --scenario is optional.
+  #
+  # Run with:
+  #   deploy-camunda
+  #   deploy-camunda config use my-dev && deploy-camunda
+  # =========================================================================
+  my-dev:
+    # --- Required --------------------------------------------------------
+    namespace: my-namespace              # Kubernetes namespace
+    release: integration                 # Helm release name
+    chartPath: charts/camunda-platform-8.8  # Path to local chart directory
+
+    # --- Cluster access --------------------------------------------------
+    # kubeContext: gke_my-project_zone_cluster  # kubectl context to use
+
+    # --- Selection + composition model -----------------------------------
+    # Pick one from each category to describe your deployment:
+    identity: keycloak                   # keycloak           - bundled Keycloak
+                                         # keycloak-external  - external Keycloak
+                                         # oidc               - OIDC / Entra ID
+                                         # basic              - basic auth (no IDP)
+                                         # hybrid             - hybrid auth mode
+    persistence: elasticsearch           # elasticsearch      - bundled Elasticsearch
+                                         # opensearch         - external OpenSearch (AWS)
+                                         # rdbms              - PostgreSQL (RDBMS)
+                                         # rdbms-oracle       - Oracle (RDBMS)
+    # testPlatform: gke                  # gke, eks, openshift
+    # features:                          # Optional feature layers:
+    #   - multitenancy                   #   multitenancy, rba, documentstore
+    # qa: false                          # Enable QA test users
+    # imageTags: false                   # Enable image tag overrides from env
+    # upgradeFlow: false                 # Enable upgrade flow configuration
+
+    # --- Scenario (legacy alternative to selection flags) -----------------
+    # Use scenario OR selection flags, not both.
+    # scenario: keycloak-original        # Maps to values-integration-test-ingress-<name>.yaml
+
+    # --- Ingress ---------------------------------------------------------
+    # Option A: subdomain + base domain (recommended for CI)
+    # ingressSubdomain: my-subdomain
+    # ingressBaseDomain: ci.distro.ultrawombat.com
+    # Option B: full hostname override
+    # ingressHostname: my-deploy.example.com
+
+    # --- Secrets & auth --------------------------------------------------
+    autoGenerateSecrets: true            # Auto-generate test passwords (recommended for dev)
+    # externalSecrets: true              # Use external secrets operator
+    # vaultSecretMapping: ""             # Vault secret mapping content
+
+    # --- Environment file ------------------------------------------------
+    # envFile: .env.88                   # Path to .env file for this deployment
+    #                                    # (see .env.template for available vars)
+
+    # --- Lifecycle -------------------------------------------------------
+    # deleteNamespace: false             # Delete namespace before deploying
+    # skipDependencyUpdate: true         # Skip helm dependency update
+    # flow: install                      # install or upgrade
+
+    # --- Docker registries -----------------------------------------------
+    # ensureDockerRegistry: false        # Create Harbor pull secret
+    # dockerUsername: ""
+    # dockerPassword: ""
+    # ensureDockerHub: false             # Create Docker Hub pull secret
+    # dockerHubUsername: ""
+    # dockerHubPassword: ""
+
+    # --- Chart overlays --------------------------------------------------
+    # valuesPreset: enterprise,digest    # Chart-root overlays: enterprise, digest,
+    #                                    # latest, local, bitnami-legacy
+    # extraValues:                       # Additional values files (applied last)
+    #   - my-overrides.yaml
+
+    # --- Tests -----------------------------------------------------------
+    # runIntegrationTests: false         # Run integration tests after deploy
+    # runE2ETests: false                 # Run E2E tests after deploy
+
+  # =========================================================================
+  # Example: Remote chart install (no local chartPath)
+  # =========================================================================
+  # my-remote:
+  #   namespace: my-namespace
+  #   release: integration
+  #   chart: camunda-platform           # Helm chart name (from repo)
+  #   version: "8.8.0"                  # Chart version
+  #   scenario: keycloak-original
+  #   autoGenerateSecrets: true
+
+  # =========================================================================
+  # Example: Upgrade flow (two-step install → upgrade)
+  # =========================================================================
+  # my-upgrade:
+  #   namespace: upgrade-test
+  #   release: integration
+  #   chartPath: charts/camunda-platform-8.8
+  #   identity: keycloak
+  #   persistence: elasticsearch
+  #   upgradeFlow: true
+  #   flow: upgrade
+
+# ---------------------------------------------------------------------------
+# Keycloak defaults (applied to all deployments using Keycloak)
+# ---------------------------------------------------------------------------
+# keycloak:
+#   host: keycloak-24-9-0.ci.distro.ultrawombat.com
+#   protocol: https
