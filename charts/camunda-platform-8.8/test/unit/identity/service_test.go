@@ -142,11 +142,9 @@ func (s *KeycloakServiceTest) TestKeycloakDifferentServiceValuesInputs() {
 
 				// then
 				s.Require().Equal(coreV1.ServiceType("ExternalName"), service.Spec.Type)
-				// The namespace is dynamically generated in the test, so we check the pattern
-				s.Require().Contains(service.Spec.ExternalName, "keycloak.")
-				s.Require().Contains(service.Spec.ExternalName, ".svc.cluster.local")
-				s.Require().NotContains(service.Spec.ExternalName, "{{")
-				s.Require().NotContains(service.Spec.ExternalName, "}}")
+				// The namespace is dynamically generated in the test; assert the full expected ExternalName
+				expectedExternalName := "keycloak." + s.namespace + ".svc.cluster.local"
+				s.Require().Equal(expectedExternalName, service.Spec.ExternalName)
 			},
 		},
 	}

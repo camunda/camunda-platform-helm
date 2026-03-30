@@ -258,11 +258,9 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 				// then
 				s.NotEmpty(configmap.Data)
 
-				// Verify the template was rendered - namespace is dynamic in tests
-				s.Require().Contains(configmapApplication.Identity.AuthProvider.BackendUrl, "https://keycloak.")
-				s.Require().Contains(configmapApplication.Identity.AuthProvider.BackendUrl, ".svc.cluster.local:443/auth/camunda-platform")
-				s.Require().NotContains(configmapApplication.Identity.AuthProvider.BackendUrl, "{{")
-				s.Require().NotContains(configmapApplication.Identity.AuthProvider.BackendUrl, "}}")
+				// Verify the full BackendUrl including the rendered namespace
+				expectedBackendURL := "https://keycloak." + s.namespace + ".svc.cluster.local:443/auth/camunda-platform"
+				s.Require().Equal(expectedBackendURL, configmapApplication.Identity.AuthProvider.BackendUrl)
 			},
 		},
 		// Hybrid Auth Tests - verify OIDC client config is only included for components using OIDC auth

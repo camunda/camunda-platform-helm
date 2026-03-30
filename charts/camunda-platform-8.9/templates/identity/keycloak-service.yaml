@@ -15,6 +15,6 @@ metadata:
     {{- end }}
 spec:
   type: ExternalName
-  externalName: {{ tpl .Values.global.identity.keycloak.url.host . }}
+  externalName: {{ include "identity.keycloak.host" . }}
 {{- end -}}
 {{- end }}
