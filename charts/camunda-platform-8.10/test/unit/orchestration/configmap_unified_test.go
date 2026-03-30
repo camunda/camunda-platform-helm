@@ -240,6 +240,37 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestMappingRulesConditionalRendering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldNotContainMappingRulesWhenDefault",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "mapping-rules")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainMappingRulesWhenSet",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.initialization.mappingRules[0].mappingRuleID": "demo-user-mapping-rule",
+				"orchestration.security.initialization.mappingRules[0].claimName":     "preferred_username",
+				"orchestration.security.initialization.mappingRules[0].claimValue":    "demo",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "mapping-rules")
+				require.Contains(t, output, "demo-user-mapping-rule")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	testCases := []testhelpers.TestCase{
 		{

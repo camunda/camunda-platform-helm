@@ -28,6 +28,3 @@ orchestration:
 
 elasticsearch:
   enabled: true
-        existingSecret: "s3-bucket-credentials"
-        accessKeyIdKey: "access-key-id"
-        secretAccessKeyKey: "secret-access-key"

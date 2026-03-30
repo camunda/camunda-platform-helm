@@ -40,15 +40,26 @@
 # systems mark the job as failed.
 # ============================================================================
 
-# Color definitions
-COLOR_RESET='\033[0m'
-COLOR_RED='\033[0;31m'
-COLOR_GREEN='\033[0;32m'
-COLOR_YELLOW='\033[0;33m'
-COLOR_BLUE='\033[0;34m'
-COLOR_MAGENTA='\033[0;35m'
-COLOR_CYAN='\033[0;36m'
-COLOR_GRAY='\033[0;90m'
+# Color definitions — disabled when stderr is not a terminal (e.g., redirected to a log file)
+if [[ -t 2 ]]; then
+  COLOR_RESET='\033[0m'
+  COLOR_RED='\033[0;31m'
+  COLOR_GREEN='\033[0;32m'
+  COLOR_YELLOW='\033[0;33m'
+  COLOR_BLUE='\033[0;34m'
+  COLOR_MAGENTA='\033[0;35m'
+  COLOR_CYAN='\033[0;36m'
+  COLOR_GRAY='\033[0;90m'
+else
+  COLOR_RESET=''
+  COLOR_RED=''
+  COLOR_GREEN=''
+  COLOR_YELLOW=''
+  COLOR_BLUE=''
+  COLOR_MAGENTA=''
+  COLOR_CYAN=''
+  COLOR_GRAY=''
+fi
 
 # Always-visible status output for long-running steps.
 # Use this instead of log() for messages the user must see regardless of -v.
@@ -262,8 +273,8 @@ _wait_for_dns_resolution() {
   _RESOLVED_IP=""
   _NEEDS_DNS_FALLBACK=false
 
-  # Skip if hostname is an IP address
-  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  # Skip if hostname is an IP address (IPv4 or IPv6)
+  if [[ "$hostname" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ "$hostname" == *:* ]]; then
     _RESOLVED_IP="$hostname"
     return 0
   fi
@@ -505,90 +516,6 @@ _release_npm_lock() {
   log "Released npm install lock"
 }
 
-# Patch the SM-8.7 ModelerHomePage page object to add banner dismissal.
-# The upstream @camunda/e2e-test-suite@0.0.242 ships SM-8.8 with clickMessageBanner()
-# but the SM-8.7 variant is missing it.  Web Modeler now shows a top banner that
-# overlays the "New project" button, so all SM-8.7 smoke tests that navigate to the
-# Modeler home page fail with "Failed to assert visibility".
-# This function is idempotent — it detects whether the patch was already applied.
-_patch_sm87_modeler_home_page() {
-  local test_suite_path="$1"
-  local target="$test_suite_path/node_modules/@camunda/e2e-test-suite/dist/pages/SM-8.7/ModelerHomePage.js"
-  [[ -f "$target" ]] || return 0
-
-  # Skip if the patch was already applied (clickMessageBanner already exists).
-  if grep -q 'clickMessageBanner' "$target" 2>/dev/null; then
-    log "SM-8.7 ModelerHomePage already patched, skipping"
-    return 0
-  fi
-
-  info "Patching SM-8.7 ModelerHomePage to add banner dismissal..."
-
-  # We need to:
-  # 1. Add messageBanner and closeButton locators in the constructor
-  # 2. Add clickMessageBanner() method
-  # 3. Update clickCreateNewProjectButton() to dismiss banners before checking visibility
-  # 4. Update createCrossComponentProjectFolder() to dismiss banners first
-
-  # Use node to do a reliable AST-free patch via string replacement.
-  node -e "
-    const fs = require('fs');
-    let src = fs.readFileSync('$target', 'utf8');
-
-    // 1. Add locator fields in constructor (after uploadFilesButton assignment)
-    src = src.replace(
-      /this\.uploadFilesButton = page\.getByRole\('menuitem', \{ name: 'Upload files' \}\);/,
-      \`this.uploadFilesButton = page.getByRole('menuitem', { name: 'Upload files' });
-        this.messageBanner = page.locator('[data-test=\"close-top-banner\"]');
-        this.closeButton = page.getByRole('button', { name: 'Got it - Dismiss' });\`
-    );
-
-    // 2. Patch clickCreateNewProjectButton to dismiss banners first
-    src = src.replace(
-      /async clickCreateNewProjectButton\(\) \{/,
-      \`async clickCreateNewProjectButton() {
-        await this.clickMessageBanner();\`
-    );
-
-    // 3. Replace createCrossComponentProjectFolder to call clickMessageBanner first
-    src = src.replace(
-      /async createCrossComponentProjectFolder\(\) \{\s*await this\.enterNewProjectName\(this\.defaultFolderName\);\s*\}/,
-      \`async createCrossComponentProjectFolder() {
-        await this.clickMessageBanner();
-        if (await this.crossComponentProjectFolder.isVisible()) {
-            console.log('Cross Component Project folder already exists. Clicking into it');
-            await this.clickCrossComponentProjectFolder();
-            return;
-        }
-        await this.clickCreateNewProjectButton();
-        await this.enterNewProjectName(this.defaultFolderName);
-    }\`
-    );
-
-    // 4. Add clickMessageBanner method (before clickCrossComponentProjectFolder)
-    src = src.replace(
-      /async clickCrossComponentProjectFolder\(\)/,
-      \`async clickMessageBanner() {
-        try {
-            await Promise.race([
-                this.messageBanner.click(),
-                this.closeButton.click(),
-            ]);
-        }
-        catch {
-            console.log('No banner or close button found to click');
-        }
-    }
-    async clickCrossComponentProjectFolder()\`
-    );
-
-    fs.writeFileSync('$target', src);
-    console.log('SM-8.7 ModelerHomePage patched successfully');
-  " || {
-    info "WARNING: Failed to patch SM-8.7 ModelerHomePage — E2E tests may fail"
-  }
-}
-
 # Replace the npm-installed @camunda/e2e-test-suite with a copy of the local
 # checkout's dist/ so Playwright resolves test files from within the e2e
 # node_modules tree (avoiding a second @playwright/test from the local
@@ -629,6 +556,21 @@ _link_local_test_suite() {
   cp "$local_dir/package.json" "$target/package.json"
   cp -R "$local_dir/dist" "$target/dist"
   info "Copied local test suite dist into $target from $local_dir"
+}
+
+# Log the installed @camunda/e2e-test-suite version for debugging.
+# Must be called after _setup_playwright_environment (which cd's into the test suite
+# directory and runs npm install).  Uses a guard variable so the version is only
+# printed once per shell invocation even when multiple entrypoints call this.
+_log_e2e_suite_version() {
+  if [[ -n "${_E2E_SUITE_VERSION_LOGGED:-}" ]]; then
+    return
+  fi
+  _E2E_SUITE_VERSION_LOGGED=true
+
+  local version
+  version=$(npm ls @camunda/e2e-test-suite --json 2>/dev/null | jq -r '.dependencies["@camunda/e2e-test-suite"].version // "unknown"') || version="unknown"
+  info "E2E test suite version: ${version}"
 }
 
 # Setup playwright environment: change directory, install dependencies, create test-results dir
@@ -688,11 +630,6 @@ _setup_playwright_environment() {
     [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
     if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
       _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
-    else
-      # Apply SM-8.7 patch even when npm install is skipped — the patch modifies
-      # node_modules in-place and is idempotent, so it must run on every invocation
-      # to handle the case where node_modules was cached before the patch existed.
-      _patch_sm87_modeler_home_page "$test_suite_path"
     fi
     local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
     mkdir -p "$results_dir"
@@ -714,14 +651,6 @@ _setup_playwright_environment() {
 
   if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
     _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
-  else
-    # Patch SM-8.7 ModelerHomePage: add banner-dismissal logic missing from the
-    # upstream @camunda/e2e-test-suite package.  The SM-8.8 page object already
-    # has clickMessageBanner() / createCrossComponentProjectFolder() with banner
-    # handling, but SM-8.7 does not.  Web Modeler now shows a top banner that
-    # blocks the "New project" button, causing all 8.7 smoke tests to fail.
-    # Remove this workaround once the upstream package ships a fix.
-    _patch_sm87_modeler_home_page "$test_suite_path"
   fi
 
   # Create the test-results directory; use namespace-scoped path when set.
@@ -811,7 +740,6 @@ _get_reporter() {
 # For pods to be considered ready:
 #   - Completed/Succeeded pods (Jobs) are always considered ready
 #   - Running pods must have all containers ready (e.g., 1/1, 2/2)
-# Args: namespace
 # Args: namespace, [kube_context]
 _check_all_pods_ready() {
   local namespace="$1"
@@ -832,7 +760,7 @@ _check_all_pods_ready() {
   # READY column (field 2) shows "X/Y" - we need X==Y for ready
   # STATUS column (field 3) shows Running, Completed, Succeeded, etc.
   local not_ready_pods
-  not_ready_pods=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | awk '
+  not_ready_pods=$($kubectl_cmd get pods -n "$namespace" --no-headers 2>/dev/null | awk '
     # Skip completed jobs - they are always considered ready
     $3 == "Completed" || $3 == "Succeeded" { next }
     # For other pods, check if READY column shows all containers ready AND status is Running
@@ -843,8 +771,6 @@ _check_all_pods_ready() {
       }
     }
   ')
-  local not_ready
-  not_ready=$($kubectl_cmd get pods -n "$namespace" --no-headers 2>/dev/null | grep -cvE "Running|Completed" || true)
   
   if [[ -z "$not_ready_pods" ]]; then
     return 0
@@ -900,16 +826,24 @@ _wait_for_pods_ready() {
     fi
     
     log "ERROR: Timeout waiting for pods to be Ready in namespace $namespace"
-    _dump_pod_status "$namespace"
+    _dump_pod_status "$namespace" "$kube_context"
     return 1
   fi
 }
 
 # Helper to dump pod status for diagnostics
+# Args: namespace, [kube_context]
 _dump_pod_status() {
   local namespace="$1"
+  local kube_context="${2:-}"
+  local kubectl_cmd="kubectl"
+
+  if [[ -n "$kube_context" ]]; then
+    kubectl_cmd="kubectl --context=$kube_context"
+  fi
+
   log "Current pod status in namespace $namespace:"
-  kubectl get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
+  $kubectl_cmd get pods -n "$namespace" -o wide 2>/dev/null | while IFS= read -r line; do
     log "  $line"
   done
 }
@@ -984,8 +918,12 @@ _run_playwright_with_retry() {
     # children terminate.  Using process substitution avoids this: the
     # shell only waits for the main command, not for the tee background
     # process.
+    #
+    # After the command exits we give the background `tee` a moment to
+    # flush remaining output so the subsequent grep sees complete data.
     "${playwright_cmd[@]}" > >(tee "$output_file") 2>&1
     playwright_rc=$?
+    sleep 1  # allow process-substitution tee to flush
     
     # If tests passed, we're done
     if [[ $playwright_rc -eq 0 ]]; then
@@ -1032,13 +970,13 @@ _run_playwright_with_retry() {
           continue
         else
           info "${COLOR_RED}Max retry attempts reached${COLOR_RESET}"
-          _dump_pod_status "$namespace"
+          _dump_pod_status "$namespace" "$kube_context"
           return $playwright_rc
         fi
       else
         # Pods are ready and no connection errors - legitimate test failure
         log "Pods are healthy and no connection errors detected - this appears to be a legitimate test failure"
-        _dump_pod_status "$namespace"
+        _dump_pod_status "$namespace" "$kube_context"
         return $playwright_rc
       fi
     else
@@ -1074,6 +1012,8 @@ run_playwright_tests() {
 
   _setup_playwright_environment "$test_suite_path" "false"
   _install_playwright_browsers
+
+  _log_e2e_suite_version
 
   reporter=$(_get_reporter "$reporter" "$show_html_report")
 
@@ -1140,6 +1080,8 @@ run_playwright_tests_hybrid() {
   [[ -n "$kube_context" ]] && log "Kube context: $kube_context"
 
   _setup_playwright_environment "$test_suite_path" "true"
+
+  _log_e2e_suite_version
 
   local reporter
   reporter=$(_get_reporter "html" "$show_html_report")

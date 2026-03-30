@@ -148,6 +148,9 @@ type RunOptions struct {
 	// UseLatest applies values-latest.yaml from each chart root instead of values-digest.yaml.
 	// This overrides the default digest-based image pinning with the latest available tags.
 	UseLatest bool
+	// UseQA forces the base-qa layer to be included for all entries, regardless of each
+	// entry's per-scenario qa setting in ci-test-config.yaml.
+	UseQA bool
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -277,7 +280,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				Features:    entry.Features,
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
-				QA:          entry.QA,
+				QA:          entry.QA || opts.UseQA,
 				ImageTags:   entry.ImageTags,
 				Upgrade:     entry.Upgrade,
 			})
@@ -593,7 +596,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				Features:    entry.Features,
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
-				QA:          entry.QA,
+				QA:          entry.QA || opts.UseQA,
 				ImageTags:   entry.ImageTags,
 				Upgrade:     entry.Upgrade,
 			})
@@ -1421,7 +1424,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			Persistence: entry.Persistence,
 			Features:    entry.Features,
 			InfraType:   entry.InfraType,
-			QA:          entry.QA,
+			QA:          entry.QA || opts.UseQA,
 			ImageTags:   entry.ImageTags,
 			UpgradeFlow: entry.Upgrade,
 		},

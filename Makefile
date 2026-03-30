@@ -227,6 +227,12 @@ helm.readme-update:
 # TODO: Once 8.7 is released, remove "alpha" name from the excluded versions.
 helm.schema-update:
 	for chart_dir in $(chartPath); do \
+		excluded_charts="keycloak|postgres|elasticsearch"; \
+		if echo "$${chart_dir}" | grep -qE "$${excluded_charts}"; then \
+			echo "\n[$@] Chart dir: $${chart_dir}";\
+			echo "[$@] This chart version shouldnt autogenerate schema"; \
+			continue; \
+		fi; \
 		excluded_versions="camunda-platform-(8\.(2|3|4|5|6|7)|alpha)$$"; \
 		if echo "$${chart_dir}" | grep -qE "$${excluded_versions}"; then \
 			echo "\n[$@] Chart dir: $${chart_dir}";\

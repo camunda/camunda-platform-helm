@@ -118,8 +118,8 @@ tasks:
           {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
           --values {{ .TEST_HELM_DIGEST_VALUES }} \
           {{ end -}}
-          $EXTRA_VALUES_ARGS \
           --values "$MERGED_VALUES" \
+          $EXTRA_VALUES_ARGS \
           $LICENSE_KEY_ARGS \
           --force \
           --timeout 20m0s \
