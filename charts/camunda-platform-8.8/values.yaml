@@ -319,13 +319,13 @@ global:
       enabled: false
       ## @param global.identity.auth.issuer defines the issuer name, which is used by the services to validate the JWT tokens.
       issuer: ""
-      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
+      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).
       issuerBackendUrl: ""
-      ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access.
+      ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).
       authUrl: ""
-      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens.
+      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
       tokenUrl: ""
-      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
+      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
       jwksUrl: ""
       ## @param global.identity.auth.type defines the type of authentication which should be used. Possible values: `KEYCLOAK`, `MICROSOFT`, or `GENERIC`.
       type: "KEYCLOAK"
@@ -1179,7 +1179,7 @@ console:
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
     ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
-    tag: 8.8.130
+    tag: 8.8.131
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
     ## @param console.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -2433,11 +2433,11 @@ orchestration:
         type: ""
         ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
         issuer: ""
-        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`.
+        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`. Supports templating (e.g., {{ .Release.Name }}).
         authUrl: ""
-        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.
+        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`. Supports templating (e.g., {{ .Release.Name }}).
         tokenUrl: ""
-        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
+        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
         ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
         usernameClaim: preferred_username

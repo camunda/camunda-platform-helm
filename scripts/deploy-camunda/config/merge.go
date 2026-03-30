@@ -334,6 +334,15 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.Test.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests, changed, "test-it")
 	MergeBoolField(&flags.Test.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests, changed, "test-e2e")
 
+	// Selection + composition model fields
+	MergeStringField(&flags.Selection.Identity, dep.Identity, rc.Identity, changed, "identity")
+	MergeStringField(&flags.Selection.Persistence, dep.Persistence, rc.Persistence, changed, "persistence")
+	MergeStringField(&flags.Selection.TestPlatform, dep.TestPlatform, rc.TestPlatform, changed, "test-platform")
+	MergeBoolField(&flags.Selection.QA, dep.QA, rc.QA, changed, "qa")
+	MergeBoolField(&flags.Selection.ImageTags, dep.ImageTags, rc.ImageTags, changed, "image-tags")
+	MergeBoolField(&flags.Selection.UpgradeFlow, dep.UpgradeFlow, rc.UpgradeFlow, changed, "upgrade-flow")
+	MergeStringSliceField(&flags.Selection.Features, dep.Features, rc.Features)
+
 	// Slice fields
 	MergeStringSliceField(&flags.Deployment.ExtraValues, dep.ExtraValues, rc.ExtraValues)
 
@@ -406,6 +415,15 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.Test.RunIntegrationTests, nil, rc.RunIntegrationTests, changed, "test-it")
 	MergeBoolField(&flags.Test.RunE2ETests, nil, rc.RunE2ETests, changed, "test-e2e")
 
+	// Selection + composition model fields
+	MergeStringField(&flags.Selection.Identity, "", rc.Identity, changed, "identity")
+	MergeStringField(&flags.Selection.Persistence, "", rc.Persistence, changed, "persistence")
+	MergeStringField(&flags.Selection.TestPlatform, "", rc.TestPlatform, changed, "test-platform")
+	MergeBoolField(&flags.Selection.QA, nil, rc.QA, changed, "qa")
+	MergeBoolField(&flags.Selection.ImageTags, nil, rc.ImageTags, changed, "image-tags")
+	MergeBoolField(&flags.Selection.UpgradeFlow, nil, rc.UpgradeFlow, changed, "upgrade-flow")
+	MergeStringSliceField(&flags.Selection.Features, nil, rc.Features)
+
 	MergeStringSliceField(&flags.Deployment.ExtraValues, nil, rc.ExtraValues)
 
 	MergeStringField(&flags.Auth.KeycloakHost, "", rc.Keycloak.Host, changed, "keycloak-host")
@@ -415,10 +433,17 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 }
 
 // Validate performs validation on the merged runtime flags.
-func Validate(flags *RuntimeFlags) error {
+// cfgRes is optional — when provided, validation errors include context about
+// which config files were searched and whether one was loaded.
+func Validate(flags *RuntimeFlags, cfgRes ...*ConfigResolution) error {
+	var res *ConfigResolution
+	if len(cfgRes) > 0 {
+		res = cfgRes[0]
+	}
+
 	// Ensure at least one of chart-path or chart is provided
 	if flags.Chart.ChartPath == "" && flags.Chart.Chart == "" {
-		return fmt.Errorf("either --chart-path or --chart must be provided")
+		return missingFieldError("chart not configured", "chartPath", "--chart-path or --chart", res)
 	}
 
 	// Validate --version compatibility
@@ -431,13 +456,25 @@ func Validate(flags *RuntimeFlags) error {
 
 	// Validate required runtime identifiers
 	if strings.TrimSpace(flags.Deployment.Namespace) == "" {
-		return fmt.Errorf("namespace not set; provide -n/--namespace or set 'namespace' in the active deployment/root config")
+		return missingFieldError("namespace not set", "namespace", "-n/--namespace", res)
 	}
 	if strings.TrimSpace(flags.Deployment.Release) == "" {
-		return fmt.Errorf("release not set; provide -r/--release or set 'release' in the active deployment/root config")
+		return missingFieldError("release not set", "release", "-r/--release", res)
 	}
+	// Migrate deprecated flags before checking selection config
+	flags.MigrateDeprecatedFlags()
+
 	if strings.TrimSpace(flags.Deployment.Scenario) == "" {
-		return fmt.Errorf("scenario not set; provide -s/--scenario or set 'scenario' in the active deployment/root config")
+		// Scenario is optional when selection flags fully describe the deployment
+		if flags.HasExplicitSelectionConfig() {
+			// Synthesize a scenario name from the selection flags so downstream
+			// code (ScenarioContext, temp dirs, realm names, etc.) has an identifier.
+			flags.Deployment.Scenario = synthesizeScenarioName(flags)
+		} else {
+			return missingFieldError(
+				"scenario not set; provide --scenario or use selection flags (--identity, --persistence, etc.)",
+				"scenario", "-s/--scenario or --identity/--persistence", res)
+		}
 	}
 
 	// Parse scenarios from comma-separated string
@@ -547,20 +584,78 @@ func (f *RuntimeFlags) EffectiveNamespace() string {
 	return f.Deployment.Namespace
 }
 
+// missingFieldError builds an actionable error message for a missing required
+// field. When a ConfigResolution is available, the message explains whether a
+// config file was found and, if not, which paths were searched.
+func missingFieldError(what, configKey, flagHint string, res *ConfigResolution) error {
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s", what)
+
+	if res != nil && !res.Found {
+		b.WriteString("\n\n  No config file found. Searched:\n")
+		for _, p := range res.Searched {
+			fmt.Fprintf(&b, "    - %s\n", p)
+		}
+		b.WriteString("\n  To fix, either:\n")
+		fmt.Fprintf(&b, "    - Create .camunda-deploy.yaml in the repo root (run: deploy-camunda config create <name>)\n")
+		fmt.Fprintf(&b, "    - Provide %s on the command line", flagHint)
+	} else if res != nil {
+		fmt.Fprintf(&b, "\n\n  Config loaded from: %s\n", res.Path)
+		fmt.Fprintf(&b, "\n  To fix, either:\n")
+		fmt.Fprintf(&b, "    - Set '%s' in your config file or active deployment\n", configKey)
+		fmt.Fprintf(&b, "    - Provide %s on the command line", flagHint)
+	} else {
+		fmt.Fprintf(&b, "; provide %s or set '%s' in the active deployment/root config", flagHint, configKey)
+	}
+
+	return fmt.Errorf("%s", b.String())
+}
+
+// synthesizeScenarioName builds a human-readable scenario identifier from the
+// selection flags. This is used when --scenario is omitted but selection flags
+// fully describe the deployment (e.g., --identity keycloak --persistence elasticsearch
+// produces "keycloak-elasticsearch").
+func synthesizeScenarioName(flags *RuntimeFlags) string {
+	var parts []string
+	if flags.Selection.Identity != "" {
+		parts = append(parts, flags.Selection.Identity)
+	}
+	if flags.Selection.Persistence != "" {
+		parts = append(parts, flags.Selection.Persistence)
+	}
+	if flags.Selection.TestPlatform != "" {
+		parts = append(parts, flags.Selection.TestPlatform)
+	}
+	for _, f := range flags.Selection.Features {
+		parts = append(parts, f)
+	}
+	if flags.Selection.QA {
+		parts = append(parts, "qa")
+	}
+	if flags.Selection.UpgradeFlow {
+		parts = append(parts, "upgrade")
+	}
+	if len(parts) == 0 {
+		return "custom"
+	}
+	return strings.Join(parts, "-")
+}
+
 // LoadAndMerge loads config from the given path and merges the active deployment into flags.
 // If configPath is empty, it resolves the default config location.
 // The includeEnv parameter controls whether environment variable overrides are applied.
-func LoadAndMerge(configPath string, includeEnv bool, flags *RuntimeFlags) (*RootConfig, error) {
-	cfgPath, err := ResolvePath(configPath)
+// The returned ConfigResolution describes where the config was found (or not).
+func LoadAndMerge(configPath string, includeEnv bool, flags *RuntimeFlags) (*RootConfig, *ConfigResolution, error) {
+	res, err := ResolvePath(configPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	rc, err := Read(cfgPath, includeEnv)
+	rc, err := Read(res.Path, includeEnv)
 	if err != nil {
-		return nil, err
+		return nil, res, err
 	}
 	if err := ApplyActiveDeployment(rc, rc.Current, flags); err != nil {
-		return nil, err
+		return nil, res, err
 	}
-	return rc, nil
+	return rc, res, nil
 }
