@@ -91,6 +91,15 @@ type DeploySpecConfig struct {
 	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
 	RunIntegrationTests      *bool    `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
 	RunE2ETests              *bool    `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
+
+	// Selection + composition model fields (alternative to Scenario)
+	Identity     string   `mapstructure:"identity" yaml:"identity,omitempty"`
+	Persistence  string   `mapstructure:"persistence" yaml:"persistence,omitempty"`
+	TestPlatform string   `mapstructure:"testPlatform" yaml:"testPlatform,omitempty"`
+	Features     []string `mapstructure:"features" yaml:"features,omitempty"`
+	QA           *bool    `mapstructure:"qa" yaml:"qa,omitempty"`
+	ImageTags    *bool    `mapstructure:"imageTags" yaml:"imageTags,omitempty"`
+	UpgradeFlow  *bool    `mapstructure:"upgradeFlow" yaml:"upgradeFlow,omitempty"`
 }
 
 // MatrixConfig holds configuration specific to the "matrix" subcommand.
@@ -162,6 +171,16 @@ type RootConfig struct {
 	FilePath    string                      `mapstructure:"-" yaml:"-"`
 }
 
+// ConfigResolution captures how the config file was resolved — which paths
+// were searched, whether a file was actually found, and which file is in use.
+// This enables downstream code (especially Validate) to produce actionable
+// error messages instead of generic "flag X not set" errors.
+type ConfigResolution struct {
+	Path     string   // resolved config file path (may not exist on disk)
+	Found    bool     // true when the file actually exists
+	Searched []string // all candidate paths that were checked, in order
+}
+
 // DetectRepoRoot uses git to auto-detect the repository root from the current
 // working directory. This correctly returns the worktree root when running
 // inside a git worktree. Returns ("", nil) when git is not available or the
@@ -184,21 +203,50 @@ func DetectRepoRoot() (string, error) {
 }
 
 // ResolvePath determines the config file path to use.
-func ResolvePath(explicit string) (string, error) {
+// It returns a ConfigResolution that records which paths were searched and
+// whether the resolved file actually exists on disk.
+func ResolvePath(explicit string) (*ConfigResolution, error) {
 	if strings.TrimSpace(explicit) != "" {
-		return explicit, nil
+		_, statErr := os.Stat(explicit)
+		return &ConfigResolution{
+			Path:     explicit,
+			Found:    statErr == nil,
+			Searched: []string{explicit},
+		}, nil
 	}
-	// prefer local project file if present
+
+	var searched []string
 	local := ".camunda-deploy.yaml"
+
+	// prefer local project file if present
+	cwd, _ := os.Getwd()
+	cwdLocal := filepath.Join(cwd, local)
+	searched = append(searched, cwdLocal)
 	if _, err := os.Stat(local); err == nil {
-		return local, nil
+		return &ConfigResolution{Path: local, Found: true, Searched: searched}, nil
 	}
+
+	// check repo root (handles running from subdirectories)
+	if root, err := DetectRepoRoot(); err == nil && root != "" {
+		repoLocal := filepath.Join(root, local)
+		// avoid duplicate if CWD is the repo root
+		if repoLocal != cwdLocal {
+			searched = append(searched, repoLocal)
+		}
+		if _, err := os.Stat(repoLocal); err == nil {
+			return &ConfigResolution{Path: repoLocal, Found: true, Searched: searched}, nil
+		}
+	}
+
 	// fallback to user config directory
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return filepath.Join(home, ".config", "camunda", "deploy.yaml"), nil
+	fallback := filepath.Join(home, ".config", "camunda", "deploy.yaml")
+	searched = append(searched, fallback)
+	_, statErr := os.Stat(fallback)
+	return &ConfigResolution{Path: fallback, Found: statErr == nil, Searched: searched}, nil
 }
 
 // Read loads configuration from the specified path.

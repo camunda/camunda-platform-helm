@@ -34,11 +34,11 @@ func newListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "List configured deployments",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ResolvePath(configFile)
+			cfgRes, err := config.ResolvePath(configFile)
 			if err != nil {
 				return err
 			}
-			rc, err := config.Read(cfgPath, false)
+			rc, err := config.Read(cfgRes.Path, false)
 			if err != nil {
 				return err
 			}
@@ -66,11 +66,11 @@ func newShowCommand() *cobra.Command {
 		Args:              cobra.RangeArgs(0, 1),
 		ValidArgsFunction: completeDeploymentNames,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := config.ResolvePath(configFile)
+			cfgRes, err := config.ResolvePath(configFile)
 			if err != nil {
 				return err
 			}
-			rc, err := config.Read(cfgPath, false)
+			rc, err := config.Read(cfgRes.Path, false)
 			if err != nil {
 				return err
 			}
@@ -102,24 +102,24 @@ func newUseCommand() *cobra.Command {
 		ValidArgsFunction: completeDeploymentNames,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
-			cfgPath, err := config.ResolvePath(configFile)
+			cfgRes, err := config.ResolvePath(configFile)
 			if err != nil {
 				return err
 			}
-			rc, err := config.Read(cfgPath, false)
+			rc, err := config.Read(cfgRes.Path, false)
 			if err != nil {
 				return err
 			}
 			if rc.Deployments == nil {
-				return fmt.Errorf("no deployments configured in %q", cfgPath)
+				return fmt.Errorf("no deployments configured in %q", cfgRes.Path)
 			}
 			if _, ok := rc.Deployments[name]; !ok {
-				return fmt.Errorf("deployment %q not found in %q", name, cfgPath)
+				return fmt.Errorf("deployment %q not found in %q", name, cfgRes.Path)
 			}
-			if err := config.WriteCurrentOnly(cfgPath, name); err != nil {
+			if err := config.WriteCurrentOnly(cfgRes.Path, name); err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stdout, "Now using deployment %q in %s\n", name, cfgPath)
+			fmt.Fprintf(os.Stdout, "Now using deployment %q in %s\n", name, cfgRes.Path)
 			return nil
 		},
 	}
@@ -127,11 +127,11 @@ func newUseCommand() *cobra.Command {
 
 // completeDeploymentNames provides shell completion for deployment names.
 func completeDeploymentNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	cfgPath, err := config.ResolvePath(configFile)
+	cfgRes, err := config.ResolvePath(configFile)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveDefault
 	}
-	rc, err := config.Read(cfgPath, false)
+	rc, err := config.Read(cfgRes.Path, false)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveDefault
 	}
@@ -179,16 +179,16 @@ Examples:
 			key := args[0]
 			value := args[1]
 
-			cfgPath, err := config.ResolvePath(configFile)
+			cfgRes, err := config.ResolvePath(configFile)
 			if err != nil {
 				return err
 			}
 
-			if err := config.SetValue(cfgPath, key, value); err != nil {
+			if err := config.SetValue(cfgRes.Path, key, value); err != nil {
 				return err
 			}
 
-			fmt.Fprintf(os.Stdout, "Set %s = %s in %s\n", key, value, cfgPath)
+			fmt.Fprintf(os.Stdout, "Set %s = %s in %s\n", key, value, cfgRes.Path)
 			return nil
 		},
 	}
@@ -217,12 +217,12 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
 
-			cfgPath, err := config.ResolvePath(configFile)
+			cfgRes, err := config.ResolvePath(configFile)
 			if err != nil {
 				return err
 			}
 
-			value, err := config.GetValue(cfgPath, key)
+			value, err := config.GetValue(cfgRes.Path, key)
 			if err != nil {
 				return err
 			}
@@ -247,16 +247,16 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 
-			cfgPath, err := config.ResolvePath(configFile)
+			cfgRes, err := config.ResolvePath(configFile)
 			if err != nil {
 				return err
 			}
 
-			if err := config.CreateDeployment(cfgPath, name); err != nil {
+			if err := config.CreateDeployment(cfgRes.Path, name); err != nil {
 				return err
 			}
 
-			fmt.Fprintf(os.Stdout, "Created deployment %q in %s\n", name, cfgPath)
+			fmt.Fprintf(os.Stdout, "Created deployment %q in %s\n", name, cfgRes.Path)
 			fmt.Fprintf(os.Stdout, "Use 'deploy-camunda config set %s.<key> <value>' to configure it\n", name)
 			return nil
 		},
@@ -276,11 +276,11 @@ func completeConfigKeys(cmd *cobra.Command, args []string, toComplete string) ([
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	cfgPath, err := config.ResolvePath(configFile)
+	cfgRes, err := config.ResolvePath(configFile)
 	if err != nil {
 		return validConfigKeys, cobra.ShellCompDirectiveNoFileComp
 	}
-	rc, err := config.Read(cfgPath, false)
+	rc, err := config.Read(cfgRes.Path, false)
 	if err != nil {
 		return validConfigKeys, cobra.ShellCompDirectiveNoFileComp
 	}

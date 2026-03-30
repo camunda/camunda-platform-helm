@@ -454,19 +454,19 @@ global:
       # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer;
       #   generic OIDC docs use publicIssuerUrl). Internal Keycloak and External Keycloak: leave empty.
       issuer: ""
-      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
+      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted and internal/external Keycloak URLs are identical.
       issuerBackendUrl: ""
-      ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access.
+      ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (browser-facing URL);
       #   auto-derived if omitted.
       authUrl: ""
-      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens.
+      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted.
       tokenUrl: ""
-      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
+      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted.
       jwksUrl: ""
@@ -2440,11 +2440,11 @@ orchestration:
         type: ""
         ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
         issuer: ""
-        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`.
+        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`. Supports templating (e.g., {{ .Release.Name }}).
         authUrl: ""
-        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.
+        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`. Supports templating (e.g., {{ .Release.Name }}).
         tokenUrl: ""
-        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
+        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
         ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
         usernameClaim: preferred_username

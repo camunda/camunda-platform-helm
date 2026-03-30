@@ -222,22 +222,26 @@ Authentication.
 
 {{- define "orchestration.authIssuerUrlEndpointAuth" -}}
   {{- if .Values.orchestration.security.authentication.oidc.authUrl -}}
-    {{- .Values.orchestration.security.authentication.oidc.authUrl -}}
+    {{- tpl .Values.orchestration.security.authentication.oidc.authUrl . -}}
   {{- else -}}
     {{- include "camundaPlatform.authIssuerUrlEndpointAuth" . -}}
   {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.authIssuerBackendUrlEndpointCerts" -}}
-    {{- .Values.orchestration.security.authentication.oidc.jwksUrl | default (
-        include "camundaPlatform.authIssuerBackendUrlEndpointCerts" .
-    ) -}}
+  {{- if .Values.orchestration.security.authentication.oidc.jwksUrl -}}
+    {{- tpl .Values.orchestration.security.authentication.oidc.jwksUrl . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . -}}
+  {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.authIssuerBackendUrlEndpointToken" -}}
-    {{- .Values.orchestration.security.authentication.oidc.tokenUrl | default (
-        include "camundaPlatform.authIssuerBackendUrlEndpointToken" .
-    ) -}}
+  {{- if .Values.orchestration.security.authentication.oidc.tokenUrl -}}
+    {{- tpl .Values.orchestration.security.authentication.oidc.tokenUrl . -}}
+  {{- else -}}
+    {{- include "camundaPlatform.authIssuerBackendUrlEndpointToken" . -}}
+  {{- end -}}
 {{- end -}}
 
 {{- define "orchestration.authClientId" -}}

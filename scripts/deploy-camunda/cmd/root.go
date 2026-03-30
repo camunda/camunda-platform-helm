@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/camunda-core/pkg/scenarios"
 	"scripts/deploy-camunda/config"
@@ -97,7 +98,8 @@ func NewRootCommand() *cobra.Command {
 			})
 
 			// Load config and merge with flags first to get envFile from config
-			if _, err := config.LoadAndMerge(configFile, true, &flags); err != nil {
+			_, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
+			if err != nil {
 				return err
 			}
 
@@ -128,8 +130,18 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// Validate merged configuration
-			if err := config.Validate(&flags); err != nil {
+			if err := config.Validate(&flags, cfgRes); err != nil {
 				return err
+			}
+
+			// Resolve relative chartPath against repoRoot when running from a subdirectory
+			if strings.TrimSpace(flags.Chart.ChartPath) != "" && !filepath.IsAbs(flags.Chart.ChartPath) && flags.Chart.RepoRoot != "" {
+				if _, err := os.Stat(flags.Chart.ChartPath); err != nil {
+					resolved := filepath.Join(flags.Chart.RepoRoot, flags.Chart.ChartPath)
+					if fi, err := os.Stat(resolved); err == nil && fi.IsDir() {
+						flags.Chart.ChartPath = resolved
+					}
+				}
 			}
 
 			// Validate chartPath exists
@@ -275,7 +287,7 @@ func registerScenarioCompletion(cmd *cobra.Command, flagName string) {
 			tempFlags.Deployment.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
 			tempFlags.Chart.ChartPath, _ = cmd.Flags().GetString("chart-path")
 
-			if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
+			if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
 				scenarioPath = tempFlags.Deployment.ScenarioPath
 			}
 		}
@@ -503,7 +515,7 @@ func resolveScenarioPath(cmd *cobra.Command) string {
 		tempFlags.Deployment.ScenarioPath, _ = cmd.Flags().GetString("scenario-path")
 		tempFlags.Chart.ChartPath, _ = cmd.Flags().GetString("chart-path")
 
-		if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
+		if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
 			scenarioPath = tempFlags.Deployment.ScenarioPath
 		}
 	}
