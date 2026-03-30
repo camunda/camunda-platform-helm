@@ -122,12 +122,6 @@ camundaHub:
         - name: index-docker-io
         - name: registry-camunda-cloud
     restapi:
-      javaOpts: >-
-        -XX:MaxRAMPercentage=80.0
-        -XX:+TieredCompilation
-        -XX:TieredStopAtLevel=1
-        -XX:+UseG1GC
-        -XX:+UseStringDeduplication
       # Wait for PostgreSQL to accept connections before starting restapi.
       # Prevents restapi from failing on DB connection during Spring context init.
       initContainers:
