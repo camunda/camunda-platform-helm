@@ -193,6 +193,25 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldRenderTemplatedAuthUrls",
+			Values: map[string]string{
+				"identity.enabled":                                       "false",
+				"identityKeycloak.enabled":                               "false",
+				"global.identity.auth.enabled":                           "false",
+				"global.identity.auth.issuer":                            "",
+				"global.identity.auth.authUrl":                           "https://{{ .Release.Name }}.example.com/auth",
+				"global.identity.auth.tokenUrl":                          "https://{{ .Release.Name }}.example.com/token",
+				"global.identity.auth.jwksUrl":                           "https://{{ .Release.Name }}.example.com/certs",
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect-url.com/orchestration",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://camunda-platform-test.example.com/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://camunda-platform-test.example.com/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://camunda-platform-test.example.com/token",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlUnUsedAndKeycloakExternal",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
