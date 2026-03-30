@@ -9,6 +9,8 @@ Chart.lock
 !scripts/*.tgz
 .env*
 !.env.template
+.camunda-deploy.yaml
+!.camunda-deploy.yaml.template
 **/*.png
 
 node_modules/
