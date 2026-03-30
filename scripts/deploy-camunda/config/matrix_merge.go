@@ -224,9 +224,9 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 // LoadMatrixConfig loads the config file and returns the parsed RootConfig
 // suitable for use by matrix subcommands. Environment overrides are applied.
 func LoadMatrixConfig(configPath string) (*RootConfig, error) {
-	cfgPath, err := ResolvePath(configPath)
+	res, err := ResolvePath(configPath)
 	if err != nil {
 		return nil, err
 	}
-	return Read(cfgPath, true)
+	return Read(res.Path, true)
 }
