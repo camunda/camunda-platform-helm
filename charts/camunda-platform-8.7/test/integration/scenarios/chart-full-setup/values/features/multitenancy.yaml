@@ -49,15 +49,3 @@ connectors:
       value: password
     - name: CAMUNDA_CLIENT_ZEEBE_DEFAULTS_TENANTIDS
       value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
-    - name: IDENTITY_TENANTS_0_MEMBERS_5_TYPE
-      value: APPLICATION
-    - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
-      value: venom
-connectors:
-  env:
-    - name: username
-      value: username
-    - name: password
-      value: password
-    - name: CAMUNDA_CLIENT_ZEEBE_DEFAULTS_TENANTIDS
-      value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"

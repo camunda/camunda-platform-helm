@@ -113,8 +113,6 @@ integration:
           shortname: kemt
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch
-          flow: upgrade-minor
           persistence: elasticsearch-external
           flow: install
           infra-type:

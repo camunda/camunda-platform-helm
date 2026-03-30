@@ -75,9 +75,6 @@ integration:
           shortname: kemt
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch
-          flow: upgrade-minor
-          skip-e2e: true  # 8.8 Playwright smoke test enters retry loop exceeding timeout
           persistence: elasticsearch-external
           flow: install
           infra-type:
