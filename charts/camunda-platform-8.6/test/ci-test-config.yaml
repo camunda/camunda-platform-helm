@@ -53,6 +53,18 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+        - name: opensearch-external
+          enabled: true
+          shortname: osex
+          exclude: []
+          auth: keycloak
+          skip-e2e: true
+          identity: keycloak
+          persistence: opensearch-external
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch

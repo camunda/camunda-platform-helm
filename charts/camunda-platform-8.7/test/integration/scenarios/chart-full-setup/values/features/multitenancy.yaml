@@ -54,9 +54,10 @@ connectors:
     - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
       value: venom
 connectors:
-  security:
-    authentication:
-      method: oidc
   env:
-    - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
-      value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
+    - name: username
+      value: username
+    - name: password
+      value: password
+    - name: CAMUNDA_CLIENT_ZEEBE_DEFAULTS_TENANTIDS
+      value: "<default>, Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"
