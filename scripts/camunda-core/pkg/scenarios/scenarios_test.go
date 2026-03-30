@@ -143,6 +143,23 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"documentstore"},
 		},
+		{
+			name:            "mcp maps to mcp feature",
+			scenario:        "mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+		},
+		{
+			name:            "qa-elasticsearch-mcp enables QA and MCP",
+			scenario:        "qa-elasticsearch-mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+			wantQA:          true,
+		},
 
 		// QA and upgrade modifiers
 		{
@@ -330,6 +347,46 @@ func TestDeploymentConfigValidate(t *testing.T) {
 				Features:    []string{"multitenancy", "rba"},
 			},
 			wantErr: true,
+		},
+		{
+			name: "mcp with elasticsearch is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with elasticsearch-external is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch-external",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with opensearch is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "opensearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with rdbms is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "rdbms",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
 		},
 	}
 
