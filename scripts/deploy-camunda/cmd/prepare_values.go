@@ -110,7 +110,7 @@ All diagnostic output goes to stderr via the logger.`,
 		return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"elasticsearch", "elasticsearch-external", "opensearch", "rdbms", "rdbms-oracle"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"elasticsearch", "elasticsearch-external", "opensearch", "rdbms", "rdbms-external", "rdbms-oracle"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return config.TestPlatforms, cobra.ShellCompDirectiveNoFileComp
