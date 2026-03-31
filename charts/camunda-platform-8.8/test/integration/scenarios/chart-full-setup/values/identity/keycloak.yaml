@@ -88,11 +88,12 @@ identityKeycloak:
     pullSecrets:
       - name: index-docker-io
       - name: ghcr-io
-  # Production mode: runs `kc.sh start` (not start-dev). Required for
-  # --optimized to work.
-  production: true
-  # Skip Quarkus augmentation: the image was pre-built with matching config.
-  extraStartupArgs: "--optimized"
+  # TODO: reenable when keycloak-ci can be pulled: https://github.com/camunda/camunda-platform-helm/issues/5613
+  # # Production mode: runs `kc.sh start` (not start-dev). Required for
+  # # --optimized to work.
+  # production: true
+  # # Skip Quarkus augmentation: the image was pre-built with matching config.
+  # extraStartupArgs: "--optimized"
 
   # -- Pod-level speed knobs --------------------------------------------------
   # Disable Kubernetes service links: avoids injecting hundreds of env vars
