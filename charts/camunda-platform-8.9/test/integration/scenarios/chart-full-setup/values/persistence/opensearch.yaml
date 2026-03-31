@@ -54,6 +54,15 @@ orchestration:
       value: "venom-client-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
       value: "connectors-client-mapping-rule"
+    # Upgrade-compat: these env vars are defined in different base layers and must
+    # be replayed here because orchestration.env is a YAML array and this layer
+    # replaces (not merges) earlier layers:
+    #   CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK — common/values-integration-test.yaml
+    #   CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED — base-upgrade.yaml
+    - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
+      value: "false"
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
 
 optimize:
   enabled: true
