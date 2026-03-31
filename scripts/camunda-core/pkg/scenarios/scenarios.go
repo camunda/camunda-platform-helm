@@ -31,7 +31,7 @@ const (
 type DeploymentConfig struct {
 	// Required selections
 	Identity    string // keycloak, keycloak-external, oidc, basic, hybrid
-	Persistence string // elasticsearch, opensearch, rdbms, rdbms-oracle
+	Persistence string // elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle
 	Platform    string // gke, eks, openshift
 
 	// Optional features (combinable with constraints)
@@ -56,7 +56,7 @@ func (c *DeploymentConfig) Validate() error {
 		return errors.New("--identity is required (keycloak, keycloak-external, oidc, basic, hybrid)")
 	}
 	if c.Persistence == "" {
-		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-oracle)")
+		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle)")
 	}
 	if c.Platform == "" {
 		return errors.New("--platform is required (gke, eks, openshift)")
@@ -69,7 +69,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "opensearch-external", "rdbms", "rdbms-oracle"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "opensearch-external", "rdbms", "rdbms-external", "rdbms-oracle"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -348,6 +348,8 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	switch {
 	case strings.Contains(s, "opensearch"):
 		config.Persistence = "opensearch-external"
+	case strings.Contains(s, "rdbms-external"):
+		config.Persistence = "rdbms-external"
 	case strings.Contains(s, "rdbms") && strings.Contains(s, "oracle"):
 		config.Persistence = "rdbms-oracle"
 	case strings.Contains(s, "rdbms"):
