@@ -24,5 +24,3 @@ orchestration:
     - name: jdbcdrivers
       emptyDir: {}
 
-optimize:
-  enabled: false
