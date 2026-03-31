@@ -14,12 +14,12 @@ global:
         class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
         accessKeyId:
           secret:
-            existingSecret: "s3-bucket-credentials"
-            existingSecretKey: "access-key-id"
+            existingSecret: "vault-mapped-secrets"
+            existingSecretKey: "IDP_AWS_ACCESSKEY"
         secretAccessKey:
           secret:
-            existingSecret: "s3-bucket-credentials"
-            existingSecretKey: "secret-access-key"
+            existingSecret: "vault-mapped-secrets"
+            existingSecretKey: "IDP_AWS_SECRETKEY"
 
 orchestration:
   data:
