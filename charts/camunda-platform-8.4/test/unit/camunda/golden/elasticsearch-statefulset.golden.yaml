@@ -86,7 +86,6 @@ spec:
             runAsGroup: 0
             runAsNonRoot: true
             runAsUser: 1001
-            seLinuxOptions: null
             seccompProfile:
               type: RuntimeDefault
           resources:
@@ -130,7 +129,6 @@ spec:
             runAsGroup: 0
             runAsNonRoot: true
             runAsUser: 1001
-            seLinuxOptions: null
             seccompProfile:
               type: RuntimeDefault
           env:
