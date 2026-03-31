@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.5.5
+version: 13.6.0
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -72,5 +72,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: added
+      description: "Add tpl rendering for global identity auth URL values"
     - kind: fixed
-      description: "Restore backward compatibility for 3rd party e2e callers and fix 8.9 documentstore corruption"
+      description: "Reference bitnami subcharts internally rather than relying on external repositories"
