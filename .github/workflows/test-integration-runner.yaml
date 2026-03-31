@@ -260,7 +260,7 @@ env:
   OPENSEARCH_HOST: "search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
   OPENSEARCH_PORT: "443"
   # RDBMS (used for testing RDBMS-based secondary storage)
-  POSTGRESQL_JDBC_URL: "jdbc:postgresql://postgresql-cluster-rw.distribution-postgresql.svc.cluster.local:5432/app"
+  POSTGRESQL_JDBC_URL: "jdbc:postgresql://postgresql-cluster-rw.distribution-postgresql.svc.cluster.local:5432"
   # OIDC.
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
   # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.

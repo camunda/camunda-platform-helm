@@ -175,6 +175,9 @@ tasks:
         # Backward compatibility: Update OpenSearch prefix
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .LAYERED_VALUES_DIR }}/persistence/opensearch.yaml
       {{ end }}
+      {{ if eq .TEST_PERSISTENCE "rdbms" }}
+        PGPASSWORD="$RDBMS_POSTGRESQL_PASSWORD" psql --host=postgresql-cluster-rw.distribution-postgresql.svc.cluster.local --port=5432 --username=$RDBMS_POSTGRESQL_USERNAME --dbname=app -c "CREATE DATABASE IF NOT EXISTS $GITHUB_WORKFLOW_JOB_ID;"
+      {{ end }}
     - |
       # Print out all the values that are being applied for debugging purposes.
       VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
