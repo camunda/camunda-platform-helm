@@ -177,6 +177,7 @@ tasks:
       {{ end }}
       {{ if eq .TEST_PERSISTENCE "rdbms" }}
         kubectl run --image=postgres:18.3 \
+          --rm=true \
           --env=PGPASSWORD="$RDBMS_POSTGRESQL_PASSWORD" \
           --env=RDBMS_POSTGRESQL_USERNAME="$RDBMS_POSTGRESQL_USERNAME" \
           --env=GITHUB_WORKFLOW_JOB_ID="$GITHUB_WORKFLOW_JOB_ID" \
