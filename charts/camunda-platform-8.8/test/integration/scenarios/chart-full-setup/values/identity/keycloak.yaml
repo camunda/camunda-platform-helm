@@ -10,7 +10,7 @@ global:
     tls:
       enabled: true
       # A wildcard certificate will be used.
-      
+
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.ingress.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
@@ -73,9 +73,17 @@ identityKeycloak:
   # This custom image runs `kc.sh build` at image build time with the exact
   # options we need, so `--optimized` can skip augmentation entirely.
   # Dockerfile: .github/docker/keycloak-ci/Dockerfile
+  # TODO: reenable keycloak-ci when this issue is closed: https://github.com/camunda/camunda-platform-helm/issues/5613
+  # image:
+  #   registry: registry.camunda.cloud
+  #   repository: team-distribution/keycloak-ci
+  #   tag: "26.3.3"
+  #   pullSecrets:
+  #     - name: index-docker-io
+  #     - name: ghcr-io
   image:
     registry: registry.camunda.cloud
-    repository: team-distribution/keycloak-ci
+    repository: camunda/keycloak
     tag: "26.3.3"
     pullSecrets:
       - name: index-docker-io
