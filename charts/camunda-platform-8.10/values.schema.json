@@ -4604,17 +4604,17 @@
                                         },
                                         "authUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.authUrl`. Supports templating (e.g., {{ .Release.Name }}).",
+                                            "description": "can be used to override `global.identity.auth.authUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "tokenUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.tokenUrl`. Supports templating (e.g., {{ .Release.Name }}).",
+                                            "description": "can be used to override `global.identity.auth.tokenUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "jwksUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.jwksUrl`. Supports templating (e.g., {{ .Release.Name }}).",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "usernameClaim": {
