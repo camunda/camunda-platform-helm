@@ -256,12 +256,6 @@ env:
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
   TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
-  # Camunda registry auth to access WebModeler Docker image since it's not public.
-  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
-  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
-  # OpenSearch credentials
-  OPENSEARCH_USERNAME: ${{ secrets.OPENSEARCH_USERNAME }}
-  OPENSEARCH_PASSWORD: ${{ secrets.OPENSEARCH_PASSWORD }}
   OPENSEARCH_PROTOCOL: "https"
   OPENSEARCH_HOST: "search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
   OPENSEARCH_PORT: "443"
@@ -371,6 +365,10 @@ jobs:
             secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+            secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
+            secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
           exportEnv: true
 
       - name: CI Setup - Authenticate to cluster
