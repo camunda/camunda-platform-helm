@@ -190,7 +190,7 @@ tasks:
           echo "Applying resource: postgresql-cluster.yaml"
           export NAMESPACE="{{ .TEST_NAMESPACE }}"
           export RELEASE_NAME="integration"
-          envsubst '$NAMESPACE $RDBMS_POSTGRESQL_PASSWORD' < "$RESOURCES_DIR/postgresql-cluster.yaml" | kubectl apply -f -
+          envsubst '$NAMESPACE $RDBMS_POSTGRESQL_PASSWORD $RDBMS_POSTGRESQL_USERNAME' < "$RESOURCES_DIR/postgresql-cluster.yaml" | kubectl apply -f -
         else
           echo "Resources directory not found: $RESOURCES_DIR"
         fi
