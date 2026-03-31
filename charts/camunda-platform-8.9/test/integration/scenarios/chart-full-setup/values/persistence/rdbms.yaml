@@ -4,6 +4,7 @@
 orchestration:
   data:
     secondaryStorage:
+      type: rdbms
       rdbms:
         url: ${POSTGRESQL_JDBC_URL}
         username: ${RDBMS_POSTGRESQL_USERNAME}
