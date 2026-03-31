@@ -177,9 +177,9 @@ tasks:
       {{ end }}
       {{ if eq .TEST_PERSISTENCE "rdbms" }}
         kubectl run --image=postgres:18.3 \
-          -e PGPASSWORD="$RDBMS_POSTGRESQL_PASSWORD" \
-          -e RDBMS_POSTGRESQL_USERNAME="$RDBMS_POSTGRESQL_USERNAME" \
-          -e GITHUB_WORKFLOW_JOB_ID="$GITHUB_WORKFLOW_JOB_ID" \
+          --env=PGPASSWORD="$RDBMS_POSTGRESQL_PASSWORD" \
+          --env=RDBMS_POSTGRESQL_USERNAME="$RDBMS_POSTGRESQL_USERNAME" \
+          --env=GITHUB_WORKFLOW_JOB_ID="$GITHUB_WORKFLOW_JOB_ID" \
           -n {{ .TEST_NAMESPACE }} \
           psql-create-db -- bash -c "psql --host=postgresql-cluster-rw.distribution-postgresql.svc.cluster.local --port=5432 --username=$RDBMS_POSTGRESQL_USERNAME --dbname=app -c \"CREATE DATABASE IF NOT EXISTS $GITHUB_WORKFLOW_JOB_ID;\""
       {{ end }}
