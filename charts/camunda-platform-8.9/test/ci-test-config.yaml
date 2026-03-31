@@ -191,16 +191,16 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           platforms: [eks]
-        - name: rdbms
+        - name: rdbms-external
           enabled: true
           auth: keycloak
-          shortname: rdbms
+          shortname: rdbme
           flow: install
           exclude: []
           infra-type:
             gke: distroci
           identity: keycloak
-          persistence: rdbms
+          persistence: rdbms-external
           platforms: [gke]
     nightly:
       scenario:
