@@ -18,6 +18,18 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: camunda/camunda-platform-helm
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
+            secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
+          exportEnv: true
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
       - name: Authenticate to GKE
@@ -27,9 +39,10 @@ jobs:
           cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
           workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+      - name: get basicauth var
+        run: |
+          echo "OPENSEARCH_BASIC_AUTH_BASE64=$(echo -n "${OPENSEARCH_USERNAME}:${OPENSEARCH_PASSWORD}" | base64)" >> $GITHUB_ENV
       - name: cleanup OpenSearch
-        env:
-          OPENSEARCH_BASIC_AUTH_BASE64: ${{ secrets.OPENSEARCH_BASIC_AUTH_BASE64 }}
         shell: bash
         run: |
           # OpenSearch endpoint
@@ -54,8 +67,6 @@ jobs:
           EXCLUSIONS=$(printf -- ",-%s*" "${KEEP_PREFIXES[@]}" | cut -c2-)
           curl -L -X DELETE ${OPENSEARCH_HOST}/*,${EXCLUSIONS} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
       - name: update ISM policy
-        env:
-          OPENSEARCH_BASIC_AUTH_BASE64: ${{ secrets.OPENSEARCH_BASIC_AUTH_BASE64 }}
         shell: bash
         run: |
           OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
