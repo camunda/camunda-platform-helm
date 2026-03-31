@@ -459,7 +459,7 @@
                                 },
                                 "url": {
                                     "type": "object",
-                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart.",
+                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
                                     "default": {}
                                 },
                                 "contextPath": {

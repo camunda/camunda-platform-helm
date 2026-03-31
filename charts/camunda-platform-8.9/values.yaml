@@ -418,7 +418,7 @@ global:
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       # Applies to: External Keycloak. Not used in Internal Keycloak or External OIDC.
       internal: false
-      ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart.
+      ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart. The "host" field supports templating (e.g., {{ .Release.Namespace }}).
       # Applies to: External Keycloak - required.
       # In Internal Keycloak, auto-derived from the Keycloak subchart. In External OIDC, not used.
       url:
@@ -427,6 +427,11 @@ global:
         # url:
         #   protocol: "https"
         #   host: "keycloak.prod.svc.cluster.local"
+        #   port: "8443"
+        # Example with templating to use the release namespace:
+        # url:
+        #   protocol: "https"
+        #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         #   port: "8443"
       #  defines the endpoint of Keycloak which varies between Keycloak versions.
       ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
