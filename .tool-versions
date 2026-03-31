@@ -15,3 +15,4 @@ yq 4.52.5
 zbctl v8.6.0
 jq 1.8.1
 bats 1.11.0
+postgres 17.9
