@@ -196,7 +196,6 @@ jobs:
     uses: ./.github/workflows/test-chart-version-template.yaml
     secrets: inherit
     with:
-      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
       pr-number: ${{ github.event.pull_request.number || matrix.flow }}
       camunda-version: ${{ matrix.version }}
       case: ${{ matrix.case }}
