@@ -105,6 +105,18 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
+		{
+			Name: "TestApplicationYamlNoWebAppProfilesWhenNoSecondaryStorageEnabled",
+			Values: map[string]string{
+				"global.noSecondaryStorage":    "true",
+				"global.elasticsearch.enabled": "false",
+				"elasticsearch.enabled":        "false",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "admin,broker,consolidated-auth",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
