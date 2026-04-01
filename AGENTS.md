@@ -1,142 +1,170 @@
 # Agent Instructions
 
-This is the **Camunda 8 Self-Managed Helm Charts** repository. See `.github/AGENTS.md` for full architecture, CI matrix, and operational context. This file focuses on build/lint/test commands and code style.
+This repository contains Camunda 8 Self-Managed Helm charts, chart tests, and Go-based tooling.
+Use this file as the practical guide for coding agents.
+
+For architecture and CI context, also read `.github/AGENTS.md`.
+
+## Quick Start
+
+- Read `STATE.md` at repo root if it exists (session continuity file, gitignored).
+- Identify the target chart version before editing.
+- Prefer `make` targets so local behavior matches CI.
 
 ## Build Commands
-
 ```bash
-# Install all Go CLI tools to $GOPATH/bin
+# Install all Go CLIs into $GOPATH/bin
 make install.dx-tooling
 
-# Build individual tools
+# Build all Go CLIs
+make build.dx-tooling
+
+# Build individual Go tools
 make build.deployer
 make build.prepare-helm-values
 make build.deploy-camunda
 make build.vault-secret-mapper
 
-# Update Helm chart dependencies (required before running tests)
-make helm.dependency-update chartPath=charts/camunda-platform-8.10
-
-# Update all chart dependencies
-make helm.dependency-update
+# Build TypeScript MCP server
+cd helm-values-mcp && npm run build
 ```
 
 ## Lint Commands
-
 ```bash
-# Lint all Helm charts (helm lint --strict)
-make helm.lint
-
-# Lint a specific chart
+# Lint one chart (strict)
 make helm.lint chartPath=charts/camunda-platform-8.10
 
-# Check Go formatting (fails if any .go files are dirty)
+# Lint all matching charts
+make helm.lint-all
+
+# Enforce Go formatting (fails if gofmt would change files)
 make go.fmt
 
-# Check Apache license headers on .go files
-make go.addlicense-check
+# Check Apache headers on Go test files
+make go.addlicense-check chartPath=charts/camunda-platform-8.10
 
-# Add missing license headers
-make go.addlicense-run
+# Add missing Apache headers
+make go.addlicense-run chartPath=charts/camunda-platform-8.10
 
-# YAML lint (applied to test/unit directories)
-yamllint -c .github/config/yamllint.yaml charts/camunda-platform-8.10/test/unit/
-
-# Run all pre-commit chores (lint + readme + schema + golden files)
+# Maintainer precommit chores
 make precommit.chores
 ```
 
 ## Test Commands
-
 ```bash
-# Run all unit tests across all chart versions
+# Run all Go unit tests for all matched chart versions
 make go.test
 
-# Run unit tests for a specific chart version
+# Run Go unit tests for a single chart version
 make go.test chartPath=charts/camunda-platform-8.10
 
-# Run a single test package (e.g., orchestration)
+# Run all tests in one Go package
 cd charts/camunda-platform-8.10/test/unit && go test ./orchestration/...
 
-# Run a single test by name
+# Run a single Go test by name (most important single-test pattern)
 cd charts/camunda-platform-8.10/test/unit && go test ./orchestration/... -run TestStatefulSetTemplate
 
-# Run multiple packages (as CI does it)
-cd charts/camunda-platform-8.10/test/unit && go test ./orchestration/ ./connectors/ ./identity/
-
-# Run golden file tests and update snapshots
+# Update only golden snapshots
 make go.update-golden-only chartPath=charts/camunda-platform-8.10
 
-# Update golden files without deleting first (faster, additive only)
+# Faster golden update without cleanup
 make go.update-golden-only-lite chartPath=charts/camunda-platform-8.10
 
-# Run bats tests for shell scripts
+# Bash tests
 bats test/scripts/
-
-# Run a single bats test file
 bats test/scripts/generate_chart_matrix.bats
 
-# TypeScript tests (helm-values-mcp)
+# TypeScript tests
 cd helm-values-mcp && npm test
 
-# TypeScript tests in watch mode
-cd helm-values-mcp && npm run test:watch
+# Run a single vitest file
+cd helm-values-mcp && npx vitest run src/path/to/file.test.ts
+
+# Run a single vitest test by name
+cd helm-values-mcp && npx vitest run -t "test name"
 ```
 
-## Tool Versions
+Single-test guidance: Go uses `go test <package> -run <regex>` from `charts/<version>/test/unit`; Vitest uses `vitest run <file>` and/or `-t <name>`.
 
-Managed by `asdf`. Install all with `asdf install`. Pinned in `.tool-versions`.
+## Helm and Dependency Commands
+```bash
+# Required before many chart test/lint operations
+make helm.dependency-update chartPath=charts/camunda-platform-8.10
 
-| Tool  | Version | Tool    | Version |
-|-------|---------|---------|---------|
-| Go    | 1.26    | helm    | 3.20    |
-| bats  | 1.11.0  | kubectl | 1.27.16 |
-| yq    | 4.52.4  | jq      | 1.8.1   |
+# Render templates locally
+make helm.template chartPath=charts/camunda-platform-8.10
 
-## Code Style: Helm Templates
+# Dry-run local install
+make helm.dry-run chartPath=charts/camunda-platform-8.10
+```
 
-- **Helper naming:** Prefix all `define` blocks with the component name: `orchestration.fullname`, `camundaPlatform.imageByParams`.
-- **Indentation:** 2 spaces. Sequences indented under their parent key.
-- **Conditionals:** Use `{{- if .Values.component.enabled -}}` guards at the top of each template file.
-- **Whitespace control:** Use `{{-` / `-}}` to strip surrounding whitespace except where output formatting matters.
-- **Helpers file:** Component-level helpers live in `templates/<component>/_helpers.tpl`. Shared helpers live in `templates/common/_helpers.tpl`.
-- **Backward compat:** Annotate cross-version compatibility notes inline: `{{- /* NOTE: backward compat between 8.7 and 8.8 */ -}}`.
-- **YAML lint rules:** 2-space indent, no line-length limit, `document-start: disable`, `truthy: warning` level. See `.github/config/yamllint.yaml`.
-- **No raw image tags:** Always use the `camundaPlatform.imageByParams` helper rather than hardcoding image references.
+## Toolchain
+Pinned in `.tool-versions`, managed via `asdf`.
 
-## Code Style: Go
+- Go `1.26.1`, Helm `3.20.1`, kubectl `1.27.16`
+- kind `0.31.0`, kustomize `5.8.1`
+- yq `4.52.5`, jq `1.8.1`, yamllint `1.38.0`, bats `1.11.0`
 
-- **License header:** Every `.go` file must have the Apache 2.0 license header. Enforced by `make go.addlicense-check`. Run `make go.addlicense-run` to add missing headers.
-- **Formatting:** `gofmt` enforced. Run `make go.fmt` before committing. No `.golangci.yml` — `gofmt` is the primary formatter.
-- **Imports:** Standard library first, then third-party, then local packages. Use aliased imports for Kubernetes types: `appsv1 "k8s.io/api/apps/v1"`, `corev1 "k8s.io/api/core/v1"`.
-- **Test structure:** Use `testify/suite` with a struct embedding `suite.Suite`. Entry point is a plain `func TestXxx(t *testing.T)` that calls `suite.Run`.
-- **Table-driven tests:** Use `testhelpers.TestCase` slices with `Name`, `Values` (map[string]string for `--set`), `ValuesFiles`, and a `Verifier` func. See `test/unit/testhelpers/testhelpers.go`.
-- **Golden files:** Snapshot outputs live in `test/unit/<component>/golden/<name>.golden.yaml`. Regenerate with `go test ./... -args -update-golden` or via `make go.update-golden-only`.
-- **Error handling:** Use `require.NoError(t, err)` in tests (fails fast). Production code uses structured logging via `github.com/rs/zerolog`.
-- **CLI tooling:** Use `github.com/spf13/cobra` for CLI commands. Local module dependencies use `replace` directives in `go.mod`.
-- **Bash vs. Go:** Any CI logic over ~20 lines must be a Go script in `scripts/`, not bash. All Go scripts must have unit tests.
-- **Module structure:** Each chart version has its own `go.mod` under `charts/<version>/`. Each script tool has its own `go.mod` under `scripts/<tool>/`.
+Install all pinned tools:
+```bash
+make tools.asdf-install
+```
 
-## Code Style: TypeScript (`helm-values-mcp/`)
+## Code Style Guidelines
 
-- Language: TypeScript 5.x, compiled with `tsc`. Runtime: Node.js with `tsx` for development.
-- Test runner: `vitest`. Config in `package.json`. Run with `npm test`.
-- ESLint configured in `test/e2e/` directories with `typescript-eslint`.
+### General
+- Keep diffs small and version-scoped.
+- Preserve existing patterns before introducing new abstractions.
+- Respect per-version layout differences across chart directories.
 
-## Naming Conventions
+### Imports
+- Go imports: standard library, third-party, local packages.
+- Let `gofmt` manage order and grouping.
+- Reuse established aliases (for example `corev1`, `appsv1`) where already used.
+- TypeScript uses ESM imports at top-level.
 
-| Context            | Convention                                                            |
-|--------------------|-----------------------------------------------------------------------|
-| Helm helper names  | `<component>.camelCase` or `camundaPlatform.camelCase`                |
-| Helm values keys   | `camelCase` (e.g., `orchestration.podLabels`)                         |
-| Go test suites     | `<Resource>Test` struct, `Test<Resource>Template` entry function      |
-| Go test cases      | `"TestVerbNoun"` string in `Name` field (e.g., `"TestContainerSetPodLabels"`) |
-| Go packages        | Match the component directory name (e.g., package `orchestration`)   |
-| Git branches       | `<issueId>-short-description` (e.g., `123-adding-bpel-support`)       |
-| Commit messages    | Conventional Commits: `feat(scope): description` (present tense, ≤120 chars) |
+### Formatting
+- Go must be gofmt-clean (`make go.fmt`).
+- Helm templates/YAML use 2-space indentation.
+- Use Helm whitespace trimming (`{{-`, `-}}`) consistently.
 
-Valid commit types: `feat`, `fix`, `refactor`, `revert`, `test`, `docs`, `style`, `build`, `ci`, `cd`, `chore`, `chore(deps)`, `chore(release)`, `deps`, `perf`.
+### Types and Naming
+- Go tests generally use `testify/suite` and table-driven helpers.
+- Prefer explicit TypeScript types when inference is unclear.
+- Helm helper names follow `<component>.<camelCase>` or `camundaPlatform.<camelCase>`.
+- Go test suite names follow `<Resource>Test`; entry function style is `Test<Resource>Template`.
 
-## Session State
+### Error Handling
+- In Go tests, prefer `require.NoError` for setup/fail-fast checks.
+- Use `assert` for additional non-fatal assertions.
+- Do not swallow errors; return/assert with useful context.
 
-Use `STATE.md` (repo root, gitignored) to persist context across sessions. Read it on start; update it after meaningful progress. See `.github/AGENTS.md` for the full format specification.
+### Golden Files
+- Template output changes often require golden snapshot updates.
+- During iteration use `make go.update-golden-only-lite chartPath=...`.
+- Before finalizing, run `make go.test chartPath=...`.
+
+## Version-Aware Rules
+- `8.8+` uses unified `templates/orchestration/`.
+- `8.7` and older use separate component template directories.
+- Never assume paths/components are identical across versions.
+
+## Commit and Branch Conventions
+- Branches: `issueId-description` (example `123-adding-bpel-support`).
+- Commit/PR titles: Conventional Commits.
+- Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `perf`, `deps`.
+- Use present tense; keep subject under 120 characters.
+
+## Cursor and Copilot Rules
+- `.cursorrules`: not found.
+- `.cursor/rules/`: not found.
+- `.github/copilot-instructions.md`: not found.
+- Repository guidance is currently in `AGENTS.md` and `.github/AGENTS.md`.
+
+## Recommended Agent Workflow
+1. Select target chart version/component.
+2. Run dependency update for that chart.
+3. Make focused edits using existing helpers/patterns.
+4. Run single package/test first, then chart-scoped test run.
+5. Update golden files only for intentional rendering changes.
+6. Record discoveries and remaining work in `STATE.md`.
