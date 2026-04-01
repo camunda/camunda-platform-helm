@@ -496,3 +496,78 @@ func (s *configMapSpringTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *configMapSpringTemplateTest) TestExtraConfigurationSpringImport() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraConfigWithSpringImportDefault",
+			Values: map[string]string{
+				"identity.enabled":                       "true",
+				"identity.extraConfiguration[0].file":    "custom-spring.yaml",
+				"identity.extraConfiguration[0].content": "some: config",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should include the file
+				s.Require().Contains(applicationYaml, "optional:file:/app/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				// File content should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"File content should be present in ConfigMap")
+			},
+		},
+		{
+			Name: "TestExtraConfigWithSpringImportFalse",
+			Values: map[string]string{
+				"identity.enabled":                            "true",
+				"identity.extraConfiguration[0].file":         "log4j2-spring.xml",
+				"identity.extraConfiguration[0].springImport": "false",
+				"identity.extraConfiguration[0].content":      "<Configuration/>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// spring.config.import should NOT include the file
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// File content should still be in ConfigMap
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"File content should be present in ConfigMap even with springImport: false")
+			},
+		},
+		{
+			Name: "TestExtraConfigMixedSpringImport",
+			Values: map[string]string{
+				"identity.enabled":                            "true",
+				"identity.extraConfiguration[0].file":         "custom-spring.yaml",
+				"identity.extraConfiguration[0].content":      "some: config",
+				"identity.extraConfiguration[1].file":         "log4j2-spring.xml",
+				"identity.extraConfiguration[1].springImport": "false",
+				"identity.extraConfiguration[1].content":      "<Configuration/>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationYaml := configmap.Data["application.yaml"]
+				// Only custom-spring.yaml should be in spring.config.import
+				s.Require().Contains(applicationYaml, "optional:file:/app/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// Both files should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"First file content should be present in ConfigMap")
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"Second file content should be present in ConfigMap even with springImport: false")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
