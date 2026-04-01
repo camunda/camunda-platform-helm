@@ -194,16 +194,15 @@ camunda:
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
-
-  persistent:
-    sessions:
-      enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
-
   {{- if eq (include "orchestration.authMethod" .) "oidc" }}
   identity:
     clientId: {{ include "orchestration.authClientId" . | quote }}
     audience: {{ include "orchestration.authAudience" . | quote }}
   {{- end }}
+  persistent:
+    sessions:
+      enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
+
 
 {{- if .Values.orchestration.profiles.operate -}}
   {{- "\n" }}
