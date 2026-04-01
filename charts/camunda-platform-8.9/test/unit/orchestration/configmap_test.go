@@ -157,7 +157,7 @@ func (s *ConfigmapLegacyTemplateTest) TestExtraConfigurationSpringImport() {
 				s.Require().NotContains(applicationYaml, "log4j2-spring.xml",
 					"File with springImport: false should not be in spring.config.import")
 				// spring.config.import block should not be rendered
-				s.Require().NotContains(applicationYaml, "config:\n      import:",
+				s.Require().NotContains(applicationYaml, "optional:file:",
 					"spring.config.import block should not be rendered when all entries have springImport: false")
 				// File content should still be in ConfigMap
 				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
