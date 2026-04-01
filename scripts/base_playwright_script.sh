@@ -674,19 +674,22 @@ _install_playwright_browsers() {
 
   # Also check common Playwright browser locations
   local ms_playwright_path="/ms-playwright"
-  if [[ -d "$ms_playwright_path" ]]; then
-    local browser_count
-    browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
-    if [[ "$browser_count" -gt 1 ]]; then
-      log "Playwright browsers already installed at ${ms_playwright_path}, skipping installation"
-      return 0
-    fi
-  fi
+  # TODO: fix if statement proper conditional.
+  # if [[ -d "$ms_playwright_path" ]]; then
+  #   local browser_count
+  #   browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
+  #   if [[ "$browser_count" -gt 1 ]]; then
+  #     log "Playwright browsers already installed at ${ms_playwright_path}, skipping installation"
+  #     return 0
+  #   fi
+  # fi
 
   info "Installing Playwright browsers..."
   if [[ "$(uname -s)" == "Linux" ]]; then
+    npm install @playwright/test
     npx playwright install --with-deps || exit 1
   else
+    npm install @playwright/test
     npx playwright install || exit 1
   fi
 }
