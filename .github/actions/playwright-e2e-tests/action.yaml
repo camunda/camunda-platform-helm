@@ -101,7 +101,7 @@ runs:
         elif command -v apk &> /dev/null; then
           apk add --no-cache gettext
         fi
-        
+
     - name: Check if tools are pre-installed
       id: check-tools
       shell: bash
@@ -178,6 +178,19 @@ runs:
         infra-type: ${{ inputs.infra-type }}
         platform: ${{ inputs.distro-platform }}
         flow: ${{ inputs.flow }}
+
+    - name: Install Playwright browsers
+      shell: bash
+      run: |
+        cd "$GITHUB_WORKSPACE/scripts"
+        if [ -f package-lock.json ]; then
+          npm ci
+        elif [ -f yarn.lock ]; then
+          yarn install --frozen-lockfile
+        else
+          npm install
+        fi
+        npx playwright install --with-deps chromium
 
     - name: Run Playwright E2E Tests
       shell: bash
