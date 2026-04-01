@@ -663,18 +663,19 @@ _setup_playwright_environment() {
 _install_playwright_browsers() {
   # Check if we're running in a container with pre-installed browsers
   # The official Playwright Docker image sets PLAYWRIGHT_BROWSERS_PATH
-  if [[ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]] && [[ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]]; then
-    local browser_count
-    browser_count=$(find "${PLAYWRIGHT_BROWSERS_PATH}" -maxdepth 1 -type d | wc -l)
-    if [[ "$browser_count" -gt 1 ]]; then
-      log "Playwright browsers already installed at ${PLAYWRIGHT_BROWSERS_PATH}, skipping installation"
-      return 0
-    fi
-  fi
+  # TODO: fix if statement proper conditional.
+  # if [[ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]] && [[ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]]; then
+  #   local browser_count
+  #   browser_count=$(find "${PLAYWRIGHT_BROWSERS_PATH}" -maxdepth 1 -type d | wc -l)
+  #   if [[ "$browser_count" -gt 1 ]]; then
+  #     log "Playwright browsers already installed at ${PLAYWRIGHT_BROWSERS_PATH}, skipping installation"
+  #     return 0
+  #   fi
+  # fi
 
   # Also check common Playwright browser locations
-  local ms_playwright_path="/ms-playwright"
   # TODO: fix if statement proper conditional.
+  # local ms_playwright_path="/ms-playwright"
   # if [[ -d "$ms_playwright_path" ]]; then
   #   local browser_count
   #   browser_count=$(find "$ms_playwright_path" -maxdepth 1 -type d | wc -l)
