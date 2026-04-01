@@ -688,7 +688,7 @@ _install_playwright_browsers() {
   info "Installing Playwright browsers..."
   if [[ "$(uname -s)" == "Linux" ]]; then
     npm install @playwright/test
-    npx playwright install --with-deps || exit 1
+    npx playwright install-deps || exit 1
   else
     npm install @playwright/test
     npx playwright install || exit 1
