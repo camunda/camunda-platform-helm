@@ -182,7 +182,7 @@ runs:
     - name: Install Playwright browsers
       shell: bash
       run: |
-        cd "$GITHUB_WORKSPACE/scripts"
+        cd "${ABSOLUTE_TEST_CHART_DIR}/test/e2e"
         if [ -f package-lock.json ]; then
           npm ci
         elif [ -f yarn.lock ]; then
@@ -190,7 +190,10 @@ runs:
         else
           npm install
         fi
-        npx playwright install --with-deps chromium
+        # Only install Playwright browsers if they are not already available.
+        if [ -z "${PLAYWRIGHT_BROWSERS_PATH:-}" ] || [ ! -d "${PLAYWRIGHT_BROWSERS_PATH}" ]; then
+          npx playwright install --with-deps chromium
+        fi
 
     - name: Run Playwright E2E Tests
       shell: bash
