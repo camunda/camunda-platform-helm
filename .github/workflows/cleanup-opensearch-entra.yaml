@@ -4,6 +4,9 @@ on:
   schedule:
     # Set the cron schedule to run nightly at US time, EST (1AM UTC)
     - cron: "0 1 * * *"
+  push:
+    branches:
+      - rotate-azure
 
 permissions:
   contents: read
