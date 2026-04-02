@@ -856,7 +856,7 @@ jobs:
       ##########################################################################################################
       # Upgrade
       ##########################################################################################################
-      - name: Helm - Install - Configure Helm with Entra Values
+      - name: Helm - Upgrade - Configure Helm with Entra Values
         if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
         timeout-minutes: 5
         env:
