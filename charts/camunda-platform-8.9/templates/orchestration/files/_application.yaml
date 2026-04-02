@@ -72,9 +72,16 @@ camunda:
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
     # zeebe.broker.cluster
+    {{- if le (int .Values.global.multiregion.regions) 1 }}
     initial-contact-points:
     {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- else }}
+    # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
+    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across regions.
+    # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
+    #          orchestration.env[0].value="broker-0.ns-0.svc.cluster.local:26502,broker-0.ns-1.svc.cluster.local:26502,..."
     {{- end }}
 
   api:
