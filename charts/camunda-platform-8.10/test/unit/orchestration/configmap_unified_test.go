@@ -376,3 +376,54 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainInitialContactPointsForSingleRegion",
+			Values: map[string]string{
+				"global.multiregion.regions":    "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "initial-contact-points")
+				require.Contains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502")
+				require.NotContains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainInitialContactPointsForMultiRegion",
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"global.multiregion.regionId":   "0",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+				require.Contains(t, output, "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS")
+				// Ensure no contact points are generated
+				require.NotContains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainInitialContactPointsForThreeRegions",
+			Values: map[string]string{
+				"global.multiregion.regions":    "3",
+				"global.multiregion.regionId":   "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
