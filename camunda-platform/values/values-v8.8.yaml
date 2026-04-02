@@ -30,7 +30,7 @@ webModeler:
   # https://hub.docker.com/r/camunda/web-modeler-restapi
   image:
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.8.11
+    tag: 8.8.12
 
 #
 # Orchestration Cluster
