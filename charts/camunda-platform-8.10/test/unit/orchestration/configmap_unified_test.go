@@ -105,6 +105,18 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
+		{
+			Name: "TestApplicationYamlNoWebAppProfilesWhenNoSecondaryStorageEnabled",
+			Values: map[string]string{
+				"global.noSecondaryStorage":                    "true",
+				"global.elasticsearch.enabled":                 "false",
+				"elasticsearch.enabled":                        "false",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "admin,broker,consolidated-auth",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -283,6 +295,45 @@ func (s *ConfigmapTemplateTest) TestMappingRulesConditionalRendering() {
 				require.NoError(t, err)
 				require.Contains(t, output, "mapping-rules")
 				require.Contains(t, output, "demo-user-mapping-rule")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestUnprotectedApiConditionalRendering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainAllowUnauthenticatedApiAccessWhenBasicAuthAndUnprotectedApiTrue",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "basic",
+				"orchestration.security.authentication.unprotectedApi": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.basic.allow-unauthenticated-api-access": "true",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainAllowUnauthenticatedApiAccessWhenBasicAuthAndUnprotectedApiFalse",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "basic",
+				"orchestration.security.authentication.unprotectedApi": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "allow-unauthenticated-api-access")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainAllowUnauthenticatedApiAccessWhenOidcAuthAndUnprotectedApiTrue",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "oidc",
+				"orchestration.security.authentication.unprotectedApi": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "allow-unauthenticated-api-access")
 			},
 		},
 	}
