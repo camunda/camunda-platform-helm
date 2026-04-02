@@ -285,9 +285,13 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 {{- end -}}
 
 {{- define "webModeler.authMethod" -}}
-    {{- .Values.webModeler.security.authentication.method | default (
-        .Values.global.security.authentication.method | default "basic"
+    {{- $authMethod := .Values.webModeler.security.authentication.method | default (
+        .Values.global.security.authentication.method | default "none"
     ) -}}
+    {{- if eq $authMethod "none" -}}
+        {{- fail "authentication.method 'none' is no longer supported by the Camunda application since 8.8. Use method: basic with unprotectedApi: true instead." -}}
+    {{- end -}}
+    {{- $authMethod -}}
 {{- end -}}
 
 {{- define "webModeler.authConfigValue" -}}
