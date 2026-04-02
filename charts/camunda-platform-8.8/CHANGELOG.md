@@ -1,5 +1,26 @@
 # Changelog
 
+## [13.7.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.6.0...camunda-platform-8.8-13.7.0) (2026-04-02)
+
+
+### Features
+
+* add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10 ([#5605](https://github.com/camunda/camunda-platform-helm/issues/5605)) ([f2cb881](https://github.com/camunda/camunda-platform-helm/commit/f2cb881e40ef84333ca646794e4efce79ab67d1b))
+
+
+### Documentation
+
+* clarify when custom urls take effect ([#5559](https://github.com/camunda/camunda-platform-helm/issues/5559)) ([29d59d7](https://github.com/camunda/camunda-platform-helm/commit/29d59d7222b75d0f6a2a0830c937a60162e30e26))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5614](https://github.com/camunda/camunda-platform-helm/issues/5614)) ([cf79b73](https://github.com/camunda/camunda-platform-helm/commit/cf79b739cd6256a9e6357296ced27bd32ef2725f))
+* update camunda-platform-digests ([#5623](https://github.com/camunda/camunda-platform-helm/issues/5623)) ([4507ed6](https://github.com/camunda/camunda-platform-helm/commit/4507ed66fd459bfff0dc7e65d8452e04eb22cc5b))
+* update camunda-platform-digests ([#5626](https://github.com/camunda/camunda-platform-helm/issues/5626)) ([326ed77](https://github.com/camunda/camunda-platform-helm/commit/326ed772047fed19a702f612be5c88bae8b14a3a))
+* update camunda-platform-digests ([#5633](https://github.com/camunda/camunda-platform-helm/issues/5633)) ([6a54ffd](https://github.com/camunda/camunda-platform-helm/commit/6a54ffdb18983b692eb703406412ab80f18b9525))
+* update camunda-platform-images (patch) ([#5634](https://github.com/camunda/camunda-platform-helm/issues/5634)) ([d53ed59](https://github.com/camunda/camunda-platform-helm/commit/d53ed59531b98d08cca5002023607e9947a3993f))
+
 ## [13.6.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.5.5...camunda-platform-8.8-13.6.0) (2026-03-30)
 
 
