@@ -286,7 +286,7 @@ Define match labels for Web Modeler websockets to be used in matchLabels selecto
 
 {{- define "webModeler.authMethod" -}}
     {{- .Values.webModeler.security.authentication.method | default (
-        .Values.global.security.authentication.method | default "none"
+        .Values.global.security.authentication.method | default "basic"
     ) -}}
 {{- end -}}
 

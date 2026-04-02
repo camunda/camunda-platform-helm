@@ -229,7 +229,7 @@ app.kubernetes.io/component: {{ .componentName }}
 
 {{- define "webModeler.authMethod" -}}
     {{- .Values.webModeler.security.authentication.method | default (
-        .Values.global.security.authentication.method | default "none"
+        .Values.global.security.authentication.method | default "basic"
     ) -}}
 {{- end -}}
 

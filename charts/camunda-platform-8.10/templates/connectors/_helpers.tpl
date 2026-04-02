@@ -74,7 +74,7 @@ Authentication.
         none
     {{- else -}}
         {{- .Values.connectors.security.authentication.method | default (
-            .Values.global.security.authentication.method | default "none"
+            .Values.global.security.authentication.method | default "basic"
         ) -}}
     {{- end -}}
 {{- end -}}

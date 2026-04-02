@@ -191,7 +191,7 @@ Authentication.
 {{- define "orchestration.authMethod" -}}
     {{- if .Values.orchestration.enabled -}}
         {{- .Values.orchestration.security.authentication.method | default (
-            .Values.global.security.authentication.method | default "none"
+            .Values.global.security.authentication.method | default "basic"
         ) -}}
     {{- else -}}
         {{- "none" -}}
