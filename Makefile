@@ -245,12 +245,16 @@ helm.schema-update:
 			--schema "$${chart_dir}/values.schema.json"; \
 		if [ ! -f "$${chart_dir}/values.schema.extra.json" ]; then \
 			echo "[$@] No extra schema to merge"; \
-			continue; \
+		else \
+			echo "[$@] Merging with extra schema"; \
+			jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
+				"$${chart_dir}/values.schema.json" \
+				"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
+				&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
 		fi; \
-		echo "[$@] Merging with extra schema"; \
-		jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
-			"$${chart_dir}/values.schema.json" \
-			"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
+		echo "[$@] Making schema strict (adding additionalProperties: false)"; \
+		jq --indent 4 -f scripts/helm-schema-make-strict.jq \
+			"$${chart_dir}/values.schema.json" > "$${chart_dir}/values.schema.tmp.json" \
 			&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
 	done
 

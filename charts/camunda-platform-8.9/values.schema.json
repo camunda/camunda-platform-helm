@@ -26,9 +26,11 @@
                                     "description": "defines the key within the existing secret object.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "compatibility": {
                     "type": "object",
@@ -41,9 +43,11 @@
                                     "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                     "default": "disabled"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "config": {
                     "type": "object",
@@ -53,7 +57,8 @@
                             "description": "defines applications request body size which used for upload files.",
                             "default": "10MB"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "multitenancy": {
                     "type": "object",
@@ -63,7 +68,8 @@
                             "description": "if true, then enable multitenancy in all applicable components.",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "security": {
                     "type": "object",
@@ -76,9 +82,15 @@
                                     "description": "defines the authentication method which should be used. Possible values: basic, oidc. Could be overridden in each component.",
                                     "default": "basic"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
+                        },
+                        "allowInsecureImages": {
+                            "type": "boolean",
+                            "description": "Allows the use of insecure images"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "createReleaseInfo": {
                     "type": "boolean",
@@ -98,7 +110,8 @@
                             "description": "Name of the application",
                             "default": "camunda-platform"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "commonLabels": {
                     "type": "object",
@@ -129,7 +142,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "host": {
                     "type": "string",
@@ -172,14 +186,26 @@
                                     "description": "defines the secret name which contains the TLS private key and certificate",
                                     "default": "camunda-platform"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "controllerNamespace": {
                             "type": "string",
                             "description": "defines the namespace where the gateway controller is running. This is only needed if the controller is running in a different namespace than the Camunda components.",
                             "default": ""
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "Labels to apply to the gateway resource",
+                            "additionalProperties": true
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "Annotations for the gateway resource",
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "ingress": {
                     "type": "object",
@@ -222,9 +248,21 @@
                                     "description": "defines the secret name which contains the TLS private key and certificate",
                                     "default": "camunda-platform"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "Labels to apply to the ingress resource",
+                            "additionalProperties": true
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "Annotations for the ingress resource",
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "elasticsearch": {
                     "type": "object",
@@ -265,9 +303,11 @@
                                             "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                             "default": "externaldb.jks"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -295,9 +335,11 @@
                                             "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.secret.existingSecretKey or orchestration.data.secondaryStorage.elasticsearch.auth.secret.existingSecretKey) defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "disableExporter": {
                             "type": "boolean",
@@ -322,7 +364,8 @@
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.url.port or orchestration.data.secondaryStorage.elasticsearch.url) Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed",
                                     "default": 9200
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "clusterName": {
                             "type": "string",
@@ -334,7 +377,8 @@
                             "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.prefix or orchestration.data.secondaryStorage.elasticsearch) defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "opensearch": {
                     "type": "object",
@@ -352,7 +396,8 @@
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.aws.enabled or orchestration.data.secondaryStorage.opensearch) Enabling AWS IRSA",
                                     "default": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "tls": {
                             "type": "object",
@@ -380,9 +425,11 @@
                                             "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                             "default": "externaldb.jks"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -410,9 +457,11 @@
                                             "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.auth.secret.existingSecretKey) defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "url": {
                             "type": "object",
@@ -432,7 +481,8 @@
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.url.port or orchestration.data.secondaryStorage.opensearch.url) defines the external opensearch port, under which opensearch can be accessed",
                                     "default": 443
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "clusterName": {
                             "type": "string",
@@ -444,7 +494,8 @@
                             "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.prefix or orchestration.data.secondaryStorage.opensearch) defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.",
                             "default": "zeebe-record"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "zeebeClusterName": {
                     "type": "string",
@@ -462,7 +513,8 @@
                                     "description": "",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "keycloak": {
                             "type": "object",
@@ -513,11 +565,14 @@
                                                     "description": "defines the key within the existing secret object containing the Keycloak admin password.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -593,9 +648,11 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "identity": {
                                     "type": "object",
@@ -628,7 +685,8 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "initialClaimName": {
                                             "type": "string",
@@ -640,7 +698,8 @@
                                             "description": "defines the initial claim value, which is used by Management  Identity to configure initial mapping rules.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "console": {
                                     "type": "object",
@@ -665,7 +724,8 @@
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
                                             "default": "http://localhost:8087"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "webModeler": {
                                     "type": "object",
@@ -690,7 +750,8 @@
                                             "description": "defines the root URL which is used by Keycloak to access WebModeler.",
                                             "default": "http://localhost:8070"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "optimize": {
                                     "type": "object",
@@ -723,18 +784,22 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "redirectUrl": {
                                             "type": "string",
                                             "description": "defines the root (or redirect) URL, which is used by Keycloak to access Optimize.",
                                             "default": "http://localhost:8083"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "documentStore": {
                     "type": "object",
@@ -763,7 +828,8 @@
                                                     "description": "When set to true, no AWS credentials are injected into pods, allowing IRSA to be used for authentication. When false (default), credentials are required via existingSecret or accessKeyId/secretAccessKey configuration.",
                                                     "default": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "storeId": {
                                             "type": "string",
@@ -816,9 +882,11 @@
                                                             "description": "defines the key within the existing secret object.",
                                                             "default": "access-key-id"
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "secretAccessKey": {
                                             "type": "object",
@@ -841,11 +909,14 @@
                                                             "description": "defines the key within the existing secret object.",
                                                             "default": "secret-access-key"
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "gcp": {
                                     "type": "object",
@@ -893,9 +964,11 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": "service-account.json"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "inmemory": {
                                     "type": "object",
@@ -915,7 +988,8 @@
                                             "description": "Fully qualified class name for the in-memory document store provider.",
                                             "default": "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "azure": {
                                     "type": "object",
@@ -941,15 +1015,20 @@
                                                             "description": "defines the key within the existing secret object.",
                                                             "default": "connection-string"
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "extraManifests": {
                     "type": "array",
@@ -961,8 +1040,36 @@
                     "type": "boolean",
                     "description": "if true, enables engine-only/no-secondary-storage mode; this disables all secondary-storage-dependent features and components.",
                     "default": false
+                },
+                "testDeprecationFlags": {
+                    "type": "object",
+                    "properties": {
+                        "existingSecretsMustBeSet": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Give error or warning when existingSecret is not set"
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "multiregion": {
+                    "type": "object",
+                    "properties": {
+                        "regions": {
+                            "type": "integer",
+                            "description": "Number of regions"
+                        },
+                        "regionId": {
+                            "type": "integer",
+                            "description": "Region ID"
+                        }
+                    },
+                    "additionalProperties": true
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "identity": {
             "type": "object",
@@ -1028,9 +1135,11 @@
                                     "description": "defines the key within the existing secret object.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "users": {
                     "type": "array",
@@ -1073,7 +1182,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "multitenancy": {
                     "type": "object",
@@ -1083,7 +1193,8 @@
                             "description": "can be used to enable multitenancy in management identity",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -1127,10 +1238,16 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "INFO"
+                                },
+                                "io.camunda.identity": {
+                                    "type": "string",
+                                    "description": "Log level for io.camunda.identity"
                                 }
-                            }
+                            },
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -1160,7 +1277,8 @@
                             "description": "defines the name of the service on which the identity metrics will be available",
                             "default": "metrics"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -1183,9 +1301,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -1223,9 +1343,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "startupProbe": {
                     "type": "object",
@@ -1270,7 +1392,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -1315,7 +1438,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -1360,7 +1484,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -1370,7 +1495,8 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
@@ -1404,7 +1530,8 @@
                                     "description": "",
                                     "default": "600m"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -1419,9 +1546,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "env": {
                     "type": "array",
@@ -1504,7 +1633,8 @@
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": true
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "externalDatabase": {
                     "type": "object",
@@ -1552,9 +1682,11 @@
                                     "description": "defines the key within the existing secret object.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "configuration": {
                     "type": "string",
@@ -1620,9 +1752,11 @@
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "identityPostgresql": {
             "type": "object",
@@ -1646,11 +1780,14 @@
                                             "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -1670,7 +1807,8 @@
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nameOverride": {
                     "type": "string",
@@ -1713,9 +1851,11 @@
                                     "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "identity-postgresql-user-password"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "volumePermissions": {
                     "type": "object",
@@ -1728,9 +1868,11 @@
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -1743,11 +1885,14 @@
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/postgres-exporter"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "identityKeycloak": {
             "type": "object",
@@ -1771,9 +1916,11 @@
                                             "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "security": {
                             "type": "object",
@@ -1783,9 +1930,11 @@
                                     "description": "(DEPRECATED) Allows the use of the Camunda build Keycloak image (including the Management Identity login theme)",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nameOverride": {
                     "type": "string",
@@ -1810,7 +1959,8 @@
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -1828,7 +1978,8 @@
                                     "description": "(DEPRECATED)",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -1843,9 +1994,11 @@
                                     "description": "(DEPRECATED)",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "postgresql": {
                     "type": "object",
@@ -1868,7 +2021,8 @@
                                     "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "auth": {
                             "type": "object",
@@ -1891,9 +2045,11 @@
                                             "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
                                             "default": "identity-keycloak-postgresql-user-password"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "primary": {
                             "type": "object",
@@ -1944,7 +2100,8 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "seccompProfile": {
                                             "type": "object",
@@ -1954,9 +2111,11 @@
                                                     "description": "(DEPRECATED)",
                                                     "default": "RuntimeDefault"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "podSecurityContext": {
                                     "type": "object",
@@ -1976,9 +2135,11 @@
                                             "description": "(DEPRECATED)",
                                             "default": 1001
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "volumePermissions": {
                             "type": "object",
@@ -1991,9 +2152,11 @@
                                             "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/os-shell"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "metrics": {
                             "type": "object",
@@ -2006,11 +2169,14 @@
                                             "description": "(DEPRECATED)",
                                             "default": "bitnamilegacy/postgres-exporter"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "proxy": {
                     "type": "string",
@@ -2025,7 +2191,8 @@
                             "description": "(DEPRECATED) enabling tls",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "extraVolumeMounts": {
                     "type": "array",
@@ -2041,7 +2208,8 @@
                                 "type": "string",
                                 "description": "(DEPRECATED)"
                             }
-                        }
+                        },
+                        "additionalProperties": false
                     }
                 },
                 "containerSecurityContext": {
@@ -2085,7 +2253,8 @@
                                         "type": "string"
                                     }
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "seccompProfile": {
                             "type": "object",
@@ -2095,9 +2264,11 @@
                                     "description": "(DEPRECATED)",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -2112,7 +2283,8 @@
                             "description": "(DEPRECATED)",
                             "default": 1001
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "httpRelativePath": {
                     "type": "string",
@@ -2153,8 +2325,14 @@
                             "type": "string",
                             "description": "(DEPRECATED) defines Ingress path type.",
                             "default": "Prefix"
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "Annotations for keycloak ingress (DEPRECATED)",
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -2164,7 +2342,8 @@
                             "description": "(DEPRECATED) can be set to change the service type.",
                             "default": "ClusterIP"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "auth": {
                     "type": "object",
@@ -2184,7 +2363,8 @@
                             "description": "(DEPRECATED) defines the key within the existing secret object.",
                             "default": "identity-keycloak-admin-password"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "keycloakConfigCli": {
                     "type": "object",
@@ -2197,11 +2377,22 @@
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/keycloak-config-cli"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
+                    },
+                    "additionalProperties": false
+                },
+                "extraVolumes": {
+                    "type": "array",
+                    "description": "Extra volumes for keycloak (DEPRECATED)",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
                     }
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "console": {
             "type": "object",
@@ -2256,7 +2447,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeEnv": {
                     "type": "string",
@@ -2300,9 +2492,11 @@
                                     "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificates",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "keycloak": {
                     "type": "object",
@@ -2312,7 +2506,8 @@
                             "description": "Specifies the Keycloak realm used for authentication.",
                             "default": "camunda-platform"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "contextPath": {
                     "type": "string",
@@ -2368,7 +2563,8 @@
                             "description": "defines the management port used to access metrics and app status",
                             "default": 9100
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -2380,8 +2576,16 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "1Gi"
+                                },
+                                "cpu": {
+                                    "type": [
+                                        "string",
+                                        "number"
+                                    ],
+                                    "description": "CPU request"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -2390,10 +2594,19 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "2Gi"
+                                },
+                                "cpu": {
+                                    "type": [
+                                        "string",
+                                        "number"
+                                    ],
+                                    "description": "CPU limit"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "env": {
                     "type": "array",
@@ -2496,7 +2709,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -2541,7 +2755,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -2586,7 +2801,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -2596,7 +2812,8 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -2621,7 +2838,8 @@
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -2644,9 +2862,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -2684,9 +2904,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
@@ -2714,7 +2936,8 @@
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "webModeler": {
             "type": "object",
@@ -2753,7 +2976,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "contextPath": {
                     "type": "string",
@@ -2771,9 +2995,11 @@
                                     "description": "defines the authentication method which should be used. Possible values: `basic`, `oidc`, or `none`. It could be used to override `global.security.authentication.method`.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "restapi": {
                     "type": "object",
@@ -2791,7 +3017,8 @@
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "sidecars": {
                             "type": "array",
@@ -2856,9 +3083,11 @@
                                             "description": "defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "mail": {
                             "type": "object",
@@ -2901,7 +3130,8 @@
                                             "description": "defines the key within the existing secret object.",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "fromAddress": {
                                     "type": "string",
@@ -2913,7 +3143,8 @@
                                     "description": "defines the name that will be displayed as the sender of emails sent by WebModeler",
                                     "default": "Camunda 8"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "pusher": {
                             "type": "object",
@@ -2939,9 +3170,11 @@
                                                     "description": "defines the key within the existing secret object",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "secret": {
                                     "type": "object",
@@ -2961,9 +3194,11 @@
                                             "description": "defines the key within the existing secret object",
                                             "default": ""
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "clusters": {
                             "type": "array",
@@ -2985,7 +3220,35 @@
                             "type": "array",
                             "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/ for more details.",
                             "default": [],
-                            "items": {}
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value",
+                                        "type": "object"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
                         },
                         "envFrom": {
                             "type": "array",
@@ -3037,9 +3300,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -3077,9 +3342,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "startupProbe": {
                             "type": "object",
@@ -3124,7 +3391,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "readinessProbe": {
                             "type": "object",
@@ -3169,7 +3437,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "livenessProbe": {
                             "type": "object",
@@ -3214,7 +3483,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "metrics": {
                             "type": "object",
@@ -3224,7 +3494,8 @@
                                     "description": "Prometheus metrics endpoint",
                                     "default": "/metrics"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "nodeSelector": {
                             "type": "object",
@@ -3258,7 +3529,8 @@
                                             "description": "",
                                             "default": "1280Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -3273,9 +3545,11 @@
                                             "description": "",
                                             "default": "2560Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "service": {
                             "type": "object",
@@ -3300,7 +3574,8 @@
                                     "description": "defines the management port of the service",
                                     "default": 8091
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "configuration": {
                             "type": "string",
@@ -3332,8 +3607,14 @@
                             "type": "string",
                             "description": "can be used to set a custom path for the Zeebe client configuration file",
                             "default": "/tmp/zeebe_client_cache.txt"
+                        },
+                        "logging": {
+                            "type": "object",
+                            "description": "Logging configuration",
+                            "additionalProperties": true
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "websockets": {
                     "type": "object",
@@ -3351,7 +3632,8 @@
                                     "description": "can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "sidecars": {
                             "type": "array",
@@ -3389,7 +3671,35 @@
                             "type": "array",
                             "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/modeler/web-modeler/configuration/#configuration-of-the-websocket-component for more details.",
                             "default": [],
-                            "items": {}
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value",
+                                        "type": "object"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
                         },
                         "envFrom": {
                             "type": "array",
@@ -3436,9 +3746,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "containerSecurityContext": {
                             "type": "object",
@@ -3476,9 +3788,11 @@
                                             "description": "",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "startupProbe": {
                             "type": "object",
@@ -3523,7 +3837,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "readinessProbe": {
                             "type": "object",
@@ -3568,7 +3883,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "livenessProbe": {
                             "type": "object",
@@ -3613,7 +3929,8 @@
                                     "description": "defines the number of seconds after which the probe times out",
                                     "default": 1
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "nodeSelector": {
                             "type": "object",
@@ -3647,7 +3964,8 @@
                                             "description": "",
                                             "default": "64Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -3662,9 +3980,11 @@
                                             "description": "",
                                             "default": "128Mi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "service": {
                             "type": "object",
@@ -3684,7 +4004,8 @@
                                     "description": "defines the port of the service",
                                     "default": 80
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "configuration": {
                             "type": "string",
@@ -3706,7 +4027,8 @@
                             "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                             "default": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -3731,7 +4053,8 @@
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "persistence": {
                     "type": "object",
@@ -3776,81 +4099,11 @@
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
             },
-            "restapi": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
-                                },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "nullable": true
-                                },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
-                                }
-                            },
-                            "required": [
-                                "name"
-                            ],
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
-            "websockets": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
-                                },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "nullable": true
-                                },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
-                                }
-                            },
-                            "required": [
-                                "name"
-                            ],
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            }
+            "additionalProperties": false
         },
         "webModelerPostgresql": {
             "type": "object",
@@ -3874,11 +4127,14 @@
                                             "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nameOverride": {
                     "type": "string",
@@ -3903,7 +4159,8 @@
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "auth": {
                     "type": "object",
@@ -3941,9 +4198,11 @@
                                     "description": "(DEPRECATED) defines the key within the existing secret object for PostgreSQL user.",
                                     "default": "web-modeler-postgresql-user-password"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "primary": {
                     "type": "object",
@@ -3994,7 +4253,8 @@
                                                 "type": "string"
                                             }
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "seccompProfile": {
                                     "type": "object",
@@ -4004,9 +4264,11 @@
                                             "description": "(DEPRECATED)",
                                             "default": "RuntimeDefault"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "podSecurityContext": {
                             "type": "object",
@@ -4026,11 +4288,14 @@
                                     "description": "(DEPRECATED)",
                                     "default": 1001
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "connectors": {
             "type": "object",
@@ -4082,13 +4347,17 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -4119,7 +4388,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -4176,7 +4446,8 @@
                             "description": "defines the port name where the Connector web application will be available",
                             "default": "http"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "resources": {
                     "type": "object",
@@ -4188,8 +4459,16 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "1Gi"
+                                },
+                                "cpu": {
+                                    "type": [
+                                        "string",
+                                        "number"
+                                    ],
+                                    "description": "CPU request"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -4198,10 +4477,19 @@
                                     "type": "string",
                                     "description": "",
                                     "default": "2Gi"
+                                },
+                                "cpu": {
+                                    "type": [
+                                        "string",
+                                        "number"
+                                    ],
+                                    "description": "CPU limit"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "env": {
                     "type": "array",
@@ -4304,7 +4592,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -4349,7 +4638,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -4394,7 +4684,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -4404,7 +4695,8 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -4429,7 +4721,8 @@
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -4452,9 +4745,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -4492,9 +4787,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
@@ -4576,9 +4873,16 @@
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
+                },
+                "logging": {
+                    "type": "object",
+                    "description": "Logging configuration",
+                    "additionalProperties": true
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "orchestration": {
             "type": "object",
@@ -4595,7 +4899,7 @@
                 },
                 "profilesOverride": {
                     "type": "string",
-                    "description": "defines the override for the profiles as comma-separated string.",
+                    "description": "Override for Zeebe broker profiles",
                     "default": "\"\""
                 },
                 "security": {
@@ -4712,11 +5016,14 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "authorizations": {
                             "type": "object",
@@ -4726,7 +5033,8 @@
                                     "description": "if true, then enable authorizations checks in all applicable components.",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "initialization": {
                             "type": "object",
@@ -4753,7 +5061,8 @@
                                                 "type": "string",
                                                 "description": ""
                                             }
-                                        }
+                                        },
+                                        "additionalProperties": false
                                     }
                                 },
                                 "defaultRoles": {
@@ -4772,7 +5081,8 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "connectors": {
                                             "type": "object",
@@ -4797,9 +5107,11 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "mappingRules": {
                                     "type": "array",
@@ -4813,9 +5125,11 @@
                                     "default": [],
                                     "items": {}
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -4846,7 +5160,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "importer": {
                     "type": "object",
@@ -4869,7 +5184,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -4888,7 +5204,8 @@
                                     "description": "if true, then enable multitenancy checks in all applicable components.",
                                     "default": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "api": {
                             "type": "object",
@@ -4898,9 +5215,11 @@
                                     "description": "if true, then enable multitenancy API used for tenant management.",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "clusterSize": {
                     "type": "string",
@@ -4965,7 +5284,8 @@
                             "description": "can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. see https://github.com/kubernetes/api/blob/master/core/v1/types.go#L1615-L1623",
                             "default": 754
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "command": {
                     "type": "array",
@@ -5009,7 +5329,8 @@
                                     "description": "defines the type of the headless service https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
                                     "default": "ClusterIP"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "type": {
                             "type": "string",
@@ -5083,7 +5404,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "serviceAccount": {
                     "type": "object",
@@ -5108,7 +5430,8 @@
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "gateway": {
                     "type": "object",
@@ -5126,9 +5449,11 @@
                                     "description": "defines the url for the GRPC k8s Gateway resources",
                                     "default": "grpc-{{ .Values.global.host }}"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "ingress": {
                     "type": "object",
@@ -5179,11 +5504,24 @@
                                             "description": "defines the secret name which contains the TLS private key and certificate",
                                             "default": "camunda-platform-zeebe-gateway"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
+                                },
+                                "labels": {
+                                    "type": "object",
+                                    "description": "Labels for gRPC ingress",
+                                    "additionalProperties": true
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "Annotations for gRPC ingress",
+                                    "additionalProperties": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "contextPath": {
                     "type": "string",
@@ -5216,7 +5554,8 @@
                                     "description": "",
                                     "default": "1500Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -5231,9 +5570,11 @@
                                     "description": "",
                                     "default": "3000Mi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "persistenceType": {
                     "type": "string",
@@ -5294,9 +5635,11 @@
                                             "description": "the minimum free space which should be available on the disk, before the broker stops receicing replicated events https://docs.camunda.io/docs/self-managed/zeebe-deployment/configuration/broker-config/#zeebebrokerdatadiskfreespace",
                                             "default": "1GB"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "secondaryStorage": {
                             "type": "object",
@@ -5337,9 +5680,11 @@
                                                     "description": "defines the key within the existing Kubernetes Secret",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "elasticsearch": {
                                     "type": "object",
@@ -5375,9 +5720,11 @@
                                                             "description": "defines the key within the existing Kubernetes Secret",
                                                             "default": ""
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "tls": {
                                             "type": "object",
@@ -5395,11 +5742,14 @@
                                                             "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
                                                             "default": ""
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "opensearch": {
                                     "type": "object",
@@ -5435,9 +5785,11 @@
                                                             "description": "defines the key within the existing Kubernetes Secret",
                                                             "default": ""
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         },
                                         "tls": {
                                             "type": "object",
@@ -5455,15 +5807,20 @@
                                                             "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
                                                             "default": ""
                                                         }
-                                                    }
+                                                    },
+                                                    "additionalProperties": false
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "extraVolumes": {
                     "type": "array",
@@ -5517,7 +5874,8 @@
                             "description": "can be used to set how many pods should be at max. unavailable",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -5540,9 +5898,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -5580,9 +5940,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "startupProbe": {
                     "type": "object",
@@ -5627,7 +5989,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -5672,7 +6035,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -5717,7 +6081,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -5727,7 +6092,8 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
@@ -5756,7 +6122,8 @@
                                     "description": "if true, enables the new Camunda exporter.",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "rdbms": {
                             "type": "object",
@@ -5766,7 +6133,8 @@
                                     "description": "if true, enables the new RDBMS exporter.",
                                     "default": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "zeebe": {
                             "type": "object",
@@ -5776,7 +6144,8 @@
                                     "description": "if true, enables the legacy Zeebe Elasticsearch and OpenSearch exporters.",
                                     "default": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "appIntegrations": {
                             "type": "object",
@@ -5802,13 +6171,17 @@
                                                     "description": "defines the key within the existing Kubernetes Secret.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "index": {
                     "type": "object",
@@ -5823,7 +6196,8 @@
                             "description": "can be used to specify the number of replicas for Orchestration Cluster indices.",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "retention": {
                     "type": "object",
@@ -5843,7 +6217,8 @@
                             "description": "defines the name of the created and applied ILM policy.",
                             "default": "zeebe-record-retention-policy"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "history": {
                     "type": "object",
@@ -5906,9 +6281,11 @@
                                     "description": "defines the name of the created and applied ILM policy to usage metric indices.",
                                     "default": "camunda-usage-metrics-retention-policy"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "configuration": {
                     "type": "string",
@@ -5945,9 +6322,21 @@
                             "description": "if true, allows the use of pre-release images for the orchestration cluster. Prerelease images are, by their nature, unstable and should be used with caution. This flag should only be used for testing purposes.",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
+                },
+                "profiles": {
+                    "type": "object",
+                    "description": "Zeebe broker profiles",
+                    "additionalProperties": true
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "Affinity rules for orchestration pods",
+                    "additionalProperties": true
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "optimize": {
             "type": "object",
@@ -5986,7 +6375,8 @@
                             "default": [],
                             "items": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "database": {
                     "type": "object",
@@ -6025,9 +6415,11 @@
                                                     "description": "can be used to provide the key within the secret containing the certificate",
                                                     "default": "externaldb.jks"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "auth": {
                                     "type": "object",
@@ -6055,9 +6447,11 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "url": {
                                     "type": "object",
@@ -6077,14 +6471,16 @@
                                             "description": "Elasticsearch.port defines the elasticsearch port, under which elasticsearch can be accessed. Falls back to global.elasticsearch.url.port.",
                                             "default": 0
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "prefix": {
                                     "type": "string",
                                     "description": "defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize. If empty, falls back to global.elasticsearch.prefix.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "opensearch": {
                             "type": "object",
@@ -6102,7 +6498,8 @@
                                             "description": "Enabling AWS IRSA",
                                             "default": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "tls": {
                                     "type": "object",
@@ -6125,9 +6522,11 @@
                                                     "description": "can be used to provide the key within the secret containing the certificate",
                                                     "default": "externaldb.jks"
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "auth": {
                                     "type": "object",
@@ -6155,9 +6554,11 @@
                                                     "description": "defines the key within the existing secret object.",
                                                     "default": ""
                                                 }
-                                            }
+                                            },
+                                            "additionalProperties": false
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "url": {
                                     "type": "object",
@@ -6177,16 +6578,19 @@
                                             "description": "defines the external opensearch port, under which opensearch can be accessed. Falls back to global.opensearch.url.port.",
                                             "default": 0
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "prefix": {
                                     "type": "string",
                                     "description": "defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize. If empty, falls back to global.opensearch.prefix.",
                                     "default": ""
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "migration": {
                     "type": "object",
@@ -6200,7 +6604,35 @@
                             "type": "array",
                             "description": "can be used to set extra environment variables in the app container. See the documentation https://docs.camunda.io/docs/self-managed/components/optimize/configuration/system-configuration/ for more details. (Note: there is no need to define this if optimize.env is defined)",
                             "default": [],
-                            "items": {}
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value",
+                                        "type": "object"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
                         },
                         "resources": {
                             "type": "object",
@@ -6218,7 +6650,8 @@
                                             "description": "",
                                             "default": "1Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -6233,11 +6666,14 @@
                                             "description": "",
                                             "default": "2Gi"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sidecars": {
                     "type": "array",
@@ -6258,7 +6694,8 @@
                             "description": "can be used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.",
                             "default": 754
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podAnnotations": {
                     "type": "object",
@@ -6377,7 +6814,8 @@
                             "description": "can be used to control whether the service account token should be automatically mounted",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "service": {
                     "type": "object",
@@ -6402,7 +6840,8 @@
                             "description": "defines the port where actuator will be available. Also required to reach backup API",
                             "default": 8092
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "podSecurityContext": {
                     "type": "object",
@@ -6425,9 +6864,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "containerSecurityContext": {
                     "type": "object",
@@ -6465,9 +6906,11 @@
                                     "description": "",
                                     "default": "RuntimeDefault"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "startupProbe": {
                     "type": "object",
@@ -6512,7 +6955,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "readinessProbe": {
                     "type": "object",
@@ -6557,7 +7001,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "livenessProbe": {
                     "type": "object",
@@ -6602,7 +7047,8 @@
                             "description": "defines the seconds after the probe times out",
                             "default": 1
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -6612,7 +7058,8 @@
                             "description": "Prometheus metrics endpoint",
                             "default": "/actuator/prometheus"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "nodeSelector": {
                     "type": "object",
@@ -6646,7 +7093,8 @@
                                     "description": "",
                                     "default": "1Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "limits": {
                             "type": "object",
@@ -6661,9 +7109,11 @@
                                     "description": "",
                                     "default": "2Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "configuration": {
                     "type": "string",
@@ -6729,7 +7179,8 @@
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "profiles": {
                     "type": "string",
@@ -6749,7 +7200,8 @@
                             "description": "if true, enables multitenancy in Optimize",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "caches": {
                     "type": "object",
@@ -6767,47 +7219,14 @@
                                     "description": "defines the minimum interval between fetches from the database for the cache",
                                     "default": 600000
                                 }
-                            }
-                        }
-                    }
-                }
-            },
-            "migration": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
-                                },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "nullable": true
-                                },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
-                                }
                             },
-                            "required": [
-                                "name"
-                            ],
                             "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "elasticsearch": {
             "type": "object",
@@ -6831,11 +7250,14 @@
                                             "description": "(DEPRECATED) Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: force (perform the adaptation always), disabled (do not perform adaptation)",
                                             "default": "{{ .Values.global.compatibility.openshift.adaptSecurityContext | default \"disabled\" }}"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "image": {
                     "type": "object",
@@ -6855,7 +7277,8 @@
                             "description": "(DEPRECATED) can be used to set image digest (overrides tag if set, e.g. \"sha256:abcd...\")",
                             "default": ""
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "master": {
                     "type": "object",
@@ -6878,7 +7301,8 @@
                                     "description": "(DEPRECATED)",
                                     "default": true
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "masterOnly": {
                             "type": "boolean",
@@ -6898,7 +7322,8 @@
                                     "description": "(DEPRECATED)",
                                     "default": "64Gi"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "resources": {
                             "type": "object",
@@ -6910,8 +7335,16 @@
                                             "type": "string",
                                             "description": "(DEPRECATED) request",
                                             "default": "2Gi"
+                                        },
+                                        "cpu": {
+                                            "type": [
+                                                "string",
+                                                "number"
+                                            ],
+                                            "description": "CPU request (DEPRECATED)"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 },
                                 "limits": {
                                     "type": "object",
@@ -6920,10 +7353,19 @@
                                             "type": "string",
                                             "description": "(DEPRECATED) memory limit",
                                             "default": "2Gi"
+                                        },
+                                        "cpu": {
+                                            "type": [
+                                                "string",
+                                                "number"
+                                            ],
+                                            "description": "CPU limit (DEPRECATED)"
                                         }
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         },
                         "extraEnvVars": {
                             "type": "array",
@@ -6939,10 +7381,12 @@
                                         "type": "string",
                                         "description": "(DEPRECATED) env value"
                                     }
-                                }
+                                },
+                                "additionalProperties": false
                             }
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "sysctlImage": {
                     "type": "object",
@@ -6957,7 +7401,8 @@
                             "description": "(DEPRECATED)",
                             "default": "bitnamilegacy/os-shell"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "data": {
                     "type": "object",
@@ -6967,7 +7412,8 @@
                             "description": "(DEPRECATED)",
                             "default": 0
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "coordinating": {
                     "type": "object",
@@ -6977,7 +7423,8 @@
                             "description": "(DEPRECATED)",
                             "default": 0
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "ingest": {
                     "type": "object",
@@ -6987,7 +7434,8 @@
                             "description": "(DEPRECATED)",
                             "default": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "metrics": {
                     "type": "object",
@@ -7000,9 +7448,11 @@
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/elasticsearch-exporter"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "volumePermissions": {
                     "type": "object",
@@ -7015,9 +7465,11 @@
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "copyTlsCerts": {
                     "type": "object",
@@ -7030,11 +7482,19 @@
                                     "description": "(DEPRECATED)",
                                     "default": "bitnamilegacy/os-shell"
                                 }
-                            }
+                            },
+                            "additionalProperties": false
                         }
-                    }
+                    },
+                    "additionalProperties": false
+                },
+                "extraConfig": {
+                    "type": "object",
+                    "description": "Extra configuration for elasticsearch (DEPRECATED)",
+                    "additionalProperties": true
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "prometheusServiceMonitor": {
             "type": "object",
@@ -7052,14 +7512,16 @@
                             "description": "",
                             "default": "metrics"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "scrapeInterval": {
                     "type": "string",
                     "description": "can be set to configure the interval at which metrics should be scraped",
                     "default": "10s"
                 }
-            }
+            },
+            "additionalProperties": false
         }
     }
 }
