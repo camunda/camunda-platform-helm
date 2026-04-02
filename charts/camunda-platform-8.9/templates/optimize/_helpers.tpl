@@ -135,11 +135,14 @@ When neither backend is explicitly enabled, falls back to "zeebe-record".
 
 {{/*
 [optimize] Build a comma-separated spring.config.import line from extraConfiguration files.
+Entries with springImport: false are excluded.
 */}}
 {{- define "optimize.springConfigImport" -}}
 {{- $imports := list -}}
 {{- range .Values.optimize.extraConfiguration -}}
-  {{- $imports = append $imports (printf "optional:file:/optimize/config/%s" .file) -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $imports = append $imports (printf "optional:file:/optimize/config/%s" .file) -}}
+  {{- end -}}
 {{- end -}}
 {{- join "," $imports -}}
 {{- end -}}

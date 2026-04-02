@@ -322,10 +322,16 @@ data:
       {{- end }}
 
     spring:
-    {{- if .Values.identity.extraConfiguration }}
+    {{- $springImports := list }}
+    {{- range .Values.identity.extraConfiguration }}
+      {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
+        {{- $springImports = append $springImports . }}
+      {{- end }}
+    {{- end }}
+    {{- if $springImports }}
       config:
         import:
-        {{- range .Values.identity.extraConfiguration }}
+        {{- range $springImports }}
           - optional:file:/app/config/{{ .file }}
         {{- end }}
     {{- end }}

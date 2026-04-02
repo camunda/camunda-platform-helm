@@ -14,10 +14,11 @@ data:
   {{- end }}
   {{- if or .Values.global.identity.auth.enabled .Values.optimize.extraConfiguration }}
   application-ccsm.yaml: |
-    {{- if .Values.optimize.extraConfiguration }}
+    {{- $springImport := include "optimize.springConfigImport" . }}
+    {{- if $springImport }}
     spring:
       config:
-        import: {{ include "optimize.springConfigImport" . }}
+        import: {{ $springImport }}
     {{- end }}
     {{- if .Values.global.identity.auth.enabled }}
     camunda:

@@ -998,6 +998,8 @@ identity:
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
@@ -1817,6 +1819,8 @@ webModeler:
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+    ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
     extraConfiguration: []
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
@@ -2331,6 +2335,8 @@ connectors:
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
@@ -2978,6 +2984,8 @@ orchestration:
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
   ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
@@ -3303,6 +3311,8 @@ optimize:
   ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
   configuration: ""
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for logback.xml).
   extraConfiguration: []
   ## @param optimize.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""

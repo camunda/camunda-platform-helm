@@ -3,10 +3,16 @@ This file name should start with an underscore to avoid rendering it as a templa
 It is included (imported) in the ConfigMap.
 */}}
 spring:
-  {{- if .Values.orchestration.extraConfiguration }}
+  {{- $springImports := list }}
+  {{- range .Values.orchestration.extraConfiguration }}
+    {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
+      {{- $springImports = append $springImports . }}
+    {{- end }}
+  {{- end }}
+  {{- if $springImports }}
   config:
     import:
-    {{- range .Values.orchestration.extraConfiguration }}
+    {{- range $springImports }}
       - optional:file:/usr/local/camunda/config/{{ .file }}
     {{- end }}
   {{- end }}
