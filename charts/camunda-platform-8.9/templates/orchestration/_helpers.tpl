@@ -259,6 +259,7 @@ Authentication.
             (or
                 (eq $key "operate")
                 (eq $key "tasklist")
+                (eq $key "consolidated-auth")
             )
             $.Values.global.noSecondaryStorage
         }}
