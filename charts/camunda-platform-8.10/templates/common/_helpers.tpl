@@ -957,7 +957,7 @@ Release highlights.
 {{- define "camundaPlatform.ReleaseHighlights" }}
 ## [info] Helm chart release highlights
 - Some values have been renamed or moved in the new chart structure.
-- When upgraded from 8.7 to 8.8, manual adjustments may be required for some cases like custom configurations.
+- When upgraded from 8.9 to 8.10, manual adjustments may be required for some cases like custom configurations.
 - Please refer to the official docs for more details.
-https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-870-880/
+https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-890-8100/
 {{- end -}}
