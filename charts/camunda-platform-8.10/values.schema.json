@@ -2744,7 +2744,6 @@
                                 "method": {
                                     "type": "string",
                                     "description": "defines the authentication method which should be used. Possible values: `basic` or `oidc`. It could be used to override `global.security.authentication.method`.",
-                                    "enum": ["", "basic", "oidc"],
                                     "default": ""
                                 }
                             }
@@ -4020,7 +4019,6 @@
                                 "method": {
                                     "type": "string",
                                     "description": "defines the authentication method which should be used. Possible values: `basic` or `oidc`. It could be used to override `global.security.authentication.method`.",
-                                    "enum": ["", "basic", "oidc"],
                                     "default": ""
                                 },
                                 "oidc": {
@@ -4579,7 +4577,6 @@
                                 "method": {
                                     "type": "string",
                                     "description": "defines the authentication method which should be used. Possible values: `basic` or `oidc`. It could be used to override `global.security.authentication.method`.",
-                                    "enum": ["", "basic", "oidc"],
                                     "default": ""
                                 },
                                 "unprotectedApi": {
