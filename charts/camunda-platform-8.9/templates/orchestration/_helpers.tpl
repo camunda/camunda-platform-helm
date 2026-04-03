@@ -259,6 +259,7 @@ Authentication.
             (or
                 (eq $key "operate")
                 (eq $key "tasklist")
+                (eq $key "consolidated-auth")
             )
             $.Values.global.noSecondaryStorage
         }}
@@ -272,7 +273,7 @@ Authentication.
 {{- define "orchestration.enabledProfilesWithAuth" -}}
     {{- if or
         (eq (include "orchestration.authMethod" .) "oidc")
-        (eq (include "orchestration.authMethod" .) "basic")
+        (and (eq (include "orchestration.authMethod" .) "basic") (not .Values.global.noSecondaryStorage))
     }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}
