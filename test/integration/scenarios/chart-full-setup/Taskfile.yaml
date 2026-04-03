@@ -178,6 +178,7 @@ tasks:
       {{ if eq .TEST_PERSISTENCE "rdbms-external" }}
         kubectl run --image=postgres:18.3 \
           --rm=true \
+          --attach=true \
           --env=PGPASSWORD="$RDBMS_POSTGRESQL_PASSWORD" \
           --env=RDBMS_POSTGRESQL_USERNAME="$RDBMS_POSTGRESQL_USERNAME" \
           --env=GITHUB_WORKFLOW_JOB_ID="$GITHUB_WORKFLOW_JOB_ID" \
