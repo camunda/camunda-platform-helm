@@ -37,7 +37,7 @@ data:
   application.yaml: |    
     spring:
       profiles:
-        active: "auth,broker,operate,tasklist"
+        active: "admin,broker,operate,tasklist,consolidated-auth"
       servlet:
         multipart:
           max-file-size: "10MB"
