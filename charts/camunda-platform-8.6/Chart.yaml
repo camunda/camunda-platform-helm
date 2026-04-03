@@ -71,8 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "Reference bitnami subcharts internally rather than relying on external repositories"
-    - kind: fixed
-      description: "Fix 8.6 release processes by adding missing test file"
+  artifacthub.io/changes: ""
