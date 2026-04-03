@@ -530,7 +530,6 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Str("objectId", objectID).
 			Str("portalURL", portalURL).
 			Msg("Created venom app in Entra")
-		time.Sleep(10 * time.Second)
 
 		propogated := false
 		attempts := 0
