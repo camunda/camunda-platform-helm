@@ -6099,7 +6099,8 @@
                                     "properties": {
                                         "enabled": {
                                             "type": "boolean",
-                                            "description": "Enabling AWS IRSA",
+                                            "description": "(DEPRECATED - ignored by the chart, configure via optimize.env instead) Enabling AWS IRSA",
+                                            "deprecated": true,
                                             "default": false
                                         }
                                     }

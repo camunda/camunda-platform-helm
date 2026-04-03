@@ -1108,6 +1108,13 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 					s.Require().NotEqual("CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", e.Name,
 						"AWS enabled env var should not be injected by the chart anymore")
 				}
+
+				for _, initContainer := range deployment.Spec.Template.Spec.InitContainers {
+					for _, e := range initContainer.Env {
+						s.Require().NotEqual("CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", e.Name,
+							"AWS enabled env var should not be injected into migration init containers by the chart anymore")
+					}
+				}
 			},
 		},
 		// ---- TLS overrides ----

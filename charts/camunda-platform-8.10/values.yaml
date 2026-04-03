@@ -3072,7 +3072,7 @@ optimize:
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
     ## @param optimize.database.opensearch.enabled enabled external opensearch
-    ## @param optimize.database.opensearch.aws.enabled Enabling AWS IRSA
+    ## @param optimize.database.opensearch.aws.enabled (DEPRECATED - ignored by the chart, configure via optimize.env instead) Enabling AWS IRSA
     ## @extra optimize.database.opensearch.tls
     ## @param optimize.database.opensearch.tls.enabled if true, enable tls for external opensearch
     ## @extra optimize.database.opensearch.auth
