@@ -181,7 +181,7 @@ tasks:
           --env=RDBMS_POSTGRESQL_USERNAME="$RDBMS_POSTGRESQL_USERNAME" \
           --env=GITHUB_WORKFLOW_JOB_ID="$GITHUB_WORKFLOW_JOB_ID" \
           -n {{ .TEST_NAMESPACE }} \
-          psql-create-db -- bash -c "psql --host=postgresql-cluster-rw.distribution-postgresql.svc.cluster.local --port=5432 --username=$RDBMS_POSTGRESQL_USERNAME --dbname=app -c \"CREATE DATABASE $GITHUB_WORKFLOW_JOB_ID;\" || true"
+          psql-create-db -- bash -c "psql --host=postgresql-cluster-rw.distribution-postgresql.svc.cluster.local --port=5432 --username=$RDBMS_POSTGRESQL_USERNAME --dbname=app -c \"CREATE DATABASE '$GITHUB_WORKFLOW_JOB_ID';\" || true"
       {{ end }}
       {{ if eq .TEST_PERSISTENCE "rdbms" }}
         RESOURCES_DIR="{{ .TEST_VALUES_BASE_DIR }}/common/resources"
