@@ -180,7 +180,7 @@ integration:
           skip-it: true   # Integration tests require Elasticsearch
           identity: keycloak
           persistence: no-elasticsearch
-          features: [no-secondary-storage]
+          features: []
           platforms: [gke]
         - name: documentstore
           enabled: true
