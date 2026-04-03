@@ -331,12 +331,11 @@ The following values inside your values.yaml need to be set but were not:
 
   {{/* global.opensearch.aws.enabled deprecation warning */}}
   {{- if .Values.global.opensearch.aws.enabled }}
-    {{- $warningMessage := printf "%s %s %s %s %s"
+    {{- $warningMessage := printf "%s %s %s %s"
         "[camunda][warning]"
         "DEPRECATION: values.yaml is using legacy option 'global.opensearch.aws.enabled'."
-        "This option is deprecated and will be removed in a future version."
-        "Please use 'orchestration.data.secondaryStorage.opensearch.aws.enabled', or configure it via 'orchestration.env' / 'orchestration.extraConfiguration'."
-        "For Optimize, use 'optimize.database.opensearch.aws.enabled'."
+        "This option is deprecated, ignored by the chart, and will be removed in a future version."
+        "Please configure AWS IRSA via 'orchestration.env' or 'orchestration.extraConfiguration' instead."
     -}}
     {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
   {{- end }}
