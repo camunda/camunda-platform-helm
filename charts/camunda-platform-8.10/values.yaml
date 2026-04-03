@@ -216,7 +216,7 @@ global:
   # Use component-specific options instead (e.g., optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch).
   ## @extra global.opensearch (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch)
   ## @param global.opensearch.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch or orchestration.data.secondaryStorage.opensearch) enabled external opensearch
-  ## @param global.opensearch.aws.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.aws.enabled or orchestration.data.secondaryStorage.opensearch) Enabling AWS IRSA
+  ## @param global.opensearch.aws.enabled (DEPRECATED - use orchestration.data.secondaryStorage.opensearch.aws.enabled or optimize.database.opensearch.aws.enabled, or configure via orchestration.env / orchestration.extraConfiguration) Enabling AWS IRSA
   ## @extra global.opensearch.tls (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls or orchestration.data.secondaryStorage.opensearch.tls)
   ## @param global.opensearch.tls.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.enabled or orchestration.data.secondaryStorage.opensearch.tls) if true, enable tls for external opensearch
   ## @extra global.opensearch.auth (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth or orchestration.data.secondaryStorage.opensearch.auth)

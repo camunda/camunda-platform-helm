@@ -267,3 +267,36 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestGlobalOpensearchAwsEnabledDeprecationWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestDeprecationWarningDoesNotPreventInstallWhenGlobalOpensearchAwsEnabled",
+			Values: map[string]string{
+				"global.opensearch.enabled":                "true",
+				"global.opensearch.aws.enabled":            "true",
+				"global.elasticsearch.enabled":             "false",
+				"elasticsearch.enabled":                    "false",
+				"orchestration.data.secondaryStorage.type": "opensearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestNoDeprecationWarningWhenUsingNewSecondaryStoragePath",
+			Values: map[string]string{
+				"global.opensearch.enabled":                                  "true",
+				"global.elasticsearch.enabled":                               "false",
+				"elasticsearch.enabled":                                      "false",
+				"orchestration.data.secondaryStorage.type":                   "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.aws.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
