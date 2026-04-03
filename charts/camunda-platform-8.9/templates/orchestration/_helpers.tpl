@@ -271,9 +271,8 @@ Authentication.
 {{- end -}}
 
 {{- define "orchestration.enabledProfilesWithAuth" -}}
-    {{- if or
+    {{- if
         (eq (include "orchestration.authMethod" .) "oidc")
-        (eq (include "orchestration.authMethod" .) "basic")
     }}
         {{- printf "%s,%s" (include "orchestration.enabledProfiles" .) "consolidated-auth" -}}
     {{- else }}
