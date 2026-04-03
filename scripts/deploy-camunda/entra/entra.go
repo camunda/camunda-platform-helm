@@ -530,7 +530,24 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Str("objectId", objectID).
 			Str("portalURL", portalURL).
 			Msg("Created venom app in Entra")
-			time.Sleep(10 * time.Second)
+		time.Sleep(10 * time.Second)
+
+		propogated := false
+		attempts := 0
+
+		while !propogated && attempts < 10 {
+			appID, objectID, err = findApp(ctx, client, token, displayName)
+			if err != nil {
+				logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
+			}
+			if appID != "" && objectID != "" {
+				propogated = true
+				break
+			}
+			attempts++
+			time.Sleep(2 * time.Second)
+		}
+
 	}
 
 	// Step 3: Rotate credentials to get a fresh client secret.
