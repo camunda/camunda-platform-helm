@@ -9,3 +9,6 @@ global:
 
 elasticsearch:
   enabled: false
+
+optimize:
+  enabled: false
