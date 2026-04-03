@@ -6,7 +6,7 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
-        url: jdbc:postgresql://postgresql-cluster-rw:5432
+        url: jdbc:postgresql://postgresql-cluster-rw:5432/app
         username: ${RDBMS_POSTGRESQL_USERNAME}
         secret:
           inlineSecret: ${RDBMS_POSTGRESQL_PASSWORD}
