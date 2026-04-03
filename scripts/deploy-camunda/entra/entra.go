@@ -533,15 +533,19 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 
 		propogated := false
 		attempts := 0
+		successes := 0
 
-		for !propogated && attempts < 30 {
+		for !propogated && attempts < 45 && successes < 3 {
 			appID, objectID, err = findApp(ctx, client, token, displayName)
 			if err != nil {
 				logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
 			}
 			if appID != "" && objectID != "" {
 				propogated = true
-				break
+				// success counter is used to ensure that the app is consistently found across multiple attempts, indicating that it has fully propagated through the system.
+				successes++
+			} else {
+				successes = 0
 			}
 			attempts++
 			time.Sleep(2 * time.Second)
