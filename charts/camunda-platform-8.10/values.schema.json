@@ -6070,7 +6070,6 @@
                                         "enabled": {
                                             "type": "boolean",
                                             "description": "(DEPRECATED - ignored by the chart, configure via optimize.env instead) Enabling AWS IRSA",
-                                            "deprecated": true,
                                             "default": false
                                         }
                                     }
