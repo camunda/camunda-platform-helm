@@ -350,7 +350,6 @@
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "(DEPRECATED - ignored by the chart. Configure AWS IRSA via orchestration.env or orchestration.extraConfiguration instead) Enabling AWS IRSA",
-                                    "deprecated": true,
                                     "default": false
                                 }
                             }
