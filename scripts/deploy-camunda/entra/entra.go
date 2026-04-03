@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
@@ -529,6 +530,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Str("objectId", objectID).
 			Str("portalURL", portalURL).
 			Msg("Created venom app in Entra")
+			time.Sleep(10 * time.Second)
 	}
 
 	// Step 3: Rotate credentials to get a fresh client secret.
