@@ -534,7 +534,7 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 		propogated := false
 		attempts := 0
 
-		for !propogated && attempts < 10 {
+		for !propogated && attempts < 30 {
 			appID, objectID, err = findApp(ctx, client, token, displayName)
 			if err != nil {
 				logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
