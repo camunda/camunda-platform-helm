@@ -17,7 +17,7 @@ spec:
   instances: 1
   managed:
     roles:
-      - name: camunda
+      - name: app
         ensure: present
         superuser: true
         login: true
