@@ -29,6 +29,10 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
             secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
           exportEnv: true
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
@@ -133,25 +137,20 @@ jobs:
               -d "$POLICY_BODY" || echo "Warning: ISM policy creation failed, skipping..."
           fi
       - name: cleanup Entra
-        env: 
-          ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
-          ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
-          ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
-          ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
         shell: bash
         run: |
           RESPONSE=$(curl -X POST \
-            https://login.microsoftonline.com/${ENTRA_PARENT_APP_DIRECTORY_ID}/oauth2/v2.0/token \
+            https://login.microsoftonline.com/${ENTRA_APP_DIRECTORY_ID}/oauth2/v2.0/token \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
+            -d "client_id=${ENTRA_APP_CLIENT_ID}" \
             -d "scope=https://graph.microsoft.com/.default" \
-            -d "client_secret=${ENTRA_PARENT_APP_CLIENT_SECRET}" \
+            -d "client_secret=${ENTRA_APP_CLIENT_SECRET}" \
             -d "grant_type=client_credentials")
 
           BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
 
           curl -X PATCH \
-          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          "https://graph.microsoft.com/v1.0/applications/${ENTRA_APP_OBJECT_ID}" \
           -H "Authorization: Bearer ${BEARER_TOKEN}" \
           -H 'Content-Type: application/json' \
           -d '{
