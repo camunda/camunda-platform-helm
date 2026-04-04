@@ -44,10 +44,9 @@ type TestResult struct {
 // On failure, the returned error is a *TestError containing the captured output
 // from the test scripts. Callers can use errors.As to extract it.
 func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string) error {
-	runIT := flags.Test.RunIntegrationTests || flags.Test.RunAllTests
 	runE2E := flags.Test.RunE2ETests || flags.Test.RunAllTests
 
-	if !runIT && !runE2E {
+	if !runE2E {
 		return nil
 	}
 
@@ -56,7 +55,6 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 	}
 
 	logging.Logger.Info().
-		Bool("integrationTests", runIT).
 		Bool("e2eTests", runE2E).
 		Str("namespace", namespace).
 		Msg("Starting post-deployment tests")
@@ -102,15 +100,6 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 	var wg sync.WaitGroup
 	resultCh := make(chan TestResult, 2)
 
-	if runIT {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			output, err := runIntegrationTests(testCtx, repoRoot, chartPath, namespace, flags.Deployment.Platform, flags.Test.KubeContext, flags.Test.TestExclude, flags.Auth.Auth, flags.ITOutputWriter)
-			resultCh <- TestResult{Type: "integration", Error: err, Output: output}
-		}()
-	}
-
 	if runE2E {
 		wg.Add(1)
 		go func() {
@@ -153,41 +142,6 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 
 	logging.Logger.Info().Msg("All post-deployment tests passed")
 	return nil
-}
-
-// runIntegrationTests executes the integration test script.
-func runIntegrationTests(ctx context.Context, repoRoot, chartPath, namespace, platform, kubeContext, testExclude, testAuthType string, outputSink io.Writer) (string, error) {
-	scriptPath := filepath.Join(repoRoot, "scripts", "run-integration-tests.sh")
-
-	if _, err := os.Stat(scriptPath); err != nil {
-		return "", fmt.Errorf("integration test script not found at %s: %w", scriptPath, err)
-	}
-
-	logging.Logger.Info().
-		Str("script", scriptPath).
-		Str("chartPath", chartPath).
-		Str("namespace", namespace).
-		Str("platform", platform).
-		Str("kubeContext", kubeContext).
-		Msg("Running integration tests")
-
-	args := []string{
-		"--absolute-chart-path", chartPath,
-		"--namespace", namespace,
-		"--platform", platform,
-	}
-
-	if kubeContext != "" {
-		args = append(args, "--kube-context", kubeContext)
-	}
-	if testExclude != "" {
-		args = append(args, "--test-exclude", testExclude)
-	}
-	if testAuthType != "" {
-		args = append(args, "--test-auth-type", testAuthType)
-	}
-
-	return executeScript(ctx, scriptPath, args, "integration", outputSink)
 }
 
 // runE2ETests executes the e2e test script.
