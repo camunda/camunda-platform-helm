@@ -349,7 +349,7 @@
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
-                                    "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.aws.enabled or orchestration.data.secondaryStorage.opensearch) Enabling AWS IRSA",
+                                    "description": "(DEPRECATED - ignored by the chart. Configure AWS IRSA via orchestration.env or orchestration.extraConfiguration instead) Enabling AWS IRSA",
                                     "default": false
                                 }
                             }
@@ -6099,7 +6099,7 @@
                                     "properties": {
                                         "enabled": {
                                             "type": "boolean",
-                                            "description": "Enabling AWS IRSA",
+                                            "description": "(DEPRECATED - ignored by the chart, configure via optimize.env instead) Enabling AWS IRSA",
                                             "default": false
                                         }
                                     }

@@ -267,3 +267,37 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestGlobalOpensearchAwsEnabledDeprecationWarning() {
+	testCases := []testhelpers.TestCase{
+		{
+			// The deprecation warning is rendered in NOTES.txt which is not captured by helm template.
+			// This test verifies the deprecated flag does not prevent installation.
+			Name: "TestDeprecationWarningDoesNotPreventInstallWhenGlobalOpensearchAwsEnabled",
+			Values: map[string]string{
+				"global.opensearch.enabled":                "true",
+				"global.opensearch.aws.enabled":            "true",
+				"global.elasticsearch.enabled":             "false",
+				"elasticsearch.enabled":                    "false",
+				"orchestration.data.secondaryStorage.type": "opensearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestNoErrorWhenNotUsingDeprecatedGlobalOpensearchAwsEnabled",
+			Values: map[string]string{
+				"global.opensearch.enabled":                "true",
+				"global.elasticsearch.enabled":             "false",
+				"elasticsearch.enabled":                    "false",
+				"orchestration.data.secondaryStorage.type": "opensearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

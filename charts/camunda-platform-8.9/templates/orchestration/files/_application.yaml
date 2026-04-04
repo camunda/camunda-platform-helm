@@ -91,9 +91,6 @@ camunda:
 
   # Database configuration - Separated syntax.
   database:
-  {{- if .Values.global.opensearch.enabled }}
-    awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-  {{- end }}
 
   data:
     snapshot-period: {{ .Values.orchestration.data.snapshotPeriod | quote }}
@@ -229,13 +226,6 @@ camunda:
     identity:
       redirectRootUrl: {{ printf "%s/operate" (include "orchestration.RedirectURI" .) | quote }}
     {{- end }}
-    {{- if .Values.global.opensearch.enabled }}
-    # OpenSearch
-    opensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-    zeebeOpensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
-    {{- end }}
     # Zeebe instance
     zeebe:
       # Gateway address
@@ -262,10 +252,7 @@ camunda:
     {{- end }}
     {{- if .Values.global.opensearch.enabled }}
     # OpenSearch
-    opensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
       username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
       password: "${VALUES_OPENSEARCH_PASSWORD:}"
     {{- end }}
@@ -347,18 +334,12 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
-          {{- if and (not .Values.global.opensearch.aws.enabled) (not .Values.optimize.database.opensearch.aws.enabled) }}
           authentication:
             username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
             password: "${VALUES_OPENSEARCH_PASSWORD:}"
-          {{- end }}
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | quote }}
-          {{- if or .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
-          aws:
-            enabled: true
-          {{- end }}
           {{- if .Values.orchestration.retention.enabled }}
           retention:
             enabled: true
@@ -375,7 +356,6 @@ zeebe:
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
-            awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
             rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}

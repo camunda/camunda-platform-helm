@@ -1088,7 +1088,7 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestOpensearchAwsEnabledFromGlobal",
+			Name: "TestOpensearchAwsEnabledFromGlobalIsIgnored",
 			Values: map[string]string{
 				"identity.enabled":              "true",
 				"optimize.enabled":              "true",
@@ -1104,28 +1104,17 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", Value: "true"})
-			},
-		},
-		{
-			Name: "TestOpensearchAwsEnabledOverriddenByOptimizeDatabase",
-			Values: map[string]string{
-				"identity.enabled":                         "true",
-				"optimize.enabled":                         "true",
-				"global.elasticsearch.enabled":             "false",
-				"elasticsearch.enabled":                    "false",
-				"global.opensearch.enabled":                "true",
-				"global.opensearch.url.host":               "opensearch-host",
-				"global.opensearch.aws.enabled":            "false",
-				"optimize.database.opensearch.aws.enabled": "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				require.NoError(t, err)
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				for _, e := range env {
+					s.Require().NotEqual("CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", e.Name,
+						"CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED should not be set by the chart anymore")
+				}
 
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", Value: "true"})
+				for _, initContainer := range deployment.Spec.Template.Spec.InitContainers {
+					for _, e := range initContainer.Env {
+						s.Require().NotEqual("CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED", e.Name,
+							"CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED should not be set in init containers by the chart anymore")
+					}
+				}
 			},
 		},
 		// ---- TLS overrides ----

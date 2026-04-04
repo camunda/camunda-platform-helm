@@ -205,7 +205,6 @@ data:
             args:
               connect:
                 type: "elasticsearch"
-                awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"
                 rolloverInterval: "1d"

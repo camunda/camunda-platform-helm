@@ -96,10 +96,6 @@ spec:
               value: {{ .Values.optimize.database.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
             {{- end }}
             {{- end }}
-            {{- if or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
-              value: "true"
-            {{- end }}
             {{- with .Values.optimize.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -215,10 +211,6 @@ spec:
               value: {{ .Values.optimize.caches.cloudTenantAuthorizations.maxSize | default "10000" | quote }}
             - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
               value: {{ .Values.optimize.caches.cloudTenantAuthorizations.minFetchIntervalSeconds | default "600000" | quote }}
-            {{- end }}
-            {{- if or .Values.optimize.database.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
-            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
-              value: "true"
             {{- end }}
             - name: OPTIMIZE_LOG_LEVEL
               value: {{ .Values.optimize.logLevel | quote }}
