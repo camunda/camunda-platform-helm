@@ -12,10 +12,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
-
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
+	"strings"
+	"time"
 )
 
 // graphBaseURL is the Microsoft Graph API base URL. It is a variable so tests
@@ -170,110 +170,200 @@ func acquireBearerToken(ctx context.Context, opts *Options) (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-// graphGet performs a GET request to the Graph API.
+const (
+	graphMaxAttempts = 5
+)
+
+// graphBackoff waits an exponentially increasing duration before a retry.
+// Attempt 1 → 2s, attempt 2 → 4s. Respects context cancellation.
+func graphBackoff(ctx context.Context, attempt int) error {
+	d := time.Duration(1<<uint(attempt)) * time.Second
+	logging.Logger.Warn().
+		Int("attempt", attempt).
+		Int("maxAttempts", graphMaxAttempts).
+		Dur("backoff", d).
+		Msg("Graph API got 409 ConcurrencyViolation, retrying")
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(d):
+		return nil
+	}
+}
+
+// graphGet performs a GET request to the Graph API with retry on 409.
 func graphGet(ctx context.Context, client *http.Client, token, path string) ([]byte, error) {
 	reqURL := graphBaseURL + path
 	logging.Logger.Debug().Str("method", "GET").Str("url", reqURL).Msg("Graph API request")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
+	var (
+		body       []byte
+		statusCode int
+	)
+	for attempt := 1; attempt <= graphMaxAttempts; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		body, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		statusCode = resp.StatusCode
+		logging.Logger.Debug().Int("statusCode", statusCode).Int("bodyLen", len(body)).Msg("Graph API GET response")
 
-	body, err := io.ReadAll(resp.Body)
-	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Int("bodyLen", len(body)).Msg("Graph API GET response")
-	return body, err
+		if statusCode != 409 || attempt == graphMaxAttempts {
+			break
+		}
+		if err := graphBackoff(ctx, attempt); err != nil {
+			return nil, err
+		}
+	}
+	return body, nil
 }
 
-// graphPost performs a POST request to the Graph API.
+// graphPost performs a POST request to the Graph API with retry on 409.
 func graphPost(ctx context.Context, client *http.Client, token, path string, payload interface{}) ([]byte, int, error) {
-	var bodyReader io.Reader
+	var rawPayload []byte
 	if payload != nil {
-		data, err := json.Marshal(payload)
+		var err error
+		rawPayload, err = json.Marshal(payload)
 		if err != nil {
 			return nil, 0, fmt.Errorf("marshal payload: %w", err)
 		}
-		bodyReader = strings.NewReader(string(data))
 	}
 
 	reqURL := graphBaseURL + path
 	logging.Logger.Debug().Str("method", "POST").Str("url", reqURL).Msg("Graph API request")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bodyReader)
-	if err != nil {
-		return nil, 0, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
+	var (
+		body       []byte
+		statusCode int
+	)
+	for attempt := 1; attempt <= graphMaxAttempts; attempt++ {
+		var bodyReader io.Reader
+		if rawPayload != nil {
+			bodyReader = strings.NewReader(string(rawPayload))
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bodyReader)
+		if err != nil {
+			return nil, 0, err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, 0, err
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, 0, err
+		}
+		body, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, 0, err
+		}
+		statusCode = resp.StatusCode
+		logging.Logger.Debug().Int("statusCode", statusCode).Int("bodyLen", len(body)).Msg("Graph API POST response")
+
+		if statusCode != 409 || attempt == graphMaxAttempts {
+			break
+		}
+		if err := graphBackoff(ctx, attempt); err != nil {
+			return nil, 0, err
+		}
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Int("bodyLen", len(body)).Msg("Graph API POST response")
-	return body, resp.StatusCode, err
+	return body, statusCode, nil
 }
 
-// graphPatch performs a PATCH request to the Graph API.
+// graphPatch performs a PATCH request to the Graph API with retry on 409.
 func graphPatch(ctx context.Context, client *http.Client, token, path string, payload interface{}) ([]byte, int, error) {
-	var bodyReader io.Reader
+	var rawPayload []byte
 	if payload != nil {
-		data, err := json.Marshal(payload)
+		var err error
+		rawPayload, err = json.Marshal(payload)
 		if err != nil {
 			return nil, 0, fmt.Errorf("marshal payload: %w", err)
 		}
-		bodyReader = strings.NewReader(string(data))
 	}
 
 	reqURL := graphBaseURL + path
 	logging.Logger.Debug().Str("method", "PATCH").Str("url", reqURL).Msg("Graph API request")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, reqURL, bodyReader)
-	if err != nil {
-		return nil, 0, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
+	var (
+		body       []byte
+		statusCode int
+	)
+	for attempt := 1; attempt <= graphMaxAttempts; attempt++ {
+		var bodyReader io.Reader
+		if rawPayload != nil {
+			bodyReader = strings.NewReader(string(rawPayload))
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPatch, reqURL, bodyReader)
+		if err != nil {
+			return nil, 0, err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, 0, err
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, 0, err
+		}
+		body, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, 0, err
+		}
+		statusCode = resp.StatusCode
+		logging.Logger.Debug().Int("statusCode", statusCode).Int("bodyLen", len(body)).Msg("Graph API PATCH response")
+
+		if statusCode != 409 || attempt == graphMaxAttempts {
+			break
+		}
+		if err := graphBackoff(ctx, attempt); err != nil {
+			return nil, 0, err
+		}
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Int("bodyLen", len(body)).Msg("Graph API PATCH response")
-	return body, resp.StatusCode, err
+	return body, statusCode, nil
 }
 
-// graphDelete performs a DELETE request to the Graph API and returns the HTTP status code.
+// graphDelete performs a DELETE request to the Graph API with retry on 409.
 func graphDelete(ctx context.Context, client *http.Client, token, path string) (int, error) {
 	reqURL := graphBaseURL + path
 	logging.Logger.Debug().Str("method", "DELETE").Str("url", reqURL).Msg("Graph API request")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, reqURL, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
+	var statusCode int
+	for attempt := 1; attempt <= graphMaxAttempts; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodDelete, reqURL, nil)
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, err
+		resp, err := client.Do(req)
+		if err != nil {
+			return 0, err
+		}
+		io.ReadAll(resp.Body) //nolint:errcheck // drain body
+		resp.Body.Close()
+		statusCode = resp.StatusCode
+		logging.Logger.Debug().Int("statusCode", statusCode).Msg("Graph API DELETE response")
+
+		if statusCode != 409 || attempt == graphMaxAttempts {
+			break
+		}
+		if err := graphBackoff(ctx, attempt); err != nil {
+			return 0, err
+		}
 	}
-	defer resp.Body.Close()
-	io.ReadAll(resp.Body) //nolint:errcheck // drain body
-	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Msg("Graph API DELETE response")
-	return resp.StatusCode, nil
+	return statusCode, nil
 }
 
 // findApp searches for an existing app registration by display name.
@@ -402,6 +492,7 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 			"endDateTime": "2099-12-31T00:00:00Z",
 		},
 	}
+
 	secretBody, statusCode, err := graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload)
 	if err != nil {
 		return "", fmt.Errorf("add password: %w", err)
