@@ -259,6 +259,8 @@ env:
   OPENSEARCH_PROTOCOL: "https"
   OPENSEARCH_HOST: "search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
   OPENSEARCH_PORT: "443"
+  # RDBMS (used for testing RDBMS-based secondary storage)
+  POSTGRESQL_JDBC_URL: "jdbc:postgresql://postgresql-cluster-rw.distribution-postgresql.svc.cluster.local:5432"
   # OIDC.
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
   # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.
@@ -789,6 +791,8 @@ jobs:
             secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
             secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
             secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+            secret/data/products/distribution/ci RDBMS_POSTGRESQL_USERNAME;
+            secret/data/products/distribution/ci RDBMS_POSTGRESQL_PASSWORD;
           exportEnv: true
 
       - name: CI Setup - Authenticate to cluster

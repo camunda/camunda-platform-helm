@@ -212,3 +212,5 @@ jobs:
         secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_OPEN_AI_ENDPOINT;
         secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_OPEN_AI_KEY;
         secret/data/products/qa/ci/cross-component-e2e-test-suite OPENAI_API_KEY;
+        secret/data/products/distribution/ci RDBMS_POSTGRESQL_USERNAME;
+        secret/data/products/distribution/ci RDBMS_POSTGRESQL_PASSWORD;
