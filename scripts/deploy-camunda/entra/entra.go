@@ -404,11 +404,11 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 		},
 	}
 
-	err = nil
+	err = fmt.Errorf("dummy error")
 	attempts := 0
 	statusCode := 0
 	var secretBody []byte
-	for (err != nil && statusCode != 201 && attempts < 30) || attempts == 0 {
+	for err != nil && statusCode != 201 && attempts < 30 {
 		secretBody, statusCode, err = graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload)
 		attempts++
 		time.Sleep(5 * time.Second)
