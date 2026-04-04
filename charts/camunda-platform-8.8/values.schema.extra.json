@@ -1,5 +1,69 @@
 {
     "properties": {
+        "global": {
+            "properties": {
+                "security": {
+                    "properties": {
+                        "allowInsecureImages": {
+                            "type": "boolean",
+                            "description": "Allows the use of insecure images"
+                        }
+                    }
+                },
+                "testDeprecationFlags": {
+                    "type": "object",
+                    "properties": {
+                        "existingSecretsMustBeSet": {
+                            "type": ["string", "boolean"],
+                            "description": "Give error or warning when existingSecret is not set"
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "gateway": {
+                    "properties": {
+                        "labels": {
+                            "type": "object",
+                            "description": "Labels to apply to the gateway resource",
+                            "additionalProperties": true
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "Annotations for the gateway resource",
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "ingress": {
+                    "properties": {
+                        "labels": {
+                            "type": "object",
+                            "description": "Labels to apply to the ingress resource",
+                            "additionalProperties": true
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "Annotations for the ingress resource",
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "multiregion": {
+                    "type": "object",
+                    "properties": {
+                        "regions": {
+                            "type": "integer",
+                            "description": "Number of regions"
+                        },
+                        "regionId": {
+                            "type": "integer",
+                            "description": "Region ID"
+                        }
+                    },
+                    "additionalProperties": true
+                }
+            }
+        },
         "console": {
             "properties": {
                 "env": {
@@ -32,6 +96,26 @@
                             "name"
                         ],
                         "additionalProperties": false
+                    }
+                },
+                "resources": {
+                    "properties": {
+                        "requests": {
+                            "properties": {
+                                "cpu": {
+                                    "type": ["string", "number"],
+                                    "description": "CPU request"
+                                }
+                            }
+                        },
+                        "limits": {
+                            "properties": {
+                                "cpu": {
+                                    "type": ["string", "number"],
+                                    "description": "CPU limit"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -69,6 +153,31 @@
                         ],
                         "additionalProperties": false
                     }
+                },
+                "resources": {
+                    "properties": {
+                        "requests": {
+                            "properties": {
+                                "cpu": {
+                                    "type": ["string", "number"],
+                                    "description": "CPU request"
+                                }
+                            }
+                        },
+                        "limits": {
+                            "properties": {
+                                "cpu": {
+                                    "type": ["string", "number"],
+                                    "description": "CPU limit"
+                                }
+                            }
+                        }
+                    }
+                },
+                "logging": {
+                    "type": "object",
+                    "description": "Logging configuration",
+                    "additionalProperties": true
                 }
             }
         },
@@ -104,6 +213,19 @@
                             "name"
                         ],
                         "additionalProperties": false
+                    }
+                },
+                "logging": {
+                    "properties": {
+                        "level": {
+                            "properties": {
+                                "io.camunda.identity": {
+                                    "type": "string",
+                                    "description": "Log level for io.camunda.identity"
+                                }
+                            },
+                            "additionalProperties": true
+                        }
                     }
                 }
             }
@@ -141,40 +263,40 @@
                         ],
                         "additionalProperties": false
                     }
-                }
-            },
-            "migration": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
+                },
+                "migration": {
+                    "properties": {
+                        "env": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value",
+                                        "type": "object"
+                                    }
                                 },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "nullable": true
-                                },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
-                                }
-                            },
-                            "required": [
-                                "name"
-                            ],
-                            "additionalProperties": false
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
                         }
                     }
                 }
@@ -213,116 +335,173 @@
                         ],
                         "additionalProperties": false
                     }
+                },
+                "profiles": {
+                    "type": "object",
+                    "description": "Zeebe broker profiles",
+                    "additionalProperties": true
+                },
+                "profilesOverride": {
+                    "type": "string",
+                    "description": "Override for Zeebe broker profiles"
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "Affinity rules for orchestration pods",
+                    "additionalProperties": true
+                },
+                "ingress": {
+                    "properties": {
+                        "grpc": {
+                            "properties": {
+                                "labels": {
+                                    "type": "object",
+                                    "description": "Labels for gRPC ingress",
+                                    "additionalProperties": true
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "Annotations for gRPC ingress",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
         "webModeler": {
-            "restapi": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
+            "properties": {
+                "restapi": {
+                    "properties": {
+                        "env": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value",
+                                        "type": "object"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "logging": {
                             "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
+                            "description": "Logging configuration",
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "websockets": {
+                    "properties": {
+                        "env": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value",
+                                        "type": "object"
+                                    }
                                 },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "nullable": true
-                                },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
-                                }
-                            },
-                            "required": [
-                                "name"
-                            ],
-                            "additionalProperties": false
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
                         }
                     }
                 }
-            },
-            "webapp": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
+            }
+        },
+        "identityKeycloak": {
+            "properties": {
+                "extraVolumes": {
+                    "type": "array",
+                    "description": "Extra volumes for keycloak (DEPRECATED)",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "ingress": {
+                    "properties": {
+                        "annotations": {
                             "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
-                                },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
-                                        }
-                                    ],
-                                    "nullable": true
-                                },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
-                                }
-                            },
-                            "required": [
-                                "name"
-                            ],
-                            "additionalProperties": false
+                            "description": "Annotations for keycloak ingress (DEPRECATED)",
+                            "additionalProperties": true
                         }
                     }
                 }
-            },
-            "websockets": {
-                "properties": {
-                    "env": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
+            }
+        },
+        "elasticsearch": {
+            "properties": {
+                "master": {
+                    "properties": {
+                        "resources": {
                             "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Environment variable name"
-                                },
-                                "value": {
-                                    "description": "Environment variable value",
-                                    "anyOf": [
-                                        {
-                                            "type": "string"
-                                        },
-                                        {
-                                            "type": "null"
+                                "requests": {
+                                    "properties": {
+                                        "cpu": {
+                                            "type": ["string", "number"],
+                                            "description": "CPU request (DEPRECATED)"
                                         }
-                                    ],
-                                    "nullable": true
+                                    }
                                 },
-                                "valueFrom": {
-                                    "description": "Source for the environment variable's value",
-                                    "type": "object"
+                                "limits": {
+                                    "properties": {
+                                        "cpu": {
+                                            "type": ["string", "number"],
+                                            "description": "CPU limit (DEPRECATED)"
+                                        }
+                                    }
                                 }
-                            },
-                            "required": [
-                                "name"
-                            ],
-                            "additionalProperties": false
+                            }
                         }
                     }
+                },
+                "extraConfig": {
+                    "type": "object",
+                    "description": "Extra configuration for elasticsearch (DEPRECATED)",
+                    "additionalProperties": true
                 }
             }
         }
