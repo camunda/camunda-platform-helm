@@ -403,11 +403,15 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 			"endDateTime": "2099-12-31T00:00:00Z",
 		},
 	}
+
 	err = nil
 	attempts := 0
-	for err == nil && statusCode != 201 && attempts < 5 {
-		secretBody, statusCode, err := graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload)
-		time.sleep(2 * time.Second)
+	statusCode := 0
+	var secretBody []byte
+	for (err != nil && statusCode != 201 && attempts < 5) || attempts == 0 {
+		secretBody, statusCode, err = graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload)
+		attempts++
+		time.Sleep(2 * time.Second)
 	}
 	if err != nil {
 		return "", fmt.Errorf("add password: %w", err)
