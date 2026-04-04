@@ -91,11 +91,6 @@ connectors:
         existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
-webModeler:
-  security:
-    authentication:
-      method: oidc
-
 orchestration:
   security:
     authentication:

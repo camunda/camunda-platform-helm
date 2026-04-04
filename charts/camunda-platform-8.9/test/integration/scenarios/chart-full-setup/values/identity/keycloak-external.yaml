@@ -92,7 +92,6 @@ optimize:
 connectors:
   security:
     authentication:
-      method: oidc
       oidc:
         secret:
           existingSecret: "integration-test-credentials"
@@ -108,7 +107,6 @@ orchestration:
           clients:
             - venom
     authentication:
-      method: oidc
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"

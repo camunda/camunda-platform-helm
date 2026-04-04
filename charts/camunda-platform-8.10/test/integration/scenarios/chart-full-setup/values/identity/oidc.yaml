@@ -94,7 +94,6 @@ identityKeycloak:
 connectors:
   security:
     authentication:
-      method: oidc
       oidc:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
@@ -104,15 +103,9 @@ connectors:
           existingSecretKey: entra-child-app-client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
-webModeler:
-  security:
-    authentication:
-      method: oidc
-
 orchestration:
   security:
     authentication:
-      method: oidc
       unprotectedApi: false
       oidc:
         backwardsCompatibleAudiences:
