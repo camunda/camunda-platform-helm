@@ -92,7 +92,7 @@ camunda:
   # Database configuration - Separated syntax.
   database:
   {{- if .Values.global.opensearch.enabled }}
-    awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+    awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
   {{- end }}
 
   data:
@@ -112,6 +112,7 @@ camunda:
       {{- end }}
       {{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "elasticsearch") }}
       elasticsearch:
+        aws-enabled: {{ .Values.orchestration.data.secondaryStorage.elasticsearch.aws.enabled }}
         url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
         cluster-name: {{ .Values.global.elasticsearch.clusterName | quote }}
         username: {{ .Values.orchestration.data.secondaryStorage.elasticsearch.auth.username | default .Values.global.elasticsearch.auth.username | quote }}
@@ -125,6 +126,7 @@ camunda:
       {{- end }}
       {{- if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled (eq .Values.orchestration.data.secondaryStorage.type "opensearch") }}
       opensearch:
+        aws-enabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
         url: {{ include "camundaPlatform.opensearchURL" . | quote }}
         cluster-name: {{ .Values.global.opensearch.clusterName | quote }}
         username: {{ .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
@@ -139,6 +141,7 @@ camunda:
       {{- if .Values.orchestration.exporters.rdbms.enabled }}
       rdbms:
         {{- with .Values.orchestration.data.secondaryStorage.rdbms }}
+        aws-enabled: {{ .aws.enabled }}
         url: {{ .url | quote }}
         username: {{ .username | quote }}
         password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
@@ -232,9 +235,9 @@ camunda:
     {{- if .Values.global.opensearch.enabled }}
     # OpenSearch
     opensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
     {{- end }}
     # Zeebe instance
     zeebe:
@@ -263,9 +266,9 @@ camunda:
     {{- if .Values.global.opensearch.enabled }}
     # OpenSearch
     opensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
     zeebeOpensearch:
-      awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+      awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
       username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
       password: "${VALUES_OPENSEARCH_PASSWORD:}"
     {{- end }}
@@ -347,7 +350,7 @@ zeebe:
       opensearch:
         className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
         args:
-          {{- if and (not .Values.global.opensearch.aws.enabled) (not .Values.optimize.database.opensearch.aws.enabled) }}
+          {{- if and (not (or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled)) (not .Values.optimize.database.opensearch.aws.enabled) }}
           authentication:
             username: {{ .Values.optimize.database.opensearch.auth.username | default .Values.orchestration.data.secondaryStorage.opensearch.auth.username | default .Values.global.opensearch.auth.username | quote }}
             password: "${VALUES_OPENSEARCH_PASSWORD:}"
@@ -355,7 +358,7 @@ zeebe:
           url: {{ include "camundaPlatform.opensearchURL" . | quote }}
           index:
             prefix: {{ .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | quote }}
-          {{- if or .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
+          {{- if or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled .Values.optimize.database.opensearch.aws.enabled }}
           aws:
             enabled: true
           {{- end }}
@@ -375,7 +378,7 @@ zeebe:
             {{- if .Values.orchestration.index.prefix }}
             indexPrefix: {{ .Values.orchestration.index.prefix | quote }}
             {{- end }}
-            awsEnabled: {{ .Values.global.opensearch.aws.enabled }}
+            awsEnabled: {{ or .Values.orchestration.data.secondaryStorage.opensearch.aws.enabled .Values.global.opensearch.aws.enabled }}
           history:
             elsRolloverDateFormat: {{ .Values.orchestration.history.elsRolloverDateFormat | quote }}
             rolloverInterval: {{ .Values.orchestration.history.rolloverInterval | quote }}
