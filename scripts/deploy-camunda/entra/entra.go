@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
@@ -402,7 +403,16 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 			"endDateTime": "2099-12-31T00:00:00Z",
 		},
 	}
-	secretBody, statusCode, err := graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload)
+
+	err = fmt.Errorf("dummy error")
+	attempts := 0
+	statusCode := 0
+	var secretBody []byte
+	for err != nil && statusCode != 201 && attempts < 30 {
+		secretBody, statusCode, err = graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload)
+		attempts++
+		time.Sleep(5 * time.Second)
+	}
 	if err != nil {
 		return "", fmt.Errorf("add password: %w", err)
 	}
@@ -529,6 +539,27 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Str("objectId", objectID).
 			Str("portalURL", portalURL).
 			Msg("Created venom app in Entra")
+
+		propogated := false
+		attempts := 0
+		successes := 0
+
+		for !propogated && attempts < 45 && successes < 3 {
+			appID, objectID, err = findApp(ctx, client, token, displayName)
+			if err != nil {
+				logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
+			}
+			if appID != "" && objectID != "" {
+				propogated = true
+				// success counter is used to ensure that the app is consistently found across multiple attempts, indicating that it has fully propagated through the system.
+				successes++
+			} else {
+				successes = 0
+			}
+			attempts++
+			time.Sleep(2 * time.Second)
+		}
+
 	}
 
 	// Step 3: Rotate credentials to get a fresh client secret.
