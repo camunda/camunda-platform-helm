@@ -19,47 +19,6 @@ orchestration:
       oidc:
         groupsClaim: ""
       authenticationRefreshInterval: "PT30S"
-  env:
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
-      value: "preferred_username"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: "demo"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
-      value: "venom"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
-      value: "client_id"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
-      value: "connectors"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_3_MAPPINGRULEID
-      value: "bart-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_3_CLAIMNAME
-      value: "preferred_username"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_3_CLAIMVALUE
-      value: "bart"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_4_MAPPINGRULEID
-      value: "lisa-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_4_CLAIMNAME
-      value: "preferred_username"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_4_CLAIMVALUE
-      value: "lisa"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "demo-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_3
-      value: "bart-user-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_4
-      value: "lisa-user-mapping-rule"
 
 identityKeycloak:
   enabled: true

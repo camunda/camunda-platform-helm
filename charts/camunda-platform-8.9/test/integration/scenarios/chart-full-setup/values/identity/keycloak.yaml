@@ -273,8 +273,11 @@ orchestration:
         admin:
           users:
             - demo
+            - lisa
+            - bart
           clients:
             - venom
+            - test
     authentication:
       method: oidc
       authenticationRefreshInterval: "PT30S"
