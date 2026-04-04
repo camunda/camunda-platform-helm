@@ -17,6 +17,10 @@ node_modules/
 **/node_modules/
 **/.npm-install-lock/
 
+# Docusaurus
+helm-docs-site/.docusaurus/
+helm-docs-site/build/
+
 test-results/
 **/test-results/
 
