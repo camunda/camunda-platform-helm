@@ -1606,6 +1606,10 @@
                             "default": {}
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 }
             }
         },
@@ -2688,6 +2692,10 @@
                     "type": "object",
                     "description": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config",
                     "default": {}
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 }
             }
         },
@@ -3747,6 +3755,10 @@
                             "default": {}
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 }
             },
             "restapi": {
@@ -4547,6 +4559,10 @@
                             "default": {}
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 }
             }
         },
@@ -5916,6 +5932,10 @@
                             "default": false
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 }
             }
         },
@@ -6740,6 +6760,10 @@
                             }
                         }
                     }
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
                 }
             },
             "migration": {

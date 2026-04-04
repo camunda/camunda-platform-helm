@@ -1049,6 +1049,21 @@ func (s *deploymentTemplateTest) TestDifferentValuesInputs() {
 						"Optimize client ID should not be present when optimize.enabled=false")
 				}
 			},
+		}, {
+			Name: "TestPodSetAutomountServiceAccountToken",
+			Values: map[string]string{
+				"identity.enabled":                      "true",
+				"identity.automountServiceAccountToken": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				// then
+				expected := true
+				s.Require().NotNil(deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().Equal(expected, *deployment.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
 		},
 	}
 

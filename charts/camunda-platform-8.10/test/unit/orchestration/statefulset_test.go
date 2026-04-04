@@ -810,6 +810,20 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 					},
 					"Orchestration should have OIDC secret when orchestration.authMethod=oidc")
 			},
+		}, {
+			Name: "TestPodSetAutomountServiceAccountToken",
+			Values: map[string]string{
+				"orchestration.automountServiceAccountToken": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				// then
+				expected := false
+				s.Require().NotNil(statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
+				s.Require().Equal(expected, *statefulSet.Spec.Template.Spec.AutomountServiceAccountToken)
+			},
 		},
 	}
 

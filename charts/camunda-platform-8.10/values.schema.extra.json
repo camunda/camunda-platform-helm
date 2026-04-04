@@ -2,6 +2,10 @@
     "properties": {
         "console": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -38,6 +42,10 @@
         },
         "connectors": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -74,6 +82,10 @@
         },
         "identity": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -110,6 +122,10 @@
         },
         "optimize": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -182,6 +198,10 @@
         },
         "orchestration": {
             "properties": {
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -217,6 +237,12 @@
             }
         },
         "webModeler": {
+            "properties": {
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "if set, overrides the automountServiceAccountToken field on the pod spec"
+                }
+            },
             "restapi": {
                 "properties": {
                     "env": {
