@@ -999,12 +999,7 @@ jobs:
       deployments: write
       packages: read
     env:
-      CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
-      TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
-      TEST_VALUES_BASE_DIR: ${{ needs.install.outputs.TEST_VALUES_BASE_DIR }}
       TEST_INGRESS_HOST: ${{ needs.install.outputs.vars-ingress-host }}
-      TEST_NAMESPACE: ${{ needs.install.outputs.TEST_NAMESPACE }}
-      ABSOLUTE_TEST_CHART_DIR: ${{ needs.install.outputs.ABSOLUTE_TEST_CHART_DIR }}
       TEST_EXCLUDE: ${{ inputs.exclude }}
       PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
@@ -1063,12 +1058,7 @@ jobs:
       deployments: write
       packages: read
     env:
-      CI_TASKS_BASE_DIR: ${{ needs.install.outputs.CI_TASKS_BASE_DIR }}
-      TEST_CHART_DIR: ${{ needs.install.outputs.TEST_CHART_DIR }}
-      TEST_VALUES_BASE_DIR: ${{ needs.install.outputs.TEST_VALUES_BASE_DIR }}
-      TEST_INGRESS_HOST: ${{ needs.install.outputs.vars-ingress-host }}
-      TEST_NAMESPACE: ${{ needs.install.outputs.TEST_NAMESPACE }}
-      ABSOLUTE_TEST_CHART_DIR: ${{ needs.install.outputs.ABSOLUTE_TEST_CHART_DIR }}
+      TEST_INGRESS_HOST: ${{ needs.upgrade.outputs.vars-ingress-host }}
       TEST_EXCLUDE: ${{ inputs.exclude }}
       PLATFORM: ${{ inputs.distro-platform }}
       TEST_AUTH_TYPE: ${{ inputs.auth }}
