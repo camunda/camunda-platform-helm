@@ -20,7 +20,7 @@
 #
 # Manual usage:
 #   gh workflow run ai-triage-issue.yml
-#   gh workflow run ai-triage-issue.yml -f issue_number=123 -f dry_run=true
+#   gh workflow run ai-triage-issue.yml -f issue_number=123
 #
 name: Triage - Issue triage
 
@@ -34,11 +34,6 @@ on:
       issue_number:
         description: 'Issue number to triage (optional, for single-issue mode)'
         required: false
-      dry_run:
-        description: 'Dry run — analyze but do not apply changes'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ai-triage-${{ github.event.inputs.issue_number || github.event.issue.number || 'bulk' }}
@@ -54,7 +49,6 @@ jobs:
       REPO: ${{ github.event.repository.name }}
       PROJECT_NUMBER: 33
       CONFIDENCE_THRESHOLD: '0.7'
-      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
     defaults:
       run:
         shell: bash
@@ -89,10 +83,6 @@ jobs:
         id: fetch_issues
         run: |
           set -euo pipefail
-
-          if [[ "$DRY_RUN" == "true" ]]; then
-            echo "🔬 DRY RUN MODE - No changes will be made"
-          fi
 
           # Determine which issues to process
           if [[ -n "${{ github.event.inputs.issue_number }}" ]]; then
@@ -344,39 +334,6 @@ jobs:
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"---"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"🤖 This issue was automatically triaged by an AI-based system."
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"✋ If you believe this assessment is incorrect, update the labels or add the \`triage:manual\` label for human review."
-
-            if [[ "$DRY_RUN" == "true" ]]; then
-              echo "🔬 DRY RUN: Would post triage comment"
-              echo "$TRIAGE_COMMENT"
-              echo ""
-              echo "🔬 DRY RUN: Would apply labels: severity/$SEVERITY, likelihood/$LIKELIHOOD, TRIAGE:COMPLETED"
-              if [[ -n "$KIND" ]]; then
-                echo "🔬 DRY RUN: Would also apply label: kind/$KIND"
-              fi
-              if [[ "$MISSING_INFO" == "true" ]]; then
-                echo "🔬 DRY RUN: Would also apply label: BLOCKER/INFO"
-              fi
-
-              # Calculate urgency for dry run output
-              LIKELIHOOD_FOR_URGENCY="$LIKELIHOOD"
-              if [[ -z "$LIKELIHOOD_FOR_URGENCY" || "$LIKELIHOOD_FOR_URGENCY" == "unknown" ]]; then
-                LIKELIHOOD_FOR_URGENCY="low"
-              fi
-              case "${SEVERITY}_${LIKELIHOOD_FOR_URGENCY}" in
-                low_low|low_mid|low_high|mid_low) URGENCY="someday" ;;
-                mid_mid|high_low) URGENCY="planned" ;;
-                mid_high|high_mid|high_high) URGENCY="next" ;;
-                critical_low|critical_mid|critical_high) URGENCY="immediate" ;;
-                *) URGENCY="someday" ;;
-              esac
-
-              if [[ "$URGENCY" == "immediate" ]]; then
-                echo "🔬 DRY RUN: Would move issue to ⏭️ Ready (urgency=immediate)"
-              else
-                echo "🔬 DRY RUN: Would move issue to 📋 Backlog (urgency=$URGENCY)"
-              fi
-              continue
-            fi
 
             # Post triage comment
             echo "💬 Posting triage assessment comment..."
