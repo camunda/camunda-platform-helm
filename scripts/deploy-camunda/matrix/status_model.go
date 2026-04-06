@@ -115,9 +115,9 @@ func (m statusModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m statusModel) View() string {
+func (m statusModel) View() tea.View {
 	if m.quitting {
-		return ""
+		return tea.NewView("")
 	}
 
 	var b strings.Builder
@@ -232,7 +232,7 @@ func (m statusModel) View() string {
 	}
 	fmt.Fprintf(&b, "  %s\n", styleDim.Render("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
 
-	return b.String()
+	return tea.NewView(b.String())
 }
 
 // fmtStatusText returns the raw (uncolored) status string.
