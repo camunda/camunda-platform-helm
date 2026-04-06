@@ -5,7 +5,7 @@
 #
 # This workflow automatically triages new/untriaged issues using Glean Chat API (RAG).
 # It analyzes issues against Distro triage documentation and applies severity/likelihood labels,
-# posts a structured triage assessment comment, and moves issues from Inbox → Backlog.
+# posts a structured triage assessment comment, and moves issues to Ready or Backlog based on urgency.
 #
 # How it works:
 # - Triggers on issue events (opened, labeled, unlabeled, reopened, transferred) and manual dispatch
@@ -15,8 +15,8 @@
 # - Skips issues with confidence < 0.7 or 'triage:manual' label
 # - Applies severity/* and likelihood/* labels based on AI assessment
 # - Posts a triage assessment comment with rationale and similar issues
-# - Moves issue status from Inbox → Backlog
-# - The assign-urgency-to-issue.yml workflow then calculates urgency automatically
+# - Calculates urgency from severity/likelihood matrix
+# - Moves issue to ⏭️ Ready if urgency=immediate (bypassing normal queue cap), otherwise to 📋 Backlog
 #
 # Manual usage:
 #   gh workflow run ai-triage-issue.yml
@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Import Vault secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b  # v3.4.0
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -75,7 +75,7 @@ jobs:
           exportEnv: true
 
       - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a  # v2
         id: generate-github-token
         with:
           app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
@@ -356,7 +356,25 @@ jobs:
               if [[ "$MISSING_INFO" == "true" ]]; then
                 echo "🔬 DRY RUN: Would also apply label: BLOCKER/INFO"
               fi
-              echo "🔬 DRY RUN: Would move issue from Inbox → Backlog"
+
+              # Calculate urgency for dry run output
+              LIKELIHOOD_FOR_URGENCY="$LIKELIHOOD"
+              if [[ -z "$LIKELIHOOD_FOR_URGENCY" || "$LIKELIHOOD_FOR_URGENCY" == "unknown" ]]; then
+                LIKELIHOOD_FOR_URGENCY="low"
+              fi
+              case "${SEVERITY}_${LIKELIHOOD_FOR_URGENCY}" in
+                low_low|low_mid|low_high|mid_low) URGENCY="someday" ;;
+                mid_mid|high_low) URGENCY="planned" ;;
+                mid_high|high_mid|high_high) URGENCY="next" ;;
+                critical_low|critical_mid|critical_high) URGENCY="immediate" ;;
+                *) URGENCY="someday" ;;
+              esac
+
+              if [[ "$URGENCY" == "immediate" ]]; then
+                echo "🔬 DRY RUN: Would move issue to ⏭️ Ready (urgency=immediate)"
+              else
+                echo "🔬 DRY RUN: Would move issue to 📋 Backlog (urgency=$URGENCY)"
+              fi
               continue
             fi
 
@@ -379,8 +397,52 @@ jobs:
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
             fi
 
-            # Move issue from Inbox to Backlog
-            echo "📦 Moving issue from Inbox → Backlog..."
+            # Calculate urgency from severity/likelihood to determine target status
+            echo "🎯 Calculating urgency from severity/likelihood..."
+
+            # Default missing or unknown likelihood to low
+            LIKELIHOOD_FOR_URGENCY="$LIKELIHOOD"
+            if [[ -z "$LIKELIHOOD_FOR_URGENCY" || "$LIKELIHOOD_FOR_URGENCY" == "unknown" ]]; then
+              LIKELIHOOD_FOR_URGENCY="low"
+              echo "ℹ️  Likelihood not set or unknown, using low for urgency calculation"
+            fi
+
+            # Severity/Likelihood Matrix:
+            #   Likelihood →     low        mid        high
+            #   Severity ↓
+            #   low              someday    someday    someday
+            #   mid              someday    planned    next
+            #   high             planned    next       next
+            #   critical         immediate  immediate  immediate
+            #
+            case "${SEVERITY}_${LIKELIHOOD_FOR_URGENCY}" in
+              low_low|low_mid|low_high|mid_low)
+                URGENCY="someday"
+                ;;
+              mid_mid|high_low)
+                URGENCY="planned"
+                ;;
+              mid_high|high_mid|high_high)
+                URGENCY="next"
+                ;;
+              critical_low|critical_mid|critical_high)
+                URGENCY="immediate"
+                ;;
+              *)
+                URGENCY="someday"
+                ;;
+            esac
+
+            echo "🎯 Calculated urgency: $URGENCY"
+
+            # Determine target status based on urgency
+            if [[ "$URGENCY" == "immediate" ]]; then
+              TARGET_STATUS="⏭️ Ready"
+              echo "📦 Moving issue to Ready (urgency=immediate bypasses normal queue cap)..."
+            else
+              TARGET_STATUS="📋 Backlog"
+              echo "📦 Moving issue to Backlog..."
+            fi
 
             # Fetch project item and status field details
             PROJECT_QUERY='
@@ -418,13 +480,13 @@ jobs:
             PROJECT_ITEM_ID=$(echo "$PROJECT_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" \
               '.data.repository.issue.projectItems.nodes[] | select(.project.number==$pn) | .id')
             STATUS_FIELD_ID=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.field.id')
-            BACKLOG_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r \
-              '.data.organization.projectV2.field.options[] | select(.name=="📋 Backlog") | .id')
+            TARGET_STATUS_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r --arg status "$TARGET_STATUS" \
+              '.data.organization.projectV2.field.options[] | select(.name==$status) | .id')
 
             if [[ -z "$PROJECT_ITEM_ID" ]]; then
               echo "⚠️  Issue not in project #${PROJECT_NUMBER}, skipping status update"
-            elif [[ -z "$BACKLOG_OPTION_ID" ]]; then
-              echo "⚠️  'Backlog' status option not found in project, skipping status update"
+            elif [[ -z "$TARGET_STATUS_OPTION_ID" ]]; then
+              echo "⚠️  '$TARGET_STATUS' status option not found in project, skipping status update"
             else
               # Update status field
               # Use flat variables and inline the input object to avoid gh api graphql
@@ -434,9 +496,9 @@ jobs:
                 -f projectId="$PROJECT_V2_ID" \
                 -f itemId="$PROJECT_ITEM_ID" \
                 -f fieldId="$STATUS_FIELD_ID" \
-                -f optionId="$BACKLOG_OPTION_ID" > /dev/null
+                -f optionId="$TARGET_STATUS_OPTION_ID" > /dev/null
 
-              echo "✅ Moved to Backlog"
+              echo "✅ Moved to $TARGET_STATUS"
             fi
 
             echo "✅ Triage completed for issue #${ISSUE_NUMBER}"
