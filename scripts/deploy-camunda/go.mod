@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
-	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/charmbracelet/lipgloss/v2 v2.0.2
 	github.com/jwalton/gchalk v1.3.0
 	github.com/mattn/go-runewidth v0.0.22
 	github.com/spf13/cobra v1.10.2
