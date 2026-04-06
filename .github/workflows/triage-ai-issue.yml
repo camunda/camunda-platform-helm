@@ -230,11 +230,18 @@ jobs:
 
             if [[ "$?" != "0" ]]; then
               echo "❌ Glean API call failed"
-              echo GLEAN_RESPONSE=$GLEAN_RESPONSE
+              echo "GLEAN_RESPONSE (first 500 chars): ${GLEAN_RESPONSE:0:500}"
               continue
             fi
-            echo GLEAN_RESPONSE=$GLEAN_RESPONSE
 
+            # Validate JSON response
+            if ! echo "$GLEAN_RESPONSE" | jq -e . > /dev/null 2>&1; then
+              echo "❌ Invalid JSON response from Glean API"
+              echo "Response (first 500 chars): ${GLEAN_RESPONSE:0:500}"
+              continue
+            fi
+
+            echo "✅ Received valid JSON response from Glean API"
 
             # Extract AI response - join all text fragments from the CONTENT message
             AI_TEXT=$(echo "$GLEAN_RESPONSE" | jq -r '
@@ -242,11 +249,11 @@ jobs:
               | select(.messageType == "CONTENT" and .author == "GLEAN_AI")
               | .fragments[]
               | select(.text != null)
-              | .text] | join("")')
+              | .text] | join("")' 2>/dev/null)
 
-            if [[ -z "$AI_TEXT" ]]; then
+            if [[ -z "$AI_TEXT" || "$AI_TEXT" == "null" ]]; then
               echo "❌ No response from Glean AI"
-              echo "Response: $GLEAN_RESPONSE"
+              echo "Response (first 500 chars): ${GLEAN_RESPONSE:0:500}"
               continue
             fi
 
@@ -259,16 +266,23 @@ jobs:
               AI_JSON="$AI_TEXT"
             fi
 
+            # Validate AI JSON response
+            if ! echo "$AI_JSON" | jq -e . > /dev/null 2>&1; then
+              echo "❌ Invalid JSON in AI response"
+              echo "AI response (first 500 chars): ${AI_TEXT:0:500}"
+              continue
+            fi
+
             # Parse AI response
-            WORK_TYPE=$(echo "$AI_JSON" | jq -r '.work_type // "unknown"')
-            KIND=$(echo "$AI_JSON" | jq -r '.kind // ""')
-            SEVERITY=$(echo "$AI_JSON" | jq -r '.severity // "unknown"')
-            LIKELIHOOD=$(echo "$AI_JSON" | jq -r '.likelihood // "low"')
-            CONFIDENCE=$(echo "$AI_JSON" | jq -r '.confidence // 0.0')
-            RATIONALE=$(echo "$AI_JSON" | jq -r '.rationale // "No rationale provided"')
-            SIMILAR_ISSUES=$(echo "$AI_JSON" | jq -r '.similar_issues // [] | join(", ")')
-            MISSING_INFO=$(echo "$AI_JSON" | jq -r '.missing_info // false')
-            MISSING_INFO_DETAILS=$(echo "$AI_JSON" | jq -r '.missing_info_details // ""')
+            WORK_TYPE=$(echo "$AI_JSON" | jq -r '.work_type // "unknown"' 2>/dev/null)
+            KIND=$(echo "$AI_JSON" | jq -r '.kind // ""' 2>/dev/null)
+            SEVERITY=$(echo "$AI_JSON" | jq -r '.severity // "unknown"' 2>/dev/null)
+            LIKELIHOOD=$(echo "$AI_JSON" | jq -r '.likelihood // "low"' 2>/dev/null)
+            CONFIDENCE=$(echo "$AI_JSON" | jq -r '.confidence // 0.0' 2>/dev/null)
+            RATIONALE=$(echo "$AI_JSON" | jq -r '.rationale // "No rationale provided"' 2>/dev/null)
+            SIMILAR_ISSUES=$(echo "$AI_JSON" | jq -r '.similar_issues // [] | join(", ")' 2>/dev/null)
+            MISSING_INFO=$(echo "$AI_JSON" | jq -r '.missing_info // false' 2>/dev/null)
+            MISSING_INFO_DETAILS=$(echo "$AI_JSON" | jq -r '.missing_info_details // ""' 2>/dev/null)
 
             echo "📊 AI Assessment:"
             echo "   Work Type: $WORK_TYPE"
