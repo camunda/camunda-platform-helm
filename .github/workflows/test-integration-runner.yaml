@@ -432,6 +432,7 @@ jobs:
           echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
         env:
           TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || env.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || env.TEST_DOCKER_PASSWORD }}
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
