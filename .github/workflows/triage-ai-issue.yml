@@ -235,13 +235,13 @@ jobs:
             echo GLEAN_RESPONSE=$GLEAN_RESPONSE
 
 
-            # Extract AI response
+            # Extract AI response - join all text fragments from the CONTENT message
             AI_TEXT=$(echo "$GLEAN_RESPONSE" | jq -r '
-              .messages[]
+              [.messages[]
               | select(.messageType == "CONTENT" and .author == "GLEAN_AI")
               | .fragments[]
               | select(.text != null)
-              | .text' | tail -n 1)
+              | .text] | join("")')
 
             if [[ -z "$AI_TEXT" ]]; then
               echo "❌ No response from Glean AI"
