@@ -227,8 +227,6 @@ env:
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
-  TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
-  TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
   # OIDC.
   ENTRA_APP_CLIENT_ID: ${{ secrets.ENTRA_APP_CLIENT_ID }}
   ENTRA_APP_CLIENT_SECRET: ${{ secrets.ENTRA_APP_CLIENT_SECRET }}
