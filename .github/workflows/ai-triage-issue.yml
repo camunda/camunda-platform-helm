@@ -8,7 +8,8 @@
 # posts a structured triage assessment comment, and moves issues from Inbox → Backlog.
 #
 # How it works:
-# - Triggers on issue creation, daily at 10 AM UTC, and manual dispatch
+# - Triggers on issue events (opened, labeled, unlabeled, reopened, transferred) and manual dispatch
+# - Schedule trigger (daily at 10 AM UTC) is currently commented out pending manual testing
 # - Fetches untriaged issues from Project #33 (Status=Inbox, no TRIAGE:COMPLETED label)
 # - Calls Glean Chat API with issue content for AI-powered triage assessment
 # - Skips issues with confidence < 0.7 or 'triage:manual' label
@@ -25,9 +26,9 @@ name: AI-powered issue triage
 
 on:
   issues:
-    types: [opened]
-  schedule:
-    - cron: '0 10 * * *'  # Daily at 10:00 UTC
+    types: [opened, labeled, unlabeled, reopened, transferred]
+  # schedule:
+  #   - cron: '0 10 * * *'  # Daily at 10:00 UTC - commented out pending manual testing
   workflow_dispatch:
     inputs:
       issue_number:
