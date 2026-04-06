@@ -1,0 +1,416 @@
+# type: Project Management
+# owner: @camunda/distribution-team
+---
+# AI-Powered Bug & Task Triage Workflow
+#
+# This workflow automatically triages new/untriaged issues using Glean Chat API (RAG).
+# It analyzes issues against Distro triage documentation and applies severity/likelihood labels,
+# posts a structured triage assessment comment, and moves issues from Inbox → Backlog.
+#
+# How it works:
+# - Triggers on issue events (opened, labeled, unlabeled, reopened, transferred) and manual dispatch
+# - Schedule trigger (daily at 10 AM UTC) is currently commented out pending manual testing
+# - Fetches untriaged issues from Project #33 (Status=Inbox, no TRIAGE:COMPLETED label)
+# - Calls Glean Chat API with issue content for AI-powered triage assessment
+# - Skips issues with confidence < 0.7 or 'triage:manual' label
+# - Applies severity/* and likelihood/* labels based on AI assessment
+# - Posts a triage assessment comment with rationale and similar issues
+# - Moves issue status from Inbox → Backlog
+# - The assign-urgency-to-issue.yml workflow then calculates urgency automatically
+#
+# Manual usage:
+#   gh workflow run ai-triage-issue.yml
+#   gh workflow run ai-triage-issue.yml -f issue_number=123 -f dry_run=true
+#
+name: AI-powered issue triage
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, reopened, transferred]
+  # schedule:
+  #   - cron: '0 10 * * *'  # Daily at 10:00 UTC - commented out pending manual testing
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to triage (optional, for single-issue mode)'
+        required: false
+      dry_run:
+        description: 'Dry run — analyze but do not apply changes'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ai-triage-${{ github.event.inputs.issue_number || github.event.issue.number || 'bulk' }}
+  cancel-in-progress: false
+
+jobs:
+  ai-triage:
+    runs-on: ubuntu-latest
+    permissions: {}
+    timeout-minutes: 30
+    env:
+      OWNER: ${{ github.repository_owner }}
+      REPO: ${{ github.event.repository.name }}
+      PROJECT_NUMBER: 33
+      CONFIDENCE_THRESHOLD: '0.7'
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Import Vault secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+            secret/data/products/distribution/ci GLEAN_API_TOKEN;
+          exportEnv: true
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Set GitHub token
+        run: |
+          echo "GH_TOKEN=${{ steps.generate-github-token.outputs.token }}" >> "$GITHUB_ENV"
+
+      - name: Fetch untriaged issues
+        id: fetch_issues
+        run: |
+          set -euo pipefail
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔬 DRY RUN MODE - No changes will be made"
+          fi
+
+          # Determine which issues to process
+          if [[ -n "${{ github.event.inputs.issue_number }}" ]]; then
+            # Single issue mode (manual dispatch with issue_number)
+            ISSUE_NUMBERS="${{ github.event.inputs.issue_number }}"
+            echo "📋 Single issue mode: #${ISSUE_NUMBERS}"
+          elif [[ "${{ github.event_name }}" == "issues" ]]; then
+            # New issue event
+            ISSUE_NUMBERS="${{ github.event.issue.number }}"
+            echo "📋 New issue event: #${ISSUE_NUMBERS}"
+          else
+            # Bulk mode (scheduled or manual dispatch without issue_number)
+            echo "📋 Bulk mode: fetching untriaged issues from Project #${PROJECT_NUMBER}"
+
+            # Query for issues in Inbox status without TRIAGE:COMPLETED label
+            QUERY='
+              query($owner:String!, $repo:String!, $projectNumber:Int!) {
+                repository(owner:$owner, name:$repo) {
+                  issues(first:50, states:OPEN, orderBy:{field:CREATED_AT, direction:DESC}) {
+                    nodes {
+                      number
+                      labels(first:20) { nodes { name } }
+                      projectItems(first:10) {
+                        nodes {
+                          id
+                          project { number }
+                          fieldValues(first:20) {
+                            nodes {
+                              ... on ProjectV2ItemFieldSingleSelectValue {
+                                field { ... on ProjectV2SingleSelectField { name } }
+                                name
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }'
+
+            RESPONSE=$(gh api graphql -f query="$QUERY" -F owner="$OWNER" -F repo="$REPO" -F projectNumber="$PROJECT_NUMBER")
+
+            # Filter issues:
+            # - In target project (#33)
+            # - Status = "📥 Inbox"
+            # - No TRIAGE:COMPLETED label
+            # - No triage:manual label
+            ISSUE_NUMBERS=$(echo "$RESPONSE" | jq -r --argjson pn "$PROJECT_NUMBER" '
+              .data.repository.issues.nodes[]
+              | select(
+                  (.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name=="Status") | .name) == "📥 Inbox"
+                  and (.labels.nodes | map(.name) | any(. == "TRIAGE:COMPLETED") | not)
+                  and (.labels.nodes | map(.name) | any(. == "triage:manual") | not)
+                )
+              | .number' | tr '\n' ' ')
+
+            if [[ -z "$ISSUE_NUMBERS" ]]; then
+              echo "ℹ️  No untriaged issues found"
+              echo "has_issues=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "📋 Found untriaged issues: $ISSUE_NUMBERS"
+          fi
+
+          echo "has_issues=true" >> "$GITHUB_OUTPUT"
+          echo "issue_numbers=$ISSUE_NUMBERS" >> "$GITHUB_OUTPUT"
+
+      - name: Triage issues
+        if: steps.fetch_issues.outputs.has_issues == 'true'
+        run: |
+          set -euo pipefail
+
+          ISSUE_NUMBERS="${{ steps.fetch_issues.outputs.issue_numbers }}"
+
+          for ISSUE_NUMBER in $ISSUE_NUMBERS; do
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔍 Processing issue #${ISSUE_NUMBER}"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # Fetch issue details
+            ISSUE_DATA=$(gh api "/repos/$OWNER/$REPO/issues/$ISSUE_NUMBER")
+            ISSUE_TITLE=$(echo "$ISSUE_DATA" | jq -r '.title')
+            ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body // ""')
+            ISSUE_LABELS=$(echo "$ISSUE_DATA" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
+
+            echo "📄 Title: $ISSUE_TITLE"
+            echo "🏷️  Labels: ${ISSUE_LABELS:-none}"
+
+            # Check if already has triage:manual label
+            if echo "$ISSUE_LABELS" | grep -q "triage:manual"; then
+              echo "⏭️  Skipping: has triage:manual label"
+              continue
+            fi
+
+            # Prepare Glean Chat API request - build prompt programmatically
+            GLEAN_PROMPT="You are an expert bug and task triage assistant for the Camunda Platform Helm chart repository."
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"Analyze the following GitHub issue and provide a triage assessment following the Distro Bug Triage and Task/Toil/Non-Feature Triage guidelines from the Camunda documentation."
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}**"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**Description:**"$'\n'"${ISSUE_BODY}"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**Current Labels:** ${ISSUE_LABELS:-none}"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**Instructions:**"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"1. Check if this issue is within the scope of the SM Platform - Team Boundaries"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"2. Determine the work type: BUG, TASK, TOIL, FEATURE_REQUEST, or QUESTION"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"3. For bugs, assess severity (low, mid, high, critical, unknown) and likelihood (low, mid, high)"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"4. For tasks/toil, assess severity and likelihood based on impact and frequency"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"5. Search for similar or duplicate existing issues in camunda/camunda-platform-helm"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"6. Provide a confidence score (0.0-1.0) for your assessment"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"7. Provide a detailed rationale citing the triage guidelines"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**IMPORTANT:** Respond ONLY with valid JSON in this exact format:"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n''{"work_type":"BUG|TASK|TOIL|FEATURE_REQUEST|QUESTION","severity":"low|mid|high|critical|unknown","likelihood":"low|mid|high","confidence":0.0,"rationale":"...","similar_issues":["#123"],"missing_info":false,"missing_info_details":"..."}'
+
+            GLEAN_REQUEST=$(jq -n \
+              --arg prompt "$GLEAN_PROMPT" \
+              '{
+                "messages": [
+                  {
+                    "author": "USER",
+                    "fragments": [{"text": $prompt}],
+                    "messageType": "CONTENT"
+                  }
+                ]
+              }')
+
+            echo "🤖 Calling Glean Chat API..."
+
+            # Call Glean Chat API
+            GLEAN_RESPONSE=$(curl -s -X POST "https://camunda-be.glean.com/rest/api/v1/chat" \
+              -H "Authorization: Bearer ${GLEAN_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$GLEAN_REQUEST") || {
+              echo "❌ Glean API call failed"
+              continue
+            }
+
+            # Extract AI response
+            AI_TEXT=$(echo "$GLEAN_RESPONSE" | jq -r '
+              .messages[]
+              | select(.messageType == "CONTENT" and .author == "GLEAN_AI")
+              | .fragments[]
+              | select(.text != null)
+              | .text' | tail -n 1)
+
+            if [[ -z "$AI_TEXT" ]]; then
+              echo "❌ No response from Glean AI"
+              echo "Response: $GLEAN_RESPONSE"
+              continue
+            fi
+
+            echo "✅ Received AI response"
+
+            # Extract JSON from AI response (it might be wrapped in markdown code blocks)
+            AI_JSON=$(echo "$AI_TEXT" | sed -n '/^```json$/,/^```$/p' | sed '1d;$d')
+            if [[ -z "$AI_JSON" ]]; then
+              # Try without markdown wrapper
+              AI_JSON="$AI_TEXT"
+            fi
+
+            # Parse AI response
+            WORK_TYPE=$(echo "$AI_JSON" | jq -r '.work_type // "unknown"')
+            SEVERITY=$(echo "$AI_JSON" | jq -r '.severity // "unknown"')
+            LIKELIHOOD=$(echo "$AI_JSON" | jq -r '.likelihood // "low"')
+            CONFIDENCE=$(echo "$AI_JSON" | jq -r '.confidence // 0.0')
+            RATIONALE=$(echo "$AI_JSON" | jq -r '.rationale // "No rationale provided"')
+            SIMILAR_ISSUES=$(echo "$AI_JSON" | jq -r '.similar_issues // [] | join(", ")')
+            MISSING_INFO=$(echo "$AI_JSON" | jq -r '.missing_info // false')
+            MISSING_INFO_DETAILS=$(echo "$AI_JSON" | jq -r '.missing_info_details // ""')
+
+            echo "📊 AI Assessment:"
+            echo "   Work Type: $WORK_TYPE"
+            echo "   Severity: $SEVERITY"
+            echo "   Likelihood: $LIKELIHOOD"
+            echo "   Confidence: $CONFIDENCE"
+
+            # Check confidence threshold
+            if (( $(echo "$CONFIDENCE < $CONFIDENCE_THRESHOLD" | bc -l) )); then
+              echo "⏭️  Skipping: confidence ($CONFIDENCE) below threshold ($CONFIDENCE_THRESHOLD)"
+              continue
+            fi
+
+            # Skip if severity is unknown
+            if [[ "$SEVERITY" == "unknown" ]]; then
+              echo "⏭️  Skipping: severity is unknown"
+              continue
+            fi
+
+            # Prepare severity emoji
+            SEVERITY_EMOJI=""
+            case "$SEVERITY" in
+              low) SEVERITY_EMOJI="ℹ️" ;;
+              mid) SEVERITY_EMOJI="⚠️" ;;
+              high) SEVERITY_EMOJI="🔴" ;;
+              critical) SEVERITY_EMOJI="🚨" ;;
+            esac
+
+            # Prepare likelihood emoji
+            LIKELIHOOD_EMOJI=""
+            case "$LIKELIHOOD" in
+              low) LIKELIHOOD_EMOJI="🔹" ;;
+              mid) LIKELIHOOD_EMOJI="🔶" ;;
+              high) LIKELIHOOD_EMOJI="🔥" ;;
+            esac
+
+            # Prepare triage comment (build programmatically to avoid YAML quoting issues)
+            TRIAGE_COMMENT="## 🧭 Triage Assessment"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"| Field | Value |"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"|-------|-------|"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Work type | **${WORK_TYPE}** |"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Severity | ${SEVERITY_EMOJI} **${SEVERITY^}** |"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Likelihood | ${LIKELIHOOD_EMOJI} **${LIKELIHOOD^}** |"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Confidence | **${CONFIDENCE}** |"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"### 📝 Rationale"$'\n\n'"${RATIONALE}"
+
+            if [[ -n "$SIMILAR_ISSUES" && "$SIMILAR_ISSUES" != "null" ]]; then
+              TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"### 🔍 Similar Issues"$'\n\n'"${SIMILAR_ISSUES}"
+            fi
+
+            if [[ "$MISSING_INFO" == "true" && -n "$MISSING_INFO_DETAILS" ]]; then
+              ISSUE_AUTHOR=$(echo "$ISSUE_DATA" | jq -r '.user.login')
+              TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"### ⚠️ Missing Information"$'\n\n'"${MISSING_INFO_DETAILS}"
+              TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"@${ISSUE_AUTHOR} - Please provide the missing information above."
+            fi
+
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"---"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"🤖 This issue was automatically triaged by an AI-based system."
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"✋ If you believe this assessment is incorrect, update the labels or add the \`triage:manual\` label for human review."
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "🔬 DRY RUN: Would post triage comment"
+              echo "$TRIAGE_COMMENT"
+              echo ""
+              echo "🔬 DRY RUN: Would apply labels: severity/$SEVERITY, likelihood/$LIKELIHOOD, TRIAGE:COMPLETED"
+              if [[ "$MISSING_INFO" == "true" ]]; then
+                echo "🔬 DRY RUN: Would also apply label: BLOCKER/INFO"
+              fi
+              echo "🔬 DRY RUN: Would move issue from Inbox → Backlog"
+              continue
+            fi
+
+            # Post triage comment
+            echo "💬 Posting triage assessment comment..."
+            gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$TRIAGE_COMMENT"
+
+            # Apply labels
+            echo "🏷️  Applying labels..."
+            gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
+              --add-label "severity/$SEVERITY" \
+              --add-label "likelihood/$LIKELIHOOD" \
+              --add-label "TRIAGE:COMPLETED"
+
+            if [[ "$MISSING_INFO" == "true" ]]; then
+              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
+            fi
+
+            # Move issue from Inbox to Backlog
+            echo "📦 Moving issue from Inbox → Backlog..."
+
+            # Fetch project item and status field details
+            PROJECT_QUERY='
+              query($owner:String!, $repo:String!, $issueNumber:Int!, $projectNumber:Int!) {
+                repository(owner:$owner, name:$repo) {
+                  issue(number:$issueNumber) {
+                    projectItems(first:10) {
+                      nodes {
+                        id
+                        project { id number }
+                      }
+                    }
+                  }
+                }
+                organization(login:$owner) {
+                  projectV2(number:$projectNumber) {
+                    id
+                    field(name:"Status") {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                        options { id name }
+                      }
+                    }
+                  }
+                }
+              }'
+
+            PROJECT_DATA=$(gh api graphql -f query="$PROJECT_QUERY" \
+              -F owner="$OWNER" \
+              -F repo="$REPO" \
+              -F issueNumber="$ISSUE_NUMBER" \
+              -F projectNumber="$PROJECT_NUMBER")
+
+            PROJECT_V2_ID=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.id')
+            PROJECT_ITEM_ID=$(echo "$PROJECT_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" \
+              '.data.repository.issue.projectItems.nodes[] | select(.project.number==$pn) | .id')
+            STATUS_FIELD_ID=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.field.id')
+            BACKLOG_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r \
+              '.data.organization.projectV2.field.options[] | select(.name=="Backlog") | .id')
+
+            if [[ -z "$PROJECT_ITEM_ID" ]]; then
+              echo "⚠️  Issue not in project #${PROJECT_NUMBER}, skipping status update"
+            elif [[ -z "$BACKLOG_OPTION_ID" ]]; then
+              echo "⚠️  'Backlog' status option not found in project, skipping status update"
+            else
+              # Update status field
+              MUTATION='mutation($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}'
+              gh api graphql -f query="$MUTATION" \
+                -F input.projectId="$PROJECT_V2_ID" \
+                -F input.itemId="$PROJECT_ITEM_ID" \
+                -F input.fieldId="$STATUS_FIELD_ID" \
+                -F input.value.singleSelectOptionId="$BACKLOG_OPTION_ID" > /dev/null
+
+              echo "✅ Moved to Backlog"
+            fi
+
+            echo "✅ Triage completed for issue #${ISSUE_NUMBER}"
+          done
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ AI triage workflow completed"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
