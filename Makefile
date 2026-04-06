@@ -164,8 +164,7 @@ tools.zbctl-topology:
 .PHONY: helm.repos-add
 helm.repos-add:
 	@for repo_args in \
-		"camunda https://helm.camunda.io" \
-		"elastic https://helm.elastic.co" ; \
+		"camunda https://helm.camunda.io" ; \
 	do \
 		success=false; \
 		for i in 1 2 3; do \
