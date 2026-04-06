@@ -35,7 +35,7 @@ jobs:
         with:
           ref: "${{ inputs.camunda-helm-git-ref }}"
       - name: Install common software tooling
-        uses: camunda/infra-global-github-actions/common-tooling@main
+        uses: camunda/infra-global-github-actions/common-tooling@b20a0e8f64ea6554900bab2d3fb3906be613aa19 # main
         with:
           overwrite: "false"
           build-essential-enabled: "true"
