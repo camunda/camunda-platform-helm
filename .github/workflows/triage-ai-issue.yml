@@ -22,7 +22,7 @@
 #   gh workflow run ai-triage-issue.yml
 #   gh workflow run ai-triage-issue.yml -f issue_number=123 -f dry_run=true
 #
-name: AI-powered issue triage
+name: Triage - Issue triage
 
 on:
   issues:

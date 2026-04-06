@@ -27,7 +27,7 @@
 # Manual usage:
 #   gh workflow run assign-urgency-to-issue.yml -f issue_number=123 -f project_id=33
 #
-name: Assign urgency field when issue is updated
+name: Triage - Assign urgency
 
 on:
   issues:
