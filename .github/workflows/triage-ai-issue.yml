@@ -394,7 +394,7 @@ jobs:
               '.data.repository.issue.projectItems.nodes[] | select(.project.number==$pn) | .id')
             STATUS_FIELD_ID=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.field.id')
             BACKLOG_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r \
-              '.data.organization.projectV2.field.options[] | select(.name=="Backlog") | .id')
+              '.data.organization.projectV2.field.options[] | select(.name=="📋 Backlog") | .id')
 
             if [[ -z "$PROJECT_ITEM_ID" ]]; then
               echo "⚠️  Issue not in project #${PROJECT_NUMBER}, skipping status update"
