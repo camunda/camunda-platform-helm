@@ -10,7 +10,7 @@
 # How it works:
 # - Triggers on issue events (opened, labeled, unlabeled, reopened, transferred) and manual dispatch
 # - Schedule trigger (daily at 10 AM UTC) is currently commented out pending manual testing
-# - Fetches untriaged issues from Project #33 (Status=Inbox, no TRIAGE:COMPLETED label)
+# - Fetches untriaged issues from Project #33 (Status=Inbox/Backlog/Next, no TRIAGE:COMPLETED label)
 # - Calls Glean Chat API with issue content for AI-powered triage assessment
 # - Skips issues with confidence < 0.7 or 'triage:manual' label
 # - Applies severity/* and likelihood/* labels based on AI assessment
@@ -107,7 +107,7 @@ jobs:
             # Bulk mode (scheduled or manual dispatch without issue_number)
             echo "📋 Bulk mode: fetching untriaged issues from Project #${PROJECT_NUMBER}"
 
-            # Query for issues in Inbox status without TRIAGE:COMPLETED label
+            # Query for issues in Inbox/Backlog/Next status without TRIAGE:COMPLETED label
             QUERY='
               query($owner:String!, $repo:String!, $projectNumber:Int!) {
                 repository(owner:$owner, name:$repo) {
@@ -138,13 +138,13 @@ jobs:
 
             # Filter issues:
             # - In target project (#33)
-            # - Status = "📥 Inbox"
+            # - Status = "📥 Inbox", "📋 Backlog", or "⏳ Next"
             # - No TRIAGE:COMPLETED label
             # - No triage:manual label
             ISSUE_NUMBERS=$(echo "$RESPONSE" | jq -r --argjson pn "$PROJECT_NUMBER" '
               .data.repository.issues.nodes[]
               | select(
-                  (.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name=="Status") | .name) == "📥 Inbox"
+                  ((.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name=="Status") | .name) as $status | $status == "📥 Inbox" or $status == "📋 Backlog" or $status == "⏳ Next")
                   and (.labels.nodes | map(.name) | any(. == "TRIAGE:COMPLETED") | not)
                   and (.labels.nodes | map(.name) | any(. == "triage:manual") | not)
                 )
