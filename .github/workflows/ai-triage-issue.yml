@@ -230,6 +230,8 @@ jobs:
               continue
             }
 
+            echo GLEAN_RESPONSE=$GLEAN_RESPONSE
+
             # Extract AI response
             AI_TEXT=$(echo "$GLEAN_RESPONSE" | jq -r '
               .messages[]
