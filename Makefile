@@ -163,9 +163,25 @@ tools.zbctl-topology:
 # helm.repos-add: add Helm repos needed by the charts
 .PHONY: helm.repos-add
 helm.repos-add:
-	helm repo add camunda https://helm.camunda.io
-	helm repo add elastic https://helm.elastic.co
-	helm repo update
+	@for repo_args in \
+		"camunda https://helm.camunda.io" ; \
+	do \
+		success=false; \
+		for i in 1 2 3; do \
+			if helm repo add $$repo_args --force-update; then \
+				success=true; break; \
+			fi; \
+			if [ $$i -lt 3 ]; then \
+				echo "⚠️  helm repo add $$repo_args failed (attempt $$i/3), retrying in 5s..." >&2; \
+				sleep 5; \
+			fi; \
+		done; \
+		if [ "$$success" != "true" ]; then \
+			echo "❌ helm repo add $$repo_args failed after 3 attempts" >&2; \
+			exit 1; \
+		fi; \
+	done
+	@helm repo update
 
 # helm.dependency-update: update and downloads the dependencies for the Helm chart
 .PHONY: helm.dependency-update
