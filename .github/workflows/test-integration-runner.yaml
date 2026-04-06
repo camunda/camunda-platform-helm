@@ -509,6 +509,8 @@ jobs:
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || env.TEST_DOCKER_USERNAME }}
+          TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || env.TEST_DOCKER_PASSWORD }}
 
       ##########################################################################################################
       # Install
