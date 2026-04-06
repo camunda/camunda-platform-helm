@@ -204,8 +204,9 @@ jobs:
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"5. Search for similar or duplicate existing issues in camunda/camunda-platform-helm"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"6. Provide a confidence score (0.0-1.0) for your assessment"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"7. Provide a detailed rationale citing the triage guidelines"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"8. Determine the kind based on the Distro triage guidelines: bug (something not working as intended), chore (maintenance: docs updates, dependency bumps, etc), docs (documentation-only change), feature-request (new capability requested), internal (general internal improvement, not customer-facing), refactor (code restructuring without behavior change), research (investigation/spike/poc/proposal to reduce uncertainty)"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**IMPORTANT:** Respond ONLY with valid JSON in this exact format:"
-            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n''{"work_type":"BUG|TASK|TOIL|FEATURE_REQUEST|QUESTION","severity":"low|mid|high|critical|unknown","likelihood":"low|mid|high","confidence":0.0,"rationale":"...","similar_issues":["#123"],"missing_info":false,"missing_info_details":"..."}'
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n''{"work_type":"BUG|TASK|TOIL|FEATURE_REQUEST|QUESTION","kind":"bug|chore|docs|feature-request|internal|refactor|research","severity":"low|mid|high|critical|unknown","likelihood":"low|mid|high","confidence":0.0,"rationale":"...","similar_issues":["#123"],"missing_info":false,"missing_info_details":"..."}'
 
             GLEAN_REQUEST=$(jq -n \
               --arg prompt "$GLEAN_PROMPT" \
@@ -260,6 +261,7 @@ jobs:
 
             # Parse AI response
             WORK_TYPE=$(echo "$AI_JSON" | jq -r '.work_type // "unknown"')
+            KIND=$(echo "$AI_JSON" | jq -r '.kind // ""')
             SEVERITY=$(echo "$AI_JSON" | jq -r '.severity // "unknown"')
             LIKELIHOOD=$(echo "$AI_JSON" | jq -r '.likelihood // "low"')
             CONFIDENCE=$(echo "$AI_JSON" | jq -r '.confidence // 0.0')
@@ -270,6 +272,7 @@ jobs:
 
             echo "📊 AI Assessment:"
             echo "   Work Type: $WORK_TYPE"
+            echo "   Kind: ${KIND:-none}"
             echo "   Severity: $SEVERITY"
             echo "   Likelihood: $LIKELIHOOD"
             echo "   Confidence: $CONFIDENCE"
@@ -308,6 +311,7 @@ jobs:
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"| Field | Value |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"|-------|-------|"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Work type | **${WORK_TYPE}** |"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Kind | **${KIND:-unknown}** |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Severity | ${SEVERITY_EMOJI} **${SEVERITY^}** |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Likelihood | ${LIKELIHOOD_EMOJI} **${LIKELIHOOD^}** |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Confidence | **${CONFIDENCE}** |"
@@ -332,6 +336,9 @@ jobs:
               echo "$TRIAGE_COMMENT"
               echo ""
               echo "🔬 DRY RUN: Would apply labels: severity/$SEVERITY, likelihood/$LIKELIHOOD, TRIAGE:COMPLETED"
+              if [[ -n "$KIND" ]]; then
+                echo "🔬 DRY RUN: Would also apply label: kind/$KIND"
+              fi
               if [[ "$MISSING_INFO" == "true" ]]; then
                 echo "🔬 DRY RUN: Would also apply label: BLOCKER/INFO"
               fi
@@ -349,6 +356,10 @@ jobs:
               --add-label "severity/$SEVERITY" \
               --add-label "likelihood/$LIKELIHOOD" \
               --add-label "TRIAGE:COMPLETED"
+
+            if [[ -n "$KIND" ]]; then
+              gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "kind/$KIND"
+            fi
 
             if [[ "$MISSING_INFO" == "true" ]]; then
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
@@ -402,12 +413,14 @@ jobs:
               echo "⚠️  'Backlog' status option not found in project, skipping status update"
             else
               # Update status field
-              MUTATION='mutation($input:UpdateProjectV2ItemFieldValueInput!){updateProjectV2ItemFieldValue(input:$input){projectV2Item{id}}}'
+              # Use flat variables and inline the input object to avoid gh api graphql
+              # limitations with nested types like ProjectV2FieldValue
+              MUTATION='mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!,$optionId:String!){updateProjectV2ItemFieldValue(input:{projectId:$projectId,itemId:$itemId,fieldId:$fieldId,value:{singleSelectOptionId:$optionId}}){projectV2Item{id}}}'
               gh api graphql -f query="$MUTATION" \
-                -F input.projectId="$PROJECT_V2_ID" \
-                -F input.itemId="$PROJECT_ITEM_ID" \
-                -F input.fieldId="$STATUS_FIELD_ID" \
-                -F input.value.singleSelectOptionId="$BACKLOG_OPTION_ID" > /dev/null
+                -f projectId="$PROJECT_V2_ID" \
+                -f itemId="$PROJECT_ITEM_ID" \
+                -f fieldId="$STATUS_FIELD_ID" \
+                -f optionId="$BACKLOG_OPTION_ID" > /dev/null
 
               echo "✅ Moved to Backlog"
             fi
