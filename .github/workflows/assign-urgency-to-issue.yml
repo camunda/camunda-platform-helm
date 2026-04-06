@@ -1,0 +1,509 @@
+# type: Project Management
+# owner: @camunda/distribution-team
+---
+# Urgency Field Automation
+#
+# This workflow automatically calculates and updates the Urgency field for issues in GitHub Projects.
+#
+# How it works:
+# - Triggers when issues are opened, labeled, unlabeled, reopened, or transferred
+# - Calculates urgency based on severity/likelihood OR impact/when labels using risk matrices
+# - Updates the Urgency field in ProjectV2 with values: immediate, next, planned, someday
+# - Applies to any issue with a severity label OR impact label
+#
+# Labels (Option 1 - Risk-based):
+# - severity/{low,mid,high,critical} - Required to trigger severity/likelihood calculation
+# - likelihood/{low,mid,high,unknown} - Optional, defaults to unknown (treated as low)
+#
+# Labels (Option 2 - Impact-based):
+# - impact/{low,medium,high} - Required to trigger impact/when calculation
+# - when/{later,soon,now} - Optional, defaults to later
+#
+# Other labels:
+# - urgency-locked - Prevents automatic urgency updates while showing calculated value
+#
+# Note: If both severity and impact labels are present, impact/when takes precedence
+#
+# Manual usage:
+#   gh workflow run assign-urgency-to-issue.yml -f issue_number=123 -f project_id=33
+#
+name: Assign urgency field when issue is updated
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, reopened, transferred]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process (optional)'
+        required: false
+      project_id:
+        description: 'Target project ID (optional, defaults to 33)'
+        required: false
+      dry_run:
+        description: 'Dry run mode - calculate urgency but do not update field'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: update-urgency-${{ github.event.inputs.issue_number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  assign-urgency-to-issue:
+    runs-on: ubuntu-latest
+    permissions: {}
+    timeout-minutes: 10
+    env:
+      OWNER: ${{ github.repository_owner }}
+      REPO: ${{ github.event.repository.name }}
+      ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
+      PROJECT_NUMBER: ${{ github.event.inputs.project_id || '33' }}
+      URGENCY_FIELD_NAME: 'Urgency'
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Import Vault secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: true
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Set GitHub token
+        run: |
+          echo "GH_TOKEN=${{ steps.generate-github-token.outputs.token }}" >> "$GITHUB_ENV"
+
+      - name: Dump event issue JSON
+        run: |
+          cat << 'EOF'
+          ${{ toJSON(github.event.issue) }}
+          EOF
+
+      - name: Fetch issue and project data
+        id: fetch_data
+        run: |
+          set -euo pipefail
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔬 DRY RUN MODE - No changes will be made"
+          fi
+
+          echo "🔍 Fetching issue #${ISSUE_NUMBER} and project ${PROJECT_NUMBER} data"
+
+          # Single GraphQL query fetches: project info, project item, labels, issue type, and current urgency value
+          # projectItems section is needed to:
+          #   - Get PROJECT_ITEM_ID (required for updating the urgency field)
+          #   - Verify the issue is in the target project (filter by project.number)
+          #   - Fetch current urgency value (from fieldValues to check if update is needed)
+          # Note: Limited to first 100 projects - if issue is in 100+ projects, target might be missed
+          QUERY="query(\$owner:String!,\$repo:String!,\$issueNumber:Int!,\$projectNumber:Int!){
+            repository(owner:\$owner,name:\$repo){
+              issue(number:\$issueNumber){
+                id
+                issueType { name }
+                labels(first:100){ nodes { name } }
+                projectItems(first:100){
+                  nodes{
+                    id
+                    project{ id number }
+                    fieldValues(first:50){
+                      nodes{
+                        ... on ProjectV2ItemFieldSingleSelectValue {
+                          field { ... on ProjectV2SingleSelectField { name } }
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            organization(login:\$owner){
+              projectV2(number:\$projectNumber){ id }
+            }
+          }"
+
+          RESP=$(gh api graphql -f query="$QUERY" -F owner="$OWNER" -F repo="$REPO" -F issueNumber="$ISSUE_NUMBER" -F projectNumber="$PROJECT_NUMBER") || {
+            echo "❌ GraphQL query failed:"
+            echo "$RESP"
+            exit 1
+          }
+
+          # Store raw response parts in outputs for extraction where needed
+          ISSUE_DATA=$(echo "$RESP" | jq -c '.data.repository.issue')
+          PROJECT_DATA=$(echo "$RESP" | jq -c '.data.organization.projectV2')
+
+          echo "✅ Fetched issue and project data"
+
+          # Store raw data in outputs for next steps
+          {
+            echo "issue_data<<EOF"
+            echo "$ISSUE_DATA"
+            echo "EOF"
+            echo "project_data<<EOF"
+            echo "$PROJECT_DATA"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Validate project membership
+        id: validate_project
+        run: |
+          set -euo pipefail
+
+          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          PROJECT_DATA='${{ steps.fetch_data.outputs.project_data }}'
+
+          # Extract project information
+          TARGET_PROJECT_NODE_ID=$(echo "$PROJECT_DATA" | jq -r '.id // empty')
+          PROJECT_ITEM_ID=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" \
+            '.projectItems.nodes[] | select(.project.number==$pn) | .id // empty')
+
+          echo "📦 Project: #${PROJECT_NUMBER} (id: ${TARGET_PROJECT_NODE_ID:-not found})"
+          echo "🔗 Project item: ${PROJECT_ITEM_ID:-not found}"
+
+          # Check if project exists
+          if [[ -z "$TARGET_PROJECT_NODE_ID" ]]; then
+            echo "❌ Target project #${PROJECT_NUMBER} not found in organization ${OWNER}"
+            echo "💡 Check that the project exists and PROJECT_NUMBER is correct"
+            exit 1
+          fi
+
+          # Check if issue is in the project
+          if [[ -z "$PROJECT_ITEM_ID" ]]; then
+            echo "⏭️ Issue #${ISSUE_NUMBER} is not in target project #${PROJECT_NUMBER}; skipping"
+            echo "in_target_project=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "✅ Issue is in target project (item: $PROJECT_ITEM_ID)"
+
+          # Store extracted IDs for later use
+          {
+            echo "in_target_project=true"
+            echo "project_v2_id=$TARGET_PROJECT_NODE_ID"
+            echo "project_item_id=$PROJECT_ITEM_ID"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check labels
+        id: check_labels
+        if: steps.validate_project.outputs.in_target_project == 'true'
+        run: |
+          set -euo pipefail
+
+          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+
+          # Extract issue type and labels
+          ISSUE_TYPE=$(echo "$ISSUE_DATA" | jq -r '.issueType.name // empty')
+          LABELS=$(echo "$ISSUE_DATA" | jq -c '.labels.nodes | map(.name)')
+
+          echo "📋 Issue type: ${ISSUE_TYPE:-none}"
+
+          # Extract and validate severity, likelihood, impact & when
+          severity=$(echo "$LABELS" | jq -r '.[] | select(startswith("severity/")) | sub("severity/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "critical")' | head -n1)
+          likelihood=$(echo "$LABELS" | jq -r '.[] | select(startswith("likelihood/")) | sub("likelihood/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "unknown")' | head -n1)
+          impact=$(echo "$LABELS" | jq -r '.[] | select(startswith("impact/")) | sub("impact/"; "") | select(. == "low" or . == "medium" or . == "high")' | head -n1)
+          when=$(echo "$LABELS" | jq -r '.[] | select(startswith("when/")) | sub("when/"; "") | select(. == "later" or . == "soon" or . == "now")' | head -n1)
+
+          # Log extracted labels
+          if [[ -n "$severity" ]]; then
+            echo "🏷️ Severity: $severity"
+          fi
+
+          if [[ -n "$likelihood" ]]; then
+            echo "🏷️ Likelihood: $likelihood"
+          fi
+
+          if [[ -n "$impact" ]]; then
+            echo "🏷️ Impact: $impact"
+          fi
+
+          if [[ -n "$when" ]]; then
+            echo "🏷️ When: $when"
+          fi
+
+          # Log hint if no matching labels found
+          if [[ -z "$severity" && -z "$impact" ]]; then
+            echo "💡 No severity or impact labels found - urgency will not be calculated"
+          fi
+
+          # Check for urgency-locked label
+          has_urgency_locked=$(echo "$LABELS" | jq -r 'any(. == "urgency-locked")')
+
+          if [[ "$has_urgency_locked" == "true" ]]; then
+            echo "🔒 Issue has 'urgency-locked' label - automatic urgency updates will be skipped"
+          fi
+
+          {
+            echo "severity=$severity"
+            echo "likelihood=$likelihood"
+            echo "impact=$impact"
+            echo "when=$when"
+            echo "has_urgency_locked=$has_urgency_locked"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Calculate urgency from severity
+        id: calculate_urgency_from_severity
+        if: steps.check_labels.outputs.severity != ''
+        run: |
+          set -euo pipefail
+          SEVERITY='${{ steps.check_labels.outputs.severity }}'
+          LIKELIHOOD='${{ steps.check_labels.outputs.likelihood }}'
+
+          # Default missing or unknown likelihood to low
+          if [[ -z "$LIKELIHOOD" || "$LIKELIHOOD" == "unknown" ]]; then
+            LIKELIHOOD="low"
+            echo "ℹ️  Likelihood not set or unknown, using low for urgency calculation"
+          fi
+
+          # Severity/Likelihood Matrix:
+          #   Likelihood →     low        mid        high
+          #   Severity ↓
+          #   low              someday    someday    someday
+          #   mid              someday    planned    next
+          #   high             planned    next       next
+          #   critical         immediate  immediate  immediate
+          #
+          # Use case statement for bash 3.2+ compatibility
+          case "${SEVERITY}_${LIKELIHOOD}" in
+            low_low|low_mid|low_high|mid_low)
+              URGENCY="someday"
+              ;;
+            mid_mid|high_low)
+              URGENCY="planned"
+              ;;
+            mid_high|high_mid|high_high)
+              URGENCY="next"
+              ;;
+            critical_low|critical_mid|critical_high)
+              URGENCY="immediate"
+              ;;
+            *)
+              URGENCY="someday"
+              ;;
+          esac
+
+          echo "🎯 Urgency (from severity/likelihood): $URGENCY"
+          echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate urgency from impact
+        id: calculate_urgency_from_impact
+        if: steps.check_labels.outputs.impact != ''
+        run: |
+          set -euo pipefail
+          IMPACT='${{ steps.check_labels.outputs.impact }}'
+          WHEN='${{ steps.check_labels.outputs.when }}'
+
+          # Default when to later if not set
+          if [[ -z "$WHEN" ]]; then
+            WHEN="later"
+            echo "ℹ️  When not set, defaulting to later"
+          fi
+
+          # Impact/When Matrix:
+          #   When →           later      soon       now
+          #   Impact ↓
+          #   low              someday    planned    planned
+          #   medium           planned    next       next
+          #   high             planned    next       immediate
+          #
+          # Use case statement for bash 3.2+ compatibility
+          case "${IMPACT}_${WHEN}" in
+            low_later)
+              URGENCY="someday"
+              ;;
+            low_soon|low_now|medium_later|high_later)
+              URGENCY="planned"
+              ;;
+            medium_soon|medium_now|high_soon)
+              URGENCY="next"
+              ;;
+            high_now)
+              URGENCY="immediate"
+              ;;
+            *)
+              URGENCY="someday"
+              ;;
+          esac
+
+          echo "🎯 Urgency (from impact/when): $URGENCY"
+          echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+
+      - name: Validate urgency
+        id: validate_urgency
+        if: steps.calculate_urgency_from_severity.outputs.urgency != '' || steps.calculate_urgency_from_impact.outputs.urgency != ''
+        run: |
+          set -euo pipefail
+          URGENCY_FROM_SEVERITY='${{ steps.calculate_urgency_from_severity.outputs.urgency }}'
+          URGENCY_FROM_IMPACT='${{ steps.calculate_urgency_from_impact.outputs.urgency }}'
+
+          # Urgency priority: immediate > next > planned > someday
+          # Use case statement for bash 3.2+ compatibility
+          get_urgency_priority() {
+            case "$1" in
+              immediate) echo 4 ;;
+              next) echo 3 ;;
+              planned) echo 2 ;;
+              someday) echo 1 ;;
+              *) echo 0 ;;
+            esac
+          }
+
+          if [[ -n "$URGENCY_FROM_IMPACT" && -n "$URGENCY_FROM_SEVERITY" ]]; then
+            IMPACT_PRIORITY=$(get_urgency_priority "$URGENCY_FROM_IMPACT")
+            SEVERITY_PRIORITY=$(get_urgency_priority "$URGENCY_FROM_SEVERITY")
+
+            if (( IMPACT_PRIORITY >= SEVERITY_PRIORITY )); then
+              URGENCY="$URGENCY_FROM_IMPACT"
+            else
+              URGENCY="$URGENCY_FROM_SEVERITY"
+            fi
+            echo "🎯 Selected urgency: $URGENCY (from severity=$URGENCY_FROM_SEVERITY, from impact=$URGENCY_FROM_IMPACT)"
+          elif [[ -n "$URGENCY_FROM_IMPACT" ]]; then
+            URGENCY="$URGENCY_FROM_IMPACT"
+            echo "🎯 Selected urgency: $URGENCY"
+          else
+            URGENCY="$URGENCY_FROM_SEVERITY"
+            echo "🎯 Selected urgency: $URGENCY"
+          fi
+
+          echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+
+      - name: Update Urgency
+        if: steps.validate_project.outputs.in_target_project == 'true'
+        run: |
+          set -euo pipefail
+
+          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
+          PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
+          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
+          HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
+
+          # Extract current urgency value
+          CURRENT_URGENCY=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" --arg fieldName "$URGENCY_FIELD_NAME" \
+            '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name==$fieldName) | .name // empty')
+
+          echo "🔄 Update urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
+
+          # Check if urgency would change
+          if [[ "$CURRENT_URGENCY" == "$NEW_URGENCY" ]]; then
+            echo "⏭️ Urgency already set to '$NEW_URGENCY'"
+            exit 0
+          fi
+
+          # Check for urgency-locked label
+          if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
+            echo "🔒 Update skipped - issue has 'urgency-locked' label"
+            exit 0
+          fi
+
+          # Dry run check
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔬 DRY RUN: Update skipped (dry run mode)"
+            exit 0
+          fi
+
+          # Fetch project fields
+          FIELD_DATA=$(gh api graphql -f query="
+            query(\$projectId:ID!){
+              node(id:\$projectId){
+                ... on ProjectV2 {
+                  fields(first:100){
+                    nodes{
+                      ... on ProjectV2SingleSelectField { id name options { id name } }
+                    }
+                  }
+                }
+              }
+            }" -F projectId="$PROJECT_V2_ID") || {
+            echo "❌ Failed to fetch project fields"
+            exit 1
+          }
+
+          FIELD_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" \
+            '.data.node.fields.nodes[] | select(.name==$name) | .id // empty')
+
+          if [[ -z "$FIELD_ID" ]]; then
+            echo "❌ Field '$URGENCY_FIELD_NAME' does not exist in project '$PROJECT_V2_ID'"
+            echo "   Expected: A ProjectV2 single-select field named '$URGENCY_FIELD_NAME' with options: immediate, next, planned, someday"
+            echo "   Verify: The field exists in the target project and URGENCY_FIELD_NAME is configured correctly"
+            exit 1
+          fi
+
+          # Build mutation based on whether we're clearing or updating
+          if [[ -z "$NEW_URGENCY" ]]; then
+            JSON_PAYLOAD=$(jq -n \
+              --arg projectId "$PROJECT_V2_ID" \
+              --arg itemId "$PROJECT_ITEM_ID" \
+              --arg fieldId "$FIELD_ID" \
+              '{
+                "query": "mutation($input: ClearProjectV2ItemFieldValueInput!) { clearProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
+                "variables": {
+                  "input": {
+                    "projectId": $projectId,
+                    "itemId": $itemId,
+                    "fieldId": $fieldId
+                  }
+                }
+              }')
+          else
+            OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
+              '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
+
+            if [[ -z "$OPTION_ID" ]]; then
+              echo "❌ Option '$NEW_URGENCY' not found in field '$URGENCY_FIELD_NAME'"
+              echo "   Expected options: immediate, next, planned, someday"
+              echo "   Verify: The field has all required options configured in the project"
+              exit 1
+            fi
+
+            JSON_PAYLOAD=$(jq -n \
+              --arg projectId "$PROJECT_V2_ID" \
+              --arg itemId "$PROJECT_ITEM_ID" \
+              --arg fieldId "$FIELD_ID" \
+              --arg optionId "$OPTION_ID" \
+              '{
+                "query": "mutation($input: UpdateProjectV2ItemFieldValueInput!) { updateProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
+                "variables": {
+                  "input": {
+                    "projectId": $projectId,
+                    "itemId": $itemId,
+                    "fieldId": $fieldId,
+                    "value": { "singleSelectOptionId": $optionId }
+                  }
+                }
+              }')
+          fi
+
+          # Execute mutation
+          MUTATION_RESP=$(gh api graphql -H "Content-Type: application/json" --input - <<< "$JSON_PAYLOAD" 2>&1) || {
+            echo "❌ GraphQL mutation failed:"
+            echo "$MUTATION_RESP"
+            exit 1
+          }
+
+          if echo "$MUTATION_RESP" | jq -e '.errors' > /dev/null 2>&1; then
+            echo "❌ GraphQL mutation returned errors:"
+            echo "$MUTATION_RESP" | jq '.errors'
+            exit 1
+          fi
+
+          echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
