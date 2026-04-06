@@ -220,14 +220,14 @@ jobs:
 
             if [[ "$?" != "0" ]]; then
               echo "❌ Glean API call failed"
-              echo "GLEAN_RESPONSE (first 500 chars): ${GLEAN_RESPONSE:0:500}"
+              echo "GLEAN_RESPONSE: ${GLEAN_RESPONSE}"
               continue
             fi
 
             # Validate JSON response
             if ! echo "$GLEAN_RESPONSE" | jq -e . > /dev/null 2>&1; then
               echo "❌ Invalid JSON response from Glean API"
-              echo "Response (first 500 chars): ${GLEAN_RESPONSE:0:500}"
+              echo "Response: ${GLEAN_RESPONSE}"
               continue
             fi
 
@@ -243,7 +243,7 @@ jobs:
 
             if [[ -z "$AI_TEXT" || "$AI_TEXT" == "null" ]]; then
               echo "❌ No response from Glean AI"
-              echo "Response (first 500 chars): ${GLEAN_RESPONSE:0:500}"
+              echo "Response: ${GLEAN_RESPONSE}"
               continue
             fi
 
@@ -252,14 +252,18 @@ jobs:
             # Extract JSON from AI response (it might be wrapped in markdown code blocks)
             AI_JSON=$(echo "$AI_TEXT" | sed -n '/^```json$/,/^```$/p' | sed '1d;$d')
             if [[ -z "$AI_JSON" ]]; then
-              # Try without markdown wrapper
+              # Extract the first JSON object, ignoring any trailing text (e.g. follow-up questions from the AI)
+              AI_JSON=$(echo "$AI_TEXT" | python3 -c "import sys,json;t=sys.stdin.read().strip();d=json.JSONDecoder();o,_=d.raw_decode(t);print(json.dumps(o))" 2>/dev/null || true)
+            fi
+            if [[ -z "$AI_JSON" ]]; then
+              # Last resort: use the full text
               AI_JSON="$AI_TEXT"
             fi
 
             # Validate AI JSON response
             if ! echo "$AI_JSON" | jq -e . > /dev/null 2>&1; then
               echo "❌ Invalid JSON in AI response"
-              echo "AI response (first 500 chars): ${AI_TEXT:0:500}"
+              echo "AI response: ${AI_TEXT}"
               continue
             fi
 
