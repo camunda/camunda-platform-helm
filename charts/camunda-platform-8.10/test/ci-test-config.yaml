@@ -203,7 +203,7 @@ integration:
           features: [documentstore]
           platforms: [eks]
         - name: rdbms-external
-          enabled: true
+          enabled: false
           auth: keycloak
           shortname: rdbme
           flow: install
