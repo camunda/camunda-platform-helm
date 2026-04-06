@@ -5,7 +5,7 @@
 #
 # This workflow automatically triages new/untriaged issues using Glean Chat API (RAG).
 # It analyzes issues against Distro triage documentation and applies severity/likelihood labels,
-# posts a structured triage assessment comment, and moves issues from Inbox → Backlog.
+# posts a structured triage assessment comment, and moves issues to Backlog.
 #
 # How it works:
 # - Triggers on issue events (opened, labeled, unlabeled, reopened, transferred) and manual dispatch
@@ -15,12 +15,12 @@
 # - Skips issues with confidence < 0.7 or 'triage:manual' label
 # - Applies severity/* and likelihood/* labels based on AI assessment
 # - Posts a triage assessment comment with rationale and similar issues
-# - Moves issue status from Inbox → Backlog
-# - The assign-urgency-to-issue.yml workflow then calculates urgency automatically
+# - Moves issue to 📋 Backlog
+# - The assign-urgency-to-issue.yml workflow then calculates urgency and routes to Ready if immediate
 #
 # Manual usage:
 #   gh workflow run ai-triage-issue.yml
-#   gh workflow run ai-triage-issue.yml -f issue_number=123 -f dry_run=true
+#   gh workflow run ai-triage-issue.yml -f issue_number=123
 #
 name: Triage - Issue triage
 
@@ -34,11 +34,6 @@ on:
       issue_number:
         description: 'Issue number to triage (optional, for single-issue mode)'
         required: false
-      dry_run:
-        description: 'Dry run — analyze but do not apply changes'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ai-triage-${{ github.event.inputs.issue_number || github.event.issue.number || 'bulk' }}
@@ -54,14 +49,13 @@ jobs:
       REPO: ${{ github.event.repository.name }}
       PROJECT_NUMBER: 33
       CONFIDENCE_THRESHOLD: '0.7'
-      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
     defaults:
       run:
         shell: bash
 
     steps:
       - name: Import Vault secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b  # v3.4.0
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -75,7 +69,7 @@ jobs:
           exportEnv: true
 
       - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a  # v2
         id: generate-github-token
         with:
           app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
@@ -89,10 +83,6 @@ jobs:
         id: fetch_issues
         run: |
           set -euo pipefail
-
-          if [[ "$DRY_RUN" == "true" ]]; then
-            echo "🔬 DRY RUN MODE - No changes will be made"
-          fi
 
           # Determine which issues to process
           if [[ -n "${{ github.event.inputs.issue_number }}" ]]; then
@@ -345,21 +335,6 @@ jobs:
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"🤖 This issue was automatically triaged by an AI-based system."
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"✋ If you believe this assessment is incorrect, update the labels or add the \`triage:manual\` label for human review."
 
-            if [[ "$DRY_RUN" == "true" ]]; then
-              echo "🔬 DRY RUN: Would post triage comment"
-              echo "$TRIAGE_COMMENT"
-              echo ""
-              echo "🔬 DRY RUN: Would apply labels: severity/$SEVERITY, likelihood/$LIKELIHOOD, TRIAGE:COMPLETED"
-              if [[ -n "$KIND" ]]; then
-                echo "🔬 DRY RUN: Would also apply label: kind/$KIND"
-              fi
-              if [[ "$MISSING_INFO" == "true" ]]; then
-                echo "🔬 DRY RUN: Would also apply label: BLOCKER/INFO"
-              fi
-              echo "🔬 DRY RUN: Would move issue from Inbox → Backlog"
-              continue
-            fi
-
             # Post triage comment
             echo "💬 Posting triage assessment comment..."
             gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$TRIAGE_COMMENT"
@@ -379,8 +354,8 @@ jobs:
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "BLOCKER/INFO"
             fi
 
-            # Move issue from Inbox to Backlog
-            echo "📦 Moving issue from Inbox → Backlog..."
+            # Move issue to Backlog
+            echo "📦 Moving issue to Backlog..."
 
             # Fetch project item and status field details
             PROJECT_QUERY='

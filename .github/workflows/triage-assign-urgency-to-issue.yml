@@ -3,12 +3,14 @@
 ---
 # Urgency Field Automation
 #
-# This workflow automatically calculates and updates the Urgency field for issues in GitHub Projects.
+# This workflow automatically calculates and updates the Urgency field for issues in GitHub Projects,
+# and moves issues with immediate urgency to the Ready status.
 #
 # How it works:
 # - Triggers when issues are opened, labeled, unlabeled, reopened, or transferred
 # - Calculates urgency based on severity/likelihood OR impact/when labels using risk matrices
 # - Updates the Urgency field in ProjectV2 with values: immediate, next, planned, someday
+# - Moves issues with urgency=immediate to ⏭️ Ready status (bypassing normal queue cap)
 # - Applies to any issue with a severity label OR impact label
 #
 # Labels (Option 1 - Risk-based):
@@ -68,7 +70,7 @@ jobs:
 
     steps:
       - name: Import Vault secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b  # v3.4.0
         id: vault-secrets
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -81,7 +83,7 @@ jobs:
           exportEnv: true
 
       - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a  # v2
         id: generate-github-token
         with:
           app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
@@ -507,3 +509,97 @@ jobs:
           fi
 
           echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
+
+      - name: Move to Ready if immediate
+        if: steps.validate_urgency.outputs.urgency == 'immediate' && steps.validate_project.outputs.in_target_project == 'true'
+        run: |
+          set -euo pipefail
+
+          PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
+          PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
+          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
+
+          echo "🎯 Urgency is immediate - checking if issue should be moved to Ready"
+
+          # Fetch current status and Ready option
+          STATUS_DATA=$(gh api graphql -f query="
+            query(\$projectId:ID!, \$itemId:ID!){
+              node(id:\$projectId){
+                ... on ProjectV2 {
+                  field(name:\"Status\") {
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      options { id name }
+                    }
+                  }
+                }
+              }
+              node(id:\$itemId) {
+                ... on ProjectV2Item {
+                  fieldValues(first:20) {
+                    nodes {
+                      ... on ProjectV2ItemFieldSingleSelectValue {
+                        field { ... on ProjectV2SingleSelectField { name } }
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }" -F projectId="$PROJECT_V2_ID" -F itemId="$PROJECT_ITEM_ID") || {
+            echo "❌ Failed to fetch status data"
+            exit 1
+          }
+
+          STATUS_FIELD_ID=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[0].value.field.id // empty')
+          READY_OPTION_ID=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[0].value.field.options[] | select(.name=="⏭️ Ready") | .id // empty')
+          CURRENT_STATUS=$(echo "$STATUS_DATA" | jq -r '.data | to_entries[1].value.fieldValues.nodes[] | select(.field.name=="Status") | .name // empty')
+
+          if [[ -z "$STATUS_FIELD_ID" ]]; then
+            echo "⚠️  Status field not found in project"
+            exit 0
+          fi
+
+          if [[ -z "$READY_OPTION_ID" ]]; then
+            echo "⚠️  '⏭️ Ready' status option not found in project"
+            exit 0
+          fi
+
+          if [[ "$CURRENT_STATUS" == "⏭️ Ready" ]]; then
+            echo "⏭️  Issue already in Ready status"
+            exit 0
+          fi
+
+          echo "📦 Moving issue from '${CURRENT_STATUS:-(empty)}' → ⏭️ Ready (urgency=immediate bypasses normal queue cap)"
+
+          # Move to Ready
+          MOVE_PAYLOAD=$(jq -n \
+            --arg projectId "$PROJECT_V2_ID" \
+            --arg itemId "$PROJECT_ITEM_ID" \
+            --arg fieldId "$STATUS_FIELD_ID" \
+            --arg optionId "$READY_OPTION_ID" \
+            '{
+              "query": "mutation($input: UpdateProjectV2ItemFieldValueInput!) { updateProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
+              "variables": {
+                "input": {
+                  "projectId": $projectId,
+                  "itemId": $itemId,
+                  "fieldId": $fieldId,
+                  "value": { "singleSelectOptionId": $optionId }
+                }
+              }
+            }')
+
+          MOVE_RESP=$(gh api graphql -H "Content-Type: application/json" --input - <<< "$MOVE_PAYLOAD" 2>&1) || {
+            echo "❌ GraphQL mutation failed:"
+            echo "$MOVE_RESP"
+            exit 1
+          }
+
+          if echo "$MOVE_RESP" | jq -e '.errors' > /dev/null 2>&1; then
+            echo "❌ GraphQL mutation returned errors:"
+            echo "$MOVE_RESP" | jq '.errors'
+            exit 1
+          fi
+
+          echo "✅ Successfully moved issue to ⏭️ Ready"
