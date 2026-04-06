@@ -147,3 +147,4 @@ annotations:
       description: "Use 8.9-SNAPSHOT for values-digest"
     - kind: fixed
       description: "Prepare-values does not use correct config option for 8.9 and 8.10"
+
