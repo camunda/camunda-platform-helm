@@ -225,12 +225,15 @@ jobs:
             GLEAN_RESPONSE=$(curl -s -X POST "https://camunda-be.glean.com/rest/api/v1/chat" \
               -H "Authorization: Bearer ${GLEAN_API_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "$GLEAN_REQUEST") || {
-              echo "❌ Glean API call failed"
-              continue
-            }
+              -d "$GLEAN_REQUEST")
 
+            if [[ "$?" != "0" ]]; then
+              echo "❌ Glean API call failed"
+              echo GLEAN_RESPONSE=$GLEAN_RESPONSE
+              continue
+            fi
             echo GLEAN_RESPONSE=$GLEAN_RESPONSE
+
 
             # Extract AI response
             AI_TEXT=$(echo "$GLEAN_RESPONSE" | jq -r '
