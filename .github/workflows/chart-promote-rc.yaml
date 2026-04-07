@@ -471,13 +471,13 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/distribution/ci SLACK_DISTRO_TEAM_WEBHOOK;
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
           exportEnv: false
       - name: Send Slack notification
         continue-on-error: true
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
-          webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_TEAM_WEBHOOK }}
+          webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
             blocks:
