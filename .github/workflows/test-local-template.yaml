@@ -83,8 +83,6 @@ jobs:
       - name: Create Docker login secret
         env:
           TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
-          TEST_DOCKER_USERNAME: ${{ env.TEST_DOCKER_USERNAME }}
-          TEST_DOCKER_PASSWORD: ${{ env.TEST_DOCKER_PASSWORD }}
         run: |
           kubectl create namespace ${{ env.TEST_NAMESPACE }}
           task docker-login --taskfile test/integration/scenarios/lib/init-seed-taskfile.yaml

@@ -435,9 +435,6 @@ jobs:
       - name: CI Setup - Login to Docker Hub
         run: |
           echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
-        env:
-          TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || env.TEST_DOCKER_USERNAME }}
-          TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || env.TEST_DOCKER_PASSWORD }}
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
@@ -510,8 +507,6 @@ jobs:
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || env.TEST_DOCKER_USERNAME }}
-          TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || env.TEST_DOCKER_PASSWORD }}
 
       ##########################################################################################################
       # Install
@@ -863,9 +858,6 @@ jobs:
       - name: CI Setup - Login to Docker Hub
         run: |
           echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
-        env:
-          TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || env.TEST_DOCKER_USERNAME }}
-          TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || env.TEST_DOCKER_PASSWORD }}
 
       - name: CI Setup - Add Helm repos and update Helm dependencies
         run: |
