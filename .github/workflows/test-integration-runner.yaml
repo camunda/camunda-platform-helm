@@ -788,7 +788,6 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
             secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
