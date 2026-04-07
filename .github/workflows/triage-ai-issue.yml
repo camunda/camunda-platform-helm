@@ -49,7 +49,7 @@ on:
         required: true
 
 concurrency:
-  group: ai-triage-${{ github.event.inputs.issue_number || github.event.issue.number || 'bulk' }}
+  group: ai-triage-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number || 'bulk' }}
   cancel-in-progress: false
 
 jobs:

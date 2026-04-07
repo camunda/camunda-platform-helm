@@ -51,7 +51,7 @@ on:
     inputs:
       issue_number:
         description: 'Issue number to process'
-        required: false
+        required: true
         type: string
       project_id:
         description: 'Target project ID (defaults to 33)'
@@ -71,7 +71,7 @@ on:
         required: true
 
 concurrency:
-  group: update-urgency-${{ github.event.inputs.issue_number || github.event.issue.number }}
+  group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
