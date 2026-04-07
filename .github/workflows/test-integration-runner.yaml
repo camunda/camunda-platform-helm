@@ -358,7 +358,6 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/distribution/ci INTEGRATION_TEST_CREDENTIALS;
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
@@ -478,10 +477,6 @@ jobs:
           kubectl annotate ns $TEST_NAMESPACE janitor/ttl=${{ inputs.deployment-ttl || '1h' }} --overwrite
           kubectl annotate ns $TEST_NAMESPACE camunda.cloud/ephemeral=true --overwrite
           kubectl annotate ns $TEST_NAMESPACE github-workflow-run-url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID --overwrite
-          if [[ "${{ inputs.distro-platform }}" == "eks" ]]; then
-            echo $INTEGRATION_TEST_CREDENTIALS | base64 -d > integration-test-credentials.yaml
-            kubectl apply -f integration-test-credentials.yaml -n $TEST_NAMESPACE
-          fi
           kubectl get ns $TEST_NAMESPACE -o yaml
 
       - name: Apply Vault mapped Secret
