@@ -216,8 +216,6 @@ orchestration:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
-  importer:
-    enabled: true
 
 console:
   enabled: true
