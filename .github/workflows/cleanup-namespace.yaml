@@ -72,6 +72,21 @@ jobs:
             kubectl
             oc
 
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+          exportEnv: true
+
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
         uses: ./.github/actions/cluster-auth
@@ -81,10 +96,10 @@ jobs:
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.cluster-name] }}
-          GKE_CLUSTER_LOC:  ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.cluster-location] }}
-          GKE_WIP:          ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.workload-identity-provider] }}
-          GKE_SA:           ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.service-account] }}
+          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.server-url] }}
           ROSA_USER:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.username] }}
           ROSA_PASS:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.password] }}
