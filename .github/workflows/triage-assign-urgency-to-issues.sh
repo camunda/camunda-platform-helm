@@ -3,17 +3,17 @@ set -euo pipefail
 
 # --- Configuration with CLI arguments and fallbacks ---
 ORG_NAME="camunda"                                    # Hardcoded organization
-REPO_NAME="camunda-platform-helm"                     # Hardcoded repository
 PROJECT_ID="${1:-33}"                                 # Numeric Project V2 number
 BRANCH="${2:-main}"                                   # Branch to trigger workflow on
 LIMIT="${3:-20}"                                      # Number of issues to process
 SKIP_ASSIGNED="${4:-false}"                           # Skip issues that already have urgency assigned (true/false)
 DRY_RUN="${5:-false}"                                 # Dry run mode - don't trigger workflows (true/false)
+REPO_NAME="${6:-camunda-platform-helm}"               # Repository name (can be overridden for cross-repo use)
 
 # Display usage if help is requested
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   cat <<EOF
-Usage: $0 [PROJECT_ID] [BRANCH] [LIMIT] [SKIP_ASSIGNED] [DRY_RUN]
+Usage: $0 [PROJECT_ID] [BRANCH] [LIMIT] [SKIP_ASSIGNED] [DRY_RUN] [REPO_NAME]
 
 Arguments (all optional, with defaults):
   PROJECT_ID       Numeric Project V2 number (default: 33)
@@ -21,13 +21,15 @@ Arguments (all optional, with defaults):
   LIMIT            Number of issues to process (default: 20)
   SKIP_ASSIGNED    Skip issues that already have urgency assigned (default: false)
   DRY_RUN          Don't trigger workflows, just show what would be done (default: false)
+  REPO_NAME        Repository name (default: camunda-platform-helm)
 
 Examples:
-  $0                        # Use all defaults - process all issues in project 33
-  $0 33                     # Specify project
-  $0 33 main 50             # All parameters except skip filter and dry run
-  $0 33 main 50 true        # Only process issues without urgency
-  $0 33 main 50 true true   # Dry run - show what would be processed
+  $0                                # Use all defaults
+  $0 33                             # Specify project
+  $0 33 main 50                     # All parameters except skip filter, dry run, and repo name
+  $0 33 main 50 true                # Only process issues without urgency
+  $0 33 main 50 true true           # Dry run - show what would be processed
+  $0 33 main 50 true true team-distribution  # Cross-repo usage
 EOF
   exit 0
 fi

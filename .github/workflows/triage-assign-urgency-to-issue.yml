@@ -47,6 +47,28 @@ on:
         required: false
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: false
+        type: string
+      project_id:
+        description: 'Target project ID (defaults to 33)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run mode'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 concurrency:
   group: update-urgency-${{ github.event.inputs.issue_number || github.event.issue.number }}
@@ -60,10 +82,10 @@ jobs:
     env:
       OWNER: ${{ github.repository_owner }}
       REPO: ${{ github.event.repository.name }}
-      ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
-      PROJECT_NUMBER: ${{ github.event.inputs.project_id || '33' }}
+      ISSUE_NUMBER: ${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
+      PROJECT_NUMBER: ${{ inputs.project_id || github.event.inputs.project_id || '33' }}
       URGENCY_FIELD_NAME: 'Urgency'
-      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+      DRY_RUN: ${{ inputs.dry_run || github.event.inputs.dry_run || 'false' }}
     defaults:
       run:
         shell: bash
