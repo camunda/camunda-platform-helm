@@ -1031,6 +1031,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
       - name: Import Vault secrets
+        if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
@@ -1109,6 +1110,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
       - name: Import Vault secrets
+        if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
@@ -1182,6 +1184,7 @@ jobs:
           repository: camunda/camunda-platform-helm
           ref: ${{ inputs.camunda-helm-git-ref }}
       - name: Import Vault secrets
+        if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
@@ -1261,6 +1264,7 @@ jobs:
           ref: ${{ inputs.camunda-helm-git-ref }}
 
       - name: Import Vault secrets
+        if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
@@ -1441,6 +1445,7 @@ jobs:
           flow: "${{ inputs.flow }}"
 
       - name: Import Vault secrets
+        if: inputs.distro-platform == 'gke'
         id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:

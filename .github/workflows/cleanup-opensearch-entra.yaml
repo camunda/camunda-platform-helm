@@ -33,16 +33,20 @@ jobs:
             secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
             secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
             secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_NAME;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
+            secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
           exportEnv: true
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:
-          cluster-name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          cluster-name: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          cluster-location: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          workload-identity-provider: ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
       - name: get basicauth var
         run: |
           echo "OPENSEARCH_BASIC_AUTH_BASE64=$(echo -n "${OPENSEARCH_USERNAME}:${OPENSEARCH_PASSWORD}" | base64)" >> $GITHUB_ENV
