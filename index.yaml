@@ -5181,6 +5181,99 @@ entries:
     - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-13.0.0-alpha2/camunda-platform-13.0.0-alpha2.tgz
     version: 13.0.0-alpha2
   - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Reference bitnami subcharts internally rather than relying on external repositories"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/component-image-versions: |
+        zeebe: 8.7.26
+        operate: 8.7.26
+        tasklist: 8.7.26
+        identity: 8.7.17
+        optimize: 8.7.19
+        webModeler: 8.7.19
+        connectors: 8.7.19
+        console: 8.7.103
+      camunda.io/helmCLIVersion: 3.20.1
+      camunda.io/imageOverrides: |+
+        zeebe: 8.7.26
+        connectors: 8.7.19
+        console: 8.7.103
+        operate: 8.7.26
+        optimize: 8.7.19
+        modeler: 8.7.19
+        tasklist: 8.7.26
+
+    apiVersion: v2
+    appVersion: 8.7.x
+    created: "2026-04-07T10:56:27.995916855Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 48c6905a863b01b7afad441b4e560ec9d073a86d673c7340d7180fb213d28aef
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.7-12.8.4/camunda-platform-12.8.4.tgz
+    version: 12.8.4
+  - annotations:
       artifacthub.io/changes: ""
       artifacthub.io/containsSecurityUpdates: "false"
       artifacthub.io/links: |
@@ -26701,4 +26794,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-03T09:20:18.855299198Z"
+generated: "2026-04-07T10:56:27.996713468Z"
