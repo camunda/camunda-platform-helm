@@ -33,6 +33,7 @@ orchestration:
       value: "$ORCHESTRATION_INDEX_PREFIX-operate-$FLOW"
     - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
       value: "$ORCHESTRATION_INDEX_PREFIX-operate-$FLOW"
+
 optimize:
   enabled: true
   env:

@@ -280,9 +280,9 @@ func (s *OpenShiftIngressTLSTest) TestHttpIngressOpenShiftTLSAutoManagement() {
 		{
 			Name: "NoTLSBlockWhenTLSDisabled",
 			Values: map[string]string{
-				"global.ingress.enabled":     "true",
-				"global.ingress.tls.enabled": "false",
-				"global.host":                "camunda.example.com",
+				"global.ingress.enabled":                              "true",
+				"global.ingress.tls.enabled":                          "false",
+				"global.host":                                         "camunda.example.com",
 				"global.compatibility.openshift.adaptSecurityContext": "disabled",
 			},
 			Template: "templates/common/ingress-http.yaml",
