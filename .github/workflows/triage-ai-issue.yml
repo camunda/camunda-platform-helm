@@ -188,12 +188,6 @@ jobs:
             echo "📄 Title: $ISSUE_TITLE"
             echo "🏷️  Labels: ${ISSUE_LABELS:-none}"
 
-            # Check if already triaged or marked for manual review
-            if echo "$ISSUE_LABELS" | grep -qi "TRIAGE:COMPLETED"; then
-              echo "⏭️  Skipping: already has TRIAGE:COMPLETED label"
-              continue
-            fi
-
             # Check if already has triage:manual label
             if echo "$ISSUE_LABELS" | grep -q "triage:manual"; then
               echo "⏭️  Skipping: has triage:manual label"
