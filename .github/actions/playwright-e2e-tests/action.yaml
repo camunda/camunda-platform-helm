@@ -215,7 +215,7 @@ runs:
       id: report_date
       if: ${{ !cancelled() }}
       shell: bash
-      run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+      run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_OUTPUT"
 
     - name: Upload Playwright JSON results
       if: ${{ !cancelled() }}
