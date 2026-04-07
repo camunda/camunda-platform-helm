@@ -3,11 +3,7 @@ matrix:
     - name: Kubernetes
       type: kubernetes
       platform: gke
-      secret:
-        cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
-        cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
-        workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
-        service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
+      secret: {}
       if: $INPUTS_PLATFORMS_GKE
     - name: Kubernetes
       type: kubernetes
