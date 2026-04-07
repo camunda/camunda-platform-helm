@@ -72,6 +72,9 @@ jobs:
           chart-dir: "${{ inputs.camunda-helm-dir }}"
           values-enterprise: false
           values-digest: true
+      - name: Docker Hub login
+        run: |
+          echo "${TEST_DOCKER_PASSWORD}" | docker login -u "${TEST_DOCKER_USERNAME}" --password-stdin
       - name: Create KIND cluster
         run: |
           kind create cluster --name camunda-platform-local
