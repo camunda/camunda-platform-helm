@@ -1,0 +1,27 @@
+---
+apiVersion: v1
+stringData:
+  password: $RDBMS_POSTGRESQL_PASSWORD
+  username: $RDBMS_POSTGRESQL_USERNAME
+kind: Secret
+metadata:
+  name: postgresql-secret
+  namespace: $NAMESPACE
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-cluster
+  namespace: $NAMESPACE
+spec:
+  instances: 1
+  managed:
+    roles:
+      - name: app
+        ensure: present
+        superuser: true
+        login: true
+        passwordSecret:
+          name: postgresql-secret
+  storage:
+    size: 1Gi

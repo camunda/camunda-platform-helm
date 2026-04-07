@@ -1,4 +1,4 @@
-# RDBMS feature configuration for 8.9 (PostgreSQL)
+# RDBMS feature configuration for 8.10 (PostgreSQL)
 # Layer 4: Feature - RDBMS secondary storage
 
 orchestration:
@@ -6,7 +6,7 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
-        url: jdbc:postgresql://postgresql-cluster-rw:5432/app
+        url: ${POSTGRESQL_JDBC_URL}/${GITHUB_WORKFLOW_JOB_ID}
         username: ${RDBMS_POSTGRESQL_USERNAME}
         secret:
           inlineSecret: ${RDBMS_POSTGRESQL_PASSWORD}

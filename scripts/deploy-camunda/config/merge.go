@@ -551,7 +551,7 @@ func (f *RuntimeFlags) MigrateDeprecatedFlags() {
 		// Filter out features that are now in other categories
 		for _, feature := range f.Deprecated.ValuesFeatures {
 			switch feature {
-			case "rdbms", "rdbms-oracle":
+			case "rdbms", "rdbms-external", "rdbms-oracle":
 				// These moved to persistence - only set if persistence not already set
 				if f.Selection.Persistence == "" {
 					f.Selection.Persistence = feature
