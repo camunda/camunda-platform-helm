@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.6.0
+version: 13.7.0
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -73,6 +73,4 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Add tpl rendering for global identity auth URL values"
-    - kind: fixed
-      description: "Reference bitnami subcharts internally rather than relying on external repositories"
+      description: "Add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10"
