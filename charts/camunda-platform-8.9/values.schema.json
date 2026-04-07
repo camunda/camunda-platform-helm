@@ -4848,6 +4848,29 @@
                         }
                     }
                 },
+                "importer": {
+                    "type": "object",
+                    "properties": {
+                        "envFrom": {
+                            "type": "array",
+                            "description": "list of environment variables to import from configMapRef and secretRef",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumes": {
+                            "type": "array",
+                            "description": "can be used to define extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
+                        },
+                        "extraVolumeMounts": {
+                            "type": "array",
+                            "description": "can be used to mount extra volumes for the importer pod",
+                            "default": [],
+                            "items": {}
+                        }
+                    }
+                },
                 "sidecars": {
                     "type": "array",
                     "description": "can be used to attach extra containers to the deployment",
