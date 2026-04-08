@@ -77,17 +77,6 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 ) | quote }}
 {{- end }}
 
-{{/*
-[orchestration] Defines extra labels for orchestration importer.
-*/}}
-{{ define "orchestration.extraLabelsImporter" -}}
-app.kubernetes.io/component: {{ printf "%s-importer" (include "orchestration.componentName" .) }}
-app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
-    "base" .Values.global
-    "overlay" .Values.orchestration
-    "chart" .Chart
-) | quote }}
-{{- end }}
 
 {{/*
 [orchestration] Define common labels for orchestration, combining the match labels and transient labels, which might change on updating
@@ -112,16 +101,6 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
 {{- end -}}
 
 {{/*
-[orchestration] Define common labels for orchestration importer, combining the match labels and transient labels, which might change on updating
-(version depending). These labels shouldn't be used on matchLabels selector, since the selectors are immutable.
-*/}}
-{{- define "orchestration.labelsImporter" -}}
-    {{- include "camundaPlatform.labels" . }}
-    {{- "\n" }}
-    {{- include "orchestration.extraLabelsImporter" . }}
-{{- end -}}
-
-{{/*
 [orchestration] Defines match labels for orchestration, which are extended by sub-charts and should be used in matchLabels selectors.
 */}}
 {{- define "orchestration.matchLabels" -}}
@@ -129,15 +108,6 @@ app.kubernetes.io/version: {{ include "camundaPlatform.versionLabel" (dict
     {{- "\n" -}}
     {{/*    For backward compatibility, the component label is set to "zeebe-broker".*/}}
     {{- include "orchestration.brokerLabel" . }}
-{{- end -}}
-
-{{/*
-[orchestration] Defines match labels for orchestration importer, which are extended by sub-charts and should be used in matchLabels selectors.
-*/}}
-{{- define "orchestration.matchLabelsImporter" -}}
-    {{- include "camundaPlatform.matchLabels" . }}
-    {{- "\n" -}}
-    app.kubernetes.io/component: {{ printf "%s-importer" (include "orchestration.componentName" .) }}
 {{- end -}}
 
 {{/*
