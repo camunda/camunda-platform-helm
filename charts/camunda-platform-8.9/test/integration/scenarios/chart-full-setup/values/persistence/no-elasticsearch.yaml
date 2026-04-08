@@ -21,3 +21,6 @@ identityKeycloak:
 
 console:
   enabled: false
+
+webModeler:
+  enabled: false
