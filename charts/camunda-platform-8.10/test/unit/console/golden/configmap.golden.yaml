@@ -61,9 +61,9 @@ data:
               url: http://localhost:8080/tasklist
               readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
-            - name: Orchestration Identity
+            - name: Orchestration Admin
               id: orchestrationIdentity
-              url: http://localhost:8080/identity
+              url: http://localhost:8080/admin
               readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
               metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus
           

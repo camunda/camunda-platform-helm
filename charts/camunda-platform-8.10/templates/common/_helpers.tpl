@@ -477,7 +477,7 @@ Orchestration Identity templates.
 [camunda-platform] Orchestration Identity external URL.
 */}}
 {{- define "camundaPlatform.orchestrationIdentityExternalURL" }}
-  {{- printf "%s/identity" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
+  {{- printf "%s/admin" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
 {{- end -}}
 
 
@@ -759,7 +759,7 @@ Release templates.
     url: {{ include "camundaPlatform.tasklistExternalURL" . }}
     readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath)) }}
     metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.metrics.prometheus)) }}
-  - name: Orchestration Identity
+  - name: Orchestration Admin
     id: orchestrationIdentity
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
     url: {{ include "camundaPlatform.orchestrationIdentityExternalURL" . }}
