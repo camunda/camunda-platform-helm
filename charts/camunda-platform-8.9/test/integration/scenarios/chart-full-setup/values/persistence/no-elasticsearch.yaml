@@ -12,3 +12,9 @@ elasticsearch:
 
 optimize:
   enabled: false
+
+identity:
+  enabled: false
+
+identityKeycloak:
+  enabled: false

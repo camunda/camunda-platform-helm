@@ -183,7 +183,7 @@ integration:
           platforms: [gke]
         - name: noSecondaryStorage
           enabled: true
-          auth: keycloak
+          auth: basic
           shortname: nosec
           exclude: []
           flow: install
