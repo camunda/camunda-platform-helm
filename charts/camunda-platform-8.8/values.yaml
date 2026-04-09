@@ -828,6 +828,8 @@ identity:
     name: ""
     ## @param identity.serviceAccount.annotations can be used to set the annotations of the identity service account
     annotations: {}
+    ## @param identity.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param identity.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: true
 
@@ -1338,6 +1340,8 @@ console:
     name: ""
     ## @param console.serviceAccount.annotations can be used to set the annotations of the service account
     annotations: {}
+    ## @param console.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param console.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -2040,6 +2044,8 @@ webModeler:
     name: ""
     ## @param webModeler.serviceAccount.annotations can be used to set the annotations of the WebModeler service account
     annotations: {}
+    ## @param webModeler.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param webModeler.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -2328,6 +2334,8 @@ connectors:
     name: ""
     ## @param connectors.serviceAccount.annotations can be used to set the annotations of the service account
     annotations: {}
+    ## @param connectors.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param connectors.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -2793,6 +2801,8 @@ orchestration:
     name: ""
     ## @param orchestration.serviceAccount.annotations can be used to set the annotations of the broker service account
     annotations: {}
+    ## @param orchestration.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param orchestration.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
@@ -3187,6 +3197,8 @@ optimize:
     name: ""
     ## @param optimize.serviceAccount.annotations can be used to set the annotations of the Optimize service account
     annotations: {}
+    ## @param optimize.serviceAccount.labels can be used to set the labels of the service account
+    labels: {}
     ## @param optimize.serviceAccount.automountServiceAccountToken can be used to control whether the service account token should be automatically mounted
     automountServiceAccountToken: false
 
