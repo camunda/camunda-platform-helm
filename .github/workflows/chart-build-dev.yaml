@@ -274,6 +274,7 @@ jobs:
             fi
 
             echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+            RELEASE_VERSION_COMPUTED=true
             echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
             echo "::notice::Computed version: ${RELEASE_VERSION}"
           fi
@@ -291,8 +292,8 @@ jobs:
             --trace 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
           cd ${{ matrix.chart.directory }}
 
-          # For stable releases, extract version from release-please output
-          if [[ "${IS_PRERELEASE}" != "true" ]]; then
+          # For stable releases (not alpha-to-stable transition), extract version from release-please output
+          if [[ "${IS_PRERELEASE}" != "true" && "${RELEASE_VERSION_COMPUTED}" != "true" ]]; then
             RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
             if [[ -z "${RELEASE_VERSION}" ]]; then
               RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
