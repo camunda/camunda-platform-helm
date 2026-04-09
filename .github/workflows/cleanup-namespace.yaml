@@ -86,7 +86,6 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
             secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-          exportEnv: true
 
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
@@ -97,10 +96,10 @@ jobs:
         env:
           GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
           GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
-          GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.server-url] }}
           ROSA_USER:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.username] }}
           ROSA_PASS:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.password] }}

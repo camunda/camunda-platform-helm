@@ -109,7 +109,6 @@ runs:
         roleId: ${{ env.VAULT_ROLE_ID }}
         secretId: ${{ env.VAULT_SECRET_ID }}
         secrets: ${{ inputs.vault-secret-mapping }}
-        exportEnv: true
 
     - name: CI Setup - Generate Secret manifest from Vault mapping
       if: inputs.vault-secret-mapping != ''
@@ -149,7 +148,6 @@ runs:
           secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
           secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
           secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-        exportEnv: true
 
     # ------------------------------------------------------------------
     # Cluster authentication
@@ -163,10 +161,10 @@ runs:
       env:
         GH_APP_ID:        ${{ env.GH_APP_ID }}
         GH_APP_KEY:       ${{ env.GH_APP_KEY }}
-        GKE_CLUSTER_NAME: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-        GKE_CLUSTER_LOC:  ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-        GKE_WIP:          ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-        GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+        GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+        GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+        GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        GKE_SA:           ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
         ROSA_URL:         ${{ env.ROSA_URL }}
         ROSA_USER:        ${{ env.ROSA_USER }}
         ROSA_PASS:        ${{ env.ROSA_PASS }}

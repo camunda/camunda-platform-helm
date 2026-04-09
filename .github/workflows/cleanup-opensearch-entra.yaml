@@ -37,17 +37,19 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
             secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
-          exportEnv: true
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:
-          cluster-name: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
-          cluster-location: ${{ env.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
-          workload-identity-provider: ${{ env.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service-account: ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+          cluster-name: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          cluster-location: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          workload-identity-provider: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
       - name: get basicauth var
+        env:
+          OPENSEARCH_USERNAME: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_USERNAME }}
+          OPENSEARCH_PASSWORD: ${{ steps.test-credentials-secret.outputs.OPENSEARCH_PASSWORD }}
         run: |
           echo "OPENSEARCH_BASIC_AUTH_BASE64=$(echo -n "${OPENSEARCH_USERNAME}:${OPENSEARCH_PASSWORD}" | base64)" >> $GITHUB_ENV
       - name: cleanup OpenSearch
@@ -142,6 +144,11 @@ jobs:
           fi
       - name: cleanup Entra
         shell: bash
+        env:
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
+          ENTRA_APP_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_OBJECT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_OBJECT_ID }}
         run: |
           RESPONSE=$(curl -X POST \
             https://login.microsoftonline.com/${ENTRA_APP_DIRECTORY_ID}/oauth2/v2.0/token \
