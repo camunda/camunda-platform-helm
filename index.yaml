@@ -4,6 +4,125 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Add tpl rendering for global identity auth URL values"
+        - kind: added
+          description: "Add MCP feature scenario for 8.9 integration tests"
+        - kind: added
+          description: "Add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10"
+        - kind: added
+          description: "Add springImport flag to extraConfiguration entries"
+        - kind: changed
+          description: "Drop global.image.tag option"
+        - kind: fixed
+          description: "Restore backward compatibility for 3rd party e2e callers and fix 8.9 documentstore corruption"
+        - kind: fixed
+          description: "Use dedicated liveness endpoint for orchestration app"
+        - kind: fixed
+          description: "Add env vars to web-modeler restapi deployment for Spring Boot 4.0.4 compatibility"
+        - kind: fixed
+          description: "Optimize prefix defaults to empty so global.elasticsearch.prefix is respected"
+        - kind: fixed
+          description: "Reference bitnami subcharts internally rather than relying on external repositories"
+        - kind: fixed
+          description: "Fix links in helpers 8.9+ to upgrade docs"
+        - kind: fixed
+          description: "Set basic.allow-unauthenticated-api-access on unprotectedApi"
+        - kind: fixed
+          description: "Skip initial-contact-points generation for multi-region deployments in 8.9 and 8.10"
+        - kind: fixed
+          description: "Consolidated-auth should be disabled"
+        - kind: fixed
+          description: "Remove importer from 8.9 and 8.10"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      artifacthub.io/prerelease: "true"
+      camunda.io/component-image-versions: |
+        camunda: 8.9.0
+        managementIdentity: 8.9.0
+        optimize: 8.9.0
+        webModeler: 8.9.0
+        connectors: 8.9.0
+        console: 8.9.13
+      camunda.io/helmCLIVersion: 3.20.1
+      camunda.io/imageOverrides: |+
+        connectors: 8.9.0
+        console: 8.9.13
+        optimize: 8.9.0
+        orchestration: 8.9.0
+        modeler: 8.9.0
+        identity: 8.9.0
+
+    apiVersion: v2
+    appVersion: 8.9.x
+    created: "2026-04-09T19:33:11.055992067Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-16
+      version: 16.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: 80249bbb54dfcbf8c5f1d9a879c25a75425004ec49f7f0c03d349ece4e578f0f
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.9-14.0.0/camunda-platform-14.0.0.tgz
+    version: 14.0.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Do not disable persistent web sessions on RDBMS"
         - kind: added
           description: "Add tpl support to podLabels, podAnnotations, and global.ingress.host"
@@ -26794,4 +26913,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-07T10:56:27.996713468Z"
+generated: "2026-04-09T19:33:11.056772702Z"
