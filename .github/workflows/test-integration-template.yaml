@@ -228,8 +228,8 @@ env:
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
   # Misc.
-  AWS_PROFILE: distribution
-  CLUSTER_NAME: camunda-ci-eks
+  # NOTE: AWS_PROFILE and CLUSTER_NAME are loaded from .github/config/infra.yaml
+  # by the workflow-vars action and exported to $GITHUB_ENV per-job.
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
 
 jobs:
@@ -389,7 +389,6 @@ jobs:
           setup-flow: install
           platform: ${{ inputs.platforms }}
           identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
-          ingress-hostname-base: ci.distro.ultrawombat.com
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}

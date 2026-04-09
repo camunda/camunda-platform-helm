@@ -1,0 +1,51 @@
+# CI infrastructure endpoints — single source of truth.
+# Consumed by .github/actions/workflow-vars/action.yaml and workflow cleanup jobs.
+#
+# When an infrastructure value changes (e.g. ES cluster migration, new OpenSearch endpoint),
+# update it HERE ONLY. All workflows read from this file via the workflow-vars action.
+
+gke:
+  ingress-hostname-base: ci.distro.ultrawombat.com
+  namespace-prefix: camunda
+
+eks:
+  ingress-hostname-base: distribution.aws.camunda.cloud
+  namespace-prefix: distribution
+  cluster-name: camunda-ci-eks
+  aws-profile: distribution
+
+rosa:
+  ingress-hostname-base: ci.distro.ultrawombat.com
+  namespace-prefix: camunda
+
+elasticsearch:
+  # In-cluster ES on GKE (4 pools: pool-0 through pool-3)
+  host: elasticsearch-21-6-3.ci.distro.ultrawombat.com
+  namespace: distribution-elasticsearch-21-6-3
+  pools: 4
+
+opensearch:
+  # In-cluster OS on GKE (4 pools: pool-0 through pool-3)
+  host: opensearch-2-19.ci.distro.ultrawombat.com
+  pools: 4
+  # AWS OpenSearch (used for EKS scenarios)
+  aws:
+    host: search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com
+    protocol: https
+    port: "443"
+
+postgresql:
+  jdbc-host: postgresql-cluster-rw.distribution-postgresql.svc.cluster.local
+  jdbc-port: "5432"
+
+teleport:
+  proxy: camunda.teleport.sh:443
+  token-distribution: infra-ci-prod-github-action-distribution
+  token-qa: infra-ci-prod-github-action-qa
+
+keycloak:
+  version-prefix: "24-9-0"
+  protocol: https
+
+s3:
+  bucket: camunda-ci-eks-prod-team-bucket-qa

@@ -65,6 +65,13 @@ jobs:
           echo "$filtered" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Load infra config
+        id: infra
+        shell: bash
+        run: |
+          INFRA_CONFIG=".github/config/infra.yaml"
+          echo "CLUSTER_NAME=$(yq '.eks.cluster-name' "$INFRA_CONFIG")" >> $GITHUB_ENV
+
       - name: CI Setup - Install tools
         uses: ./.github/actions/install-tool-versions
         with:
@@ -104,7 +111,7 @@ jobs:
           ROSA_URL:         ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.server-url] }}
           ROSA_USER:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.username] }}
           ROSA_PASS:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.password] }}
-          CLUSTER_NAME:     camunda-ci-eks
+          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
       - name: CI Cleanup
         shell: bash

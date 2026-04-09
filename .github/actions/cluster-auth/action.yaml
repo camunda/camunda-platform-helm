@@ -71,7 +71,7 @@ runs:
       id: teleport-auth
       shell: bash
       env:
-        TELEPORT_PROXY: "camunda.teleport.sh:443"
+        TELEPORT_PROXY: ${{ env.INFRA_TELEPORT_PROXY || 'camunda.teleport.sh:443' }}
         TELEPORT_TOKEN: ${{ env.TELEPORT_TOKEN }}
         KUBERNETES_CLUSTER: ${{ env.CLUSTER_NAME }}
       run: |

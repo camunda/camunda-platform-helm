@@ -249,24 +249,19 @@ env:
   # Vars with "CI_" prefix are used in the CI workflow only.
   # Vars with "TEST_" prefix are used in the test runner tool (Task).
   CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
-  CI_HOSTNAME_BASE: ci.distro.ultrawombat.com
   # The Helm repo which is used during the upgrade flow.
   TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
   # Docker Hub auth to avoid image pull rate limit.
   TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
-  OPENSEARCH_PROTOCOL: "https"
-  OPENSEARCH_HOST: "search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com"
-  OPENSEARCH_PORT: "443"
-  # RDBMS (used for testing RDBMS-based secondary storage)
-  POSTGRESQL_JDBC_URL: "jdbc:postgresql://postgresql-cluster-rw.distribution-postgresql.svc.cluster.local:5432"
   # OIDC.
   INITIAL_CLAIM_VALUE: ${{ inputs.initialClaimValue }}
   # Mapping rule client IDs - defaults for Keycloak; overridden by entra.ensure-venom-app for OIDC.
   VENOM_CLIENT_ID: venom
   CONNECTORS_CLIENT_ID: connectors
   # Misc.
-  AWS_PROFILE: distribution
-  CLUSTER_NAME: camunda-ci-eks
+  # NOTE: Infrastructure values (CLUSTER_NAME, AWS_PROFILE, OPENSEARCH_HOST/PROTOCOL/PORT,
+  # POSTGRESQL_JDBC_URL) are loaded from .github/config/infra.yaml by the workflow-vars action
+  # (invoked via integration-test-setup) and exported to $GITHUB_ENV per-job.
   TELEPORT_TOKEN: ${{ inputs.teleport-token }}
   FLOW: ${{ inputs.flow }}
 
@@ -337,7 +332,6 @@ jobs:
           deployment-ttl:              ${{ env.CI_DEPLOYMENT_TTL }}
           flow:                        ${{ inputs.flow }}
           identifier:                  ${{ inputs.identifier }}
-          ingress-hostname-base:       ${{ env.CI_HOSTNAME_BASE }}
           camunda-helm-dir:            ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           namespace-prefix:            ${{ inputs.namespace-prefix }}
@@ -354,7 +348,6 @@ jobs:
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
           DISTRO_CI_DOCKER_USERNAME_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
           DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
 
@@ -679,7 +672,6 @@ jobs:
           deployment-ttl:              ${{ env.CI_DEPLOYMENT_TTL }}
           flow:                        ${{ inputs.flow }}
           identifier:                  ${{ inputs.identifier }}
-          ingress-hostname-base:       ${{ env.CI_HOSTNAME_BASE }}
           camunda-helm-dir:            ${{ inputs.camunda-helm-dir }}
           camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           namespace-prefix:            ${{ inputs.namespace-prefix }}
@@ -697,7 +689,6 @@ jobs:
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
           DISTRO_CI_DOCKER_USERNAME_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
           DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
 
@@ -881,8 +872,6 @@ jobs:
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-          CI_HOSTNAME_BASE: ${{ env.CI_HOSTNAME_BASE }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
@@ -961,8 +950,6 @@ jobs:
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-          CI_HOSTNAME_BASE: ${{ env.CI_HOSTNAME_BASE }}
           CI_DEPLOYMENT_TTL: ${{ env.CI_DEPLOYMENT_TTL }}
         with:
           camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
@@ -1100,7 +1087,6 @@ jobs:
           setup-flow: ${{ inputs.flow }}
           platform: ${{ inputs.distro-platform }}
           identifier-base: ${{ inputs.identifier }}
-          ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
           chart-dir: ${{ inputs.camunda-helm-dir }}
           chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
           prefix: ${{ inputs.namespace-prefix }}
@@ -1148,8 +1134,8 @@ jobs:
           GKE_SA:           ${{ env.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
-          ROSA_PASS:        ${{ secrets[inputs.password] }}      
-          CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+          ROSA_PASS:        ${{ secrets[inputs.password] }}
+          CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
 
       - name: CI Cleanup - Cleanup GitHub deployment
         if: always() && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')
@@ -1179,7 +1165,7 @@ jobs:
           if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
-            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3-pool-${ES_POOL_INDEX}.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3-pool-${ES_POOL_INDEX}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
+            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
             scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
@@ -1188,7 +1174,7 @@ jobs:
             else
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true || true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
-              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://elasticsearch-21-6-3-pool-${ES_POOL_INDEX}.ci.distro.ultrawombat.com" --user "elastic" --elasticsearch-namespace "distribution-elasticsearch-21-6-3-pool-${ES_POOL_INDEX}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
+              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
               scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
             fi
           fi
@@ -1199,8 +1185,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          ES_URL="https://elasticsearch-21-6-3-pool-${ES_POOL_INDEX}.ci.distro.ultrawombat.com"
-          ES_NS="distribution-elasticsearch-21-6-3-pool-${ES_POOL_INDEX}"
+          ES_URL="https://${INFRA_ES_HOST}"
+          ES_NS="${INFRA_ES_NAMESPACE}"
 
           # Extract the 6-char hex suffix from the namespace.
           # Namespace patterns:
