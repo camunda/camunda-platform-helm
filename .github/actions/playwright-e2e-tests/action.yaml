@@ -210,3 +210,18 @@ runs:
         name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
         retention-days: 1
+
+    - name: Set report date
+      id: report_date
+      if: ${{ !cancelled() }}
+      shell: bash
+      run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_OUTPUT"
+
+    - name: Upload Playwright JSON results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      with:
+        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
+        if-no-files-found: warn
+        retention-days: 5
