@@ -88,7 +88,8 @@ jobs:
             
             # Query Harbor API to get all tags for this artifact
             tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}")
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              --retry 3 --retry-delay 5 --retry-all-errors)
             
             if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
               echo "::error::Rolling tag ${input_tag} not found in Harbor"
@@ -179,9 +180,10 @@ jobs:
       - name: Pull and validate dev package
         id: package
         run: |
+          source scripts/harbor-retry.sh
           echo "Checking for package: ${{ steps.parse.outputs.resolved_tag }}"
-          
-          helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
+
+          harbor_helm_pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
             --version "${{ steps.parse.outputs.resolved_tag }}" \
             --destination /tmp || {
               echo "::error::Dev package not found in Harbor: ${{ steps.parse.outputs.resolved_tag }}"
@@ -345,7 +347,8 @@ jobs:
           # Get artifact digest from dev tag
           echo "Getting digest for dev tag: ${{ steps.parse.outputs.resolved_tag }}"
           digest=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ steps.parse.outputs.resolved_tag }}" \
-            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" | jq -r '.digest')
+            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            --retry 3 --retry-delay 5 --retry-all-errors | jq -r '.digest')
           
           if [[ -z "$digest" || "$digest" == "null" ]]; then
             echo "::error::Failed to get digest for dev tag"
@@ -358,6 +361,7 @@ jobs:
             local tag_name="$1"
             curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
               -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              --retry 3 --retry-delay 5 --retry-all-errors \
               | jq -r '.digest // empty' || true
           }
 
@@ -365,7 +369,8 @@ jobs:
             local tag_name="$1"
             echo "Removing existing tag if present: ${tag_name}"
             curl -sf -X DELETE "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" || true
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              --retry 3 --retry-delay 5 --retry-all-errors || true
           }
 
           add_or_update_tag() {
@@ -390,6 +395,7 @@ jobs:
             echo "Adding tag: ${tag_name}"
             http_code="$(curl -sS -o /tmp/harbor-tag.json -w "%{http_code}" -X POST "${HARBOR_API}/${HARBOR_REPO}/artifacts/${digest}/tags" \
               -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              --retry 3 --retry-delay 5 --retry-all-errors \
               -H "Content-Type: application/json" \
               -d "{\"name\": \"${tag_name}\"}" || true)"
 
