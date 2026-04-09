@@ -34,9 +34,22 @@ on:
       issue_number:
         description: 'Issue number to triage (optional, for single-issue mode)'
         required: false
+  workflow_call:
+    inputs:
+      issue_number:
+        description: 'Issue number to triage'
+        required: false
+        type: string
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 concurrency:
-  group: ai-triage-${{ github.event.inputs.issue_number || github.event.issue.number || 'bulk' }}
+  group: ai-triage-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number || 'bulk' }}
   cancel-in-progress: false
 
 jobs:
@@ -85,9 +98,10 @@ jobs:
           set -euo pipefail
 
           # Determine which issues to process
-          if [[ -n "${{ github.event.inputs.issue_number }}" ]]; then
-            # Single issue mode (manual dispatch with issue_number)
-            ISSUE_NUMBERS="${{ github.event.inputs.issue_number }}"
+          MANUAL_ISSUE="${{ inputs.issue_number || github.event.inputs.issue_number }}"
+          if [[ -n "$MANUAL_ISSUE" ]]; then
+            # Single issue mode (manual dispatch or workflow_call with issue_number)
+            ISSUE_NUMBERS="$MANUAL_ISSUE"
             echo "📋 Single issue mode: #${ISSUE_NUMBERS}"
           elif [[ "${{ github.event_name }}" == "issues" ]]; then
             # New issue event
@@ -187,7 +201,7 @@ jobs:
             fi
 
             # Prepare Glean Chat API request - build prompt programmatically
-            GLEAN_PROMPT="You are an expert bug and task triage assistant for the Camunda Platform Helm chart repository."
+            GLEAN_PROMPT="You are an expert bug and task triage assistant for the ${OWNER}/${REPO} repository."
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"Analyze the following GitHub issue and provide a triage assessment following the Distro Bug Triage and Task/Toil/Non-Feature Triage guidelines from the Camunda documentation."
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}**"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n\n'"**Description:**"$'\n'"${ISSUE_BODY}"
@@ -197,7 +211,7 @@ jobs:
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"2. Determine the work type: BUG, TASK, TOIL, FEATURE_REQUEST, or QUESTION"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"3. For bugs, assess severity (low, mid, high, critical, unknown) and likelihood (low, mid, high)"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"4. For tasks/toil, assess severity and likelihood based on impact and frequency"
-            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"5. Search for similar or duplicate existing issues in camunda/camunda-platform-helm"
+            GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"5. Search for similar or duplicate existing issues in ${OWNER}/${REPO}"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"6. Provide a confidence score (0.0-1.0) for your assessment"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"7. Provide a detailed rationale citing the triage guidelines"
             GLEAN_PROMPT="$GLEAN_PROMPT"$'\n'"8. Determine the kind based on the Distro triage guidelines: bug (something not working as intended), chore (maintenance: docs updates, dependency bumps, etc), docs (documentation-only change), feature-request (new capability requested), internal (general internal improvement, not customer-facing), refactor (code restructuring without behavior change), research (investigation/spike/poc/proposal to reduce uncertainty)"

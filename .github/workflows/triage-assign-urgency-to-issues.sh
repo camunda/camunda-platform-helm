@@ -3,7 +3,7 @@ set -euo pipefail
 
 # --- Configuration with CLI arguments and fallbacks ---
 ORG_NAME="camunda"                                    # Hardcoded organization
-REPO_NAME="camunda-platform-helm"                     # Hardcoded repository
+REPO_NAME="camunda-platform-helm"                     # Hardcoded repository (for cross-repo, use workflow_call instead)
 PROJECT_ID="${1:-33}"                                 # Numeric Project V2 number
 BRANCH="${2:-main}"                                   # Branch to trigger workflow on
 LIMIT="${3:-20}"                                      # Number of issues to process
@@ -14,6 +14,12 @@ DRY_RUN="${5:-false}"                                 # Dry run mode - don't tri
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   cat <<EOF
 Usage: $0 [PROJECT_ID] [BRANCH] [LIMIT] [SKIP_ASSIGNED] [DRY_RUN]
+
+This script bulk-processes issues in camunda/camunda-platform-helm by triggering
+the assign-urgency-to-issue.yml workflow via workflow_dispatch.
+
+For cross-repo usage (e.g., camunda/team-distribution), use workflow_call instead
+of this script by creating a caller workflow that invokes the reusable workflows.
 
 Arguments (all optional, with defaults):
   PROJECT_ID       Numeric Project V2 number (default: 33)
