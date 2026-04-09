@@ -50,7 +50,10 @@ harbor_retry() {
     fi
     if [[ ${attempt} -lt ${max_retries} ]]; then
       echo "::warning::${desc} failed on attempt ${attempt}, re-authenticating and retrying in ${retry_delay}s..."
-      harbor_reauth
+      if ! harbor_reauth; then
+        echo "::error::Harbor re-authentication failed after ${desc} failed on attempt ${attempt}; aborting retries"
+        return 1
+      fi
       sleep "${retry_delay}"
       retry_delay=$((retry_delay * 2))
     fi

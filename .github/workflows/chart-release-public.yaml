@@ -163,12 +163,17 @@ jobs:
           source scripts/harbor-retry.sh
           mkdir -p .cr-release-packages
 
+          PULL_RC=0
           harbor_helm_pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
             --version "${{ steps.parse.outputs.resolved_tag }}" \
-            --destination .cr-release-packages || {
-              echo "::error::Failed to pull RC package from Harbor"
-              exit 1
-            }
+            --destination .cr-release-packages || PULL_RC=$?
+          if [[ ${PULL_RC} -eq 2 ]]; then
+            echo "::error::Harbor auth failure pulling RC package: ${{ steps.parse.outputs.resolved_tag }}"
+            exit 1
+          elif [[ ${PULL_RC} -ne 0 ]]; then
+            echo "::error::Failed to pull RC package from Harbor: ${{ steps.parse.outputs.resolved_tag }}"
+            exit 1
+          fi
 
           # drop -rc from filename
           filename=$(ls .cr-release-packages/camunda-platform-*-rc*.tgz)

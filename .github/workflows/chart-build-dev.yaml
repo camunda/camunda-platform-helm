@@ -365,17 +365,20 @@ jobs:
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
 
           # Retry helm pull with re-auth to avoid misinterpreting transient 401 as "not found"
-          # harbor_helm_pull returns: 0=found, 1=not found, 2=persistent auth failure
+          # harbor_helm_pull returns: 0=found, 1=not-found/other non-auth error, 2=persistent auth failure
           PULL_RC=0
           harbor_helm_pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
             --version "${DEV_TAG}" --destination /tmp || PULL_RC=$?
-          [[ ${PULL_RC} -eq 2 ]] && exit 1
+          if [[ ${PULL_RC} -eq 2 ]]; then
+            echo "::error::Harbor auth failure checking artifact existence"
+            exit 1
+          fi
 
           if [[ ${PULL_RC} -eq 0 ]]; then
             if [[ "${HAS_IMAGE_OVERRIDES}" == "true" ]]; then
               # Image overrides provided - delete existing artifact to allow rebuild
               echo "::notice::Dev package ${DEV_TAG} exists but image overrides provided - deleting to rebuild"
-              curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              harbor_curl \
                 -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DEV_TAG}/tags/${DEV_TAG}" || true
               echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
             else

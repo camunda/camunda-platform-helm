@@ -183,12 +183,17 @@ jobs:
           source scripts/harbor-retry.sh
           echo "Checking for package: ${{ steps.parse.outputs.resolved_tag }}"
 
+          PULL_RC=0
           harbor_helm_pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
             --version "${{ steps.parse.outputs.resolved_tag }}" \
-            --destination /tmp || {
-              echo "::error::Dev package not found in Harbor: ${{ steps.parse.outputs.resolved_tag }}"
-              exit 1
-            }
+            --destination /tmp || PULL_RC=$?
+          if [[ ${PULL_RC} -eq 2 ]]; then
+            echo "::error::Harbor auth failure pulling dev package: ${{ steps.parse.outputs.resolved_tag }}"
+            exit 1
+          elif [[ ${PULL_RC} -ne 0 ]]; then
+            echo "::error::Dev package not found in Harbor: ${{ steps.parse.outputs.resolved_tag }}"
+            exit 1
+          fi
           
           package_file=$(ls /tmp/camunda-platform-*.tgz)
           echo "✅ Dev package exists: ${package_file}"
