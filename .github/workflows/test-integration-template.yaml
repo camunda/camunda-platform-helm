@@ -266,6 +266,11 @@ jobs:
           # This replaces the previous envsubst + exclude hack, which silently turned
           # unset variables into empty strings and relied on a non-standard 'if' field.
 
+          # Lowercase inputs so callers passing e.g. "GKE" or "Install" still match
+          # the canonical lowercase keys in test-integration-matrix.yaml.
+          CI_PLATFORMS="${CI_PLATFORMS,,}"
+          CI_FLOWS="${CI_FLOWS,,}"
+
           # Build platform filter: ".platform == \"gke\" or .platform == \"eks\""
           platform_expr=""
           IFS=',' read -r -a platforms_arr <<< "${CI_PLATFORMS}"
