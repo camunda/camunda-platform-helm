@@ -1218,7 +1218,7 @@ jobs:
   cleanup:
     name: Cleanup - ${{ inputs.flow }} on ${{ inputs.distro-platform }} - ${{ inputs.shortname }}
     needs: [merge-e2e-reports, playwright-integration-tests-after-install, playwright-integration-tests-after-upgrade]
-    if: ${{ always() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'skipped') || contains(needs.*.result, 'cancelled')) }}
+    if: always()
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/camunda/team-distribution/ci-runner:latest
