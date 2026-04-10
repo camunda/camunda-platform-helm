@@ -147,13 +147,13 @@ get_first_version() {
 
 }
 
-@test "upgrade-patch is filtered for version == 8.9 via YAML config" {
-  # Ensure 8.9 is among active versions; skip if not present
-  if ! printf "%s\n" $AV | grep -q '^8\.9$'; then
-    skip "8.9 not available in active versions"
+@test "upgrade-patch is filtered for version == 8.10 via YAML config" {
+  # Ensure 8.10 is among active versions; skip if not present
+  if ! printf "%s\n" $AV | grep -q '^8\.10$'; then
+    skip "8.10 not available in active versions"
   fi
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
-    --manual-trigger "8.9" \
+    --manual-trigger "8.10" \
     --active-versions "$AV" \
     --manual-flow "install,upgrade-patch,upgrade-minor"
   assert_success
