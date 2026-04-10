@@ -93,7 +93,7 @@ Camunda images:
 - docker.io/camunda/web-modeler-webapp:8.7.18
 - docker.io/camunda/web-modeler-websockets:8.7.18
 - docker.io/camunda/zeebe:8.7.25
-- registry.camunda.cloud/team-distribution/keycloak-ci:26.3.3
+- ghcr.io/camunda/team-distribution/keycloak-ci:26.3.3
 
 Non-Camunda images:
 

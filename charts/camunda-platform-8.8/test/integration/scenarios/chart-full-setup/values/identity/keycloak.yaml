@@ -73,27 +73,18 @@ identityKeycloak:
   # This custom image runs `kc.sh build` at image build time with the exact
   # options we need, so `--optimized` can skip augmentation entirely.
   # Dockerfile: .github/docker/keycloak-ci/Dockerfile
-  # TODO: reenable keycloak-ci when this issue is closed: https://github.com/camunda/camunda-platform-helm/issues/5613
-  # image:
-  #   registry: registry.camunda.cloud
-  #   repository: team-distribution/keycloak-ci
-  #   tag: "26.3.3"
-  #   pullSecrets:
-  #     - name: index-docker-io
-  #     - name: ghcr-io
   image:
-    registry: registry.camunda.cloud
-    repository: camunda/keycloak
+    registry: ghcr.io
+    repository: camunda/team-distribution/keycloak-ci
     tag: "26.3.3"
     pullSecrets:
       - name: index-docker-io
       - name: ghcr-io
-  # TODO: reenable when keycloak-ci can be pulled: https://github.com/camunda/camunda-platform-helm/issues/5613
-  # # Production mode: runs `kc.sh start` (not start-dev). Required for
-  # # --optimized to work.
-  # production: true
-  # # Skip Quarkus augmentation: the image was pre-built with matching config.
-  # extraStartupArgs: "--optimized"
+  # Production mode: runs `kc.sh start` (not start-dev). Required for
+  # --optimized to work.
+  production: true
+  # Skip Quarkus augmentation: the image was pre-built with matching config.
+  extraStartupArgs: "--optimized"
 
   # -- Pod-level speed knobs --------------------------------------------------
   # Disable Kubernetes service links: avoids injecting hundreds of env vars
@@ -132,38 +123,37 @@ identityKeycloak:
   #   SerialGC            – lower startup overhead than G1 for small heaps
   #   TieredStopAtLevel=1 – skip C2 compiler (massive startup win)
   #   /dev/urandom        – avoid entropy blocking on container start
-  # TODO: reenable keycloak-ci when this issue is closed: https://github.com/camunda/camunda-platform-helm/issues/5613
-  # extraEnvVars:
-  #   - name: JAVA_OPTS
-  #     value: >-
-  #       -Xms512m -Xmx1024m
-  #       -XX:MaxMetaspaceSize=256m
-  #       -XX:+UseSerialGC
-  #       -XX:TieredStopAtLevel=1
-  #       -Djava.security.egd=file:/dev/urandom
-  #       -Djava.net.preferIPv4Stack=true
-  #   # Production mode without TLS requires explicit HTTP enablement.
-  #   - name: KC_HTTP_ENABLED
-  #     value: "true"
-  #   # Health endpoints must be explicitly enabled for probes.
-  #   - name: KC_HEALTH_ENABLED
-  #     value: "true"
-  #   # Reduce logging I/O during startup.
-  #   - name: KC_LOG_LEVEL
-  #     value: "WARN"
-  #   # Minimal DB connection pool for a single-realm instance.
-  #   - name: KC_DB_POOL_INITIAL_SIZE
-  #     value: "1"
-  #   - name: KC_DB_POOL_MIN_SIZE
-  #     value: "1"
-  #   - name: KC_DB_POOL_MAX_SIZE
-  #     value: "10"
-  #   # Disable XA transactions – not needed for single-node, avoids 2PC overhead.
-  #   - name: KC_TRANSACTION_XA_ENABLED
-  #     value: "false"
-  #   # Disable unused Keycloak features to speed up SPI initialization.
-  #   - name: KC_FEATURES_DISABLED
-  #     value: "ciba,client-policies,dpop,dynamic-scopes,kerberos,par,step-up-authentication,web-authn"
+  extraEnvVars:
+    - name: JAVA_OPTS
+      value: >-
+        -Xms512m -Xmx1024m
+        -XX:MaxMetaspaceSize=256m
+        -XX:+UseSerialGC
+        -XX:TieredStopAtLevel=1
+        -Djava.security.egd=file:/dev/urandom
+        -Djava.net.preferIPv4Stack=true
+    # Production mode without TLS requires explicit HTTP enablement.
+    - name: KC_HTTP_ENABLED
+      value: "true"
+    # Health endpoints must be explicitly enabled for probes.
+    - name: KC_HEALTH_ENABLED
+      value: "true"
+    # Reduce logging I/O during startup.
+    - name: KC_LOG_LEVEL
+      value: "WARN"
+    # Minimal DB connection pool for a single-realm instance.
+    - name: KC_DB_POOL_INITIAL_SIZE
+      value: "1"
+    - name: KC_DB_POOL_MIN_SIZE
+      value: "1"
+    - name: KC_DB_POOL_MAX_SIZE
+      value: "10"
+    # Disable XA transactions – not needed for single-node, avoids 2PC overhead.
+    - name: KC_TRANSACTION_XA_ENABLED
+      value: "false"
+    # Disable unused Keycloak features to speed up SPI initialization.
+    - name: KC_FEATURES_DISABLED
+      value: "ciba,client-policies,dpop,dynamic-scopes,kerberos,par,step-up-authentication,web-authn"
 
   # -- Probes -----------------------------------------------------------------
   # startupProbe gates liveness/readiness so they start with initialDelay=0.
