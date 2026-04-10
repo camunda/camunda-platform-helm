@@ -100,9 +100,12 @@ get_first_version() {
 }
 
 @test "manual flow multiple values produce entries for each flow" {
-  v="$(get_first_version)"
+  # Use 8.8 which allows both install and upgrade-patch
+  if ! printf "%s\n" $AV | grep -q '^8\.8$'; then
+    skip "8.8 not available in active versions"
+  fi
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
-    --manual-trigger "$v" \
+    --manual-trigger "8.8" \
     --active-versions "$AV" \
     --manual-flow "install,upgrade-patch"
   [ "$status" -eq 0 ]
