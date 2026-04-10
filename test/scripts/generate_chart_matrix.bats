@@ -34,6 +34,17 @@ get_first_version() {
   echo "$AV" | awk '{print $1}'
 }
 
+# Return a version that has no flow restrictions in permitted-flows.yaml.
+# Tests that assert specific flows must use this to avoid false negatives.
+get_unrestricted_version() {
+  echo "$AV" | tr ' ' '\n' | while read -r v; do
+    if ! grep -A5 "\"==$v\"" "$ROOT/.github/config/permitted-flows.yaml" | grep -q 'deny:'; then
+      echo "$v"
+      return
+    fi
+  done
+}
+
 @test "manual all builds a non-empty matrix" {
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
     --manual-trigger all \
@@ -88,7 +99,7 @@ get_first_version() {
 
 
 @test "manual flow single value applies to all entries" {
-  v="$(get_first_version)"
+  v="$(get_unrestricted_version)"
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
     --manual-trigger "$v" \
     --active-versions "$AV" \
@@ -100,7 +111,7 @@ get_first_version() {
 }
 
 @test "manual flow multiple values produce entries for each flow" {
-  v="$(get_first_version)"
+  v="$(get_unrestricted_version)"
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
     --manual-trigger "$v" \
     --active-versions "$AV" \
