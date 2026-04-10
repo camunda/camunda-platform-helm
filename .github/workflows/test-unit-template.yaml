@@ -1,6 +1,9 @@
 name: "Test - Unit - Template"
 
 on:
+  push:
+    paths:
+      - "test/scripts/generate_chart_matrix.bats"
   workflow_call:
     inputs:
       identifier:
