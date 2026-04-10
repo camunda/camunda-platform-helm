@@ -9,10 +9,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-REGISTRY="registry.camunda.cloud"
-CI_RUNNER_IMAGE="${REGISTRY}/team-distribution/ci-runner:latest"
-PLAYWRIGHT_RUNNER_IMAGE="${REGISTRY}/team-distribution/playwright-runner:latest"
-KEYCLOAK_CI_IMAGE="ghcr.io/camunda/team-distribution/keycloak-ci:latest"
+REGISTRY="ghcr.io"
+CI_RUNNER_IMAGE="${REGISTRY}/camunda/team-distribution/ci-runner:latest"
+PLAYWRIGHT_RUNNER_IMAGE="${REGISTRY}/camunda/team-distribution/playwright-runner:latest"
+KEYCLOAK_CI_IMAGE="${REGISTRY}/camunda/team-distribution/keycloak-ci:latest"
 
 # Colors for output
 RED='\033[0;31m'
