@@ -159,8 +159,8 @@ get_first_version() {
   assert_success
   run bash -c 'yq -o=json ".matrix | [.[] | .flow] | unique | sort" matrix_versions.txt | jq -c'
   assert_success
-  # Only install and upgrade-minor should remain
-  assert_output '["install","upgrade-minor"]'
+  # Only install should remain (both upgrade-patch and upgrade-minor are denied for 8.9)
+  assert_output '["install"]'
 }
 
 
