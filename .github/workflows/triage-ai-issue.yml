@@ -363,6 +363,22 @@ jobs:
             echo "💬 Posting triage assessment comment..."
             gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$TRIAGE_COMMENT"
 
+            # Route non-internal feature requests to PM for manual triage
+            if [[ "$KIND" == "feature-request" ]]; then
+              if ! echo "$ISSUE_LABELS" | grep -qi "kind/internal"; then
+                echo "📌 Non-internal feature request — routing to PM"
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
+                  --add-label "kind/feature-request" \
+                  --add-label "triage:manual"
+                gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
+                  --add-assignee "mlowe-camunda"
+                echo "✅ Assigned to @mlowe-camunda for PM triage"
+                continue  # skip TRIAGE:COMPLETED + Backlog move
+              else
+                echo "ℹ️  kind/internal feature request — normal auto-triage"
+              fi
+            fi
+
             # Apply labels
             echo "🏷️  Applying labels..."
             gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" \
