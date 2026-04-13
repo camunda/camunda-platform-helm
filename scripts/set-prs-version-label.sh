@@ -61,9 +61,8 @@ get_issues_per_pr () {
 # Label PRs with the app and chart version only if there is a change in the chart.
 # Use chartPath env var when set (e.g. in workflow_dispatch on main where ct list-changed
 # returns nothing because there is no branch diff), otherwise fall back to ct list-changed.
-# Normalize spaces to newlines so space-separated lists are handled correctly.
 if [[ -n "${chartPath:-}" ]]; then
-    chart_dirs="$(echo "${chartPath}" | tr ' ' '\n')"
+    chart_dirs="${chartPath}"
 else
     chart_dirs="$(ct list-changed)"
 fi
