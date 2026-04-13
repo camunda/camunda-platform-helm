@@ -164,7 +164,6 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				"webModeler.enabled":                              "true",
 				"webModeler.restapi.mail.fromAddress":             "example@example.com",
 				"global.image.registry":                           "global.custom.registry.io",
-				"global.image.tag":                                "8.x.x",
 				"webModeler.image.registry":                       "subchart.custom.registry.io",
 				"webModeler.image.tag":                            "snapshot",
 				"webModeler." + s.component + ".image.repository": "web-modeler/modeler-" + s.component,
@@ -256,34 +255,12 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
-			Name: "TestContainerOverwriteGlobalImageTag",
-			Values: map[string]string{
-				"identity.enabled":                    "true",
-				"webModeler.enabled":                  "true",
-				"webModeler.restapi.mail.fromAddress": "example@example.com",
-				"webModeler.image.tag":                "",
-				"global.image.tag":                    "a.b.c",
-				"global.elasticsearch.enabled":        "true",
-				"elasticsearch.enabled":               "true",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
-
-				// then
-				expectedContainerImage := "camunda/web-modeler-" + s.component + ":a.b.c"
-				containers := deployment.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
-				s.Require().Equal(expectedContainerImage, containers[0].Image)
-			},
-		}, {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
 				"identity.enabled":                    "true",
 				"webModeler.enabled":                  "true",
 				"webModeler.restapi.mail.fromAddress": "example@example.com",
 				"webModeler.image.tag":                "a.b.c",
-				"global.image.tag":                    "x.y.z",
 				"global.elasticsearch.enabled":        "true",
 				"elasticsearch.enabled":               "true",
 			},

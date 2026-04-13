@@ -51,25 +51,28 @@ jobs:
           echo "${GITHUB_CONTEXT}" | jq '."extra-values" = "<Check below>"'
           echo "Workflow Inputs - Extra Values:"
           echo "${GITHUB_CONTEXT}" | jq -r '."extra-values"'
-      - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-github-token
-        with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
-      - name: Import Vault secrets for Harbor
+      - name: Import Vault secrets
+        id: test-credentials-secret
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        id: vault-harbor
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
           exportEnv: true
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Parse dev tag
         id: parse
@@ -278,10 +281,22 @@ jobs:
           mkdir -p /tmp/rc-chart
           tar -xzf "${package_file}" -C /tmp/rc-chart
           
+          # Build layered values args (same approach as generate-version-matrix.sh)
+          scenario_dir="${chart_path}/test/integration/scenarios/chart-full-setup"
+          helm_values_args=""
+          for layer_file in \
+            "${scenario_dir}/values/base.yaml" \
+            "${scenario_dir}/values/identity/keycloak.yaml" \
+            "${scenario_dir}/values/persistence/elasticsearch.yaml"; do
+            if [[ -f "${layer_file}" ]]; then
+              helm_values_args="${helm_values_args} --values ${layer_file}"
+            fi
+          done
+
           # Get images using helm template on the extracted package
           chart_images=$(
             helm template --skip-tests camunda /tmp/rc-chart/camunda-platform \
-              --values "${chart_path}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-keycloak.yaml" 2>/dev/null |
+              ${helm_values_args} 2>/dev/null |
             tr -d "\"'" | awk '/image:/{gsub(/^(camunda|bitnami)/, "docker.io/&", $2); printf "%s\n", $2}' |
             sort | uniq
           )
@@ -472,7 +487,7 @@ jobs:
           exportEnv: false
       - name: Send Slack notification
         continue-on-error: true
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook

@@ -112,8 +112,6 @@ global:
   image:
     ## @param global.image.registry Can be used to set container image registry.
     registry: ""
-    ## @param global.image.tag defines the tag / version which should be used in the most of the apps.
-    tag: ""
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -412,7 +410,7 @@ global:
       ## @param global.identity.keycloak.internal It's useful for using existing Keycloak in another namespace with and access it with the combined Ingress.
       # Applies to: External Keycloak. Not used in Internal Keycloak or External OIDC.
       internal: false
-      ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart.
+      ## @param global.identity.keycloak.url can be used incorporate with "identityKeycloak.enabled: false" to use your own Keycloak instead of the one comes with Camunda Helm chart. The "host" field supports templating (e.g., {{ .Release.Namespace }}).
       # Applies to: External Keycloak - required.
       # In Internal Keycloak, auto-derived from the Keycloak subchart. In External OIDC, not used.
       url:
@@ -421,6 +419,11 @@ global:
         # url:
         #   protocol: "https"
         #   host: "keycloak.prod.svc.cluster.local"
+        #   port: "8443"
+        # Example with templating to use the release namespace:
+        # url:
+        #   protocol: "https"
+        #   host: "keycloak.{{ .Release.Namespace }}.svc.cluster.local"
         #   port: "8443"
       #  defines the endpoint of Keycloak which varies between Keycloak versions.
       ## @param global.identity.keycloak.contextPath In Keycloak v16.x.x it's hard-coded as '/auth', but in v19.x.x it's '/'.
@@ -456,19 +459,19 @@ global:
       # External OIDC: either this or publicIssuerUrl must be set (Microsoft Entra docs use issuer;
       #   generic OIDC docs use publicIssuerUrl). Internal Keycloak and External Keycloak: leave empty.
       issuer: ""
-      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.
+      ## @param global.identity.auth.issuerBackendUrl defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted and internal/external Keycloak URLs are identical.
       issuerBackendUrl: ""
-      ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access.
+      ## @param global.identity.auth.authUrl defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (browser-facing URL);
       #   auto-derived if omitted.
       authUrl: ""
-      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens.
+      ## @param global.identity.auth.tokenUrl defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted.
       tokenUrl: ""
-      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens.
+      ## @param global.identity.auth.jwksUrl defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).
       # External OIDC: required. Internal Keycloak: auto-derived. External Keycloak: recommended (cluster-internal URL);
       #   auto-derived if omitted.
       jwksUrl: ""
@@ -673,6 +676,17 @@ global:
         storeId: "INMEMORY"
         ## @param global.documentStore.type.inmemory.class Fully qualified class name for the in-memory document store provider.
         class: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
+      azure:
+        ## @extra global.documentStore.type.azure.connectionString configuration to provide the Azure Blob Storage connection string.
+        connectionString:
+          ## @extra global.documentStore.type.azure.connectionString.secret configuration to provide the Azure connection string as a secret.
+          secret:
+            ## @param global.documentStore.type.azure.connectionString.secret.inlineSecret can be used to provide the connection string as a plain-text value for non-production usage.
+            inlineSecret: ""
+            ## @param global.documentStore.type.azure.connectionString.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the connection string.
+            existingSecret: ""
+            ## @param global.documentStore.type.azure.connectionString.secret.existingSecretKey defines the key within the existing secret object.
+            existingSecretKey: "connection-string"
 
   ## @param global.extraManifests Array of extra objects to deploy with the release.
   #Example:
@@ -984,6 +998,8 @@ identity:
   ## @param identity.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param identity.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
   ## @param identity.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
@@ -1311,7 +1327,7 @@ console:
     registry: ""
     ## @param console.image.repository defines which image repository to use
     repository: camunda/console
-    ## @param console.image.tag can be used to set the Docker image tag for the Console image (overwrites global.image.tag)
+    ## @param console.image.tag can be used to set the Docker image tag for the Console image
     tag: 8.9.0-alpha5
     ## @param console.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
     digest: ""
@@ -1534,7 +1550,7 @@ webModeler:
   image:
     ## @param webModeler.image.registry can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)
     registry: ""
-    ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)
+    ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images
     # renovate: datasource=docker depName=camunda/web-modeler-restapi
     tag: 8.9.0-alpha5-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -1803,6 +1819,8 @@ webModeler:
     ## @param webModeler.restapi.configuration if specified, contents will be used as the application.yaml
     configuration: ""
     ## @param webModeler.restapi.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+    ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+    ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
     extraConfiguration: []
     ## @param webModeler.restapi.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
     dnsPolicy: ""
@@ -2317,6 +2335,8 @@ connectors:
   ## @param connectors.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param connectors.extraConfiguration if specified, contents will be used for any extra configuration files such as the log4j2.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
   ## @param connectors.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
@@ -2389,11 +2409,11 @@ orchestration:
         type: ""
         ## @param orchestration.security.authentication.oidc.issuer can be used to override `global.identity.auth.issuer`.
         issuer: ""
-        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`.
+        ## @param orchestration.security.authentication.oidc.authUrl can be used to override `global.identity.auth.authUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         authUrl: ""
-        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`.
+        ## @param orchestration.security.authentication.oidc.tokenUrl can be used to override `global.identity.auth.tokenUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         tokenUrl: ""
-        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`.
+        ## @param orchestration.security.authentication.oidc.jwksUrl can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).
         jwksUrl: ""
         ## @param orchestration.security.authentication.oidc.usernameClaim can be used to set username claim.
         usernameClaim: preferred_username
@@ -2491,15 +2511,6 @@ orchestration:
     digest: ""
     ## @param orchestration.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
-
-  ## @extra orchestration.importer configuration for the external tasklist and operate importer deployment for the orchestration cluster
-  importer:
-    ## @param orchestration.importer.envFrom list of environment variables to import from configMapRef and secretRef
-    envFrom: []
-    ## @param orchestration.importer.extraVolumes can be used to define extra volumes for the importer pod
-    extraVolumes: []
-    ## @param orchestration.importer.extraVolumeMounts can be used to mount extra volumes for the importer pod
-    extraVolumeMounts: []
 
   ## @param orchestration.sidecars can be used to attach extra containers to the deployment
   sidecars: []
@@ -2976,6 +2987,8 @@ orchestration:
   ## @param orchestration.configuration if specified, contents will be used as the application.yaml
   configuration: ""
   ## @param orchestration.extraConfiguration if specified, contents will be used for any extra configuration files such as log4j2.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for log4j2.xml).
   extraConfiguration: []
   ## @param orchestration.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""
@@ -3057,7 +3070,7 @@ optimize:
         protocol: ""
         host: ""
         port: 0
-      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize. Falls back to global.elasticsearch.prefix.
+      ## @param optimize.database.elasticsearch.prefix defines the prefix which is used by the old Zeebe Elasticsearch Exporter to create Elasticsearch indexes and consumed by Optimize.
       prefix: "zeebe-record"
     # Opensearch configuration which is shared between the sub charts
     ## @extra optimize.database.opensearch
@@ -3097,7 +3110,7 @@ optimize:
         protocol: ""
         host: ""
         port: 0
-      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize. Falls back to global.opensearch.prefix.
+      ## @param optimize.database.opensearch.prefix defines the prefix which is used by the old Zeebe OpenSearch Exporter to create OpenSearch indexes and consumed by Optimize.
       prefix: "zeebe-record"
 
 
@@ -3301,6 +3314,8 @@ optimize:
   ## @param optimize.configuration if specified, contents will be used as the environment-config.yaml
   configuration: ""
   ## @param optimize.extraConfiguration if specified, contents will be used for any extra configuration files such as environment-logback.xml
+  ## Each entry has: file (filename), content (file contents), and optional springImport (bool, default true).
+  ## Set springImport to false to mount the file without adding it to spring.config.import (e.g. for logback.xml).
   extraConfiguration: []
   ## @param optimize.dnsPolicy https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy
   dnsPolicy: ""

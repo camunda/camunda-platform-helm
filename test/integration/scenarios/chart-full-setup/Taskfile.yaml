@@ -175,6 +175,20 @@ tasks:
         # Backward compatibility: Update OpenSearch prefix
         sed -i 's/custom/{{ .TEST_OPENSEARCH_PREFIX }}/g' {{ .LAYERED_VALUES_DIR }}/persistence/opensearch.yaml
       {{ end }}
+        RESOURCES_DIR="{{ .TEST_VALUES_BASE_DIR }}/common/resources"
+      {{ if eq .TEST_PERSISTENCE "rdbms-external" }}
+        envsubst < "$RESOURCES_DIR/postgres-createdb-job.yaml" | kubectl apply -n {{ .TEST_NAMESPACE }} -f -
+      {{ end }}
+      {{ if eq .TEST_PERSISTENCE "rdbms" }}
+        if [ -d "$RESOURCES_DIR" ]; then
+          echo "Applying resource: postgresql-cluster.yaml"
+          export NAMESPACE="{{ .TEST_NAMESPACE }}"
+          export RELEASE_NAME="integration"
+          envsubst '$NAMESPACE $RDBMS_POSTGRESQL_PASSWORD $RDBMS_POSTGRESQL_USERNAME' < "$RESOURCES_DIR/postgresql-cluster.yaml" | kubectl apply -f -
+        else
+          echo "Resources directory not found: $RESOURCES_DIR"
+        fi
+      {{ end }}
     - |
       # Print out all the values that are being applied for debugging purposes.
       VALUES_DIR="{{ .LAYERED_VALUES_DIR }}"
@@ -332,12 +346,26 @@ tasks:
         --interactive=false \
         --log-level info)
       
+      # Write license key to a file and use --set-file to avoid shell word-splitting.
+      # License keys contain spaces and semicolons which break --set via shell expansion.
+      # Charts >=8.9 moved the key from global.license.key to global.license.secret.inlineSecret.
+      LICENSE_KEY_ARGS=""
+      if [ -n "${E2E_TESTS_LICENSE_KEY:-}" ]; then
+        LICENSE_KEY_FILE="/tmp/license-key.txt"
+        printf '%s' "${E2E_TESTS_LICENSE_KEY}" > "$LICENSE_KEY_FILE"
+        if grep -q '@param global.license.key' {{ .TEST_CHART_DIR }}/values.yaml 2>/dev/null; then
+          LICENSE_KEY_ARGS="--set-file global.license.key=$LICENSE_KEY_FILE"
+        else
+          LICENSE_KEY_ARGS="--set-file global.license.secret.inlineSecret=$LICENSE_KEY_FILE"
+        fi
+      fi
+
       echo ""
       echo "=========================================="
       echo "Merged values file: $MERGED_VALUES"
       echo "Final helm install command:"
       echo "=========================================="
-      
+
       # Helm values precedence: last --values wins.
       # Order: common → digest (overlay) → extra → scenario (highest precedence).
       # This ensures scenario-specific values (e.g., CI Keycloak image) override
@@ -351,9 +379,9 @@ tasks:
         {{ if and (eq .TEST_CHART_FLOW "install") (not (empty .TEST_HELM_DIGEST_VALUES)) -}}
         --values {{ .TEST_HELM_DIGEST_VALUES }} \
         {{ end -}}
-        --values /tmp/extra-values-file.yaml \
         --values "$MERGED_VALUES" \
-        ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
+        --values /tmp/extra-values-file.yaml \
+        $LICENSE_KEY_ARGS \
         --set orchestration.upgrade.allowPreReleaseImages=true \
         --timeout 20m0s \
         --wait \
@@ -381,13 +409,10 @@ tasks:
         echo "Applying post-deploy resources for gateway-keycloak scenario"
         RESOURCES_DIR="{{ .TEST_VALUES_BASE_DIR }}/common/resources"
         if [ -d "$RESOURCES_DIR" ]; then
-          for f in "$RESOURCES_DIR"/*.yaml "$RESOURCES_DIR"/*.yml; do
-            [ -f "$f" ] || continue
-            echo "Applying resource: $f"
-            export NAMESPACE="{{ .TEST_NAMESPACE }}"
-            export RELEASE_NAME="integration"
-            envsubst '$NAMESPACE $RELEASE_NAME' < "$f" | kubectl apply -f -
-          done
+          echo "Applying resource: gateway-proxy-settings.yaml"
+          export NAMESPACE="{{ .TEST_NAMESPACE }}"
+          export RELEASE_NAME="integration"
+          envsubst '$NAMESPACE $RELEASE_NAME' < "$RESOURCES_DIR/gateway-proxy-settings.yaml" | kubectl apply -f -
         else
           echo "Resources directory not found: $RESOURCES_DIR"
         fi

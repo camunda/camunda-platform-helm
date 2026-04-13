@@ -1,0 +1,14 @@
+# MCP (Model Context Protocol) feature configuration for 8.9
+# Layer 4: Feature - MCP
+#
+# This feature file only enables the MCP gateway. It works with any secondary
+# storage type (elasticsearch, opensearch, rdbms) controlled by the persistence layer.
+
+# Enable MCP gateway
+orchestration:
+  extraConfiguration:
+    - file: mcp-gateway.yaml
+      content: |
+        camunda:
+          mcp:
+            enabled: true

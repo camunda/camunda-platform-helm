@@ -147,13 +147,13 @@ get_first_version() {
 
 }
 
-@test "upgrade-patch is filtered for version == 8.9 via YAML config" {
-  # Ensure 8.9 is among active versions; skip if not present
-  if ! printf "%s\n" $AV | grep -q '^8\.9$'; then
-    skip "8.9 not available in active versions"
+@test "upgrade-patch is filtered for version == 8.10 via YAML config" {
+  # Ensure 8.10 is among active versions; skip if not present
+  if ! printf "%s\n" $AV | grep -q '^8\.10$'; then
+    skip "8.10 not available in active versions"
   fi
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
-    --manual-trigger "8.9" \
+    --manual-trigger "8.10" \
     --active-versions "$AV" \
     --manual-flow "install,upgrade-patch,upgrade-minor"
   assert_success
@@ -180,12 +180,13 @@ get_first_version() {
 }
 
 @test "upgrade-patch is skipped for keycloak-mt even with manual flow" {
-  # Ensure 8.8 is among active versions; skip if not present
-  if ! printf "%s\n" $AV | grep -q '^8\.8$'; then
-    skip "8.8 not available in active versions"
+  # Ensure 8.7 is among active versions; skip if not present.
+  # keycloak-mt exists in 8.7 (not in 8.8+).
+  if ! printf "%s\n" $AV | grep -q '^8\.7$'; then
+    skip "8.7 not available in active versions"
   fi
   run bash "$ROOT/scripts/generate-chart-matrix.sh" \
-    --manual-trigger "8.8" \
+    --manual-trigger "8.7" \
     --active-versions "$AV" \
     --manual-flow "install,upgrade-patch"
   assert_success

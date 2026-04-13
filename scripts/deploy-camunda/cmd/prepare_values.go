@@ -30,6 +30,7 @@ type prepareValuesFlags struct {
 	features     []string
 	qa           bool
 	imageTags    bool
+	imageTagsSet bool // true when --image-tags was explicitly provided
 	upgradeFlow  bool
 	flow         string
 	chartVersion string
@@ -78,6 +79,7 @@ All diagnostic output goes to stderr via the logger.`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			pv.imageTagsSet = cmd.Flags().Changed("image-tags")
 			return runPrepareValues(&pv)
 		},
 	}
@@ -87,7 +89,7 @@ All diagnostic output goes to stderr via the logger.`,
 	f.StringVar(&pv.chartPath, "chart-path", "", "Path to the Camunda chart directory (used to derive scenario-path if not set)")
 	f.StringVar(&pv.scenario, "scenario", "chart-full-setup", "Scenario name (used to derive defaults from naming conventions)")
 	f.StringVar(&pv.identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-external, opensearch, rdbms, rdbms-oracle")
+	f.StringVar(&pv.persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-external, opensearch, opensearch-external, rdbms, rdbms-oracle")
 	f.StringVar(&pv.testPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
 	f.StringVar(&pv.platform, "platform", "gke", "Deploy platform: gke, rosa, eks (fallback for --test-platform)")
 	f.StringSliceVar(&pv.features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
@@ -108,7 +110,7 @@ All diagnostic output goes to stderr via the logger.`,
 		return []string{"keycloak", "keycloak-external", "oidc", "basic", "hybrid"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"elasticsearch", "elasticsearch-external", "opensearch", "rdbms", "rdbms-oracle"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"elasticsearch", "elasticsearch-external", "opensearch", "rdbms", "rdbms-external", "rdbms-oracle"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	_ = cmd.RegisterFlagCompletionFunc("test-platform", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return config.TestPlatforms, cobra.ShellCompDirectiveNoFileComp
@@ -225,6 +227,7 @@ func runPrepareValuesLayered(pv *prepareValuesFlags, scenarioDir, outputDir stri
 		Flow:         pv.flow,
 		QA:           pv.qa,
 		ImageTags:    pv.imageTags,
+		ImageTagsSet: pv.imageTagsSet,
 		Upgrade:      pv.upgradeFlow,
 		ChartVersion: pv.chartVersion,
 		ValuesConfig: pv.valuesConfig,

@@ -8,11 +8,18 @@ Chart.lock
 # exceptions
 !scripts/*.tgz
 .env*
+!.env.template
+.camunda-deploy.yaml
+!.camunda-deploy.yaml.template
 **/*.png
 
 node_modules/
 **/node_modules/
 **/.npm-install-lock/
+
+# Docusaurus
+helm-docs-site/.docusaurus/
+helm-docs-site/build/
 
 test-results/
 **/test-results/
@@ -37,3 +44,5 @@ charts/camunda-platform*/test/e2e/package-lock.json
 
 diagnostics/
 STATE.md
+
+**/.omc

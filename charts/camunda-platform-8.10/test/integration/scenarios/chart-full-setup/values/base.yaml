@@ -2,6 +2,9 @@
 # Layer 1: Common configuration shared across all scenarios
 
 global:
+  imagePullSecrets:
+    - index-docker-io
+    - registry-camunda-cloud
   elasticsearch:
     enabled: true
   exporter:
@@ -143,14 +146,6 @@ webModeler:
       periodSeconds: 5
       failureThreshold: 30
       timeoutSeconds: 1
-    pusher:
-      secret:
-        existingSecret: "integration-test-credentials"
-        existingSecretKey: "webmodeler-pusher-app-secret"
-      client:
-        secret:
-          existingSecret: "integration-test-credentials"
-          existingSecretKey: "webmodeler-pusher-app-key"
     mail:
       fromAddress: noreply@example.com
 
@@ -221,8 +216,6 @@ orchestration:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: "orchestration-{{ .Values.global.host }}"
         external-dns.alpha.kubernetes.io/ttl: "60"
-  importer:
-    enabled: true
 
 console:
   enabled: true

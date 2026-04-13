@@ -162,7 +162,7 @@ runs:
         CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
 
     - name: Cache - node_modules
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
       with:
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
         key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -170,7 +170,7 @@ runs:
           node_modules-${{ runner.os }}-
 
     - name: Cache - Playwright
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
       with:
         path: ~/.cache/ms-playwright
         key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
@@ -193,19 +193,10 @@ runs:
 
     - name: Test - Upload Playwright report
       if: always()
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
       with:
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
         name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner-${{ steps.report_date.outputs.date }}
         if-no-files-found: error
         retention-days: 5
-    - name: Test - Upload Playwright JSON results
-      if: always()
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-      with:
-        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/test-results/playwright-results.json
-        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner-${{ steps.report_date.outputs.date }}
-        if-no-files-found: error
-        retention-days: 5
-
 

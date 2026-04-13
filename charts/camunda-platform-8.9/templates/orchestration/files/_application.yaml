@@ -3,10 +3,16 @@ This file name should start with an underscore to avoid rendering it as a templa
 It is included (imported) in the ConfigMap.
 */}}
 spring:
-  {{- if .Values.orchestration.extraConfiguration }}
+  {{- $springImports := list }}
+  {{- range .Values.orchestration.extraConfiguration }}
+    {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
+      {{- $springImports = append $springImports . }}
+    {{- end }}
+  {{- end }}
+  {{- if $springImports }}
   config:
     import:
-    {{- range .Values.orchestration.extraConfiguration }}
+    {{- range $springImports }}
       - optional:file:/usr/local/camunda/config/{{ .file }}
     {{- end }}
   {{- end }}
@@ -39,6 +45,12 @@ camunda:
   {{- end }}
   license:
     key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
+  {{- if eq (include "orchestration.hasAzureDocumentStore" .) "true" }}
+  document:
+    store:
+      azure:
+        connection-string: "${VALUES_DOCUMENT_STORE_AZURE_CONNECTION_STRING:}"
+  {{- end }}
 
   system:
     cpu-thread-count: {{ .Values.orchestration.cpuThreadCount }}
@@ -60,9 +72,16 @@ camunda:
     replication-factor: {{ .Values.orchestration.replicationFactor | quote }}
     partition-count: {{ .Values.orchestration.partitionCount | quote }}
     # zeebe.broker.cluster
+    {{- if le (int .Values.global.multiregion.regions) 1 }}
     initial-contact-points:
     {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
       - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
+    {{- end }}
+    {{- else }}
+    # Multi-region deployments: initial-contact-points must be provided manually via environment variable.
+    # Set CAMUNDA_CLUSTER_INITIALCONTACTPOINTS with fully-qualified domain names for all brokers across regions.
+    # Example: orchestration.env[0].name=CAMUNDA_CLUSTER_INITIALCONTACTPOINTS
+    #          orchestration.env[0].value=<pod>.<headless-service>.<namespace-0>.svc.cluster.local:26502,<pod>.<headless-service>.<namespace-1>.svc.cluster.local:26502,...
     {{- end }}
 
   api:
@@ -132,6 +151,10 @@ camunda:
   # Security configuration - Separated syntax.
   security:
     authentication:
+    {{- if and (eq (include "orchestration.authMethod" .) "basic") (.Values.orchestration.security.authentication.unprotectedApi) }}
+      basic:
+        allow-unauthenticated-api-access: {{ .Values.orchestration.security.authentication.unprotectedApi }}
+    {{- end }}
     {{- if eq (include "orchestration.authMethod" .) "oidc" }}
       oidc:
         username-claim: {{ .Values.orchestration.security.authentication.oidc.usernameClaim | quote }}
@@ -176,6 +199,10 @@ camunda:
       users:
         {{- .Values.orchestration.security.initialization.users | toYaml | nindent 8 }}
       {{- end }}
+      {{- if .Values.orchestration.security.initialization.mappingRules }}
+      mapping-rules:
+        {{- .Values.orchestration.security.initialization.mappingRules | toYaml | nindent 8 }}
+      {{- end }}
       {{- if .Values.orchestration.security.initialization.authorizations }}
       authorizations:
         {{- .Values.orchestration.security.initialization.authorizations | toYaml | nindent 8 }}
@@ -183,16 +210,15 @@ camunda:
     multiTenancy:
       checksEnabled: {{ include "orchestration.multitenancyChecksEnabled" . }}
       apiEnabled: {{ include "orchestration.multitenancyApiEnabled" . }}
-
-  persistent:
-    sessions:
-      enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
-
   {{- if eq (include "orchestration.authMethod" .) "oidc" }}
   identity:
     clientId: {{ include "orchestration.authClientId" . | quote }}
     audience: {{ include "orchestration.authAudience" . | quote }}
   {{- end }}
+  persistent:
+    sessions:
+      enabled: {{ include "orchestration.persistentSessionsEnabled" . }}
+
 
 {{- if .Values.orchestration.profiles.operate -}}
   {{- "\n" }}

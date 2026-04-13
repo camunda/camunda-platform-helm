@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/config"
 	"scripts/deploy-camunda/matrix"
@@ -171,7 +173,10 @@ func newMatrixRunCommand() *cobra.Command {
 		dockerHubUsername        string
 		dockerHubPassword        string
 		ensureDockerHub          bool
+		useLatest                bool
+		useQA                    bool
 		yes                      bool
+		logDir                   string
 	)
 
 	cmd := &cobra.Command{
@@ -391,6 +396,48 @@ This command calls deploy.Execute() for each matrix entry.`,
 				fmt.Fprintln(os.Stdout, output)
 			}
 
+			// Set up status display and log redirection.
+			// Auto-generates a timestamped log dir when stdout is a TTY and
+			// --log-dir is not explicitly set, so each run gets its own logs.
+			var statusDisplay *matrix.StatusDisplay
+			var logFile io.Closer
+			stdoutIsTerminal := logging.IsTerminal(os.Stdout.Fd())
+			// When --log-dir is explicitly set, append a timestamp subdirectory
+			// so successive runs don't clobber each other's logs.
+			if logDir != "" {
+				logDir = filepath.Join(logDir, time.Now().Format("20060102-150405"))
+			}
+			if logDir == "" && stdoutIsTerminal && !dryRun && !coverage {
+				logDir = filepath.Join(os.TempDir(), "matrix-logs", time.Now().Format("20060102-150405"))
+			}
+			if logDir != "" && !dryRun && !coverage {
+				if err := os.MkdirAll(logDir, 0o755); err != nil {
+					return fmt.Errorf("failed to create log directory %q: %w", logDir, err)
+				}
+
+				// Create/update a "latest" symlink so `tail -f /tmp/matrix-logs/latest/matrix-run.log` always works.
+				latestLink := filepath.Join(filepath.Dir(logDir), "latest")
+				_ = os.Remove(latestLink)
+				_ = os.Symlink(logDir, latestLink)
+
+				f, err := os.Create(filepath.Join(logDir, "matrix-run.log"))
+				if err != nil {
+					return fmt.Errorf("failed to create log file: %w", err)
+				}
+				logFile = f
+
+				// Redirect zerolog to the log file so stdout is clean for the status table.
+				if err := logging.Setup(logging.Options{
+					LevelString:  logLevel,
+					ColorEnabled: false,
+					Writer:       f,
+				}); err != nil {
+					return err
+				}
+
+				statusDisplay = matrix.NewStatusDisplay(os.Stdout, entries, stdoutIsTerminal, logDir)
+			}
+
 			runStart := time.Now()
 			results, err := matrix.Run(ctx, entries, matrix.RunOptions{
 				DryRun:                dryRun,
@@ -425,11 +472,42 @@ This command calls deploy.Execute() for each matrix entry.`,
 				DockerHubUsername:     dockerHubUsername,
 				DockerHubPassword:     dockerHubPassword,
 				EnsureDockerHub:       ensureDockerHub,
+				UseLatest:             useLatest,
+				UseQA:                 useQA,
+				OnEntryStart: func(entry matrix.Entry, namespace string) {
+					if statusDisplay != nil {
+						statusDisplay.OnEntryStart(entry, namespace)
+					}
+				},
+				OnEntryComplete: func(entry matrix.Entry, result matrix.RunResult) {
+					if statusDisplay != nil {
+						statusDisplay.OnEntryComplete(entry, result)
+					}
+				},
+				OnPhaseChange: func(entry matrix.Entry, phase string) {
+					if statusDisplay != nil {
+						statusDisplay.OnPhaseChange(entry, phase)
+					}
+				},
+				LogDir: logDir,
 			})
 
-			// Print summary (skip for dry-run/coverage since they print their own output)
+			// Close the log file if we opened one.
+			if logFile != nil {
+				logFile.Close()
+			}
+
+			// Print summary (skip for dry-run/coverage since they print their own output).
 			if !dryRun && !coverage {
-				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart)))
+				// Stop the ticker, restore the cursor, and clear the status table
+				// before printing the final summary.
+				if statusDisplay != nil {
+					statusDisplay.Stop()
+					statusDisplay.Clear()
+					// Restore color output for the summary since logging was redirected to a file.
+					logging.ColorEnabled = stdoutIsTerminal
+				}
+				fmt.Fprintln(os.Stdout, matrix.PrintRunSummary(results, time.Since(runStart), logDir))
 			}
 
 			return err
@@ -480,7 +558,11 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&dockerHubUsername, "dockerhub-username", "", "Docker Hub registry username (defaults to DOCKERHUB_USERNAME or TEST_DOCKER_USERNAME env var)")
 	f.StringVar(&dockerHubPassword, "dockerhub-password", "", "Docker Hub registry password (defaults to DOCKERHUB_PASSWORD or TEST_DOCKER_PASSWORD env var)")
 	f.BoolVar(&ensureDockerHub, "ensure-docker-hub", false, "Ensure Docker Hub registry pull secret is created in each entry's namespace")
+	f.BoolVar(&useLatest, "use-latest", false, "Use values-latest.yaml from each chart root instead of values-digest.yaml")
+	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
+	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
+
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
@@ -586,7 +668,7 @@ func resolveRepoRoot(flagValue string) string {
 
 	// Try to resolve from config file
 	var tempFlags config.RuntimeFlags
-	if _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
+	if _, _, err := config.LoadAndMerge(configFile, false, &tempFlags); err == nil {
 		if tempFlags.Chart.RepoRoot != "" {
 			return tempFlags.Chart.RepoRoot
 		}

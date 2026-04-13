@@ -72,7 +72,29 @@ func generateTestSecrets(envFile string, existingEnv map[string]string) (map[str
 	}
 
 	// Add vault secret mapping.
-	secrets["vault_secret_mapping"] = "ci/path DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;ci/path DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;"
+	secrets["vault_secret_mapping"] = "" +
+		"ci/path DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;" +
+		"ci/path DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;" +
+		"ci/path DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;" +
+		"ci/path DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;" +
+		"ci/path IDP_AWS_ACCESSKEY;" +
+		"ci/path IDP_AWS_BUCKET_NAME;" +
+		"ci/path IDP_AWS_REGION;" +
+		"ci/path IDP_AWS_SECRETKEY;" +
+		"ci/path IDP_GCP_SERVICE_ACCOUNT;" +
+		"ci/path IDP_GCP_VERTEX_BUCKET_NAME;" +
+		"ci/path IDP_GCP_VERTEX_PROJECT_ID;" +
+		"ci/path IDP_GCP_DOCUMENT_AI_PROJECT_ID;" +
+		"ci/path IDP_GCP_DOCUMENT_AI_PROCESSOR_ID;" +
+		"ci/path IDP_GCP_DOCUMENT_AI_REGION;" +
+		"ci/path IDP_GCP_VERTEX_REGION;" +
+		"ci/path IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY;" +
+		"ci/path IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;" +
+		"ci/path IDP_AZURE_AI_FOUNDRY_ENDPOINT;" +
+		"ci/path IDP_AZURE_AI_FOUNDRY_KEY;" +
+		"ci/path IDP_AZURE_OPEN_AI_ENDPOINT;" +
+		"ci/path IDP_AZURE_OPEN_AI_KEY;" +
+		"ci/path OPENAI_API_KEY;"
 
 	// Persist to .env file
 	targetEnvFile := envFile

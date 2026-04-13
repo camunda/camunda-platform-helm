@@ -106,21 +106,21 @@ otherwise falls back to global.elasticsearch.auth.
 {{- end -}}
 
 {{/*
-[optimize] Resolve zeebe prefix
+[optimize] Resolve zeebe prefix.
+Precedence matches optimize.defaultConfig: ES is checked first, OS only when ES is off.
+  ES chain: optimize.database.elasticsearch.prefix -> global.elasticsearch.prefix -> "zeebe-record"
+  OS chain: optimize.database.opensearch.prefix -> global.opensearch.prefix -> "zeebe-record"
+When neither backend is explicitly enabled, falls back to "zeebe-record".
 */}}
-{{- define "optimize.indexPrefix" }}
-{{- if ne .Values.optimize.database.elasticsearch.prefix "zeebe-record" -}}
-{{ .Values.optimize.database.elasticsearch.prefix }}
-{{- else if ne .Values.optimize.database.opensearch.prefix "zeebe-record" -}}
-{{ .Values.optimize.database.opensearch.prefix }}
-{{- else if ne .Values.global.elasticsearch.prefix "zeebe-record" -}}
-{{ .Values.global.elasticsearch.prefix }}
-{{- else if ne .Values.global.opensearch.prefix "zeebe-record" -}}
-{{ .Values.global.opensearch.prefix }}
+{{- define "optimize.indexPrefix" -}}
+{{- if or .Values.global.elasticsearch.enabled .Values.optimize.database.elasticsearch.enabled -}}
+  {{- .Values.optimize.database.elasticsearch.prefix | default .Values.global.elasticsearch.prefix | default "zeebe-record" -}}
+{{- else if or .Values.global.opensearch.enabled .Values.optimize.database.opensearch.enabled -}}
+  {{- .Values.optimize.database.opensearch.prefix | default .Values.global.opensearch.prefix | default "zeebe-record" -}}
 {{- else -}}
-zeebe-record
-{{- end }}
-{{- end }}
+  {{- "zeebe-record" -}}
+{{- end -}}
+{{- end -}}
 
 {{/*
 [optimize] Resolve the effective OpenSearch auth config.
@@ -135,11 +135,14 @@ zeebe-record
 
 {{/*
 [optimize] Build a comma-separated spring.config.import line from extraConfiguration files.
+Entries with springImport: false are excluded.
 */}}
 {{- define "optimize.springConfigImport" -}}
 {{- $imports := list -}}
 {{- range .Values.optimize.extraConfiguration -}}
-  {{- $imports = append $imports (printf "optional:file:/optimize/config/%s" .file) -}}
+  {{- if not (and (hasKey . "springImport") (eq .springImport false)) -}}
+    {{- $imports = append $imports (printf "optional:file:/optimize/config/%s" .file) -}}
+  {{- end -}}
 {{- end -}}
 {{- join "," $imports -}}
 {{- end -}}

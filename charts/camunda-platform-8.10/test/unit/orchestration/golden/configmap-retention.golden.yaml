@@ -139,7 +139,6 @@ data:
         multiTenancy:
           checksEnabled: false
           apiEnabled: true
-    
       persistent:
         sessions:
           enabled: true

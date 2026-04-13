@@ -265,7 +265,7 @@ TODO: Most of the Keycloak config is handeled in Identity sub-chart, but it shou
       {{-
         printf "%s://%s:%v%s"
           .Values.global.identity.keycloak.url.protocol
-          .Values.global.identity.keycloak.url.host
+          (include "identity.keycloak.host" .)
           .Values.global.identity.keycloak.url.port
           (include "camundaPlatform.joinpath" (list .Values.global.identity.keycloak.contextPath .Values.global.identity.keycloak.realm))
       -}}
@@ -290,7 +290,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 */}}
 {{- define "camundaPlatform.authIssuerUrlEndpointAuth" -}}
   {{- if or .Values.global.identity.auth.authUrl -}}
-    {{- .Values.global.identity.auth.authUrl -}}
+    {{- tpl .Values.global.identity.auth.authUrl . -}}
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerUrlWithFallback" . -}}/protocol/openid-connect/auth
   {{- end -}}
@@ -301,7 +301,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointToken" -}}
   {{- if .Values.global.identity.auth.tokenUrl -}}
-    {{- .Values.global.identity.auth.tokenUrl -}}
+    {{- tpl .Values.global.identity.auth.tokenUrl . -}}
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/token
   {{- end -}}
@@ -312,7 +312,7 @@ NOTE: This is for Management Identity config, all new types will be supported vi
 */}}
 {{- define "camundaPlatform.authIssuerBackendUrlEndpointCerts" -}}
   {{- if .Values.global.identity.auth.jwksUrl -}}
-    {{- .Values.global.identity.auth.jwksUrl -}}
+    {{- tpl .Values.global.identity.auth.jwksUrl . -}}
   {{- else if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" -}}
     {{- include "camundaPlatform.authIssuerBackendUrl" . -}}/protocol/openid-connect/certs
   {{- end -}}
@@ -990,7 +990,7 @@ Release highlights.
 {{- define "camundaPlatform.ReleaseHighlights" }}
 ## [info] Helm chart release highlights
 - Some values have been renamed or moved in the new chart structure.
-- When upgraded from 8.7 to 8.8, manual adjustments may be required for some cases like custom configurations.
+- When upgraded from 8.8 to 8.9, manual adjustments may be required for some cases like custom configurations.
 - Please refer to the official docs for more details.
-https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-870-880/
+https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/upgrade-hc-880-890/
 {{- end -}}

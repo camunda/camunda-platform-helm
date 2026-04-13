@@ -34,6 +34,10 @@ import (
 // are distributed via round-robin. This matches the 4-cluster pool infra.
 const numESPools = 4
 
+// numOSPools is the number of OpenSearch pools across which matrix entries
+// are distributed via round-robin. This matches the 4-cluster pool infra.
+const numOSPools = 4
+
 // RunOptions controls matrix execution.
 type RunOptions struct {
 	// DryRun logs what would be done without executing.
@@ -141,6 +145,27 @@ type RunOptions struct {
 	// When true, the deployer performs docker login and creates an index-docker-io
 	// Kubernetes secret of type kubernetes.io/dockerconfigjson.
 	EnsureDockerHub bool
+	// UseLatest applies values-latest.yaml from each chart root instead of values-digest.yaml.
+	// This overrides the default digest-based image pinning with the latest available tags.
+	UseLatest bool
+	// UseQA forces the base-qa layer to be included for all entries, regardless of each
+	// entry's per-scenario qa setting in ci-test-config.yaml.
+	UseQA bool
+	// OnEntryStart is called when a matrix entry begins execution.
+	// The callback receives the entry and its resolved namespace.
+	// Nil disables the callback (zero overhead for existing CLI behavior).
+	OnEntryStart func(entry Entry, namespace string)
+	// OnEntryComplete is called when a matrix entry finishes execution.
+	// The callback receives the entry and its full result (including error and duration).
+	// Nil disables the callback (zero overhead for existing CLI behavior).
+	OnEntryComplete func(entry Entry, result RunResult)
+	// OnPhaseChange is called when a matrix entry transitions to a new phase
+	// (e.g., "preparing", "deploying", "step-1", "step-2", "testing", "cleanup").
+	// Nil disables the callback.
+	OnPhaseChange func(entry Entry, phase string)
+	// LogDir is the directory for per-entry log files. When set, test script
+	// output (IT/e2e) is redirected to per-entry files instead of the terminal.
+	LogDir string
 }
 
 // RunResult holds the result of a single matrix entry execution.
@@ -192,6 +217,14 @@ func Run(ctx context.Context, entries []Entry, opts RunOptions) ([]RunResult, er
 		if err := docker.EnsureHarborLogin(ctx, opts.DockerUsername, opts.DockerPassword); err != nil {
 			return nil, fmt.Errorf("failed to ensure Harbor login: %w", err)
 		}
+	}
+
+	// Warm up each unique kube context ONCE before dispatching entries.
+	// For Teleport-managed clusters (EKS), the first API call may trigger
+	// an interactive browser login. Doing this sequentially ensures only one
+	// login prompt per context, rather than N parallel goroutines racing.
+	if err := warmUpKubeContexts(ctx, entries, opts); err != nil {
+		return nil, err
 	}
 
 	parallel := opts.MaxParallel > 1
@@ -270,7 +303,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				Features:    entry.Features,
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
-				QA:          entry.QA,
+				QA:          entry.QA || opts.UseQA,
 				ImageTags:   entry.ImageTags,
 				Upgrade:     entry.Upgrade,
 			})
@@ -313,7 +346,7 @@ func dryRun(entries []Entry, opts RunOptions) []RunResult {
 				preUpgradeScript:     resolvePreUpgradeScriptQuiet(opts.RepoRoot, entry),
 				upgradeOnly:          versionmatrix.IsUpgradeOnlyFlow(entry.Flow),
 				step1ValuesFrom:      resolveStep1ValuesFromQuiet(entry),
-				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry),
+				chartRootOverlays:    resolveChartRootOverlaysQuiet(entry.ChartPath, entry, opts.UseLatest),
 			})
 			results = append(results, RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx})
 		}
@@ -390,8 +423,9 @@ func resolveStep1ValuesFromQuiet(entry Entry) string {
 // enterprise is composable (changes registry/repo, not tags).
 // digest, latest, and image-tags are mutually exclusive for image version resolution:
 //   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-//   - digest is the CI default when image-tags is not active
-func resolveChartRootOverlaysQuiet(chartPath string, entry Entry) []string {
+//   - useLatest selects values-latest.yaml instead of values-digest.yaml
+//   - digest is the CI default when neither image-tags nor useLatest is active
+func resolveChartRootOverlaysQuiet(chartPath string, entry Entry, useLatest bool) []string {
 	if chartPath == "" {
 		return nil
 	}
@@ -400,7 +434,11 @@ func resolveChartRootOverlaysQuiet(chartPath string, entry Entry) []string {
 		overlays = append(overlays, "enterprise")
 	}
 	if !entry.ImageTags {
-		overlays = append(overlays, "digest")
+		if useLatest {
+			overlays = append(overlays, "latest")
+		} else {
+			overlays = append(overlays, "digest")
+		}
 	}
 	// Filter to only overlays whose files exist on disk.
 	var existing []string
@@ -581,7 +619,7 @@ func coverageReport(entries []Entry, opts RunOptions) []RunResult {
 				Features:    entry.Features,
 				InfraType:   entry.InfraType,
 				Flow:        entry.Flow,
-				QA:          entry.QA,
+				QA:          entry.QA || opts.UseQA,
 				ImageTags:   entry.ImageTags,
 				Upgrade:     entry.Upgrade,
 			})
@@ -841,6 +879,9 @@ func runParallel(ctx context.Context, entries []Entry, opts RunOptions) ([]RunRe
 					Namespace: buildNamespace(opts.NamespacePrefix, e),
 					Error:     fmt.Errorf("skipped: run cancelled"),
 				}
+				if opts.OnEntryComplete != nil {
+					opts.OnEntryComplete(e, results[idx])
+				}
 				return
 			}
 
@@ -965,6 +1006,30 @@ func resolveKubeContext(opts RunOptions, platform string) string {
 		return ctx
 	}
 	return opts.KubeContext
+}
+
+// warmUpKubeContexts makes a lightweight API call to each unique kube context
+// used by the matrix entries. This triggers any pending interactive login
+// (e.g., Teleport browser SSO) sequentially, before parallel dispatch begins.
+func warmUpKubeContexts(ctx context.Context, entries []Entry, opts RunOptions) error {
+	seen := make(map[string]bool)
+	for _, entry := range entries {
+		platform := resolvePlatform(opts, entry)
+		kubeCtx := resolveKubeContext(opts, platform)
+		if kubeCtx == "" || seen[kubeCtx] {
+			continue
+		}
+		seen[kubeCtx] = true
+
+		logging.Logger.Info().
+			Str("kubeContext", kubeCtx).
+			Msg("Verifying cluster connectivity")
+
+		if err := kube.CheckConnectivity(ctx, kubeCtx); err != nil {
+			return fmt.Errorf("cluster connectivity check failed: %w", err)
+		}
+	}
+	return nil
 }
 
 // resolveEnvFile returns the .env file path for a matrix entry's version.
@@ -1293,6 +1358,16 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	namespace := buildNamespace(opts.NamespacePrefix, entry)
 	baseNamespace := buildBaseNamespace(entry)
 
+	if opts.OnEntryStart != nil {
+		opts.OnEntryStart(entry, namespace)
+	}
+
+	// Fire "preparing" phase and wire flags.OnPhase so deploy/test callbacks
+	// propagate back to the status display.
+	if opts.OnPhaseChange != nil {
+		opts.OnPhaseChange(entry, "preparing")
+	}
+
 	// Determine platform and kube context
 	platform := resolvePlatform(opts, entry)
 	kubeCtx := resolveKubeContext(opts, platform)
@@ -1333,14 +1408,19 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			// enterprise is composable (changes registry/repo, not tags).
 			// digest, latest, and image-tags are mutually exclusive for image version resolution:
 			//   - image-tags (SNAPSHOT tags from env) takes priority over digest/latest
-			//   - digest is the CI default when image-tags is not active
+			//   - useLatest selects values-latest.yaml instead of values-digest.yaml
+			//   - digest is the CI default when neither image-tags nor useLatest is active
 			ChartRootOverlays: func() []string {
 				var overlays []string
 				if entry.Enterprise {
 					overlays = append(overlays, "enterprise")
 				}
 				if !entry.ImageTags {
-					overlays = append(overlays, "digest")
+					if opts.UseLatest {
+						overlays = append(overlays, "latest")
+					} else {
+						overlays = append(overlays, "digest")
+					}
 				}
 				return overlays
 			}(),
@@ -1404,13 +1484,76 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			Persistence: entry.Persistence,
 			Features:    entry.Features,
 			InfraType:   entry.InfraType,
-			QA:          entry.QA,
+			QA:          entry.QA || opts.UseQA,
 			ImageTags:   entry.ImageTags,
 			UpgradeFlow: entry.Upgrade,
 		},
 	}
 
 	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
+	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
+
+	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
+	// which we forward to the matrix-level OnPhaseChange callback.
+	if opts.OnPhaseChange != nil {
+		flags.OnPhase = func(phase string) {
+			opts.OnPhaseChange(entry, phase)
+		}
+	}
+
+	// Redirect test script output and deploy logs to per-entry files when logDir is set.
+	// This keeps output out of the terminal so the status table stays clean.
+	if opts.LogDir != "" {
+		baseName := entryLogFileName(entry)
+		if itFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".it.log")); err != nil {
+			logging.Logger.Warn().Err(err).Msg("Failed to create IT log file, output will go to terminal")
+		} else {
+			defer itFile.Close()
+			flags.ITOutputWriter = itFile
+		}
+		if e2eFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".e2e.log")); err != nil {
+			logging.Logger.Warn().Err(err).Msg("Failed to create e2e log file, output will go to terminal")
+		} else {
+			defer e2eFile.Close()
+			flags.E2EOutputWriter = e2eFile
+		}
+
+		// Per-entry deploy log: captures all subprocess output (helm, kubectl, etc.)
+		// plus lifecycle events, giving a complete timeline for this entry.
+		deployLogPath := filepath.Join(opts.LogDir, baseName+".deploy.log")
+		if deployLog, err := os.Create(deployLogPath); err != nil {
+			logging.Logger.Warn().Err(err).Msg("Failed to create deploy log file")
+		} else {
+			defer deployLog.Close()
+			writeEntryLog := func(level, msg string) {
+				if !logging.ShouldLog(logLevel, level) {
+					return
+				}
+				ts := time.Now().Format("15:04:05")
+				fmt.Fprintf(deployLog, "[%s] %s: %s\n", ts, strings.ToUpper(level), msg)
+			}
+			writeEntryLog("info", fmt.Sprintf("entry=%s namespace=%s platform=%s flow=%s", entryID(entry), namespace, platform, entry.Flow))
+
+			// Intercept all subprocess output (helm, kubectl) via executil buffer callback.
+			// The callback tees lines to both the per-entry file and the normal logger.
+			ctx = executil.ContextWithBuffer(ctx, func(level, line string) {
+				writeEntryLog(level, line)
+				prefix := logging.BuildPrefix(logging.FieldsFromContext(ctx), "")
+				switch strings.ToLower(level) {
+				case "trace":
+					logging.Logger.Trace().Msg(prefix + line)
+				case "debug":
+					logging.Logger.Debug().Msg(prefix + line)
+				case "warn", "warning":
+					logging.Logger.Warn().Msg(prefix + line)
+				case "error":
+					logging.Logger.Error().Msg(prefix + line)
+				default:
+					logging.Logger.Info().Msg(prefix + line)
+				}
+			})
+		}
+	}
 
 	// OIDC hook: provision a venom Entra app registration before deployment.
 	// The entra package is the canonical implementation for OIDC app provisioning,
@@ -1504,6 +1647,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Strs("features", entry.Features).
 		Bool("vaultBackedSecrets", useVault).
 		Str("esPoolIndex", flags.ESPoolIndex).
+		Str("osPoolIndex", flags.OSPoolIndex).
 		Msg("Deploying matrix entry")
 
 	// Execute the deployment (deploy + tests run inside deploy.Execute).
@@ -1534,7 +1678,14 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// Per-entry cleanup: delete namespace and Entra app after deployment + tests complete.
 	// This runs regardless of success/failure, after diagnostics have been collected.
 	if opts.Cleanup {
+		if opts.OnPhaseChange != nil {
+			opts.OnPhaseChange(entry, "cleanup")
+		}
 		cleanupEntry(ctx, result, opts)
+	}
+
+	if opts.OnEntryComplete != nil {
+		opts.OnEntryComplete(entry, result)
 	}
 
 	return result
@@ -1672,6 +1823,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 		Msg("Two-step upgrade: pinned index prefixes and realm for both steps")
 
 	// --- Step 1: Install old version from Helm repo ---
+	if flags.OnPhase != nil {
+		flags.OnPhase("step-1")
+	}
 	logging.Logger.Info().
 		Str("step", "1/2").
 		Str("action", "install").
@@ -1763,6 +1917,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	}
 
 	// --- Step 2: Upgrade to current on-disk chart ---
+	if flags.OnPhase != nil {
+		flags.OnPhase("step-2")
+	}
 	logging.Logger.Info().
 		Str("step", "2/2").
 		Str("action", "upgrade").
@@ -1810,6 +1967,9 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 // Unlike executeTwoStepUpgrade, there is NO Step 1 install from the Helm repo.
 // The previous version must already be deployed (by a prior "install" flow entry).
 func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeFlags, opts RunOptions) error {
+	if flags.OnPhase != nil {
+		flags.OnPhase("upgrading")
+	}
 	logging.Logger.Info().
 		Str("flow", entry.Flow).
 		Str("namespace", flags.EffectiveNamespace()).
@@ -1882,7 +2042,8 @@ func executeUpgradeOnly(ctx context.Context, entry Entry, flags *config.RuntimeF
 // PrintRunSummary outputs a summary of all run results including per-entry timings.
 // wallClock is the actual elapsed wall-clock duration for the entire matrix run.
 // When entries run in parallel, this will be less than the sum of individual entry durations.
-func PrintRunSummary(results []RunResult, wallClock time.Duration) string {
+// logDir, when non-empty, shows per-entry log file paths for failed entries.
+func PrintRunSummary(results []RunResult, wallClock time.Duration, logDir string) string {
 	if len(results) == 0 {
 		return "No entries executed."
 	}
@@ -1973,8 +2134,20 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration) string {
 				if r.Diagnostics != "" {
 					fmt.Fprintf(&b, "    %s %s\n", dryKey("Diagnostics:"), dryWarn(r.Diagnostics))
 				}
+
+				if logDir != "" {
+					baseName := entryLogFileName(r.Entry)
+					fmt.Fprintf(&b, "    %s\n", dryKey("Logs:"))
+					fmt.Fprintf(&b, "      deploy:  %s\n", filepath.Join(logDir, baseName+".deploy.log"))
+					fmt.Fprintf(&b, "      it:      %s\n", filepath.Join(logDir, baseName+".it.log"))
+					fmt.Fprintf(&b, "      e2e:     %s\n", filepath.Join(logDir, baseName+".e2e.log"))
+				}
 			}
 		}
+	}
+
+	if logDir != "" {
+		fmt.Fprintf(&b, "\n  %s %s\n", dryKey("Log directory:"), logDir)
 	}
 
 	return b.String()

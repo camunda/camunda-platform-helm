@@ -202,7 +202,13 @@ func (c *Client) waitForNamespaceNotTerminating(ctx context.Context, namespace s
 			return nil
 		}
 		if apierrors.IsForbidden(err) {
-			return formatNamespacePermissionError("access", namespace, "get", err)
+			// On Teleport-managed clusters, a freshly created namespace may return
+			// Forbidden until RBAC propagates. Treat as "doesn't exist yet" and let
+			// EnsureNamespace attempt the create — if that also fails, it's a real error.
+			logging.Logger.Debug().
+				Str("namespace", namespace).
+				Msg("namespace get returned forbidden (possible Teleport RBAC propagation delay), proceeding")
+			return nil
 		}
 		return fmt.Errorf("failed to check namespace status: %w", err)
 	}
@@ -358,7 +364,16 @@ func (c *Client) createOrUpdateSecret(ctx context.Context, namespace, secretName
 	secretsClient := c.clientset.CoreV1().Secrets(namespace)
 
 	existing, err := secretsClient.Get(ctx, secretName, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) || apierrors.IsForbidden(err) {
+		// On Teleport-managed clusters, a freshly created namespace may return
+		// Forbidden instead of NotFound until RBAC propagates. Treat both as
+		// "secret doesn't exist yet" and attempt Create.
+		if apierrors.IsForbidden(err) {
+			logging.Logger.Debug().
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("get secret returned forbidden (possible Teleport RBAC propagation delay), attempting create")
+		}
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      secretName,
@@ -438,7 +453,16 @@ func (c *Client) createOrUpdateOpaqueSecret(ctx context.Context, namespace, secr
 	secretsClient := c.clientset.CoreV1().Secrets(namespace)
 
 	existing, err := secretsClient.Get(ctx, secretName, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) || apierrors.IsForbidden(err) {
+		// On Teleport-managed clusters, a freshly created namespace may return
+		// Forbidden instead of NotFound until RBAC propagates. Treat both as
+		// "secret doesn't exist yet" and attempt Create.
+		if apierrors.IsForbidden(err) {
+			logging.Logger.Debug().
+				Str("namespace", namespace).
+				Str("secret", secretName).
+				Msg("get opaque secret returned forbidden (possible Teleport RBAC propagation delay), attempting create")
+		}
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      secretName,
@@ -603,16 +627,82 @@ func (c *Client) SetLabelsAndAnnotations(ctx context.Context, namespace string, 
 		WithLabels(labels).
 		WithAnnotations(annotations)
 
-	_, err := c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
+	result, err := c.clientset.CoreV1().Namespaces().Apply(ctx, nsApply, defaultApplyOptions())
 	if err != nil {
+		logging.Logger.Warn().
+			Err(err).
+			Str("namespace", namespace).
+			Str("errorType", fmt.Sprintf("%T", err)).
+			Bool("isForbidden", apierrors.IsForbidden(err)).
+			Bool("isUnauthorized", apierrors.IsUnauthorized(err)).
+			Msg("server-side apply failed for namespace labels/annotations")
 		// Check if error is due to namespace termination
 		if strings.Contains(err.Error(), "is being terminated") || strings.Contains(err.Error(), "because it is being terminated") {
 			return fmt.Errorf("failed to apply namespace %q labels/annotations (context=%q): namespace is currently being deleted, please wait for deletion to complete or use a different namespace: %w", namespace, c.kubeContext, err)
 		}
+		if apierrors.IsForbidden(err) {
+			logging.Logger.Warn().
+				Err(err).
+				Str("namespace", namespace).
+				Msg("server-side apply forbidden for namespace labels/annotations, falling back to JSON merge patch")
+			return c.patchNamespaceLabelsAndAnnotations(ctx, namespace, labels, annotations)
+		}
 		return fmt.Errorf("failed to apply namespace %q labels/annotations (context=%q): %w", namespace, c.kubeContext, err)
 	}
 
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Interface("resultLabels", result.Labels).
+		Interface("resultAnnotations", result.Annotations).
+		Int("labelCount", len(labels)).
+		Int("annotationCount", len(annotations)).
+		Msg("server-side apply succeeded for namespace labels/annotations")
+
 	return nil
+}
+
+func (c *Client) patchNamespaceLabelsAndAnnotations(ctx context.Context, namespace string, labels, annotations map[string]string) error {
+	const maxRetries = 3
+	var lastErr error
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		ns, err := c.clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get namespace %q for label/annotation update (context=%q): %w", namespace, c.kubeContext, err)
+		}
+		if ns.Labels == nil {
+			ns.Labels = make(map[string]string)
+		}
+		if ns.Annotations == nil {
+			ns.Annotations = make(map[string]string)
+		}
+		for k, v := range labels {
+			ns.Labels[k] = v
+		}
+		for k, v := range annotations {
+			ns.Annotations[k] = v
+		}
+		_, err = c.clientset.CoreV1().Namespaces().Update(ctx, ns, metav1.UpdateOptions{})
+		if err == nil {
+			logging.Logger.Info().
+				Str("namespace", namespace).
+				Int("attempt", attempt).
+				Msg("updated namespace labels/annotations via fallback GET+UPDATE")
+			return nil
+		}
+		lastErr = err
+		logging.Logger.Warn().
+			Err(err).
+			Str("namespace", namespace).
+			Int("attempt", attempt).
+			Int("maxRetries", maxRetries).
+			Msg("fallback GET+UPDATE failed, retrying")
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
+	return fmt.Errorf("failed to update namespace %q labels/annotations after %d attempts (context=%q): %w", namespace, maxRetries, c.kubeContext, lastErr)
 }
 
 const (
@@ -1022,6 +1112,21 @@ func DeleteNamespace(ctx context.Context, kubeconfig, kubeContext, namespace str
 	}
 
 	logging.Logger.Debug().Str("namespace", namespace).Msg("namespace deleted successfully via kubectl")
+	return nil
+}
+
+// CheckConnectivity performs a lightweight API call (ServerVersion) to verify
+// that the given kube context has valid credentials. For Teleport-managed
+// clusters this triggers the interactive browser login if needed, ensuring
+// subsequent parallel calls don't race on the login prompt.
+func CheckConnectivity(ctx context.Context, kubeContext string) error {
+	client, err := NewClient("", kubeContext)
+	if err != nil {
+		return fmt.Errorf("kube context %q: %w", kubeContext, err)
+	}
+	if _, err := client.clientset.Discovery().ServerVersion(); err != nil {
+		return fmt.Errorf("kube context %q: failed to connect: %w", kubeContext, err)
+	}
 	return nil
 }
 

@@ -31,7 +31,7 @@ const (
 type DeploymentConfig struct {
 	// Required selections
 	Identity    string // keycloak, keycloak-external, oidc, basic, hybrid
-	Persistence string // elasticsearch, opensearch, rdbms, rdbms-oracle
+	Persistence string // elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle
 	Platform    string // gke, eks, openshift
 
 	// Optional features (combinable with constraints)
@@ -56,7 +56,7 @@ func (c *DeploymentConfig) Validate() error {
 		return errors.New("--identity is required (keycloak, keycloak-external, oidc, basic, hybrid)")
 	}
 	if c.Persistence == "" {
-		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-oracle)")
+		return errors.New("--persistence is required (elasticsearch, opensearch, rdbms, rdbms-external, rdbms-oracle)")
 	}
 	if c.Platform == "" {
 		return errors.New("--platform is required (gke, eks, openshift)")
@@ -69,7 +69,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "rdbms", "rdbms-oracle"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-external", "no-elasticsearch", "opensearch", "opensearch-external", "rdbms", "rdbms-external", "rdbms-oracle"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -310,6 +310,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive QA mode from prefix
 	if strings.HasPrefix(s, "qa-") {
 		config.QA = true
+		config.Persistence = "elasticsearch"
 	}
 
 	// Handle well-known composite scenarios that can't be derived from name parsing alone.
@@ -319,14 +320,14 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// so it must keep working.
 	if s == "keycloak-original" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 		config.Platform = "gke"
 		return config
 	}
 
 	if s == "elasticsearch" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 		config.Platform = "gke"
 		return config
 	}
@@ -346,13 +347,15 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive persistence
 	switch {
 	case strings.Contains(s, "opensearch"):
-		config.Persistence = "opensearch"
+		config.Persistence = "opensearch-external"
+	case strings.Contains(s, "rdbms-external"):
+		config.Persistence = "rdbms-external"
 	case strings.Contains(s, "rdbms") && strings.Contains(s, "oracle"):
 		config.Persistence = "rdbms-oracle"
 	case strings.Contains(s, "rdbms"):
 		config.Persistence = "rdbms"
 	default:
-		config.Persistence = "elasticsearch-external"
+		config.Persistence = "elasticsearch"
 	}
 
 	// Derive platform (default to gke)
@@ -381,6 +384,9 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	if strings.Contains(s, "tasklist-v1") {
 		config.Features = append(config.Features, "tasklist-v1")
 	}
+	if strings.Contains(s, "mcp") {
+		config.Features = append(config.Features, "mcp")
+	}
 
 	// Derive upgrade mode
 	if strings.Contains(s, "upgrade") || strings.Contains(s, "-upg") {
@@ -401,9 +407,10 @@ type BuilderOverrides struct {
 	Flow         string   // install, upgrade-patch, upgrade-minor
 	QA           bool
 	ImageTags    bool
+	ImageTagsSet bool // true when --image-tags was explicitly provided (prevents auto-detection override)
 	Upgrade      bool
 	ChartVersion string
-	ValuesConfig string // JSON config string; if it contains *_IMAGE_TAG keys, ImageTags is auto-enabled
+	ValuesConfig string // JSON config string; if it contains *_IMAGE_TAG keys, ImageTags is auto-enabled (only when ImageTagsSet is false)
 }
 
 // BuildDeploymentConfig is the single canonical constructor for DeploymentConfig.
@@ -444,7 +451,7 @@ func BuildDeploymentConfig(scenario string, ov BuilderOverrides) (*DeploymentCon
 	if ov.ImageTags {
 		cfg.ImageTags = true
 	}
-	if !cfg.ImageTags && valuesConfigHasImageTags(ov.ValuesConfig) {
+	if !ov.ImageTagsSet && !cfg.ImageTags && valuesConfigHasImageTags(ov.ValuesConfig) {
 		cfg.ImageTags = true
 	}
 	if ov.Upgrade {

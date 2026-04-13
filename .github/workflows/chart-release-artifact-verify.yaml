@@ -14,10 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+          exportEnv: true
       - name: Get chart versions
         id: get-chart-versions
         uses: ./.github/actions/get-chart-versions
@@ -123,9 +134,9 @@ jobs:
       # NOTE: If needed, we can limit the scope of the Slack notification to failed verifications only.
       - name: 🚨 Notify the team via Slack 🚨
         if: failure()
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
-          webhook: ${{ secrets.SLACK_DISTRO_TEAM_WEBHOOK }}
+          webhook: ${{ env.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
             blocks:

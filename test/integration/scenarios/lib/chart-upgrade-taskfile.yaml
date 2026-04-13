@@ -92,6 +92,20 @@ tasks:
           EXTRA_VALUES_ARGS="--values /tmp/extra-values-file.yaml"
         fi
         
+        # Write license key to a file and use --set-file to avoid shell word-splitting.
+        # License keys contain spaces and semicolons which break --set via shell expansion.
+        # Charts >=8.9 moved the key from global.license.key to global.license.secret.inlineSecret.
+        LICENSE_KEY_ARGS=""
+        if [ -n "${E2E_TESTS_LICENSE_KEY:-}" ]; then
+          LICENSE_KEY_FILE="/tmp/license-key.txt"
+          printf '%s' "${E2E_TESTS_LICENSE_KEY}" > "$LICENSE_KEY_FILE"
+          if grep -q '@param global.license.key' {{ .TEST_CHART_DIR }}/values.yaml 2>/dev/null; then
+            LICENSE_KEY_ARGS="--set-file global.license.key=$LICENSE_KEY_FILE"
+          else
+            LICENSE_KEY_ARGS="--set-file global.license.secret.inlineSecret=$LICENSE_KEY_FILE"
+          fi
+        fi
+
         # Helm values precedence: last --values wins.
         # Order: common → digest (overlay) → extra → scenario (highest precedence).
         # This ensures scenario-specific values (e.g., CI Keycloak image) override
@@ -104,9 +118,9 @@ tasks:
           {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
           --values {{ .TEST_HELM_DIGEST_VALUES }} \
           {{ end -}}
-          $EXTRA_VALUES_ARGS \
           --values "$MERGED_VALUES" \
-          ${E2E_TESTS_LICENSE_KEY:+--set global.license.key="${E2E_TESTS_LICENSE_KEY}"} \
+          $EXTRA_VALUES_ARGS \
+          $LICENSE_KEY_ARGS \
           --force \
           --timeout 20m0s \
           --set orchestration.upgrade.allowPreReleaseImages=true \

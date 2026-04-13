@@ -186,7 +186,7 @@ jobs:
             yq
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Build values-injector
         env:
@@ -274,6 +274,7 @@ jobs:
             fi
 
             echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+            RELEASE_VERSION_COMPUTED=true
             echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
             echo "::notice::Computed version: ${RELEASE_VERSION}"
           fi
@@ -291,8 +292,8 @@ jobs:
             --trace 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
           cd ${{ matrix.chart.directory }}
 
-          # For stable releases, extract version from release-please output
-          if [[ "${IS_PRERELEASE}" != "true" ]]; then
+          # For stable releases (not alpha-to-stable transition), extract version from release-please output
+          if [[ "${IS_PRERELEASE}" != "true" && "${RELEASE_VERSION_COMPUTED}" != "true" ]]; then
             RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
             if [[ -z "${RELEASE_VERSION}" ]]; then
               RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
@@ -857,7 +858,7 @@ jobs:
           exportEnv: false
       - name: Send Slack notification
         continue-on-error: true
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook

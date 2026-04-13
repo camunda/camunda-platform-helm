@@ -172,6 +172,9 @@ func executeSingleDeployment(ctx context.Context, flags *config.RuntimeFlags) er
 	}
 
 	// Phase 2: Deploy
+	if flags.OnPhase != nil {
+		flags.OnPhase("deploying")
+	}
 	result := executeDeployment(ctx, prepared, flags)
 
 	if result.Error != nil {

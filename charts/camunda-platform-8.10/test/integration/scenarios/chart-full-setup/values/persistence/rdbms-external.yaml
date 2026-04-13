@@ -1,0 +1,29 @@
+# RDBMS feature configuration for 8.10 (PostgreSQL)
+# Layer 4: Feature - RDBMS secondary storage
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: rdbms
+      rdbms:
+        url: ${POSTGRESQL_JDBC_URL}/${GITHUB_WORKFLOW_JOB_ID}
+        username: ${RDBMS_POSTGRESQL_USERNAME}
+        secret:
+          inlineSecret: ${RDBMS_POSTGRESQL_PASSWORD}
+  security:
+    authorizations:
+      enabled: false
+    authentication:
+      unprotectedApi: true
+  exporters:
+    rdbms:
+      enabled: true
+  extraVolumeMounts:
+    - name: jdbcdrivers
+      mountPath: /driver-lib
+  extraVolumes:
+    - name: jdbcdrivers
+      emptyDir: {}
+
+elasticsearch:
+  enabled: true

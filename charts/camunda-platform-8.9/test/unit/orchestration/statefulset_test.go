@@ -115,7 +115,6 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 			Name: "TestContainerSetImageNameSubChart",
 			Values: map[string]string{
 				"global.image.registry":          "global.custom.registry.io",
-				"global.image.tag":               "8.x.x",
 				"orchestration.image.registry":   "subchart.custom.registry.io",
 				"orchestration.image.repository": "camunda/camunda-test",
 				"orchestration.image.tag":        "snapshot",
@@ -208,25 +207,8 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
 			},
 		}, {
-			Name: "TestContainerOverwriteGlobalImageTag",
-			Values: map[string]string{
-				"global.image.tag":        "a.b.c",
-				"orchestration.image.tag": "",
-			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var statefulSet appsv1.StatefulSet
-				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
-
-				// then
-				expectedContainerImage := "camunda/camunda:a.b.c"
-				containers := statefulSet.Spec.Template.Spec.Containers
-				s.Require().Equal(1, len(containers))
-				s.Require().Equal(expectedContainerImage, containers[0].Image)
-			},
-		}, {
 			Name: "TestContainerOverwriteImageTagWithChartDirectSetting",
 			Values: map[string]string{
-				"global.image.tag":        "x.y.z",
 				"orchestration.image.tag": "a.b.c",
 			},
 			Verifier: func(t *testing.T, output string, err error) {

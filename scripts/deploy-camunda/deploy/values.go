@@ -330,6 +330,16 @@ func buildScenarioEnv(scenarioCtx *ScenarioContext, flags *config.RuntimeFlags) 
 	}
 	envMap["ES_POOL_INDEX"] = esPoolIndex
 
+	// Default OS pool index to 0 if not set (for local dev / manual runs).
+	osPoolIndex := flags.OSPoolIndex
+	if osPoolIndex == "" {
+		osPoolIndex = envMap["OS_POOL_INDEX"]
+	}
+	if osPoolIndex == "" {
+		osPoolIndex = "0"
+	}
+	envMap["OS_POOL_INDEX"] = osPoolIndex
+
 	// 4. Apply per-entry extra environment variables (e.g., VENOM_CLIENT_ID, CONNECTORS_CLIENT_ID).
 	for k, v := range flags.ExtraEnv {
 		envMap[k] = v
@@ -751,7 +761,7 @@ func prepareScenarioValues(ctx context.Context, scenarioCtx *ScenarioContext, fl
 		if mapping == "" {
 			mapping = envMap["vault_secret_mapping"]
 		}
-		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath); err != nil {
+		if err := mapper.Generate(mapping, "vault-mapped-secrets", vaultSecretPath, envMap); err != nil {
 			os.RemoveAll(tempDir) // Cleanup on error
 			return nil, fmt.Errorf("failed to generate vault secrets: %w", err)
 		}

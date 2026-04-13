@@ -101,7 +101,7 @@ runs:
         elif command -v apk &> /dev/null; then
           apk add --no-cache gettext
         fi
-        
+
     - name: Check if tools are pre-installed
       id: check-tools
       shell: bash
@@ -116,7 +116,7 @@ runs:
 
     - name: Install if required common software tooling
       if: steps.check-tools.outputs.skip-install != 'true'
-      uses: camunda/infra-global-github-actions/common-tooling@main
+      uses: camunda/infra-global-github-actions/common-tooling@b20a0e8f64ea6554900bab2d3fb3906be613aa19 # main
       with:
         overwrite: "false"
         build-essential-enabled: "true"
@@ -205,8 +205,23 @@ runs:
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
       with:
         name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
         retention-days: 1
+
+    - name: Set report date
+      id: report_date
+      if: ${{ !cancelled() }}
+      shell: bash
+      run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_OUTPUT"
+
+    - name: Upload Playwright JSON results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      with:
+        name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
+        if-no-files-found: warn
+        retention-days: 5

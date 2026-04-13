@@ -63,9 +63,9 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 			Name:                 "TestCustomZeebeName",
 			HelmOptionsExtraArgs: map[string][]string{"install": {"--debug"}},
 			Values: map[string]string{
-				"identity.enabled":            "true",
-				"optimize.enabled":            "true",
-				"global.elasticsearch.prefix": "custom-prefix",
+				"identity.enabled":                       "true",
+				"optimize.enabled":                       "true",
+				"optimize.database.elasticsearch.prefix": "custom-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var configmap corev1.ConfigMap
@@ -111,11 +111,12 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestElasticsearchPrefixFallsBackToGlobal",
+			Name: "TestElasticsearchPrefixUsesComponentKeyDirectly",
 			Values: map[string]string{
-				"identity.enabled":            "true",
-				"optimize.enabled":            "true",
-				"global.elasticsearch.prefix": "global-prefix",
+				"identity.enabled":                       "true",
+				"optimize.enabled":                       "true",
+				"global.elasticsearch.prefix":            "global-prefix",
+				"optimize.database.elasticsearch.prefix": "component-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -128,7 +129,8 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
 
-				s.Require().Equal("global-prefix", configmapApplication.Zeebe.Name)
+				// In 8.10 global keys are deprecated; component key takes effect directly
+				s.Require().Equal("component-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
 		{
@@ -261,15 +263,15 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 			},
 		},
 		{
-			Name: "TestOpensearchPrefixFallsBackThroughChain",
+			Name: "TestOpensearchPrefixUsesComponentKeyDirectly",
 			Values: map[string]string{
-				"identity.enabled":             "true",
-				"optimize.enabled":             "true",
-				"global.elasticsearch.enabled": "false",
-				"elasticsearch.enabled":        "false",
-				"global.opensearch.enabled":    "true",
-				"global.opensearch.url.host":   "opensearch-host",
-				"global.opensearch.prefix":     "os-prefix",
+				"identity.enabled":                    "true",
+				"optimize.enabled":                    "true",
+				"global.elasticsearch.enabled":        "false",
+				"elasticsearch.enabled":               "false",
+				"global.opensearch.enabled":           "true",
+				"global.opensearch.url.host":          "opensearch-host",
+				"optimize.database.opensearch.prefix": "os-component-prefix",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
@@ -282,7 +284,8 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 					s.Fail("Failed to unmarshal yaml. error=", e)
 				}
 
-				s.Require().Equal("os-prefix", configmapApplication.Zeebe.Name)
+				// In 8.10 global keys are deprecated; component key takes effect directly
+				s.Require().Equal("os-component-prefix", configmapApplication.Zeebe.Name)
 			},
 		},
 		{
@@ -308,6 +311,87 @@ func (s *ConfigMapTemplateTest) TestDatabaseOverrides() {
 				}
 
 				s.Require().Equal("my-optimize-os-prefix", configmapApplication.Zeebe.Name)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigMapTemplateTest) TestExtraConfigurationSpringImport() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraConfigWithSpringImportDefault",
+			Values: map[string]string{
+				"identity.enabled":                       "true",
+				"optimize.enabled":                       "true",
+				"optimize.extraConfiguration[0].file":    "custom-spring.yaml",
+				"optimize.extraConfiguration[0].content": "some: config",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationCcsmYaml := configmap.Data["application-ccsm.yaml"]
+				// spring.config.import should include the file
+				s.Require().Contains(applicationCcsmYaml, "optional:file:/optimize/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				// File content should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"File content should be present in ConfigMap")
+			},
+		},
+		{
+			Name: "TestExtraConfigWithSpringImportFalse",
+			Values: map[string]string{
+				"identity.enabled":                            "true",
+				"optimize.enabled":                            "true",
+				"optimize.extraConfiguration[0].file":         "log4j2-spring.xml",
+				"optimize.extraConfiguration[0].springImport": "false",
+				"optimize.extraConfiguration[0].content":      "<Configuration/>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationCcsmYaml := configmap.Data["application-ccsm.yaml"]
+				// spring.config.import should NOT include the file
+				s.Require().NotContains(applicationCcsmYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// spring.config.import block should not be rendered
+				s.Require().NotContains(applicationCcsmYaml, "config:",
+					"spring.config.import block should not be rendered when all entries have springImport: false")
+				// File content should still be in ConfigMap
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"File content should be present in ConfigMap even with springImport: false")
+			},
+		},
+		{
+			Name: "TestExtraConfigMixedSpringImport",
+			Values: map[string]string{
+				"identity.enabled":                            "true",
+				"optimize.enabled":                            "true",
+				"optimize.extraConfiguration[0].file":         "custom-spring.yaml",
+				"optimize.extraConfiguration[0].content":      "some: config",
+				"optimize.extraConfiguration[1].file":         "log4j2-spring.xml",
+				"optimize.extraConfiguration[1].springImport": "false",
+				"optimize.extraConfiguration[1].content":      "<Configuration/>",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var configmap corev1.ConfigMap
+				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
+
+				applicationCcsmYaml := configmap.Data["application-ccsm.yaml"]
+				// Only custom-spring.yaml should be in spring.config.import
+				s.Require().Contains(applicationCcsmYaml, "optional:file:/optimize/config/custom-spring.yaml",
+					"File without springImport should be included in spring.config.import")
+				s.Require().NotContains(applicationCcsmYaml, "log4j2-spring.xml",
+					"File with springImport: false should not be in spring.config.import")
+				// Both files should be in ConfigMap
+				s.Require().Contains(configmap.Data["custom-spring.yaml"], "some: config",
+					"First file content should be present in ConfigMap")
+				s.Require().Contains(configmap.Data["log4j2-spring.xml"], "<Configuration/>",
+					"Second file content should be present in ConfigMap even with springImport: false")
 			},
 		},
 	}

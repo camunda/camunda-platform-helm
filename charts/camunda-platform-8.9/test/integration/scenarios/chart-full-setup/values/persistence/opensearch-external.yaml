@@ -1,0 +1,63 @@
+# External OpenSearch backend configuration for 8.9
+# Layer 3: Backend - OpenSearch (external, pool-routed)
+#
+# Uses one of 4 internal OpenSearch pools (pool-0 through pool-3) based on
+# the $OS_POOL_INDEX variable, mirroring the Elasticsearch external pool pattern.
+#
+# NOTE: The legacy Zeebe exporter (optimize.database.opensearch.prefix) and the
+# Camunda exporter (orchestration.index.prefix) MUST use different prefixes to
+# avoid mapping conflicts that prevent template/alias creation. Optimize reads
+# from the legacy exporter's aliases, so CAMUNDA_OPTIMIZE_ZEEBE_NAME must match
+# optimize.database.opensearch.prefix.
+
+global:
+  elasticsearch:
+    enabled: false
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: opensearch
+      opensearch:
+        url: "https://opensearch-2-19-pool-${OS_POOL_INDEX}.ci.distro.ultrawombat.com:443"
+        auth:
+          username: admin
+          secret:
+            existingSecret: infra-credentials
+            existingSecretKey: opensearch-password
+  index:
+    prefix: $ORCHESTRATION_INDEX_PREFIX-$FLOW
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: false
+    opensearch:
+      enabled: true
+      aws:
+        enabled: false
+      auth:
+        username: admin
+        secret:
+          existingSecret: infra-credentials
+          existingSecretKey: opensearch-password
+      url:
+        protocol: https
+        host: "opensearch-2-19-pool-${OS_POOL_INDEX}.ci.distro.ultrawombat.com"
+        port: 443
+      prefix: zeebe-$ORCHESTRATION_INDEX_PREFIX-$FLOW
+  env:
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: zeebe-$ORCHESTRATION_INDEX_PREFIX-$FLOW
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+      value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+  migration:
+    env:
+      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+        value: zeebe-$ORCHESTRATION_INDEX_PREFIX-$FLOW
+      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+        value: $OPTIMIZE_INDEX_PREFIX-$FLOW
+
+elasticsearch:
+  enabled: false

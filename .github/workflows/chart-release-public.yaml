@@ -42,13 +42,6 @@ jobs:
       CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
       CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
     steps:
-      - name: Generate GitHub token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-github-token
-        with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-
       - name: Import Vault secrets for Harbor
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         id: vault-harbor
@@ -60,7 +53,16 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
           exportEnv: true
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Parse RC tag
         id: parse
@@ -140,7 +142,7 @@ jobs:
             yq
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Configure Git
         run: |
@@ -369,12 +371,25 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     steps:
+      - name: Import Vault secrets for Harbor
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-harbor
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: true
+
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -498,7 +513,7 @@ jobs:
       - name: Notify Slack of release completion
         if: steps.auto-merge.outputs.enabled == 'true'
         continue-on-error: true
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.vault-notification.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook
@@ -530,7 +545,7 @@ jobs:
           exportEnv: false
       - name: Send Slack notification
         continue-on-error: true
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
           webhook-type: incoming-webhook

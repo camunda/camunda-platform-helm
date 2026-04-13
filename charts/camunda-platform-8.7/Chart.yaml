@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 12.8.2
+version: 12.8.4
 appVersion: 8.7.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -34,7 +34,7 @@ dependencies:
     condition: "identity.keycloak.enabled,identityKeycloak.enabled"
   - name: postgresql
     alias: identityPostgresql
-    repository: oci://registry-1.docker.io/bitnamicharts
+    repository: "file://../identity-postgresql-15"
     version: 15.x.x
     condition: "identity.postgresql.enabled,identityPostgresql.enabled"
   # WebModeler Dependencies.
@@ -45,12 +45,12 @@ dependencies:
     condition: "postgresql.enabled"
   # Shared Dependencies.
   - name: elasticsearch
-    repository: oci://registry-1.docker.io/bitnamicharts
+    repository: "file://../elasticsearch-21"
     version: 21.6.3
     condition: "elasticsearch.enabled"
   # Helpers.
   - name: common
-    repository: oci://registry-1.docker.io/bitnamicharts
+    repository: "file://../common-2"
     version: 2.x.x
 maintainers:
   - name: aabouzaid
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.20.0"
+  camunda.io/helmCLIVersion: "3.20.1"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -71,4 +71,6 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: ""
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Reference bitnami subcharts internally rather than relying on external repositories"

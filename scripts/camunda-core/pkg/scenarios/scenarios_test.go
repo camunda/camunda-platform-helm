@@ -82,10 +82,10 @@ func TestMapScenarioToConfig(t *testing.T) {
 
 		// Persistence derivation
 		{
-			name:            "opensearch maps to opensearch persistence",
+			name:            "opensearch maps to opensearch-external persistence",
 			scenario:        "opensearch",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch",
+			wantPersistence: "opensearch-external",
 			wantPlatform:    "gke",
 		},
 		{
@@ -143,6 +143,23 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPlatform:    "gke",
 			wantFeatures:    []string{"documentstore"},
 		},
+		{
+			name:            "mcp maps to mcp feature",
+			scenario:        "mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+		},
+		{
+			name:            "qa-elasticsearch-mcp enables QA and MCP",
+			scenario:        "qa-elasticsearch-mcp",
+			wantIdentity:    "keycloak",
+			wantPersistence: "elasticsearch-external",
+			wantPlatform:    "gke",
+			wantFeatures:    []string{"mcp"},
+			wantQA:          true,
+		},
 
 		// QA and upgrade modifiers
 		{
@@ -198,7 +215,7 @@ func TestMapScenarioToConfig(t *testing.T) {
 			name:            "combined qa + opensearch + eks",
 			scenario:        "qa-opensearch-eks",
 			wantIdentity:    "keycloak",
-			wantPersistence: "opensearch",
+			wantPersistence: "opensearch-external",
 			wantPlatform:    "eks",
 			wantQA:          true,
 		},
@@ -297,6 +314,14 @@ func TestDeploymentConfigValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid config with opensearch-external",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "opensearch-external",
+				Platform:    "gke",
+			},
+		},
+		{
 			name: "missing identity",
 			config: DeploymentConfig{
 				Persistence: "elasticsearch",
@@ -322,6 +347,46 @@ func TestDeploymentConfigValidate(t *testing.T) {
 				Features:    []string{"multitenancy", "rba"},
 			},
 			wantErr: true,
+		},
+		{
+			name: "mcp with elasticsearch is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with elasticsearch-external is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "elasticsearch-external",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with opensearch is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "opensearch",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "mcp with rdbms is valid",
+			config: DeploymentConfig{
+				Identity:    "keycloak",
+				Persistence: "rdbms",
+				Platform:    "gke",
+				Features:    []string{"mcp"},
+			},
+			wantErr: false,
 		},
 	}
 
@@ -361,6 +426,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 		filepath.Join(tmpDir, "values", "persistence", "elasticsearch.yaml"),
 		filepath.Join(tmpDir, "values", "persistence", "elasticsearch-external.yaml"),
 		filepath.Join(tmpDir, "values", "persistence", "opensearch.yaml"),
+		filepath.Join(tmpDir, "values", "persistence", "opensearch-external.yaml"),
 		filepath.Join(tmpDir, "values", "platform", "gke.yaml"),
 		filepath.Join(tmpDir, "values", "platform", "eks.yaml"),
 		filepath.Join(tmpDir, "values", "features", "multitenancy.yaml"),
@@ -480,7 +546,7 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			t.Fatalf("ResolvePaths() error = %v", err)
 		}
 
-		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch.yaml, eks.yaml
+		// Should contain: base.yaml, base-qa.yaml, keycloak.yaml, opensearch-external.yaml, eks.yaml
 		if len(paths) != 5 {
 			t.Fatalf("Expected 5 paths, got %d: %v", len(paths), paths)
 		}
@@ -489,8 +555,37 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			"values/base.yaml",
 			"values/base-qa.yaml",
 			"values/identity/keycloak.yaml",
-			"values/persistence/opensearch.yaml",
+			"values/persistence/opensearch-external.yaml",
 			"values/platform/eks.yaml",
+		}
+		for i, suffix := range expectedSuffixes {
+			if !containsSuffix(paths[i], suffix) {
+				t.Errorf("paths[%d] = %q, want suffix %q", i, paths[i], suffix)
+			}
+		}
+	})
+
+	t.Run("opensearch-external persistence resolves to opensearch-external.yaml", func(t *testing.T) {
+		config := &DeploymentConfig{
+			Identity:    "keycloak",
+			Persistence: "opensearch-external",
+			Platform:    "gke",
+		}
+		paths, err := config.ResolvePaths(tmpDir)
+		if err != nil {
+			t.Fatalf("ResolvePaths() error = %v", err)
+		}
+
+		// Should contain: base.yaml, keycloak.yaml, opensearch-external.yaml, gke.yaml
+		if len(paths) != 4 {
+			t.Fatalf("Expected 4 paths, got %d: %v", len(paths), paths)
+		}
+
+		expectedSuffixes := []string{
+			"values/base.yaml",
+			"values/identity/keycloak.yaml",
+			"values/persistence/opensearch-external.yaml",
+			"values/platform/gke.yaml",
 		}
 		for i, suffix := range expectedSuffixes {
 			if !containsSuffix(paths[i], suffix) {
@@ -718,12 +813,14 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 	tests := []struct {
 		name          string
 		imageTags     bool
+		imageTagsSet  bool
 		valuesConfig  string
 		wantImageTags bool
 	}{
 		{
 			name:          "explicit true stays true",
 			imageTags:     true,
+			imageTagsSet:  true,
 			valuesConfig:  `{}`,
 			wantImageTags: true,
 		},
@@ -769,6 +866,13 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 			valuesConfig:  `not valid json`,
 			wantImageTags: false,
 		},
+		{
+			name:          "explicit false not overridden by IMAGE_TAG keys",
+			imageTags:     false,
+			imageTagsSet:  true,
+			valuesConfig:  `{"E2E_TESTS_CONNECTORS_IMAGE_TAG": "8.8.0", "SOME_OTHER_KEY": "val"}`,
+			wantImageTags: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -778,6 +882,7 @@ func TestBuildDeploymentConfig_ImageTagsAutoDetection(t *testing.T) {
 				Persistence:  "elasticsearch",
 				Platform:     "gke",
 				ImageTags:    tt.imageTags,
+				ImageTagsSet: tt.imageTagsSet,
 				ValuesConfig: tt.valuesConfig,
 			})
 			if err != nil {

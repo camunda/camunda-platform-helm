@@ -113,6 +113,8 @@ connectors:
     authentication:
       method: oidc
   env:
+    - name: CAMUNDA_CONNECTOR_SECRETPROVIDER_ENVIRONMENT_PREFIX
+      value: ""
     - name: username
       value: username
     - name: password

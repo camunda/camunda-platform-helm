@@ -59,7 +59,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]  # EKS removed: external ES connectivity issues cause Zeebe pods to never become ready on EKS
         - name: opensearch
           enabled: false
@@ -70,6 +70,17 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+          platforms: [gke]
+        - name: opensearch-external
+          enabled: true
+          shortname: osex
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch-external
+          flow: install
+          infra-type:
+            gke: distroci
           platforms: [gke]
         - name: elasticsearch-basic
           enabled: false
@@ -94,7 +105,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: oidc
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
           enabled: true
@@ -102,7 +113,7 @@ integration:
           shortname: kemt
           auth: keycloak
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           flow: upgrade-minor
           infra-type:
             gke: distroci
@@ -118,7 +129,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
@@ -131,7 +142,7 @@ integration:
             gke: distroci
             eks: preemptible
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           platforms: [gke]
         - name: gateway-keycloak
           enabled: true
@@ -140,7 +151,7 @@ integration:
           auth: keycloak
           flow: install
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [gateway]
           infra-type:
             gke: distroci
@@ -170,6 +181,37 @@ integration:
           identity: keycloak
           persistence: no-elasticsearch
           features: [no-secondary-storage]
+          platforms: [gke]
+        - name: documentstore
+          enabled: true
+          exclude: []
+          shortname: docstr
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          platforms: [eks]
+        - name: rdbms-external
+          enabled: false
+          auth: keycloak
+          shortname: rdbme
+          flow: install
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms-external
+          platforms: [gke]
+        - name: rdbms
+          enabled: true
+          auth: keycloak
+          shortname: rdbms
+          flow: install
+          exclude: []
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: rdbms
           platforms: [gke]
     nightly:
       scenario:

@@ -50,7 +50,7 @@ identityKeycloak:
   image:
     registry: registry.camunda.cloud
     repository: keycloak-ee/keycloak
-    tag: 26.5.5
+    tag: 26.5.6
     pullSecrets:
       - name: registry-camunda-cloud
 
@@ -109,7 +109,7 @@ elasticsearch:
   image:
     registry: registry.camunda.cloud
     repository: vendor-ee/elasticsearch
-    tag: 8.19.12
+    tag: 8.19.13
     pullSecrets:
       - name: registry-camunda-cloud
 

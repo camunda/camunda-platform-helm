@@ -552,7 +552,7 @@ func TestPrintRunSummary(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "oidc", Shortname: "esoi", Flow: "install"}, Namespace: "matrix-88-esoi", Error: os.ErrNotExist},
 	}
 
-	summary := PrintRunSummary(results, 10*time.Second)
+	summary := PrintRunSummary(results, 10*time.Second, "")
 	if !strings.Contains(summary, "Total:   2") || !strings.Contains(summary, "Success: 1") || !strings.Contains(summary, "Failed:  1") {
 		t.Errorf("PrintRunSummary: unexpected output: %s", summary)
 	}
@@ -576,7 +576,7 @@ func TestPrintRunSummaryParallelShowsSum(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "os", Shortname: "oske", Flow: "install"}, Namespace: "matrix-88-oske", Duration: 30 * time.Second},
 	}
 
-	summary := PrintRunSummary(results, 30*time.Second)
+	summary := PrintRunSummary(results, 30*time.Second, "")
 	if !strings.Contains(summary, "Total time:") {
 		t.Errorf("PrintRunSummary: expected 'Total time:' line, got: %s", summary)
 	}
@@ -592,7 +592,7 @@ func TestPrintRunSummarySequentialNoSum(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "es", Shortname: "eske", Flow: "install"}, Namespace: "matrix-88-eske", Duration: 30 * time.Second},
 	}
 
-	summary := PrintRunSummary(results, 30*time.Second)
+	summary := PrintRunSummary(results, 30*time.Second, "")
 	if !strings.Contains(summary, "Total time:") {
 		t.Errorf("PrintRunSummary: expected 'Total time:' line, got: %s", summary)
 	}
@@ -612,7 +612,7 @@ func TestPrintRunSummaryHelmError(t *testing.T) {
 		{Entry: Entry{Version: "8.9", Scenario: "elasticsearch-arm", Shortname: "esarm", Flow: "install"}, Namespace: "matrix-89-esarm", Error: helmErr},
 	}
 
-	summary := PrintRunSummary(results, 5*time.Second)
+	summary := PrintRunSummary(results, 5*time.Second, "")
 
 	// Should contain structured output
 	if !strings.Contains(summary, "8.9/elasticsearch-arm (esarm, flow=install)") {
@@ -645,7 +645,7 @@ func TestPrintRunSummaryWrappedHelmError(t *testing.T) {
 		{Entry: Entry{Version: "8.8", Scenario: "es", Shortname: "eske", Flow: "upgrade-patch"}, Namespace: "matrix-88-eske", Error: wrappedErr},
 	}
 
-	summary := PrintRunSummary(results, 5*time.Second)
+	summary := PrintRunSummary(results, 5*time.Second, "")
 
 	// Should contain step context
 	if !strings.Contains(summary, "Step:") {
@@ -657,7 +657,7 @@ func TestPrintRunSummaryWrappedHelmError(t *testing.T) {
 }
 
 func TestPrintRunSummaryEmpty(t *testing.T) {
-	summary := PrintRunSummary(nil, 0)
+	summary := PrintRunSummary(nil, 0, "")
 	if !strings.Contains(summary, "No entries executed") {
 		t.Errorf("PrintRunSummary(nil): expected 'No entries executed', got: %s", summary)
 	}

@@ -67,8 +67,8 @@ jobs:
          scenario:
           - name: qa-elasticsearch
             shortname: qael
-          #- name: qa-opensearch
-          #  shortname: qaos
+          - name: qa-opensearch
+            shortname: qaos
           - name: qa-elasticsearch-rba
             shortname: qaelrba
           - name: qa-elasticsearch-mt
@@ -82,12 +82,29 @@ jobs:
             auth: oidc
             initialClaimValue: placeholder-for-compat-test
             it-enabled: false
-          #- name: qa-document-store
-          #  shortname: qadoc
+          - name: qa-document-store
+            shortname: qadoc
           - name: qa-elasticsearch-tasklist-v1
             shortname: qaeltlv1
+          - name: qa-opensearch-tasklist-v1
+            shortname: qaosupg
+          - name: qa-elasticsearch-rba-tasklist-v1
+            shortname: qaelrbaupg
+          - name: qa-elasticsearch-mt-tasklist-v1
+            shortname: qaelmtupg
+            e2e-enabled: false
+          - name: qa-license-tasklist-v1
+            shortname: licupg
+            licenseVaultMapping: "secret/data/products/qa/ci/cross-component-e2e-test-suite LICENSE_VALID_COMMERCIAL_UNLIMITED | E2E_TESTS_LICENSE_KEY;"
           - name: qa-elasticsearch-upg
             shortname: qaelupg
+          - name: qa-opensearch-upg
+            shortname: qaosupg
+          - name: qa-elasticsearch-mt-upg
+            shortname: qaelmtupg
+            e2e-enabled: false
+          - name: qa-elasticsearch-document-upg
+            shortname: qaeldocupg
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
@@ -131,8 +148,8 @@ jobs:
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;
-        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_USERNAME;
-        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_PASSWORD;
+        secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
+        secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL;
         secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_ACCESSKEY;
         secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_BUCKET_NAME;
@@ -226,10 +243,10 @@ jobs:
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;
-        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_USERNAME;
-        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL | OPENSEARCH_HOST;
         secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL;
+        secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
+        secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
         secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
@@ -284,16 +301,16 @@ jobs:
   # Caller 1b: c8-cross-component-e2e-tests — upgrade-minor flows
   # Source: sm_manual_upgrade_minor_8_8 / sm_manual_upgrade_minor_8_9
   #
-  # Validates the qa-elasticsearch-upg scenario name and upgrade-related inputs
-  # are accepted by the template. Uses flows: install because
-  # modular-upgrade-minor skips the install job (which creates the namespace)
-  # and goes straight to upgrade, requiring real infrastructure. Since the
-  # backward compat test uses test-enabled: true (no infra), we validate the
-  # input contract via the install flow instead. The scenario name resolution
-  # and values layering are identical regardless of flow.
+  # Validates upgrade-related scenario names and inputs are accepted by the
+  # template. Uses flows: install because modular-upgrade-minor skips the
+  # install job (which creates the namespace) and goes straight to upgrade,
+  # requiring real infrastructure. Since the backward compat test uses
+  # test-enabled: true (no infra), we validate the input contract via the
+  # install flow instead. The scenario name resolution and values layering are
+  # identical regardless of flow.
   # ===========================================================================
   compat-e2e-8-8-plus-upgrade-minor:
-    name: "Compat: e2e 8.8+ upgrade-minor (${{ matrix.version.tag }})"
+    name: "Compat: e2e 8.8+ upgrade-minor (${{ matrix.version.tag }}-${{ matrix.scenario.shortname }})"
     strategy:
       fail-fast: false
       matrix:
@@ -308,23 +325,33 @@ jobs:
             snapshot: "8.9-SNAPSHOT"
             identity: "SNAPSHOT"
             webmodeler: "SNAPSHOT"
+        scenario:
+          - name: qa-elasticsearch-upg
+            shortname: qaelupg
+          - name: qa-opensearch-upg
+            shortname: qaosupg
+          - name: qa-elasticsearch-mt-upg
+            shortname: qaelmtupg
+            e2e-enabled: false
+          - name: qa-elasticsearch-document-upg
+            shortname: qaeldocupg
     uses: ./.github/workflows/test-integration-template.yaml
     secrets: inherit
     with:
       auth: keycloak
       helmChartVersion: ""
-      identifier: compat-88p-upgmin-${{ matrix.version.tag }}-${{ github.run_id }}
+      identifier: compat-88p-upgmin-${{ matrix.version.tag }}-${{ matrix.scenario.shortname }}-${{ github.run_id }}
       platforms: gke
       infra-type: preemptible
       camunda-helm-git-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       camunda-helm-dir: ${{ matrix.version.dir }}
       teleport-token: infra-ci-prod-github-action-distribution
-      namespace-prefix: "bc88pupgmin${{ matrix.version.tag }}-"
+      namespace-prefix: "bc88pupgmin${{ matrix.version.tag }}${{ matrix.scenario.shortname }}-"
       deployment-ttl: ""
-      test-enabled: true
-      e2e-enabled: false
-      scenario: qa-elasticsearch-upg
-      shortname: qaelupg
+      test-enabled: ${{ matrix.scenario.it-enabled != false }}
+      e2e-enabled: ${{ matrix.scenario.e2e-enabled != false }}
+      scenario: ${{ matrix.scenario.name }}
+      shortname: ${{ matrix.scenario.shortname }}
       always-delete-namespace: true
       flows: install
       include-image-tags: true
@@ -350,9 +377,31 @@ jobs:
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD;
-        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_USERNAME;
-        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENSEARCH_PASSWORD;
+        secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_USERNAME | OPENSEARCH_USERNAME;
+        secret/data/products/distribution/ci DISTRO_AWS_OPENSEARCH_PASSWORD | OPENSEARCH_PASSWORD;
         secret/data/products/qa/ci/cross-component-e2e-test-suite AWS_HOST_URL;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_ACCESSKEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_BUCKET_NAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_REGION;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AWS_SECRETKEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_SERVICE_ACCOUNT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_VERTEX_BUCKET_NAME;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_VERTEX_PROJECT_ID;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_DOCUMENT_AI_PROJECT_ID;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_DOCUMENT_AI_PROCESSOR_ID;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_DOCUMENT_AI_REGION;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_GCP_VERTEX_REGION;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_AI_FOUNDRY_ENDPOINT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_AI_FOUNDRY_KEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_OPEN_AI_ENDPOINT;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite IDP_AZURE_OPEN_AI_KEY;
+        secret/data/products/qa/ci/cross-component-e2e-test-suite OPENAI_API_KEY;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
 
   # ===========================================================================
   # Summary gate: all compat jobs must pass

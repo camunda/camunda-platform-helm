@@ -105,6 +105,18 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
+		{
+			Name: "TestApplicationYamlNoWebAppProfilesWhenNoSecondaryStorageEnabled",
+			Values: map[string]string{
+				"global.noSecondaryStorage":                    "true",
+				"global.elasticsearch.enabled":                 "false",
+				"elasticsearch.enabled":                        "false",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.spring.profiles.active": "admin,broker,consolidated-auth",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -271,6 +283,25 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedAuthOIDC() {
 			},
 		},
 		{
+			Name: "TestApplicationYamlShouldRenderTemplatedAuthUrls",
+			Values: map[string]string{
+				"identity.enabled":                                       "false",
+				"identityKeycloak.enabled":                               "false",
+				"global.identity.auth.enabled":                           "false",
+				"global.identity.auth.issuer":                            "",
+				"global.identity.auth.authUrl":                           "https://{{ .Release.Name }}.example.com/auth",
+				"global.identity.auth.tokenUrl":                          "https://{{ .Release.Name }}.example.com/token",
+				"global.identity.auth.jwksUrl":                           "https://{{ .Release.Name }}.example.com/certs",
+				"orchestration.security.authentication.method":           "oidc",
+				"orchestration.security.authentication.oidc.redirectUrl": "https://redirect-url.com/orchestration",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.oidc.authorization-uri": "https://camunda-platform-test.example.com/auth",
+				"configmapApplication.camunda.security.authentication.oidc.jwk-set-uri":       "https://camunda-platform-test.example.com/certs",
+				"configmapApplication.camunda.security.authentication.oidc.token-uri":         "https://camunda-platform-test.example.com/token",
+			},
+		},
+		{
 			Name: "TestApplicationYamlShouldContainAuthOIDCWithIssuerUrlUnUsedAndKeycloakExternal",
 			Values: map[string]string{
 				"identity.enabled":                                       "false",
@@ -337,6 +368,76 @@ func (s *ConfigmapTemplateTest) TestGroupsClaimConditionalRendering() {
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *ConfigmapTemplateTest) TestMappingRulesConditionalRendering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldNotContainMappingRulesWhenDefault",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "mapping-rules")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldContainMappingRulesWhenSet",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                            "elasticsearch",
+				"orchestration.security.initialization.mappingRules[0].mappingRuleID": "demo-user-mapping-rule",
+				"orchestration.security.initialization.mappingRules[0].claimName":     "preferred_username",
+				"orchestration.security.initialization.mappingRules[0].claimValue":    "demo",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "mapping-rules")
+				require.Contains(t, output, "demo-user-mapping-rule")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestUnprotectedApiConditionalRendering() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainAllowUnauthenticatedApiAccessWhenBasicAuthAndUnprotectedApiTrue",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "basic",
+				"orchestration.security.authentication.unprotectedApi": "true",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.basic.allow-unauthenticated-api-access": "true",
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainAllowUnauthenticatedApiAccessWhenBasicAuthAndUnprotectedApiFalse",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "basic",
+				"orchestration.security.authentication.unprotectedApi": "false",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "allow-unauthenticated-api-access")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainAllowUnauthenticatedApiAccessWhenOidcAuthAndUnprotectedApiTrue",
+			Values: map[string]string{
+				"orchestration.security.authentication.method":         "oidc",
+				"orchestration.security.authentication.unprotectedApi": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "allow-unauthenticated-api-access")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
 func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -371,4 +472,55 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnifiedRDBMS() {
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *ConfigmapTemplateTest) TestMultiRegionInitialContactPoints() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestApplicationYamlShouldContainInitialContactPointsForSingleRegion",
+			Values: map[string]string{
+				"global.multiregion.regions":    "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "initial-contact-points")
+				require.Contains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502")
+				require.Contains(t, output, "camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502")
+				require.NotContains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainInitialContactPointsForMultiRegion",
+			Values: map[string]string{
+				"global.multiregion.regions":    "2",
+				"global.multiregion.regionId":   "0",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+				require.Contains(t, output, "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS")
+				// Ensure no contact points are generated
+				require.NotContains(t, output, "camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502")
+			},
+		},
+		{
+			Name: "TestApplicationYamlShouldNotContainInitialContactPointsForThreeRegions",
+			Values: map[string]string{
+				"global.multiregion.regions":    "3",
+				"global.multiregion.regionId":   "1",
+				"orchestration.profiles.broker": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.NotContains(t, output, "initial-contact-points:")
+				require.Contains(t, output, "Multi-region deployments: initial-contact-points must be provided manually")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }

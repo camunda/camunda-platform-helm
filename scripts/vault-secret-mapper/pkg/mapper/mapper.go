@@ -23,7 +23,7 @@ type Metadata struct {
 	Labels map[string]string `yaml:"labels"`
 }
 
-func Generate(mapping, secretName, outputPath string) error {
+func Generate(mapping, secretName, outputPath string, envOverrides ...map[string]string) error {
 	logging.Logger.Debug().
 		Str("secretName", secretName).
 		Str("outputPath", outputPath).
@@ -35,14 +35,29 @@ func Generate(mapping, secretName, outputPath string) error {
 	envVarNames = dedupePreserveOrder(envVarNames)
 
 	logging.Logger.Debug().Int("count", len(envVarNames)).Msg("Found env vars to map")
-    logging.Logger.Debug().Strs("envVarNames", envVarNames).Msg("Env var names")
-	// Collect non-empty env vars from environment
+	logging.Logger.Debug().Strs("envVarNames", envVarNames).Msg("Env var names")
+
+	// Build a lookup function: prefer envOverrides (if provided), fall back to os.Getenv.
+	var overrides map[string]string
+	if len(envOverrides) > 0 && envOverrides[0] != nil {
+		overrides = envOverrides[0]
+	}
+	lookupEnv := func(key string) string {
+		if overrides != nil {
+			if v, ok := overrides[key]; ok {
+				return v
+			}
+		}
+		return os.Getenv(key)
+	}
+
+	// Collect non-empty env vars
 	stringData := make(map[string]string)
 	for _, name := range envVarNames {
 		if name == "" {
 			continue
 		}
-		val := os.Getenv(name)
+		val := lookupEnv(name)
 		if val == "" {
 			// Skip empty values to avoid creating empty keys
 			logging.Logger.Debug().Str("var", name).Msg("Environment variable empty or missing, skipping")

@@ -3,12 +3,12 @@
 camundaVersions:
   alpha:
     - "8.10"
-    - "8.9"
   supportStandard:
+    - "8.9"
     - "8.8"
     - "8.7"
-  supportExtended:
     - "8.6"
+  supportExtended:
     - "8.5"
     - "8.4"
     - "8.3"

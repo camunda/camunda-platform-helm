@@ -519,7 +519,7 @@
                                 },
                                 "url": {
                                     "type": "object",
-                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart.",
+                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
                                     "default": {}
                                 },
                                 "contextPath": {
@@ -554,22 +554,22 @@
                                 },
                                 "issuerBackendUrl": {
                                     "type": "string",
-                                    "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context.",
+                                    "description": "defines the issuer backend URL, which is used by the services to validate the JWT tokens in a container to container context. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "authUrl": {
                                     "type": "string",
-                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access.",
+                                    "description": "defines the authentication URL, which is used by the services to to obtain authorized access. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "tokenUrl": {
                                     "type": "string",
-                                    "description": "defines the token URL, which is used by the services to request JWT tokens.",
+                                    "description": "defines the token URL, which is used by the services to request JWT tokens. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "jwksUrl": {
                                     "type": "string",
-                                    "description": "defines the JWKS URL, which is used by the services to validate the JWT tokens.",
+                                    "description": "defines the JWKS URL, which is used by the services to validate the JWT tokens. Supports templating (e.g., {{ .Release.Name }}).",
                                     "default": ""
                                 },
                                 "type": {
@@ -1105,7 +1105,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.9"
+                            "default": "8.8.10"
                         },
                         "digest": {
                             "type": "string",
@@ -2291,7 +2291,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the Console image (overwrites global.image.tag)",
-                            "default": "8.8.126"
+                            "default": "8.8.132"
                         },
                         "digest": {
                             "type": "string",
@@ -2783,7 +2783,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images (overwrites global.image.tag)",
-                            "default": "8.8.11"
+                            "default": "8.8.12"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -4567,7 +4567,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.8"
+                            "default": "8.8.10"
                         },
                         "digest": {
                             "type": "string",
@@ -5094,17 +5094,17 @@
                                         },
                                         "authUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.authUrl`.",
+                                            "description": "can be used to override `global.identity.auth.authUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "tokenUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.tokenUrl`.",
+                                            "description": "can be used to override `global.identity.auth.tokenUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "jwksUrl": {
                                             "type": "string",
-                                            "description": "can be used to override `global.identity.auth.jwksUrl`.",
+                                            "description": "can be used to override `global.identity.auth.jwksUrl`. Only takes effect if `orchestration.security.authentication.oidc.issuer` or `global.identity.auth.issuer` are not set. Supports templating (e.g., {{ .Release.Name }}).",
                                             "default": ""
                                         },
                                         "usernameClaim": {
@@ -5310,7 +5310,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.16"
+                            "default": "8.8.21"
                         },
                         "digest": {
                             "type": "string",
@@ -6500,7 +6500,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.7"
+                            "default": "8.8.8"
                         },
                         "digest": {
                             "type": "string",

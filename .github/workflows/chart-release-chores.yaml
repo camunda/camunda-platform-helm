@@ -19,13 +19,25 @@ jobs:
     name: Generate release files
     runs-on: ubuntu-latest
     steps:
+      - name: Import Vault secrets for Harbor
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-harbor
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+          exportEnv: true
       # Checkout.
       - name: Generate GitHub token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         id: generate-github-token
         with:
-          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -54,7 +66,7 @@ jobs:
       - name: Add Helm repos
         run: |
           make helm.repos-add
-      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
             ~/.cache/go-build
@@ -116,7 +128,7 @@ jobs:
           for chartPath in "${CHANGED_CHARTS}"; do
             rm -f "$chartPath/CHANGELOG.md"
           done
-      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+      - uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
         with:
           # IMPORTANT: use a GitHub App token instead of the default GITHUB_TOKEN.
           # Commits pushed with GITHUB_TOKEN do not trigger other workflows, which
