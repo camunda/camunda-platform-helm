@@ -78,7 +78,8 @@ jobs:
             
             # Query Harbor API to get all tags for this artifact
             tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}")
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              --retry 3 --retry-delay 5 --retry-all-errors)
             
             if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
               echo "::error::Rolling tag ${input_tag} not found in Harbor"
@@ -113,7 +114,8 @@ jobs:
           # Find the dev tag associated with this RC for traceability
           # Query all tags on this artifact to find the dev tag (format: {version}-dev-{sha})
           all_tags=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${rc_tag}/tags" \
-            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" | jq -r '.[].name' 2>/dev/null || echo "")
+            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            --retry 3 --retry-delay 5 --retry-all-errors | jq -r '.[].name' 2>/dev/null || echo "")
           
           dev_tag=$(echo "${all_tags}" | grep -E "^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$" | head -1 || echo "")
           if [[ -n "${dev_tag}" ]]; then
@@ -158,16 +160,25 @@ jobs:
 
       - name: Pull RC package from Harbor
         run: |
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           mkdir -p .cr-release-packages
-          
-          helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
+
+          PULL_RC=0
+          harbor_helm_pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
             --version "${{ steps.parse.outputs.resolved_tag }}" \
-            --destination .cr-release-packages
+            --destination .cr-release-packages || PULL_RC=$?
+          if [[ ${PULL_RC} -eq 2 ]]; then
+            echo "::error::Harbor auth failure pulling RC package: ${{ steps.parse.outputs.resolved_tag }}"
+            exit 1
+          elif [[ ${PULL_RC} -ne 0 ]]; then
+            echo "::error::Failed to pull RC package from Harbor: ${{ steps.parse.outputs.resolved_tag }}"
+            exit 1
+          fi
 
           # drop -rc from filename
           filename=$(ls .cr-release-packages/camunda-platform-*-rc*.tgz)
           mv "$filename" "${filename/-rc/}"
-          
+
           echo "Downloaded package:"
           ls -la .cr-release-packages/
 
