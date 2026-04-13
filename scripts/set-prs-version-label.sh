@@ -59,7 +59,15 @@ get_issues_per_pr () {
 
 # Run.
 # Label PRs with the app and chart version only if there is a change in the chart.
-ct list-changed | while read chart_dir; do
+# Use chartPath env var when set (e.g. in workflow_dispatch on main where ct list-changed
+# returns nothing because there is no branch diff), otherwise fall back to ct list-changed.
+if [[ -n "${chartPath:-}" ]]; then
+    chart_dirs="${chartPath}"
+else
+    chart_dirs="$(ct list-changed)"
+fi
+
+echo "${chart_dirs}" | while read chart_dir; do
     app_version="$(yq '.appVersion | sub("\..$", "")' ${chart_dir}/Chart.yaml)"
     chart_version="$(yq '.version' ${chart_dir}/Chart.yaml)"
     app_version_label="version/${app_version}"
