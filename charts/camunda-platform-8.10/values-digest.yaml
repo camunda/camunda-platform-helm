@@ -7,21 +7,21 @@ console:
   image:
     repository: camunda/console
     tag: 8.9-SNAPSHOT
-    digest: "sha256:65c6998bb0cdcad5090a751e62165879a5079fefe29be3ae739d07dfd99378cd"
+    digest: "sha256:baa00e892b8f44532f1826af32589a967fea97c62826772ddf06f2db3152750b"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
     tag: SNAPSHOT
-    digest: "sha256:4b0d0bd79b76ca7e48d3151e1ec77bbb50e9d1316251925e385c2db29d3f135f"
+    digest: "sha256:aa2185f7e08fbe049d4f070c64cfd6e5fec95d9b6c7350070102aeeb35e6cbbf"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
     tag: 8-SNAPSHOT
-    digest: "sha256:4c9c9e7d56f172f79d113ed02de0786d42ea4ef18af84e2fb9e6701110ee876a"
+    digest: "sha256:cb37b2815505ab891d65bd81613b6b830a79c10987012baed874dc8ea21c868b"
 
 #
 # Web Modeler
@@ -33,14 +33,14 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:316a86c6d5478b0bf45f1427bbff4a5b38d90843f3855e362e96d6cece52b5f1"
+      digest: "sha256:a6ea98f76478f98f8fc27a5e16dd35e3eea9c07eba8aca2956de1675dde86628"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
     image:
       repository: camunda/web-modeler-websockets
       tag: SNAPSHOT
-      digest: "sha256:06f392a189ec592b8027213056651c77c3f80463b6190c5df69bca0b1f2df7f2"
+      digest: "sha256:0547c695fe0e6df06577f05029e493970097c8cb683ec1e4192aacf4192b9e08"
 
 #
 # Orchestration Cluster
@@ -51,7 +51,7 @@ orchestration:
   image:
     repository: camunda/camunda
     tag: SNAPSHOT
-    digest: "sha256:89067430afac8e110db29715d4174f7aca0e4b61136f7db105502165856cfede"
+    digest: "sha256:ad862531f8affd26958a29caba0a089e1ed056e96c8b180b2b6515865b758ace"
 
 #
 # Identity
@@ -62,4 +62,4 @@ identity:
   image:
     repository: camunda/identity
     tag: SNAPSHOT
-    digest: "sha256:6eacd5cede80f4c84c49b57123364d5d379a907b58167651e07e7e8dad077023"
+    digest: "sha256:562216ce2a749d3c9ecd130bc759af6f793629a8a0ebb6c4f579faaa21f26409"
