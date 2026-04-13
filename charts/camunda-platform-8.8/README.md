@@ -266,6 +266,27 @@ identity:
         mountPath: /opt/bitnami/keycloak/themes/identity
 ```
 
+## Values Validation
+
+This chart ships with a `values.schema.strict.json` file that enforces `additionalProperties: false` on all nested objects. This catches typos and invalid keys (e.g. `global.identity.keycloak.urll` instead of `url`) **before** deployment.
+
+The strict schema is **not** enforced by `helm install`/`helm upgrade` by default to maintain backward compatibility. You can use it as a pre-deployment check:
+
+```bash
+# Validate your values file against the strict schema before deploying
+helm template my-release camunda/camunda-platform \
+  -f my-values.yaml \
+  --validate 2>/dev/null || true
+
+# Use the strict schema directly (requires ajv-cli: npm install -g ajv-cli)
+ajv validate -s charts/camunda-platform-8.8/values.schema.strict.json \
+  -d my-values.yaml --spec=draft2020 --errors=text
+```
+
+> [!TIP]
+> Starting with chart version 8.10 (chart 15.x), strict validation is enabled by default.
+> If you want to opt out on 8.10+, use `helm install --skip-schema-validation`.
+
 ## Development
 
 For development purposes, you might want to deploy and test the charts without creating a new helm chart release.

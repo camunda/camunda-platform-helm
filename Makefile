@@ -252,10 +252,17 @@ helm.schema-update:
 				"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
 				&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
 		fi; \
-		echo "[$@] Making schema strict (adding additionalProperties: false)"; \
-		jq --indent 4 -f scripts/helm-schema-make-strict.jq \
-			"$${chart_dir}/values.schema.json" > "$${chart_dir}/values.schema.tmp.json" \
-			&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
+		strict_inline_versions="camunda-platform-8\.(1[0-9]|[2-9][0-9])$$"; \
+		if echo "$${chart_dir}" | grep -qE "$${strict_inline_versions}"; then \
+			echo "[$@] Making schema strict inline (8.10+)"; \
+			jq --indent 4 -f scripts/helm-schema-make-strict.jq \
+				"$${chart_dir}/values.schema.json" > "$${chart_dir}/values.schema.tmp.json" \
+				&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
+		else \
+			echo "[$@] Generating separate strict schema (values.schema.strict.json)"; \
+			jq --indent 4 -f scripts/helm-schema-make-strict.jq \
+				"$${chart_dir}/values.schema.json" > "$${chart_dir}/values.schema.strict.json"; \
+		fi; \
 	done
 
 # helm.get-images: list all images in the chart.

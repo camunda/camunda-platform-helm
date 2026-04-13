@@ -253,6 +253,27 @@ identity:
         mountPath: /opt/bitnami/keycloak/themes/identity
 ```
 
+## Values Validation
+
+Starting with chart version 8.10, the Helm schema enforces `additionalProperties: false` on all nested objects by default. This catches typos and invalid keys at `helm install`/`helm upgrade` time.
+
+**Example:**
+```bash
+helm template my-release camunda/camunda-platform \
+  --set global.identity.keycloak.urll=https://example.com
+# Error: values don't meet the specifications of the schema(s)
+# - at '/global/identity/keycloak': additional properties 'urll' not allowed
+```
+
+If you need to temporarily bypass strict validation (e.g. during migration):
+```bash
+helm upgrade my-release camunda/camunda-platform --skip-schema-validation -f my-values.yaml
+```
+
+> [!WARNING]
+> `--skip-schema-validation` disables **all** schema validation, not just `additionalProperties`.
+> Fix invalid keys in your values file instead of relying on this flag long-term.
+
 ## Development
 
 For development purposes, you might want to deploy and test the charts without creating a new helm chart release.
