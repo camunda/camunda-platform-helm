@@ -180,7 +180,7 @@ jobs:
       - name: Pull and validate dev package
         id: package
         run: |
-          source scripts/harbor-retry.sh
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           echo "Checking for package: ${{ steps.parse.outputs.resolved_tag }}"
 
           PULL_RC=0

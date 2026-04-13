@@ -160,7 +160,7 @@ jobs:
 
       - name: Pull RC package from Harbor
         run: |
-          source scripts/harbor-retry.sh
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           mkdir -p .cr-release-packages
 
           PULL_RC=0
