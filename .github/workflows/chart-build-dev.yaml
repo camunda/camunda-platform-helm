@@ -172,7 +172,6 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
-          exportEnv: true
 
       - name: Install tools
         uses: ./.github/actions/install-tool-versions
