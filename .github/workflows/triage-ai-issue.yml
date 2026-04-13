@@ -79,6 +79,7 @@ jobs:
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
             secret/data/products/distribution/ci GLEAN_API_TOKEN;
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_GH;
           exportEnv: true
 
       - name: Generate GitHub token
@@ -453,6 +454,44 @@ jobs:
 
               echo "✅ Moved to Backlog"
             fi
+
+            # Send Slack notification to #team-distribution-github
+            echo "📣 Sending Slack notification..."
+            ISSUE_URL="$GITHUB_SERVER_URL/$OWNER/$REPO/issues/$ISSUE_NUMBER"
+            SHORT_REPO=$(echo "$REPO" | sed 's/camunda-platform-//')
+
+            # Pick an emoji based on kind
+            KIND_EMOJI=":label:"
+            case "${KIND:-unknown}" in
+              bug)             KIND_EMOJI=":bug:" ;;
+              chore)           KIND_EMOJI=":wrench:" ;;
+              docs)            KIND_EMOJI=":memo:" ;;
+              feature-request) KIND_EMOJI=":bulb:" ;;
+              internal)        KIND_EMOJI=":nut_and_bolt:" ;;
+              refactor)        KIND_EMOJI=":recycle:" ;;
+              research)        KIND_EMOJI=":microscope:" ;;
+            esac
+
+            SLACK_PAYLOAD=$(jq -n \
+              --arg emoji "$KIND_EMOJI" \
+              --arg repo "$SHORT_REPO" \
+              --arg kind "${KIND:-unknown}" \
+              --arg severity "${SEVERITY_EMOJI} ${SEVERITY}" \
+              --arg issue_url "$ISSUE_URL" \
+              --arg issue_number "#${ISSUE_NUMBER}" \
+              --arg title "$ISSUE_TITLE" \
+              '{
+                "blocks": [{
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ($emoji + " [" + $repo + "] " + $kind + " · " + $severity + " severity — <" + $issue_url + "|" + $issue_number + " " + $title + ">")
+                  }
+                }]
+              }')
+            curl -s -X POST "$SLACK_DISTRO_BOT_WEBHOOK_GH" \
+              -H "Content-Type: application/json" \
+              --data "$SLACK_PAYLOAD" > /dev/null || echo "⚠️  Slack notification failed (non-fatal)"
 
             echo "✅ Triage completed for issue #${ISSUE_NUMBER}"
           done
