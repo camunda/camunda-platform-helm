@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,7 +25,7 @@ import (
 	"time"
 )
 
-const timeLayout = "2006-01-02T15:04:05Z"
+const timeLayout = time.RFC3339
 
 type slackBlock struct {
 	Type string    `json:"type"`
@@ -137,7 +138,18 @@ func sendSlack(webhook, message string) error {
 	if err != nil {
 		return fmt.Errorf("marshal payload: %w", err)
 	}
-	resp, err := http.Post(webhook, "application/json", bytes.NewReader(body)) //nolint:noctx
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", webhook, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("http post: %w", err)
 	}
