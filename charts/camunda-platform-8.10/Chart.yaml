@@ -75,3 +75,4 @@ annotations:
   artifacthub.io/changes: |
     - kind: added
       description: "Initial 8.10 alpha chart"
+
