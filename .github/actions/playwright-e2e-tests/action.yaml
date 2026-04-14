@@ -116,7 +116,7 @@ runs:
 
     - name: Install if required common software tooling
       if: steps.check-tools.outputs.skip-install != 'true'
-      uses: camunda/infra-global-github-actions/common-tooling@b20a0e8f64ea6554900bab2d3fb3906be613aa19 # main
+      uses: camunda/infra-global-github-actions/common-tooling@fd6cd936ce528cff5f0758a78b3daaceca30a2a0 # main
       with:
         overwrite: "false"
         build-essential-enabled: "true"
@@ -205,7 +205,7 @@ runs:
 
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
@@ -219,7 +219,7 @@ runs:
 
     - name: Upload Playwright JSON results
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: playwright-results-json-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}-${{ steps.report_date.outputs.date }}
         path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/test-results/playwright-results.json
