@@ -2708,6 +2708,10 @@ orchestration:
       type: ""
       ## @extra orchestration.data.secondaryStorage.rdbms configuration for RDBMS (Relational Database Management System) as secondary storage
       rdbms:
+        ## @extra orchestration.data.secondaryStorage.rdbms.aws AWS configuration for RDBMS secondary storage
+        aws:
+          ## @param orchestration.data.secondaryStorage.rdbms.aws.enabled enable AWS IAM Database Authentication for RDBMS connection
+          enabled: false
         ## @param orchestration.data.secondaryStorage.rdbms.url the JDBC connection URL for the RDBMS database
         url: ""
         ## @param orchestration.data.secondaryStorage.rdbms.username the JDBMC username for authenticating with the RDBMS database
@@ -2722,6 +2726,10 @@ orchestration:
           existingSecretKey: ""
       ## @extra orchestration.data.secondaryStorage.elasticsearch configuration for Elasticsearch as secondary storage
       elasticsearch:
+        ## @extra orchestration.data.secondaryStorage.elasticsearch.aws AWS configuration for Elasticsearch secondary storage
+        aws:
+          ## @param orchestration.data.secondaryStorage.elasticsearch.aws.enabled enable AWS IRSA for Elasticsearch connection
+          enabled: false
         ## @param orchestration.data.secondaryStorage.elasticsearch.url the URL for the elasticsearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200
         url: ""
         ## @extra orchestration.data.secondaryStorage.elasticsearch.auth defines the authentication configuration for elasticsearch connection
@@ -2746,6 +2754,10 @@ orchestration:
             existingSecretKey: ""
       ## @extra orchestration.data.secondaryStorage.opensearch configuration for Opensearch as secondary storage
       opensearch:
+        ## @extra orchestration.data.secondaryStorage.opensearch.aws AWS configuration for OpenSearch secondary storage
+        aws:
+          ## @param orchestration.data.secondaryStorage.opensearch.aws.enabled enable AWS IRSA for OpenSearch connection
+          enabled: false
         ## @param orchestration.data.secondaryStorage.opensearch.url the URL for the opensearch cluster defined as scheme://host:port, e.g. http://elasticsearch:9200
         url: ""
         ## @extra orchestration.data.secondaryStorage.opensearch.auth defines the authentication configuration for opensearch connection
