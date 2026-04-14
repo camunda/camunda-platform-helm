@@ -74,3 +74,4 @@ annotations:
   artifacthub.io/changes: |
     - kind: fixed
       description: "Reference bitnami subcharts internally rather than relying on external repositories"
+
