@@ -421,9 +421,8 @@ jobs:
       - name: Label PRs with version
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-          chartPath: "charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
         run: |
-          make release.set-prs-version-label
+          make release.set-prs-version-label chartPath="charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
 
       - name: Mark release-please PR as published
         id: mark-published
