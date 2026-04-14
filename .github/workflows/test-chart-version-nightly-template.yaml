@@ -69,3 +69,13 @@ jobs:
       values-enterprise: "${{ inputs.values-enterprise }}"
       values-digest: "true"
       camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      vault-secret-mapping: |
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+        secret/data/products/qa/ci/s3 access_key_id | IDP_AWS_ACCESSKEY;
+        secret/data/products/qa/ci/s3 bucket_name | IDP_AWS_BUCKET_NAME;
+        secret/data/products/qa/ci/s3 bucket_region | IDP_AWS_REGION;
+        secret/data/products/qa/ci/s3 secret_access_key | IDP_AWS_SECRETKEY;

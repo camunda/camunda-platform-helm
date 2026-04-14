@@ -210,15 +210,8 @@ jobs:
 
       - name: Login to Harbor registry
         run: |
-          echo "${HARBOR_REGISTRY_PASSWORD}" | \
-            helm registry login "${HARBOR_REGISTRY_HOST}" \
-              -u "${HARBOR_REGISTRY_USER}" \
-              --password-stdin
-
-          echo "${HARBOR_REGISTRY_PASSWORD}" | \
-            cosign login "${HARBOR_REGISTRY_HOST}" \
-              -u "${HARBOR_REGISTRY_USER}" \
-              --password-stdin
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+          harbor_login
 
       - name: Set version vars
         id: vars
@@ -365,18 +358,27 @@ jobs:
       - name: Check if artifact already exists
         id: check-artifact
         run: |
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
+
           # Dev packages are immutable - skip if already exists
           # Exception: when image overrides are provided, delete and rebuild
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
-          # Use --destination /tmp to avoid polluting the chart directory with downloaded .tgz
-          helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
-            --version "${DEV_TAG}" --destination /tmp 2>/dev/null && EXIT_CODE=0 || EXIT_CODE=1
 
-          if [[ ${EXIT_CODE} -eq 0 ]]; then
+          # Retry helm pull with re-auth to avoid misinterpreting transient 401 as "not found"
+          # harbor_helm_pull returns: 0=found, 1=not-found/other non-auth error, 2=persistent auth failure
+          PULL_RC=0
+          harbor_helm_pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
+            --version "${DEV_TAG}" --destination /tmp || PULL_RC=$?
+          if [[ ${PULL_RC} -eq 2 ]]; then
+            echo "::error::Harbor auth failure checking artifact existence"
+            exit 1
+          fi
+
+          if [[ ${PULL_RC} -eq 0 ]]; then
             if [[ "${HAS_IMAGE_OVERRIDES}" == "true" ]]; then
               # Image overrides provided - delete existing artifact to allow rebuild
               echo "::notice::Dev package ${DEV_TAG} exists but image overrides provided - deleting to rebuild"
-              curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              harbor_curl \
                 -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DEV_TAG}/tags/${DEV_TAG}" || true
               echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
             else
@@ -589,12 +591,15 @@ jobs:
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
 
           # helm push creates OCI tag from Chart.yaml version (the release version)
           # We need to retag to our dev tag and add rolling tag
-          helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}" |& tee blob_digest.txt
-          blob_sha="$(cat blob_digest.txt | grep Digest | awk '{print $2}')"
+
+          # helm push with retry and re-auth (most common 401 failure point)
+          harbor_retry "helm push" helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
+
           cosign sign-blob -y ${HELM_PACKAGE} \
             --bundle ".cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
 
@@ -634,7 +639,9 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-          oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
+          # oras push with retry and re-auth
+          harbor_retry "oras push" \
+            oras push ${OCI_REGISTRY}/${{ env.CHART_NAME }} .cr-release-packages/${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}
 
           # The helm push created a tag with the release version
           PUSHED_TAG="${RELEASE_VERSION}"
@@ -642,8 +649,7 @@ jobs:
 
           # Get the digest for API operations
           DIGEST=$(helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" --version "${PUSHED_TAG}" 2>&1 | grep -oP 'Digest: \K[^\s]+' || \
-            curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${PUSHED_TAG}" | jq -r '.digest')
+            harbor_curl "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${PUSHED_TAG}" | jq -r '.digest')
           echo "Artifact digest: ${DIGEST}"
 
           # Harbor API base URL for this artifact
@@ -651,25 +657,22 @@ jobs:
 
           # Add dev tag: {version}-dev-{sha}
           echo "Adding dev tag: ${DEV_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            -X POST "${HARBOR_API}" \
+          harbor_curl -X POST "${HARBOR_API}" \
             -H "Content-Type: application/json" \
             -d "{\"name\": \"${DEV_TAG}\"}"
 
           # Delete the release version tag (we only want dev tag for now)
           echo "Removing release version tag: ${PUSHED_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            -X DELETE "${HARBOR_API}/${PUSHED_TAG}"
+          harbor_curl -X DELETE "${HARBOR_API}/${PUSHED_TAG}"
 
           # Add rolling tag: {chart-major}-dev-latest
           ROLLING_TAG="${CHART_MAJOR_VERSION}-dev-latest"
           echo "Removing existing rolling tag if present: ${ROLLING_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+          harbor_curl \
             -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${ROLLING_TAG}/tags/${ROLLING_TAG}" || true
 
           echo "Adding rolling tag: ${ROLLING_TAG}"
-          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            -X POST "${HARBOR_API}" \
+          harbor_curl -X POST "${HARBOR_API}" \
             -H "Content-Type: application/json" \
             -d "{\"name\": \"${ROLLING_TAG}\"}"
 
