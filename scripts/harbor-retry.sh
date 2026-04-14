@@ -11,7 +11,7 @@
 #   harbor_login   # login with retry
 
 HARBOR_RETRY_MAX=${HARBOR_RETRY_MAX:-3}
-HARBOR_RETRY_DELAY=${HARBOR_RETRY_DELAY:-10}
+HARBOR_RETRY_DELAY=${HARBOR_RETRY_DELAY:-30}
 
 # Resolve which env var holds the registry hostname.
 _harbor_host() {
@@ -50,10 +50,7 @@ harbor_retry() {
     fi
     if [[ ${attempt} -lt ${max_retries} ]]; then
       echo "::warning::${desc} failed on attempt ${attempt}, re-authenticating and retrying in ${retry_delay}s..."
-      if ! harbor_reauth; then
-        echo "::error::Harbor re-authentication failed after ${desc} failed on attempt ${attempt}; aborting retries"
-        return 1
-      fi
+      harbor_reauth || echo "::warning::Re-authentication also failed (attempt ${attempt}), will retry after backoff..."
       sleep "${retry_delay}"
       retry_delay=$((retry_delay * 2))
     fi
@@ -118,7 +115,7 @@ harbor_helm_pull() {
       echo "::warning::helm pull auth error on attempt ${attempt}/${max_retries}"
       cat "${pull_stderr}" >&2
       if [[ ${attempt} -lt ${max_retries} ]]; then
-        harbor_reauth
+        harbor_reauth || echo "::warning::Re-authentication also failed (attempt ${attempt}), will retry after backoff..."
         sleep "${retry_delay}"
         retry_delay=$((retry_delay * 2))
         continue
