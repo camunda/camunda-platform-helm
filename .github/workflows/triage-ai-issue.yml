@@ -335,13 +335,17 @@ jobs:
               high) LIKELIHOOD_EMOJI="🔥" ;;
             esac
 
+            # Get issue author for triage comment
+            ISSUE_AUTHOR=$(echo "$ISSUE_DATA" | jq -r '.user.login')
+
             # Prepare triage comment (build programmatically to avoid YAML quoting issues)
             TRIAGE_COMMENT="## 🧭 Triage Assessment"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"| Field | Value |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"|-------|-------|"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Author | @${ISSUE_AUTHOR} |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Work type | **${WORK_TYPE}** |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Kind | **${KIND:-unknown}** |"
-            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Severity | ${SEVERITY_EMOJI} **${SEVERITY^}** |"
+            TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Severity | **${SEVERITY^}** |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Likelihood | ${LIKELIHOOD_EMOJI} **${LIKELIHOOD^}** |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n'"| Confidence | **${CONFIDENCE}** |"
             TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"### 📝 Rationale"$'\n\n'"${RATIONALE}"
@@ -351,7 +355,6 @@ jobs:
             fi
 
             if [[ "$MISSING_INFO" == "true" && -n "$MISSING_INFO_DETAILS" ]]; then
-              ISSUE_AUTHOR=$(echo "$ISSUE_DATA" | jq -r '.user.login')
               TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"### ⚠️ Missing Information"$'\n\n'"${MISSING_INFO_DETAILS}"
               TRIAGE_COMMENT="$TRIAGE_COMMENT"$'\n\n'"@${ISSUE_AUTHOR} - Please provide the missing information above."
             fi
