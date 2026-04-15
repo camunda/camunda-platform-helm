@@ -54,3 +54,5 @@ jobs:
           destination_dir: camunda-platform-helm
           # Preserve existing files (index.yaml, values/, version-matrix/, etc.)
           keep_files: true
+          # Allow Jekyll to run so README.md at the gh-pages root is rendered as HTML.
+          enable_jekyll: true
