@@ -49,6 +49,7 @@ jobs:
           OS_PROTOCOL=$(yq '.opensearch.aws.protocol' "$INFRA_CONFIG")
           OS_PORT=$(yq '.opensearch.aws.port' "$INFRA_CONFIG")
           echo "INFRA_OPENSEARCH_ENDPOINT=${OS_PROTOCOL}://${OS_HOST}:${OS_PORT}" >> $GITHUB_ENV
+
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:

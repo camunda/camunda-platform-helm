@@ -40,7 +40,6 @@ postgresql:
 
 teleport:
   proxy: camunda.teleport.sh:443
-  token-distribution: infra-ci-prod-github-action-distribution
 
 keycloak:
   version-prefix: "24-9-0"

@@ -109,7 +109,6 @@ runs:
 
       # Teleport.
       INFRA_TELEPORT_PROXY=$(yq '.teleport.proxy' "$INFRA_CONFIG")
-      INFRA_TELEPORT_TOKEN=$(yq '.teleport.token-distribution' "$INFRA_CONFIG")
       echo "INFRA_TELEPORT_PROXY=${INFRA_TELEPORT_PROXY}" | tee -a $GITHUB_ENV
 
       # Keycloak.
