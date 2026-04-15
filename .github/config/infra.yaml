@@ -41,11 +41,7 @@ postgresql:
 teleport:
   proxy: camunda.teleport.sh:443
   token-distribution: infra-ci-prod-github-action-distribution
-  token-qa: infra-ci-prod-github-action-qa
 
 keycloak:
   version-prefix: "24-9-0"
   protocol: https
-
-s3:
-  bucket: camunda-ci-eks-prod-team-bucket-qa

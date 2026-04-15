@@ -33,7 +33,7 @@ inputs:
     description: Unique identifier base used in the deployment hostname
     required: true
   ingress-hostname-base:
-    description: (deprecated, no longer used) Base ingress hostname — now loaded from .github/config/infra.yaml
+    description: "(deprecated, remove after 2026-07) Base ingress hostname — now loaded from .github/config/infra.yaml"
     required: false
     default: ""
   camunda-helm-dir:

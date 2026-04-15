@@ -36,48 +36,8 @@ outputs:
     description: The namespace for the deployment
     value: ${{ steps.vars.outputs.namespace }}
   es-pool-index:
-    description: Elasticsearch pool index (0-3) for per-scenario hash-based cluster routing
+    description: Elasticsearch pool index (0..pools-1) for per-scenario hash-based cluster routing
     value: ${{ steps.vars.outputs.es-pool-index }}
-  # Infrastructure outputs (loaded from .github/config/infra.yaml)
-  cluster-name:
-    description: EKS cluster name
-    value: ${{ steps.infra.outputs.cluster-name }}
-  aws-profile:
-    description: AWS profile for EKS
-    value: ${{ steps.infra.outputs.aws-profile }}
-  es-host:
-    description: In-cluster Elasticsearch host
-    value: ${{ steps.infra.outputs.es-host }}
-  es-namespace:
-    description: In-cluster Elasticsearch Kubernetes namespace
-    value: ${{ steps.infra.outputs.es-namespace }}
-  os-host:
-    description: In-cluster OpenSearch host base (append -pool-N for pooled access)
-    value: ${{ steps.infra.outputs.os-host }}
-  opensearch-aws-host:
-    description: AWS OpenSearch host
-    value: ${{ steps.infra.outputs.opensearch-aws-host }}
-  opensearch-aws-protocol:
-    description: AWS OpenSearch protocol
-    value: ${{ steps.infra.outputs.opensearch-aws-protocol }}
-  opensearch-aws-port:
-    description: AWS OpenSearch port
-    value: ${{ steps.infra.outputs.opensearch-aws-port }}
-  postgresql-jdbc-url:
-    description: PostgreSQL JDBC URL (without database name)
-    value: ${{ steps.infra.outputs.postgresql-jdbc-url }}
-  teleport-proxy:
-    description: Teleport proxy address
-    value: ${{ steps.infra.outputs.teleport-proxy }}
-  teleport-token-default:
-    description: Default Teleport token for the distribution platform
-    value: ${{ steps.infra.outputs.teleport-token-default }}
-  s3-bucket:
-    description: S3 bucket name
-    value: ${{ steps.infra.outputs.s3-bucket }}
-  keycloak-version-prefix:
-    description: Keycloak version prefix for hostnames
-    value: ${{ steps.infra.outputs.keycloak-version-prefix }}
 
 runs:
   using: composite
@@ -87,12 +47,22 @@ runs:
     run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
   - name: Load infra config
-    id: infra
     shell: bash
     run: |
       # Load infrastructure values from centralized config.
       INFRA_CONFIG=".github/config/infra.yaml"
+
+      # Extract first platform when a comma-separated list is passed (e.g. "gke,eks").
       PLATFORM="${{ inputs.platform }}"
+      PLATFORM="${PLATFORM%%,*}"
+      if [[ -z "$PLATFORM" ]]; then
+        echo "::error::platform input must not be empty"
+        exit 1
+      fi
+      if ! yq -e ".$PLATFORM" "$INFRA_CONFIG" > /dev/null 2>&1; then
+        echo "::error::platform '$PLATFORM' not found in $INFRA_CONFIG"
+        exit 1
+      fi
 
       # Platform-specific values.
       INFRA_INGRESS_HOSTNAME_BASE=$(yq ".$PLATFORM.ingress-hostname-base" "$INFRA_CONFIG")
@@ -106,8 +76,6 @@ runs:
       echo "INFRA_CLUSTER_NAME=${INFRA_CLUSTER_NAME}" | tee -a $GITHUB_ENV
       echo "CLUSTER_NAME=${INFRA_CLUSTER_NAME}" | tee -a $GITHUB_ENV
       echo "AWS_PROFILE=${INFRA_AWS_PROFILE}" | tee -a $GITHUB_ENV
-      echo "cluster-name=${INFRA_CLUSTER_NAME}" >> $GITHUB_OUTPUT
-      echo "aws-profile=${INFRA_AWS_PROFILE}" >> $GITHUB_OUTPUT
 
       # Elasticsearch (in-cluster).
       INFRA_ES_HOST=$(yq '.elasticsearch.host' "$INFRA_CONFIG")
@@ -116,15 +84,12 @@ runs:
       echo "INFRA_ES_HOST=${INFRA_ES_HOST}" | tee -a $GITHUB_ENV
       echo "INFRA_ES_NAMESPACE=${INFRA_ES_NAMESPACE}" | tee -a $GITHUB_ENV
       echo "INFRA_ES_POOLS=${INFRA_ES_POOLS}" | tee -a $GITHUB_ENV
-      echo "es-host=${INFRA_ES_HOST}" >> $GITHUB_OUTPUT
-      echo "es-namespace=${INFRA_ES_NAMESPACE}" >> $GITHUB_OUTPUT
 
       # OpenSearch (in-cluster).
       INFRA_OS_HOST=$(yq '.opensearch.host' "$INFRA_CONFIG")
       INFRA_OS_POOLS=$(yq '.opensearch.pools' "$INFRA_CONFIG")
       echo "INFRA_OS_HOST=${INFRA_OS_HOST}" | tee -a $GITHUB_ENV
       echo "INFRA_OS_POOLS=${INFRA_OS_POOLS}" | tee -a $GITHUB_ENV
-      echo "os-host=${INFRA_OS_HOST}" >> $GITHUB_OUTPUT
 
       # OpenSearch (AWS) — also set consumer-facing env vars for existing workflow references.
       INFRA_OPENSEARCH_AWS_HOST=$(yq '.opensearch.aws.host' "$INFRA_CONFIG")
@@ -136,33 +101,22 @@ runs:
       echo "OPENSEARCH_HOST=${INFRA_OPENSEARCH_AWS_HOST}" | tee -a $GITHUB_ENV
       echo "OPENSEARCH_PROTOCOL=${INFRA_OPENSEARCH_AWS_PROTOCOL}" | tee -a $GITHUB_ENV
       echo "OPENSEARCH_PORT=${INFRA_OPENSEARCH_AWS_PORT}" | tee -a $GITHUB_ENV
-      echo "opensearch-aws-host=${INFRA_OPENSEARCH_AWS_HOST}" >> $GITHUB_OUTPUT
-      echo "opensearch-aws-protocol=${INFRA_OPENSEARCH_AWS_PROTOCOL}" >> $GITHUB_OUTPUT
-      echo "opensearch-aws-port=${INFRA_OPENSEARCH_AWS_PORT}" >> $GITHUB_OUTPUT
 
       # PostgreSQL — also set consumer-facing env var.
       INFRA_PG_HOST=$(yq '.postgresql.jdbc-host' "$INFRA_CONFIG")
       INFRA_PG_PORT=$(yq '.postgresql.jdbc-port' "$INFRA_CONFIG")
       echo "POSTGRESQL_JDBC_URL=jdbc:postgresql://${INFRA_PG_HOST}:${INFRA_PG_PORT}" | tee -a $GITHUB_ENV
-      echo "postgresql-jdbc-url=jdbc:postgresql://${INFRA_PG_HOST}:${INFRA_PG_PORT}" >> $GITHUB_OUTPUT
 
       # Teleport.
       INFRA_TELEPORT_PROXY=$(yq '.teleport.proxy' "$INFRA_CONFIG")
       INFRA_TELEPORT_TOKEN=$(yq '.teleport.token-distribution' "$INFRA_CONFIG")
       echo "INFRA_TELEPORT_PROXY=${INFRA_TELEPORT_PROXY}" | tee -a $GITHUB_ENV
-      echo "teleport-proxy=${INFRA_TELEPORT_PROXY}" >> $GITHUB_OUTPUT
-      echo "teleport-token-default=${INFRA_TELEPORT_TOKEN}" >> $GITHUB_OUTPUT
 
       # Keycloak.
       INFRA_KEYCLOAK_PREFIX=$(yq '.keycloak.version-prefix' "$INFRA_CONFIG")
       INFRA_KEYCLOAK_PROTOCOL=$(yq '.keycloak.protocol' "$INFRA_CONFIG")
       echo "INFRA_KEYCLOAK_PREFIX=${INFRA_KEYCLOAK_PREFIX}" | tee -a $GITHUB_ENV
       echo "INFRA_KEYCLOAK_PROTOCOL=${INFRA_KEYCLOAK_PROTOCOL}" | tee -a $GITHUB_ENV
-      echo "keycloak-version-prefix=${INFRA_KEYCLOAK_PREFIX}" >> $GITHUB_OUTPUT
-
-      # S3.
-      INFRA_S3_BUCKET=$(yq '.s3.bucket' "$INFRA_CONFIG")
-      echo "s3-bucket=${INFRA_S3_BUCKET}" >> $GITHUB_OUTPUT
 
   - name: Set workflow vars
     id: vars
