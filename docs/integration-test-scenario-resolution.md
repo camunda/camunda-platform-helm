@@ -654,14 +654,14 @@ values/platform/gke.yaml
 
 ### 8.10
 
-Adds MCP (Model Context Protocol) feature support for Self-Managed MCP cluster tools testing.
+Includes MCP (Model Context Protocol) feature support for Self-Managed MCP cluster tools testing (introduced in 8.9).
 
 #### Scenarios
 
-All scenarios from 8.9 apply. The `mcp` feature scenario is now available.
+All scenarios from 8.9 apply, including the `mcp` feature scenario.
 
-#### What 8.10 Adds Over 8.9
-- `features/mcp.yaml` — MCP gateway enabled via `orchestration.extraConfiguration`
+#### 8.10 Layer Notes
+- `features/mcp.yaml` — enables the MCP gateway via `orchestration.extraConfiguration`
 
 #### Resolved Values Files
 
@@ -669,7 +669,7 @@ All scenarios from 8.9 apply. The `mcp` feature scenario is now available.
 ```
 values/base.yaml
 values/identity/keycloak.yaml
-values/persistence/elasticsearch-external.yaml
+values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 values/features/mcp.yaml
 ```
@@ -679,7 +679,7 @@ values/features/mcp.yaml
 values/base.yaml
 values/base-qa.yaml
 values/identity/keycloak.yaml
-values/persistence/elasticsearch-external.yaml
+values/persistence/elasticsearch.yaml
 values/platform/gke.yaml
 values/features/mcp.yaml
 ```
