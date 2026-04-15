@@ -1,5 +1,11 @@
 # ARM nodes (c4a-standard-8) don't support pd-balanced disks.
 # Use hyperdisk-balanced for all StatefulSet PVCs.
+
+# Identity startup is slower on ARM; increase startup probe budget.
+identity:
+  startupProbe:
+    failureThreshold: 180
+
 orchestration:
   pvcStorageClassName: hyperdisk-balanced
 
