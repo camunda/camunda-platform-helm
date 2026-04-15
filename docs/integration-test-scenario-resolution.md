@@ -20,6 +20,7 @@ test scenario, from the CI config entry to the final `helm install -f` arguments
   - [8.7](#87)
   - [8.8](#88)
   - [8.9](#89)
+  - [8.10](#810)
 
 ---
 
@@ -205,32 +206,33 @@ Versions 8.2–8.5 use the legacy (non-layered) values system and do not have a
 - &#x2713; = file exists
 - &#x2717; = file does not exist
 
-| File | 8.6 | 8.7 | 8.8 | 8.9 |
-|------|-----|-----|-----|-----|
-| **Base** | | | | |
-| `base.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `base-qa.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `base-upgrade.yaml` | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
-| `base-image-tags.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| **Identity** | | | | |
-| `identity/keycloak.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `identity/keycloak-external.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `identity/oidc.yaml` | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
-| `identity/basic.yaml` | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
-| `identity/hybrid.yaml` | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
-| **Persistence** | | | | |
-| `persistence/elasticsearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `persistence/elasticsearch-external.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `persistence/opensearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `persistence/rdbms.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; |
-| `persistence/rdbms-oracle.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; |
-| **Platform** | | | | |
-| `platform/gke.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `platform/eks.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| **Features** | | | | |
-| `features/multitenancy.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `features/rba.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
-| `features/documentstore.yaml` | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
+| File | 8.6 | 8.7 | 8.8 | 8.9 | 8.10 |
+|------|-----|-----|-----|-----|------|
+| **Base** | | | | | |
+| `base.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `base-qa.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `base-upgrade.yaml` | &#x2717; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `base-image-tags.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| **Identity** | | | | | |
+| `identity/keycloak.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `identity/keycloak-external.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `identity/oidc.yaml` | &#x2717; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `identity/basic.yaml` | &#x2717; | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
+| `identity/hybrid.yaml` | &#x2717; | &#x2717; | &#x2713; | &#x2713; | &#x2713; |
+| **Persistence** | | | | | |
+| `persistence/elasticsearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `persistence/elasticsearch-external.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `persistence/opensearch.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `persistence/rdbms.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
+| `persistence/rdbms-oracle.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
+| **Platform** | | | | | |
+| `platform/gke.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `platform/eks.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| **Features** | | | | | |
+| `features/multitenancy.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `features/rba.yaml` | &#x2713; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `features/documentstore.yaml` | &#x2717; | &#x2713; | &#x2713; | &#x2713; | &#x2713; |
+| `features/mcp.yaml` | &#x2717; | &#x2717; | &#x2717; | &#x2713; | &#x2713; |
 
 ---
 
@@ -647,6 +649,40 @@ values/platform/gke.yaml
 - `gateway-keycloak` scenario
 - Documentation comments in ci-test-config.yaml describing the Selection +
   Composition approach
+
+---
+
+### 8.10
+
+Includes MCP (Model Context Protocol) feature support for Self-Managed MCP cluster tools testing (introduced in 8.9).
+
+#### Scenarios
+
+All scenarios from 8.9 apply, including the `mcp` feature scenario.
+
+#### 8.10 Layer Notes
+- `features/mcp.yaml` — enables the MCP gateway via `orchestration.extraConfiguration`
+
+#### Resolved Values Files
+
+**`mcp` on GKE:**
+```
+values/base.yaml
+values/identity/keycloak.yaml
+values/persistence/elasticsearch.yaml
+values/platform/gke.yaml
+values/features/mcp.yaml
+```
+
+**`qa-elasticsearch-mcp` on GKE:**
+```
+values/base.yaml
+values/base-qa.yaml
+values/identity/keycloak.yaml
+values/persistence/elasticsearch.yaml
+values/platform/gke.yaml
+values/features/mcp.yaml
+```
 
 ---
 
