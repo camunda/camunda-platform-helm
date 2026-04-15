@@ -81,6 +81,11 @@ jobs:
       - name: Set vars
         run: |
           echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
+      - name: Run go mod tidy
+        run: |
+          echo "Running 'go mod tidy' on all go.mod files..."
+          find . -name 'go.mod' -execdir sh -c 'echo "Processing $(pwd)/go.mod" && go mod tidy' \;
+          echo "✅ 'go mod tidy' completed successfully"
       - name: Update golden files
         run: |
           if [ -n "${CHANGED_CHARTS}" ]; then
@@ -103,4 +108,4 @@ jobs:
         with:
           author_name: "renovate[bot]"
           author_email: "29139614+renovate[bot]@users.noreply.github.com"
-          message: "chore(deps): post upgrade tasks - update golden files"
+          message: "chore(deps): post upgrade tasks - go mod tidy and update golden files"
