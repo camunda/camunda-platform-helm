@@ -4,7 +4,7 @@
 # PR Activity Slack Notifications
 #
 # Sends a message to #team-distribution-github (via distro-bot) when:
-#   - A PR is assigned (fires after the auto-assignee is set, covers "PR opened" use case)
+#   - A PR is opened (or converted from draft to ready for review)
 #   - A PR is merged
 #   - A PR is closed without merge
 #
@@ -25,12 +25,12 @@ on:
   # pull_request_target ensures secrets are available even for fork PRs.
   # Safe here because we never checkout PR code.
   pull_request_target:
-    types: [assigned, closed]
+    types: [opened, ready_for_review, closed]
 
   workflow_call:
     inputs:
       action:
-        description: 'PR event action: assigned, closed'
+        description: 'PR event action: opened, ready_for_review, closed'
         type: string
         required: true
       pr_repo:
@@ -103,13 +103,14 @@ on:
 
 jobs:
   notify-slack:
-    # Skip draft PRs; only run for assigned, closed+merged, or closed+unmerged events.
+    # Skip draft PRs; only run for opened, ready_for_review, closed+merged, or closed+unmerged events.
     # When called via workflow_call, the caller controls filtering via the pr_draft input.
     if: |
       (github.event_name == 'workflow_call' && inputs.pr_draft != 'true') ||
       (github.event_name == 'pull_request_target' &&
         !github.event.pull_request.draft && (
-          github.event.action == 'assigned' ||
+          github.event.action == 'opened' ||
+          github.event.action == 'ready_for_review' ||
           github.event.action == 'closed'
         ))
     runs-on: ubuntu-latest
