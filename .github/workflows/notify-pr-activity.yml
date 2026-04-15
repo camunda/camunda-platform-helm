@@ -5,6 +5,7 @@
 #
 # Sends a message to #team-distribution-github (via distro-bot) when:
 #   - A PR is opened or converted from draft to ready for review
+#   - A PR is merged
 #   - A PR is closed without merge
 #
 # Draft PRs are skipped entirely.
