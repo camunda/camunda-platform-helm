@@ -96,7 +96,7 @@ func buildMessage() string {
 	link := fmt.Sprintf("<%s|%s %s>", prURL, prNum, prTitle)
 
 	switch action {
-	case "assigned":
+	case "opened", "ready_for_review":
 		size := fmt.Sprintf("+%s/-%s", mustEnv("PR_ADDITIONS"), mustEnv("PR_DELETIONS"))
 		reviewers := parseReviewers(os.Getenv("PR_REVIEWERS_JSON"))
 		reviewText := ""
