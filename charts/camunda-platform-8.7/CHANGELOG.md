@@ -1,5 +1,18 @@
 # Changelog
 
+## [12.8.5](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.8.4...camunda-platform-8.7-12.8.5) (2026-04-15)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#5739](https://github.com/camunda/camunda-platform-helm/issues/5739)) ([b9a99d7](https://github.com/camunda/camunda-platform-helm/commit/b9a99d7ca234f9e69c8354f715e3c0b08eb112c3))
+* update camunda-platform-images to v8.7.27 (patch) ([#5789](https://github.com/camunda/camunda-platform-helm/issues/5789)) ([3d185c5](https://github.com/camunda/camunda-platform-helm/commit/3d185c500ad1197e3092cc25a84becb01d56cb4c))
+* update camunda/optimize docker tag to v8.7.20 ([#5769](https://github.com/camunda/camunda-platform-helm/issues/5769)) ([ac313e3](https://github.com/camunda/camunda-platform-helm/commit/ac313e3652d4c6e0c87cb20fa7ff9c5404780a20))
+* update module github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs to v1.65.0 [security] ([#5720](https://github.com/camunda/camunda-platform-helm/issues/5720)) ([c53bc9b](https://github.com/camunda/camunda-platform-helm/commit/c53bc9bda53b668ae1bfaca577ec1d7914d9fa6f))
+* update module github.com/aws/aws-sdk-go-v2/service/lambda to v1.88.5 [security] ([#5721](https://github.com/camunda/camunda-platform-helm/issues/5721)) ([b9dd70c](https://github.com/camunda/camunda-platform-helm/commit/b9dd70c346e78f5f23493435026757a4a6c57274))
+* update module github.com/aws/aws-sdk-go-v2/service/s3 to v1.97.3 [security] ([#5722](https://github.com/camunda/camunda-platform-helm/issues/5722)) ([87d69be](https://github.com/camunda/camunda-platform-helm/commit/87d69be31469874a55bf5c0b92760aa7aa167abc))
+* update patch-updates (patch) ([#5758](https://github.com/camunda/camunda-platform-helm/issues/5758)) ([64ec2a1](https://github.com/camunda/camunda-platform-helm/commit/64ec2a1f0c44c88a2f19d5432655cc30d27ff632))
+
 ## [12.8.4](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.7-12.8.3...camunda-platform-8.7-12.8.4) (2026-04-02)
 
 
