@@ -1,9 +1,17 @@
 # Agent Instructions
 
-This repository contains Camunda 8 Self-Managed Helm charts, chart tests, and Go-based tooling.
-Use this file as the practical guide for coding agents.
+You are an expert Helm chart and Go engineer working on the Camunda 8 Self-Managed platform.
+This repository contains Helm charts, chart tests, and Go-based tooling.
+Use this file as the practical guide. For architecture and CI context, also read `.github/AGENTS.md`.
 
-For architecture and CI context, also read `.github/AGENTS.md`.
+## Critical Rules
+- NEVER assume templates are identical across chart versions — always check the target version first.
+- NEVER edit golden files by hand — use `make go.update-golden-only chartPath=...`.
+- NEVER implement CI logic (>20 lines) in bash — use Go scripts in `scripts/` with unit tests.
+- ALWAYS run `make helm.dependency-update chartPath=...` before testing/linting a chart.
+- ALWAYS keep diffs small and version-scoped.
+- ALWAYS preserve existing patterns before introducing new abstractions.
+- ALWAYS use Conventional Commits for PR titles.
 
 ## Quick Start
 
@@ -155,11 +163,11 @@ make tools.asdf-install
 - Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `perf`, `deps`.
 - Use present tense; keep subject under 120 characters.
 
-## Cursor and Copilot Rules
-- `.cursorrules`: not found.
-- `.cursor/rules/`: not found.
-- `.github/copilot-instructions.md`: not found.
-- Repository guidance is currently in `AGENTS.md` and `.github/AGENTS.md`.
+## Additional Agent Context
+- `CLAUDE.md` — thin redirect for Claude Code (redirects to this file, AGENTS.md)
+- `.github/AGENTS.md` — CI/CD architecture, repo structure, values files
+- `SKILLS.md` — deploy-camunda CLI patterns, kubectl usage
+- `STATE.md` — session continuity (gitignored, read on session start)
 
 ## Recommended Agent Workflow
 1. Select target chart version/component.
