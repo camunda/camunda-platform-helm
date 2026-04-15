@@ -474,7 +474,7 @@ Orchestration Identity templates.
 */}}
 
 {{/*
-[camunda-platform] Orchestration Identity external URL.
+[camunda-platform] Orchestration Admin external URL.
 */}}
 {{- define "camundaPlatform.orchestrationIdentityExternalURL" }}
   {{- printf "%s/admin" (include "camundaPlatform.orchestrationExternalURL" . | trimSuffix "/") -}}
