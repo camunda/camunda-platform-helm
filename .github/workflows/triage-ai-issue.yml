@@ -167,6 +167,8 @@ jobs:
 
       - name: Triage issues
         if: steps.fetch_issues.outputs.has_issues == 'true'
+        env:
+          GLEAN_API_TOKEN: ${{ steps.vault-secrets.outputs.GLEAN_API_TOKEN }}
         run: |
           set -euo pipefail
 

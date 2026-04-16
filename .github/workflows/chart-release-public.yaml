@@ -68,6 +68,8 @@ jobs:
         env:
           HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
+          HARBOR_REGISTRY_USER: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           input_tag="${{ inputs.rc-tag }}"
           
@@ -152,8 +154,8 @@ jobs:
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: ${{ env.HARBOR_REGISTRY }}
-          username: ${{ env.HARBOR_REGISTRY_USER }}
-          password: ${{ env.HARBOR_REGISTRY_PASSWORD }}
+          username: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_USER }}
+          password: ${{ steps.vault-harbor.outputs.HARBOR_REGISTRY_PASSWORD }}
 
       - name: Pull RC package from Harbor
         run: |

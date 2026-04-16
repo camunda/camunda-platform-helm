@@ -208,6 +208,9 @@ jobs:
           ./scripts/values-injector/values-injector
 
       - name: Login to Harbor registry
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           echo "${HARBOR_REGISTRY_PASSWORD}" | \
             helm registry login "${HARBOR_REGISTRY_HOST}" \
@@ -363,6 +366,9 @@ jobs:
 
       - name: Check if artifact already exists
         id: check-artifact
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           # Dev packages are immutable - skip if already exists
           # Exception: when image overrides are provided, delete and rebuild
@@ -587,6 +593,8 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         env:
           CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
         run: |
           OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
 

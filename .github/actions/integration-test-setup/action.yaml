@@ -109,6 +109,7 @@ runs:
         roleId: ${{ env.VAULT_ROLE_ID }}
         secretId: ${{ env.VAULT_SECRET_ID }}
         secrets: ${{ inputs.vault-secret-mapping }}
+        exportEnv: true # Required: vault-secret-mapper reads values via os.Getenv()
 
     - name: CI Setup - Generate Secret manifest from Vault mapping
       if: inputs.vault-secret-mapping != ''
@@ -221,8 +222,8 @@ runs:
     - name: CI Setup - Login to Docker Hub
       shell: bash
       env:
-        TEST_DOCKER_USERNAME: ${{ env.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || env.TEST_DOCKER_USERNAME }}
-        TEST_DOCKER_PASSWORD: ${{ env.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || env.TEST_DOCKER_PASSWORD }}
+        TEST_DOCKER_USERNAME: ${{ env.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB || steps.test-credentials-secret.outputs.TEST_DOCKER_USERNAME }}
+        TEST_DOCKER_PASSWORD: ${{ env.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB || steps.test-credentials-secret.outputs.TEST_DOCKER_PASSWORD }}
       run: |
         echo "${TEST_DOCKER_PASSWORD}" | helm registry login registry-1.docker.io -u "${TEST_DOCKER_USERNAME}" --password-stdin
 
