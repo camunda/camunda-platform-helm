@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      MEDIC_USERGROUP_HANDLE: "distro-medic"
+      MEDIC_HANDLE: "@distro-medic"
       SLACK_CHANNEL: "#team-distribution-reports"
       ALERT_CHANNEL: "#team-distribution-alerts"
       SUPPORT_CHANNELS: "#ask-self-managed,#inc-*"
@@ -55,7 +55,6 @@ jobs:
             secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
             secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
             secret/data/products/distribution/ci GLEAN_API_TOKEN;
-            secret/data/products/distribution/ci SLACK_BOT_TOKEN;
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_REPORTS;
           exportEnv: true
 

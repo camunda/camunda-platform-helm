@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -30,19 +29,16 @@ import (
 
 const (
 	gleanAPIURL            = "https://camunda-be.glean.com/rest/api/v1/chat"
-	slackAPIBaseURL        = "https://slack.com/api"
 	githubIssueCommentPath = "https://api.github.com/repos/%s/issues/%s/comments"
 )
 
 type config struct {
 	WeekOffset         int
 	GleanAPIToken      string
-	SlackBotToken      string
 	SlackWebhookURL    string
 	TrackingIssueRepo  string
 	TrackingIssueNum   string
-	MedicUsergroupID   string
-	MedicUsergroupName string
+	MedicHandle        string
 	SlackChannel       string
 	AlertChannel       string
 	SupportChannels    string
@@ -82,34 +78,6 @@ type slackText struct {
 	Text string `json:"text"`
 }
 
-type slackUsergroupsListResponse struct {
-	OK         bool   `json:"ok"`
-	Error      string `json:"error"`
-	Usergroups []struct {
-		ID     string `json:"id"`
-		Handle string `json:"handle"`
-	} `json:"usergroups"`
-}
-
-type slackUsergroupUsersListResponse struct {
-	OK    bool     `json:"ok"`
-	Error string   `json:"error"`
-	Users []string `json:"users"`
-}
-
-type slackUsersInfoResponse struct {
-	OK    bool   `json:"ok"`
-	Error string `json:"error"`
-	User  struct {
-		Name     string `json:"name"`
-		RealName string `json:"real_name"`
-		Profile  struct {
-			DisplayName string `json:"display_name"`
-			RealName    string `json:"real_name"`
-		} `json:"profile"`
-	} `json:"user"`
-}
-
 func mustEnv(name string) string {
 	v := os.Getenv(name)
 	if v == "" {
@@ -130,15 +98,10 @@ func loadConfig() config {
 	return config{
 		WeekOffset:        weekOffset,
 		GleanAPIToken:     mustEnv("GLEAN_API_TOKEN"),
-		SlackBotToken:     mustEnv("SLACK_BOT_TOKEN"),
 		SlackWebhookURL:   mustEnv("SLACK_DISTRO_BOT_WEBHOOK_REPORTS"),
 		TrackingIssueRepo: mustEnv("TRACKING_ISSUE_REPO"),
 		TrackingIssueNum:  mustEnv("TRACKING_ISSUE_NUMBER"),
-		MedicUsergroupID:  os.Getenv("MEDIC_USERGROUP_ID"),
-		MedicUsergroupName: func() string {
-			h := mustEnv("MEDIC_USERGROUP_HANDLE")
-			return strings.TrimPrefix(h, "@")
-		}(),
+		MedicHandle:       mustEnv("MEDIC_HANDLE"),
 		SlackChannel:      mustEnv("SLACK_CHANNEL"),
 		AlertChannel:      mustEnv("ALERT_CHANNEL"),
 		SupportChannels:   mustEnv("SUPPORT_CHANNELS"),
@@ -200,91 +163,21 @@ func doJSONRequest(ctx context.Context, method, endpoint string, headers map[str
 	return nil
 }
 
-func resolveMedicName(ctx context.Context, cfg config) (string, error) {
-	headers := map[string]string{
-		"Authorization": "Bearer " + cfg.SlackBotToken,
-	}
-
-	usergroupID := cfg.MedicUsergroupID
-	if usergroupID == "" {
-		listEndpoint := fmt.Sprintf("%s/usergroups.list?include_count=false&include_disabled=false", slackAPIBaseURL)
-		var groups slackUsergroupsListResponse
-		if err := doJSONRequest(ctx, http.MethodGet, listEndpoint, headers, nil, &groups); err != nil {
-			return "", err
-		}
-		if !groups.OK {
-			return "", fmt.Errorf("slack usergroups.list failed: %s", groups.Error)
-		}
-
-		for _, g := range groups.Usergroups {
-			if g.Handle == cfg.MedicUsergroupName {
-				usergroupID = g.ID
-				break
-			}
-		}
-		if usergroupID == "" {
-			return "", fmt.Errorf("slack usergroup @%s not found", cfg.MedicUsergroupName)
-		}
-	}
-
-	usersQuery := url.Values{}
-	usersQuery.Set("usergroup", usergroupID)
-	usersQuery.Set("include_disabled", "false")
-	usersEndpoint := fmt.Sprintf("%s/usergroups.users.list?%s", slackAPIBaseURL, usersQuery.Encode())
-
-	var groupUsers slackUsergroupUsersListResponse
-	if err := doJSONRequest(ctx, http.MethodGet, usersEndpoint, headers, nil, &groupUsers); err != nil {
-		return "", err
-	}
-	if !groupUsers.OK {
-		return "", fmt.Errorf("slack usergroups.users.list failed: %s", groupUsers.Error)
-	}
-	if len(groupUsers.Users) == 0 {
-		return "@" + cfg.MedicUsergroupName, nil
-	}
-
-	infoQuery := url.Values{}
-	infoQuery.Set("user", groupUsers.Users[0])
-	infoEndpoint := fmt.Sprintf("%s/users.info?%s", slackAPIBaseURL, infoQuery.Encode())
-
-	var userInfo slackUsersInfoResponse
-	if err := doJSONRequest(ctx, http.MethodGet, infoEndpoint, headers, nil, &userInfo); err != nil {
-		return "", err
-	}
-	if !userInfo.OK {
-		return "", fmt.Errorf("slack users.info failed: %s", userInfo.Error)
-	}
-
-	if userInfo.User.Profile.RealName != "" {
-		return userInfo.User.Profile.RealName, nil
-	}
-	if userInfo.User.RealName != "" {
-		return userInfo.User.RealName, nil
-	}
-	if userInfo.User.Profile.DisplayName != "" {
-		return userInfo.User.Profile.DisplayName, nil
-	}
-	if userInfo.User.Name != "" {
-		return userInfo.User.Name, nil
-	}
-
-	return "@" + cfg.MedicUsergroupName, nil
-}
-
-func buildPrompt(cfg config, weekStart, weekEnd time.Time, medicName string) string {
+func buildPrompt(cfg config, weekStart, weekEnd time.Time) string {
 	_, isoWeek := weekStart.ISOWeek()
 	return fmt.Sprintf(`You are generating the weekly distro-medic report for the Distribution team at Camunda.
 
 Report period: %s to %s (W%02d)
-Current medic: %s
 
 Follow the Distro - Medic Report Guidelines from the Camunda Confluence documentation exactly.
 Search all data sources listed in the guidelines for activity during this period.
+Determine who was medic for this report period by looking up the Slack @%s user group membership/activity in that period.
+Include a line in the report: Current medic: <name>.
 Ensure you include activity from support channels (%s) and alert channel (%s) when relevant.
 Cross-reference with previous medic reports in https://github.com/%s/issues/%s for recurring themes.
 
 Respond ONLY with the Slack message content. No wrapping, no explanation.
-`, weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"), isoWeek, medicName, cfg.SupportChannels, cfg.AlertChannel, cfg.TrackingIssueRepo, cfg.TrackingIssueNum)
+`, weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"), isoWeek, strings.TrimPrefix(cfg.MedicHandle, "@"), cfg.SupportChannels, cfg.AlertChannel, cfg.TrackingIssueRepo, cfg.TrackingIssueNum)
 }
 
 func generateReport(ctx context.Context, cfg config, prompt string) (string, error) {
@@ -333,13 +226,12 @@ func postSlack(ctx context.Context, cfg config, report string) error {
 	}, payload, nil)
 }
 
-func commentOnIssue(ctx context.Context, cfg config, weekStart, weekEnd time.Time, medicName, report string) error {
+func commentOnIssue(ctx context.Context, cfg config, weekStart, weekEnd time.Time, report string) error {
 	_, isoWeek := weekStart.ISOWeek()
-	comment := fmt.Sprintf("## Weekly distro-medic report (W%02d)\n\nPeriod: %s to %s\nMedic: %s\nSlack channel: %s\n\n%s",
+	comment := fmt.Sprintf("## Weekly distro-medic report (W%02d)\n\nPeriod: %s to %s\nSlack channel: %s\n\n%s",
 		isoWeek,
 		weekStart.Format("2006-01-02"),
 		weekEnd.Format("2006-01-02"),
-		medicName,
 		cfg.SlackChannel,
 		report,
 	)
@@ -360,14 +252,7 @@ func main() {
 	_, isoWeek := weekStart.ISOWeek()
 	fmt.Printf("Reporting period: %s to %s (W%02d)\n", weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"), isoWeek)
 
-	medicName, err := resolveMedicName(ctx, cfg)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "resolve medic from Slack usergroup: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("Resolved medic: %s\n", medicName)
-
-	prompt := buildPrompt(cfg, weekStart, weekEnd, medicName)
+	prompt := buildPrompt(cfg, weekStart, weekEnd)
 	report, err := generateReport(ctx, cfg, prompt)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "generate report from Glean: %v\n", err)
@@ -379,7 +264,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := commentOnIssue(ctx, cfg, weekStart, weekEnd, medicName, report); err != nil {
+	if err := commentOnIssue(ctx, cfg, weekStart, weekEnd, report); err != nil {
 		fmt.Fprintf(os.Stderr, "comment report on GitHub issue: %v\n", err)
 		os.Exit(1)
 	}

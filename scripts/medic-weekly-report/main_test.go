@@ -48,6 +48,7 @@ func TestBuildPrompt(t *testing.T) {
 	cfg := config{
 		TrackingIssueRepo: "camunda/team-distribution",
 		TrackingIssueNum:  "418",
+		MedicHandle:       "@distro-medic",
 		SupportChannels:   "#ask-self-managed,#inc-*",
 		AlertChannel:      "#team-distribution-alerts",
 	}
@@ -55,12 +56,14 @@ func TestBuildPrompt(t *testing.T) {
 	weekStart := time.Date(2026, time.April, 13, 0, 0, 0, 0, time.UTC)
 	weekEnd := time.Date(2026, time.April, 19, 0, 0, 0, 0, time.UTC)
 
-	prompt := buildPrompt(cfg, weekStart, weekEnd, "John Medic")
+	prompt := buildPrompt(cfg, weekStart, weekEnd)
 
 	mustContain := []string{
 		"Distro - Medic Report Guidelines",
 		"Report period: 2026-04-13 to 2026-04-19 (W16)",
-		"Current medic: John Medic",
+		"Determine who was medic for this report period",
+		"Slack @distro-medic user group membership/activity",
+		"Current medic: <name>",
 		"#ask-self-managed,#inc-*",
 		"#team-distribution-alerts",
 		"https://github.com/camunda/team-distribution/issues/418",
