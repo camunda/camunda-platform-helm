@@ -1,0 +1,78 @@
+# type: Project Management
+# owner: @camunda/distribution-team
+---
+name: Medic - Weekly report
+
+on:
+  schedule:
+    - cron: '0 16 * * 5' # Every Friday 16:00 UTC
+  workflow_dispatch:
+    inputs:
+      week_offset:
+        description: 'Weeks back (0 = current week, 1 = last week)'
+        required: false
+        default: '0'
+
+concurrency:
+  group: medic-weekly-report
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  generate-report:
+    name: Generate distro medic report
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MEDIC_USERGROUP_HANDLE: "distro-medic"
+      SLACK_CHANNEL: "#team-distribution-reports"
+      ALERT_CHANNEL: "#team-distribution-alerts"
+      SUPPORT_CHANNELS: "#ask-self-managed,#inc-*"
+      TRACKING_ISSUE_REPO: "camunda/team-distribution"
+      TRACKING_ISSUE_NUMBER: "418"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+
+      - name: Import Vault secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+            secret/data/products/distribution/ci GLEAN_API_TOKEN;
+            secret/data/products/distribution/ci SLACK_BOT_TOKEN;
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_REPORTS;
+          exportEnv: true
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Set GitHub token
+        run: |
+          echo "GH_TOKEN=${{ steps.generate-github-token.outputs.token }}" >> "$GITHUB_ENV"
+
+      - name: Generate and publish weekly medic report
+        env:
+          WEEK_OFFSET: ${{ github.event.inputs.week_offset || '0' }}
+        run: |
+          cd scripts/medic-weekly-report
+          go run .
