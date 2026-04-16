@@ -30,6 +30,8 @@ import (
 const (
 	gleanAPIURL            = "https://camunda-be.glean.com/rest/api/v1/chat"
 	githubIssueCommentPath = "https://api.github.com/repos/%s/issues/%s/comments"
+	gleanRequestTimeout    = 120 * time.Second
+	defaultRequestTimeout  = 20 * time.Second
 )
 
 type config struct {
@@ -121,7 +123,7 @@ func weekWindow(now time.Time, offsetWeeks int) (time.Time, time.Time) {
 	return start, end
 }
 
-func doJSONRequest(ctx context.Context, method, endpoint string, headers map[string]string, reqBody any, respBody any) error {
+func doJSONRequest(ctx context.Context, method, endpoint string, headers map[string]string, reqBody any, respBody any, timeout time.Duration) error {
 	var bodyReader io.Reader
 	if reqBody != nil {
 		payload, err := json.Marshal(reqBody)
@@ -139,7 +141,7 @@ func doJSONRequest(ctx context.Context, method, endpoint string, headers map[str
 		req.Header.Set(k, v)
 	}
 
-	client := &http.Client{Timeout: 20 * time.Second}
+	client := &http.Client{Timeout: timeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("send request: %w", err)
@@ -189,7 +191,7 @@ func generateReport(ctx context.Context, cfg config, prompt string) (string, err
 		Author:      "USER",
 		MessageType: "CONTENT",
 		Fragments:   []gleanFragment{{Text: prompt}},
-	}}}, &out)
+	}}}, &out, gleanRequestTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -223,7 +225,7 @@ func postSlack(ctx context.Context, cfg config, report string) error {
 	}
 	return doJSONRequest(ctx, http.MethodPost, cfg.SlackWebhookURL, map[string]string{
 		"Content-Type": "application/json",
-	}, payload, nil)
+	}, payload, nil, defaultRequestTimeout)
 }
 
 func commentOnIssue(ctx context.Context, cfg config, weekStart, weekEnd time.Time, report string) error {
@@ -241,7 +243,7 @@ func commentOnIssue(ctx context.Context, cfg config, weekStart, weekEnd time.Tim
 		"Authorization": "Bearer " + cfg.GitHubToken,
 		"Accept":        "application/vnd.github+json",
 		"Content-Type":  "application/json",
-	}, map[string]string{"body": comment}, nil)
+	}, map[string]string{"body": comment}, nil, defaultRequestTimeout)
 }
 
 func main() {
