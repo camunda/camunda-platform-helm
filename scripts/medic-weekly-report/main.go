@@ -220,6 +220,15 @@ func postSlack(ctx context.Context, cfg config, report string) error {
 	}, payload, nil, defaultRequestTimeout)
 }
 
+func buildFailureMessage(weekStart, weekEnd time.Time, err error) string {
+	return fmt.Sprintf(
+		":warning: Weekly distro-medic report generation failed.\nPeriod: %s to %s\nError: `%s`",
+		weekStart.Format("2006-01-02"),
+		weekEnd.Format("2006-01-02"),
+		err,
+	)
+}
+
 func main() {
 	cfg := loadConfig()
 	ctx := context.Background()
@@ -231,6 +240,10 @@ func main() {
 	prompt := buildPrompt(cfg, weekStart, weekEnd)
 	report, err := generateReport(ctx, cfg, prompt)
 	if err != nil {
+		failureMessage := buildFailureMessage(weekStart, weekEnd, err)
+		if notifyErr := postSlack(ctx, cfg, failureMessage); notifyErr != nil {
+			fmt.Fprintf(os.Stderr, "notify report failure to Slack: %v\n", notifyErr)
+		}
 		fmt.Fprintf(os.Stderr, "generate report from Glean: %v\n", err)
 		os.Exit(1)
 	}

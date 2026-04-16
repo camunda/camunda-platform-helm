@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -70,6 +71,28 @@ func TestBuildPrompt(t *testing.T) {
 	for _, expected := range mustContain {
 		if !strings.Contains(prompt, expected) {
 			t.Fatalf("prompt missing expected content: %q", expected)
+		}
+	}
+}
+
+func TestBuildFailureMessage(t *testing.T) {
+	t.Parallel()
+
+	weekStart := time.Date(2026, time.April, 13, 0, 0, 0, 0, time.UTC)
+	weekEnd := time.Date(2026, time.April, 19, 0, 0, 0, 0, time.UTC)
+	err := fmt.Errorf("glean timeout")
+
+	msg := buildFailureMessage(weekStart, weekEnd, err)
+
+	mustContain := []string{
+		"Weekly distro-medic report generation failed",
+		"Period: 2026-04-13 to 2026-04-19",
+		"Error: `glean timeout`",
+	}
+
+	for _, expected := range mustContain {
+		if !strings.Contains(msg, expected) {
+			t.Fatalf("failure message missing expected content: %q", expected)
 		}
 	}
 }
