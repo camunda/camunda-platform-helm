@@ -93,6 +93,11 @@ on:
         type: string
         required: false
         default: 'false'
+      pr_labels_json:
+        description: 'JSON array of label objects: [{"name":"automerge"},...]'
+        type: string
+        required: false
+        default: '[]'
     secrets:
       VAULT_ADDR:
         required: true
@@ -160,6 +165,7 @@ jobs:
           PR_CREATED_AT:    ${{ inputs.pr_created_at  || github.event.pull_request.created_at }}
           PR_MERGED_AT:     ${{ inputs.pr_merged_at   || github.event.pull_request.merged_at }}
           PR_REVIEWERS_JSON: ${{ inputs.pr_reviewers_json || toJSON(github.event.pull_request.requested_reviewers) }}
+          PR_LABELS_JSON:   ${{ inputs.pr_labels_json   || toJSON(github.event.pull_request.labels) }}
         run: |
           cd scripts/notify-pr-activity
           go run .

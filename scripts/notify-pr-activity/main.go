@@ -160,7 +160,31 @@ func sendSlack(webhook, message string) error {
 	return nil
 }
 
+// hasLabel reports whether the JSON label array contains a label with the given name.
+// The array has the shape [{"name":"automerge",...},...]
+func hasLabel(labelsJSON, name string) bool {
+	var labels []struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
+		return false
+	}
+	for _, l := range labels {
+		if l.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
+	// Renovate PRs labelled "automerge" are handled automatically and generate no useful signal.
+	// Renovate PRs without "automerge" (e.g. major updates) still need human attention — notify those.
+	if os.Getenv("PR_AUTHOR") == "renovate[bot]" && hasLabel(os.Getenv("PR_LABELS_JSON"), "automerge") {
+		fmt.Println("ℹ️  Skipping Slack notification: automerge Renovate PR.")
+		return
+	}
+
 	webhook := mustEnv("SLACK_WEBHOOK")
 	message := buildMessage()
 
