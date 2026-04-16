@@ -1165,7 +1165,7 @@ jobs:
           if [[ "$(kubectl get ns $TEST_NAMESPACE --ignore-not-found)" != "" && "${{ env.CI_DEPLOYMENT_TTL }}" == "" ]]; then
             kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true
             kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true
-            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
+            scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}-pool-${ES_POOL_INDEX}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}-pool-${ES_POOL_INDEX}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
             scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
           else
             if [[ "${{ inputs.distro-type }}" == "kubernetes" && "${{ env.CI_DEPLOYMENT_TTL }}" != "" ]]; then
@@ -1174,7 +1174,7 @@ jobs:
             else
               kubectl annotate ns $TEST_NAMESPACE cleaner/ttl=1s --overwrite=true || true
               kubectl annotate ns $TEST_NAMESPACE janitor/ttl=1s --overwrite=true || true
-              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
+              scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "https://${INFRA_ES_HOST}-pool-${ES_POOL_INDEX}" --user "elastic" --elasticsearch-namespace "${INFRA_ES_NAMESPACE}-pool-${ES_POOL_INDEX}" --debug || echo "Warning: Elasticsearch index cleanup failed (credentials inaccessible), skipping..."
               scripts/apply-ttl-to-elasticsearch-indexes.sh --prefix "${GITHUB_WORKFLOW_JOB_ID}" --ttl 1s --url "${OPENSEARCH_PROTOCOL}://${OPENSEARCH_HOST}:${OPENSEARCH_PORT}" --user "${OPENSEARCH_USERNAME}" --pass "${OPENSEARCH_PASSWORD}" --debug || echo "Warning: OpenSearch index cleanup failed, skipping..."
             fi
           fi
@@ -1185,8 +1185,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          ES_URL="https://${INFRA_ES_HOST}"
-          ES_NS="${INFRA_ES_NAMESPACE}"
+          ES_URL="https://${INFRA_ES_HOST}-pool-${ES_POOL_INDEX}"
+          ES_NS="${INFRA_ES_NAMESPACE}-pool-${ES_POOL_INDEX}"
 
           # Extract the 6-char hex suffix from the namespace.
           # Namespace patterns:
