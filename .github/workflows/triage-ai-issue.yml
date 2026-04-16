@@ -274,7 +274,7 @@ jobs:
             AI_JSON=$(echo "$AI_TEXT" | sed -n '/^```json$/,/^```$/p' | sed '1d;$d')
             if [[ -z "$AI_JSON" ]]; then
               # Extract the first JSON object, skipping any prose that precedes it
-              AI_JSON=$(echo "$AI_TEXT" | python3 -c "import sys,json;t=sys.stdin.read();start=t.find('{');d=json.JSONDecoder();o,_=d.raw_decode(t,start) if start>=0 else (None,0);print(json.dumps(o)) if o else ''" 2>/dev/null || true)
+              AI_JSON=$(echo "$AI_TEXT" | python3 -c "import sys,json;t=sys.stdin.read();start=t.find('{');d=json.JSONDecoder();o,_=d.raw_decode(t,start) if start>=0 else (None,0);print(json.dumps(o)) if o is not None else ''" 2>/dev/null || true)
             fi
             if [[ -z "$AI_JSON" ]]; then
               # Last resort: use the full text
