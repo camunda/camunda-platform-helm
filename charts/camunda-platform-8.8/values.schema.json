@@ -5286,7 +5286,7 @@
                                 },
                                 "authorizations": {
                                     "type": "array",
-                                    "description": "define authorizations.",
+                                    "description": "define authorizations for Identity as Code.",
                                     "default": [],
                                     "items": {}
                                 }
@@ -5310,7 +5310,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.21"
+                            "default": "8.8.22"
                         },
                         "digest": {
                             "type": "string",
