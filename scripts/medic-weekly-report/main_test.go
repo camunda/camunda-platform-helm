@@ -46,11 +46,9 @@ func TestBuildPrompt(t *testing.T) {
 	t.Parallel()
 
 	cfg := config{
-		TrackingIssueRepo: "camunda/team-distribution",
-		TrackingIssueNum:  "418",
-		MedicHandle:       "@distro-medic",
-		SupportChannels:   "#ask-self-managed,#inc-*",
-		AlertChannel:      "#team-distribution-alerts",
+		MedicHandle:     "@distro-medic",
+		SupportChannels: "#ask-self-managed,#inc-*",
+		AlertChannel:    "#team-distribution-alerts",
 	}
 
 	weekStart := time.Date(2026, time.April, 13, 0, 0, 0, 0, time.UTC)
@@ -66,7 +64,6 @@ func TestBuildPrompt(t *testing.T) {
 		"Current medic: <name>",
 		"#ask-self-managed,#inc-*",
 		"#team-distribution-alerts",
-		"https://github.com/camunda/team-distribution/issues/418",
 		"Respond ONLY with the Slack message content. No wrapping, no explanation.",
 	}
 

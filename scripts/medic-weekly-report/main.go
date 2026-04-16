@@ -28,23 +28,19 @@ import (
 )
 
 const (
-	gleanAPIURL            = "https://camunda-be.glean.com/rest/api/v1/chat"
-	githubIssueCommentPath = "https://api.github.com/repos/%s/issues/%s/comments"
-	gleanRequestTimeout    = 120 * time.Second
-	defaultRequestTimeout  = 20 * time.Second
+	gleanAPIURL           = "https://camunda-be.glean.com/rest/api/v1/chat"
+	gleanRequestTimeout   = 120 * time.Second
+	defaultRequestTimeout = 20 * time.Second
 )
 
 type config struct {
-	WeekOffset         int
-	GleanAPIToken      string
-	SlackWebhookURL    string
-	TrackingIssueRepo  string
-	TrackingIssueNum   string
-	MedicHandle        string
-	SlackChannel       string
-	AlertChannel       string
-	SupportChannels    string
-	GitHubToken        string
+	WeekOffset      int
+	GleanAPIToken   string
+	SlackWebhookURL string
+	MedicHandle     string
+	SlackChannel    string
+	AlertChannel    string
+	SupportChannels string
 }
 
 type gleanRequest struct {
@@ -98,16 +94,13 @@ func loadConfig() config {
 	}
 
 	return config{
-		WeekOffset:        weekOffset,
-		GleanAPIToken:     mustEnv("GLEAN_API_TOKEN"),
-		SlackWebhookURL:   mustEnv("SLACK_DISTRO_BOT_WEBHOOK_REPORTS"),
-		TrackingIssueRepo: mustEnv("TRACKING_ISSUE_REPO"),
-		TrackingIssueNum:  mustEnv("TRACKING_ISSUE_NUMBER"),
-		MedicHandle:       mustEnv("MEDIC_HANDLE"),
-		SlackChannel:      mustEnv("SLACK_CHANNEL"),
-		AlertChannel:      mustEnv("ALERT_CHANNEL"),
-		SupportChannels:   mustEnv("SUPPORT_CHANNELS"),
-		GitHubToken:       mustEnv("GH_TOKEN"),
+		WeekOffset:      weekOffset,
+		GleanAPIToken:   mustEnv("GLEAN_API_TOKEN"),
+		SlackWebhookURL: mustEnv("SLACK_DISTRO_BOT_WEBHOOK_REPORTS"),
+		MedicHandle:     mustEnv("MEDIC_HANDLE"),
+		SlackChannel:    mustEnv("SLACK_CHANNEL"),
+		AlertChannel:    mustEnv("ALERT_CHANNEL"),
+		SupportChannels: mustEnv("SUPPORT_CHANNELS"),
 	}
 }
 
@@ -176,10 +169,9 @@ Search all data sources listed in the guidelines for activity during this period
 Determine who was medic for this report period by looking up the Slack @%s user group membership/activity in that period.
 Include a line in the report: Current medic: <name>.
 Ensure you include activity from support channels (%s) and alert channel (%s) when relevant.
-Cross-reference with previous medic reports in https://github.com/%s/issues/%s for recurring themes.
 
 Respond ONLY with the Slack message content. No wrapping, no explanation.
-`, weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"), isoWeek, strings.TrimPrefix(cfg.MedicHandle, "@"), cfg.SupportChannels, cfg.AlertChannel, cfg.TrackingIssueRepo, cfg.TrackingIssueNum)
+`, weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"), isoWeek, strings.TrimPrefix(cfg.MedicHandle, "@"), cfg.SupportChannels, cfg.AlertChannel)
 }
 
 func generateReport(ctx context.Context, cfg config, prompt string) (string, error) {
@@ -228,24 +220,6 @@ func postSlack(ctx context.Context, cfg config, report string) error {
 	}, payload, nil, defaultRequestTimeout)
 }
 
-func commentOnIssue(ctx context.Context, cfg config, weekStart, weekEnd time.Time, report string) error {
-	_, isoWeek := weekStart.ISOWeek()
-	comment := fmt.Sprintf("## Weekly distro-medic report (W%02d)\n\nPeriod: %s to %s\nSlack channel: %s\n\n%s",
-		isoWeek,
-		weekStart.Format("2006-01-02"),
-		weekEnd.Format("2006-01-02"),
-		cfg.SlackChannel,
-		report,
-	)
-
-	endpoint := fmt.Sprintf(githubIssueCommentPath, cfg.TrackingIssueRepo, cfg.TrackingIssueNum)
-	return doJSONRequest(ctx, http.MethodPost, endpoint, map[string]string{
-		"Authorization": "Bearer " + cfg.GitHubToken,
-		"Accept":        "application/vnd.github+json",
-		"Content-Type":  "application/json",
-	}, map[string]string{"body": comment}, nil, defaultRequestTimeout)
-}
-
 func main() {
 	cfg := loadConfig()
 	ctx := context.Background()
@@ -266,10 +240,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := commentOnIssue(ctx, cfg, weekStart, weekEnd, report); err != nil {
-		fmt.Fprintf(os.Stderr, "comment report on GitHub issue: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("Weekly medic report generated and published successfully")
+	fmt.Println("Weekly medic report generated and posted to Slack successfully")
 }
