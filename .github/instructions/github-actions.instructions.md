@@ -12,7 +12,7 @@ template workflows (named `*-template.yaml`) are called by trigger workflows (na
 for security. Vault is the source of truth for secrets — never hard-code credentials. The
 `hashicorp/vault-action` step imports secrets as environment variables before any step that
 needs them. Complex logic (>20 lines of shell) must be implemented as a Go script, not inline
-bash. Commit messages from automated workflow steps follow Conventional Commits with the
+bash or standalone bash scripts. Commit messages from automated workflow steps follow Conventional Commits with the
 `chore(ci):` type. Always set `permissions:` explicitly to the minimum required.
 
 ---
@@ -26,6 +26,8 @@ bash. Commit messages from automated workflow steps follow Conventional Commits 
   variables. All secrets come from Vault via `hashicorp/vault-action`.
 - **NEVER** write inline bash scripts longer than ~20 lines — implement as a Go script with tests
   in `scripts/` instead.
+- **NEVER** add new bash business-logic scripts in `scripts/` for workflow automation when logic
+  exceeds ~20 lines, includes branching, calls APIs, or parses JSON.
 - **NEVER** omit `concurrency:` on workflows triggered by `push` or `pull_request` — duplicate
   runs waste CI resources.
 - **NEVER** use `strategy.fail-fast: true` for integration test matrices — one flaky test must
@@ -41,6 +43,8 @@ bash. Commit messages from automated workflow steps follow Conventional Commits 
 - **ALWAYS** use `make` targets (not raw commands) so local and CI behaviour match.
 - **ALWAYS** install tools via `.github/actions/install-tool-versions` before using `go`, `helm`,
   `kubectl`, etc. — this respects the pinned versions in `.tool-versions`.
+- **ALWAYS** implement new non-trivial workflow automation logic in Go under `scripts/<feature>/`
+  (or an existing Go tooling module), with tests where practical.
 
 ---
 
@@ -235,19 +239,23 @@ jobs:
 3. **Inline bash >20 lines** — complex logic in `run:` blocks has no tests and is hard to
    maintain. Move it to a Go script in `scripts/` with unit tests.
 
-4. **Missing `fail-fast: false`** — default is `true`, which cancels all matrix jobs when one
+4. **Standalone bash automation scripts for business logic** — adding new `scripts/*.sh` files
+  that perform API orchestration, JSON parsing, and branching duplicates logic that should live in
+  Go and be testable.
+
+5. **Missing `fail-fast: false`** — default is `true`, which cancels all matrix jobs when one
    fails. This is almost never wanted for test matrices.
 
-5. **Skipping `concurrency:`** — PR workflows without concurrency run duplicate jobs on rapid
+6. **Skipping `concurrency:`** — PR workflows without concurrency run duplicate jobs on rapid
    force-pushes, wasting CI minutes.
 
-6. **Not using `make` targets** — running `go test ./...` directly instead of `make go.test`
+7. **Not using `make` targets** — running `go test ./...` directly instead of `make go.test`
    skips pre-test steps (license checks, formatting, dependency updates).
 
-7. **Missing `id-token: write`** — OIDC-based Vault auth requires `permissions.id-token: write`
+8. **Missing `id-token: write`** — OIDC-based Vault auth requires `permissions.id-token: write`
    at job or workflow level.
 
-8. **Skipping debug output** — add an info step (`echo "output: ${{ steps.id.outputs.val }}"`)
+9. **Skipping debug output** — add an info step (`echo "output: ${{ steps.id.outputs.val }}"`)
    after complex composite actions so failures are easier to diagnose.
 
 ---
