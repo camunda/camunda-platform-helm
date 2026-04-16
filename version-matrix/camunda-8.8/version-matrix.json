@@ -928,22 +928,6 @@
       "docker.io/camunda/web-modeler-webapp:8.8.12",
       "docker.io/camunda/web-modeler-websockets:8.8.12",
       "registry.camunda.cloud/camunda/keycloak:26.3.3"
-    ],
-    "chart_enterprise_images": [
-      "busybox:1.36",
-      "docker.io/camunda/camunda:8.8.21",
-      "docker.io/camunda/connectors-bundle:8.8.10",
-      "docker.io/camunda/console:8.8.133",
-      "docker.io/camunda/identity:8.8.10",
-      "docker.io/camunda/optimize:8.8.8",
-      "docker.io/camunda/web-modeler-restapi:8.8.12",
-      "docker.io/camunda/web-modeler-webapp:8.8.12",
-      "docker.io/camunda/web-modeler-websockets:8.8.12",
-      "registry.camunda.cloud/keycloak-ee/keycloak:26.5.6",
-      "registry.camunda.cloud/vendor-ee/elasticsearch:8.19.13",
-      "registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r43",
-      "registry.camunda.cloud/vendor-ee/postgresql:14.22.0-debian-12-r0",
-      "registry.camunda.cloud/vendor-ee/postgresql:15.17.0-debian-12-r2"
     ]
   }
 ]
