@@ -11,6 +11,8 @@ on:
       - 'charts/camunda-platform*/values.yaml'
       - 'charts/camunda-platform*/templates/**'
       - 'charts/camunda-platform*/charts/**'
+      - '**/go.mod'
+      - '**/go.sum'
 
 permissions:
   contents: read
@@ -83,8 +85,16 @@ jobs:
           echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
       - name: Run go mod tidy
         run: |
+          set -euo pipefail
           echo "Running 'go mod tidy' on all go.mod files..."
-          find . -name 'go.mod' -execdir sh -c 'echo "Processing $(pwd)/go.mod" && go mod tidy' \;
+          while IFS= read -r -d '' go_mod_file; do
+            module_dir="$(dirname "${go_mod_file}")"
+            (
+              cd "${module_dir}"
+              echo "Processing $(pwd)/go.mod"
+              go mod tidy
+            )
+          done < <(find . -name 'go.mod' -print0)
           echo "✅ 'go mod tidy' completed successfully"
       - name: Update golden files
         run: |
