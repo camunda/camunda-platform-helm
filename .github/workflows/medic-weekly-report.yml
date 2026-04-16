@@ -71,7 +71,7 @@ jobs:
 
       - name: Generate and publish weekly medic report
         env:
-          WEEK_OFFSET: ${{ github.event.inputs.week_offset || '0' }}
+          WEEK_OFFSET: ${{ github.event_name == 'schedule' && '1' || github.event.inputs.week_offset || '0' }}
         run: |
           cd scripts/medic-weekly-report
           go run .
