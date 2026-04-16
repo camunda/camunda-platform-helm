@@ -1,0 +1,108 @@
+# type: Notifications
+# owner: @camunda/distribution-team
+---
+# PR Review Reminder
+#
+# Runs on a weekday schedule and posts a grouped Slack message to #team-distribution-github
+# listing open (non-draft) PRs that have gone stale without a review action.
+# PRs are considered stale after 3 business days of inactivity.
+#
+# Monitored repos: camunda-platform-helm, team-distribution, camunda-distributions,
+#                  camunda-docs, camunda
+#
+# Team membership and GitHub→Slack user resolution are driven by scripts/slack-user-map.json.
+#
+# Can be triggered manually via workflow_dispatch with an optional dry-run mode that
+# logs the Slack payload without sending it.
+#
+name: Notify - PR Review Reminder
+
+on:
+  schedule:
+    # Weekdays at 13:00 UTC (2 PM CET / 8 AM ET)
+    - cron: '0 13 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Log the Slack payload without sending it'
+        required: false
+        default: false
+        type: boolean
+
+  workflow_call:
+    inputs:
+      dry-run:
+        description: 'Log the Slack payload without sending it'
+        type: boolean
+        required: false
+        default: false
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
+
+jobs:
+  pr-review-reminder:
+    name: Send stale PR review reminder
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          sparse-checkout: |
+            scripts/pr-review-reminder
+            scripts/slack-user-map.json
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: scripts/pr-review-reminder/go.mod
+
+      - name: Import Vault secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK_GH;
+          exportEnv: true
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        id: github-token
+        with:
+          app_id: ${{ env.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ env.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Run PR review reminder
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          SLACK_WEBHOOK: ${{ env.SLACK_DISTRO_BOT_WEBHOOK_GH }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          cd scripts/pr-review-reminder
+          go run .
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
