@@ -471,7 +471,9 @@ Connectors templates.
 [camunda-platform] Connectors external URL.
 */}}
 {{- define "camundaPlatform.connectorsExternalURL" }}
-  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "connectors" "context" .)) -}}
+  {{- $proto := (lower .Values.connectors.readinessProbe.scheme) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s" $proto (include "connectors.serviceName" .) .Release.Namespace -}}
+  {{- printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath "")) | trimSuffix "/" -}}
 {{- end -}}
 
 
@@ -699,7 +701,7 @@ Release templates.
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
     url: {{ include "camundaPlatform.connectorsExternalURL" . }}
     readiness: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath)) }}
-    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort .Values.connectors.metrics.prometheus }}
+    metrics: {{ printf "%s:%v%s" $baseURLInternal .Values.connectors.service.serverPort (include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.metrics.prometheus)) }}
   {{- end }}
 
   {{- if .Values.tasklist.enabled }}
