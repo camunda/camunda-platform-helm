@@ -1,5 +1,29 @@
 # Changelog
 
+## [13.7.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.7.0...camunda-platform-8.8-13.7.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* retrieve github app credentials from vault ([#5672](https://github.com/camunda/camunda-platform-helm/issues/5672)) ([ae52ab4](https://github.com/camunda/camunda-platform-helm/commit/ae52ab42cf2eb961893a3b9eb9b369943b5d0c73))
+* use internal cluster url for connectors in console release info ([#5767](https://github.com/camunda/camunda-platform-helm/issues/5767)) ([aaf5ba9](https://github.com/camunda/camunda-platform-helm/commit/aaf5ba9443fbf738a0ac254f2cab1ffa6a35a2ca))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5705](https://github.com/camunda/camunda-platform-helm/issues/5705)) ([d31979a](https://github.com/camunda/camunda-platform-helm/commit/d31979a25037b73ac9f1de1cd371372d6409df78))
+* update camunda-platform-digests ([#5782](https://github.com/camunda/camunda-platform-helm/issues/5782)) ([f20e3cd](https://github.com/camunda/camunda-platform-helm/commit/f20e3cd64d16d0ef5fc4231dfd91b4592f64e603))
+* update camunda-platform-digests ([#5798](https://github.com/camunda/camunda-platform-helm/issues/5798)) ([d614831](https://github.com/camunda/camunda-platform-helm/commit/d614831feb8eb7b0571abd0385befc43b7ec937c))
+* update camunda-platform-digests ([#5802](https://github.com/camunda/camunda-platform-helm/issues/5802)) ([f0394ca](https://github.com/camunda/camunda-platform-helm/commit/f0394ca536a2efd7dabb56abdebf9e2d3922b2c0))
+* update camunda-platform-digests ([#5804](https://github.com/camunda/camunda-platform-helm/issues/5804)) ([a633eec](https://github.com/camunda/camunda-platform-helm/commit/a633eeca41a4a460961ff3f8ad97b7e96388c1e3))
+* update camunda-platform-images (patch) ([#5739](https://github.com/camunda/camunda-platform-helm/issues/5739)) ([b9a99d7](https://github.com/camunda/camunda-platform-helm/commit/b9a99d7ca234f9e69c8354f715e3c0b08eb112c3))
+* update minor-updates (minor) ([#5757](https://github.com/camunda/camunda-platform-helm/issues/5757)) ([50fec7b](https://github.com/camunda/camunda-platform-helm/commit/50fec7b381de0f0831f830bd635454da6f362fcd))
+* update module github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs to v1.65.0 [security] ([#5720](https://github.com/camunda/camunda-platform-helm/issues/5720)) ([c53bc9b](https://github.com/camunda/camunda-platform-helm/commit/c53bc9bda53b668ae1bfaca577ec1d7914d9fa6f))
+* update module github.com/aws/aws-sdk-go-v2/service/lambda to v1.88.5 [security] ([#5721](https://github.com/camunda/camunda-platform-helm/issues/5721)) ([b9dd70c](https://github.com/camunda/camunda-platform-helm/commit/b9dd70c346e78f5f23493435026757a4a6c57274))
+* update module github.com/aws/aws-sdk-go-v2/service/s3 to v1.97.3 [security] ([#5722](https://github.com/camunda/camunda-platform-helm/issues/5722)) ([87d69be](https://github.com/camunda/camunda-platform-helm/commit/87d69be31469874a55bf5c0b92760aa7aa167abc))
+* update patch-updates (patch) ([#5645](https://github.com/camunda/camunda-platform-helm/issues/5645)) ([a7e5165](https://github.com/camunda/camunda-platform-helm/commit/a7e51650ab00b231c748faaa8408a6718a94ce6c))
+* update patch-updates (patch) ([#5758](https://github.com/camunda/camunda-platform-helm/issues/5758)) ([64ec2a1](https://github.com/camunda/camunda-platform-helm/commit/64ec2a1f0c44c88a2f19d5432655cc30d27ff632))
+
 ## [13.7.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.6.0...camunda-platform-8.8-13.7.0) (2026-04-02)
 
 
