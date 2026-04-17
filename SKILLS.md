@@ -237,6 +237,12 @@ kubectl delete pvc -l app.kubernetes.io/instance=$RELEASE -n $NS
 
 ---
 
+## Reproducing a CI Test Failure Locally
+
+See [docs/reproducing-ci-e2e-failures.md](docs/reproducing-ci-e2e-failures.md) for the step-by-step guide to pulling logs, downloading artifacts, decoding CI scenario shortnames, and spinning up an identical local environment.
+
+---
+
 ## Troubleshooting
 
 ### Deployment fails
