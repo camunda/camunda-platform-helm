@@ -237,6 +237,107 @@ kubectl delete pvc -l app.kubernetes.io/instance=$RELEASE -n $NS
 
 ---
 
+## Debugging Spring Boot Config via `/actuator/configprops`
+
+Most Camunda components (Orchestration/Zeebe, Operate, Tasklist, Identity, Optimize, Connectors, Web Modeler, Console) are Spring Boot apps. When a configmap or env var isn't doing what you expect, verify the effective bound `@ConfigurationProperties` via the `/actuator/configprops` endpoint — this is the source of truth for what Spring actually resolved, and will reveal typos in env var names, wrong relaxed-binding forms, and values that never made it into a bean.
+
+### Enable the endpoint + show values
+
+By default `configprops` is not exposed and values are masked. Add these env vars to the target container:
+
+```yaml
+        - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+          value: health,info,metrics,prometheus,configprops
+        - name: MANAGEMENT_ENDPOINT_CONFIGPROPS_SHOW_VALUES
+          value: ALWAYS
+```
+
+> `SHOW_VALUES=ALWAYS` exposes passwords, tokens, and connection strings in the response. Use only for local/debug namespaces — never leave this on a shared or production cluster.
+
+### Patch a running workload
+
+StatefulSets and Deployments restart their pods automatically when `spec.template` changes.
+
+```bash
+# StatefulSet (8.8+ orchestration/zeebe, keycloak, postgresql)
+kubectl edit statefulset $RELEASE-zeebe -n $NS
+
+# Deployment (identity, optimize, connectors, console, web-modeler-*)
+kubectl edit deployment $RELEASE-identity -n $NS
+```
+
+Add both entries under `spec.template.spec.containers[0].env`. Or patch non-interactively:
+
+```bash
+kubectl patch statefulset $RELEASE-zeebe -n $NS --type=json -p='[
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE","value":"health,info,metrics,prometheus,configprops"}},
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"MANAGEMENT_ENDPOINT_CONFIGPROPS_SHOW_VALUES","value":"ALWAYS"}}
+]'
+
+kubectl rollout status statefulset/$RELEASE-zeebe -n $NS
+```
+
+Note: a subsequent `helm upgrade` will revert these edits.
+
+### Query the endpoint
+
+Most components expose actuator on a dedicated management port (verified from `charts/camunda-platform-8.10/values.yaml`):
+
+| Component | Management Port |
+|-----------|-----------------|
+| Orchestration / Zeebe | `9600` |
+| Optimize | `8092` |
+| Console | `9100` |
+| Web Modeler REST API | `8091` |
+| Identity / Connectors | same as app port (`8080` / `8082`) — check the container's `ports:` |
+
+Exec into the pod (no port-forward needed):
+
+```bash
+kubectl exec -n $NS $RELEASE-zeebe-0 -- \
+  curl -s http://localhost:9600/actuator/configprops | jq .
+
+# Filter to a specific prefix (e.g., camunda.*)
+kubectl exec -n $NS $RELEASE-zeebe-0 -- \
+  curl -s http://localhost:9600/actuator/configprops \
+  | jq '.. | objects | select(.prefix? | strings | startswith("camunda"))'
+```
+
+Or port-forward:
+
+```bash
+kubectl port-forward -n $NS statefulset/$RELEASE-zeebe 9600:9600
+curl -s http://localhost:9600/actuator/configprops | jq .
+```
+
+**Always try both with and without a context path** — it's inconsistent across components. Some serve actuator at the root (`/actuator/...`), others behind a server or management context path (e.g. `/operate/actuator/...`, `/tasklist/actuator/...`, `/identity/actuator/...`, `/optimize/api/actuator/...`). If one 404s, try the other before assuming the endpoint isn't enabled:
+
+```bash
+# Probe root first, then common context paths
+for p in "" "/operate" "/tasklist" "/identity" "/optimize/api" "/console" "/modeler"; do
+  echo "== ${p}/actuator/configprops =="
+  kubectl exec -n $NS <pod> -- curl -s -o /dev/null -w "%{http_code}\n" \
+    "http://localhost:<mgmt-port>${p}/actuator/configprops"
+done
+```
+
+You can also discover the correct prefix from `/actuator` itself (the discovery endpoint), which lists the absolute `href` for every exposed endpoint:
+
+```bash
+kubectl exec -n $NS <pod> -- curl -s http://localhost:<mgmt-port>/actuator | jq '._links'
+# If that 404s, retry with each candidate context path above.
+```
+
+### Workflow for diagnosing a misconfiguration
+
+1. Identify the Spring property you believe you're setting (e.g., `camunda.database.url`).
+2. Apply the env vars above and wait for the pod to restart.
+3. Hit `/actuator/configprops` and search for the prefix — confirm the value bound to the bean matches what you expect.
+4. If it's missing or wrong, the env var name is likely mis-cased or using the wrong relaxed-binding form (Spring maps `CAMUNDA_DATABASE_URL` → `camunda.database.url`).
+5. Revert the debug env vars (especially `SHOW_VALUES=ALWAYS`) once done.
+
+---
+
 ## Reproducing a CI Test Failure Locally
 
 See [docs/reproducing-ci-e2e-failures.md](docs/reproducing-ci-e2e-failures.md) for the step-by-step guide to pulling logs, downloading artifacts, decoding CI scenario shortnames, and spinning up an identical local environment.
