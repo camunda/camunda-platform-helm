@@ -1,7 +1,7 @@
 # Used in the GitHub Actions unit test CI workflow.
 # auth can be the following values: basic, keycloak, oidc
 unit:
-  enabled: false
+  enabled: true
   matrix:
     - name: Management
       packages: identity common console
@@ -108,7 +108,7 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
-          enabled: false
+          enabled: true
           exclude: []
           shortname: kemt
           auth: keycloak
