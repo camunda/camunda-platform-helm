@@ -348,34 +348,32 @@ jobs:
           HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
         run: |
           set -euo pipefail
+          # harbor_curl bakes in auth + --retry 3 --retry-delay 5 --retry-all-errors
+          # with -sf, so HTTP 4xx/5xx (incl. transient 401) trigger retries.
+          source "${GITHUB_WORKSPACE}/scripts/harbor-retry.sh"
 
           # Get artifact digest from dev tag
           echo "Getting digest for dev tag: ${{ steps.parse.outputs.resolved_tag }}"
-          digest=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ steps.parse.outputs.resolved_tag }}" \
-            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-            --retry 3 --retry-delay 5 --retry-all-errors | jq -r '.digest')
-          
+          digest=$(harbor_curl "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ steps.parse.outputs.resolved_tag }}" \
+            | jq -r '.digest')
+
           if [[ -z "$digest" || "$digest" == "null" ]]; then
             echo "::error::Failed to get digest for dev tag"
             exit 1
           fi
           echo "Digest: ${digest}"
-          
+
           # Helpers for idempotent tagging.
           tag_digest() {
             local tag_name="$1"
-            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              --retry 3 --retry-delay 5 --retry-all-errors \
+            harbor_curl "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
               | jq -r '.digest // empty' || true
           }
 
           delete_tag_if_exists() {
             local tag_name="$1"
             echo "Removing existing tag if present: ${tag_name}"
-            curl -sf -X DELETE "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              --retry 3 --retry-delay 5 --retry-all-errors || true
+            harbor_curl -X DELETE "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" || true
           }
 
           add_or_update_tag() {
@@ -398,15 +396,13 @@ jobs:
             fi
 
             echo "Adding tag: ${tag_name}"
-            http_code="$(curl -sS -o /tmp/harbor-tag.json -w "%{http_code}" -X POST "${HARBOR_API}/${HARBOR_REPO}/artifacts/${digest}/tags" \
-              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
-              --retry 3 --retry-delay 5 --retry-all-errors \
+            http_code="$(harbor_curl -o /tmp/harbor-tag.json -w "%{http_code}" \
+              -X POST "${HARBOR_API}/${HARBOR_REPO}/artifacts/${digest}/tags" \
               -H "Content-Type: application/json" \
               -d "{\"name\": \"${tag_name}\"}" || true)"
 
             if [[ "${http_code}" != "201" && "${http_code}" != "200" && "${http_code}" != "409" ]]; then
               echo "::error::Failed to add tag: ${tag_name} (HTTP ${http_code})"
-              cat /tmp/harbor-tag.json || true
               exit 1
             fi
 
