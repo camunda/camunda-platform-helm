@@ -31,7 +31,7 @@ runs:
         apply_external_secret_with_retry() {
           local file="$1"
           local namespace="$2"
-          local max_retries=5
+          local max_retries=20
           local retry_delay=10
           
           for ((i=1; i<=max_retries; i++)); do
