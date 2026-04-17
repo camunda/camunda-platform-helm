@@ -2539,7 +2539,18 @@ orchestration:
       #     claimName: preferred_username
       #     claimValue: demo
       mappingRules: []
-      ## @param orchestration.security.initialization.authorizations define authorizations.
+      ## @param orchestration.security.initialization.authorizations define authorizations for Identity as Code.
+      ## Use this to bootstrap authorization DB entries at application start, e.g. for machine clients (CI/CD).
+      ## Ref: https://docs.camunda.io/docs/self-managed/components/orchestration-cluster/core-settings/configuration/identity-as-code/#configure-authorizations
+      # Example:
+      # authorizations:
+      #   - ownerType: CLIENT
+      #     ownerId: my-m2m-client
+      #     resourceType: RESOURCE
+      #     resourceId: "*"
+      #     permissions:
+      #       - CREATE
+      #       - READ
       authorizations: []
   ## @extra orchestration.image configuration to configure the image specifics
   image:
