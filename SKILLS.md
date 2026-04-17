@@ -245,6 +245,24 @@ Designed for application developers: you do not need deep Kubernetes knowledge �
 
 Repo slug used throughout: `camunda/camunda-platform-helm`.
 
+### Prerequisites
+
+Two cold-start requirements for anyone new to this workflow:
+
+```bash
+# 1. Authenticate the GitHub CLI (used for check runs, logs, artifacts)
+gh auth login
+
+# 2. Point kubectl at the distro-ci GKE cluster
+gcloud container clusters get-credentials distro-ci \
+  --zone europe-west1-b \
+  --project camunda-distribution
+# Verify:
+kubectl config current-context   # gke_camunda-distribution_europe-west1-b_distro-ci
+```
+
+For the rest (Go/helm/asdf toolchain → `make install.dx-tooling`, Docker creds → Step 5, Playwright browsers → Gotchas) see the linked sections.
+
 ### Step 1 — Find the Failing Check Run
 
 From the PR's commit SHA (or `git rev-parse HEAD` if checked out locally):
