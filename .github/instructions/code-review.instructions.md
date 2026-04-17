@@ -30,9 +30,8 @@ These are first-class review criteria. Flag PRs that violate them:
   core (e.g., OpenSearch, Bitnami sub-charts beyond what already exists).
 - **No workarounds** — the chart must not patch or work around application-level issues or
   technical debt. If an application bug requires a workaround, fix the application instead.
-- **1:1 mapping** — changes should maintain a 1:1 mapping between application configuration
-  and Helm values. New abstraction layers require strong justification.
-
+- **1:1 mapping** — maintain a 1:1 mapping between application configuration and Helm values
+  wherever possible. Do not add Helm-only abstraction that has no equivalent in the app.
 ---
 
 ## Critical Rules
@@ -162,6 +161,14 @@ func TestDeploymentTemplate(t *testing.T) {
   should be in Secrets, not ConfigMaps?
 - [ ] Are `containerSecurityContext` and `podSecurityContext` fields preserved, not removed?
 
+### Workflow Automation Implementation
+
+- [ ] Does the PR introduce new non-trivial workflow automation logic in Bash (`run:` blocks or
+  `scripts/*.sh`) instead of Go?
+- [ ] If the workflow logic calls external APIs, parses JSON, or contains branching/orchestration,
+  is that logic implemented in Go under `scripts/<feature>/` (or existing Go tooling)?
+- [ ] If Bash remains, is it only thin glue (roughly <=20 lines), with business logic moved to Go?
+
 ```yaml
 # GOOD — action pinned to SHA with version comment
 - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -202,26 +209,30 @@ func TestDeploymentTemplate(t *testing.T) {
    CI will fail. Check that `test/unit/<component>/golden/*.golden.yaml` files are committed
    alongside template changes.
 
-2. **Undocumented values field** — a new `values.yaml` field without `## @param` will be
+3. **Undocumented values field** — a new `values.yaml` field without `## @param` will be
    invisible in generated docs. Flag as a required fix.
 
-3. **Missing `kindIs "slice"` check on `extraConfiguration`** — the field supports both map
+4. **Missing `kindIs "slice"` check on `extraConfiguration`** — the field supports both map
    and list forms. Handlers that only loop with `range $k, $v := ...` will panic on list input.
 
-4. **`indent` without `trim` on multiline strings** — produces a leading newline before the
+5. **`indent` without `trim` on multiline strings** — produces a leading newline before the
    content block, causing YAML parse errors at helm install time.
 
-5. **Cross-version scope creep** — a fix applied to `8.10` templates may also be needed in
+6. **Cross-version scope creep** — a fix applied to `8.10` templates may also be needed in
    `8.8` and `8.9`. Flag if the PR description doesn't address this.
 
-6. **Inline bash >20 lines** — complex shell logic without tests. Flag and suggest moving to
+7. **Inline bash >20 lines** — complex shell logic without tests. Flag and suggest moving to
    a Go script in `scripts/` with unit tests per `.github/AGENTS.md` policy.
 
-7. **`fail-fast: true` (or default) on test matrix** — in GitHub Actions workflows, the default
+8. **`fail-fast: true` (or default) on test matrix** — in GitHub Actions workflows, the default
    for `fail-fast` is `true`. Test matrices should set `fail-fast: false`.
 
-8. **Using `assert` instead of `require` for fatal Go test setup** — allows tests to continue
+9. **Using `assert` instead of `require` for fatal Go test setup** — allows tests to continue
    with bad state and produces confusing failure messages.
+
+10. **Non-trivial workflow automation in Bash** — API orchestration, JSON parsing, and branching
+    added in `run:` blocks or `scripts/*.sh` should be flagged and migrated to Go for testability
+    and maintainability.
 
 ---
 
