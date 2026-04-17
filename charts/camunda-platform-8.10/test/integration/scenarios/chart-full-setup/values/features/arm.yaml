@@ -2,8 +2,11 @@
 # Use hyperdisk-balanced for all StatefulSet PVCs.
 
 # Identity startup is slower on ARM; increase startup probe budget.
+# periodSeconds is inherited from base.yaml (2s) but set explicitly here so the
+# effective budget (failureThreshold * periodSeconds = ~6min) is obvious.
 identity:
   startupProbe:
+    periodSeconds: 2
     failureThreshold: 180
 
 orchestration:
