@@ -286,7 +286,7 @@ jobs:
               echo "❌ Invalid JSON in AI response"
               echo "AI response: ${AI_TEXT}"
               echo "💬 Posting error comment and applying triage:manual label..."
-              gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$(printf '❌ **Error triaging #%s — manual triage required**\n\nThe AI triage assistant failed to produce a valid response for this issue. Please triage it manually and apply the appropriate labels.\n\nAdd the \`triage:manual\` label to suppress future automated triage attempts.' "$ISSUE_NUMBER")"
+              gh issue comment "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --body "$(printf '❌ **Error triaging #%s — manual triage required**\n\nThe AI triage assistant failed to produce a valid response for this issue. Please triage it manually and apply the appropriate labels.\n\nAdd the `triage:manual` label to suppress future automated triage attempts.' "$ISSUE_NUMBER")" || true
               gh issue edit "$ISSUE_NUMBER" --repo "$OWNER/$REPO" --add-label "triage:manual" || true
               continue
             fi
