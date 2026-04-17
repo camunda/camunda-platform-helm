@@ -28,9 +28,6 @@
 #
 # Usage examples
 #   # Local run against KIND cluster
-#   ./scripts/run-integration-tests.sh \
-#       --chart-path /home/runner/work/camunda-platform-helm/charts/camunda-platform-8.7 \
-#       --namespace camunda
 #
 #   ./scripts/run-e2e-tests.sh \
 #       --chart-path /home/runner/work/camunda-platform-helm/charts/camunda-platform-8.7 \
