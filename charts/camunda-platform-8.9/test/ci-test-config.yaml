@@ -120,7 +120,7 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          flow: upgrade-minor
+          flow: install
           infra-type:
             gke: distroci
             eks: preemptible
