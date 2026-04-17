@@ -14,6 +14,9 @@ orchestration:
   data:
     secondaryStorage:
       type: ""
+  security:
+    authentication:
+      method: basic
 
 optimize:
   enabled: false
@@ -29,3 +32,25 @@ console:
 
 webModeler:
   enabled: false
+
+# Override the common integration-test connectors initContainers: skip the
+# identity health wait, since identity is disabled in this scenario.
+connectors:
+  security:
+    authentication:
+      method: basic
+  initContainers:
+    - name: wait-for-orchestration
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Orchestration cluster to be healthy..."
+          until wget --spider -q http://integration-zeebe-gateway:9600/orchestration/actuator/health/readiness 2>/dev/null; do
+            echo "Orchestration cluster not ready yet, waiting..."
+            sleep 5
+          done
+          echo "Orchestration cluster is healthy!"
+      securityContext:
+        runAsUser: 1000
