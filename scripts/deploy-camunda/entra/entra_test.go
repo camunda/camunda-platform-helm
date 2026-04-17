@@ -516,6 +516,88 @@ func TestEnsureServicePrincipal_Creates(t *testing.T) {
 	}
 }
 
+// TestEnsureServicePrincipal_RetriesOn400RequestBadRequest verifies that the
+// /servicePrincipals POST retries the specific 400 Request_BadRequest race
+// Graph returns when the appId of a just-created app isn't yet visible to
+// the SP endpoint.
+func TestEnsureServicePrincipal_RetriesOn400RequestBadRequest(t *testing.T) {
+	shrinkRetryTimings(t)
+
+	var postAttempts int32
+	const flakyAttempts int32 = 2
+
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]interface{}{
+				"value": []interface{}{},
+			})
+		},
+		"POST /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
+			n := atomic.AddInt32(&postAttempts, 1)
+			if n <= flakyAttempts {
+				jsonResponse(w, 400, map[string]interface{}{
+					"error": map[string]string{
+						"code":    "Request_BadRequest",
+						"message": "The appId 'abc-123' of the service principal does not reference a valid application object.",
+					},
+				})
+				return
+			}
+			jsonResponse(w, 201, map[string]string{"id": "sp-recovered"})
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	graphBaseURL = srv.URL
+	defer func() { graphBaseURL = origGraph }()
+
+	if err := ensureServicePrincipal(context.Background(), srv.Client(), "token", "abc-123"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := atomic.LoadInt32(&postAttempts); got != flakyAttempts+1 {
+		t.Errorf("POST attempts = %d, want %d (retry loop should recover from 400 Request_BadRequest)", got, flakyAttempts+1)
+	}
+}
+
+// TestEnsureServicePrincipal_DoesNotRetryGeneric400 verifies the SP retry
+// predicate is narrow — a 400 that is NOT Request_BadRequest with the appId
+// message must fail fast.
+func TestEnsureServicePrincipal_DoesNotRetryGeneric400(t *testing.T) {
+	shrinkRetryTimings(t)
+
+	var postAttempts int32
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"GET /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]interface{}{
+				"value": []interface{}{},
+			})
+		},
+		"POST /servicePrincipals": func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&postAttempts, 1)
+			jsonResponse(w, 400, map[string]interface{}{
+				"error": map[string]string{
+					"code":    "Request_BadRequest",
+					"message": "Some other validation failure unrelated to propagation.",
+				},
+			})
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	graphBaseURL = srv.URL
+	defer func() { graphBaseURL = origGraph }()
+
+	err := ensureServicePrincipal(context.Background(), srv.Client(), "token", "app-id")
+	if err == nil {
+		t.Fatal("expected error on generic 400, got nil")
+	}
+	if got := atomic.LoadInt32(&postAttempts); got != 1 {
+		t.Errorf("POST attempts = %d, want 1 (generic 400 should not be retried)", got)
+	}
+}
+
 func TestCleanupVenomApp_AppExists(t *testing.T) {
 	deleted := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{

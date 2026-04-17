@@ -5,6 +5,7 @@
 package entra
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -207,14 +208,59 @@ func graphGet(ctx context.Context, client *http.Client, token, path string) ([]b
 	return body, err
 }
 
-// postWithGraphRetry wraps graphPost with bounded exponential backoff. It
-// retries on transport errors, 404 (Graph is eventually consistent after a
-// new object is created), 408/429 (throttling), and 5xx. Terminal statuses
-// like 400/401/403 are returned to the caller without retries.
+// retryPredicate decides whether to retry a Graph response. statusCode and
+// body come from the last response; err is non-nil for transport-level errors
+// (in which case statusCode/body are zero-valued).
+type retryPredicate func(statusCode int, body []byte, err error) bool
+
+// defaultRetryable retries on transport errors and the statuses Graph commonly
+// returns while propagating a newly-created object: 404, 408, 429, and 5xx.
+// Terminal statuses (400, 401, 403) are treated as caller errors.
+func defaultRetryable(statusCode int, _ []byte, err error) bool {
+	if err != nil {
+		return true
+	}
+	switch {
+	case statusCode == http.StatusNotFound:
+		return true
+	case statusCode == http.StatusRequestTimeout:
+		return true
+	case statusCode == http.StatusTooManyRequests:
+		return true
+	case statusCode >= 500 && statusCode <= 599:
+		return true
+	}
+	return false
+}
+
+// servicePrincipalCreateRetryable extends defaultRetryable with the specific
+// 400 Request_BadRequest that Graph returns when a just-created appId isn't
+// yet visible to the /servicePrincipals endpoint — a known eventual-consistency
+// race, not a caller bug. Narrowly matched on error code + message to avoid
+// retrying legitimate 400s.
+func servicePrincipalCreateRetryable(statusCode int, body []byte, err error) bool {
+	if defaultRetryable(statusCode, body, err) {
+		return true
+	}
+	if statusCode == http.StatusBadRequest &&
+		bytes.Contains(body, []byte("Request_BadRequest")) &&
+		bytes.Contains(body, []byte("does not reference a valid application")) {
+		return true
+	}
+	return false
+}
+
+// postWithGraphRetry wraps graphPost with bounded exponential backoff. The
+// retryable predicate decides which non-2xx responses to retry; pass nil for
+// defaultRetryable. 2xx always short-circuits as success; anything the
+// predicate rejects is returned as a non-retryable error.
 //
 // On success it returns (body, statusCode, nil). On give-up it returns the
 // last status and body together with a wrapped error describing attempt count.
-func postWithGraphRetry(ctx context.Context, client *http.Client, token, path string, payload interface{}, op string) ([]byte, int, error) {
+func postWithGraphRetry(ctx context.Context, client *http.Client, token, path string, payload interface{}, op string, retryable retryPredicate) ([]byte, int, error) {
+	if retryable == nil {
+		retryable = defaultRetryable
+	}
 	var (
 		body       []byte
 		statusCode int
@@ -235,7 +281,7 @@ func postWithGraphRetry(ctx context.Context, client *http.Client, token, path st
 			return body, statusCode, nil
 		}
 
-		if lastErr == nil && !isRetryableStatus(statusCode) {
+		if !retryable(statusCode, body, lastErr) {
 			return body, statusCode, fmt.Errorf("%s: non-retryable status=%d body=%s", op, statusCode, string(body))
 		}
 
@@ -270,23 +316,6 @@ func postWithGraphRetry(ctx context.Context, client *http.Client, token, path st
 		return body, statusCode, fmt.Errorf("%s: gave up after %d attempts: %w", op, retryMaxAttempts, lastErr)
 	}
 	return body, statusCode, fmt.Errorf("%s: gave up after %d attempts (last status=%d body=%s)", op, retryMaxAttempts, statusCode, string(body))
-}
-
-// isRetryableStatus reports whether an HTTP status code from Graph is worth
-// retrying. 404 is included because Graph's write endpoints can briefly
-// return 404 for newly-created objects (eventual consistency).
-func isRetryableStatus(statusCode int) bool {
-	switch {
-	case statusCode == http.StatusNotFound:
-		return true
-	case statusCode == http.StatusRequestTimeout:
-		return true
-	case statusCode == http.StatusTooManyRequests:
-		return true
-	case statusCode >= 500 && statusCode <= 599:
-		return true
-	}
-	return false
 }
 
 // graphPost performs a POST request to the Graph API.
@@ -502,7 +531,7 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 	}
 
 	secretBody, statusCode, err := postWithGraphRetry(ctx, client, token,
-		fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload, "addPassword")
+		fmt.Sprintf("/applications/%s/addPassword", objectID), addPayload, "addPassword", nil)
 	if err != nil {
 		return "", fmt.Errorf("add password: %w", err)
 	}
@@ -546,10 +575,15 @@ func ensureServicePrincipal(ctx context.Context, client *http.Client, token, app
 		return nil
 	}
 
-	// Create service principal.
+	// Create service principal. Graph's /servicePrincipals endpoint can lag
+	// behind a newly-created app registration and return 400 Request_BadRequest
+	// ("does not reference a valid application") for seconds after the app is
+	// visible via direct GET/POST on /applications/{objectId}. Retry narrowly
+	// on that specific error.
 	logging.Logger.Debug().Str("appId", appID).Msg("Creating new service principal")
 	spPayload := map[string]string{"appId": appID}
-	spBody, statusCode, err := graphPost(ctx, client, token, "/servicePrincipals", spPayload)
+	spBody, statusCode, err := postWithGraphRetry(ctx, client, token,
+		"/servicePrincipals", spPayload, "createServicePrincipal", servicePrincipalCreateRetryable)
 	if err != nil {
 		return fmt.Errorf("create service principal: %w", err)
 	}
