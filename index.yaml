@@ -41,7 +41,6 @@ entries:
           url: https://docs.camunda.io/docs/self-managed/about-self-managed/
         - name: Camunda 8 Self-Managed Helm charts
           url: https://github.com/camunda/camunda-platform-helm
-      artifacthub.io/prerelease: "true"
       camunda.io/component-image-versions: |
         camunda: 8.9.0
         managementIdentity: 8.9.0
@@ -27087,4 +27086,5 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-17T11:27:30.487805517Z"
+generated: "2026-04-20T12:05:52.487805517Z"
+
