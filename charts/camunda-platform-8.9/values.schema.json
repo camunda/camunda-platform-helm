@@ -1499,6 +1499,11 @@
                             "description": "can be used to set the annotations of the identity service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -2616,6 +2621,11 @@
                             "description": "can be used to set the annotations of the service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -3726,6 +3736,11 @@
                             "description": "can be used to set the annotations of the WebModeler service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -4424,6 +4439,11 @@
                             "description": "can be used to set the annotations of the service account",
                             "default": {}
                         },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
+                            "default": {}
+                        },
                         "automountServiceAccountToken": {
                             "type": "boolean",
                             "description": "can be used to control whether the service account token should be automatically mounted",
@@ -5078,6 +5098,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the broker service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
@@ -6377,6 +6402,11 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to set the annotations of the Optimize service account",
+                            "default": {}
+                        },
+                        "labels": {
+                            "type": "object",
+                            "description": "can be used to set the labels of the service account",
                             "default": {}
                         },
                         "automountServiceAccountToken": {
