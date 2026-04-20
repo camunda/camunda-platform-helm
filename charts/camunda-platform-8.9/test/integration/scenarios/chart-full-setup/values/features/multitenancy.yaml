@@ -8,6 +8,9 @@ global:
     apiEnabled: true
 
 orchestration:
+  exporters:
+    zeebe:
+      enabled: true
   security:
     authorization:
       enabled: true
