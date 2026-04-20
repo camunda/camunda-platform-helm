@@ -338,6 +338,76 @@ kubectl exec -n $NS <pod> -- curl -s http://localhost:<mgmt-port>/actuator | jq 
 
 ---
 
+## Headless JVM Remote Debugging with `jdb`
+
+When a stacktrace in the logs tells you *where* code failed but not *why* — the values of locals, fields, or caller arguments at that line — attach a headless debugger to the running pod. JDWP lets you set a breakpoint and inspect state without rebuilding or redeploying.
+
+All Camunda components listed under the configprops section above are JVM apps and work with this.
+
+### Step 1 — Enable JDWP on the target
+
+Prefer a **single-replica Deployment** — patching a StatefulSet triggers a rolling restart of every replica.
+
+Add the JDWP agent via `JAVA_TOOL_OPTIONS` and expose a container port. `suspend=n` is critical — `suspend=y` hangs the JVM at startup until a debugger attaches.
+
+```bash
+kubectl -n $NS patch deploy integration-optimize --type=json -p='[
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"JAVA_TOOL_OPTIONS","value":"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"}},
+  {"op":"add","path":"/spec/template/spec/containers/0/ports/-","value":{"containerPort":5005,"name":"jdwp","protocol":"TCP"}}
+]'
+kubectl -n $NS rollout status deploy/integration-optimize
+```
+
+For StatefulSets (`zeebe`, `keycloak`, `postgresql`), substitute `statefulset/<name>`.
+
+A subsequent `helm upgrade` reverts these edits. Also note: **JDWP exposes every local and field to anyone on the port — passwords, tokens, connection strings included.** Only port-forward to localhost; never expose via a Service or Ingress. Revert the patch when done.
+
+### Step 2 — Port-forward and attach
+
+```bash
+POD=$(kubectl -n $NS get pod -l app.kubernetes.io/name=optimize -o jsonpath='{.items[0].metadata.name}')
+kubectl -n $NS port-forward $POD 15005:5005 &
+
+# -sourcepath enables jdb's `list` command; `print`/`where`/`locals` work without it
+SRC=/path/to/camunda/<module>/src/main/java
+jdb -sourcepath "$SRC" -attach localhost:15005
+```
+
+### Step 3 — Set a breakpoint and inspect
+
+```
+stop in <fqcn>.<method>     # breakpoint by method (matches any overload)
+stop at <fqcn>:<line>       # breakpoint by line
+where                        # current thread's stack
+locals                       # method arguments + local vars in frame 1
+print <expr>                 # evaluate; use `this.<field>` for instance fields
+dump <expr>                  # print with nested fields expanded
+threads                      # list all threads
+thread <id>                  # switch current thread
+clear <fqcn>.<method>        # remove breakpoint — do this BEFORE `cont` on hot paths
+cont                         # resume
+exit                         # detach; VM keeps running because suspend=n
+```
+
+Method invocation (`print service.someCall()`, `print this.getIndexAlias()`) requires the **current thread** to be suspended at the breakpoint. If jdb reports `IncompatibleThreadStateException` or `Thread not suspended`, the thread already resumed — on hot paths the BP gets re-hit on many threads and "current thread" shifts out from under you. Clear the breakpoint immediately after the first hit to avoid this.
+
+### Driving `jdb` headlessly — use `expect`
+
+Piping commands into `jdb` via `tail -f cmdfile | jdb` or a heredoc **races the VM state**: jdb consumes queued commands from stdin faster than the VM transitions between running and suspended, so `clear` + `cont` execute before your `print` commands and you get `Current thread isn't suspended` / `Thread not suspended` errors on every inspection.
+
+The clean fix is to install `expect` and pattern-match on `Breakpoint hit` / the thread-suspended prompt (`<thread-name>[1]`) before sending each dump command. Without `expect`, fall back to: (a) poll the jdb output file for `Breakpoint hit` before sending any `print`; (b) send prints one at a time with short waits between; (c) send `clear` and `cont` last. Interactive `jdb` works fine and is simpler for one-off debug sessions — reach for scripting only when you need to automate repeated runs.
+
+### Revert when done
+
+```bash
+# list the env/port array indices first so you remove the right ones
+kubectl -n $NS get deploy integration-optimize -o json \
+  | jq '.spec.template.spec.containers[0] | {env, ports}'
+# then patch with `"op":"remove"` on the specific indices, or just wait for the next helm upgrade
+```
+
+---
+
 ## Reproducing a CI Test Failure Locally
 
 See [docs/reproducing-ci-e2e-failures.md](docs/reproducing-ci-e2e-failures.md) for the step-by-step guide to pulling logs, downloading artifacts, decoding CI scenario shortnames, and spinning up an identical local environment.
