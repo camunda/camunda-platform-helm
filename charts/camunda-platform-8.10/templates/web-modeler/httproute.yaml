@@ -33,7 +33,7 @@ spec:
     backendRefs:
     - name: {{ template "webModeler.restapi.fullname" . }}
       namespace: {{ .Release.Namespace }}
-      port: {{ (dig "webModeler" "restapi" "service" "port" .Values.webModeler.restapi.service.port .Values.camundaHub) }}
+      port: {{ (or .Values.camundaHub.webModeler.restapi.service.port .Values.webModeler.restapi.service.port) }}
   - matches:
     - path:
         type: PathPrefix
@@ -41,6 +41,6 @@ spec:
     backendRefs:
     - name: {{ template "webModeler.websockets.fullname" . }}
       namespace: {{ .Release.Namespace }}
-      port: {{ (dig "webModeler" "websockets" "service" "port" .Values.webModeler.websockets.service.port .Values.camundaHub) }}
+      port: {{ (or .Values.camundaHub.webModeler.websockets.service.port .Values.webModeler.websockets.service.port) }}
 {{- end }}
 {{- end }}

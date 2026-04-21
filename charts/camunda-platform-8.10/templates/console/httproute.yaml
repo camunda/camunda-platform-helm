@@ -33,6 +33,6 @@ spec:
     backendRefs:
     - name: {{ template "console.fullname" . }}
       namespace: {{ .Release.Namespace }}
-      port: {{ (dig "console" "service" "port" .Values.console.service.port .Values.camundaHub) }}
+      port: {{ (or .Values.camundaHub.console.service.port .Values.console.service.port) }}
 {{- end }}
 {{- end }}

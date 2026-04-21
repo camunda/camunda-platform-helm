@@ -727,14 +727,14 @@ Release templates.
   {{- $baseURL := printf "%s://%s" $proto (tpl .Values.global.host $) }}
 
   {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
-  {{-  $proto := (lower (dig "console" "readinessProbe" "scheme" .Values.console.readinessProbe.scheme .Values.camundaHub)) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace (dig "console" "service" "managementPort" .Values.console.service.managementPort .Values.camundaHub) }}
+  {{-  $proto := (lower (or .Values.camundaHub.console.readinessProbe.scheme .Values.console.readinessProbe.scheme)) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "console.fullname" .) .Release.Namespace (or .Values.camundaHub.console.service.managementPort .Values.console.service.managementPort) }}
   - name: Console
     id: console
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.console) (.Values.camundaHub.console | default dict))) }}
     url: {{ include "camundaPlatform.consoleExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal (dig "console" "readinessProbe" "probePath" .Values.console.readinessProbe.probePath .Values.camundaHub) }}
-    metrics: {{ printf "%s%s" $baseURLInternal (dig "console" "metrics" "prometheus" .Values.console.metrics.prometheus .Values.camundaHub) }}
+    readiness: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.readinessProbe.probePath .Values.console.readinessProbe.probePath) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (or .Values.camundaHub.console.metrics.prometheus .Values.console.metrics.prometheus) }}
   {{- end }}
   {{ if .Values.identity.enabled -}}
   {{-  $proto := (lower .Values.identity.readinessProbe.scheme) -}}
@@ -752,14 +752,14 @@ Release templates.
   {{- end }}
 
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
-  {{-  $proto := (lower (dig "webModeler" "restapi" "readinessProbe" "scheme" .Values.webModeler.restapi.readinessProbe.scheme .Values.camundaHub)) -}}
-  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (dig "webModeler" "restapi" "service" "managementPort" .Values.webModeler.restapi.service.managementPort .Values.camundaHub) }}
+  {{-  $proto := (lower (or .Values.camundaHub.webModeler.restapi.readinessProbe.scheme .Values.webModeler.restapi.readinessProbe.scheme)) -}}
+  {{- $baseURLInternal := printf "%s://%s.%s:%v" $proto (include "webModeler.restapi.fullname" .) .Release.Namespace (or .Values.camundaHub.webModeler.restapi.service.managementPort .Values.webModeler.restapi.service.managementPort) }}
   - name: WebModeler
     id: webModelerWebApp
     version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" (mustMergeOverwrite (deepCopy .Values.webModeler) (.Values.camundaHub.webModeler | default dict))) }}
     url: {{ include "camundaPlatform.webModelerExternalURL" . }}
-    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "readinessProbe" "probePath" .Values.webModeler.restapi.readinessProbe.probePath .Values.camundaHub))) }}
-    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (dig "webModeler" "restapi" "metrics" "prometheus" .Values.webModeler.restapi.metrics.prometheus .Values.camundaHub))) }}
+    readiness: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.webModeler.restapi.readinessProbe.probePath .Values.webModeler.restapi.readinessProbe.probePath))) }}
+    metrics: {{ printf "%s%s" $baseURLInternal (include "camundaPlatform.joinpath" (list (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) (or .Values.camundaHub.webModeler.restapi.metrics.prometheus .Values.webModeler.restapi.metrics.prometheus))) }}
   {{- end }}
 
   {{- if .Values.optimize.enabled }}

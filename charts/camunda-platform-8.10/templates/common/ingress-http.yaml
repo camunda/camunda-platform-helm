@@ -30,7 +30,7 @@ spec:
               service:
                 name: {{ template "console.fullname" . }}
                 port:
-                  number: {{ (dig "console" "service" "port" .Values.console.service.port .Values.camundaHub) }}
+                  number: {{ (or .Values.camundaHub.console.service.port .Values.console.service.port) }}
             path: {{ (or .Values.camundaHub.console.contextPath .Values.console.contextPath) }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}
@@ -60,14 +60,14 @@ spec:
               service:
                 name: {{ template "webModeler.restapi.fullname" . }}
                 port:
-                  number: {{ (dig "webModeler" "restapi" "service" "port" .Values.webModeler.restapi.service.port .Values.camundaHub) }}
+                  number: {{ (or .Values.camundaHub.webModeler.restapi.service.port .Values.webModeler.restapi.service.port) }}
             path: {{ (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
             pathType: {{ .Values.global.ingress.pathType }}
           - backend:
               service:
                 name: {{ template "webModeler.websockets.fullname" . }}
                 port:
-                  number:  {{ (dig "webModeler" "websockets" "service" "port" .Values.webModeler.websockets.service.port .Values.camundaHub) }}
+                  number:  {{ (or .Values.camundaHub.webModeler.websockets.service.port .Values.webModeler.websockets.service.port) }}
             path: {{ template "webModeler.websocketContextPath" . }}
             pathType: {{ .Values.global.ingress.pathType }}
           {{- end }}

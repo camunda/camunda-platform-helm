@@ -9,13 +9,13 @@ metadata:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if (dig "webModeler" "websockets" "service" "annotations" .Values.webModeler.websockets.service.annotations .Values.camundaHub)}}
-      {{- toYaml (dig "webModeler" "websockets" "service" "annotations" .Values.webModeler.websockets.service.annotations .Values.camundaHub) | nindent 4 }}
+    {{- if (or .Values.camundaHub.webModeler.websockets.service.annotations .Values.webModeler.websockets.service.annotations)}}
+      {{- toYaml (or .Values.camundaHub.webModeler.websockets.service.annotations .Values.webModeler.websockets.service.annotations) | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ (dig "webModeler" "websockets" "service" "type" .Values.webModeler.websockets.service.type .Values.camundaHub) }}
+  type: {{ (or .Values.camundaHub.webModeler.websockets.service.type .Values.webModeler.websockets.service.type) }}
   ports:
-    - port: {{ (dig "webModeler" "websockets" "service" "port" .Values.webModeler.websockets.service.port .Values.camundaHub) }}
+    - port: {{ (or .Values.camundaHub.webModeler.websockets.service.port .Values.webModeler.websockets.service.port) }}
       name: http
       targetPort: 8060
       protocol: TCP

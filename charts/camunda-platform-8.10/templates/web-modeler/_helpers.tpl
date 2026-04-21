@@ -11,9 +11,12 @@ web-modeler
 Create a default fully qualified app name.
 */}}
 {{- define "webModeler.fullname" -}}
+  {{/* mustMergeOverwrite is used instead of or because camundaHub.webModeler has intermediate
+       sub-maps that make it truthy even when no overrides are set. Deep-merging empty maps
+       is a no-op, preserving all legacy values. */}}
   {{- include "camundaPlatform.componentFullname" (dict
       "componentName" "web-modeler"
-      "componentValues" (or .Values.camundaHub.webModeler .Values.webModeler)
+      "componentValues" (mustMergeOverwrite (deepCopy .Values.webModeler) .Values.camundaHub.webModeler)
       "context" $
   ) -}}
 {{- end -}}
@@ -101,14 +104,14 @@ app.kubernetes.io/component: {{ .componentName }}
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the restapi Docker image
 */}}
 {{- define "webModeler.restapi.image" -}}
-  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.webModeler.image .Values.webModeler.image) | merge (dig "webModeler" "restapi" "image" .Values.webModeler.restapi.image .Values.camundaHub)))) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.webModeler.image .Values.webModeler.image) | merge (or .Values.camundaHub.webModeler.restapi.image .Values.webModeler.restapi.image)))) }}
 {{- end }}
 
 {{/*
 [web-modeler] Get the full name (<registry>/<repository>:<tag>) of the websockets Docker image
 */}}
 {{- define "webModeler.websockets.image" -}}
-  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.webModeler.image .Values.webModeler.image) | merge (dig "webModeler" "websockets" "image" .Values.webModeler.websockets.image .Values.camundaHub)))) }}
+  {{- include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" (dict "image" (deepCopy (or .Values.camundaHub.webModeler.image .Values.webModeler.image) | merge (or .Values.camundaHub.webModeler.websockets.image .Values.webModeler.websockets.image)))) }}
 {{- end }}
 
 {{/*
@@ -130,13 +133,13 @@ app.kubernetes.io/component: {{ .componentName }}
         (include "webModeler.postgresql.fullname" .)
         (.Values.webModelerPostgresql.auth.database)
       -}}
-  {{- else if (dig "webModeler" "restapi" "externalDatabase" "url" .Values.webModeler.restapi.externalDatabase.url .Values.camundaHub) -}}
-    {{- (dig "webModeler" "restapi" "externalDatabase" "url" .Values.webModeler.restapi.externalDatabase.url .Values.camundaHub) -}}
-  {{- else if (dig "webModeler" "restapi" "externalDatabase" "host" .Values.webModeler.restapi.externalDatabase.host .Values.camundaHub) -}}
+  {{- else if (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
+    {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.url .Values.webModeler.restapi.externalDatabase.url) -}}
+  {{- else if (or .Values.camundaHub.webModeler.restapi.externalDatabase.host .Values.webModeler.restapi.externalDatabase.host) -}}
     {{- printf "jdbc:postgresql://%s:%s/%s"
-        (dig "webModeler" "restapi" "externalDatabase" "host" .Values.webModeler.restapi.externalDatabase.host .Values.camundaHub)
-        (toString ((dig "webModeler" "restapi" "externalDatabase" "port" .Values.webModeler.restapi.externalDatabase.port .Values.camundaHub)))
-        ((dig "webModeler" "restapi" "externalDatabase" "database" .Values.webModeler.restapi.externalDatabase.database .Values.camundaHub))
+        (or .Values.camundaHub.webModeler.restapi.externalDatabase.host .Values.webModeler.restapi.externalDatabase.host)
+        (toString (or .Values.camundaHub.webModeler.restapi.externalDatabase.port .Values.webModeler.restapi.externalDatabase.port))
+        (or .Values.camundaHub.webModeler.restapi.externalDatabase.database .Values.webModeler.restapi.externalDatabase.database)
       -}}
   {{- end -}}
 {{- end -}}
@@ -148,7 +151,7 @@ app.kubernetes.io/component: {{ .componentName }}
   {{- if .Values.webModelerPostgresql.enabled -}}
     {{- .Values.webModelerPostgresql.auth.username -}}
   {{- else -}}
-    {{- (dig "webModeler" "restapi" "externalDatabase" "username" .Values.webModeler.restapi.externalDatabase.username .Values.camundaHub) -}}
+    {{- (or .Values.camundaHub.webModeler.restapi.externalDatabase.username .Values.webModeler.restapi.externalDatabase.username) -}}
   {{- end -}}
 {{- end -}}
 
@@ -157,8 +160,8 @@ app.kubernetes.io/component: {{ .componentName }}
 */}}
 {{- define "webModeler.restapi.mail.authEnabled" -}}
   {{- $authEnabled := false -}}
-  {{- if and (typeIs "string" (dig "webModeler" "restapi" "mail" "smtpUser" .Values.webModeler.restapi.mail.smtpUser .Values.camundaHub)) (ne (dig "webModeler" "restapi" "mail" "smtpUser" .Values.webModeler.restapi.mail.smtpUser .Values.camundaHub) "") }}
-    {{- if or (and (typeIs "string" (dig "webModeler" "restapi" "mail" "smtpPassword" .Values.webModeler.restapi.mail.smtpPassword .Values.camundaHub)) (ne (dig "webModeler" "restapi" "mail" "smtpPassword" .Values.webModeler.restapi.mail.smtpPassword .Values.camundaHub) "")) (dig "webModeler" "restapi" "mail" "existingSecret" .Values.webModeler.restapi.mail.existingSecret .Values.camundaHub) }}
+  {{- if and (typeIs "string" (or .Values.camundaHub.webModeler.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser)) (ne (or .Values.camundaHub.webModeler.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser) "") }}
+    {{- if or (and (typeIs "string" (or .Values.camundaHub.webModeler.restapi.mail.smtpPassword .Values.webModeler.restapi.mail.smtpPassword)) (ne (or .Values.camundaHub.webModeler.restapi.mail.smtpPassword .Values.webModeler.restapi.mail.smtpPassword) "")) (or .Values.camundaHub.webModeler.restapi.mail.existingSecret .Values.webModeler.restapi.mail.existingSecret) }}
       {{- $authEnabled = true }}
     {{- end }}
   {{- end }}
@@ -186,7 +189,7 @@ app.kubernetes.io/component: {{ .componentName }}
   {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
     {{- tpl .Values.global.host $ }}
   {{- else -}}
-    {{- (dig "webModeler" "websockets" "publicHost" .Values.webModeler.websockets.publicHost .Values.camundaHub) }}
+    {{- (or .Values.camundaHub.webModeler.websockets.publicHost .Values.webModeler.websockets.publicHost) }}
   {{- end }}
 {{- end -}}
 
@@ -197,7 +200,7 @@ app.kubernetes.io/component: {{ .componentName }}
   {{- if and .Values.global.ingress.enabled (or .Values.camundaHub.webModeler.contextPath .Values.webModeler.contextPath) }}
     {{- .Values.global.ingress.tls.enabled | ternary "443" "80" }}
   {{- else }}
-    {{- (dig "webModeler" "websockets" "publicPort" .Values.webModeler.websockets.publicPort .Values.camundaHub) }}
+    {{- (or .Values.camundaHub.webModeler.websockets.publicPort .Values.webModeler.websockets.publicPort) }}
   {{- end }}
 {{- end -}}
 
@@ -228,7 +231,7 @@ app.kubernetes.io/component: {{ .componentName }}
 {{- end -}}
 
 {{- define "webModeler.authMethod" -}}
-    {{- (dig "webModeler" "security" "authentication" "method" .Values.webModeler.security.authentication.method .Values.camundaHub) | default (
+    {{- (or .Values.camundaHub.webModeler.security.authentication.method .Values.webModeler.security.authentication.method) | default (
         .Values.global.security.authentication.method | default "none"
     ) -}}
 {{- end -}}

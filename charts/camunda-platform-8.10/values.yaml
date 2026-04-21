@@ -1560,13 +1560,58 @@ camundaHub:
 
   ## @skip camundaHub.console Override values for the Console sub-component when using Camunda Hub.
   ## Any values set here take precedence over the legacy top-level console.* values.
-  ## The structure mirrors the top-level console.* configuration exactly.
-  console: {}
+  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
+  ## To override a value, set it explicitly under camundaHub.console (e.g. camundaHub.console.replicas: 3).
+  ##
+  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
+  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
+  ## camundaHub.console.readinessProbe.enabled=false will NOT disable the probe if the
+  ## legacy console.readinessProbe.enabled is true. Use the legacy keys directly for
+  ## falsy overrides.
+  console:
+    image: {}
+    tls: {}
+    keycloak: {}
+    service: {}
+    startupProbe: {}
+    readinessProbe: {}
+    livenessProbe: {}
+    metrics: {}
+    serviceAccount: {}
 
   ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
   ## Any values set here take precedence over the legacy top-level webModeler.* values.
-  ## The structure mirrors the top-level webModeler.* configuration exactly.
-  webModeler: {}
+  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
+  ## To override a value, set it explicitly under camundaHub.webModeler (e.g. camundaHub.webModeler.contextPath: /modeler).
+  ##
+  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
+  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
+  ## camundaHub.webModeler.restapi.readinessProbe.enabled=false will NOT disable the probe
+  ## if the legacy webModeler.restapi.readinessProbe.enabled is true. Use the legacy keys
+  ## directly for falsy overrides.
+  webModeler:
+    image: {}
+    security:
+      authentication: {}
+    restapi:
+      image: {}
+      externalDatabase: {}
+      mail: {}
+      pusher: {}
+      startupProbe: {}
+      readinessProbe: {}
+      livenessProbe: {}
+      metrics: {}
+      service: {}
+      logging: {}
+    websockets:
+      image: {}
+      startupProbe: {}
+      readinessProbe: {}
+      livenessProbe: {}
+      service: {}
+    serviceAccount: {}
+    persistence: {}
 
 #######################################################################
 #     #               #     #

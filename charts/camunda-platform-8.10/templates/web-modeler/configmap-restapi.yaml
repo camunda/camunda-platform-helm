@@ -6,9 +6,9 @@ metadata:
   labels: {{- include "webModeler.labels" . | nindent 4 }}
   annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
 data:
-  {{- if (dig "webModeler" "restapi" "configuration" .Values.webModeler.restapi.configuration .Values.camundaHub) }}
+  {{- if (or .Values.camundaHub.webModeler.restapi.configuration .Values.webModeler.restapi.configuration) }}
   application.yaml: |
-    {{ (dig "webModeler" "restapi" "configuration" .Values.webModeler.restapi.configuration .Values.camundaHub) | indent 4 | trim }}
+    {{ (or .Values.camundaHub.webModeler.restapi.configuration .Values.webModeler.restapi.configuration) | indent 4 | trim }}
   {{- else }}
   application.yaml: |
     camunda:
@@ -28,7 +28,7 @@ data:
 
         pusher:
           host: {{ include "webModeler.websockets.fullname" . | quote }}
-          port: {{ (dig "webModeler" "websockets" "service" "port" .Values.webModeler.websockets.service.port .Values.camundaHub) }}
+          port: {{ (or .Values.camundaHub.webModeler.websockets.service.port .Values.webModeler.websockets.service.port) }}
           client:
             host: {{ include "webModeler.publicWebsocketHost" . | quote }}
             port: {{ include "webModeler.publicWebsocketPort" . | quote }}
@@ -48,8 +48,8 @@ data:
         {{- end }}
 
         mail:
-          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" (dig "webModeler" "restapi" "mail" "fromAddress" .Values.webModeler.restapi.mail.fromAddress .Values.camundaHub) | quote }}
-          from-name: {{ (dig "webModeler" "restapi" "mail" "fromName" .Values.webModeler.restapi.mail.fromName .Values.camundaHub) | quote }}
+          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" (or .Values.camundaHub.webModeler.restapi.mail.fromAddress .Values.webModeler.restapi.mail.fromAddress) | quote }}
+          from-name: {{ (or .Values.camundaHub.webModeler.restapi.mail.fromName .Values.webModeler.restapi.mail.fromName) | quote }}
 
         oauth2:
           client-id: {{ include "webModeler.authClientId" . | quote }}
@@ -60,10 +60,10 @@ data:
           url: {{ tpl (or .Values.global.identity.auth.camundaHub.webModeler.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
           https-only: {{ hasPrefix "https://" (tpl (or .Values.global.identity.auth.camundaHub.webModeler.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $) | quote }}
 
-        {{- if or .Values.orchestration.enabled (dig "webModeler" "restapi" "clusters" .Values.webModeler.restapi.clusters .Values.camundaHub) }}
+        {{- if or .Values.orchestration.enabled (or .Values.camundaHub.webModeler.restapi.clusters .Values.webModeler.restapi.clusters) }}
         clusters:
-          {{- if (dig "webModeler" "restapi" "clusters" .Values.webModeler.restapi.clusters .Values.camundaHub) }}
-            {{- (dig "webModeler" "restapi" "clusters" .Values.webModeler.restapi.clusters .Values.camundaHub) | toYaml | nindent 10 }}
+          {{- if (or .Values.camundaHub.webModeler.restapi.clusters .Values.webModeler.restapi.clusters) }}
+            {{- (or .Values.camundaHub.webModeler.restapi.clusters .Values.webModeler.restapi.clusters) | toYaml | nindent 10 }}
           {{- else}}
           - id: "default-cluster"
             name: {{ tpl .Values.global.zeebeClusterName . | quote }}
@@ -80,7 +80,7 @@ data:
 
     spring:
       {{- $springImports := list }}
-      {{- range (dig "webModeler" "restapi" "extraConfiguration" .Values.webModeler.restapi.extraConfiguration .Values.camundaHub) }}
+      {{- range (or .Values.camundaHub.webModeler.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration) }}
         {{- if not (and (hasKey . "springImport") (eq .springImport false)) }}
           {{- $springImports = append $springImports . }}
         {{- end }}
@@ -97,15 +97,15 @@ data:
         username: {{ include "webModeler.restapi.databaseUser" . | quote }}
 
       mail:
-        host: {{ (dig "webModeler" "restapi" "mail" "smtpHost" .Values.webModeler.restapi.mail.smtpHost .Values.camundaHub) | quote }}
-        port: {{ (dig "webModeler" "restapi" "mail" "smtpPort" .Values.webModeler.restapi.mail.smtpPort .Values.camundaHub) }}
-        {{- if (dig "webModeler" "restapi" "mail" "smtpUser" .Values.webModeler.restapi.mail.smtpUser .Values.camundaHub) }}
-        username: {{ (dig "webModeler" "restapi" "mail" "smtpUser" .Values.webModeler.restapi.mail.smtpUser .Values.camundaHub) | quote }}
+        host: {{ (or .Values.camundaHub.webModeler.restapi.mail.smtpHost .Values.webModeler.restapi.mail.smtpHost) | quote }}
+        port: {{ (or .Values.camundaHub.webModeler.restapi.mail.smtpPort .Values.webModeler.restapi.mail.smtpPort) }}
+        {{- if (or .Values.camundaHub.webModeler.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser) }}
+        username: {{ (or .Values.camundaHub.webModeler.restapi.mail.smtpUser .Values.webModeler.restapi.mail.smtpUser) | quote }}
         {{- end }}
         properties:
           mail.smtp.auth: {{ include "webModeler.restapi.mail.authEnabled" . }}
-          mail.smtp.starttls.enable: {{ (dig "webModeler" "restapi" "mail" "smtpTlsEnabled" .Values.webModeler.restapi.mail.smtpTlsEnabled .Values.camundaHub) }}
-          mail.smtp.starttls.required: {{ (dig "webModeler" "restapi" "mail" "smtpTlsEnabled" .Values.webModeler.restapi.mail.smtpTlsEnabled .Values.camundaHub) }}
+          mail.smtp.starttls.enable: {{ (or .Values.camundaHub.webModeler.restapi.mail.smtpTlsEnabled .Values.webModeler.restapi.mail.smtpTlsEnabled) }}
+          mail.smtp.starttls.required: {{ (or .Values.camundaHub.webModeler.restapi.mail.smtpTlsEnabled .Values.webModeler.restapi.mail.smtpTlsEnabled) }}
 
       security:
         oauth2:
@@ -133,9 +133,9 @@ data:
     {{- end }}
 
     logging:
-{{- with (dig "webModeler" "restapi" "logging" .Values.webModeler.restapi.logging .Values.camundaHub) }}
+{{- with (or .Values.camundaHub.webModeler.restapi.logging .Values.webModeler.restapi.logging) }}
 {{ . | toYaml | indent 6 }}
 {{- end }}
   {{- end }}
-  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" (dig "webModeler" "restapi" "extraConfiguration" .Values.webModeler.restapi.extraConfiguration .Values.camundaHub)) }}
+  {{- include "camundaPlatform.renderExtraConfiguration" (dict "extraConfig" (or .Values.camundaHub.webModeler.restapi.extraConfiguration .Values.webModeler.restapi.extraConfiguration)) }}
 {{- end }}

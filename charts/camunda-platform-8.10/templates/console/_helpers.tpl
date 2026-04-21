@@ -1,7 +1,10 @@
 {{- define "console.fullname" -}}
+    {{/* mustMergeOverwrite is used instead of or because camundaHub.console has intermediate
+         sub-maps that make it truthy even when no overrides are set. Deep-merging empty maps
+         is a no-op, preserving all legacy values. */}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "console"
-        "componentValues" (or .Values.camundaHub.console .Values.console)
+        "componentValues" (mustMergeOverwrite (deepCopy .Values.console) .Values.camundaHub.console)
         "context" $
     ) -}}
 {{- end -}}

@@ -9,17 +9,17 @@ metadata:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if (dig "console" "service" "annotations" .Values.console.service.annotations .Values.camundaHub) }}
-      {{- toYaml (dig "console" "service" "annotations" .Values.console.service.annotations .Values.camundaHub) | nindent 4 }}
+    {{- if (or .Values.camundaHub.console.service.annotations .Values.console.service.annotations) }}
+      {{- toYaml (or .Values.camundaHub.console.service.annotations .Values.console.service.annotations) | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ (dig "console" "service" "type" .Values.console.service.type .Values.camundaHub) }}
+  type: {{ (or .Values.camundaHub.console.service.type .Values.console.service.type) }}
   ports:
-    - port: {{ (dig "console" "service" "port" .Values.console.service.port .Values.camundaHub) }}
+    - port: {{ (or .Values.camundaHub.console.service.port .Values.console.service.port) }}
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ (dig "console" "service" "managementPort" .Values.console.service.managementPort .Values.camundaHub) }}
+    - port: {{ (or .Values.camundaHub.console.service.managementPort .Values.console.service.managementPort) }}
       name: management
       targetPort: management
       protocol: TCP
