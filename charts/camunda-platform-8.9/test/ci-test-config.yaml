@@ -39,7 +39,7 @@ integration:
     pr:
       scenario:
         - name: elasticsearch
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: eskee
           flow: install
@@ -50,7 +50,7 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: elasticsearch
-          enabled: false
+          enabled: true
           flow: install,upgrade-minor
           auth: keycloak
           shortname: eske
@@ -72,7 +72,7 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: opensearch-external
-          enabled: false
+          enabled: true
           shortname: osex
           exclude: []
           auth: keycloak
@@ -94,7 +94,7 @@ integration:
             gke: distroci
             eks: preemptible
         - name: oidc
-          enabled: false
+          enabled: true
           exclude: [identity,console,orchestration-grpc]
           shortname: esoi
           auth: oidc
@@ -114,13 +114,13 @@ integration:
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
-          flow: install
+          flow: upgrade-minor
           infra-type:
             gke: distroci
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
-          enabled: false
+          enabled: true
           exclude: []
           shortname: kerba
           auth: keycloak
@@ -133,7 +133,7 @@ integration:
           features: [rba]
           platforms: [gke]
         - name: keycloak-original
-          enabled: false
+          enabled: true
           exclude: []
           shortname: keorg
           auth: keycloak
@@ -145,7 +145,7 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: gateway-keycloak
-          enabled: false
+          enabled: true
           exclude: []
           shortname: gatkc
           auth: keycloak
@@ -158,7 +158,7 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: elasticsearch-arm
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: esarm
           exclude: []
@@ -171,7 +171,7 @@ integration:
           features: [arm]
           platforms: [gke]
         - name: noSecondaryStorage
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: nosec
           exclude: []
@@ -183,7 +183,7 @@ integration:
           features: [no-secondary-storage]
           platforms: [gke]
         - name: documentstore
-          enabled: false
+          enabled: true
           exclude: []
           shortname: docstr
           auth: keycloak
@@ -203,7 +203,7 @@ integration:
           persistence: rdbms-external
           platforms: [gke]
         - name: rdbms
-          enabled: false
+          enabled: true
           auth: keycloak
           shortname: rdbms
           flow: install
@@ -216,13 +216,13 @@ integration:
     nightly:
       scenario:
         - name: elasticsearch
-          enabled: false
+          enabled: true
           exclude: []
           shortname: eskey
           auth: keycloak
           # The following integration tests need to be exluded when basic-auth is enabled.
         - name: elasticsearch-basic
-          enabled: false
+          enabled: true
           auth: basic
           shortname: esba
           identity: basic
@@ -251,19 +251,19 @@ integration:
           shortname: oske
           auth: keycloak
         - name: opensearch
-          enabled: false
+          enabled: true
           shortname: osba
           exclude: [identity,console,orchestration-grpc]
           auth: basic
           identity: basic
           persistence: opensearch
         - name: identity-migration
-          enabled: false
+          enabled: true
           exclude: []
           shortname: idmike
           auth: keycloak
         - name: elasticsearch
-          enabled: false
+          enabled: true
           exclude: []
           auth: basic
           shortname: elbae
@@ -277,7 +277,7 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
         - name: keycloak-external-mimic
-          enabled: false
+          enabled: true
           exclude: []
           shortname: kcextm
           auth: keycloak
