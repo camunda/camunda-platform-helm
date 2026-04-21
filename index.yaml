@@ -2,6 +2,7 @@ apiVersion: v1
 entries:
   camunda-platform:
   - annotations:
+      artifacthub.io/prerelease: "false"
       artifacthub.io/changes: |
         - kind: added
           description: "Add tpl rendering for global identity auth URL values"
@@ -27086,5 +27087,5 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-20T12:05:52.487805517Z"
+generated: "2026-04-21T12:34:52.487805517Z"
 
