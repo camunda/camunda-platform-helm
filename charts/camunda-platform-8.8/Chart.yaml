@@ -72,7 +72,5 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "Retrieve github app credentials from vault"
-    - kind: fixed
-      description: "Use internal cluster url for connectors in console release info"
+    - kind: changed
+      description: "Remove integration tests"
