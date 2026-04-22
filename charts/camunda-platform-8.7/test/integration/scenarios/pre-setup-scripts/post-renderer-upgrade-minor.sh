@@ -6,4 +6,25 @@
 # The StatefulSet and PVCs are untouched — data migration is still fully tested.
 #
 
-yq e 'if .kind == "StatefulSet" and .metadata.labels["app.kubernetes.io/component"] == "zeebe-broker" then .spec.updateStrategy.rollingUpdate.maxUnavailable = "100%" else . end' -
+set -euo pipefail
+
+PYFILE=$(mktemp /tmp/post-renderer-XXXXXX.py)
+trap 'rm -f "$PYFILE"' EXIT
+
+cat > "$PYFILE" << 'PYEOF'
+import sys
+import yaml
+
+docs = list(yaml.safe_load_all(sys.stdin))
+for doc in docs:
+    if (doc is not None
+            and doc.get("kind") == "StatefulSet"
+            and (doc.get("metadata") or {}).get("labels", {}).get("app.kubernetes.io/component") == "zeebe-broker"):
+        (doc
+            .setdefault("spec", {})
+            .setdefault("updateStrategy", {})
+            .setdefault("rollingUpdate", {}))["maxUnavailable"] = "100%"
+sys.stdout.write(yaml.dump_all(docs, default_flow_style=False, allow_unicode=True))
+PYEOF
+
+python3 "$PYFILE"
