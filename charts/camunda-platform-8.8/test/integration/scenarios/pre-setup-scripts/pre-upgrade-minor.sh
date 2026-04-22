@@ -16,12 +16,3 @@ fi
 # They are recreated by Helm with the new spec while keeping PVC data.
 kubectl ${CONTEXT_FLAG} delete sts -n "${TEST_NAMESPACE}" -l app.kubernetes.io/name=postgresql --ignore-not-found
 kubectl ${CONTEXT_FLAG} delete sts -n "${TEST_NAMESPACE}" -l app.kubernetes.io/name=postgresql-web-modeler --ignore-not-found
-
-# Speed up the minor upgrade in CI by allowing all Zeebe broker pods to update simultaneously.
-# By default StatefulSet RollingUpdate replaces one pod at a time; setting maxUnavailable to 100%
-# makes all pods cycle at once. The StatefulSet and PVCs are untouched, so data migration
-# is still fully tested.
-kubectl ${CONTEXT_FLAG} get sts -n "${TEST_NAMESPACE}" \
-  -l app.kubernetes.io/component=zeebe-broker -o name \
-  | xargs -I{} kubectl ${CONTEXT_FLAG} patch {} -n "${TEST_NAMESPACE}" \
-      --type=merge -p '{"spec":{"updateStrategy":{"rollingUpdate":{"maxUnavailable":"100%"}}}}'
