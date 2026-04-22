@@ -161,9 +161,6 @@ webModelerPostgresql:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
   primary:
-    # No persistent storage needed in CI — use emptyDir instead of PVC.
-    persistence:
-      enabled: false
     # Resource allocation for faster startup
     resources:
       requests:
