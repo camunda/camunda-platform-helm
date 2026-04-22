@@ -5,7 +5,7 @@ optimize:
   enabled: true
   caches:
     cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 120
+      minFetchIntervalSeconds: 60
 
 identity:
   firstUser:
