@@ -6,4 +6,4 @@
 # The StatefulSet and PVCs are untouched — data migration is still fully tested.
 #
 
-yq e 'if (.kind == "StatefulSet" and .metadata.labels["app.kubernetes.io/component"] == "zeebe-broker") then .spec.updateStrategy.rollingUpdate.maxUnavailable = "100%" else . end' -
+yq e 'if .kind == "StatefulSet" and .metadata.labels["app.kubernetes.io/component"] == "zeebe-broker" then .spec.updateStrategy.rollingUpdate.maxUnavailable = "100%" else . end' -
