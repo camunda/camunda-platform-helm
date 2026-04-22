@@ -201,6 +201,11 @@ on:
         required: false
         default: false
         type: boolean
+      helm-version:
+        description: "Helm version to install via azure/setup-helm. Empty means use the pre-baked Helm from the CI runner image."
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -356,6 +361,7 @@ jobs:
       camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
       camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
       run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
+      helm-version: ${{ inputs.helm-version }}
       shortname: ${{ inputs.shortname }}
       teleport-token: ${{ inputs.teleport-token }}
       namespace-prefix: ${{ inputs.namespace-prefix }}

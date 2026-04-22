@@ -56,12 +56,14 @@ integration:
           infra-type:
             gke: distroci
           flow: install
+          helmVersion: 3.20.2
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
         - name: upgrade-migration
           enabled: false
           flow: upgrade-minor
+          helmVersion: 3.20.2
           auth: keycloak
           shortname: eske-upgm
           exclude: []
@@ -77,6 +79,7 @@ integration:
           shortname: esba
           auth: basic
           flow: install
+          helmVersion: 3.20.2
           identity: basic
           persistence: elasticsearch
           exclude: [identity,console,orchestration-grpc]
@@ -91,6 +94,7 @@ integration:
           tier: 2
           auth: oidc
           flow: install,upgrade-minor
+          helmVersion: 3.20.2
           skip-e2e: true  # OIDC auth incompatible with Keycloak-dependent smoke tests
           skip-it: true   # OIDC ITs require Entra setup that returns 401
           infra-type:
@@ -107,6 +111,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           flow: upgrade-minor
+          helmVersion: 3.20.2
           skip-e2e: true  # 8.8 Playwright smoke test enters retry loop exceeding timeout
           infra-type:
             gke: distroci
@@ -118,6 +123,7 @@ integration:
           shortname: kerba
           auth: keycloak
           flow: upgrade-minor
+          helmVersion: 3.20.2
           infra-type:
             gke: distroci
             eks: preemptible
@@ -151,6 +157,7 @@ integration:
           shortname: keyc
           auth: keycloak
           flow: upgrade-minor
+          helmVersion: 3.20.2
           infra-type:
             gke: distroci
             eks: preemptible
@@ -165,6 +172,7 @@ integration:
           persistence: elasticsearch
           auth: hybrid
           flow: install
+          helmVersion: 3.20.2
           skip-e2e: true  # Hybrid auth incompatible with Keycloak-dependent smoke tests
           infra-type:
             gke: distroci
@@ -179,6 +187,7 @@ integration:
           infra-type:
             gke: arm
           flow: install
+          helmVersion: 3.20.2
           skip-e2e: true  # 8.8 ARM frontend bug: Deploy-and-Run API call never reaches restapi
           identity: keycloak-external
           features: [arm]
@@ -196,6 +205,7 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+          helmVersion: 3.20.2
         - name: opensearch-external
           enabled: false  # Disabled: external AWS OpenSearch tests are unstable; tracked in #6119
           shortname: osex
@@ -205,6 +215,7 @@ integration:
           identity: keycloak
           persistence: opensearch-external
           flow: install
+          helmVersion: 3.20.2
           infra-type:
             gke: distroci
           platforms: [gke]
@@ -233,6 +244,7 @@ integration:
           shortname: docstr
           tier: 2
           auth: keycloak
+          helmVersion: 3.20.2
           identity: keycloak
           persistence: elasticsearch
           features: [documentstore]
@@ -509,10 +521,12 @@ integration:
           exclude: []
           shortname: eskey
           auth: keycloak
+          helmVersion: 3.20.2
           # The following integration tests need to be exluded when basic-auth is enabled.
         - name: elasticsearch-basic
           enabled: true
           auth: basic
+          helmVersion: 3.20.2
           shortname: esba
           identity: basic
           persistence: elasticsearch
@@ -523,6 +537,7 @@ integration:
           exclude: []
           shortname: esoi
           auth: oidc
+          helmVersion: 3.20.2
           identity: oidc
           persistence: elasticsearch
         - name: multitenancy
@@ -530,6 +545,7 @@ integration:
           shortname: mtke
           exclude: []
           auth: keycloak
+          helmVersion: 3.20.2
           identity: keycloak-external
           persistence: elasticsearch
           features: [multitenancy]
@@ -539,6 +555,7 @@ integration:
           exclude: []
           shortname: oske
           auth: keycloak
+          helmVersion: 3.20.2
           identity: keycloak
           persistence: opensearch
           flow: install
@@ -547,6 +564,7 @@ integration:
           shortname: osba
           exclude: [identity,console,orchestration-grpc]
           auth: basic
+          helmVersion: 3.20.2
           identity: basic
           persistence: opensearch
         - name: identity-migration
@@ -554,10 +572,12 @@ integration:
           exclude: []
           shortname: idmike
           auth: keycloak
+          helmVersion: 3.20.2
         - name: elasticsearch
           enabled: true
           exclude: []
           auth: basic
+          helmVersion: 3.20.2
           shortname: elbae
           enterprise: true
         - name: documentstore
@@ -565,6 +585,7 @@ integration:
           exclude: []
           shortname: docstr
           auth: keycloak
+          helmVersion: 3.20.2
           identity: keycloak
           persistence: elasticsearch
           features: [documentstore]
@@ -573,3 +594,4 @@ integration:
           exclude: []
           shortname: kcextm
           auth: keycloak
+          helmVersion: 3.20.2
