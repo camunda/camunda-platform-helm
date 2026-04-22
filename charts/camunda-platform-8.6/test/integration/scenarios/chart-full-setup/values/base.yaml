@@ -199,7 +199,7 @@ connectors:
 optimize:
   caches:
     cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
+      minFetchIntervalSeconds: 120
   enabled: true
   database:
     elasticsearch:
