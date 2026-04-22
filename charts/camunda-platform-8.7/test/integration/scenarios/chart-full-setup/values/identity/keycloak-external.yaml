@@ -72,7 +72,7 @@ identityPostgresql:
 optimize:
   caches:
     cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 60
+      minFetchIntervalSeconds: 120
 
 console:
   keycloak:
