@@ -88,6 +88,11 @@ type CIScenario struct {
 	Upgrade    bool `yaml:"upgrade,omitempty"`
 	Enterprise bool `yaml:"enterprise,omitempty"`
 
+	// HelmVersion, when set, overrides the pre-baked Helm binary in CI with the
+	// given version via azure/setup-helm. Free-form version string (e.g. "3.20.2",
+	// "v4.0.0"). Empty means use whatever Helm ships in the CI runner image.
+	HelmVersion string `yaml:"helmVersion,omitempty"`
+
 	// Test skip flags — declarative controls read from ci-test-config.yaml.
 	// When set, these prevent the corresponding test types from running for this scenario,
 	// replacing hardcoded shortname-based skip logic in both the Go CLI and GHA workflows.

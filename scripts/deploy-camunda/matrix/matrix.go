@@ -41,6 +41,10 @@ type Entry struct {
 
 	// Dependencies specifies companion charts to deploy before the main Camunda chart.
 	Dependencies []ChartDependency `json:"dependencies,omitempty"`
+
+	// HelmVersion, when non-empty, tells the integration workflow to install
+	// this Helm version via azure/setup-helm (overriding the pre-baked binary).
+	HelmVersion string `json:"helmVersion,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -178,6 +182,7 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 						SkipE2E:      scenario.SkipE2E,
 						SkipIT:       scenario.SkipIT,
 						Dependencies: scenario.Dependencies,
+						HelmVersion: scenario.HelmVersion,
 					})
 				}
 			}

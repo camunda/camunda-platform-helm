@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"scripts/camunda-deployer/pkg/deployer"
 	"scripts/deploy-camunda/deploy"
 )
@@ -541,6 +543,48 @@ func TestLoadCITestConfig(t *testing.T) {
 
 	if len(cfg.Integration.Case.PR.Scenarios) == 0 {
 		t.Error("LoadCITestConfig: no PR scenarios")
+	}
+}
+
+// --- HelmVersion passthrough ---
+
+func TestHelmVersionPassthrough(t *testing.T) {
+	// Decode a minimal scenario YAML and confirm HelmVersion loads.
+	src := []byte(`
+name: elasticsearch
+enabled: true
+shortname: eske
+flow: install
+helmVersion: "4.0.0"
+`)
+	var s CIScenario
+	if err := yaml.Unmarshal(src, &s); err != nil {
+		t.Fatalf("yaml.Unmarshal: %v", err)
+	}
+	if s.HelmVersion != "4.0.0" {
+		t.Errorf("CIScenario.HelmVersion = %q, want %q", s.HelmVersion, "4.0.0")
+	}
+
+	// Marshal an Entry carrying HelmVersion and confirm the JSON key is
+	// `helmVersion` — GitHub Actions matrix expressions rely on this exact key.
+	e := Entry{Version: "8.10", Scenario: "elasticsearch", Flow: "install", HelmVersion: "4.0.0"}
+	b, err := json.Marshal(e)
+	if err != nil {
+		t.Fatalf("json.Marshal: %v", err)
+	}
+	if !strings.Contains(string(b), `"helmVersion":"4.0.0"`) {
+		t.Errorf("Entry JSON missing helmVersion key: %s", b)
+	}
+
+	// Empty HelmVersion must be omitted from JSON so existing scenarios stay
+	// noise-free in the matrix output.
+	eEmpty := Entry{Version: "8.10", Scenario: "elasticsearch", Flow: "install"}
+	bEmpty, err := json.Marshal(eEmpty)
+	if err != nil {
+		t.Fatalf("json.Marshal empty: %v", err)
+	}
+	if strings.Contains(string(bEmpty), "helmVersion") {
+		t.Errorf("empty HelmVersion leaked into JSON: %s", bEmpty)
 	}
 }
 

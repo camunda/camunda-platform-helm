@@ -29,6 +29,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           flow: install
+          helmVersion: 3.20.2
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
             gke: distroci
@@ -42,6 +43,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           flow: install,upgrade-patch
+          helmVersion: 3.20.2
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
             gke: distroci
@@ -55,6 +57,7 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           flow: install
+          helmVersion: 3.20.2
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
             gke: distroci
@@ -66,6 +69,7 @@ integration:
           auth: oidc
           persistence: elasticsearch
           flow: install,upgrade-patch
+          helmVersion: 3.20.2
           skip-e2e: true  # 8.7 web-modeler-restapi bug + OIDC incompatible with Keycloak-dependent smoke tests
           skip-it: true   # OIDC ITs require Entra setup that returns 401
           infra-type:
@@ -78,6 +82,7 @@ integration:
           exclude: []
           auth: keycloak
           flow: install,upgrade-patch
+          helmVersion: 3.20.2
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           infra-type:
             gke: distroci
@@ -94,6 +99,7 @@ integration:
           skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
           persistence: opensearch-external
           flow: install
+          helmVersion: 3.20.2
           infra-type:
             gke: distroci
           platforms: [gke]
@@ -104,11 +110,13 @@ integration:
           exclude: []
           shortname: es
           auth: keycloak
+          helmVersion: 3.20.2
         - name: multitenancy
           enabled: true
           exclude: []
           shortname: mt
           auth: keycloak
+          helmVersion: 3.20.2
           identity: keycloak-external
           persistence: elasticsearch
           features: [multitenancy]
@@ -117,21 +125,25 @@ integration:
           exclude: []
           shortname: oi
           auth: keycloak
+          helmVersion: 3.20.2
         - name: opensearch
           enabled: true
           shortname: os
           exclude: []
           auth: keycloak
+          helmVersion: 3.20.2
         - name: elasticsearch
           enabled: true
           exclude: []
           auth: keycloak
+          helmVersion: 3.20.2
           enterprise: true
         - name: documentstore
           enabled: true
           exclude: []
           shortname: docstr
           auth: keycloak
+          helmVersion: 3.20.2
           identity: keycloak
           persistence: elasticsearch
           features: [documentstore]

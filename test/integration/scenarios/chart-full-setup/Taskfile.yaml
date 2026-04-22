@@ -284,6 +284,9 @@ tasks:
     desc: "Install helm chart using selection + composition configuration"
     cmds:
     - |
+      echo "Helm version"
+      helm version
+    - |
       set -o pipefail
       
       # Use deploy-camunda prepare-values to resolve, substitute, and merge all layered values.

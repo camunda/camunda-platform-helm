@@ -221,3 +221,4 @@ jobs:
       test-upgrade: ${{ matrix.upgrade == 'true' }}
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
       skip-it: ${{ matrix.skipIT == 'true' }}
+      helm-version: ${{ matrix.helmVersion }}
