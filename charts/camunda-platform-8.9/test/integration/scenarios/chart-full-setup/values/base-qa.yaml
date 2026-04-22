@@ -1,6 +1,11 @@
 # QA-specific configuration for 8.9
 # Layer 5: QA additions - Extra users, clients, and test configuration
 
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 60
+
 global:
   image:
     pullPolicy: Always
