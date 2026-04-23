@@ -71,6 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: changed
-      description: "Remove integration tests"
+  artifacthub.io/changes: ""
