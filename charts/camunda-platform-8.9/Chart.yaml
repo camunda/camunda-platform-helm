@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.0.0
+version: 14.0.1
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -62,7 +62,7 @@ maintainers:
   - name: jessesimpson36
     email: jesse.simpson@camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.20.1"
+  camunda.io/helmCLIVersion: "3.20.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -72,33 +72,11 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add tpl rendering for global identity auth URL values"
-    - kind: added
-      description: "Add MCP feature scenario for 8.9 integration tests"
-    - kind: added
-      description: "Add tpl rendering for global.identity.keycloak.url.host in charts 8.8-8.10"
-    - kind: added
-      description: "Add springImport flag to extraConfiguration entries"
     - kind: changed
-      description: "Drop global.image.tag option"
+      description: "Remove integration tests"
     - kind: fixed
-      description: "Restore backward compatibility for 3rd party e2e callers and fix 8.9 documentstore corruption"
+      description: "Add aws-enabled property to secondary-storage config"
     - kind: fixed
-      description: "Use dedicated liveness endpoint for orchestration app"
+      description: "Use internal cluster url for connectors in console release info"
     - kind: fixed
-      description: "Add env vars to web-modeler restapi deployment for Spring Boot 4.0.4 compatibility"
-    - kind: fixed
-      description: "Optimize prefix defaults to empty so global.elasticsearch.prefix is respected"
-    - kind: fixed
-      description: "Reference bitnami subcharts internally rather than relying on external repositories"
-    - kind: fixed
-      description: "Fix links in helpers 8.9+ to upgrade docs"
-    - kind: fixed
-      description: "Set basic.allow-unauthenticated-api-access on unprotectedApi"
-    - kind: fixed
-      description: "Skip initial-contact-points generation for multi-region deployments in 8.9 and 8.10"
-    - kind: fixed
-      description: "Consolidated-auth should be disabled"
-    - kind: fixed
-      description: "Remove importer from 8.9 and 8.10"
+      description: "#5874 remove prerelease annotation"
