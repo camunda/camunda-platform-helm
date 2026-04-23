@@ -426,6 +426,7 @@ jobs:
 
       - name: Mark release-please PR as published
         id: mark-published
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
           CHART_DIR_ID: "${{ needs.release.outputs.chart-dir-id }}"
@@ -453,6 +454,7 @@ jobs:
 
       - name: Approve and auto-merge release-please PR
         id: auto-merge
+        if: ${{ !cancelled() && steps.mark-published.outcome == 'success' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
@@ -479,6 +481,7 @@ jobs:
           echo "enabled=true" >> $GITHUB_OUTPUT
 
       - name: Summary
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         run: |
