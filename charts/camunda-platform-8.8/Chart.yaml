@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 13.7.1
+version: 13.7.2
 appVersion: 8.8.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -72,7 +72,7 @@ annotations:
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/changes: |
+    - kind: changed
+      description: "Remove integration tests"
     - kind: fixed
-      description: "Retrieve github app credentials from vault"
-    - kind: fixed
-      description: "Use internal cluster url for connectors in console release info"
+      description: "Keep persistence enabled in web modeler postgresql"

@@ -1,5 +1,29 @@
 # Changelog
 
+## [13.7.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.7.1...camunda-platform-8.8-13.7.2) (2026-04-22)
+
+
+### Documentation
+
+* add commented example for orchestration.security.initialization.authorizations ([#5840](https://github.com/camunda/camunda-platform-helm/issues/5840)) ([56633ff](https://github.com/camunda/camunda-platform-helm/commit/56633ff6aa8c6896d780292701dde07391d99f84))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5871](https://github.com/camunda/camunda-platform-helm/issues/5871)) ([91918a7](https://github.com/camunda/camunda-platform-helm/commit/91918a75eca5051b294be4746de1a57546881845))
+* update camunda-platform-digests ([#5872](https://github.com/camunda/camunda-platform-helm/issues/5872)) ([0602159](https://github.com/camunda/camunda-platform-helm/commit/06021594f556e88098342fada95d9fd1b01a1e72))
+* update camunda-platform-digests ([#5900](https://github.com/camunda/camunda-platform-helm/issues/5900)) ([a803537](https://github.com/camunda/camunda-platform-helm/commit/a803537caeccc37bc5c0f0ae02d871f47cdda688))
+* update camunda-platform-digests ([#5902](https://github.com/camunda/camunda-platform-helm/issues/5902)) ([52108ed](https://github.com/camunda/camunda-platform-helm/commit/52108edc212e1f1654d3e92eabf968f991c3249d))
+* update camunda-platform-images (patch) ([#5901](https://github.com/camunda/camunda-platform-helm/issues/5901)) ([5ae870b](https://github.com/camunda/camunda-platform-helm/commit/5ae870b4c47c9688e503e08701111326f279540c))
+* update camunda/camunda docker tag to v8.8.23 ([#5909](https://github.com/camunda/camunda-platform-helm/issues/5909)) ([269437b](https://github.com/camunda/camunda-platform-helm/commit/269437bfc97419346f2fbace7e7a8f20806e9aa8))
+* update camunda/identity docker tag to v8.8.11 ([#5851](https://github.com/camunda/camunda-platform-helm/issues/5851)) ([435fdcb](https://github.com/camunda/camunda-platform-helm/commit/435fdcb5e08a1394004ba04b9bb60d8a46c8dbe2))
+* update module github.com/moby/spdystream to v0.5.1 [security] ([#5842](https://github.com/camunda/camunda-platform-helm/issues/5842)) ([7f9533c](https://github.com/camunda/camunda-platform-helm/commit/7f9533c434223464ac1da6c34240c71fe6cea8e5))
+
+
+### Refactors
+
+* remove integration tests ([#5540](https://github.com/camunda/camunda-platform-helm/issues/5540)) ([8389340](https://github.com/camunda/camunda-platform-helm/commit/8389340f13038f60f80b77bc8e53b4b6a43374f2))
+
 ## [13.7.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.7.0...camunda-platform-8.8-13.7.1) (2026-04-16)
 
 
