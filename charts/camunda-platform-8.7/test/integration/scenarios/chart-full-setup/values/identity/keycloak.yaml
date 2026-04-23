@@ -132,10 +132,12 @@ identityKeycloak:
     enabled: false
   # CPU-heavy startup (class loading): give 4 cores limit and 2 cores request
   # so the scheduler guarantees real CPU capacity from the start.
+  # Right-sized for CI: CPU P99 919m (from 2 CPU), memory P99 657Mi (from 1Gi).
+  # Keep high CPU limit for startup burst (class loading).
   resources:
     requests:
-      cpu: "2"
-      memory: 1Gi
+      cpu: 1200m
+      memory: 900Mi
     limits:
       cpu: "4"
       memory: 2Gi
@@ -202,12 +204,13 @@ identityKeycloak:
     primary:
       persistence:
         enabled: true
+      # Right-sized for CI: CPU P99 61m (from 500m), memory P99 92Mi (from 256Mi).
       resources:
         requests:
-          cpu: "500m"
-          memory: 256Mi
+          cpu: 80m
+          memory: 125Mi
         limits:
-          cpu: "1"
+          cpu: 500m
           memory: 512Mi
       startupProbe:
         enabled: true

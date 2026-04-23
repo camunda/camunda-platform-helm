@@ -26,6 +26,14 @@ global:
 identity:
   enabled: true
   contextPath: "/identity"
+  # Right-sized for CI: "camunda-platform" container P99 mem 849Mi (from 400Mi default).
+  resources:
+    requests:
+      cpu: 600m
+      memory: 1150Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
   startupProbe:
     enabled: true
     initialDelaySeconds: 5
@@ -75,6 +83,14 @@ identity:
 optimize:
   enabled: true
   contextPath: "/optimize"
+  # Right-sized for CI: CPU P99 369m (from 600m default), memory P99 840Mi INCREASE (from 1Gi default).
+  resources:
+    requests:
+      cpu: 475m
+      memory: 1150Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
   startupProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -95,6 +111,14 @@ optimize:
 
 connectors:
   contextPath: "/connectors"
+  # Right-sized for CI: CPU P99 389m (from 1000m default), memory P99 531Mi (from 1Gi default).
+  resources:
+    requests:
+      cpu: 500m
+      memory: 700Mi
+    limits:
+      cpu: 1000m
+      memory: 1400Mi
   startupProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -121,6 +145,14 @@ webModeler:
       - name: index-docker-io
       - name: registry-camunda-cloud
   restapi:
+    # Right-sized for CI: CPU P99 640m INCREASE (from 500m default), memory P99 1132Mi INCREASE (from 1Gi default).
+    resources:
+      requests:
+        cpu: 850m
+        memory: 1550Mi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
     # Wait for PostgreSQL to accept connections before starting restapi.
     # Prevents restapi from failing on DB connection during Spring context init.
     initContainers:
@@ -149,6 +181,26 @@ webModeler:
     mail:
       fromAddress: noreply@example.com
 
+  webapp:
+    # Right-sized for CI: CPU P99 47m (from 400m default), memory P99 216Mi INCREASE (from 256Mi default).
+    resources:
+      requests:
+        cpu: 60m
+        memory: 300Mi
+      limits:
+        cpu: 400m
+        memory: 512Mi
+
+  websockets:
+    # Right-sized for CI: CPU P99 3m (from 100m default), memory P99 33Mi (from 64Mi default).
+    resources:
+      requests:
+        cpu: 25m
+        memory: 50Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
 webModelerPostgresql:
   enabled: true
   auth:
@@ -157,13 +209,13 @@ webModelerPostgresql:
       adminPasswordKey: "webmodeler-postgresql-admin-password"
       userPasswordKey: "webmodeler-postgresql-user-password"
   primary:
-    # Resource allocation for faster startup
+    # Right-sized for CI: CPU P99 61m (from 500m), memory P99 92Mi (from 256Mi).
     resources:
       requests:
-        cpu: 500m
-        memory: 256Mi
+        cpu: 80m
+        memory: 125Mi
       limits:
-        cpu: 1000m
+        cpu: 500m
         memory: 512Mi
     # PostgreSQL configuration optimized for fast startup in integration tests.
     # WARNING: These settings trade durability for speed — NOT suitable for production.
@@ -182,13 +234,14 @@ orchestration:
   contextPath: "/orchestration"
   # JVM startup optimizations: TieredStopAtLevel=1 skips C2 compiler for ~30-50% faster startup,
   # pre-sized heap avoids resizing overhead, G1GC with string deduplication for efficiency.
+  # Right-sized for CI: CPU P99 481m (from 2000m), memory P99 1012Mi (from 2000Mi).
   resources:
     requests:
-      cpu: 2000m
-      memory: 2000Mi
+      cpu: 600m
+      memory: 1350Mi
     limits:
       cpu: 2000m
-      memory: 3000Mi
+      memory: 2000Mi
   startupProbe:
     enabled: true
     initialDelaySeconds: 30
@@ -217,10 +270,29 @@ orchestration:
 console:
   enabled: true
   contextPath: "/"
+  # Right-sized for CI: "camunda-platform" container CPU P99 493m (from 1000m default), memory P99 849Mi INCREASE (from 1Gi default).
+  resources:
+    requests:
+      cpu: 650m
+      memory: 1150Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
   image:
     pullSecrets:
       - name: index-docker-io
       - name: registry-camunda-cloud
+
+# Right-sized for CI: CPU P99 621m (from 1000m default), memory P99 1572Mi INCREASE (from 2Gi default).
+elasticsearch:
+  master:
+    resources:
+      requests:
+        cpu: 800m
+        memory: 2100Mi
+      limits:
+        cpu: 2000m
+        memory: 2560Mi
 
 prometheusServiceMonitor:
   enabled: true
