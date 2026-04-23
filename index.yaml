@@ -1003,6 +1003,88 @@ entries:
     version: 14.0.0-alpha1
   - annotations:
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Remove integration tests"
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/component-image-versions: |
+        camunda: 8.8.23
+        managementIdentity: 8.8.11
+        optimize: 8.8.8
+        webModeler: 8.8.13
+        connectors: 8.8.10
+        console: 8.8.133
+      camunda.io/helmCLIVersion: 3.20.2
+    apiVersion: v2
+    appVersion: 8.8.x
+    created: "2026-04-23T09:30:45.862298093Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: webModelerPostgresql
+      condition: webModelerPostgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: aaf46a36f26518b2c73f524619de1bd62d63c81a1ff1121ad4d88cfdb94145d4
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - email: ahmed.abouzaid@camunda.com
+      name: aabouzaid
+    - email: daniel.rodriguez@camunda.com
+      name: drodriguez-305
+    - email: hamza.masood@camunda.com
+      name: hamza-m-masood
+    - email: jesse.simpson@camunda.com
+      name: jessesimpson36
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.8-13.7.2/camunda-platform-13.7.2.tgz
+    version: 13.7.2
+  - annotations:
+      artifacthub.io/changes: |
         - kind: fixed
           description: "Retrieve github app credentials from vault"
         - kind: fixed
@@ -27171,4 +27253,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-23T06:28:15.386200848Z"
+generated: "2026-04-23T09:30:45.863090118Z"
