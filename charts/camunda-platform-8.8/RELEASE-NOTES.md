@@ -1,10 +1,14 @@
 The changelog is automatically generated and it follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-## [camunda-platform-13.7.2](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.7.2) (2026-04-22)
+## [camunda-platform-13.7.2](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-13.7.2) (2026-04-23)
 
 ### Refactor
 
 - Remove integration tests (#5540)
+
+### Fixes
+
+- Keep persistence enabled in web modeler postgresql (#5926)
 
 ### Documentation
 
