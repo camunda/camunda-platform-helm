@@ -71,12 +71,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: changed
-      description: "Remove integration tests"
-    - kind: fixed
-      description: "Add aws-enabled property to secondary-storage config"
-    - kind: fixed
-      description: "Use internal cluster url for connectors in console release info"
-    - kind: fixed
-      description: "#5874 remove prerelease annotation"
+  artifacthub.io/changes: ""
