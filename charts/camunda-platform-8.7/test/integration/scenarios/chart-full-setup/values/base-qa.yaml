@@ -134,8 +134,3 @@ connectors:
       value: username
     - name: password
       value: password
-
-optimize:
-  caches:
-    cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 120

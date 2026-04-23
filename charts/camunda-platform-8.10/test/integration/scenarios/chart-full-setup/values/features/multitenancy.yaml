@@ -1,4 +1,4 @@
-# Multi-tenancy feature configuration for 8.9
+# Multi-tenancy feature configuration for 8.10
 # Layer 4: Feature - Multi-tenancy
 
 global:
@@ -34,6 +34,11 @@ identityPostgresql:
 identity:
   externalDatabase:
     enabled: false
+
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 120
 
 connectors:
   env:

@@ -32,6 +32,11 @@ identity:
     - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
       value: zeebe
 
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 120
+
 connectors:
   env:
     - name: username
