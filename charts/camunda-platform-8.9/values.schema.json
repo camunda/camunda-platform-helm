@@ -223,6 +223,14 @@
                                     "default": "camunda-platform"
                                 }
                             }
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 },
@@ -475,7 +483,27 @@
                                 "url": {
                                     "type": "object",
                                     "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
-                                    "default": {}
+                                    "default": {},
+                                    "properties": {
+                                        "protocol": {
+                                            "type": "string",
+                                            "description": "defines the protocol used for Keycloak URL (e.g., https).",
+                                            "default": ""
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "defines the hostname for Keycloak. Supports templating (e.g., {{ .Release.Namespace }}).",
+                                            "default": ""
+                                        },
+                                        "port": {
+                                            "type": [
+                                                "string",
+                                                "integer"
+                                            ],
+                                            "description": "defines the port for Keycloak (e.g., 443).",
+                                            "default": ""
+                                        }
+                                    }
                                 },
                                 "contextPath": {
                                     "type": "string",
@@ -4971,7 +4999,8 @@
                         "annotations": {
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the service",
-                            "default": {}
+                            "default": {},
+                            "additionalProperties": true
                         },
                         "headless": {
                             "type": "object",
@@ -4979,7 +5008,8 @@
                                 "annotations": {
                                     "type": "object",
                                     "description": "can be used to define annotations, which will be applied to the headless service",
-                                    "default": {}
+                                    "default": {},
+                                    "additionalProperties": true
                                 },
                                 "type": {
                                     "type": "string",
@@ -5156,6 +5186,14 @@
                                             "description": "defines the secret name which contains the TLS private key and certificate",
                                             "default": "camunda-platform-zeebe-gateway"
                                         }
+                                    }
+                                },
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
                                     }
                                 }
                             }

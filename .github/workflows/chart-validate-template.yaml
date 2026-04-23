@@ -103,3 +103,18 @@ jobs:
         run: |
           # Call yamllint via asdf because there is an issue loading the correct version of yamllint in GHA workflow.
           $(asdf which yamllint) -c .github/config/yamllint.yaml ./charts/${{ inputs.camunda-helm-dir }}/test/unit
+      # Schema freshness check.
+      - name: Install readme-generator-for-helm
+        if: ${{ hashFiles(format('charts/{0}/values.schema.json', inputs.camunda-helm-dir)) != '' }}
+        run: |
+          # renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
+          npm install -g @bitnami/readme-generator-for-helm@2.7.2
+      - name: Check schema is up-to-date
+        if: ${{ hashFiles(format('charts/{0}/values.schema.json', inputs.camunda-helm-dir)) != '' }}
+        run: |
+          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          make helm.schema-update
+          if ! git diff --exit-code "${chartPath}/values.schema.json"; then
+            echo "::error::values.schema.json is out of date. Run 'make helm.schema-update chartPath=${chartPath}' and commit the result."
+            exit 1
+          fi
