@@ -5776,7 +5776,9 @@
                             "type": "object",
                             "description": "can be used to define annotations, which will be applied to the service",
                             "default": {},
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         },
                         "headless": {
                             "type": "object",
@@ -5785,7 +5787,9 @@
                                     "type": "object",
                                     "description": "can be used to define annotations, which will be applied to the headless service",
                                     "default": {},
-                                    "additionalProperties": true
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
                                 },
                                 "type": {
                                     "type": "string",
