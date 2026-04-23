@@ -69,11 +69,6 @@ identityPostgresql:
       adminPasswordSecretKey: identity-keycloak-postgresql-admin-password
       userPasswordKey: identity-keycloak-postgresql-user-password
 
-optimize:
-  caches:
-    cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 120
-
 console:
   keycloak:
     realm: $KEYCLOAK_REALM
