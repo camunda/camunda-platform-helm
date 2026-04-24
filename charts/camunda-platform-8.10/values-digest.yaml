@@ -7,7 +7,7 @@ console:
   image:
     repository: camunda/console
     tag: 8.9-SNAPSHOT
-    digest: "sha256:18beea43181426283108a00c0644bbb6baa814a40b241d6cd8c0f69fee2844a9"
+    digest: "sha256:b8b3ffc26a5fc8350cab76dd7a1f157be354e4484e4c70f18f3700933bef6608"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
