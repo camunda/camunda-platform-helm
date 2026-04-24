@@ -1,5 +1,51 @@
 {
     "properties": {
+        "global": {
+            "properties": {
+                "ingress": {
+                    "properties": {
+                        "annotations": {
+                            "type": "object",
+                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                            "default": {},
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "identity": {
+                    "properties": {
+                        "keycloak": {
+                            "properties": {
+                                "url": {
+                                    "type": "object",
+                                    "description": "can be used incorporate with \"identityKeycloak.enabled: false\" to use your own Keycloak instead of the one comes with Camunda Helm chart. The \"host\" field supports templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": {},
+                                    "properties": {
+                                        "protocol": {
+                                            "type": "string",
+                                            "description": "defines the protocol used for Keycloak URL (e.g., https).",
+                                            "default": ""
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "defines the hostname for Keycloak. Supports templating (e.g., {{ .Release.Namespace }}).",
+                                            "default": ""
+                                        },
+                                        "port": {
+                                            "type": ["string", "integer"],
+                                            "description": "defines the port for Keycloak (e.g., 443).",
+                                            "default": ""
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "console": {
             "properties": {
                 "env": {
@@ -182,6 +228,42 @@
         },
         "orchestration": {
             "properties": {
+                "ingress": {
+                    "properties": {
+                        "grpc": {
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "defines the ingress related annotations, consumed mostly by the ingress controller",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "service": {
+                    "properties": {
+                        "annotations": {
+                            "type": "object",
+                            "description": "can be used to define annotations, which will be applied to the service",
+                            "default": {},
+                            "additionalProperties": { "type": "string" }
+                        },
+                        "headless": {
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations, which will be applied to the headless service",
+                                    "default": {},
+                                    "additionalProperties": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
                 "env": {
                     "type": "array",
                     "items": {
