@@ -18,6 +18,14 @@
   separateMinorPatch: true,
   ignoreTests: false,
   prCreation: 'not-pending',
+  // Automerge is the default. The "Required Check" workflow aggregates all
+  // other PR checks into one stable status, so Renovate can wait on it.
+  // Major updates are excluded via packageRules below.
+  automerge: true,
+  // Use Renovate's PR-based automerge (not GitHub's platformAutomerge), since
+  // Renovate waits for all status checks before merging.
+  platformAutomerge: false,
+  automergeType: 'pr',
   prBodyNotes: [
     '{{#if isMajor}}:warning: THIS IS A MAJOR VERSION UPDATE :warning:{{/if}}',
     'Before merging, *always* check with the release notes if any other changes need to be done.',
@@ -384,6 +392,9 @@
       prCreation: 'immediate',
     },
     {
+      // Visibility labels for non-major updates in known automation paths.
+      // Automerge itself is now the global default (see top of file); this
+      // rule only adds labels.
       matchFileNames: [
         '.tool-versions',
         '.github/workflows/*',
@@ -396,12 +407,6 @@
         'automation/renovatebot',
         'kind/chore',
       ],
-      // Use Renovate's automerge (not GitHub's platformAutomerge)
-      // Renovate waits for all status checks by default, which works with dynamic checks per chart version
-      platformAutomerge: false,
-      automerge: true,
-      automergeType: 'pr', // Merge via PR to respect GitHub settings
-      ignoreTests: false, // Wait for all status checks to pass
     },
     // This package name is used by the initContainer for keycloak in v8.5, and doesn't make sense to
     // be processed by renovate because it requires helm templating to render the real image name.
