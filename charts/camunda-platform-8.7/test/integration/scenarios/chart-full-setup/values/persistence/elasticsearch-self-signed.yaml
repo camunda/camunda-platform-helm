@@ -64,7 +64,14 @@ operate:
       value: "camunda-ci-es-password"
 
 optimize:
-  enabled: false
+  javaOpts: "-Djavax.net.ssl.trustStoreType=jks -Djavax.net.ssl.trustStorePassword=changeit"
+  env:
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME
+      value: elastic
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED
+      value: "true"
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD
+      value: "camunda-ci-es-password"
 
 tasklist:
   javaOpts: "-Djavax.net.ssl.trustStoreType=jks -Djavax.net.ssl.trustStorePassword=changeit"
