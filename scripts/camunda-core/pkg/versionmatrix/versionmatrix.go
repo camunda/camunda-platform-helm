@@ -66,6 +66,45 @@ func HasPreUpgradeScript(repoRoot, appVersion, flow string) bool {
 	return err == nil && !info.IsDir()
 }
 
+// PreInstallScriptName returns the pre-install script filename for a given
+// scenario. The naming convention is:
+//
+//	"elasticsearch-self-signed-upgrade" → "pre-install-elasticsearch-self-signed-upgrade.sh"
+//
+// Returns empty string if scenario is empty.
+func PreInstallScriptName(scenario string) string {
+	if scenario == "" {
+		return ""
+	}
+	return "pre-install-" + scenario + ".sh"
+}
+
+// PreInstallScriptPath returns the absolute path to the scenario-specific
+// pre-install script for a given app version. The path follows the convention:
+//
+//	charts/camunda-platform-<appVersion>/test/integration/scenarios/pre-setup-scripts/pre-install-<scenario>.sh
+//
+// Returns empty string if scenario is empty.
+func PreInstallScriptPath(repoRoot, appVersion, scenario string) string {
+	name := PreInstallScriptName(scenario)
+	if name == "" {
+		return ""
+	}
+	return filepath.Join(repoRoot, "charts", "camunda-platform-"+appVersion,
+		"test", "integration", "scenarios", PreSetupScriptsDir, name)
+}
+
+// HasPreInstallScript returns true if a scenario-specific pre-install script
+// exists on disk for the given app version.
+func HasPreInstallScript(repoRoot, appVersion, scenario string) bool {
+	p := PreInstallScriptPath(repoRoot, appVersion, scenario)
+	if p == "" {
+		return false
+	}
+	info, err := os.Stat(p)
+	return err == nil && !info.IsDir()
+}
+
 // ChartEntry represents a single entry in a version-matrix.json file.
 type ChartEntry struct {
 	ChartVersion string   `json:"chart_version"`

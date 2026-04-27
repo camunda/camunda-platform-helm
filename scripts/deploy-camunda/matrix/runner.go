@@ -1650,6 +1650,39 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 		Str("osPoolIndex", flags.OSPoolIndex).
 		Msg("Deploying matrix entry")
 
+	// --- Pre-install lifecycle script (single-step flows) ---
+	// Register a scenario-specific pre-install hook for non-upgrade flows.
+	// Upgrade flows handle this inside executeTwoStepUpgrade with version-aware logic.
+	if !versionmatrix.IsTwoStepUpgradeFlow(entry.Flow) && !versionmatrix.IsUpgradeOnlyFlow(entry.Flow) {
+		if versionmatrix.HasPreInstallScript(opts.RepoRoot, entry.Version, entry.Scenario) {
+			scriptPath := versionmatrix.PreInstallScriptPath(opts.RepoRoot, entry.Version, entry.Scenario)
+			scenario := entry.Scenario
+			appVersion := entry.Version
+			flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
+				logging.Logger.Info().
+					Str("script", scriptPath).
+					Str("namespace", namespace).
+					Str("scenario", scenario).
+					Str("appVersion", appVersion).
+					Msg("Running scenario-specific pre-install script (PreInstallHook)")
+
+				scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
+				if flags.Test.KubeContext != "" {
+					scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
+				}
+
+				if err := executil.RunCommand(hookCtx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
+					return fmt.Errorf("pre-install script %s failed: %w", scriptPath, err)
+				}
+
+				logging.Logger.Info().
+					Str("script", scriptPath).
+					Msg("Pre-install script completed successfully")
+				return nil
+			})
+		}
+	}
+
 	// Execute the deployment (deploy + tests run inside deploy.Execute).
 	// All code paths converge into a single result so cleanup runs exactly once.
 	var deployErr error
@@ -1859,11 +1892,13 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// In CI, test-type-vars sets CHART_PATH to charts/camunda-platform-<previous> for
 	// the install step of upgrade-minor, so values files come from the older chart.
 	// For upgrade-patch, Step 1 uses the current chart's values (same app version).
+	step1AppVersion := entry.Version
 	if entry.Flow == "upgrade-minor" {
 		prevVersion, err := versionmatrix.PreviousAppVersion(entry.Version)
 		if err != nil {
 			return fmt.Errorf("step 1: resolve previous app version for %s: %w", entry.Version, err)
 		}
+		step1AppVersion = prevVersion
 		prevChartDir := filepath.Join(opts.RepoRoot, "charts", "camunda-platform-"+prevVersion)
 		prevScenarioDir := filepath.Join(prevChartDir, "test/integration/scenarios/chart-full-setup")
 		step1Flags.Deployment.ScenarioPath = prevScenarioDir
@@ -1873,6 +1908,38 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 			Str("previousVersion", prevVersion).
 			Str("scenarioDir", prevScenarioDir).
 			Msg("Step 1: using previous app version's values files (matching CI behavior)")
+	}
+
+	// --- Pre-install lifecycle script ---
+	// Run a scenario-specific pre-install script (if it exists) before Step 1's helm install.
+	// These scripts create K8s resources (e.g., TLS secrets) that must exist in the namespace
+	// before the Helm release is installed. The script comes from the app version being installed
+	// in Step 1 (previous version for upgrade-minor, current for upgrade-patch).
+	if versionmatrix.HasPreInstallScript(opts.RepoRoot, step1AppVersion, entry.Scenario) {
+		scriptPath := versionmatrix.PreInstallScriptPath(opts.RepoRoot, step1AppVersion, entry.Scenario)
+		step1Flags.PreInstallHooks = append(step1Flags.PreInstallHooks, func(hookCtx context.Context) error {
+			namespace := flags.EffectiveNamespace()
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Str("namespace", namespace).
+				Str("scenario", entry.Scenario).
+				Str("appVersion", step1AppVersion).
+				Msg("Running scenario-specific pre-install script (PreInstallHook)")
+
+			scriptEnv := []string{"TEST_NAMESPACE=" + namespace}
+			if flags.Test.KubeContext != "" {
+				scriptEnv = append(scriptEnv, "KUBE_CONTEXT="+flags.Test.KubeContext)
+			}
+
+			if err := executil.RunCommand(hookCtx, "bash", []string{"-x", scriptPath}, scriptEnv, ""); err != nil {
+				return fmt.Errorf("pre-install script %s failed: %w", scriptPath, err)
+			}
+
+			logging.Logger.Info().
+				Str("script", scriptPath).
+				Msg("Pre-install script completed successfully")
+			return nil
+		})
 	}
 
 	if err := deploy.Execute(ctx, &step1Flags); err != nil {
