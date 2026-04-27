@@ -105,7 +105,10 @@ elasticsearch:
       passwordsSecret: elasticsearch-tls-passwords
       keystorePassword: ""
       truststorePassword: ""
+  # The parent chart's values.yaml defaults master.extraEnvVars to
+  # [{name: ELASTICSEARCH_ENABLE_REST_TLS, value: "false"}], which would
+  # override the security helper's "true" (from restEncryption: true above).
+  # Setting extraEnvVars to an empty array clears that default so only the
+  # security helper's correct value remains — no duplicate env var.
   master:
-    extraEnvVars:
-      - name: ELASTICSEARCH_ENABLE_REST_TLS
-        value: "true"
+    extraEnvVars: []
