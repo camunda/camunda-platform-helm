@@ -68,9 +68,6 @@ identityPostgresql:
   enabled: true
 
 optimize:
-  caches:
-    cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
   auth:
     existingSecret: "integration-test-credentials"
     secretKeys:

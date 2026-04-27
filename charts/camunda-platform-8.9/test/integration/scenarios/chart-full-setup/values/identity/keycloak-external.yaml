@@ -80,9 +80,6 @@ identityPostgresql:
       userPasswordKey: "identity-postgresql-user-password"
 
 optimize:
-  caches:
-    cloudTenantAuthorizations:
-      minFetchIntervalSeconds: 300
   auth:
     existingSecret: "integration-test-credentials"
     secretKeys:
