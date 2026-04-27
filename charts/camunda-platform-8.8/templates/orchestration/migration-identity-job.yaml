@@ -66,6 +66,10 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /usr/local/camunda/logs
+              name: logs
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
@@ -82,4 +86,8 @@ spec:
         - name: config
           configMap:
             name: {{ include "identity.fullname" . }}-migration-configuration
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
 {{- end }}

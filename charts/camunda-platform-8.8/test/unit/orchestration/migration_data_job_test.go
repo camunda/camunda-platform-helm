@@ -316,7 +316,7 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 			},
 		},
 		{
-			Name: "TestTmpVolumeAndVolumeMountArePresent",
+			Name: "TestTmpAndLogsVolumesArePresent",
 			Values: map[string]string{
 				"orchestration.migration.data.enabled": "true",
 			},
@@ -330,24 +330,36 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 				// Verify /tmp volume mount exists
 				volumeMounts := containers[0].VolumeMounts
 				tmpVolumeMountFound := false
+				logsVolumeMountFound := false
 				for _, vm := range volumeMounts {
 					if vm.Name == "tmp" {
 						tmpVolumeMountFound = true
 						s.Require().Equal("/tmp", vm.MountPath)
 					}
+					if vm.Name == "logs" {
+						logsVolumeMountFound = true
+						s.Require().Equal("/usr/local/camunda/logs", vm.MountPath)
+					}
 				}
 				s.Require().True(tmpVolumeMountFound, "tmp volume mount should exist at /tmp")
+				s.Require().True(logsVolumeMountFound, "logs volume mount should exist at /usr/local/camunda/logs")
 
-				// Verify tmp volume exists
+				// Verify tmp and logs volumes exist
 				volumes := job.Spec.Template.Spec.Volumes
 				tmpVolumeFound := false
+				logsVolumeFound := false
 				for _, vol := range volumes {
 					if vol.Name == "tmp" {
 						tmpVolumeFound = true
 						s.Require().NotNil(vol.EmptyDir)
 					}
+					if vol.Name == "logs" {
+						logsVolumeFound = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
 				}
 				s.Require().True(tmpVolumeFound, "tmp volume should exist as emptyDir")
+				s.Require().True(logsVolumeFound, "logs volume should exist as emptyDir")
 			},
 		},
 	}
