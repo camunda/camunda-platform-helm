@@ -315,6 +315,41 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 				}
 			},
 		},
+		{
+			Name: "TestTmpVolumeAndVolumeMountArePresent",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				// Verify /tmp volume mount exists
+				volumeMounts := containers[0].VolumeMounts
+				tmpVolumeMountFound := false
+				for _, vm := range volumeMounts {
+					if vm.Name == "tmp" {
+						tmpVolumeMountFound = true
+						s.Require().Equal("/tmp", vm.MountPath)
+					}
+				}
+				s.Require().True(tmpVolumeMountFound, "tmp volume mount should exist at /tmp")
+
+				// Verify tmp volume exists
+				volumes := job.Spec.Template.Spec.Volumes
+				tmpVolumeFound := false
+				for _, vol := range volumes {
+					if vol.Name == "tmp" {
+						tmpVolumeFound = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+				}
+				s.Require().True(tmpVolumeFound, "tmp volume should exist as emptyDir")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)

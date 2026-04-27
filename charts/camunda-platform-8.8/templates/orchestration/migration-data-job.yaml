@@ -68,6 +68,8 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
             - name: keystore
               mountPath: /usr/local/camunda/certificates/externaldb.jks
@@ -90,6 +92,8 @@ spec:
           configMap:
             name: {{ include "orchestration.fullname" . }}-configuration-unified
             defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
+        - name: tmp
+          emptyDir: {}
         {{- if .Values.global.elasticsearch.tls.existingSecret }}
         - name: keystore
           secret:
