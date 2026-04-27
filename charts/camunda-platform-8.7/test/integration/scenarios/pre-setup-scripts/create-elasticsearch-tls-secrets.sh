@@ -47,7 +47,7 @@ CERT_VALIDITY_DAYS=365
 
 # Temp dir for generated artifacts — cleaned up on exit.
 WORK_DIR=$(mktemp -d)
-trap 'rm -rf "$WORK_DIR"' EXIT
+trap '[[ -n "${WORK_DIR:-}" ]] && rm -rf "$WORK_DIR"' EXIT
 
 echo "[elasticsearch-tls] Working directory: $WORK_DIR"
 
