@@ -210,6 +210,11 @@ type RuntimeFlags struct {
 	// CONNECTORS_CLIENT_ID in an isolated map instead of relying on os.Setenv.
 	ExtraEnv map[string]string
 
+	// CompanionCharts are Helm charts to deploy as separate releases in the
+	// same namespace before the main Camunda chart. Each entry specifies the
+	// chart path, release name, and optional values file.
+	CompanionCharts []CompanionChart
+
 	// OnPhase is called when the deployment transitions to a new phase
 	// (e.g., "deploying", "testing"). Used by the matrix status display to
 	// show fine-grained progress. Nil disables the callback.
@@ -223,6 +228,22 @@ type RuntimeFlags struct {
 	// e2e test script output. Used by the matrix runner to redirect
 	// e2e output to a per-entry log file instead of polluting the terminal.
 	E2EOutputWriter io.Writer
+}
+
+// CompanionChart represents a Helm chart to deploy as a separate release
+// before the main Camunda chart. Used to deploy infrastructure dependencies
+// (e.g., OpenSearch) in the same namespace.
+type CompanionChart struct {
+	// ChartRef is the Helm chart reference — either a repo/chart name
+	// (e.g., "opensearch/opensearch") or an absolute local path.
+	ChartRef string
+	// Version is the chart version to install (e.g., "3.6.0").
+	// Empty means use the latest version (for remote) or ignore (for local).
+	Version string
+	// ReleaseName is the Helm release name for this companion chart.
+	ReleaseName string
+	// ValuesFile is the absolute path to a values file. Empty means use chart defaults.
+	ValuesFile string
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".

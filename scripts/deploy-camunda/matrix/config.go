@@ -93,6 +93,28 @@ type CIScenario struct {
 	// replacing hardcoded shortname-based skip logic in both the Go CLI and GHA workflows.
 	SkipE2E bool `yaml:"skip-e2e,omitempty"`
 	SkipIT  bool `yaml:"skip-it,omitempty"`
+
+	// Dependencies specifies companion charts to deploy before the main Camunda chart.
+	// Each dependency is deployed as a separate Helm release in the same namespace.
+	Dependencies []ChartDependency `yaml:"dependencies,omitempty"`
+}
+
+// ChartDependency represents a companion chart that must be deployed
+// before the main Camunda chart. The chart is deployed as a separate
+// Helm release in the same namespace.
+type ChartDependency struct {
+	// Chart is the Helm chart reference. This can be a repo/chart name
+	// (e.g., "opensearch/opensearch") or a local path relative to the repo root.
+	Chart string `yaml:"chart"`
+	// Version is the chart version to install (e.g., "3.6.0").
+	// Required for remote charts; ignored for local paths.
+	Version string `yaml:"version,omitempty"`
+	// ReleaseName is the Helm release name for the companion chart.
+	// Example: "opensearch"
+	ReleaseName string `yaml:"release-name"`
+	// ValuesFile is the path to a values file for the companion chart,
+	// relative to the repo root. Optional — omit to use chart defaults.
+	ValuesFile string `yaml:"values-file,omitempty"`
 }
 
 // LoadCITestConfig reads and parses the ci-test-config.yaml for a given chart directory.

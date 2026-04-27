@@ -165,3 +165,45 @@ func formatArgs(args []string) string {
 	}
 	return strings.Join(parts, " ")
 }
+
+// deployCompanionChart deploys a single companion chart as its own Helm release
+// in the same namespace as the main Camunda chart. It uses helm upgrade --install
+// with --wait to ensure the chart is fully ready before returning.
+func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.Options) error {
+	args := []string{
+		"upgrade", "--install",
+		cc.ReleaseName,
+		cc.ChartRef,
+		"-n", o.Namespace,
+		"--create-namespace",
+		"--wait",
+	}
+
+	// Pin chart version (required for remote charts)
+	if cc.Version != "" {
+		args = append(args, "--version", cc.Version)
+	}
+
+	// Use the same timeout as the main deployment
+	if o.Timeout > 0 {
+		args = append(args, "--timeout", fmt.Sprintf("%ds", int(o.Timeout.Seconds())))
+	}
+
+	// Kubernetes connection
+	args = append(args, composeKubeArgs(o.Kubeconfig, o.KubeContext)...)
+
+	// Values file (optional)
+	if cc.ValuesFile != "" {
+		args = append(args, "-f", cc.ValuesFile)
+	}
+
+	err := helm.Run(ctx, args, "")
+	if err != nil {
+		return &HelmError{
+			Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
+			Command: "helm " + formatArgs(args),
+			Cause:   err,
+		}
+	}
+	return nil
+}

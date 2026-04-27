@@ -1,0 +1,36 @@
+# CI values for the embedded OpenSearch 3 companion chart.
+# Security disabled, single node, minimal resources for CI/dev environments.
+#
+# Deployed as a separate Helm release by deploy-camunda before the main
+# Camunda chart. Referenced from ci-test-config.yaml dependencies.
+
+clusterName: "opensearch"
+masterService: "opensearch-master"
+
+singleNode: true
+
+replicas: 1
+
+protocol: http
+
+config:
+  opensearch.yml: |
+    cluster.name: opensearch
+    network.host: 0.0.0.0
+    plugins:
+      security:
+        disabled: true
+
+securityConfig:
+  enabled: false
+
+sysctlInit:
+  enabled: true
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"

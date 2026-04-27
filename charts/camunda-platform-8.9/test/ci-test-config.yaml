@@ -82,6 +82,22 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+        - name: opensearch-embedded
+          enabled: false
+          shortname: osem
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch-embedded
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
+          dependencies:
+            - chart: opensearch/opensearch
+              version: "3.6.0"
+              release-name: opensearch
+              values-file: test/integration/companion-values/opensearch.yaml
         - name: elasticsearch-basic
           enabled: false
           shortname: esba

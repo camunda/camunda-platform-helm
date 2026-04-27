@@ -1493,6 +1493,30 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	flags.ESPoolIndex = strconv.Itoa(entryIndex % numESPools)
 	flags.OSPoolIndex = strconv.Itoa(entryIndex % numOSPools)
 
+	// Wire companion chart dependencies from ci-test-config.yaml.
+	// Values file paths are resolved relative to the repo root.
+	// Chart references are passed through as-is (remote repo/chart names)
+	// or resolved to absolute paths (local directories).
+	if len(entry.Dependencies) > 0 {
+		for _, dep := range entry.Dependencies {
+			chartRef := dep.Chart
+			// If the chart reference looks like a local path (contains a slash
+			// but no repo prefix like "reponame/chartname"), resolve it.
+			if !strings.Contains(dep.Chart, "/") || strings.HasPrefix(dep.Chart, ".") || strings.HasPrefix(dep.Chart, "charts/") {
+				chartRef = filepath.Join(opts.RepoRoot, dep.Chart)
+			}
+			cc := config.CompanionChart{
+				ChartRef:    chartRef,
+				Version:     dep.Version,
+				ReleaseName: dep.ReleaseName,
+			}
+			if dep.ValuesFile != "" {
+				cc.ValuesFile = filepath.Join(opts.RepoRoot, dep.ValuesFile)
+			}
+			flags.CompanionCharts = append(flags.CompanionCharts, cc)
+		}
+	}
+
 	// Wire phase reporting: deploy.Execute and RunTests call flags.OnPhase,
 	// which we forward to the matrix-level OnPhaseChange callback.
 	if opts.OnPhaseChange != nil {
