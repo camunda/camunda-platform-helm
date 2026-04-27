@@ -6,22 +6,22 @@ console:
   # https://hub.docker.com/r/camunda/console/tags
   image:
     repository: camunda/console
-    tag: 8.9-SNAPSHOT
-    digest: "sha256:b8b3ffc26a5fc8350cab76dd7a1f157be354e4484e4c70f18f3700933bef6608"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:40d43e46918e7fd2e1ab824018b11288fedadc1698712367fdd63fb13a87fc49"
 
 connectors:
   # https://hub.docker.com/r/camunda/connectors-bundle/tags
   image:
     repository: camunda/connectors-bundle
-    tag: SNAPSHOT
-    digest: "sha256:7227711e112271694f464f4954fbdc1096191128ca93ad2b93a0708f587f766c"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:dd1926f820c9fc7ab9a1c36c889317b0f956e723129545c2de122f5157ea5ff1"
 
 optimize:
   # https://hub.docker.com/r/camunda/optimize/tags
   image:
     repository: camunda/optimize
-    tag: 8-SNAPSHOT
-    digest: "sha256:f25035f225f35a612b33d3f28ec17b410b6826c46e8b77281d672e46e90e93af"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:ccc73bd4eaef0d00386effcd0ae9b663c57c560a2824df5b36027d7ca93309a8"
 
 #
 # Web Modeler
@@ -33,7 +33,7 @@ webModeler:
     image:
       repository: camunda/web-modeler-restapi
       tag: SNAPSHOT
-      digest: "sha256:29c77699508958a47cd811b37d7ff27ad164f336c149be1cbdd147b433288621"
+      digest: "sha256:90e3d8a655c612a41f1112283d9d22e382f561d6816dd909d7ce2d167f72788a"
 
   # https://hub.docker.com/r/camunda/web-modeler-websockets/tags
   websockets:
@@ -50,8 +50,8 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: SNAPSHOT
-    digest: "sha256:84a70f311c96e05ccb77e4942aa8c88a75f1fab4a73df2c962cf17972f161015"
+    tag: 8.10-SNAPSHOT
+    digest: "sha256:d744c40133d86d364aa30fd14a7b69968c95aa3479256bb0a4771be0f714a651"
 
 #
 # Identity
