@@ -42,8 +42,8 @@ get_prs_per_chart_dir () {
 # Note: GH CLI doesn't support this so we use the API call directly.
 # https://github.com/cli/cli/discussions/7097#discussioncomment-5229031
 get_issues_per_pr () {
-    pr_nubmer="${1}"
-    gh api graphql -F owner="${REPO_OWNER}" -F repo="${REPO_NAME}" -F pr="${pr_nubmer}" -f query='
+    pr_number="${1}"
+    gh api graphql -F owner="${REPO_OWNER}" -F repo="${REPO_NAME}" -F pr="${pr_number}" -f query='
         query ($owner: String!, $repo: String!, $pr: Int!) {
             repository(owner: $owner, name: $repo) {
                 pullRequest(number: $pr) {
@@ -94,34 +94,34 @@ echo "${chart_dirs}" | while read -r chart_dir; do
     # Update GH PRs and Issues with the chart version.
     # Labeling is best-effort: a single failure (non-PR reference, transient API
     # error, etc.) must not abort the post-release workflow.
-    get_prs_per_chart_dir "${chart_dir}" | while read pr_nubmer; do
+    get_prs_per_chart_dir "${chart_dir}" | while read -r pr_number; do
         # Commit messages may reference issues by #NNNN too; skip those.
         # The REST pulls endpoint 404s for issue numbers (gh pr view would
         # silently fall back to issue view, so it can't be used here).
-        if ! gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/${pr_nubmer}" --silent >/dev/null 2>&1; then
-            printf -- "- [#${pr_nubmer}] not a PR, skipping.\n"
+        if ! gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/${pr_number}" --silent >/dev/null 2>&1; then
+            printf -- "- [#${pr_number}] not a PR, skipping.\n"
             continue
         fi
         # Label PR.
-        printf "[PR ${pr_nubmer}] Labeling the PR with chart version label ${chart_version_label}"
-        if ! pr_edit_out="$(gh pr edit "${pr_nubmer}" --add-label "${app_version_label},${chart_version_label}" 2>&1)"; then
-            printf -- "\n- [PR ${pr_nubmer}] labeling failed, skipping: %s\n" "${pr_edit_out}"
+        printf "[PR ${pr_number}] Labeling the PR with chart version label ${chart_version_label}"
+        if ! pr_edit_out="$(gh pr edit "${pr_number}" --add-label "${app_version_label},${chart_version_label}" 2>&1)"; then
+            printf -- "\n- [PR ${pr_number}] labeling failed, skipping: %s\n" "${pr_edit_out}"
             continue
         fi
         printf -- " - %s\n" "${pr_edit_out}"
         # Label the PR's corresponding issue.
-        if ! issue_nubmers="$(get_issues_per_pr ${pr_nubmer})"; then
-            printf -- "- [PR ${pr_nubmer}] could not fetch linked issues, skipping.\n"
+        if ! issue_numbers="$(get_issues_per_pr "${pr_number}")"; then
+            printf -- "- [PR ${pr_number}] could not fetch linked issues, skipping.\n"
             continue
         fi
-        test -z "${issue_nubmers}" && {
-            printf -- "- PR no. ${pr_nubmer} has no corresponding issues.\n"
+        test -z "${issue_numbers}" && {
+            printf -- "- PR no. ${pr_number} has no corresponding issues.\n"
             continue
         }
-        echo -e "${issue_nubmers}" | while read issue_nubmer; do
-            printf -- "- [Issue ${issue_nubmer}] Labeling the issue with chart version label ${chart_version_label}"
-            if ! issue_edit_out="$(gh issue edit "${issue_nubmer}" --add-label "${app_version_label},${chart_version_label}" 2>&1)"; then
-                printf -- "\n- [Issue ${issue_nubmer}] labeling failed, skipping: %s\n" "${issue_edit_out}"
+        echo -e "${issue_numbers}" | while read -r issue_number; do
+            printf -- "- [Issue ${issue_number}] Labeling the issue with chart version label ${chart_version_label}"
+            if ! issue_edit_out="$(gh issue edit "${issue_number}" --add-label "${app_version_label},${chart_version_label}" 2>&1)"; then
+                printf -- "\n- [Issue ${issue_number}] labeling failed, skipping: %s\n" "${issue_edit_out}"
                 continue
             fi
             printf -- " - %s\n" "${issue_edit_out}"
