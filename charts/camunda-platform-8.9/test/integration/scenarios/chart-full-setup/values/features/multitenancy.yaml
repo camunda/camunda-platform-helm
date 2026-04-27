@@ -35,6 +35,11 @@ identity:
   externalDatabase:
     enabled: false
 
+optimize:
+  caches:
+    cloudTenantAuthorizations:
+      minFetchIntervalSeconds: 300
+
 connectors:
   env:
     - name: username
