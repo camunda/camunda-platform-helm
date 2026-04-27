@@ -319,3 +319,33 @@ func (s *MigrationDataJobTest) TestCustomTrustStoreConfiguration() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *MigrationDataJobTest) TestServiceAccount() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestServiceAccountDefault",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+				s.Require().Equal("camunda-platform-test-zeebe", job.Spec.Template.Spec.ServiceAccountName)
+			},
+		},
+		{
+			Name: "TestServiceAccountCustomName",
+			Values: map[string]string{
+				"orchestration.migration.data.enabled": "true",
+				"orchestration.serviceAccount.name":    "custom-sa",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+				s.Require().Equal("custom-sa", job.Spec.Template.Spec.ServiceAccountName)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

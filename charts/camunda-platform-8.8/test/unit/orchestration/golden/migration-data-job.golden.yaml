@@ -29,6 +29,7 @@ spec:
       annotations:
     spec:
       restartPolicy: OnFailure
+      serviceAccountName: camunda-platform-test-zeebe
       imagePullSecrets:
         []
       securityContext:
