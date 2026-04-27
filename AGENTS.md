@@ -56,6 +56,10 @@ make go.addlicense-run chartPath=charts/camunda-platform-8.10
 
 # Maintainer precommit chores
 make precommit.chores
+
+# Find values defined in values.yaml that are not referenced by any template
+# Build first: cd scripts/helm_unused_values && go build -o helm-unused-values
+./helm-unused-values charts/camunda-platform-8.10/templates
 ```
 
 ## Test Commands
@@ -168,6 +172,8 @@ make tools.asdf-install
 - `.github/AGENTS.md` — CI/CD architecture, repo structure, values files
 - `SKILLS.md` — deploy-camunda CLI patterns, kubectl usage
 - `STATE.md` — session continuity (gitignored, read on session start)
+- `helm-values-mcp/` — MCP server exposing chart values schema. Tools: `list_versions`, `list_components`, `search_configs`, `get_config_info`, `generate_values_example`.
+- `scripts/helm_unused_values/` — CLI to find values declared in `values.yaml` but never referenced in templates.
 
 ## Recommended Agent Workflow
 1. Select target chart version/component.
