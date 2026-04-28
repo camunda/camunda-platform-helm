@@ -173,6 +173,17 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           platforms: [gke]
+        - name: elasticsearch-self-signed
+          enabled: false
+          exclude: []
+          shortname: esss
+          auth: keycloak
+          flow: install
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-self-signed
+          platforms: [gke]
         - name: gateway-keycloak
           enabled: true
           exclude: []
