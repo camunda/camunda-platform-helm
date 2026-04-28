@@ -687,6 +687,7 @@ jobs:
           values-enterprise:           ${{ inputs.values-enterprise }}
           values-digest:               ${{ inputs.values-digest }}
           camunda-version-previous:    ${{ inputs.camunda-version-previous }}
+          upgrade-step:                "true"
         env:
           VAULT_ADDR:       ${{ secrets.VAULT_ADDR }}
           VAULT_ROLE_ID:    ${{ secrets.VAULT_ROLE_ID }}

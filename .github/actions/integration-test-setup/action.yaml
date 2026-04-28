@@ -64,6 +64,12 @@ inputs:
     description: Previous Camunda version used in upgrade-minor flow
     required: false
     default: ""
+  upgrade-step:
+    description: |
+      Set to "true" when called from the upgrade phase of an upgrade flow.
+      Passed through to test-type-vars so the current chart is used instead of the previous one.
+    required: false
+    default: "false"
 
 outputs:
   cluster-auth-token:
@@ -216,6 +222,7 @@ runs:
         values-digest: ${{ inputs.values-digest }}
         flow: ${{ inputs.flow }}
         camunda-version-previous: ${{ inputs.camunda-version-previous }}
+        upgrade-step: ${{ inputs.upgrade-step }}
 
     # ------------------------------------------------------------------
     # Docker Hub login (avoids rate limits for Helm dependency pulls)
