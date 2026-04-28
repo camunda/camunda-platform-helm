@@ -66,8 +66,7 @@ spec:
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks %s" .Values.operate.javaOpts | trim | quote }}
+            {{- include "camunda.java_tool_options_tls_env" (dict "Values" .Values "component" "operate" "truststorePath" "/usr/local/operate/certificates/externaldb.jks") | nindent 12 }}
             {{- else if .Values.operate.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.operate.javaOpts | quote }}
@@ -150,8 +149,7 @@ spec:
                   key: {{ include "opensearch.authExistingSecretKey" . | quote }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks %s" .Values.operate.javaOpts | trim | quote }}
+            {{- include "camunda.java_tool_options_tls_env" (dict "Values" .Values "component" "operate" "truststorePath" "/usr/local/operate/certificates/externaldb.jks") | nindent 12 }}
             {{- else if .Values.operate.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.operate.javaOpts | quote }}

@@ -1084,3 +1084,70 @@ func (s *statefulSetTest) TestContainerSetExtraVolumeClaimTemplates() {
 		return false
 	}(), "Expected to find extra PVC named 'test-extra-pvc' in volumeClaimTemplates")
 }
+
+func (s *statefulSetTest) TestZeebeJKSPasswordFromSecret() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret":               "es-tls",
+			"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+			"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	require.Contains(s.T(), output, "name: TRUSTSTORE_PASSWORD")
+	require.Contains(s.T(), output, "name: \"truststore-secret\"")
+	require.Contains(s.T(), output, "key: \"truststore-password\"")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/externaldb.jks")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+}
+
+func (s *statefulSetTest) TestZeebeJKSPasswordInline() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret":          "es-tls",
+			"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	require.Contains(s.T(), output, "name: TRUSTSTORE_PASSWORD")
+	require.Contains(s.T(), output, "value: \"changeit\"")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+}
+
+func (s *statefulSetTest) TestZeebeNoJKSOmitsPassword() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret": "es-tls",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	require.NotContains(s.T(), output, "name: TRUSTSTORE_PASSWORD")
+	require.NotContains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/externaldb.jks")
+}
+
+func (s *statefulSetTest) TestZeebeJKSEmitsExactlyOneTruststorePasswordEnv() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret":          "es-tls",
+			"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	count := strings.Count(output, "name: TRUSTSTORE_PASSWORD")
+	require.Equalf(s.T(), 1, count,
+		"Expected TRUSTSTORE_PASSWORD env var to appear exactly once; "+
+			"duplicate entries are rejected by AKS. Found %d.", count)
+}
