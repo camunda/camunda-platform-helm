@@ -95,6 +95,18 @@ integration:
           persistence: elasticsearch
           features: [rba]
           platforms: [gke]
+        - name: elasticsearch-self-signed-upgrade
+          enabled: false
+          exclude: []
+          shortname: esss
+          auth: keycloak
+          flow: upgrade-minor
+          features: [migrator]
+          infra-type:
+            gke: distroci
+          identity: keycloak
+          persistence: elasticsearch-self-signed
+          platforms: [gke]
         - name: keycloak-original
           enabled: false
           exclude: []
