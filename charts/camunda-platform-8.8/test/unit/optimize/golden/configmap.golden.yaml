@@ -19,6 +19,7 @@ data:
       enabled: true
       partitionCount: 3
       name: "zeebe-record"
+
     es:
       connection:
         nodes:
