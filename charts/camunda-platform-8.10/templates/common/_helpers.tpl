@@ -497,7 +497,7 @@ Web Modeler templates.
       {{- if eq .component "websockets" }}
         {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (include "webModeler.websocketContextPath" .context) -}}
       {{- else -}}
-        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (index .context.Values.webModeler "contextPath") -}}
+        {{- printf "%s://%s%s" $proto (tpl .context.Values.global.host .context) (or .context.Values.camundaHub.webModeler.contextPath .context.Values.webModeler.contextPath) -}}
       {{- end -}}
     {{- else -}}
       {{- if eq .component "websockets" -}}
@@ -598,7 +598,14 @@ Console templates.
 [camunda-platform] Console external URL.
 */}}
 {{- define "camundaPlatform.consoleExternalURL" }}
-  {{- printf "%s" (include "camundaPlatform.getExternalURL" (dict "component" "console" "context" .)) -}}
+  {{- if eq (include "camundaHub.consoleEnabled" .) "true" -}}
+    {{- if .Values.global.ingress.enabled -}}
+      {{- $proto := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+      {{- printf "%s://%s%s" $proto (tpl .Values.global.host .) (or .Values.camundaHub.console.contextPath .Values.console.contextPath) -}}
+    {{- else -}}
+      {{- printf "http://localhost:8087" -}}
+    {{- end -}}
+  {{- end -}}
 {{- end -}}
 
 
