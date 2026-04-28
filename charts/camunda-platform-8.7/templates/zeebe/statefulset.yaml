@@ -127,8 +127,7 @@ spec:
               value: {{ .Values.global.elasticsearch.prefix | quote }}
             {{- end }}
             {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
-            - name: JAVA_TOOL_OPTIONS
-              value: {{ printf "%s -Djavax.net.ssl.trustStore=/usr/local/zeebe/certificates/externaldb.jks" .Values.zeebe.javaOpts | trim | quote }}
+            {{- include "camunda.java_tool_options_tls_env" (dict "Values" .Values "component" "zeebe" "truststorePath" "/usr/local/zeebe/certificates/externaldb.jks" "javaOptsFirst" true) | nindent 12 }}
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.zeebe.javaOpts | quote }}

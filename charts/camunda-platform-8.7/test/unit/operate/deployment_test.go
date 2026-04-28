@@ -1038,3 +1038,92 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
+
+func (s *deploymentTemplateTest) TestOperateJKSPasswordFromSecret() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret":               "es-tls",
+			"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+			"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	require.Contains(s.T(), output, "name: TRUSTSTORE_PASSWORD")
+	require.Contains(s.T(), output, "name: \"truststore-secret\"")
+	require.Contains(s.T(), output, "key: \"truststore-password\"")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+}
+
+func (s *deploymentTemplateTest) TestOperateJKSPasswordInline() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret":       "es-tls",
+			"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	require.Contains(s.T(), output, "name: TRUSTSTORE_PASSWORD")
+	require.Contains(s.T(), output, "value: \"changeit\"")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+}
+
+func (s *deploymentTemplateTest) TestOperateNoJKSOmitsPassword() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret": "es-tls",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	require.NotContains(s.T(), output, "name: TRUSTSTORE_PASSWORD")
+	require.NotContains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStore=/usr/local/operate/certificates/externaldb.jks")
+}
+
+func (s *deploymentTemplateTest) TestOperateJKSEmitsExactlyOneTruststorePasswordEnv() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.elasticsearch.tls.existingSecret":          "es-tls",
+			"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	count := strings.Count(output, "name: TRUSTSTORE_PASSWORD")
+	// Operate has init + main containers, both call the helper, so we expect 2 declarations
+	// total (one per container). Locks the contract: any future change that doubles either
+	// will trip this assertion. Duplicates within a single container are rejected by AKS.
+	require.Equalf(s.T(), 2, count,
+		"Expected TRUSTSTORE_PASSWORD env var to appear exactly twice "+
+			"(init container + main container); duplicates within a container are "+
+			"rejected by AKS. Found %d.", count)
+}
+
+func (s *deploymentTemplateTest) TestOperateJKSCoexistenceWithLegacyJavaOptsWorkaround() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"operate.javaOpts":                                 "-Xmx2g -Djavax.net.ssl.trustStorePassword=oldworkaround",
+			"global.elasticsearch.tls.existingSecret":          "es-tls",
+			"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+
+	// Both args end up in JAVA_TOOL_OPTIONS; JVM resolves last-wins (= newpw via env var).
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=oldworkaround")
+	require.Contains(s.T(), output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+	require.Contains(s.T(), output, "value: \"newpw\"")
+}
