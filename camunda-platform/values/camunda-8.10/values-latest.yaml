@@ -27,9 +27,9 @@ optimize:
     tag: 8-SNAPSHOT
 
 webModeler:
-  # https://hub.docker.com/r/camunda/web-modeler-restapi
+  # https://hub.docker.com/r/camunda/hub
   image:
-    # renovate: datasource=docker depName=camunda/web-modeler-restapi
+    # renovate: datasource=docker depName=camunda/hub
     tag: SNAPSHOT
 
 #
