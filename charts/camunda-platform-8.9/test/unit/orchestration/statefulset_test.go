@@ -815,3 +815,356 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *StatefulSetTest) TestWithJKSSecretReference() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TLS with JKS secret reference emits password env and flag",
+			Values: map[string]string{
+				"orchestration.enabled":                              "true",
+				"global.opensearch.tls.existingSecret":               "os-tls-secret",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "- name: JAVA_TOOL_OPTIONS")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "secretKeyRef:")
+				require.Contains(t, output, "name: truststore-secret")
+				require.Contains(t, output, "key: truststore-password")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestWithJKSInlineSecret() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TLS with JKS inline secret emits password env with value and flag",
+			Values: map[string]string{
+				"orchestration.enabled":                         "true",
+				"global.opensearch.tls.existingSecret":          "os-tls-secret",
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "- name: JAVA_TOOL_OPTIONS")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "value: \"changeit\"")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestWithoutJKSConfig() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TLS without JKS omits password flag and env var",
+			Values: map[string]string{
+				"orchestration.enabled":                "true",
+				"global.opensearch.tls.existingSecret": "os-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "- name: JAVA_TOOL_OPTIONS")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.NotContains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotContains(t, output, "name: TRUSTSTORE_PASSWORD")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestRespectsComponentJavaOpts_NoJKS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Component javaOpts preserved with trustStore path only when no JKS",
+			Values: map[string]string{
+				"orchestration.enabled":                "true",
+				"orchestration.javaOpts":               "-Xmx512m -Xms256m",
+				"global.opensearch.tls.existingSecret": "os-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Xmx512m -Xms256m")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.NotContains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotContains(t, output, "name: TRUSTSTORE_PASSWORD")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestRespectsComponentJavaOpts_WithJKS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Component javaOpts preserved with trustStore path and password when JKS provided",
+			Values: map[string]string{
+				"orchestration.enabled":                              "true",
+				"orchestration.javaOpts":                             "-Xmx1g -Xms512m",
+				"global.opensearch.tls.existingSecret":               "os-tls-secret",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Xmx1g -Xms512m")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestWithJKSSecretReference_Elasticsearch() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Elasticsearch TLS with JKS secret reference emits password env and flag",
+			Values: map[string]string{
+				"orchestration.enabled":                                 "true",
+				"global.elasticsearch.tls.existingSecret":               "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "- name: JAVA_TOOL_OPTIONS")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "secretKeyRef:")
+				require.Contains(t, output, "name: truststore-secret")
+				require.Contains(t, output, "key: truststore-password")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestWithJKSInlineSecret_Elasticsearch() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Elasticsearch TLS with JKS inline secret emits password env with value and flag",
+			Values: map[string]string{
+				"orchestration.enabled":                            "true",
+				"global.elasticsearch.tls.existingSecret":          "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "- name: JAVA_TOOL_OPTIONS")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "value: \"changeit\"")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestWithoutJKSConfig_Elasticsearch() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Elasticsearch TLS without JKS omits password flag and env var",
+			Values: map[string]string{
+				"orchestration.enabled":                   "true",
+				"global.elasticsearch.tls.existingSecret": "es-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "- name: JAVA_TOOL_OPTIONS")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.NotContains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotContains(t, output, "name: TRUSTSTORE_PASSWORD")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestRespectsComponentJavaOpts_NoJKS_Elasticsearch() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Elasticsearch: Component javaOpts preserved with trustStore path only when no JKS",
+			Values: map[string]string{
+				"orchestration.enabled":                   "true",
+				"orchestration.javaOpts":                  "-Xmx512m -Xms256m",
+				"global.elasticsearch.tls.existingSecret": "es-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Xmx512m -Xms256m")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.NotContains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotContains(t, output, "name: TRUSTSTORE_PASSWORD")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestRespectsComponentJavaOpts_WithJKS_Elasticsearch() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Elasticsearch: Component javaOpts preserved with trustStore path and password when JKS provided",
+			Values: map[string]string{
+				"orchestration.enabled":                                 "true",
+				"orchestration.javaOpts":                                "-Xmx1g -Xms512m",
+				"global.elasticsearch.tls.existingSecret":               "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Xmx1g -Xms512m")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestJKSEmitsExactlyOneTruststorePasswordEnv() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Helper emits TRUSTSTORE_PASSWORD exactly once (no collision in normal use)",
+			Values: map[string]string{
+				"orchestration.enabled":                            "true",
+				"global.elasticsearch.tls.existingSecret":          "es-tls",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				count := strings.Count(output, "name: TRUSTSTORE_PASSWORD")
+				// Locks the contract: exactly one declaration per pod. Duplicate entries are
+				// rejected by the AKS API server, so any future change that doubles this up
+				// will trip this assertion. Customers must not also set this name via
+				// orchestration.env (documented in the helper docstring as a reserved name).
+				require.Equalf(t, 1, count,
+					"Expected TRUSTSTORE_PASSWORD env var to appear exactly once; "+
+						"duplicate entries are rejected by AKS. Found %d.", count)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestJKSCoexistenceWithLegacyJavaOptsWorkaround() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Migrating customer keeps trustStorePassword in javaOpts AND adds new jks block",
+			Values: map[string]string{
+				"orchestration.enabled":                            "true",
+				"orchestration.javaOpts":                           "-Xmx2g -Djavax.net.ssl.trustStorePassword=oldworkaround",
+				"global.elasticsearch.tls.existingSecret":          "es-tls",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Both args end up in JAVA_TOOL_OPTIONS; JVM resolves last-wins (= newpw via env var).
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=oldworkaround")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "value: \"newpw\"")
+				// Existing trustStore arg still emitted with no duplication
+				require.Equal(t, 1, strings.Count(output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks"))
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestJKSDoesNotFireForSecondaryStorageOnlyTLS() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "secondaryStorage TLS triggers truststore path injection but NOT password — documented limit",
+			Values: map[string]string{
+				"orchestration.enabled":                                                                  "true",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret":            "ssec-tls",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey":         "externaldb.jks",
+				// Customer also sets global jks.secret expecting it to apply — it does NOT for secondaryStorage-only TLS.
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "newpw",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				// Truststore path arg IS emitted (helper called via outer gating)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/")
+				// Password is NOT emitted because helper resolves only against global.<engine>.tls (which is empty here)
+				require.NotContains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.NotContains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *StatefulSetTest) TestJKSWithModernTlsSecretPattern() {
+	// 8.9 supports both legacy `tls.existingSecret` and the newer normalized
+	// `tls.secret.existingSecret` pattern. The helper must emit the JKS password
+	// for either one. Locks the fix from PR #5993 review.
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "OpenSearch via tls.secret.existingSecret + jks.secret.existingSecret",
+			Values: map[string]string{
+				"orchestration.enabled":                              "true",
+				"global.opensearch.tls.secret.existingSecret":        "os-tls-modern",
+				"global.opensearch.tls.secret.existingSecretKey":     "externaldb.jks",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "name: truststore-secret")
+				require.Contains(t, output, "key: truststore-password")
+			},
+		},
+		{
+			Name: "Elasticsearch via tls.secret.existingSecret + jks.secret.inlineSecret",
+			Values: map[string]string{
+				"orchestration.enabled":                            "true",
+				"global.elasticsearch.tls.secret.existingSecret":   "es-tls-modern",
+				"global.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "value: \"changeit\"")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

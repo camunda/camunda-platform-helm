@@ -274,6 +274,31 @@
                                             "default": "externaldb.jks"
                                         }
                                     }
+                                },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -387,6 +412,31 @@
                                             "type": "string",
                                             "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                             "default": "externaldb.jks"
+                                        }
+                                    }
+                                },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
                                         }
                                     }
                                 }

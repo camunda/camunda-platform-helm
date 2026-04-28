@@ -824,6 +824,179 @@ es:
 				require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 			},
 		},
+		{
+			Name: "TestOptimizeOpenSearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"identity.enabled":                                   "true",
+				"optimize.enabled":                                   "true",
+				"global.opensearch.tls.existingSecret":               "os-tls-secret",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststorePassword *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststorePassword = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotNil(s.T(), truststorePassword)
+				require.NotNil(s.T(), truststorePassword.ValueFrom)
+				require.NotNil(s.T(), truststorePassword.ValueFrom.SecretKeyRef)
+				require.Equal(s.T(), "truststore-secret", truststorePassword.ValueFrom.SecretKeyRef.Name)
+				require.Equal(s.T(), "truststore-password", truststorePassword.ValueFrom.SecretKeyRef.Key)
+			},
+		},
+		{
+			Name: "TestOptimizeOpenSearchTLSWithJKSInlineEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"identity.enabled":                              "true",
+				"optimize.enabled":                              "true",
+				"global.opensearch.tls.existingSecret":          "os-tls-secret",
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststorePassword *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststorePassword = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotNil(s.T(), truststorePassword)
+				require.Equal(s.T(), "changeit", truststorePassword.Value)
+			},
+		},
+		{
+			Name: "TestOptimizeOpenSearchTLSWithoutJKSDoesNotEmitPassword",
+			Values: map[string]string{
+				"identity.enabled":                     "true",
+				"optimize.enabled":                     "true",
+				"global.opensearch.tls.existingSecret": "os-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststoreFound bool
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststoreFound = true
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.False(s.T(), truststoreFound)
+			},
+		},
+		{
+			Name: "TestOptimizeElasticsearchTLSWithJKSSecretRefEmitsPasswordAndFlag",
+			Values: map[string]string{
+				"identity.enabled":                                      "true",
+				"optimize.enabled":                                      "true",
+				"global.elasticsearch.tls.existingSecret":               "es-tls-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststorePassword *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststorePassword = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.NotNil(s.T(), truststorePassword)
+				require.NotNil(s.T(), truststorePassword.ValueFrom)
+				require.NotNil(s.T(), truststorePassword.ValueFrom.SecretKeyRef)
+				require.Equal(s.T(), "truststore-secret", truststorePassword.ValueFrom.SecretKeyRef.Name)
+				require.Equal(s.T(), "truststore-password", truststorePassword.ValueFrom.SecretKeyRef.Key)
+			},
+		},
+		{
+			Name: "TestOptimizeElasticsearchTLSWithoutJKSDoesNotEmitPassword",
+			Values: map[string]string{
+				"identity.enabled":                        "true",
+				"optimize.enabled":                        "true",
+				"global.elasticsearch.tls.existingSecret": "es-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				var truststoreFound bool
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+					if env[i].Name == "TRUSTSTORE_PASSWORD" {
+						truststoreFound = true
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.False(s.T(), truststoreFound)
+			},
+		},
+		{
+			Name: "TestOptimizeOpenSearchTLSRespectsJavaOptsWithAndWithoutJKS",
+			Values: map[string]string{
+				"identity.enabled":                     "true",
+				"optimize.enabled":                     "true",
+				"optimize.javaOpts":                    "-Xmx512m -Xms256m",
+				"global.opensearch.tls.existingSecret": "os-tls-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				var javaToolOptions *corev1.EnvVar
+				for i := range env {
+					if env[i].Name == "JAVA_TOOL_OPTIONS" {
+						javaToolOptions = &env[i]
+					}
+				}
+				require.NotNil(s.T(), javaToolOptions)
+				require.Contains(s.T(), javaToolOptions.Value, "-Xmx512m -Xms256m")
+				require.Contains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.NotContains(s.T(), javaToolOptions.Value, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+			},
+		},
 	}
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
@@ -1295,6 +1468,51 @@ func (s *DeploymentTemplateTest) TestDatabaseOverrides() {
 						},
 					},
 				})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+func (s *DeploymentTemplateTest) TestOptimizeJKSWithModernTlsSecretPattern() {
+	// 8.9 supports both legacy `tls.existingSecret` and the newer normalized
+	// `tls.secret.existingSecret` pattern. Locks the fix from PR #5993 review.
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "Optimize OpenSearch via tls.secret.existingSecret + jks.secret.existingSecret",
+			Values: map[string]string{
+				"identity.enabled":                                   "true",
+				"optimize.enabled":                                   "true",
+				"global.opensearch.tls.secret.existingSecret":        "os-tls-modern",
+				"global.opensearch.tls.secret.existingSecretKey":     "externaldb.jks",
+				"global.opensearch.tls.jks.secret.existingSecret":    "truststore-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey": "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "name: truststore-secret")
+				require.Contains(t, output, "key: truststore-password")
+			},
+		},
+		{
+			Name: "Optimize Elasticsearch via tls.secret.existingSecret + jks.secret.inlineSecret",
+			Values: map[string]string{
+				"identity.enabled":                                  "true",
+				"optimize.enabled":                                  "true",
+				"global.elasticsearch.tls.secret.existingSecret":    "es-tls-modern",
+				"global.elasticsearch.tls.secret.existingSecretKey": "externaldb.jks",
+				"global.elasticsearch.tls.jks.secret.inlineSecret":  "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				require.Contains(t, output, "-Djavax.net.ssl.trustStore=/optimize/certificates/externaldb.jks")
+				require.Contains(t, output, "-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)")
+				require.Contains(t, output, "name: TRUSTSTORE_PASSWORD")
+				require.Contains(t, output, "value: \"changeit\"")
 			},
 		},
 	}
