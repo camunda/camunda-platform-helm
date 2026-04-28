@@ -77,9 +77,6 @@ optimize:
     key: workload
     operator: Equal
     value: standard
-  resources:
-    requests:
-      cpu: 2000m
 
 # Web Modeler.
 webModeler:
@@ -118,11 +115,6 @@ orchestration:
     key: workload
     operator: Equal
     value: standard
-  resources:
-    requests:
-      cpu: 4000m
-    limits:
-      cpu: 4000m
 zeebeGateway:
   nodeSelector:
     workload: standard
