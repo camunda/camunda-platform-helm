@@ -59,7 +59,7 @@ data:
             - name: "Console"
               id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
               type: public
-              root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+              root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.console.redirectUrl .Values.global.identity.auth.console.redirectUrl) $ | quote }}
               redirect-uris:
                 - "/"
           apis:
@@ -154,7 +154,7 @@ data:
             - name: "Web Modeler"
               id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
               type: public
-              root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+              root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.webModeler.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
               redirect-uris:
                 - "/login-callback"
           apis:
@@ -210,7 +210,7 @@ data:
           secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
         {{- end }}
         console:
-          root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+          root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.console.redirectUrl .Values.global.identity.auth.console.redirectUrl) $ | quote }}
         {{- if .Values.optimize.enabled }}
         optimize:
           secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
@@ -220,7 +220,7 @@ data:
           secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
         {{- end }}
         webmodeler:
-          root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+          root-url: {{ tpl (or .Values.global.identity.auth.camundaHub.webModeler.redirectUrl .Values.global.identity.auth.webModeler.redirectUrl) $ | quote }}
       clients:
       {{- if .Values.global.identity.auth.admin.enabled }}
         - id: {{ .Values.global.identity.auth.admin.clientId }}
@@ -278,11 +278,11 @@ data:
             {{- if .Values.optimize.enabled }}
             - Optimize
             {{- end }}
-            {{- if .Values.webModeler.enabled }}
+            {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
             - Web Modeler
             - Web Modeler Admin
             {{- end }}
-            {{- if .Values.console.enabled }}
+            {{- if eq (include "camundaHub.consoleEnabled" .) "true" }}
             - Console
             {{- end }}
             {{- if eq (include "orchestration.authMethod" .) "oidc" }}

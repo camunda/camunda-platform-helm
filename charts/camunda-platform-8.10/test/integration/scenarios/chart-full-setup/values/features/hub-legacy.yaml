@@ -1,0 +1,58 @@
+# Hub Legacy feature layer — uses ONLY legacy console.*/webModeler.* keys.
+# Layer 6: Feature - Validates backward compatibility when users do NOT adopt camundaHub.
+#
+# This layer disables camundaHub and re-provides all Web Modeler and Console config
+# under legacy keys (matching what base.yaml provides via camundaHub.*).
+# The deploy-camunda deep merge will override base.yaml's camundaHub section.
+
+camundaHub:
+  enabled: false
+
+console:
+  enabled: true
+  contextPath: "/"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  restapi:
+    javaOpts: >-
+      -XX:MaxRAMPercentage=80.0
+      -XX:+TieredCompilation
+      -XX:TieredStopAtLevel=1
+      -XX:+UseG1GC
+      -XX:+UseStringDeduplication
+    # Wait for PostgreSQL to accept connections before starting restapi.
+    initContainers:
+      - name: wait-for-postgresql
+        image: busybox:1.36
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for PostgreSQL at {{ .Release.Name }}-postgresql-web-modeler:5432 ..."
+            until nc -z "{{ .Release.Name }}-postgresql-web-modeler" 5432; do
+              sleep 2
+            done
+            echo "PostgreSQL is ready"
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      failureThreshold: 30
+      timeoutSeconds: 1
+    mail:
+      fromAddress: noreply@example.com

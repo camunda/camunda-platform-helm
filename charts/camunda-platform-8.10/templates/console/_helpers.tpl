@@ -1,7 +1,10 @@
 {{- define "console.fullname" -}}
+    {{/* mustMergeOverwrite is used instead of or because camundaHub.console has intermediate
+         sub-maps that make it truthy even when no overrides are set. Deep-merging empty maps
+         is a no-op, preserving all legacy values. */}}
     {{- include "camundaPlatform.componentFullname" (dict
         "componentName" "console"
-        "componentValues" .Values.console
+        "componentValues" (mustMergeOverwrite (deepCopy .Values.console) .Values.camundaHub.console)
         "context" $
     ) -}}
 {{- end -}}
@@ -42,5 +45,5 @@ Get the image pull secrets.
 [console] Define variables related to authentication.
 */}}
 {{- define "console.authAudience" -}}
-  {{- .Values.global.identity.auth.console.audience | default "console-api" -}}
+  {{- (or .Values.global.identity.auth.camundaHub.console.audience .Values.global.identity.auth.console.audience) | default "console-api" -}}
 {{- end -}}

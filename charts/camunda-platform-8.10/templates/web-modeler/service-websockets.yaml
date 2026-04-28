@@ -1,4 +1,4 @@
-{{- if .Values.webModeler.enabled -}}
+{{- if eq (include "camundaHub.webModelerEnabled" .) "true" -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,13 +9,13 @@ metadata:
     {{- if .Values.global.annotations}}
       {{- toYaml .Values.global.annotations | nindent 4 }}
     {{- end }}
-    {{- if .Values.webModeler.websockets.service.annotations}}
-      {{- toYaml .Values.webModeler.websockets.service.annotations | nindent 4 }}
+    {{- if (or .Values.camundaHub.webModeler.websockets.service.annotations .Values.webModeler.websockets.service.annotations)}}
+      {{- toYaml (or .Values.camundaHub.webModeler.websockets.service.annotations .Values.webModeler.websockets.service.annotations) | nindent 4 }}
     {{- end }}
 spec:
-  type: {{ .Values.webModeler.websockets.service.type }}
+  type: {{ (or .Values.camundaHub.webModeler.websockets.service.type .Values.webModeler.websockets.service.type) }}
   ports:
-    - port: {{ .Values.webModeler.websockets.service.port }}
+    - port: {{ (or .Values.camundaHub.webModeler.websockets.service.port .Values.webModeler.websockets.service.port) }}
       name: http
       targetPort: 8060
       protocol: TCP

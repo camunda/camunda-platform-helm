@@ -570,6 +570,19 @@ global:
         redirectUrl: "http://localhost:8070"
 
       #####################
+      # Camunda Hub (alias for Console + WebModeler auth)
+      #####################
+
+      ## @extra global.identity.auth.camundaHub auth configuration alias for Camunda Hub.
+      ## When camundaHub.enabled is true, these values override the legacy console and webModeler
+      ## auth sections above. If not set, falls back to the legacy sections.
+      camundaHub:
+        ## @skip global.identity.auth.camundaHub.console Console auth overrides when using camundaHub.
+        console: {}
+        ## @skip global.identity.auth.camundaHub.webModeler WebModeler auth overrides when using camundaHub.
+        webModeler: {}
+
+      #####################
       # Optimize
       #####################
       ## @extra global.identity.auth.optimize configuration to configure Optimize authentication specifics on global level, which can be accessed by other components
@@ -1525,6 +1538,80 @@ console:
   dnsPolicy: ""
   ## @param console.dnsConfig https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
   dnsConfig: {}
+
+###############################################################################
+#  #####                                              #     #
+# #     #   ##   #    # #    # #    # #####    ##     #     # #    # #####
+# #        #  #  ##  ## #    # ##   # #    #  #  #    #     # #    # #    #
+# #       #    # # ## # #    # # #  # #    # #    #   ####### #    # #####
+# #       ###### #    # #    # #  # # #    # ######   #     # #    # #    #
+# #     # #    # #    # #    # #   ## #    # #    #   #     # #    # #    #
+#  #####  #    # #    #  ####  #    # #####  #    #   #     #  ####  #####
+###############################################################################
+## @section CamundaHub Parameters
+## @extra camundaHub configuration for the consolidated Console + WebModeler component.
+## When camundaHub.enabled is true, both Console and WebModeler are deployed as sub-components
+## of Camunda Hub. The legacy top-level console.* and webModeler.* keys still work for
+## backward compatibility but emit deprecation warnings when camundaHub is also enabled.
+camundaHub:
+  ## @param camundaHub.enabled if true, enables Camunda Hub which deploys both Console and WebModeler as sub-components.
+  ## When enabled, this takes precedence over the individual console.enabled and webModeler.enabled flags.
+  enabled: false
+
+  ## @skip camundaHub.console Override values for the Console sub-component when using Camunda Hub.
+  ## Any values set here take precedence over the legacy top-level console.* values.
+  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
+  ## To override a value, set it explicitly under camundaHub.console (e.g. camundaHub.console.replicas: 3).
+  ##
+  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
+  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
+  ## camundaHub.console.readinessProbe.enabled=false will NOT disable the probe if the
+  ## legacy console.readinessProbe.enabled is true. Use the legacy keys directly for
+  ## falsy overrides.
+  console:
+    image: {}
+    tls: {}
+    keycloak: {}
+    service: {}
+    startupProbe: {}
+    readinessProbe: {}
+    livenessProbe: {}
+    metrics: {}
+    serviceAccount: {}
+
+  ## @skip camundaHub.webModeler Override values for the WebModeler sub-component when using Camunda Hub.
+  ## Any values set here take precedence over the legacy top-level webModeler.* values.
+  ## Only intermediate maps are defined so `or` falls through to legacy values by default.
+  ## To override a value, set it explicitly under camundaHub.webModeler (e.g. camundaHub.webModeler.contextPath: /modeler).
+  ##
+  ## NOTE: The `or` function returns the first truthy value. This means camundaHub overrides
+  ## cannot set a value to a falsy form (false, 0, or ""). For example, setting
+  ## camundaHub.webModeler.restapi.readinessProbe.enabled=false will NOT disable the probe
+  ## if the legacy webModeler.restapi.readinessProbe.enabled is true. Use the legacy keys
+  ## directly for falsy overrides.
+  webModeler:
+    image: {}
+    security:
+      authentication: {}
+    restapi:
+      image: {}
+      externalDatabase: {}
+      mail: {}
+      pusher: {}
+      startupProbe: {}
+      readinessProbe: {}
+      livenessProbe: {}
+      metrics: {}
+      service: {}
+      logging: {}
+    websockets:
+      image: {}
+      startupProbe: {}
+      readinessProbe: {}
+      livenessProbe: {}
+      service: {}
+    serviceAccount: {}
+    persistence: {}
 
 #######################################################################
 #     #               #     #
