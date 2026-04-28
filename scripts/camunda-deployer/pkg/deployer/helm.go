@@ -170,6 +170,16 @@ func formatArgs(args []string) string {
 // in the same namespace as the main Camunda chart. It uses helm upgrade --install
 // with --wait to ensure the chart is fully ready before returning.
 func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.Options) error {
+	// Ensure the Helm repo is registered when a repo-style chart ref is used.
+	if cc.RepoName != "" && cc.RepoURL != "" {
+		if err := helm.RepoAdd(ctx, cc.RepoName, cc.RepoURL); err != nil {
+			return fmt.Errorf("companion chart %q: repo add failed: %w", cc.ReleaseName, err)
+		}
+		if err := helm.RepoUpdate(ctx); err != nil {
+			return fmt.Errorf("companion chart %q: repo update failed: %w", cc.ReleaseName, err)
+		}
+	}
+
 	args := []string{
 		"upgrade", "--install",
 		cc.ReleaseName,

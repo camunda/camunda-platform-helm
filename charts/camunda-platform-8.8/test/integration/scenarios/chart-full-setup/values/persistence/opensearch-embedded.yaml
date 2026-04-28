@@ -3,7 +3,7 @@
 #
 # Connects to the OpenSearch companion chart deployed as a separate Helm release
 # by deploy-camunda before the main Camunda chart. The companion chart values
-# are in charts/opensearch-3/ci-values.yaml (security disabled, single node).
+# are in test/integration/companion-values/opensearch.yaml (security disabled, single node).
 
 global:
   elasticsearch:

@@ -244,6 +244,12 @@ type CompanionChart struct {
 	ReleaseName string
 	// ValuesFile is the absolute path to a values file. Empty means use chart defaults.
 	ValuesFile string
+	// RepoName is the Helm repository name to register before installing
+	// (e.g., "opensearch"). Empty means no repo registration is needed.
+	RepoName string
+	// RepoURL is the Helm repository URL
+	// (e.g., "https://opensearch-project.github.io/helm-charts/").
+	RepoURL string
 }
 
 // ParseDebugFlag parses a debug flag value in the format "component" or "component:port".

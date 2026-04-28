@@ -432,6 +432,8 @@ func toDeployerCompanionCharts(charts []config.CompanionChart) []types.Companion
 			Version:     c.Version,
 			ReleaseName: c.ReleaseName,
 			ValuesFile:  c.ValuesFile,
+			RepoName:    c.RepoName,
+			RepoURL:     c.RepoURL,
 		}
 	}
 	return result

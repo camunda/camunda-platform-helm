@@ -179,6 +179,8 @@ integration:
             - chart: opensearch/opensearch
               version: "3.6.0"
               release-name: opensearch
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
         - name: documentstore
           enabled: true

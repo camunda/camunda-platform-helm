@@ -1495,20 +1495,24 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 
 	// Wire companion chart dependencies from ci-test-config.yaml.
 	// Values file paths are resolved relative to the repo root.
-	// Chart references are passed through as-is (remote repo/chart names)
-	// or resolved to absolute paths (local directories).
+	// Chart references are resolved to absolute paths when they point to an
+	// existing local directory under the repo root; otherwise they are passed
+	// through as-is as remote repo/chart names.
 	if len(entry.Dependencies) > 0 {
 		for _, dep := range entry.Dependencies {
 			chartRef := dep.Chart
-			// If the chart reference looks like a local path (contains a slash
-			// but no repo prefix like "reponame/chartname"), resolve it.
-			if !strings.Contains(dep.Chart, "/") || strings.HasPrefix(dep.Chart, ".") || strings.HasPrefix(dep.Chart, "charts/") {
-				chartRef = filepath.Join(opts.RepoRoot, dep.Chart)
+			version := dep.Version
+			localChartPath := filepath.Join(opts.RepoRoot, dep.Chart)
+			if info, err := os.Stat(localChartPath); err == nil && info.IsDir() {
+				chartRef = localChartPath
+				version = "" // --version is only meaningful for remote charts
 			}
 			cc := config.CompanionChart{
 				ChartRef:    chartRef,
-				Version:     dep.Version,
+				Version:     version,
 				ReleaseName: dep.ReleaseName,
+				RepoName:    dep.RepoName,
+				RepoURL:     dep.RepoURL,
 			}
 			if dep.ValuesFile != "" {
 				cc.ValuesFile = filepath.Join(opts.RepoRoot, dep.ValuesFile)
