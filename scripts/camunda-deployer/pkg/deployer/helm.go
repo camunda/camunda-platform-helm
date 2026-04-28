@@ -9,6 +9,15 @@ import (
 	"strings"
 )
 
+// Package-level function variables for helm operations. These default to the
+// real implementations but can be swapped in tests to avoid shelling out to
+// the helm binary.
+var (
+	helmRun        = helm.Run
+	helmRepoAdd    = helm.RepoAdd
+	helmRepoUpdate = helm.RepoUpdate
+)
+
 // HelmError is a structured error for helm command failures that separates
 // the high-level failure reason from the full command details. This allows
 // consumers to display a short summary or the full details as needed.
@@ -129,7 +138,7 @@ func upgradeInstall(ctx context.Context, o types.Options) error {
 	}
 
 	// Execute via thin helm wrapper
-	err := helm.Run(ctx, args, "")
+	err := helmRun(ctx, args, "")
 	if err != nil {
 		return &HelmError{
 			Reason:  "helm upgrade --install failed",
@@ -172,10 +181,10 @@ func formatArgs(args []string) string {
 func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.Options) error {
 	// Ensure the Helm repo is registered when a repo-style chart ref is used.
 	if cc.RepoName != "" && cc.RepoURL != "" {
-		if err := helm.RepoAdd(ctx, cc.RepoName, cc.RepoURL); err != nil {
+		if err := helmRepoAdd(ctx, cc.RepoName, cc.RepoURL); err != nil {
 			return fmt.Errorf("companion chart %q: repo add failed: %w", cc.ReleaseName, err)
 		}
-		if err := helm.RepoUpdate(ctx); err != nil {
+		if err := helmRepoUpdate(ctx); err != nil {
 			return fmt.Errorf("companion chart %q: repo update failed: %w", cc.ReleaseName, err)
 		}
 	}
@@ -207,7 +216,7 @@ func deployCompanionChart(ctx context.Context, cc types.CompanionChart, o types.
 		args = append(args, "-f", cc.ValuesFile)
 	}
 
-	err := helm.Run(ctx, args, "")
+	err := helmRun(ctx, args, "")
 	if err != nil {
 		return &HelmError{
 			Reason:  fmt.Sprintf("companion chart %q helm upgrade --install failed", cc.ReleaseName),
