@@ -194,8 +194,10 @@ $RELEASE-zeebe-0/1/2          # Orchestration StatefulSet
 $RELEASE-connectors-<hash>    # Connectors
 $RELEASE-identity-<hash>      # Identity
 $RELEASE-optimize-<hash>      # Optimize
-$RELEASE-web-modeler-restapi-<hash>
-$RELEASE-web-modeler-websockets-<hash>
+$RELEASE-web-modeler-restapi-<hash>     # Pre-8.10
+$RELEASE-web-modeler-websockets-<hash>  # Pre-8.10
+$RELEASE-hub-<hash>                     # 8.10+
+$RELEASE-hub-websockets-<hash>          # 8.10+
 $RELEASE-console-<hash>
 $RELEASE-keycloak-0
 $RELEASE-postgresql-0

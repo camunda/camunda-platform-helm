@@ -2758,7 +2758,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be used to set the Docker image tag for the WebModeler images",
-                            "default": "8.9.0"
+                            "default": "8.10.0-alpha1-rc1"
                         },
                         "pullSecrets": {
                             "type": "array",
@@ -2797,7 +2797,7 @@
                                 "repository": {
                                     "type": "string",
                                     "description": "defines which image repository to use for the restapi Docker image",
-                                    "default": "camunda/web-modeler-restapi"
+                                    "default": "camunda/hub"
                                 },
                                 "digest": {
                                     "type": "string",
@@ -3352,7 +3352,7 @@
                                 "repository": {
                                     "type": "string",
                                     "description": "defines which image repository to use for the websockets Docker image",
-                                    "default": "camunda/web-modeler-websockets"
+                                    "default": "camunda/hub-websockets"
                                 },
                                 "digest": {
                                     "type": "string",

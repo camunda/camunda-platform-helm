@@ -57,6 +57,13 @@ func TestDeploymentTemplate(t *testing.T) {
 	}
 }
 
+func (s *DeploymentTemplateTest) imageRepo() string {
+	if s.component == "restapi" {
+		return "camunda/hub"
+	}
+	return "camunda/hub-" + s.component
+}
+
 func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 	testCases := []testhelpers.TestCase{
 		{
@@ -249,7 +256,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				expectedContainerImage := "camunda/web-modeler-" + s.component + ":a.b.c"
+				expectedContainerImage := s.imageRepo() + ":a.b.c"
 				containers := deployment.Spec.Template.Spec.Containers
 				s.Require().Equal(1, len(containers))
 				s.Require().Equal(expectedContainerImage, containers[0].Image)
@@ -269,7 +276,7 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
 				// then
-				expectedContainerImage := "camunda/web-modeler-" + s.component + ":a.b.c"
+				expectedContainerImage := s.imageRepo() + ":a.b.c"
 				containers := deployment.Spec.Template.Spec.Containers
 				s.Require().Equal(1, len(containers))
 				s.Require().Equal(expectedContainerImage, containers[0].Image)

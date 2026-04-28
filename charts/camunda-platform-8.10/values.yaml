@@ -1638,8 +1638,8 @@ webModeler:
     ## @param webModeler.image.registry can be used to set the Docker registry for the WebModeler images (overwrites global.image.registry)
     registry: ""
     ## @param webModeler.image.tag can be used to set the Docker image tag for the WebModeler images
-    # renovate: datasource=docker depName=camunda/web-modeler-restapi
-    tag: 8.9.0
+    # renovate: datasource=docker depName=camunda/hub
+    tag: 8.10.0-alpha1-rc1
     ## @param webModeler.image.pullSecrets can be used to configure image pull secrets, see https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
 
@@ -1670,7 +1670,7 @@ webModeler:
     ## @extra webModeler.restapi.image configuration of the restapi Docker image
     image:
       ## @param webModeler.restapi.image.repository defines which image repository to use for the restapi Docker image
-      repository: camunda/web-modeler-restapi
+      repository: camunda/hub
       ## @param webModeler.restapi.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
       digest: ""
 
@@ -1933,7 +1933,7 @@ webModeler:
     ## @extra webModeler.websockets.image configuration of the websockets Docker image
     image:
       ## @param webModeler.websockets.image.repository defines which image repository to use for the websockets Docker image
-      repository: camunda/web-modeler-websockets
+      repository: camunda/hub-websockets
       ## @param webModeler.websockets.image.digest can be used to set image digest (overrides tag if set, e.g. "sha256:abcd...")
       digest: ""
 
