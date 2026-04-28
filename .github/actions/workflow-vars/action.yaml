@@ -158,7 +158,15 @@ runs:
       echo "OPTIMIZE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-optimize" | tee -a $GITHUB_ENV
       echo "OPERATE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-operate" | tee -a $GITHUB_ENV
       echo "TASKLIST_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-tasklist" | tee -a $GITHUB_ENV
-      echo "FLOW=$FLOW" | tee -a $GITHUB_ENV
+      # For modular-upgrade-minor, the upgrade step must use the same FLOW value
+      # that was used during install (i.e. "install") so that index prefixes match.
+      # The install step creates indices with FLOW=install; if the upgrade step used
+      # FLOW=modular-upgrade-minor, it would look for non-existent indices.
+      if [[ "${{ inputs.setup-flow }}" == 'modular-upgrade-minor' ]]; then
+        echo "FLOW=install" | tee -a $GITHUB_ENV
+      else
+        echo "FLOW=$FLOW" | tee -a $GITHUB_ENV
+      fi
       keycloakRealm="${GITHUB_WORKFLOW_JOB_ID}-realm"
       export KEYCLOAK_REALM=$keycloakRealm
       echo "KEYCLOAK_REALM=$KEYCLOAK_REALM" | tee -a $GITHUB_ENV

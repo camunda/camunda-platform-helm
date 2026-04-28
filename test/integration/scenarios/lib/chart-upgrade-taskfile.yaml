@@ -67,6 +67,7 @@ tasks:
         
         MERGED_VALUES=$(cd "$REPO_ROOT/scripts/deploy-camunda" && go run . prepare-values \
           --scenario-path "$SCENARIO_DIR" \
+          --scenario "${TEST_VALUES_SCENARIO:-chart-full-setup}" \
           ${TEST_IDENTITY:+--identity "${TEST_IDENTITY}"} \
           ${TEST_PERSISTENCE:+--persistence "${TEST_PERSISTENCE}"} \
           ${TEST_PLATFORM:+--test-platform "${TEST_PLATFORM}"} \

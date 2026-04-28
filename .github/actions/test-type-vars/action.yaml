@@ -15,6 +15,13 @@ inputs:
     description: Flow type, e.g., install, upgrade-patch, upgrade-minor
   camunda-version-previous:
     description: Previous Camunda version, e.g., 8.7
+  upgrade-step:
+    description: |
+      Set to "true" when called from the upgrade phase of an upgrade flow.
+      When false (default), upgrade-minor uses the previous chart version for the install phase.
+      When true, the current chart-dir is used so helm upgrade deploys the new version.
+    required: false
+    default: "false"
 outputs:
   unitTestEnabled:
     description: Should the unit test be executed or not.
@@ -33,7 +40,10 @@ runs:
         matrix_file="charts/${{ inputs.chart-dir }}/test/ci-test-config.yaml"
 
         # Chart path.
-        if [[ "${{ inputs.flow }}" == "upgrade-minor" && -n "${{ inputs.camunda-version-previous }}" ]]; then
+        # For upgrade-minor, the install step deploys the previous chart version,
+        # but the upgrade step must use the current (target) chart so helm upgrade
+        # actually moves to the new version.
+        if [[ "${{ inputs.flow }}" == "upgrade-minor" && -n "${{ inputs.camunda-version-previous }}" && "${{ inputs.upgrade-step }}" != "true" ]]; then
           chart_path="charts/camunda-platform-${{ inputs.camunda-version-previous }}"
         else
           chart_path="charts/${{ inputs.chart-dir }}"

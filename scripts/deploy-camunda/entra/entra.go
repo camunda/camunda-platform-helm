@@ -214,7 +214,8 @@ func graphGet(ctx context.Context, client *http.Client, token, path string) ([]b
 type retryPredicate func(statusCode int, body []byte, err error) bool
 
 // defaultRetryable retries on transport errors and the statuses Graph commonly
-// returns while propagating a newly-created object: 404, 408, 429, and 5xx.
+// returns while propagating a newly-created object or under concurrent
+// mutation: 404, 408, 409, 429, and 5xx.
 // Terminal statuses (400, 401, 403) are treated as caller errors.
 func defaultRetryable(statusCode int, _ []byte, err error) bool {
 	if err != nil {
@@ -224,6 +225,8 @@ func defaultRetryable(statusCode int, _ []byte, err error) bool {
 	case statusCode == http.StatusNotFound:
 		return true
 	case statusCode == http.StatusRequestTimeout:
+		return true
+	case statusCode == http.StatusConflict: // Directory_ConcurrencyViolation
 		return true
 	case statusCode == http.StatusTooManyRequests:
 		return true

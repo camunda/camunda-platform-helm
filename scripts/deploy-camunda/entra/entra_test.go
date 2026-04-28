@@ -424,6 +424,56 @@ func TestRotateCredentials_GivesUpAfterMaxAttempts(t *testing.T) {
 	}
 }
 
+// TestRotateCredentials_RetriesOn409ThenSucceeds verifies that addPassword
+// is retried when Graph returns 409 Directory_ConcurrencyViolation (a
+// transient error caused by concurrent tenant mutations), and that the
+// rotated secret is returned once the conflict clears.
+func TestRotateCredentials_RetriesOn409ThenSucceeds(t *testing.T) {
+	shrinkRetryTimings(t)
+
+	var addAttempts int32
+	const flakyAttempts int32 = 2
+
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-conflict": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]interface{}{
+				"passwordCredentials": []map[string]string{},
+			})
+		},
+		"POST /applications/obj-conflict/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			n := atomic.AddInt32(&addAttempts, 1)
+			if n <= flakyAttempts {
+				jsonResponse(w, 409, map[string]interface{}{
+					"error": map[string]string{
+						"code":    "Directory_ConcurrencyViolation",
+						"message": "Error due to concurrent requests being made to the tenant.",
+					},
+				})
+				return
+			}
+			jsonResponse(w, 201, map[string]string{
+				"secretText": "conflict-resolved-secret",
+			})
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	graphBaseURL = srv.URL
+	defer func() { graphBaseURL = origGraph }()
+
+	secret, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-conflict")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if secret != "conflict-resolved-secret" {
+		t.Errorf("secret = %q, want %q", secret, "conflict-resolved-secret")
+	}
+	if got := atomic.LoadInt32(&addAttempts); got != flakyAttempts+1 {
+		t.Errorf("addPassword attempts = %d, want %d (retry loop did not retry through 409s)", got, flakyAttempts+1)
+	}
+}
+
 // TestRotateCredentials_DoesNotRetry401 verifies terminal auth errors fail
 // fast rather than burning the retry budget.
 func TestRotateCredentials_DoesNotRetry401(t *testing.T) {
