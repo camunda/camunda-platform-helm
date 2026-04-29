@@ -523,7 +523,12 @@ jobs:
           exit 1
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
-        if: inputs.helmChartVersion == ''
+        # For upgrade flows, the upgrade job runs the full two-step orchestration
+        # (install previous version + upgrade to current) via deploy-camunda matrix run.
+        # The install job only deploys for plain `install` flow; for upgrade-patch /
+        # upgrade-minor it stops after pre-install setup so the upgrade job can take
+        # over a clean (but pre-secret-configured) namespace.
+        if: inputs.helmChartVersion == '' && inputs.flow == 'install'
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
