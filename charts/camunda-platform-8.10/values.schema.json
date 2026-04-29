@@ -250,21 +250,6 @@
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.enabled or orchestration.data.secondaryStorage.elasticsearch.tls) if true, enable tls for external elasticsearch",
                                     "default": false
                                 },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
-                                            "default": "externaldb.jks"
-                                        }
-                                    }
-                                },
                                 "jks": {
                                     "type": "object",
                                     "properties": {
@@ -287,6 +272,21 @@
                                                     "default": ""
                                                 }
                                             }
+                                        }
+                                    }
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
+                                            "default": "externaldb.jks"
                                         }
                                     }
                                 }
@@ -385,21 +385,6 @@
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.enabled or orchestration.data.secondaryStorage.opensearch.tls) if true, enable tls for external opensearch",
                                     "default": false
                                 },
-                                "secret": {
-                                    "type": "object",
-                                    "properties": {
-                                        "existingSecret": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
-                                            "default": ""
-                                        },
-                                        "existingSecretKey": {
-                                            "type": "string",
-                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
-                                            "default": "externaldb.jks"
-                                        }
-                                    }
-                                },
                                 "jks": {
                                     "type": "object",
                                     "properties": {
@@ -422,6 +407,21 @@
                                                     "default": ""
                                                 }
                                             }
+                                        }
+                                    }
+                                },
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecret or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.secret.existingSecretKey or orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
+                                            "default": "externaldb.jks"
                                         }
                                     }
                                 }
