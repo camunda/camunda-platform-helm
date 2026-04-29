@@ -26,6 +26,18 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 {{- end }}
 
 {{/*
+Fail with a message if Resource-Based Authorization (RBA) and Multi-Tenancy are both enabled.
+These features cannot run together.
+*/}}
+{{- if and .Values.global.rba.enabled (or .Values.global.multitenancy.enabled .Values.identity.multitenancy.enabled) }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Resource-Based Authorization (\"global.rba.enabled\") and Multi-Tenancy (\"global.multitenancy\" / \"identity.multitenancy\") cannot be enabled at the same time."
+      "Please disable one of them."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
 Fail if there is no secondary storage type specified and if noSecondaryStorage is not enabled.
 */}}
 {{- if and .Values.orchestration.enabled (eq (include "orchestration.secondaryStorage" .) "unset") }}
