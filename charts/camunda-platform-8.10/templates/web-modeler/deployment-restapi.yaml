@@ -175,7 +175,7 @@ spec:
             claimName: {{ (or .Values.camundaHub.webModeler.persistence.existingClaim .Values.webModeler.persistence.existingClaim) }}
           {{- else if (or .Values.camundaHub.webModeler.persistence.enabled .Values.webModeler.persistence.enabled) }}
           persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-webModeler-data
+            claimName: {{ include "camundaPlatform.fullname" . }}-webmodeler-data
           {{- else }}
           emptyDir: {}
           {{- end }}
