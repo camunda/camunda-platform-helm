@@ -12,7 +12,7 @@ vars:
   # Helm v4 changed --wait semantics; --wait=legacy preserves v3 behavior.
   HELM_WAIT_FLAG:
     sh: |
-      if helm version --short --client 2>/dev/null | grep -q '^v4'; then
+      if helm version --short 2>/dev/null | grep -q '^v4'; then
         echo "--wait=legacy"
       else
         echo "--wait"
