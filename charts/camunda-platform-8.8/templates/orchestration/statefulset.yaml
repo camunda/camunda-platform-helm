@@ -84,6 +84,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if .Values.global.rba.enabled }}
+            - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
+              value: "true"
+            - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
+              value: "true"
+            {{- end }}
             {{- with .Values.orchestration.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
