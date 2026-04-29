@@ -86,7 +86,7 @@ global:
     enabled: false
 
   ## Resource-Based Authorization (RBA) configuration.
-  ## Cannot be enabled at the same time as global.multitenancy.
+  ## Cannot be enabled at the same time as global.multitenancy.enabled.
   ## @extra global.rba
   rba:
     ## @param global.rba.enabled if true, then enable RBA in all applicable components (Tasklist, Operate, and Identity).

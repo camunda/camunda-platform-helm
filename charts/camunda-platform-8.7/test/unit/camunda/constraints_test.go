@@ -119,9 +119,9 @@ func (s *ConstraintTemplateTest) TestRBAMultiTenancyMutualExclusion() {
 				"global.identity.auth.enabled": "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().ErrorContains(err, "Resource-Based Authorization")
-				s.Require().ErrorContains(err, "Multi-Tenancy")
-				s.Require().ErrorContains(err, "cannot be enabled at the same time")
+				require.ErrorContains(t, err, "Resource-Based Authorization")
+				require.ErrorContains(t, err, "Multi-Tenancy")
+				require.ErrorContains(t, err, "cannot be enabled at the same time")
 			},
 		},
 		{
@@ -131,7 +131,7 @@ func (s *ConstraintTemplateTest) TestRBAMultiTenancyMutualExclusion() {
 				"identity.enabled":   "true",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
-				s.Require().Nil(err)
+				require.NoError(t, err)
 			},
 		},
 	}
