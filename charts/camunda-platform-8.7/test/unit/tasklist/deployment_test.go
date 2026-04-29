@@ -770,10 +770,11 @@ func (s *DeploymentTemplateTest) TestRBA() {
 			Values: map[string]string{},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().NotContains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+				for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", e.Name)
+				}
 			},
 		},
 		{
@@ -783,10 +784,10 @@ func (s *DeploymentTemplateTest) TestRBA() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+				require.Contains(t, env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
 			},
 		},
 	}

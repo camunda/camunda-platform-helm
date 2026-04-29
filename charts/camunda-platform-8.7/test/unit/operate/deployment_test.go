@@ -1047,8 +1047,9 @@ func (s *deploymentTemplateTest) TestRBADisabledByDefaultDoesNotEmitEnvVar() {
 	var deployment appsv1.Deployment
 	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-	env := deployment.Spec.Template.Spec.Containers[0].Env
-	s.Require().NotContains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", Value: "true"})
+	for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", e.Name)
+	}
 }
 
 func (s *deploymentTemplateTest) TestRBAEnabledEmitsOperateEnvVar() {
