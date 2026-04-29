@@ -6,12 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/yaml.v3"
-	corev1 "k8s.io/api/core/v1"
 )
 
 type ConfigMapTemplateTest struct {
@@ -87,18 +84,9 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"global.security.authentication.method": "oidc",
 				"global.identity.auth.tokenUrl":         "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var configmapApplication ConnectorsConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// then
-				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.token-url": "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
 			},
 		},
 		{
@@ -109,18 +97,31 @@ func (s *ConfigMapTemplateTest) TestDifferentValuesInputs() {
 				"connectors.security.authentication.method": "oidc",
 				"global.identity.auth.tokenUrl":             "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
 			},
-			Verifier: func(t *testing.T, output string, err error) {
-				var configmap corev1.ConfigMap
-				var configmapApplication ConnectorsConfigYAML
-				helm.UnmarshalK8SYaml(s.T(), output, &configmap)
-
-				e := yaml.Unmarshal([]byte(configmap.Data["application.yaml"]), &configmapApplication)
-				if e != nil {
-					s.Fail("Failed to unmarshal yaml. error=", e)
-				}
-
-				// then
-				s.Require().Equal("http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token", configmapApplication.Camunda.Client.Auth.TokenUrl)
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.token-url": "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
+			},
+		},
+		{
+			Name: "TestConnectorsOIDCShouldInheritAuthMethodFromGlobal",
+			Values: map[string]string{
+				"connectors.enabled":                    "true",
+				"global.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
+			},
+		},
+		{
+			Name: "TestConnectorsOIDCComponentMethodShouldOverrideGlobal",
+			Values: map[string]string{
+				"connectors.enabled":                        "true",
+				"global.security.authentication.method":     "basic",
+				"connectors.security.authentication.method": "oidc",
+				"global.identity.auth.tokenUrl":             "http://camunda-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.client.auth.client-id": "connectors",
 			},
 		},
 	}
