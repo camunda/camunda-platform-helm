@@ -119,7 +119,9 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
-          enabled: false
+          # Exercises the new global.rba.enabled flag end-to-end via the
+          # simplified features/rba.yaml overlay.
+          enabled: true
           exclude: []
           shortname: kerba
           auth: keycloak
@@ -130,6 +132,24 @@ integration:
           identity: keycloak
           persistence: elasticsearch
           features: [rba]
+          platforms: [gke]
+        - name: rba-upgrade
+          # Verifies that an installation using the legacy manual env-var
+          # configuration on the previous chart version still works after
+          # upgrading to a chart that exposes global.rba.enabled. The values
+          # file features/rba-upgrade.yaml deliberately keeps the manual env
+          # vars (no global.rba.enabled) to exercise the back-compat path.
+          enabled: true
+          exclude: []
+          shortname: rbaup
+          auth: keycloak
+          flow: upgrade-minor
+          infra-type:
+            gke: distroci
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba-upgrade]
           platforms: [gke]
         - name: keycloak-original
           enabled: false
