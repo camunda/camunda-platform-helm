@@ -16,6 +16,7 @@ spec:
         checksum/env-vars: {{ include (print $.Template.BasePath "/orchestration/migration-data-configmap-env-vars.yaml") . | sha256sum }}
     spec:
       restartPolicy: OnFailure
+      serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
       imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       {{- if .Values.orchestration.podSecurityContext }}
       securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
