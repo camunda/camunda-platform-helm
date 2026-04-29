@@ -202,6 +202,16 @@ integration:
         # tasklist-v1 install scenarios and *-upg upgrade-minor scenarios. Both deploy
         # via the same flow=install path here. One entry per shortname covers both.
         # ===========================================================================
+        # `es` is the test-integration-template default shortname; used by the
+        # compat-camunda-simple job (camunda/camunda-helm-integration.yml).
+        - name: elasticsearch
+          enabled: false
+          flow: install
+          shortname: es
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          platforms: [gke]
         - name: qa-elasticsearch
           enabled: false
           flow: install
