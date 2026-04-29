@@ -1,12 +1,12 @@
-# OIDC auth configuration for 8.8 (Entra ID)
-# Layer 2: Auth method - External OIDC provider (Microsoft Entra)
+# OIDC auth configuration for 8.8 - global method only (issue #5456 test case)
+# method is set only in global — components inherit it. No VENOM_CLIENT_ID required.
 
 global:
   annotations:
     keycloak-token-url: "https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/token"
   security:
     authentication:
-      method: oidc
+      method: oidc          # Set ONLY here — components must inherit this
   identity:
     auth:
       enabled: true
@@ -27,7 +27,7 @@ global:
       identity:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
-        secret: 
+        secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
         initialClaimValue: $ENTRA_APP_OBJECT_ID
         redirectUrl: "https://{{ .Values.global.ingress.host }}/identity"
@@ -78,18 +78,6 @@ identityPostgresql:
 identityKeycloak:
   enabled: false
 
-connectors:
-  security:
-    authentication:
-      oidc:
-        clientId: $ENTRA_APP_CLIENT_ID
-        audience: $ENTRA_APP_CLIENT_ID
-        clientApiAudience: $ENTRA_APP_CLIENT_ID
-        existingSecret:
-          name: integration-test-credentials
-        existingSecretKey: entra-child-app-client-secret
-        tokenScope: $ENTRA_APP_CLIENT_ID/.default
-
 orchestration:
   security:
     authentication:
@@ -106,23 +94,11 @@ orchestration:
   env:
     - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
       value: "false"
-    # Mapping rules for OIDC (Entra ID) - these override base-qa.yaml mapping rules
-    # because Helm replaces arrays, so this orchestration.env replaces base-qa.yaml's entirely.
-    # In Entra v2.0 tokens, the application (client) ID is in the "azp" claim,
-    # not "client_id" (which Keycloak uses). The value is the app's GUID.
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
-      value: "venom-client-mapping-rule"
+      value: "connectors-client-mapping-rule"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
       value: "azp"
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
-      value: "$VENOM_CLIENT_ID"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
-      value: "connectors-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
-      value: "azp"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
       value: "$ENTRA_APP_CLIENT_ID"
     - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
-      value: "venom-client-mapping-rule"
-    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
       value: "connectors-client-mapping-rule"
