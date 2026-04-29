@@ -584,6 +584,7 @@ jobs:
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
             --shortname-filter "${{ inputs.shortname }}" \
+            --shortname-exact \
             --flow-filter "${{ inputs.flow }}" \
             --versions "${CHART_VERSION}" \
             --platform "${{ inputs.distro-platform }}" \
@@ -823,6 +824,7 @@ jobs:
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
             --shortname-filter "${{ inputs.shortname }}" \
+            --shortname-exact \
             --flow-filter "${{ inputs.flow }}" \
             --versions "${CHART_VERSION}" \
             --platform "${{ inputs.distro-platform }}" \

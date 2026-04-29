@@ -40,6 +40,7 @@ func newMatrixListCommand() *cobra.Command {
 		includeDisabled bool
 		scenarioFilter  string
 		shortnameFilter string
+		shortnameExact  bool
 		flowFilter      string
 		outputFormat    string
 		platform        string
@@ -97,6 +98,7 @@ This command does not require cluster access.`,
 			entries = matrix.Filter(entries, matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
+				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
 			})
@@ -115,6 +117,7 @@ This command does not require cluster access.`,
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
+	f.BoolVar(&shortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&outputFormat, "format", "table", "Output format: table, json")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform")
@@ -180,6 +183,7 @@ func newMatrixRunCommand() *cobra.Command {
 		extraHelmArgs            []string
 		extraHelmSets            []string
 		namespaceOverride        string
+		shortnameExact           bool
 	)
 
 	cmd := &cobra.Command{
@@ -367,6 +371,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 			entries = matrix.Filter(entries, matrix.FilterOptions{
 				ScenarioFilter:  scenarioFilter,
 				ShortnameFilter: shortnameFilter,
+				ShortnameExact:  shortnameExact,
 				FlowFilter:      flowFilter,
 				Platform:        platform,
 			})
@@ -532,6 +537,7 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&includeDisabled, "include-disabled", false, "Include disabled scenarios in the output")
 	f.StringVar(&scenarioFilter, "scenario-filter", "", "Filter scenarios by substring match (comma-separated for multiple, e.g. elasticsearch,opensearch)")
 	f.StringVar(&shortnameFilter, "shortname-filter", "", "Filter entries by shortname substring match (comma-separated for multiple, e.g. eske,eshy)")
+	f.BoolVar(&shortnameExact, "shortname-exact", false, "Treat each --shortname-filter value as an exact match instead of a substring (recommended for per-scenario CI use)")
 	f.StringVar(&flowFilter, "flow-filter", "", "Filter entries by exact flow name")
 	f.StringVar(&platform, "platform", "", "Filter entries to those supporting this platform (also sets deploy platform)")
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
