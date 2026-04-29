@@ -1095,10 +1095,11 @@ func (s *deploymentTemplateTest) TestRBA() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
-				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().NotContains(env, corev1.EnvVar{Name: "RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+				for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "RESOURCE_PERMISSIONS_ENABLED", e.Name)
+				}
 			},
 		},
 		{
@@ -1109,10 +1110,10 @@ func (s *deploymentTemplateTest) TestRBA() {
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				var deployment appsv1.Deployment
-				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+				helm.UnmarshalK8SYaml(t, output, &deployment)
 
 				env := deployment.Spec.Template.Spec.Containers[0].Env
-				s.Require().Contains(env, corev1.EnvVar{Name: "RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+				require.Contains(t, env, corev1.EnvVar{Name: "RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
 			},
 		},
 	}
