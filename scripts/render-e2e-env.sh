@@ -138,6 +138,16 @@ resolve_keycloak_setup_password() {
 
   log "DEBUG: Resolving Keycloak setup password"
 
+  # Tier 0: QA-owned secret (decoupled from integration-test-credentials).
+  # Read directly from qa-keycloak-admin-credentials if present; this lets QA
+  # rotate the keycloak admin password without touching helm CI's secret.
+  password="$($kubectl_cmd -n "$namespace" get secret qa-keycloak-admin-credentials -o jsonpath='{.data.identity-keycloak-admin-password}' 2> /dev/null | base64 -d || true)"
+  if [[ -n "$password" ]]; then
+    log "DEBUG: Found Keycloak password from qa-keycloak-admin-credentials"
+    printf "%s" "$password"
+    return 0
+  fi
+
   # Try KEYCLOAK_SETUP_PASSWORD
   password="$(resolve_env_password "$namespace" "KEYCLOAK_SETUP_PASSWORD" "$kube_context")"
   if [[ -n "$password" ]]; then

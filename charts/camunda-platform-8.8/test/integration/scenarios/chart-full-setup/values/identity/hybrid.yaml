@@ -87,7 +87,7 @@ identityKeycloak:
         adminPasswordKey: "identity-keycloak-postgresql-admin-password"
         userPasswordKey: "identity-keycloak-postgresql-user-password"
   auth:
-    existingSecret: "integration-test-credentials"
+    existingSecret: "qa-keycloak-admin-credentials"
     passwordSecretKey: "identity-keycloak-admin-password"
 
 # -----------------------------------------------------------------------------

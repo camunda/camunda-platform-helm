@@ -128,6 +128,15 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		return fmt.Errorf("apply credentials secrets: %w", err)
 	}
 
+	// Apply QA keycloak admin secret (decoupled from integration-test-credentials so QA
+	// can rotate the keycloak admin password independently of helm CI).
+	qaKeycloakSecretFile := fmt.Sprintf("external-secret-qa-keycloak-credentials%s.yaml", vaultSuffix)
+	if err := applyManifestIfExists(ctx, client, namespace,
+		filepath.Join(externalSecretDir, qaKeycloakSecretFile),
+		"qa-keycloak-admin external-secret"); err != nil {
+		return fmt.Errorf("apply qa keycloak admin secrets: %w", err)
+	}
+
 	// Determine which integration test credentials file to use based on external secrets store
 	integrationCredsFile := fmt.Sprintf("external-secret-integration-test-credentials%s.yaml", vaultSuffix)
 
