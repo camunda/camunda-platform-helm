@@ -729,6 +729,18 @@ integration:
               repo-name: elastic
               repo-url: https://helm.elastic.co
               values-file: test/integration/companion-values/elasticsearch.yaml
+        - name: component-persistence
+          enabled: true
+          exclude: []
+          shortname: cprst
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          flow: install,upgrade-minor
+          infra-type:
+            gke: distroci
+          features: [persistence,migrator]
+          platforms: [gke]
         - name: keycloak-original
           enabled: true
           flow: install
