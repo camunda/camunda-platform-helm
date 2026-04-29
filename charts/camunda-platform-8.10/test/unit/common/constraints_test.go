@@ -267,3 +267,52 @@ func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *ConstraintTemplateTest) TestRBAMultiTenancyMutualExclusion() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRBAAndGlobalMultitenancyEnabledTogetherFails",
+			Values: map[string]string{
+				"global.rba.enabled":                       "true",
+				"global.multitenancy.enabled":              "true",
+				"identity.enabled":                         "true",
+				"identityPostgresql.enabled":               "true",
+				"global.identity.auth.enabled":             "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Resource-Based Authorization")
+				s.Require().ErrorContains(err, "Multi-Tenancy")
+				s.Require().ErrorContains(err, "cannot be enabled at the same time")
+			},
+		},
+		{
+			Name: "TestRBAAndIdentityMultitenancyEnabledTogetherFails",
+			Values: map[string]string{
+				"global.rba.enabled":                       "true",
+				"identity.multitenancy.enabled":            "true",
+				"identity.enabled":                         "true",
+				"identityPostgresql.enabled":               "true",
+				"global.identity.auth.enabled":             "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().ErrorContains(err, "Resource-Based Authorization")
+				s.Require().ErrorContains(err, "cannot be enabled at the same time")
+			},
+		},
+		{
+			Name: "TestRBAEnabledAloneSucceeds",
+			Values: map[string]string{
+				"global.rba.enabled":                       "true",
+				"identity.enabled":                         "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

@@ -815,3 +815,39 @@ func (s *StatefulSetTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *StatefulSetTest) TestRBA() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRBADisabledByDefaultDoesNotEmitEnvVars",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().NotContains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+				s.Require().NotContains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "TestRBAEnabledEmitsOrchestrationEnvVars",
+			Values: map[string]string{
+				"global.rba.enabled":                       "true",
+				"orchestration.data.secondaryStorage.type": "elasticsearch",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(s.T(), output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", Value: "true"})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
