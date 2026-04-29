@@ -191,6 +191,153 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           platforms: [eks]
+
+        # ===========================================================================
+        # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
+        # (callers: c8-cross-component-e2e-tests playwright_sm_reusable_flow_8_8_plus.yaml,
+        #  sm_manual_upgrade_minor_8_8). All disabled so they don't appear in the regular
+        # CI matrix; matrix run resolves them via --shortname-filter + --include-disabled.
+        #
+        # Note on duplicate shortnames: compat workflow reuses qaosupg/qaelmtupg across
+        # tasklist-v1 install scenarios and *-upg upgrade-minor scenarios. Both deploy
+        # via the same flow=install path here. One entry per shortname covers both.
+        # ===========================================================================
+        - name: qa-elasticsearch
+          enabled: false
+          flow: install
+          shortname: qael
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch
+          enabled: false
+          flow: install
+          shortname: qaos
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba
+          enabled: false
+          flow: install
+          shortname: qaelrba
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt
+          enabled: false
+          flow: install
+          shortname: qaelmt
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-license
+          enabled: false
+          flow: install
+          shortname: lic
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license]
+          qa: true
+          platforms: [gke]
+        - name: qa-entra
+          enabled: false
+          flow: install
+          shortname: qaen
+          auth: oidc
+          identity: oidc
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-document-store
+          enabled: false
+          flow: install
+          shortname: qadoc
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaeltlv1
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaosupg
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          features: [tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaelrbaupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba, tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaelmtupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy, tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-license-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: licupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license, tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-upg
+          enabled: false
+          flow: install
+          shortname: qaelupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-document-upg
+          enabled: false
+          flow: install
+          shortname: qaeldocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
