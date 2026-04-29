@@ -26,6 +26,18 @@ Multi-Tenancy requirements: https://docs.camunda.io/docs/self-managed/concepts/m
 {{- end }}
 
 {{/*
+Fail with a message if Resource-Based Authorization (RBA) and Multi-Tenancy are both enabled.
+These features cannot run together.
+*/}}
+{{- if and .Values.global.rba.enabled .Values.global.multitenancy.enabled }}
+  {{- $errorMessage := printf "[camunda][error] %s %s"
+      "Resource-Based Authorization (\"global.rba.enabled\") and Multi-Tenancy (\"global.multitenancy.enabled\") cannot be enabled at the same time."
+      "Please disable one of them."
+  -}}
+  {{ printf "\n%s" $errorMessage | trimSuffix "\n"| fail }}
+{{- end }}
+
+{{/*
 Fail with a message if the auth type is set to non-Keycloak and its requirements are not met which are:
 - Global Identity issuerBackendUrl.
 */}}

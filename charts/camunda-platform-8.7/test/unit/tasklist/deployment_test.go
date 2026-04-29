@@ -762,3 +762,34 @@ camunda.tasklist:
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *DeploymentTemplateTest) TestRBA() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestRBADisabledByDefaultDoesNotEmitEnvVar",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().NotContains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+			},
+		},
+		{
+			Name: "TestRBAEnabledEmitsTasklistEnvVar",
+			Values: map[string]string{
+				"global.rba.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

@@ -172,6 +172,10 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
             {{- end }}
+            {{- if .Values.global.rba.enabled }}
+            - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
+              value: "true"
+            {{- end }}
             {{- with .Values.tasklist.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
