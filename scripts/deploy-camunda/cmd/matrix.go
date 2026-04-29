@@ -177,6 +177,9 @@ func newMatrixRunCommand() *cobra.Command {
 		useQA                    bool
 		yes                      bool
 		logDir                   string
+		extraHelmArgs            []string
+		extraHelmSets            []string
+		namespaceOverride        string
 	)
 
 	cmd := &cobra.Command{
@@ -474,6 +477,9 @@ This command calls deploy.Execute() for each matrix entry.`,
 				EnsureDockerHub:       ensureDockerHub,
 				UseLatest:             useLatest,
 				UseQA:                 useQA,
+				ExtraHelmArgs:         extraHelmArgs,
+				ExtraHelmSets:         extraHelmSets,
+				NamespaceOverride:     namespaceOverride,
 				OnEntryStart: func(entry matrix.Entry, namespace string) {
 					if statusDisplay != nil {
 						statusDisplay.OnEntryStart(entry, namespace)
@@ -562,7 +568,9 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.BoolVar(&useQA, "use-qa", false, "Force the base-qa layer to be included for all entries, regardless of per-scenario qa config")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompts (e.g., e2e threshold warning)")
 	f.StringVar(&logDir, "log-dir", "", "Write logs to this directory and show a live status table (auto-generated when running in a TTY)")
-
+	f.StringArrayVar(&extraHelmArgs, "extra-helm-arg", nil, "Extra argument appended to every helm command (repeatable, e.g. --extra-helm-arg=--set-file=global.license.secret.inlineSecret=/tmp/license.txt)")
+	f.StringSliceVar(&extraHelmSets, "extra-helm-set", nil, "Extra helm --set key=value pair applied to every entry (comma-separated or repeatable, e.g. orchestration.upgrade.allowPreReleaseImages=true)")
+	f.StringVar(&namespaceOverride, "namespace-override", "", "Override the computed namespace for every entry. Use only with filters that narrow the run to a single entry (typically called from per-scenario CI workflows that pre-create the namespace).")
 
 	registerMatrixShortnameCompletion(cmd)
 	registerMatrixVersionsCompletion(cmd)
