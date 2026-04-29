@@ -1,0 +1,23 @@
+# =============================================================================
+# Component Persistence Feature
+# =============================================================================
+# Layer 4: Optional feature - exercises persistent volume configuration on
+# Camunda components so the chart's PVC/StatefulSet templates are covered by
+# nightly CI. Tracks the regressions reported in:
+#   SUPPORT-30094 (zeebe extraVolumeClaimTemplates rejected by API)
+# Used with: TEST_VALUES_FEATURES containing "persistence"
+#
+# Note: 8.7 predates the unified orchestration component and the
+# optimize.persistence / webModeler.persistence keys (added in 8.8). This
+# scenario only covers the StatefulSet extraVolumeClaimTemplates path on 8.7.
+# =============================================================================
+
+zeebe:
+  extraVolumeClaimTemplates:
+    - metadata:
+        name: extra-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
