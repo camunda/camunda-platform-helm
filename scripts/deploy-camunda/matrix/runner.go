@@ -1503,7 +1503,12 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			SkipDockerLogin: true,
 		},
 		Secrets: config.SecretsFlags{
-			ExternalSecrets:       true,
+			// When the caller pre-creates the namespace (--namespace-override) it
+			// also pre-applies platform secrets/TLS via cluster-setup-secrets. Skip
+			// the runner's ExternalSecrets path in that case — re-running it on
+			// EKS would try to read aws-camunda-cloud-tls from the global "certs"
+			// namespace, which CI service accounts don't have RBAC for.
+			ExternalSecrets:       opts.NamespaceOverride == "",
 			AutoGenerateSecrets:   true,
 			UseVaultBackedSecrets: useVault,
 		},
