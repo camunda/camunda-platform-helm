@@ -372,6 +372,13 @@ This command calls deploy.Execute() for each matrix entry.`,
 			})
 
 			if len(entries) == 0 {
+				// Per-scenario CI workflows (signalled by --namespace-override or
+				// any explicit filter) always expect exactly one entry. A silent
+				// no-op here would let Playwright run against an empty namespace.
+				if namespaceOverride != "" || shortnameFilter != "" || scenarioFilter != "" || flowFilter != "" {
+					return fmt.Errorf("no matrix entries matched the filters (versions=%v, scenario-filter=%q, shortname-filter=%q, flow-filter=%q, platform=%q); check ci-test-config.yaml has an entry for this scenario+flow combination",
+						versions, scenarioFilter, shortnameFilter, flowFilter, platform)
+				}
 				fmt.Fprintln(os.Stdout, "No matrix entries matched the filters.")
 				return nil
 			}
