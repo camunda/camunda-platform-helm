@@ -12,6 +12,14 @@ vars:
   USE_LAYERED_VALUES: '{{ env "USE_LAYERED_VALUES" | default "true" }}'
   # Values directory (per chart version)
   LAYERED_VALUES_DIR: '{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values'
+  # Helm v4 changed --wait semantics; --wait=legacy preserves v3 behavior.
+  HELM_WAIT_FLAG:
+    sh: |
+      if helm version --short --client 2>/dev/null | grep -q '^v4'; then
+        echo "--wait=legacy"
+      else
+        echo "--wait"
+      fi
 
 dotenv:
 - ../vars/common.env
@@ -347,7 +355,7 @@ tasks:
         $LICENSE_KEY_ARGS \
         --set orchestration.upgrade.allowPreReleaseImages=true \
         --timeout 20m0s \
-        --wait \
+        {{ .HELM_WAIT_FLAG }} \
         --wait-for-jobs \
         {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
 
