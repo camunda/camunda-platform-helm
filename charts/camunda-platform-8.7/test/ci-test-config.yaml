@@ -128,6 +128,20 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
+        - name: component-persistence
+          enabled: true
+          tier: 2
+          exclude: []
+          shortname: cprst
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          flow: install
+          skip-e2e: true  # 8.7 web-modeler-restapi has a known unresponsiveness bug
+          infra-type:
+            gke: distroci
+          features: [persistence]
+          platforms: [gke]
 
         # ===========================================================================
         # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
