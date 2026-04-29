@@ -145,7 +145,7 @@ integration:
           features: [arm]
           persistence: elasticsearch-external
         - name: opensearch
-          enabled: false
+          enabled: true
           exclude: []
           shortname: oske
           auth: keycloak
