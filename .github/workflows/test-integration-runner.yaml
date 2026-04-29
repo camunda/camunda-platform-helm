@@ -577,6 +577,7 @@ jobs:
           cd ./scripts/deploy-camunda
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
+            --include-disabled \
             --shortname-filter "${{ inputs.shortname }}" \
             --flow-filter "${{ inputs.flow }}" \
             --versions "${CHART_VERSION}" \
@@ -815,6 +816,7 @@ jobs:
           cd ./scripts/deploy-camunda
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
+            --include-disabled \
             --shortname-filter "${{ inputs.shortname }}" \
             --flow-filter "${{ inputs.flow }}" \
             --versions "${CHART_VERSION}" \
