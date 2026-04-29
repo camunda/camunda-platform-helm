@@ -607,6 +607,95 @@ func TestDeploymentConfigResolvePaths(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("qa mode layers identity-qa.yaml overlay when present", func(t *testing.T) {
+		oidcPath := filepath.Join(tmpDir, "values", "identity", "oidc.yaml")
+		oidcQAPath := filepath.Join(tmpDir, "values", "identity", "oidc-qa.yaml")
+		if err := os.WriteFile(oidcPath, []byte("# oidc"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(oidcQAPath, []byte("# oidc qa"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			os.Remove(oidcPath)
+			os.Remove(oidcQAPath)
+		})
+
+		config := &DeploymentConfig{
+			Identity:    "oidc",
+			Persistence: "elasticsearch",
+			Platform:    "gke",
+			QA:          true,
+		}
+		paths, err := config.ResolvePaths(tmpDir)
+		if err != nil {
+			t.Fatalf("ResolvePaths() error = %v", err)
+		}
+
+		// Expected order: base.yaml, base-qa.yaml, oidc.yaml, oidc-qa.yaml, elasticsearch.yaml, gke.yaml
+		expectedSuffixes := []string{
+			"values/base.yaml",
+			"values/base-qa.yaml",
+			"values/identity/oidc.yaml",
+			"values/identity/oidc-qa.yaml",
+			"values/persistence/elasticsearch.yaml",
+			"values/platform/gke.yaml",
+		}
+		if len(paths) != len(expectedSuffixes) {
+			t.Fatalf("Expected %d paths, got %d: %v", len(expectedSuffixes), len(paths), paths)
+		}
+		for i, suffix := range expectedSuffixes {
+			if !containsSuffix(paths[i], suffix) {
+				t.Errorf("paths[%d] = %q, want suffix %q", i, paths[i], suffix)
+			}
+		}
+	})
+
+	t.Run("non-qa with identity-qa.yaml present does not layer it", func(t *testing.T) {
+		oidcPath := filepath.Join(tmpDir, "values", "identity", "oidc.yaml")
+		oidcQAPath := filepath.Join(tmpDir, "values", "identity", "oidc-qa.yaml")
+		if err := os.WriteFile(oidcPath, []byte("# oidc"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(oidcQAPath, []byte("# oidc qa"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			os.Remove(oidcPath)
+			os.Remove(oidcQAPath)
+		})
+
+		config := &DeploymentConfig{
+			Identity:    "oidc",
+			Persistence: "elasticsearch",
+			Platform:    "gke",
+		}
+		paths, err := config.ResolvePaths(tmpDir)
+		if err != nil {
+			t.Fatalf("ResolvePaths() error = %v", err)
+		}
+
+		for _, p := range paths {
+			if containsSuffix(p, "oidc-qa.yaml") {
+				t.Errorf("non-QA scenario should not include oidc-qa.yaml, but found: %q", p)
+			}
+		}
+	})
+
+	t.Run("qa mode without identity-qa.yaml present skips overlay silently", func(t *testing.T) {
+		// keycloak-qa.yaml does NOT exist in fixtures — qa with keycloak should still resolve cleanly.
+		config := MapScenarioToConfig("qa-elasticsearch")
+		paths, err := config.ResolvePaths(tmpDir)
+		if err != nil {
+			t.Fatalf("ResolvePaths() error = %v", err)
+		}
+		for _, p := range paths {
+			if containsSuffix(p, "keycloak-qa.yaml") {
+				t.Errorf("keycloak-qa.yaml does not exist; should not appear in paths: %q", p)
+			}
+		}
+	})
 }
 
 func TestExpandImports(t *testing.T) {

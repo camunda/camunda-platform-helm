@@ -106,6 +106,20 @@ integration:
           identity: oidc
           persistence: elasticsearch
           platforms: [gke]
+        - name: oidc-qa
+          enabled: false  # flip to true after first green Entra QA run
+          exclude: [identity,console,orchestration-grpc]
+          shortname: oidcqa
+          auth: oidc
+          flow: install
+          skip-e2e: true  # E2E suite is driven from c8-cross-component-e2e-tests OIDC nightly
+          skip-it: true   # ITs not authored for Entra real-user flow yet
+          infra-type:
+            gke: distroci
+          identity: oidc
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
         - name: keycloak-mt
           enabled: false
           exclude: []

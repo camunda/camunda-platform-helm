@@ -1,0 +1,27 @@
+# QA OIDC auth overlay for 8.8 (Entra ID)
+# Layered on top of identity/oidc.yaml when QA mode is enabled.
+# Swaps the admin from a static Entra app object ID to the QA test user's `oid`
+# ($INITIAL_CLAIM_VALUE) so real-user UI sign-in flows (TOTP MFA) can drive the
+# end-to-end suite. Replaces the orchestration env mapping rules with a
+# structured defaultRoles.admin.users entry so the user is granted admin
+# directly rather than via a service-principal mapping rule.
+
+global:
+  identity:
+    auth:
+      identity:
+        initialClaimValue: $INITIAL_CLAIM_VALUE
+
+orchestration:
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - $INITIAL_CLAIM_VALUE
+  # Helm replaces arrays wholesale: re-declare orchestration.env without the
+  # mapping rules from identity/oidc.yaml so the QA test user, not a service
+  # principal, is the sole admin.
+  env:
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"

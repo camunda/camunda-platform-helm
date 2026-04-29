@@ -127,6 +127,15 @@ func (c *DeploymentConfig) ResolvePaths(scenariosDir string) ([]string, error) {
 		if _, err := os.Stat(identityPath); err == nil {
 			files = append(files, identityPath)
 		}
+		// QA-specific identity overlay (e.g., oidc-qa.yaml) layered on top of the
+		// base identity file when QA mode is on. Lets QA swap test users / claim
+		// values without forking the whole identity overlay.
+		if c.QA {
+			qaIdentityPath := filepath.Join(valuesDir, IdentityDir, c.Identity+"-qa.yaml")
+			if _, err := os.Stat(qaIdentityPath); err == nil {
+				files = append(files, qaIdentityPath)
+			}
+		}
 	}
 
 	// Layer 4: Persistence selection

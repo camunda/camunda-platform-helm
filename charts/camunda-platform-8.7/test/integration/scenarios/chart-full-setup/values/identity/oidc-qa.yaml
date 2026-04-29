@@ -1,0 +1,13 @@
+# QA OIDC auth overlay for 8.7 (Entra ID)
+# Layered on top of identity/oidc.yaml when QA mode is enabled.
+# Swaps the initial admin claim from a fixed Entra app object ID
+# ($ENTRA_APP_OBJECT_ID) to the QA test user's oid ($INITIAL_CLAIM_VALUE),
+# allowing real-user UI sign-in flows (TOTP MFA) instead of service-principal
+# token grants.
+
+global:
+  identity:
+    auth:
+      identity:
+        initialClaimName: oid
+        initialClaimValue: $INITIAL_CLAIM_VALUE
