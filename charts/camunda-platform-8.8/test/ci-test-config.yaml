@@ -251,6 +251,20 @@ integration:
           platforms: [eks]
           infra-type:
             eks: preemptible
+        - name: component-persistence
+          enabled: true
+          exclude: []
+          shortname: cprst
+          tier: 2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          flow: install,upgrade-minor
+          helmVersion: 3.20.2
+          infra-type:
+            gke: distroci
+          features: [persistence,migrator]
+          platforms: [gke]
 
         # ===========================================================================
         # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
