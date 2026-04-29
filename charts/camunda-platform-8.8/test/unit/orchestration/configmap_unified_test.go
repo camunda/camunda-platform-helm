@@ -105,6 +105,26 @@ func (s *ConfigmapTemplateTest) TestDifferentValuesInputsUnified() {
 				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
 			},
 		},
+		{
+			Name: "TestApplicationYamlShouldInheritAuthMethodFromGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method":          "oidc",
+				"configmapApplication.camunda.security.authentication.oidc.client-id": "orchestration",
+			},
+		},
+		{
+			Name: "TestApplicationYamlComponentMethodShouldOverrideGlobal",
+			Values: map[string]string{
+				"global.security.authentication.method":        "basic",
+				"orchestration.security.authentication.method": "oidc",
+			},
+			Expected: map[string]string{
+				"configmapApplication.camunda.security.authentication.method": "oidc",
+			},
+		},
 	}
 
 	testhelpers.RunTestCases(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
