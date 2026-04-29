@@ -701,6 +701,4 @@ path ignores the `auth` field (it uses `identity` instead), but adding explicit
 | 8.8–8.9 | `elasticsearch` (hybrid) | hybrid | `hybrid` | `auth` and derived identity happen to align |
 | 8.8–8.9 | `elasticsearch-basic` | basic | `basic` | `auth` and derived identity happen to align |
 
-The `auth` field is still used by the **legacy Taskfile path** for scenarios on
-versions without layered values (8.2–8.5). For 8.6+, the `auth` field is
-effectively ignored in the layered code path.
+For 8.6+ the `auth` field is effectively ignored in the layered code path.

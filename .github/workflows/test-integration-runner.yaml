@@ -410,7 +410,16 @@ jobs:
           --docker-password $GITHUB_TOKEN \
           --dry-run=client -o yaml | kubectl apply -f -
 
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup init.seed
+          # Docker Hub pull secret (replaces the legacy `task init.seed` lib taskfile target).
+          # TEST_DOCKER_USERNAME/PASSWORD are exported by integration-test-setup from Vault.
+          if [[ "${TEST_CREATE_DOCKER_LOGIN_SECRET:-FALSE}" == "TRUE" && -n "${TEST_DOCKER_USERNAME:-}" && -n "${TEST_DOCKER_PASSWORD:-}" ]]; then
+            kubectl create secret docker-registry index-docker-io \
+            --namespace $TEST_NAMESPACE \
+            --docker-server "https://index.docker.io/v1/" \
+            --docker-username "$TEST_DOCKER_USERNAME" \
+            --docker-password "$TEST_DOCKER_PASSWORD" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          fi
         env:
           TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_USERNAME_CAMUNDA_CLOUD || env.NEXUS_USERNAME }}
           TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ env.TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD || env.NEXUS_PASSWORD }}
@@ -465,52 +474,35 @@ jobs:
           eval "$(grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt)"
           eval "$(grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt)"
 
-      - name: Helm - Install - Execute before install lifecycle tasks
+      - name: Helm - Install - Pre-install scenario tweaks
         timeout-minutes: 5
         env:
-          TEST_CHART_FLOW: ${{ inputs.flow }}
-          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
-          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
           EXTRA_VALUES: ${{ inputs.extra-values }}
-          VALUES_CONFIG: ${{ inputs.values-config }}
-          # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
-          CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
-          # Selection + composition model environment variables (new - preferred)
-          TEST_IDENTITY: ${{ inputs.test-identity }}
-          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
-          TEST_FEATURES: ${{ inputs.test-features }}
-          TEST_QA: ${{ inputs.test-qa }}
-          TEST_UPGRADE: ${{ inputs.test-upgrade }}
-          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ env.TEST_HELM_EXTRA_ARGS }}
-            ${{ steps.setup.outputs.legacy-ingress-arg }}
-            --set global.host=${{ steps.setup.outputs.ingress-host }}
         run: |
-          # Configure OpenSearch environment if using opensearch scenario
-          if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME}" ]] && [[ -n "${OPENSEARCH_PASSWORD}" ]]; then
-            # Apply environment variable substitution to values file
-            values_file="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${TEST_VALUES_SCENARIO}.yaml"
-            envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
-          fi
+          # Persist user-supplied extra values for `deploy-camunda matrix run` to consume.
+          # The runner uses a fixed location (/tmp/extra-values-file.yaml) which is added to
+          # the helm values chain by deploy.Execute via flags.Deployment.ExtraValues.
           echo "Extra values from workflow:"
           echo "$EXTRA_VALUES" | tee /tmp/extra-values-file.yaml
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.pre
 
-      - name: Helm - Package
-        if: inputs.helmChartVersion == ''
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
+          # Configure OpenSearch values when running the opensearch scenario
+          # (legacy substitution; only applies to the opensearch scenario name).
+          if [[ "${{ inputs.scenario }}" == "opensearch" ]] && [[ -n "${OPENSEARCH_USERNAME:-}" ]] && [[ -n "${OPENSEARCH_PASSWORD:-}" ]]; then
+            values_file="${{ env.CHART_PATH }}/test/integration/scenarios/chart-full-setup/values-integration-test-ingress-${{ inputs.scenario }}.yaml"
+            if [[ -f "$values_file" ]]; then
+              envsubst < "$values_file" > /tmp/values-substituted.yaml && mv /tmp/values-substituted.yaml "$values_file"
+            fi
+          fi
 
-      - name: Helm - Package (OCI)
+      - name: Helm - Install (OCI)
         if: inputs.helmChartVersion != ''
         env:
           HELM_CHART_VERSION: ${{ inputs.helmChartVersion }}
         run: |
           set -euo pipefail
+          # OCI install path: pull a published chart from Harbor and stash a marker
+          # for the matrix-run step. The matrix-run install path below skips itself
+          # when this OCI marker is present.
           echo "Using OCI chart version: ${HELM_CHART_VERSION}"
           helm registry login registry.camunda.cloud \
             --username "${TEST_DOCKER_USERNAME_CAMUNDA_CLOUD}" \
@@ -523,27 +515,27 @@ jobs:
             --destination .
 
           echo "TEST_CHART_VERSION=${HELM_CHART_VERSION}" >> "$GITHUB_ENV"
-
-      # NOTE: The old "prepare-helm-values.sh" step has been removed.
-      # Env var substitution, image-tags inclusion, and deep-merge are now handled by
-      # "deploy-camunda prepare-values" called from the Taskfile's setup.exec task.
-      # License key is injected via --set in TEST_HELM_EXTRA_ARGS below.
+          # TODO(deploy-camunda): wire OCI chart deploy through `deploy-camunda matrix run`
+          # once it learns to install from a local .tgz. Until then, fall back to
+          # `helm install` here. This branch is currently unused by all active CI callers
+          # (every caller passes helmChartVersion: "").
+          echo "::error::OCI install path is not yet supported by deploy-camunda matrix run; this CI flow is currently inert."
+          exit 1
 
       - name: Helm - Install - 🌟 Install Camunda chart 🌟
+        if: inputs.helmChartVersion == ''
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
-          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_CASE: "${{ inputs.test-case }}"
-          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
-          VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
           CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
-          # License key for Camunda Platform (injected via --set in helm install).
-          # Use the GitHub secret if available, otherwise fall back to the Vault-exported env var.
+          # License key for Camunda Platform. Persisted to a file and injected via
+          # --set-file (avoids shell word-splitting on spaces/semicolons).
           E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
-          # Selection + composition model environment variables (new - preferred)
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          # Selection + composition model environment variables (consumed by
+          # deploy-camunda's prepare-values via the matrix run scenario resolver
+          # — no flag wiring required, the runner reads $TEST_* env vars).
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
           TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
@@ -551,18 +543,50 @@ jobs:
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ steps.setup.outputs.legacy-ingress-arg }}
-            --set global.host=${{ steps.setup.outputs.ingress-host }}
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.exec
-
-      - name: Helm - Execute after install lifecycle tasks
-        timeout-minutes: 5
-        env:
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          VALUES_CONFIG: ${{ inputs.values-config }}
         run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.post
+          set -euo pipefail
+          CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
+
+          # License key: pre-8.9 charts use global.license.key, >=8.9 use
+          # global.license.secret.inlineSecret. Detect by grepping the chart's
+          # values.yaml @param annotations.
+          EXTRA_HELM_ARGS=()
+          if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
+            LICENSE_FILE=/tmp/license-key.txt
+            printf '%s' "${E2E_TESTS_LICENSE_KEY}" > "$LICENSE_FILE"
+            if grep -q '@param global.license.key' "${{ env.CHART_PATH }}/values.yaml" 2>/dev/null; then
+              EXTRA_HELM_ARGS+=(--extra-helm-arg=--set-file=global.license.key="$LICENSE_FILE")
+            else
+              EXTRA_HELM_ARGS+=(--extra-helm-arg=--set-file=global.license.secret.inlineSecret="$LICENSE_FILE")
+            fi
+          fi
+
+          # Pass the legacy ingress arg + global.host as helm extra args.
+          LEGACY_INGRESS_ARG="${{ steps.setup.outputs.legacy-ingress-arg }}"
+          if [[ -n "$LEGACY_INGRESS_ARG" ]]; then
+            # legacy-ingress-arg is space-delimited (e.g. "--set foo=bar"); split it.
+            # shellcheck disable=SC2206
+            LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
+            for tok in "${LEGACY_TOKENS[@]}"; do
+              EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
+            done
+          fi
+
+          cd ./scripts/deploy-camunda
+          go run . matrix run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --shortname-filter "${{ inputs.shortname }}" \
+            --flow-filter "${{ inputs.flow }}" \
+            --versions "${CHART_VERSION}" \
+            --platform "${{ inputs.distro-platform }}" \
+            --namespace-override "${TEST_NAMESPACE}" \
+            --skip-dependency-update=false \
+            --timeout 20 \
+            --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
+            --log-level info
 
       - name: Display Docker Image Git Commits
         id: display-image-commits
@@ -728,14 +752,9 @@ jobs:
           grep '^VENOM_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
           grep '^CONNECTORS_CLIENT_ID=' /tmp/entra-output.txt >> "$GITHUB_ENV"
 
-      - name: Helm - Upgrade - Package
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup setup.package
-
-      # NOTE: The old "prepare-helm-values.sh" step has been removed.
-      # Env var substitution, image-tags inclusion, and deep-merge are now handled by
-      # "deploy-camunda prepare-values" called from the Taskfile's upgrade.exec task.
-      # License key is injected via --set in TEST_HELM_EXTRA_ARGS below.
+      # NOTE: helm package + pre-upgrade scripts are handled by `deploy-camunda matrix run`.
+      # The runner deploys directly from the chart directory (no `helm package` needed) and
+      # auto-discovers per-version pre-upgrade scripts via versionmatrix.HasPreUpgradeScript.
 
       - name: Cluster Setup - Upgrade - Configure TLS Certificates/Secrets
         uses: ./.github/actions/cluster-setup-secrets
@@ -750,39 +769,16 @@ jobs:
         run: |
           kubectl -n "$TEST_NAMESPACE" apply -f /tmp/vault-mapped-secrets.yaml
 
-      - name: Helm - Upgrade - Execute before upgrade lifecycle tasks
-        env:
-          TEST_CHART_FLOW: ${{ inputs.flow }}
-          VALUES_CONFIG: ${{ inputs.values-config }}
-          CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
-          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
-          TEST_IDENTITY: ${{ inputs.test-identity }}
-          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
-          TEST_FEATURES: ${{ inputs.test-features }}
-          TEST_QA: ${{ inputs.test-qa }}
-          TEST_UPGRADE: ${{ inputs.test-upgrade }}
-          TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
-        run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.pre
-
       - name: Helm - Upgrade - 🌟 Upgrade Camunda chart 🌟
         env:
-          TEST_OPENSHIFT_POST_RENDER: ${{ inputs.camunda-helm-post-render }}
-          TEST_CASE: ${{ inputs.test-case }}
-          TEST_VALUES_SCENARIO: ${{ inputs.scenario }}
-          TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
           TEST_CHART_FLOW: ${{ inputs.flow }}
-          VALUES_CONFIG: ${{ inputs.values-config }}
           # CAMUNDA_HOSTNAME is required by layered values (e.g. base.yaml contains $CAMUNDA_HOSTNAME)
           CAMUNDA_HOSTNAME: ${{ steps.setup.outputs.ingress-host }}
-          # License key for Camunda Platform (injected via --set in helm install).
-          # Use the GitHub secret if available, otherwise fall back to the Vault-exported env var.
+          # License key for Camunda Platform.
           E2E_TESTS_LICENSE_KEY: ${{ secrets.E2E_TESTS_LICENSE_KEY || env.E2E_TESTS_LICENSE_KEY }}
-          # Selection + composition model environment variables (new - preferred)
+          CAMUNDA_HELM_DIR: ${{ inputs.camunda-helm-dir }}
+          INFRA_TYPE: ${{ inputs.infra-type }}
+          # Selection + composition model environment variables.
           TEST_IDENTITY: ${{ inputs.test-identity }}
           TEST_PERSISTENCE: ${{ inputs.test-persistence }}
           TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
@@ -790,11 +786,45 @@ jobs:
           TEST_QA: ${{ inputs.test-qa }}
           TEST_UPGRADE: ${{ inputs.test-upgrade }}
           TEST_IMAGE_TAGS: ${{ inputs.include-image-tags }}
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ steps.setup.outputs.legacy-ingress-arg }}
-            --set global.host=${{ steps.setup.outputs.ingress-host }}
+          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
+          VALUES_CONFIG: ${{ inputs.values-config }}
         run: |
-          task -d ${CI_TASKS_BASE_DIR}/chart-full-setup upgrade.exec
+          set -euo pipefail
+          CHART_VERSION="${CAMUNDA_HELM_DIR#camunda-platform-}"
+
+          EXTRA_HELM_ARGS=()
+          if [[ -n "${E2E_TESTS_LICENSE_KEY:-}" ]]; then
+            LICENSE_FILE=/tmp/license-key.txt
+            printf '%s' "${E2E_TESTS_LICENSE_KEY}" > "$LICENSE_FILE"
+            if grep -q '@param global.license.key' "${{ env.CHART_PATH }}/values.yaml" 2>/dev/null; then
+              EXTRA_HELM_ARGS+=(--extra-helm-arg=--set-file=global.license.key="$LICENSE_FILE")
+            else
+              EXTRA_HELM_ARGS+=(--extra-helm-arg=--set-file=global.license.secret.inlineSecret="$LICENSE_FILE")
+            fi
+          fi
+
+          LEGACY_INGRESS_ARG="${{ steps.setup.outputs.legacy-ingress-arg }}"
+          if [[ -n "$LEGACY_INGRESS_ARG" ]]; then
+            # shellcheck disable=SC2206
+            LEGACY_TOKENS=($LEGACY_INGRESS_ARG)
+            for tok in "${LEGACY_TOKENS[@]}"; do
+              EXTRA_HELM_ARGS+=(--extra-helm-arg="$tok")
+            done
+          fi
+
+          cd ./scripts/deploy-camunda
+          go run . matrix run \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --shortname-filter "${{ inputs.shortname }}" \
+            --flow-filter "${{ inputs.flow }}" \
+            --versions "${CHART_VERSION}" \
+            --platform "${{ inputs.distro-platform }}" \
+            --namespace-override "${TEST_NAMESPACE}" \
+            --skip-dependency-update=false \
+            --timeout 20 \
+            --extra-helm-set "global.host=${{ steps.setup.outputs.ingress-host }}" \
+            ${EXTRA_HELM_ARGS[@]+"${EXTRA_HELM_ARGS[@]}"} \
+            --log-level info
 
       - name: Display Docker Image Git Commits (Upgrade)
         id: display-image-commits-upgrade
