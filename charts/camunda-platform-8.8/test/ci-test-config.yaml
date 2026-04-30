@@ -61,11 +61,12 @@ integration:
           persistence: elasticsearch
           platforms: [gke]  # EKS removed: Playwright ITs and E2E consistently fail on EKS for 8.8 eske
         - name: upgrade-migration
-          enabled: false
+          enabled: true
           flow: upgrade-minor
           helmVersion: 3.20.2
           auth: keycloak
           shortname: eske-upgm
+          tier: 2
           exclude: []
           features: [migrator]
           infra-type:
@@ -104,9 +105,10 @@ integration:
           persistence: elasticsearch
           platforms: [gke]
         - name: keycloak-mt
-          enabled: false # our upgrade testing has issues with credentials on 8.7 -> 8.8 upgrade, so disabling for now to get green CI while we investigate
+          enabled: true
           exclude: []
           shortname: kemt
+          tier: 2
           auth: keycloak
           identity: keycloak
           persistence: elasticsearch
@@ -118,9 +120,10 @@ integration:
             eks: preemptible
           platforms: [gke]
         - name: keycloak-rba
-          enabled: false
+          enabled: true
           exclude: []
           shortname: kerba
+          tier: 2
           auth: keycloak
           flow: upgrade-minor
           helmVersion: 3.20.2
@@ -152,9 +155,10 @@ integration:
               and elasticsearch-jks Secrets consumed by the Elasticsearch
               StatefulSet's TLS config.
         - name: keycloak-original
-          enabled: false
+          enabled: true
           exclude: []
           shortname: keyc
+          tier: 2
           auth: keycloak
           flow: upgrade-minor
           helmVersion: 3.20.2
