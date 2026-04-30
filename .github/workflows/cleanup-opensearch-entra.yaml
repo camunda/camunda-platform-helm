@@ -40,6 +40,16 @@ jobs:
           exportEnv: true
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
+      - name: Load infra config
+        id: infra
+        shell: bash
+        run: |
+          INFRA_CONFIG=".github/config/infra.yaml"
+          OS_HOST=$(yq '.opensearch.aws.host' "$INFRA_CONFIG")
+          OS_PROTOCOL=$(yq '.opensearch.aws.protocol' "$INFRA_CONFIG")
+          OS_PORT=$(yq '.opensearch.aws.port' "$INFRA_CONFIG")
+          echo "INFRA_OPENSEARCH_ENDPOINT=${OS_PROTOCOL}://${OS_HOST}:${OS_PORT}" >> $GITHUB_ENV
+
       - name: Authenticate to GKE
         uses: ./.github/actions/gke-login
         with:
@@ -54,7 +64,7 @@ jobs:
         shell: bash
         run: |
           # OpenSearch endpoint
-          OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
+          OPENSEARCH_HOST="${INFRA_OPENSEARCH_ENDPOINT}"
 
           # Get all namespace names
           ALL_NS=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
@@ -77,7 +87,7 @@ jobs:
       - name: update ISM policy
         shell: bash
         run: |
-          OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
+          OPENSEARCH_HOST="${INFRA_OPENSEARCH_ENDPOINT}"
           # Update the delete-after-48h ISM policy to cover both old and new index naming patterns.
           # First, get current seq_no and primary_term (required for updating existing policies).
           POLICY_RESP=$(curl -s -L "${OPENSEARCH_HOST}/_plugins/_ism/policies/delete-after-48h" \

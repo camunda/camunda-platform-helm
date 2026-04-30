@@ -139,6 +139,18 @@ runs:
           zbctl
           jq
 
+    - name: Set workflow vars
+      id: vars
+      uses: ./.github/actions/workflow-vars
+      with:
+        deployment-ttl: ${{ inputs.deployment-ttl }}
+        setup-flow: ${{ inputs.flow }}
+        platform: ${{ inputs.distro-platform }}
+        identifier-base: ${{ inputs.identifier }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+        prefix: ${{ inputs.namespace-prefix }}
+
     - name: Authenticate to cluster
       id: cluster-auth
       uses: ./.github/actions/cluster-auth
@@ -155,20 +167,7 @@ runs:
         ROSA_URL:         ${{ env.ROSA_URL }}
         ROSA_USER:        ${{ env.ROSA_USER }}
         ROSA_PASS:        ${{ env.ROSA_PASS }}
-        CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-    - name: Set workflow vars
-      id: vars
-      uses: ./.github/actions/workflow-vars
-      with:
-        deployment-ttl: ${{ inputs.deployment-ttl }}
-        setup-flow: ${{ inputs.flow }}
-        platform: ${{ inputs.distro-platform }}
-        identifier-base: ${{ inputs.identifier }}
-        ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
-        chart-dir: ${{ inputs.camunda-helm-dir }}
-        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-        prefix: ${{ inputs.namespace-prefix }}
+        CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
 
     - name: Set test type vars
       id: test-type-vars

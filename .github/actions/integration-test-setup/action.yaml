@@ -33,8 +33,9 @@ inputs:
     description: Unique identifier base used in the deployment hostname
     required: true
   ingress-hostname-base:
-    description: Base ingress hostname (e.g. ci.distro.ultrawombat.com)
-    required: true
+    description: "(deprecated, remove after 2026-07) Base ingress hostname — now loaded from .github/config/infra.yaml"
+    required: false
+    default: ""
   camunda-helm-dir:
     description: Helm chart directory name (e.g. camunda-platform-8.8)
     required: true
@@ -94,14 +95,32 @@ outputs:
 #   VAULT_ADDR, VAULT_ROLE_ID, VAULT_SECRET_ID   (always — used for the CI credentials import)
 #   GH_APP_ID, GH_APP_KEY                        (GitHub App token for cluster-auth)
 #   ROSA_URL, ROSA_USER, ROSA_PASS               (ROSA/OpenShift)
-#   CLUSTER_NAME, TELEPORT_TOKEN                 (EKS)
+#   TELEPORT_TOKEN                                (EKS)
 # Optional env vars (used as fallback overrides for the Vault-imported values):
 #   DISTRO_CI_DOCKER_USERNAME_DOCKERHUB, DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB
 # GKE cluster coordinates and Docker Hub credentials are imported from Vault by this action.
+# EKS cluster name and AWS profile are loaded from .github/config/infra.yaml by workflow-vars.
 
 runs:
   using: composite
   steps:
+    # ------------------------------------------------------------------
+    # Workflow vars (namespace, ingress host, identifier, infra config…)
+    # Runs first so infra values (CLUSTER_NAME, AWS_PROFILE, etc.) are
+    # available to cluster-auth and all subsequent steps.
+    # ------------------------------------------------------------------
+    - name: CI Setup - Set workflow vars
+      id: vars
+      uses: ./.github/actions/workflow-vars
+      with:
+        deployment-ttl: ${{ inputs.deployment-ttl }}
+        setup-flow: ${{ inputs.flow }}
+        platform: ${{ inputs.distro-platform }}
+        identifier-base: ${{ inputs.identifier }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+        prefix: ${{ inputs.namespace-prefix }}
+
     # ------------------------------------------------------------------
     # Vault: optional per-scenario secret import
     # ------------------------------------------------------------------
@@ -176,23 +195,7 @@ runs:
         ROSA_URL:         ${{ env.ROSA_URL }}
         ROSA_USER:        ${{ env.ROSA_USER }}
         ROSA_PASS:        ${{ env.ROSA_PASS }}
-        CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
-
-    # ------------------------------------------------------------------
-    # Workflow vars (namespace, ingress host, identifier, …)
-    # ------------------------------------------------------------------
-    - name: CI Setup - Set workflow vars
-      id: vars
-      uses: ./.github/actions/workflow-vars
-      with:
-        deployment-ttl: ${{ inputs.deployment-ttl }}
-        setup-flow: ${{ inputs.flow }}
-        platform: ${{ inputs.distro-platform }}
-        identifier-base: ${{ inputs.identifier }}
-        ingress-hostname-base: ${{ inputs.ingress-hostname-base }}
-        chart-dir: ${{ inputs.camunda-helm-dir }}
-        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
-        prefix: ${{ inputs.namespace-prefix }}
+        CLUSTER_NAME:     ${{ env.INFRA_CLUSTER_NAME }}
 
     # ------------------------------------------------------------------
     # Legacy ingress host arg (pre-8.10 charts use global.ingress.host)
