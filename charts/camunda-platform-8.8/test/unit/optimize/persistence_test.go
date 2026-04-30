@@ -66,18 +66,25 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-				var tmpVolume *corev1.Volume
+				// Find the tmp and camunda volumes
+				var tmpVolume, camundaVolume *corev1.Volume
 				for i := range deployment.Spec.Template.Spec.Volumes {
 					if deployment.Spec.Template.Spec.Volumes[i].Name == "tmp" {
 						tmpVolume = &deployment.Spec.Template.Spec.Volumes[i]
 					}
-					s.Require().NotEqual("camunda", deployment.Spec.Template.Spec.Volumes[i].Name, "camunda volume should no longer exist")
+					if deployment.Spec.Template.Spec.Volumes[i].Name == "camunda" {
+						camundaVolume = &deployment.Spec.Template.Spec.Volumes[i]
+					}
 				}
 
 				// then
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
 				s.Require().NotNil(tmpVolume.EmptyDir, "tmp should use emptyDir when persistence is disabled")
 				s.Require().Nil(tmpVolume.PersistentVolumeClaim, "tmp should not use PVC when persistence is disabled")
+
+				s.Require().NotNil(camundaVolume, "camunda volume should exist")
+				s.Require().NotNil(camundaVolume.EmptyDir, "camunda should use emptyDir when persistence is disabled")
+				s.Require().Nil(camundaVolume.PersistentVolumeClaim, "camunda should not use PVC when persistence is disabled")
 			},
 		},
 		{
@@ -93,12 +100,15 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-				var tmpVolume *corev1.Volume
+				// Find the tmp and camunda volumes
+				var tmpVolume, camundaVolume *corev1.Volume
 				for i := range deployment.Spec.Template.Spec.Volumes {
 					if deployment.Spec.Template.Spec.Volumes[i].Name == "tmp" {
 						tmpVolume = &deployment.Spec.Template.Spec.Volumes[i]
 					}
-					s.Require().NotEqual("camunda", deployment.Spec.Template.Spec.Volumes[i].Name, "camunda volume should no longer exist")
+					if deployment.Spec.Template.Spec.Volumes[i].Name == "camunda" {
+						camundaVolume = &deployment.Spec.Template.Spec.Volumes[i]
+					}
 				}
 
 				// then
@@ -106,6 +116,11 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "tmp should use PVC when persistence is enabled")
 				s.Require().Nil(tmpVolume.EmptyDir, "tmp should not use emptyDir when persistence is enabled")
 				s.Require().Equal("camunda-platform-test-optimize-data-tmp", tmpVolume.PersistentVolumeClaim.ClaimName)
+
+				s.Require().NotNil(camundaVolume, "camunda volume should exist")
+				s.Require().NotNil(camundaVolume.PersistentVolumeClaim, "camunda should use PVC when persistence is enabled")
+				s.Require().Nil(camundaVolume.EmptyDir, "camunda should not use emptyDir when persistence is enabled")
+				s.Require().Equal("camunda-platform-test-optimize-data-camunda", camundaVolume.PersistentVolumeClaim.ClaimName)
 			},
 		},
 		{
@@ -120,18 +135,25 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				var deployment appsv1.Deployment
 				helm.UnmarshalK8SYaml(s.T(), output, &deployment)
 
-				var tmpVolume *corev1.Volume
+				// Find the tmp and camunda volumes
+				var tmpVolume, camundaVolume *corev1.Volume
 				for i := range deployment.Spec.Template.Spec.Volumes {
 					if deployment.Spec.Template.Spec.Volumes[i].Name == "tmp" {
 						tmpVolume = &deployment.Spec.Template.Spec.Volumes[i]
 					}
-					s.Require().NotEqual("camunda", deployment.Spec.Template.Spec.Volumes[i].Name, "camunda volume should no longer exist")
+					if deployment.Spec.Template.Spec.Volumes[i].Name == "camunda" {
+						camundaVolume = &deployment.Spec.Template.Spec.Volumes[i]
+					}
 				}
 
 				// then
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
 				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "tmp should use PVC when persistence is enabled")
 				s.Require().Equal("my-existing-pvc", tmpVolume.PersistentVolumeClaim.ClaimName)
+
+				s.Require().NotNil(camundaVolume, "camunda volume should exist")
+				s.Require().NotNil(camundaVolume.PersistentVolumeClaim, "camunda should use PVC when persistence is enabled")
+				s.Require().Equal("my-existing-pvc", camundaVolume.PersistentVolumeClaim.ClaimName)
 			},
 		},
 		{

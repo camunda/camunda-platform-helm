@@ -102,6 +102,8 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - mountPath: /camunda
+              name: camunda
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
@@ -277,6 +279,8 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - mountPath: /camunda
+              name: camunda
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
@@ -303,6 +307,8 @@ spec:
         {{- end }}
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: camunda
           emptyDir: {}
         - name: environment-config
           configMap:
