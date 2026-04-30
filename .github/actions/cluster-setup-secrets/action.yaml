@@ -60,8 +60,10 @@ runs:
 
           # Apply QA keycloak admin secret (decoupled from integration-test-credentials so QA
           # can rotate the keycloak admin password independently of helm CI).
+          # Uses the vault-backend ClusterSecretStore — see camunda/team-distribution#775
+          # for the GKE-side prerequisite.
           apply_external_secret_with_retry \
-            ".github/config/external-secret/external-secret-qa-keycloak-credentials.yaml" \
+            ".github/config/external-secret/external-secret-qa-keycloak-credentials-vault.yaml" \
             "$TEST_NAMESPACE"
 
           # Apply external secret configuration for integration tests
