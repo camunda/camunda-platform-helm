@@ -74,6 +74,33 @@ type Options struct {
 	// in the namespace at install time but cannot be created earlier because
 	// the namespace may not yet exist or may be recreated.
 	PreInstallHooks []func(ctx context.Context) error
+
+	// CompanionCharts are Helm charts deployed as separate releases in the
+	// same namespace before the main Camunda chart. Each companion chart is
+	// deployed with helm upgrade --install --wait to ensure it is ready
+	// before the main chart deployment begins.
+	CompanionCharts []CompanionChart
+}
+
+// CompanionChart represents a Helm chart that should be deployed as a
+// separate release before the main Camunda chart.
+type CompanionChart struct {
+	// ChartRef is the Helm chart reference — either a repo/chart name
+	// (e.g., "opensearch/opensearch") or an absolute local path.
+	ChartRef string
+	// Version is the chart version to install (e.g., "3.6.0").
+	// Empty means latest (for remote) or ignore (for local).
+	Version string
+	// ReleaseName is the Helm release name for this companion chart.
+	ReleaseName string
+	// ValuesFile is the absolute path to a values file. Empty means use chart defaults.
+	ValuesFile string
+	// RepoName is the Helm repository name to register before installing
+	// (e.g., "opensearch"). Empty means no repo registration is needed.
+	RepoName string
+	// RepoURL is the Helm repository URL
+	// (e.g., "https://opensearch-project.github.io/helm-charts/").
+	RepoURL string
 }
 
 type CIMetadata struct {

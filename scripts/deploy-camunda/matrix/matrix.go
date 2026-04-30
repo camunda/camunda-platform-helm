@@ -38,6 +38,9 @@ type Entry struct {
 	// Test skip flags — declarative controls from ci-test-config.yaml.
 	SkipE2E bool `json:"skipE2E,omitempty"`
 	SkipIT  bool `json:"skipIT,omitempty"`
+
+	// Dependencies specifies companion charts to deploy before the main Camunda chart.
+	Dependencies []ChartDependency `json:"dependencies,omitempty"`
 }
 
 // GenerateOptions controls matrix generation.
@@ -155,25 +158,26 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 			for _, flow := range permittedFlows {
 				for _, platform := range platforms {
 					entries = append(entries, Entry{
-						Version:     version,
-						ChartPath:   chartDir,
-						Scenario:    scenario.Name,
-						Shortname:   scenario.Shortname,
-						Auth:        scenario.Auth,
-						Flow:        flow,
-						Platform:    platform,
-						InfraType:   resolveInfraType(scenario.InfraType, platform),
-						Exclude:     scenario.Exclude,
-						Enabled:     scenario.Enabled,
-						Identity:    scenario.Identity,
-						Persistence: scenario.Persistence,
-						Features:    scenario.Features,
-						QA:          scenario.QA,
-						ImageTags:   scenario.ImageTags,
-						Upgrade:     scenario.Upgrade,
-						Enterprise:  scenario.Enterprise,
-						SkipE2E:     scenario.SkipE2E,
-						SkipIT:      scenario.SkipIT,
+						Version:      version,
+						ChartPath:    chartDir,
+						Scenario:     scenario.Name,
+						Shortname:    scenario.Shortname,
+						Auth:         scenario.Auth,
+						Flow:         flow,
+						Platform:     platform,
+						InfraType:    resolveInfraType(scenario.InfraType, platform),
+						Exclude:      scenario.Exclude,
+						Enabled:      scenario.Enabled,
+						Identity:     scenario.Identity,
+						Persistence:  scenario.Persistence,
+						Features:     scenario.Features,
+						QA:           scenario.QA,
+						ImageTags:    scenario.ImageTags,
+						Upgrade:      scenario.Upgrade,
+						Enterprise:   scenario.Enterprise,
+						SkipE2E:      scenario.SkipE2E,
+						SkipIT:       scenario.SkipIT,
+						Dependencies: scenario.Dependencies,
 					})
 				}
 			}

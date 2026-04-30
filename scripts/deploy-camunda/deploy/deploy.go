@@ -312,6 +312,7 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 		ExtraArgs:             flags.Deployment.ExtraHelmArgs,
 		SetPairs:              flags.Deployment.ExtraHelmSets,
 		PreInstallHooks:       flags.PreInstallHooks,
+		CompanionCharts:       toDeployerCompanionCharts(flags.CompanionCharts),
 	}
 
 	// Log deployment options (redact sensitive fields)
@@ -417,4 +418,23 @@ func executeDeployment(ctx context.Context, prepared *PreparedScenario, flags *c
 // deleteNamespace deletes a Kubernetes namespace.
 func deleteNamespace(ctx context.Context, kubeContext, namespace string) error {
 	return kube.DeleteNamespace(ctx, "", kubeContext, namespace)
+}
+
+// toDeployerCompanionCharts converts config.CompanionChart to types.CompanionChart.
+func toDeployerCompanionCharts(charts []config.CompanionChart) []types.CompanionChart {
+	if len(charts) == 0 {
+		return nil
+	}
+	result := make([]types.CompanionChart, len(charts))
+	for i, c := range charts {
+		result[i] = types.CompanionChart{
+			ChartRef:    c.ChartRef,
+			Version:     c.Version,
+			ReleaseName: c.ReleaseName,
+			ValuesFile:  c.ValuesFile,
+			RepoName:    c.RepoName,
+			RepoURL:     c.RepoURL,
+		}
+	}
+	return result
 }

@@ -1,0 +1,34 @@
+# OpenSearch backend configuration for 8.9
+# Layer 3: Backend - OpenSearch (embedded companion chart)
+#
+# Connects to the OpenSearch companion chart deployed as a separate Helm release
+# by deploy-camunda before the main Camunda chart. The companion chart values
+# are in test/integration/companion-values/opensearch.yaml (security disabled, single node).
+
+global:
+  elasticsearch:
+    enabled: false
+
+orchestration:
+  data:
+    secondaryStorage:
+      type: opensearch
+      opensearch:
+        url: "http://opensearch-master:9200"
+
+optimize:
+  enabled: true
+  database:
+    elasticsearch:
+      enabled: false
+    opensearch:
+      enabled: true
+      aws:
+        enabled: false
+      url:
+        protocol: http
+        host: "opensearch-master"
+        port: 9200
+
+elasticsearch:
+  enabled: false
