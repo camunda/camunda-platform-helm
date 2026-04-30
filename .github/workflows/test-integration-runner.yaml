@@ -328,9 +328,18 @@ jobs:
       # See: .github/docker/ci-runner/Dockerfile
       # The per-scenario helm-version input below can override the pre-baked helm when set in ci-test-config.yaml.
       # When no override is provided, fall back to the helm version pinned in .tool-versions.
+
+      - name: CI Setup - Resolve Helm version
+        id: helm-resolve
+        run: |
+          version="${{ inputs.helm-version }}"
+          if [[ -z "$version" ]]; then
+            version="$(awk '$1=="helm"{print $2}' .tool-versions)"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: CI Setup - Set Helm version
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
-        if: inputs.helm-version != ''
         with:
           version: ${{ steps.helm-resolve.outputs.version }}
 
