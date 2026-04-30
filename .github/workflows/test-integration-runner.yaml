@@ -336,9 +336,18 @@ jobs:
           if [[ -z "$version" ]]; then
             version="$(awk '$1=="helm"{print $2}' .tool-versions)"
           fi
+          prebaked="$(helm version --short --template '{{.Version}}' 2>/dev/null | sed 's/^v//' | cut -d'+' -f1)"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == "$prebaked" ]]; then
+            echo "needs-install=false" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked matches requested $version — skipping override"
+          else
+            echo "needs-install=true" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked != requested $version — installing override"
+          fi
 
-      - name: CI Setup - Set Helm version
+      - name: CI Setup - Override Helm version
+        if: steps.helm-resolve.outputs.needs-install == 'true'
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
         with:
           version: ${{ steps.helm-resolve.outputs.version }}
@@ -692,9 +701,18 @@ jobs:
           if [[ -z "$version" ]]; then
             version="$(awk '$1=="helm"{print $2}' .tool-versions)"
           fi
+          prebaked="$(helm version --short --template '{{.Version}}' 2>/dev/null | sed 's/^v//' | cut -d'+' -f1)"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == "$prebaked" ]]; then
+            echo "needs-install=false" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked matches requested $version — skipping override"
+          else
+            echo "needs-install=true" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked != requested $version — installing override"
+          fi
 
-      - name: CI Setup - Set Helm version
+      - name: CI Setup - Override Helm version
+        if: steps.helm-resolve.outputs.needs-install == 'true'
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
         with:
           version: ${{ steps.helm-resolve.outputs.version }}
