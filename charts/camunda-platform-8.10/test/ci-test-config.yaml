@@ -268,12 +268,9 @@ integration:
           exclude: []
           flow: install
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [hub-legacy]
           platforms: [gke]
-          infra-type:
-            gke: distroci
-            eks: preemptible
         - name: hub-legacy
           enabled: false
           auth: keycloak
