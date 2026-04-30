@@ -297,6 +297,15 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+        - name: qa-elasticsearch-upg
+          enabled: false
+          flow: install
+          shortname: qaelupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
