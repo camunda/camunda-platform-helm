@@ -87,11 +87,11 @@ jobs:
           - name: qa-elasticsearch-tasklist-v1
             shortname: qaeltlv1
           - name: qa-opensearch-tasklist-v1
-            shortname: qaosupg
+            shortname: qaostlv1
           - name: qa-elasticsearch-rba-tasklist-v1
             shortname: qaelrbaupg
           - name: qa-elasticsearch-mt-tasklist-v1
-            shortname: qaelmtupg
+            shortname: qaelmttl
             e2e-enabled: false
           - name: qa-license-tasklist-v1
             shortname: licupg

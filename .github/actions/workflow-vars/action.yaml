@@ -97,6 +97,19 @@ runs:
       echo "OS_POOL_INDEX=${OS_POOL_INDEX}" | tee -a $GITHUB_ENV
       echo "os-pool-index=${OS_POOL_INDEX}" >> $GITHUB_OUTPUT
 
+      # K8s caps namespace length at 63. Reserve room for the hash (-XXXXXX, 7 chars) and the flow
+      # suffix (-upgp/-upgm, 5 chars) BEFORE appending them, so on long scenario names the hash and
+      # flow tag survive instead of being silently truncated off — otherwise namespaces stop being
+      # unique per run and concurrent or back-to-back runs collide.
+      RESERVED_SUFFIX_LEN=0
+      if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
+        RESERVED_SUFFIX_LEN=$((RESERVED_SUFFIX_LEN + 7))
+      fi
+      case "${{ inputs.setup-flow }}" in
+        upgrade-patch|upgrade-minor) RESERVED_SUFFIX_LEN=$((RESERVED_SUFFIX_LEN + 5)) ;;
+      esac
+      TEST_NAMESPACE="$(printf '%s' "$TEST_NAMESPACE" | head -c $((63 - RESERVED_SUFFIX_LEN)) | sed 's/-$//')"
+
       if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
         TEST_NAMESPACE="${TEST_NAMESPACE}-${GITHUB_WORKFLOW_JOB_ID}"
       fi

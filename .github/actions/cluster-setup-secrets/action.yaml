@@ -76,7 +76,7 @@ runs:
           for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
 
         else
@@ -121,7 +121,7 @@ runs:
           for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
             echo "⏳ Waiting for ExternalSecret: $secret"
             kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
-            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=600s
           done
         fi
 
