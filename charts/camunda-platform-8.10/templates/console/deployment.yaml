@@ -30,7 +30,12 @@ spec:
       imagePullSecrets:
         {{- include "console.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((or .Values.camundaHub.console.initContainers .Values.console.initContainers) | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- end }}
+        {{- with (or .Values.camundaHub.console.initContainers .Values.console.initContainers) }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       serviceAccountName: {{ include "console.serviceAccountName" . }}
       {{- if (or .Values.camundaHub.console.dnsConfig .Values.console.dnsConfig) }}
       dnsConfig: {{- toYaml (or .Values.camundaHub.console.dnsConfig .Values.console.dnsConfig) | nindent 8 }}
@@ -87,6 +92,7 @@ spec:
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
           {{- end }}
           {{- if (or .Values.camundaHub.console.env .Values.console.env) }}
             {{ (or .Values.camundaHub.console.env .Values.console.env) | toYaml | nindent 12 }}
@@ -160,6 +166,7 @@ spec:
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
           {{- end }}
           {{- if (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) }}
             {{- (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) | toYaml | nindent 12 }}
@@ -184,6 +191,7 @@ spec:
         {{- end }}
       {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
       {{- end }}
       {{- if (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) }}
         {{- (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) | toYaml | nindent 8 }}
