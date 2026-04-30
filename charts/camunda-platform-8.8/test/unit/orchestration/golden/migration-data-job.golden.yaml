@@ -69,6 +69,10 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /usr/local/camunda/logs
+              name: logs
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -86,3 +90,7 @@ spec:
           configMap:
             name: camunda-platform-test-zeebe-configuration-unified
             defaultMode: 492
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}

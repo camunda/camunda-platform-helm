@@ -85,6 +85,10 @@ spec:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
               subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /usr/local/camunda/logs
+              name: logs
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -101,3 +105,7 @@ spec:
         - name: config
           configMap:
             name: camunda-platform-test-identity-migration-configuration
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
