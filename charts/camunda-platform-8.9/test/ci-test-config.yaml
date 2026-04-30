@@ -213,6 +213,18 @@ integration:
           identity: keycloak
           persistence: rdbms
           platforms: [gke]
+        - name: component-persistence
+          enabled: true
+          exclude: []
+          shortname: cprst
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          flow: install,upgrade-minor
+          infra-type:
+            gke: distroci
+          features: [persistence]
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
