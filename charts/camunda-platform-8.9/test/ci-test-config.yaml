@@ -220,6 +220,14 @@ integration:
           identity: keycloak
           persistence: rdbms-external
           platforms: [gke]
+        # rdbms: persistence layer points Camunda at an external PostgreSQL cluster
+        # (postgresql-cluster-rw.<namespace>.svc.cluster.local). The CloudNativePG
+        # `Cluster` + auth Secret are NOT part of the chart — they're a CI-only
+        # fixture that must exist before helm install or Camunda pods crash-loop
+        # connecting. Provisioned by `pre-setup-scripts/pre-install-rdbms.sh`,
+        # auto-discovered by versionmatrix.HasPreInstallScript and run by the
+        # matrix runner immediately before `helm install` (replaces the legacy
+        # Taskfile `setup.pre` rdbms branch).
         - name: rdbms
           enabled: true
           auth: keycloak
