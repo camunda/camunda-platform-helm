@@ -71,6 +71,17 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+        - name: elasticsearch-self-signed
+          enabled: false
+          shortname: esss
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch-self-signed
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
         - name: opensearch-embedded
           enabled: false
           shortname: osem
