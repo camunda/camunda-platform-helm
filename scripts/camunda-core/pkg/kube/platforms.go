@@ -175,7 +175,7 @@ func applySecretsForEKS(ctx context.Context, client *Client, repoRoot, chartPath
 	return nil
 }
 
-const externalSecretsReadyTimeout = 300 * time.Second
+const externalSecretsReadyTimeout = 600 * time.Second
 
 func copySecretBetweenNamespaces(ctx context.Context, client *Client, srcNamespace, secretName, destNamespace string) error {
 	logging.Logger.Debug().
