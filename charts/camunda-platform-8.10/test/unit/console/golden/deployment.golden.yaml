@@ -40,7 +40,6 @@ spec:
       imagePullSecrets:
         []
       initContainers:
-        []
       serviceAccountName: camunda-platform-test-console
       securityContext:
         fsGroup: 1001
