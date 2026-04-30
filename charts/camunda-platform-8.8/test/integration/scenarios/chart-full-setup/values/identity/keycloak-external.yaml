@@ -2,6 +2,9 @@
 # Layer 2: Auth method - External Keycloak (for multi-tenancy scenarios)
 
 global:
+  security:
+    authentication:
+      method: oidc
   annotations:
     keycloak-token-url: "$KEYCLOAK_EXT_PROTOCOL_24_9_0://$KEYCLOAK_EXT_HOST_24_9_0/auth/realms/$KEYCLOAK_REALM/protocol/openid-connect/token"
   identity:
@@ -81,7 +84,6 @@ connectors:
   contextPath: "/connectors"
   security:
     authentication:
-      method: oidc
       oidc:
         secret:
           existingSecret: "integration-test-credentials"
@@ -124,7 +126,6 @@ orchestration:
           clients:
             - venom
     authentication:
-      method: oidc
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
