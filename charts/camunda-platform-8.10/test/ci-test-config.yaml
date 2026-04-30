@@ -231,6 +231,24 @@ integration:
           persistence: elasticsearch
           features: [documentstore]
           platforms: [eks]
+        - name: rdbms-self-signed
+          enabled: false
+          shortname: rdbss
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: rdbms-self-signed
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
+          dependencies:
+            - chart: bitnami/postgresql
+              version: "18.6.2"
+              release-name: postgres-tls
+              repo-name: bitnami
+              repo-url: https://charts.bitnami.com/bitnami
+              values-file: test/integration/companion-values/postgresql-tls.yaml
         - name: rdbms-external
           enabled: false
           auth: keycloak
