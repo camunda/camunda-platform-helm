@@ -1,0 +1,220 @@
+# =============================================================================
+# values-tls.yaml — TLS-everywhere overlay for Camunda 8.10 Self-Managed
+# =============================================================================
+#
+# An opinionated, customer-facing overlay that turns "enable TLS everywhere"
+# from a multi-week consulting engagement into a single helm flag.
+#
+#   helm upgrade --install camunda camunda/camunda-platform \
+#     -f values-tls.yaml \
+#     -f your-values.yaml
+#
+# Prerequisites in the target namespace (you create these once):
+#
+#   1. A PEM-encoded CA bundle the chart will inject into every Java
+#      component's runtime truststore. Bundle contains the root and any
+#      intermediate certs that signed your datastore / IdP certs.
+#
+#        kubectl create secret generic camunda-ca-bundle \
+#          --from-file=ca.crt=./your-ca-bundle.pem
+#
+#   2. (Optional) Datastore credentials secrets you reference below.
+#
+# Scope
+# -----
+# This file enables TLS for the connections the chart can configure:
+#   - Camunda components → Elasticsearch / OpenSearch / PostgreSQL / Oracle
+#   - Camunda components → external OIDC issuers (private CAs)
+#
+# It does NOT cover in-cluster pod-to-pod transport (Operate → Zeebe gateway
+# gRPC, Connectors → Zeebe gateway, etc.). Those need a service mesh
+# (Linkerd, Istio, Cilium). See docs/tls-coverage-810.md for the full matrix.
+#
+# Layering
+# --------
+# Apply this overlay AFTER your scenario / persistence values so per-component
+# fields here can override datastore-specific defaults. The overlay is
+# additive and idempotent — applying it to an already-TLS deployment is a
+# no-op.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# 1. The single trust input: a PEM CA bundle
+# -----------------------------------------------------------------------------
+# This is the only mandatory input. The chart will:
+#   - mount the secret at /etc/camunda/tls/ca.crt (read-only) on every Java
+#     component, and set SSL_CERT_FILE so libraries that honor it pick it up
+#     (libcurl, Go, Python requests + certifi, the post-8.6.7 OpenSearch
+#     native client).
+#   - run a dedicated init container per Java component that imports the CA
+#     into a JKS truststore at runtime, then prepend
+#       -Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts
+#     to JAVA_TOOL_OPTIONS — so JVM HTTP clients (Apache httpcore5, the
+#     OperateOpenSearchConnector, PostgreSQL JDBC, etc.) trust the user CA.
+#
+# This single secret + the chart's wiring is the customer-facing answer to
+# camunda/camunda-platform-helm#3498. No init container running as root, no
+# custom image rebuild, no per-component override.
+global:
+  tls:
+    caBundle:
+      existingSecret: "camunda-ca-bundle"
+      existingSecretKey: "ca.crt"
+      # The init container is a dedicated JRE image (it needs `keytool`).
+      # Override if you mirror images internally.
+      image: "eclipse-temurin:21-jre"
+      imagePullPolicy: "IfNotPresent"
+
+
+# -----------------------------------------------------------------------------
+# 2. Secondary storage — Elasticsearch
+# -----------------------------------------------------------------------------
+# Uncomment and set the URL host/port to your TLS-enabled ES endpoint.
+# Auth credentials follow the standard chart pattern (existingSecret OR
+# inlineSecret). The TLS trust path is already covered by global.tls.caBundle
+# above; you do NOT need to set tls.secret.existingSecret unless you have a
+# legacy JKS-only deployment and want to stay on that path.
+#
+# orchestration:
+#   data:
+#     secondaryStorage:
+#       type: elasticsearch
+#       elasticsearch:
+#         url: "https://your-elasticsearch.example.com:9200"
+#         auth:
+#           username: elastic
+#           secret:
+#             existingSecret: "your-elasticsearch-credentials"
+#             existingSecretKey: password
+# optimize:
+#   database:
+#     elasticsearch:
+#       enabled: true
+#       url:
+#         protocol: https
+#         host: "your-elasticsearch.example.com"
+#         port: 9200
+#       auth:
+#         username: elastic
+#         secret:
+#           existingSecret: "your-elasticsearch-credentials"
+#           existingSecretKey: password
+
+
+# -----------------------------------------------------------------------------
+# 3. Secondary storage — OpenSearch
+# -----------------------------------------------------------------------------
+# AWS-managed OpenSearch, self-hosted with private CA, or in-cluster — the
+# global.tls.caBundle above covers all three. Just set the URL to https://
+# and provide credentials.
+#
+# orchestration:
+#   data:
+#     secondaryStorage:
+#       type: opensearch
+#       opensearch:
+#         url: "https://your-opensearch.example.com:9200"
+#         auth:
+#           username: admin
+#           secret:
+#             existingSecret: "your-opensearch-credentials"
+#             existingSecretKey: password
+# optimize:
+#   database:
+#     opensearch:
+#       enabled: true
+#       aws:
+#         enabled: false   # set true + remove auth.* for IRSA against AWS-managed OS
+#       url:
+#         protocol: https
+#         host: "your-opensearch.example.com"
+#         port: 9200
+#       auth:
+#         username: admin
+#         secret:
+#           existingSecret: "your-opensearch-credentials"
+#           existingSecretKey: password
+
+
+# -----------------------------------------------------------------------------
+# 4. Secondary storage — PostgreSQL (RDBMS exporter)
+# -----------------------------------------------------------------------------
+# PostgreSQL JDBC reads the CA in PEM directly via sslrootcert. The CA is
+# already mounted at /etc/camunda/tls/ca.crt by global.tls.caBundle, so the
+# JDBC URL just needs sslmode=verify-full + sslrootcert pointing there.
+#
+# orchestration:
+#   data:
+#     secondaryStorage:
+#       type: rdbms
+#       rdbms:
+#         url: "jdbc:postgresql://your-postgres.example.com:5432/orchestration?sslmode=verify-full&sslrootcert=/etc/camunda/tls/ca.crt"
+#         username: camunda
+#         secret:
+#           existingSecret: "your-postgres-credentials"
+#           existingSecretKey: password
+
+
+# -----------------------------------------------------------------------------
+# 5. External OIDC issuer (Microsoft Entra, Okta, Keycloak with private CA)
+# -----------------------------------------------------------------------------
+# Public-CA issuers (login.microsoftonline.com, accounts.google.com) work
+# out of the box — the JVM ships with a public CA bundle already. Only set
+# this when your IdP uses a private or internal CA: that CA must be in the
+# bundle you supplied to global.tls.caBundle above.
+#
+# global:
+#   identity:
+#     auth:
+#       issuerBackendUrl: "https://your-idp.example.com/realms/camunda"
+#       tokenUrl:         "https://your-idp.example.com/realms/camunda/protocol/openid-connect/token"
+#       jwksUrl:          "https://your-idp.example.com/realms/camunda/protocol/openid-connect/certs"
+#       authUrl:          "https://your-idp.example.com/realms/camunda/protocol/openid-connect/auth"
+
+
+# -----------------------------------------------------------------------------
+# 6. Ingress / GatewayAPI TLS termination (external edge)
+# -----------------------------------------------------------------------------
+# Independent of the trust input above — this is browser/external-client
+# facing. Provide your own cert via existing K8s patterns. Example:
+#
+# global:
+#   gateway:
+#     tls:
+#       enabled: true
+#       secretName: "camunda-edge-cert"   # standard K8s TLS secret type
+#
+# orchestration:
+#   ingress:
+#     grpc:
+#       tls:
+#         enabled: true
+#         secretName: "camunda-edge-cert"
+
+
+# -----------------------------------------------------------------------------
+# 7. cert-manager integration (illustrative)
+# -----------------------------------------------------------------------------
+# When using cert-manager, the recommended pattern is to issue your CA
+# bundle Secret via a Certificate resource and reference its secretName as
+# global.tls.caBundle.existingSecret. The chart does not depend on
+# cert-manager — this is just the ergonomic recipe.
+#
+# Outside this values file, apply something like:
+#
+#   apiVersion: cert-manager.io/v1
+#   kind: Certificate
+#   metadata: {name: camunda-ca-bundle, namespace: camunda}
+#   spec:
+#     secretName: camunda-ca-bundle      # matches existingSecret above
+#     issuerRef:
+#       name: your-internal-ca-issuer
+#       kind: ClusterIssuer
+#     commonName: camunda-ca
+#     isCA: true
+#     duration: 8760h
+#     renewBefore: 720h
+#
+# Then ensure the secret is "Opaque" with key "ca.crt", or override
+# existingSecretKey here to match cert-manager's "ca.crt" / "tls.crt" output.
