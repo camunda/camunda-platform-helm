@@ -122,12 +122,11 @@ tasks:
           --values "$MERGED_VALUES" \
           $EXTRA_VALUES_ARGS \
           $LICENSE_KEY_ARGS \
-          --force \
           --timeout 20m0s \
           --set orchestration.upgrade.allowPreReleaseImages=true \
           --wait-for-jobs \
           --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
-      
+
       else
         # Fallback to legacy monolithic values files
         echo "WARNING: Values directory not found: $VALUES_DIR" >&2
@@ -176,7 +175,6 @@ tasks:
           {{ end -}}
           --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
           $IMAGE_TAGS_ARGS \
-          --force \
           --timeout 20m0s \
           --set orchestration.upgrade.allowPreReleaseImages=true \
           --wait-for-jobs \
