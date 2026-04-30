@@ -2630,6 +2630,18 @@ orchestration:
           minRetryDelay: PT10s
           ## @param orchestration.migration.data.tasks.retry.retryDelayMultiplier can be used to define the delay multiplier.
           retryDelayMultiplier: 2.0
+      ## @extra orchestration.migration.data.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+      ## @param orchestration.migration.data.resources.requests.cpu
+      ## @param orchestration.migration.data.resources.requests.memory
+      ## @param orchestration.migration.data.resources.limits.cpu
+      ## @param orchestration.migration.data.resources.limits.memory
+      resources:
+        limits:
+          cpu: 500m
+          memory: 500Mi
+        requests:
+          cpu: 500m
+          memory: 500Mi
     identity:
       ## @param orchestration.migration.identity.enabled if true, the migration of Management Identity data to the orchestration clusters Identity occurs
       enabled: false
@@ -2665,6 +2677,18 @@ orchestration:
         existingSecretKey: ""
       ## @param orchestration.migration.identity.env can be used to set extra environment variables in the identity migration job container
       env: []
+      ## @extra orchestration.migration.identity.resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+      ## @param orchestration.migration.identity.resources.requests.cpu
+      ## @param orchestration.migration.identity.resources.requests.memory
+      ## @param orchestration.migration.identity.resources.limits.cpu
+      ## @param orchestration.migration.identity.resources.limits.memory
+      resources:
+        limits:
+          cpu: 500m
+          memory: 500Mi
+        requests:
+          cpu: 500m
+          memory: 500Mi
     ## @extra orchestration.migration.affinity can be used to define pod affinity or anti-affinity https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
     # The default defined PodAntiAffinity allows constraining on which nodes the pods are scheduled on https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
     # It uses a hard requirement for scheduling and works based on the pod labels
