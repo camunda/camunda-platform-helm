@@ -96,8 +96,6 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
-            - mountPath: /camunda
-              name: camunda
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
@@ -281,8 +279,6 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
-            - mountPath: /camunda
-              name: camunda
             - mountPath: /optimize/config/environment-config.yaml
               subPath: environment-config.yaml
               name: environment-config
@@ -320,16 +316,6 @@ spec:
           {{- else if .Values.optimize.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data-tmp
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
-        - name: camunda
-          {{- if and .Values.optimize.persistence.enabled .Values.optimize.persistence.existingClaim }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.optimize.persistence.existingClaim }}
-          {{- else if .Values.optimize.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "camundaPlatform.fullname" . }}-optimize-data-camunda
           {{- else }}
           emptyDir: {}
           {{- end }}
