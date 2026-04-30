@@ -27,7 +27,12 @@ spec:
       imagePullSecrets:
         {{- include "identity.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl (.Values.identity.initContainers | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.identity.initContainers }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
@@ -150,6 +155,7 @@ spec:
           {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
           {{- end }}
           {{- with .Values.identity.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -227,6 +233,7 @@ spec:
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
             {{- if .Values.identity.extraVolumeMounts}}
               {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
@@ -258,6 +265,7 @@ spec:
         {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.identity.extraVolumes}}
         {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}

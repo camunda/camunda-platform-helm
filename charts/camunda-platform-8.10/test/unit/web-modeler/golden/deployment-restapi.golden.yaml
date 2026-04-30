@@ -38,7 +38,6 @@ spec:
       imagePullSecrets:
         []
       initContainers:
-        []
       containers:
         - name: web-modeler-restapi
           image: "camunda/hub:8.10.0-alpha1-rc1"
