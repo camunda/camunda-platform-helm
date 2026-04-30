@@ -76,3 +76,4 @@ annotations:
       description: "Remove integration tests"
     - kind: fixed
       description: "Keep persistence enabled in web modeler postgresql"
+
