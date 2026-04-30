@@ -215,9 +215,8 @@ permissions:
   deployments: write
   packages: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
-  cancel-in-progress: true
+# No concurrency block here — cancellation is handled by each caller workflow.
+# Adding cancel-in-progress here would kill the runner's cleanup job. See #5307.
 
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.

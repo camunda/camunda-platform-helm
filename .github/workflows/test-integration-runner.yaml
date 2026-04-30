@@ -241,9 +241,9 @@ permissions:
   deployments: write
   packages: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-${{ github.ref_name || github.ref }}-runner
-  cancel-in-progress: true
+# No concurrency block here — this is the innermost layer containing the cleanup job.
+# cancel-in-progress at this level kills ALL jobs including cleanup, causing orphaned
+# cloud resources. Cancellation is handled by outer caller workflows. See #5307.
 
 env:
   # Vars with "CI_" prefix are used in the CI workflow only.
