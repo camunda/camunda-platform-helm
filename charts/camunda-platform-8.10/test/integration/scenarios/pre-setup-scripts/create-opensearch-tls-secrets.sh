@@ -137,6 +137,21 @@ openssl x509 -req \
 # ---------------------------------------------------------------------------
 # 4. JKS truststore for Camunda components (legacy Java truststore path).
 # ---------------------------------------------------------------------------
+# Ensure keytool is available. The CI runner container
+# (ghcr.io/camunda/team-distribution/ci-runner:latest) ships without a JRE
+# to keep image size down; install one on demand. Local dev workstations
+# typically already have a JDK.
+if ! command -v keytool >/dev/null 2>&1; then
+  echo "[opensearch-tls] keytool not found; installing default-jre-headless..."
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -qq && apt-get install -y --no-install-recommends -qq default-jre-headless
+  elif command -v apk >/dev/null 2>&1; then
+    apk add --no-cache openjdk17-jre-headless
+  else
+    echo "[opensearch-tls] ERROR: cannot install JRE — no apt-get or apk available." >&2
+    exit 2
+  fi
+fi
 echo "[opensearch-tls] Creating JKS truststore (externaldb.jks) for Camunda..."
 keytool -importcert \
   -keystore "$WORK_DIR/externaldb.jks" \
