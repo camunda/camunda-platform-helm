@@ -232,7 +232,7 @@ integration:
           features: [documentstore]
           platforms: [eks]
         - name: rdbms-self-signed
-          enabled: false
+          enabled: true
           shortname: rdbss
           exclude: []
           auth: keycloak
