@@ -30,9 +30,10 @@ spec:
       imagePullSecrets:
         {{- include "console.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
-        {{- end }}
+        {{- /* Console is a Node.js application; the caBundle init container builds
+              a JKS truststore that the JVM consumes — Node uses NODE_EXTRA_CA_CERTS
+              instead. caBundleEnv (below) injects both SSL_CERT_FILE and
+              NODE_EXTRA_CA_CERTS, so no init container is needed here. */ -}}
         {{- with (or .Values.camundaHub.console.initContainers .Values.console.initContainers) }}
         {{- tpl (toYaml . | nindent 8) $ }}
         {{- end }}
@@ -91,8 +92,10 @@ spec:
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- /* Node.js — SSL_CERT_FILE for libcurl init scripts and
+                  NODE_EXTRA_CA_CERTS for the Node TLS stack. JAVA_TOOL_OPTIONS
+                  is omitted: Node ignores it. */ -}}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
-            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
           {{- end }}
           {{- if (or .Values.camundaHub.console.env .Values.console.env) }}
             {{ (or .Values.camundaHub.console.env .Values.console.env) | toYaml | nindent 12 }}
@@ -165,8 +168,8 @@ spec:
               readOnly: true
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
-            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
           {{- end }}
           {{- if (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) }}
             {{- (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) | toYaml | nindent 12 }}
@@ -190,8 +193,8 @@ spec:
         ) | nindent 8 }}
         {{- end }}
       {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
-        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
       {{- end }}
       {{- if (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) }}
         {{- (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) | toYaml | nindent 8 }}
