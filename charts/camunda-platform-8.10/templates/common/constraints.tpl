@@ -314,8 +314,17 @@ The following values inside your values.yaml need to be set but were not:
   (dict "path" "optimize.database.elasticsearch.tls.secret" "config" .Values.optimize.database.elasticsearch.tls)
   (dict "path" "optimize.database.opensearch.tls.secret" "config" .Values.optimize.database.opensearch.tls)
   }}
+  {{- /* Direct existingSecret / inlineSecret check rather than going via
+         camundaPlatform.hasSecretConfig — that helper requires BOTH
+         existingSecret AND existingSecretKey to be truthy (because it
+         normalizes for actual secret-ref injection). For a deprecation
+         warning we want to fire when the user has opted into the legacy
+         path AT ALL, including the natural minimal config of setting only
+         existingSecret (existingSecretKey defaults to "" on the
+         secondaryStorage / database paths). */ -}}
   {{- range $deprecatedDatabaseTlsOptions }}
-    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .config)) "true") }}
+    {{- $secret := (.config).secret -}}
+    {{- if and $secret (or $secret.existingSecret $secret.inlineSecret) }}
         {{- $warningMessage := printf "%s %s %s %s %s"
             "[camunda][warning]"
             (printf "DEPRECATION: values.yaml is using legacy JKS truststore option '%s'." .path)

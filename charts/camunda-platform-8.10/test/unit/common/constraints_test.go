@@ -290,11 +290,42 @@ func (s *ConstraintTemplateTest) TestLegacyJksTruststoreFieldsRenderWithoutCrash
 			},
 		},
 		{
-			Name: "TestCaBundleAndLegacyJksCoexistRenderOk",
+			Name: "TestGlobalElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":       "elasticsearch",
+				"global.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":    "opensearch",
+				"global.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk_Elasticsearch",
 			Values: map[string]string{
 				"orchestration.data.secondaryStorage.type":                                    "elasticsearch",
 				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
 				"global.tls.caBundle.secret.existingSecret":                                   "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk_Opensearch",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                 "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+				"global.tls.caBundle.secret.existingSecret":                                "camunda-ca-bundle",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
