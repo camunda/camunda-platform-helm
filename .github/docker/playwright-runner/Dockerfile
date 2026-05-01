@@ -361,6 +361,36 @@ ENV PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
 RUN mkdir -p "${GOPATH}/bin" "${GOCACHE}" "${GOMODCACHE}"
 
 # ==============================================================================
+# Layer 4c: Pre-built E2E test-suite node_modules
+# ==============================================================================
+# At test time, scripts/base_playwright_script.sh runs `npm install` inside
+# charts/<v>/test/e2e/, which pulls hundreds of pinned packages every job
+# (containers start with an empty filesystem). To make this fast while still
+# always running against the latest published `@camunda/e2e-test-suite`, we
+# pre-install every OTHER dependency here at image build time, then the runtime
+# script only fetches `@camunda/e2e-test-suite@latest` on top.
+#
+# Inputs:
+#   - e2e-package.json: a copy of charts/camunda-platform-<latest>/test/e2e/
+#     package.json, placed into the build context by the workflow / local build
+#     script. Required.
+#
+# We strip `@camunda/e2e-test-suite` from the package.json before installing so
+# the moving-target dep is not baked in.
+# ==============================================================================
+COPY e2e-package.json /opt/e2e-prebuilt/package.json
+
+RUN cd /opt/e2e-prebuilt \
+    && jq 'del(.devDependencies["@camunda/e2e-test-suite"], .dependencies["@camunda/e2e-test-suite"])' \
+        package.json > package.json.stripped \
+    && mv package.json.stripped package.json \
+    && npm install --no-audit --no-fund --omit=optional \
+    && node -e "require('@playwright/test')" \
+    && echo "Prebuilt node_modules size:" && du -sh node_modules \
+    && npm cache clean --force \
+    && rm -rf /root/.npm /tmp/*
+
+# ==============================================================================
 # Layer 5: Configuration
 # ==============================================================================
 # Allow git operations in any directory (fixes "dubious ownership" error)
@@ -398,6 +428,9 @@ RUN echo "=== Verifying tool installations ===" \
     && go version \
     && echo "=== Checking browser installation ===" \
     && ls -la /ms-playwright/ \
+    && echo "=== Checking prebuilt e2e node_modules ===" \
+    && test -d /opt/e2e-prebuilt/node_modules/@playwright/test \
+    && test ! -d /opt/e2e-prebuilt/node_modules/@camunda/e2e-test-suite \
     && echo "=== All tools verified successfully ==="
 
 # Run as root by default (CI typically runs as root)

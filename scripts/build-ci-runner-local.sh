@@ -400,6 +400,14 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
     echo "Copying .tool-versions to docker context..."
     cp "$REPO_ROOT/.tool-versions" "$REPO_ROOT/.github/docker/playwright-runner/.tool-versions"
 
+    # Copy the highest-version chart e2e package.json into the docker context
+    # so the image can pre-install pinned e2e deps (everything except
+    # @camunda/e2e-test-suite, which stays a moving target at runtime).
+    echo "Copying chart e2e package.json to docker context..."
+    E2E_PKG_SRC=$(ls -d "$REPO_ROOT"/charts/camunda-platform-*/test/e2e/package.json \
+        | sort -V | tail -n1)
+    cp "$E2E_PKG_SRC" "$REPO_ROOT/.github/docker/playwright-runner/e2e-package.json"
+
     # Determine image tags based on whether we're testing
     if [[ "$DO_TEST" == "true" ]]; then
         PW_BUILD_TAGS="-t ${PLAYWRIGHT_TEST_IMAGE}:latest"
@@ -438,6 +446,7 @@ if [[ "$BUILD_PLAYWRIGHT" == "true" ]]; then
 
     # Cleanup
     rm -f "$REPO_ROOT/.github/docker/playwright-runner/.tool-versions"
+    rm -f "$REPO_ROOT/.github/docker/playwright-runner/e2e-package.json"
 
     echo ""
     echo "✅ Playwright Runner build complete!"
