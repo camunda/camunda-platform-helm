@@ -89,7 +89,6 @@ type DeploySpecConfig struct {
 	ExtraValues              []string `mapstructure:"extraValues" yaml:"extraValues,omitempty"`
 	ScenarioRoot             string   `mapstructure:"scenarioRoot" yaml:"scenarioRoot,omitempty"`
 	ValuesPreset             string   `mapstructure:"valuesPreset" yaml:"valuesPreset,omitempty"`
-	RunIntegrationTests      *bool    `mapstructure:"runIntegrationTests" yaml:"runIntegrationTests,omitempty"`
 	RunE2ETests              *bool    `mapstructure:"runE2ETests" yaml:"runE2ETests,omitempty"`
 
 	// Selection + composition model fields (alternative to Scenario)
@@ -126,7 +125,6 @@ type MatrixConfig struct {
 	HelmTimeout   *int  `mapstructure:"helmTimeout" yaml:"helmTimeout,omitempty"`
 
 	// Tests
-	TestIT  *bool `mapstructure:"testIT" yaml:"testIT,omitempty"`
 	TestE2E *bool `mapstructure:"testE2E" yaml:"testE2E,omitempty"`
 	TestAll *bool `mapstructure:"testAll" yaml:"testAll,omitempty"`
 
@@ -469,10 +467,6 @@ func applyMatrixEnvOverrides(m *MatrixConfig, get func(string) string) {
 	}
 	if v := get("CAMUNDA_MATRIX_UPGRADE_FROM_VERSION"); v != "" {
 		m.UpgradeFromVersion = v
-	}
-	if v := get("CAMUNDA_MATRIX_TEST_IT"); v != "" {
-		b := parseBool(v)
-		m.TestIT = &b
 	}
 	if v := get("CAMUNDA_MATRIX_TEST_E2E"); v != "" {
 		b := parseBool(v)

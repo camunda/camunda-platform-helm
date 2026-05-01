@@ -91,7 +91,6 @@ type MatrixRunFlags struct {
 	HelmTimeout          *int
 
 	// Tests
-	TestIT  *bool
 	TestE2E *bool
 	TestAll *bool
 
@@ -175,7 +174,6 @@ func ApplyMatrixRunConfig(rc *RootConfig, changedFlags map[string]bool, f *Matri
 	MergeStringField(f.LogLevel, m.LogLevel, rc.LogLevel, changedFlags, "log-level")
 
 	// --- Tests ---
-	MergeBoolField(f.TestIT, m.TestIT, nil, changedFlags, "test-it")
 	MergeBoolField(f.TestE2E, m.TestE2E, nil, changedFlags, "test-e2e")
 	MergeBoolField(f.TestAll, m.TestAll, nil, changedFlags, "test-all")
 

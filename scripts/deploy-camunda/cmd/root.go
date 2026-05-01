@@ -233,9 +233,8 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Test.OutputTestEnvPath, "output-test-env-path", ".env.test", "Path for the test .env file output (for multi-scenario: used as base, e.g., .env.test.{scenario})")
 
 	// Test execution flags
-	f.BoolVar(&flags.Test.RunIntegrationTests, "test-it", false, "Run integration tests after deployment")
 	f.BoolVar(&flags.Test.RunE2ETests, "test-e2e", false, "Run e2e tests after deployment")
-	f.BoolVar(&flags.Test.RunAllTests, "test-all", false, "Run both integration and e2e tests after deployment")
+	f.BoolVar(&flags.Test.RunAllTests, "test-all", false, "Run all e2e tests after deployment")
 	f.StringVar(&flags.Test.KubeContext, "kube-context", "", "Kubernetes context to use for deployment")
 	f.StringVar(&flags.Test.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
 	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")

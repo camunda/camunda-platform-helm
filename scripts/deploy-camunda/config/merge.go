@@ -111,13 +111,12 @@ type DebugFlags struct {
 
 // TestFlags holds test execution configuration.
 type TestFlags struct {
-	RunIntegrationTests bool   // Run integration tests after deployment
-	RunE2ETests         bool   // Run e2e tests after deployment
-	RunAllTests         bool   // Run both integration and e2e tests after deployment
-	TestExclude         string // Pipe-separated regex for test suites to exclude (passed as --grep-invert to Playwright)
-	OutputTestEnv       bool   // Generate .env file for E2E tests after deployment
-	OutputTestEnvPath   string // Path for the test .env file output
-	KubeContext         string
+	RunE2ETests   bool   // Run e2e tests after deployment
+	RunAllTests   bool   // Run all e2e tests after deployment
+	TestExclude   string // Pipe-separated regex for test suites to exclude (passed as --grep-invert to Playwright)
+	OutputTestEnv bool   // Generate .env file for E2E tests after deployment
+	OutputTestEnvPath string // Path for the test .env file output
+	KubeContext   string
 }
 
 // SelectionFlags holds selection + composition model flags.
@@ -215,10 +214,6 @@ type RuntimeFlags struct {
 	// show fine-grained progress. Nil disables the callback.
 	OnPhase func(phase string)
 
-	// ITOutputWriter, when non-nil, replaces os.Stdout/os.Stderr for
-	// integration test script output. Used by the matrix runner to redirect
-	// IT output to a per-entry log file instead of polluting the terminal.
-	ITOutputWriter io.Writer
 	// E2EOutputWriter, when non-nil, replaces os.Stdout/os.Stderr for
 	// e2e test script output. Used by the matrix runner to redirect
 	// e2e output to a per-entry log file instead of polluting the terminal.
@@ -331,7 +326,6 @@ func ApplyActiveDeployment(rc *RootConfig, active string, flags *RuntimeFlags) e
 	MergeBoolField(&flags.Deployment.RenderTemplates, dep.RenderTemplates, rc.RenderTemplates, changed, "render-templates")
 
 	// Test execution flags
-	MergeBoolField(&flags.Test.RunIntegrationTests, dep.RunIntegrationTests, rc.RunIntegrationTests, changed, "test-it")
 	MergeBoolField(&flags.Test.RunE2ETests, dep.RunE2ETests, rc.RunE2ETests, changed, "test-e2e")
 
 	// Selection + composition model fields
@@ -412,7 +406,6 @@ func applyRootDefaults(rc *RootConfig, flags *RuntimeFlags) error {
 	MergeBoolField(&flags.Deployment.RenderTemplates, nil, rc.RenderTemplates, changed, "render-templates")
 
 	// Test execution flags
-	MergeBoolField(&flags.Test.RunIntegrationTests, nil, rc.RunIntegrationTests, changed, "test-it")
 	MergeBoolField(&flags.Test.RunE2ETests, nil, rc.RunE2ETests, changed, "test-e2e")
 
 	// Selection + composition model fields

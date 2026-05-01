@@ -33,13 +33,12 @@ func (e *TestError) Unwrap() error {
 
 // TestResult holds the result of a test execution.
 type TestResult struct {
-	Type   string // "integration" or "e2e"
+	Type   string // "e2e"
 	Error  error
 	Output string // Captured stdout+stderr from the test script.
 }
 
 // RunTests executes tests after deployment based on flags.
-// Tests are run in parallel if both --test-it and --test-e2e (or --test-all) are specified.
 //
 // On failure, the returned error is a *TestError containing the captured output
 // from the test scripts. Callers can use errors.As to extract it.
@@ -61,7 +60,7 @@ func RunTests(ctx context.Context, flags *config.RuntimeFlags, namespace string)
 
 	// Bound total post-deployment test runtime so matrix entries cannot hang
 	// indefinitely after Helm has already completed.
-	// Keep this well above Helm timeout because integration tests (DNS + ingress
+	// Keep this well above Helm timeout because e2e tests (DNS + ingress
 	// readiness + Playwright retries) can legitimately run much longer on
 	// upgrade-minor flows for 8.9.
 	testTimeout := 30 * time.Minute
@@ -280,7 +279,7 @@ func findRepoRoot(chartPath string) string {
 		}
 
 		// Check for scripts directory (specific to this repo)
-		if _, err := os.Stat(filepath.Join(dir, "scripts", "run-integration-tests.sh")); err == nil {
+		if _, err := os.Stat(filepath.Join(dir, "scripts", "run-e2e-tests.sh")); err == nil {
 			return dir
 		}
 

@@ -139,7 +139,6 @@ func newMatrixRunCommand() *cobra.Command {
 		repoRoot                 string
 		dryRun                   bool
 		coverage                 bool
-		testIT                   bool
 		testE2E                  bool
 		testAll                  bool
 		stopOnFailure            bool
@@ -265,7 +264,6 @@ This command calls deploy.Execute() for each matrix entry.`,
 					SkipDependencyUpdate: &skipDependencyUpdate,
 					HelmTimeout:          &helmTimeout,
 					// Tests
-					TestIT:  &testIT,
 					TestE2E: &testE2E,
 					TestAll: &testAll,
 					// Kube contexts
@@ -450,7 +448,6 @@ This command calls deploy.Execute() for each matrix entry.`,
 				NamespacePrefix:       namespacePrefix,
 				Platform:              platform,
 				MaxParallel:           maxParallel,
-				TestIT:                testIT,
 				TestE2E:               testE2E,
 				TestAll:               testAll,
 				RepoRoot:              repoRoot,
@@ -524,9 +521,8 @@ This command calls deploy.Execute() for each matrix entry.`,
 	f.StringVar(&repoRoot, "repo-root", "", "Repository root path (or set repoRoot in config)")
 	f.BoolVar(&dryRun, "dry-run", false, "Log what would be deployed without actually deploying")
 	f.BoolVar(&coverage, "coverage", false, "Show a layer-breakdown report of what is tested in the matrix (no deployment)")
-	f.BoolVar(&testIT, "test-it", false, "Run integration tests after each deployment")
 	f.BoolVar(&testE2E, "test-e2e", false, "Run e2e tests after each deployment")
-	f.BoolVar(&testAll, "test-all", false, "Run both integration and e2e tests after each deployment")
+	f.BoolVar(&testAll, "test-all", false, "Run all e2e tests after each deployment")
 	f.BoolVar(&stopOnFailure, "stop-on-failure", false, "Stop the run on the first failure")
 	f.StringVar(&namespacePrefix, "namespace-prefix", "matrix", "Prefix for generated namespaces")
 	f.BoolVar(&cleanup, "cleanup", false, "Delete each entry's namespace after its deployment and tests complete")

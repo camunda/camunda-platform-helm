@@ -65,11 +65,9 @@ type RunOptions struct {
 	// 0 or 1 means sequential execution (default). Values > 1 enable parallel execution
 	// with at most MaxParallel entries running simultaneously.
 	MaxParallel int
-	// TestIT runs integration tests after each deployment.
-	TestIT bool
 	// TestE2E runs e2e tests after each deployment.
 	TestE2E bool
-	// TestAll runs both integration and e2e tests after each deployment.
+	// TestAll runs all e2e tests after each deployment.
 	TestAll bool
 	// RepoRoot is the repository root path.
 	RepoRoot string
@@ -1467,14 +1465,13 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 			UseVaultBackedSecrets: useVault,
 		},
 		Test: config.TestFlags{
-			KubeContext:         kubeCtx,
-			TestExclude:         testExclude,
-			RunIntegrationTests: (opts.TestIT || opts.TestAll) && !entry.SkipIT,
-			RunE2ETests:         (opts.TestE2E || opts.TestAll) && !entry.SkipE2E,
-			// Do NOT propagate RunAllTests here — RunE2ETests/RunIntegrationTests already
-			// encode the full decision (including skip-e2e/skip-it from ci-test-config.yaml).
-			// Setting RunAllTests would bypass the skip logic in deploy/test.go which ORs
-			// RunAllTests with each individual flag.
+			KubeContext: kubeCtx,
+			TestExclude: testExclude,
+			RunE2ETests: (opts.TestE2E || opts.TestAll) && !entry.SkipE2E,
+			// Do NOT propagate RunAllTests here — RunE2ETests already encodes
+			// the full decision (including skip-e2e from ci-test-config.yaml).
+			// Setting RunAllTests would bypass the skip logic in deploy/test.go
+			// which ORs RunAllTests with RunE2ETests.
 			RunAllTests: false,
 		},
 		// Selection + Composition: pass explicit layer overrides from ci-test-config.yaml.
@@ -1505,12 +1502,6 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions, entryIndex 
 	// This keeps output out of the terminal so the status table stays clean.
 	if opts.LogDir != "" {
 		baseName := entryLogFileName(entry)
-		if itFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".it.log")); err != nil {
-			logging.Logger.Warn().Err(err).Msg("Failed to create IT log file, output will go to terminal")
-		} else {
-			defer itFile.Close()
-			flags.ITOutputWriter = itFile
-		}
 		if e2eFile, err := os.Create(filepath.Join(opts.LogDir, baseName+".e2e.log")); err != nil {
 			logging.Logger.Warn().Err(err).Msg("Failed to create e2e log file, output will go to terminal")
 		} else {
@@ -1883,8 +1874,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	step1Flags.Selection.UpgradeFlow = false     // Step 1 is a fresh install, no base-upgrade.yaml.
 	step1Flags.Chart.ChartRootOverlays = nil     // Step 1 installs old version from repo — no chart-root overlays.
 	step1Flags.Chart.SkipDependencyUpdate = true // Repo charts don't need local dep update.
-	step1Flags.Test.RunIntegrationTests = false  // Don't run tests after Step 1.
-	step1Flags.Test.RunE2ETests = false
+	step1Flags.Test.RunE2ETests = false          // Don't run tests after Step 1.
 	step1Flags.Test.RunAllTests = false
 	step1Flags.Deployment.DeleteNamespaceFirst = flags.Deployment.DeleteNamespaceFirst // Only delete on Step 1.
 
