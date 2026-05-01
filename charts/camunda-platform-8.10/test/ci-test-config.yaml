@@ -56,6 +56,7 @@ integration:
           shortname: oske
           exclude: []
           identity: keycloak
+          persistence: opensearch
           infra-type:
             gke: distroci
             eks: preemptible
