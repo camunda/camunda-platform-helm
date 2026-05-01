@@ -345,7 +345,14 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	}
 
 	// Derive persistence
+	// Specific opensearch variants must precede the generic "opensearch" arm
+	// since Go's switch evaluates in order and "opensearch-self-signed" /
+	// "opensearch-embedded" both contain the substring "opensearch".
 	switch {
+	case strings.Contains(s, "opensearch-self-signed"):
+		config.Persistence = "opensearch-self-signed"
+	case strings.Contains(s, "opensearch-embedded"):
+		config.Persistence = "opensearch-embedded"
 	case strings.Contains(s, "opensearch"):
 		config.Persistence = "opensearch-external"
 	case strings.Contains(s, "rdbms-external"):

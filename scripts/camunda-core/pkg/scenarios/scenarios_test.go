@@ -89,6 +89,20 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPlatform:    "gke",
 		},
 		{
+			name:            "opensearch-self-signed maps to opensearch-self-signed persistence",
+			scenario:        "opensearch-self-signed",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-self-signed",
+			wantPlatform:    "gke",
+		},
+		{
+			name:            "opensearch-embedded maps to opensearch-embedded persistence",
+			scenario:        "opensearch-embedded",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-embedded",
+			wantPlatform:    "gke",
+		},
+		{
 			name:            "rdbms maps to rdbms persistence",
 			scenario:        "rdbms",
 			wantIdentity:    "keycloak",
