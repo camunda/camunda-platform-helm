@@ -1,0 +1,36 @@
+# =============================================================================
+# Component Persistence Feature
+# =============================================================================
+# Layer 4: Optional feature - exercises persistent volume configuration on
+# Camunda components so the chart's PVC/StatefulSet templates are covered by
+# nightly CI. Tracks the regressions reported in:
+#   SUPPORT-30042 (Optimize PVC pending)
+#   SUPPORT-30069 (web-modeler PVC pending / install failure)
+#   SUPPORT-30094 (orchestration extraVolumeClaimTemplates rejected)
+# Used with: TEST_VALUES_FEATURES containing "persistence"
+# =============================================================================
+
+optimize:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 1Gi
+
+webModeler:
+  persistence:
+    enabled: true
+    size: 1Gi
+    # Required to upgrade through a single-replica restapi Deployment when
+    # the chart-managed PVC is RWO (default). RollingUpdate would leave
+    # the new pod waiting for the old pod to release the volume.
+    deploymentStrategy: Recreate
+
+orchestration:
+  extraVolumeClaimTemplates:
+    - metadata:
+        name: extra-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
