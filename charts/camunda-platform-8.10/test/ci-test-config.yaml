@@ -292,6 +292,18 @@ integration:
           infra-type:
             gke: distroci
             eks: preemptible
+        - name: component-persistence
+          enabled: true
+          exclude: []
+          shortname: cprst
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          flow: install,upgrade-minor
+          infra-type:
+            gke: distroci
+          features: [persistence,migrator]
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch
