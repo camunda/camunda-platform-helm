@@ -267,6 +267,7 @@ jobs:
             fi
 
             echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+            echo "IS_PRERELEASE=${IS_PRERELEASE}" >> $GITHUB_ENV
             RELEASE_VERSION_COMPUTED=true
             echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
             echo "::notice::Computed version: ${RELEASE_VERSION}"
@@ -400,6 +401,15 @@ jobs:
 
           # Update the version field
           yq -i ".version = \"${RELEASE_VERSION}\"" Chart.yaml
+
+          # Remove prerelease annotation for stable releases.
+          # During alpha-to-stable transitions the source Chart.yaml may still
+          # carry artifacthub.io/prerelease: "true". Strip it so Artifact Hub
+          # does not label the GA chart as a pre-release.
+          if [[ "${IS_PRERELEASE}" != "true" ]]; then
+            yq -i 'del(.annotations."artifacthub.io/prerelease")' Chart.yaml
+            echo "Removed artifacthub.io/prerelease annotation (stable release)"
+          fi
 
           # Extract and apply the artifacthub.io/changes annotation from trace
           # The trace output contains the full YAML block for the annotation
