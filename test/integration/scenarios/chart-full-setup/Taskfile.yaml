@@ -139,6 +139,13 @@ tasks:
       {{ if eq .TEST_CHART_FLOW "install" }}
         # Pre-run scripts in the install flow.
         bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-install.sh
+        # Scenario-specific pre-install hook (cert generators, companion-chart
+        # secrets, etc.). Mirrors the deploy-camunda matrix runner's
+        # versionmatrix.HasPreInstallScript discovery.
+        SCENARIO_PRE_INSTALL="{{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-install-${TEST_PERSISTENCE}.sh"
+        if [ -f "$SCENARIO_PRE_INSTALL" ]; then
+          bash -x "$SCENARIO_PRE_INSTALL"
+        fi
       {{ end }}
     - |
       {{ if and (eq .TEST_PERSISTENCE "opensearch") .TEST_OPENSEARCH_PREFIX }}
