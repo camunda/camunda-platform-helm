@@ -143,6 +143,15 @@ integration:
           features: [license]
           qa: true
           platforms: [gke]
+        - name: qa-opensearch
+          enabled: false
+          flow: install
+          shortname: qaos
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch

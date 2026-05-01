@@ -348,6 +348,45 @@ integration:
           features: [documentstore]
           qa: true
           platforms: [gke]
+        - name: qa-opensearch-upg
+          enabled: false
+          flow: install
+          shortname: qaosupg2
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba-upg
+          enabled: false
+          flow: install
+          shortname: qaelrbaup2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          flow: install
+          shortname: qaelmtup2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-license-upg
+          enabled: false
+          flow: install
+          shortname: licup2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license]
+          qa: true
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch

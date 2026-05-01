@@ -306,6 +306,83 @@ integration:
           persistence: elasticsearch
           qa: true
           platforms: [gke]
+        - name: qa-elasticsearch
+          enabled: false
+          flow: install
+          shortname: qael
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch
+          enabled: false
+          flow: install
+          shortname: qaos
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch-upg
+          enabled: false
+          flow: install
+          shortname: qaosupg
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt
+          enabled: false
+          flow: install
+          shortname: qaelmt
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          flow: install
+          shortname: qaelmtupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba
+          enabled: false
+          flow: install
+          shortname: qaelrba
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
+          qa: true
+          platforms: [gke]
+        - name: qa-document-store
+          enabled: false
+          flow: install
+          shortname: qadoc
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
+        - name: qa-document-store-upg
+          enabled: false
+          flow: install
+          shortname: qadocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
         - name: qa-license
           enabled: false
           flow: install
