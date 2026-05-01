@@ -34,6 +34,27 @@ identityPostgresql:
 identity:
   externalDatabase:
     enabled: false
+  env:
+    - name: IDENTITY_TENANTS_0_TENANTID
+      value: "<default>"
+    - name: IDENTITY_TENANTS_0_NAME
+      value: "Default"
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_TYPE
+      value: "USER"
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_USERNAME
+      value: "demo"
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_TYPE
+      value: "APPLICATION"
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_APPLICATIONID
+      value: "venom"
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_TYPE
+      value: "APPLICATION"
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
+      value: "connectors"
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
+      value: "APPLICATION"
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
+      value: "optimize"
 
 optimize:
   caches:
