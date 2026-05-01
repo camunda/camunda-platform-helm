@@ -110,7 +110,7 @@ Each row in section 1 was validated by deploying the corresponding scenario and 
 | --- | --- | --- |
 | `opensearch-self-signed` | #6032 | OS via JKS |
 | `opensearch-self-signed-os-trust` | #6040 | OS via caBundle init container, JKS removed — proves Phase B2 |
-| `elasticsearch-self-signed` | #6033 | ES + legacy exporter auth env |
+| `elasticsearch-self-signed` | #5994 | ES + legacy exporter auth env (superseded the closed draft #6033) |
 | `rdbms-self-signed` | #6036 | PG with `sslmode=verify-full` + caBundle mount |
 | Plaintext-fallback regression check | #6037 | Asserts no `http://datastore` URLs leaked into pods |
 
