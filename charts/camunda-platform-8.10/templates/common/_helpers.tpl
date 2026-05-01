@@ -1136,13 +1136,14 @@ See common.java_tool_options_tls_env for full documentation.
 
 {{/*
 hasCaBundle
-Returns "true" when global.tls.caBundle.existingSecret is set, "false"
-otherwise. Mirrors hasSecretConfig but specific to the OS-level CA bundle.
+Returns "true" when global.tls.caBundle.secret.existingSecret is set,
+"false" otherwise. Mirrors hasSecretConfig but specific to the OS-level
+CA bundle.
 Usage:
   {{ if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
 */}}
 {{- define "camundaPlatform.hasCaBundle" -}}
-{{- if and .Values.global.tls .Values.global.tls.caBundle .Values.global.tls.caBundle.existingSecret -}}
+{{- if and .Values.global.tls .Values.global.tls.caBundle .Values.global.tls.caBundle.secret .Values.global.tls.caBundle.secret.existingSecret -}}
 true
 {{- else -}}
 false
@@ -1167,9 +1168,9 @@ Usage:
 {{- define "camundaPlatform.caBundleVolume" -}}
 - name: ca-bundle
   secret:
-    secretName: {{ .Values.global.tls.caBundle.existingSecret | quote }}
+    secretName: {{ .Values.global.tls.caBundle.secret.existingSecret | quote }}
     items:
-      - key: {{ .Values.global.tls.caBundle.existingSecretKey | default "ca.crt" | quote }}
+      - key: {{ .Values.global.tls.caBundle.secret.existingSecretKey | default "ca.crt" | quote }}
         path: ca.crt
     optional: false
 {{- end -}}
