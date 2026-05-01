@@ -99,6 +99,9 @@ spec:
             - name: CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED
               value: "true"
             {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- end }}
             {{- with .Values.optimize.env }}
               {{- tpl (toYaml .) $ | nindent 12 }}
             {{- end }}
@@ -127,6 +130,9 @@ spec:
             - name: keystore
               mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
               subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -240,6 +246,9 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
             {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- end }}
           {{- with .Values.optimize.env }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
@@ -322,6 +331,9 @@ spec:
               mountPath: {{ printf "/optimize/certificates/%s" (include "camundaPlatform.getTlsSecretKey" .) }}
               subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
             {{- end }}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
@@ -377,6 +389,9 @@ spec:
             "config" .Values.global.documentStore.type.gcp
             "fileName" (.Values.global.documentStore.type.gcp.fileName | default "service-account.json")
         ) | nindent 8 }}
+        {{- end }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
