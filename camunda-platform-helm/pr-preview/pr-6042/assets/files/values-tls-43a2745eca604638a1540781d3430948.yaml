@@ -48,10 +48,15 @@
 #     (libcurl, Go, Python requests + certifi, the post-8.6.7 OpenSearch
 #     native client).
 #   - run a dedicated init container per Java component that imports the CA
-#     into a JKS truststore at runtime, then prepend
+#     into the JDK system truststore at runtime (PKCS12 format on Java 21,
+#     since the init container copies $JAVA_HOME/lib/security/cacerts and
+#     appends the user CA via `keytool -importcert` without converting the
+#     format), then prepend
 #       -Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts
 #     to JAVA_TOOL_OPTIONS — so JVM HTTP clients (Apache httpcore5, the
 #     OperateOpenSearchConnector, PostgreSQL JDBC, etc.) trust the user CA.
+#     The JVM default `trustStoreType` (PKCS12) is left in place; the
+#     helper does NOT set `-Djavax.net.ssl.trustStoreType`.
 #
 # This single secret + the chart's wiring is the customer-facing answer to
 # camunda/camunda-platform-helm#3498. No init container running as root, no
