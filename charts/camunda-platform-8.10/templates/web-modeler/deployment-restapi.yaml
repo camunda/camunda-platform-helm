@@ -25,7 +25,12 @@ spec:
       imagePullSecrets:
         {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((or .Values.camundaHub.webModeler.restapi.initContainers .Values.webModeler.restapi.initContainers) | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- end }}
+        {{- with (or .Values.camundaHub.webModeler.restapi.initContainers .Values.webModeler.restapi.initContainers) }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: {{ include "webModeler.name" . }}-restapi
           image: {{ include "webModeler.restapi.image" . | quote }}
@@ -93,6 +98,7 @@ spec:
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
           {{- end }}
           {{- with (or .Values.camundaHub.webModeler.restapi.env .Values.webModeler.restapi.env) }}
             {{- tpl (toYaml .) $ | nindent 12 }}
@@ -167,6 +173,7 @@ spec:
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
             {{- if (or .Values.camundaHub.webModeler.restapi.extraVolumeMounts .Values.webModeler.restapi.extraVolumeMounts) }}
             {{- (or .Values.camundaHub.webModeler.restapi.extraVolumeMounts .Values.webModeler.restapi.extraVolumeMounts) | toYaml | nindent 12 }}
@@ -197,6 +204,7 @@ spec:
         {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if (or .Values.camundaHub.webModeler.restapi.extraVolumes .Values.webModeler.restapi.extraVolumes) }}
         {{- (or .Values.camundaHub.webModeler.restapi.extraVolumes .Values.webModeler.restapi.extraVolumes) | toYaml | nindent 8 }}

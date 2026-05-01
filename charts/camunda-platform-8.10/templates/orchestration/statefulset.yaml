@@ -37,7 +37,12 @@ spec:
       imagePullSecrets:
         {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- end }}
+        {{- with (coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       containers:
         - name: orchestration
           image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
@@ -80,6 +85,9 @@ spec:
               (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.opensearch.tls)) "true")
             }}
             {{- include "common.java_tool_options_tls_env" (dict "Values" .Values "component" "orchestration") | nindent 12 }}
+            {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ printf "%s %s" .Values.orchestration.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
             {{- else }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.orchestration.javaOpts | quote }}
@@ -246,6 +254,7 @@ spec:
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
             {{- if .Values.orchestration.extraVolumeMounts }}
             {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
@@ -297,6 +306,7 @@ spec:
         {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.orchestration.extraVolumes }}
           {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}

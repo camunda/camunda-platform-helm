@@ -90,12 +90,12 @@ integration:
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
         - name: opensearch-self-signed-os-trust
-          # Disabled until A1 (opensearch-self-signed scenario, #6032) merges
-          # to main — that PR carries the cert generator script
-          # (create-opensearch-tls-secrets.sh) referenced by the os-trust
-          # pre-install wrapper. B2 (#6040, the truststore init container PR)
-          # flips this to enabled: true once both have landed.
-          enabled: false
+          # B2 turns this on. Depends on A1 (#6032) being on main first
+          # (carries the cert generator script
+          # create-opensearch-tls-secrets.sh that the os-trust pre-install
+          # wrapper exec's). If B2 lands before A1 the scenario will fail
+          # in CI; keep B2 stacked on a base that includes A1, or merge A1 first.
+          enabled: true
           shortname: osot
           exclude: []
           auth: keycloak

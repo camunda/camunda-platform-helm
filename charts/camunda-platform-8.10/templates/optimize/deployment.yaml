@@ -30,6 +30,9 @@ spec:
       imagePullSecrets:
         {{- include "optimize.imagePullSecrets" . | nindent 8 }}
       initContainers:
+        {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+        {{- end }}
         {{- if .Values.optimize.initContainers }}
           {{- tpl (.Values.optimize.initContainers | toYaml | nindent 8) $ }}
         {{- end }}
@@ -77,6 +80,9 @@ spec:
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
             {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize") | nindent 12 }}
+            {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ printf "%s %s" .Values.optimize.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
             {{- else if .Values.optimize.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.optimize.javaOpts | quote }}
@@ -133,6 +139,7 @@ spec:
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
             {{- if .Values.optimize.extraVolumeMounts }}
             {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
@@ -182,6 +189,9 @@ spec:
             {{- end }}
             {{- if eq (include "optimize.hasTlsConfig" .) "true" }}
             {{- include "optimize.java_tool_options_tls_env" (dict "Values" .Values "component" "optimize") | nindent 12 }}
+            {{- else if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ printf "%s %s" .Values.optimize.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
             {{- else if .Values.optimize.javaOpts }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.optimize.javaOpts | quote }}
@@ -333,6 +343,7 @@ spec:
             {{- end }}
             {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+            {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
             {{- end }}
             {{- if .Values.global.documentStore.type.gcp.enabled }}
             - name: gcp-credentials-volume
@@ -392,6 +403,7 @@ spec:
         {{- end }}
         {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+        {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
         {{- end }}
         {{- if .Values.optimize.extraVolumes }}
         {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}

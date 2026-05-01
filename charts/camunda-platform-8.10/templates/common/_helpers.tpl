@@ -1207,6 +1207,198 @@ Usage (inside an env: list):
 {{- define "camundaPlatform.caBundleEnv" -}}
 - name: SSL_CERT_FILE
   value: /etc/camunda/tls/ca.crt
+- name: NODE_EXTRA_CA_CERTS
+  value: /etc/camunda/tls/ca.crt
+{{- end -}}
+
+{{/*
+caBundleSslCertFileEnv
+SSL_CERT_FILE only — for components that already manage their own
+NODE_EXTRA_CA_CERTS via component-specific values (Console pins the env
+var to its own server cert path; injecting another NODE_EXTRA_CA_CERTS
+from this helper would emit a duplicate env name with last-wins
+behavior). Use this variant on those components.
+
+Usage (inside an env: list):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleSslCertFileEnv" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleSslCertFileEnv" -}}
+- name: SSL_CERT_FILE
+  value: /etc/camunda/tls/ca.crt
+{{- end -}}
+
+{{/*
+caBundleInitContainer
+Emits an init container that builds a Java truststore (PKCS12-format JKS)
+combining the system $JAVA_HOME/lib/security/cacerts with the user CA
+mounted by caBundleVolume. Output is written to /var/camunda/tls-truststore/cacerts
+in an emptyDir shared with the main container. The main container then
+points -Djavax.net.ssl.trustStore at this file.
+
+This is the JVM-side counterpart to caBundleEnv (SSL_CERT_FILE): the
+JVM does not honour SSL_CERT_FILE, so we have to give it a real
+truststore. Runs `keytool` from a dedicated JRE image (default
+eclipse-temurin:21-jre — see "Image and pull policy" below for why
+we don't reuse the main container image). Runs as a non-root user
+with readOnlyRootFilesystem and dropped capabilities.
+
+Usage (inside .spec.initContainers):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleInitContainer" . | nindent 8 }}
+  {{- end }}
+
+Image and pull policy come from global.tls.caBundle.image and
+global.tls.caBundle.imagePullPolicy. We pin a dedicated JRE image
+(eclipse-temurin:21-jre by default) because not every Camunda
+component image exposes JAVA_HOME consistently — using a known JRE
+image keeps the keytool step robust across orchestration / optimize /
+identity / connectors / console / web-modeler restapi.
+*/}}
+{{- define "camundaPlatform.caBundleInitContainer" -}}
+{{- $defaultImg := "eclipse-temurin:21-jre" -}}
+{{- $img := .Values.global.tls.caBundle.image | default $defaultImg -}}
+{{- /* Prepend global.image.registry when set AND the user has not
+       overridden the image. A regex-based "is this fully qualified"
+       detection breaks for port-based registries with no dots
+       (`localhost:5000/foo`, `myregistry:5000/foo`); we sidestep that
+       by only prefixing the chart default. If the user supplied an
+       explicit override they are responsible for making it routable
+       in their environment. */ -}}
+{{- if and (eq $img $defaultImg) .Values.global.image .Values.global.image.registry -}}
+{{-   $img = printf "%s/%s" .Values.global.image.registry $img -}}
+{{- end -}}
+- name: ca-bundle-truststore-init
+  image: {{ $img | quote }}
+  imagePullPolicy: {{ .Values.global.tls.caBundle.imagePullPolicy | default "IfNotPresent" | quote }}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ["ALL"]
+    seccompProfile:
+      type: RuntimeDefault
+  command: ["sh", "-c"]
+  args:
+    - |
+      set -eu
+      umask 022
+      # Java 21 default cacerts is PKCS12; copy it as-is so we keep all
+      # public CAs and add our user CA on top.
+      cp -L "$JAVA_HOME/lib/security/cacerts" /var/camunda/tls-truststore/cacerts
+      chmod 0644 /var/camunda/tls-truststore/cacerts
+      # Split a multi-cert PEM bundle into single-cert files and import
+      # each under its own alias. keytool -importcert with a single
+      # -alias only ever stores the first cert under that alias and
+      # silently discards the rest, so customers who concatenate
+      # root + intermediate CAs into one ca.crt would otherwise lose
+      # everything but the first. Use a writable workdir under
+      # /var/camunda — readOnlyRootFilesystem is set on this container.
+      WORK=/var/camunda/tls-truststore/work
+      mkdir -p "$WORK"
+      awk 'BEGIN{n=0; out=""}
+           /-----BEGIN CERTIFICATE-----/ {n++; out=sprintf("'"$WORK"'/cert-%02d.pem", n)}
+           out!="" {print > out}
+           /-----END CERTIFICATE-----/ {close(out); out=""}' \
+           /etc/camunda/tls/ca.crt
+      i=0
+      for cert in "$WORK"/cert-*.pem; do
+        # POSIX sh has no nullglob — when awk produced zero output files,
+        # the literal pattern is iterated once. Skip non-files.
+        [ -f "$cert" ] || continue
+        i=$((i+1))
+        keytool -importcert \
+          -noprompt \
+          -trustcacerts \
+          -keystore /var/camunda/tls-truststore/cacerts \
+          -storepass changeit \
+          -alias "camunda-user-ca-$i" \
+          -file "$cert"
+      done
+      rm -rf "$WORK"
+      if [ "$i" = "0" ]; then
+        echo "[ca-bundle-truststore-init] ERROR: no certificates found in /etc/camunda/tls/ca.crt — check that global.tls.caBundle.secret references a non-empty PEM bundle." >&2
+        exit 1
+      fi
+      echo "[ca-bundle-truststore-init] imported $i user CA cert(s) into /var/camunda/tls-truststore/cacerts"
+  volumeMounts:
+    - name: ca-bundle
+      mountPath: /etc/camunda/tls
+      readOnly: true
+    - name: ca-bundle-truststore
+      mountPath: /var/camunda/tls-truststore
+{{- end -}}
+
+{{/*
+caBundleTruststoreVolume
+Emits the emptyDir volume that the init container writes the combined
+truststore into. Always paired with caBundleInitContainer in
+.spec.initContainers and caBundleTruststoreVolumeMount on the main
+container.
+
+Usage (inside .spec.volumes):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleTruststoreVolume" . | nindent 8 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleTruststoreVolume" -}}
+- name: ca-bundle-truststore
+  emptyDir: {}
+{{- end -}}
+
+{{/*
+caBundleTruststoreVolumeMount
+Emits the volumeMount for the chart-built truststore on the main
+container. Mounted read-only — the init container writes once.
+
+Usage (inside container.volumeMounts):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleTruststoreVolumeMount" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleTruststoreVolumeMount" -}}
+- name: ca-bundle-truststore
+  mountPath: /var/camunda/tls-truststore
+  readOnly: true
+{{- end -}}
+
+{{/*
+caBundleJavaOpts
+Returns the -D arguments needed to point a JVM at the chart-built
+combined truststore. Use this when injecting JAVA_TOOL_OPTIONS for a
+component that has caBundle set but no component-specific JKS path.
+
+Usage (inside an env: list, after computing the trustStore branch):
+  - name: JAVA_TOOL_OPTIONS
+    value: {{ printf "%s %s" .Values.<component>.javaOpts (include "camundaPlatform.caBundleJavaOpts" .) | trim | quote }}
+*/}}
+{{- define "camundaPlatform.caBundleJavaOpts" -}}
+-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit
+{{- end -}}
+
+{{/*
+caBundleJavaToolOptionsEnv
+Emits a JAVA_TOOL_OPTIONS env var pre-populated with caBundleJavaOpts.
+Use on components that do NOT already render their own JAVA_TOOL_OPTIONS
+(connectors, identity, console, web-modeler websockets) so the chart-built
+truststore takes effect with no per-component branching.
+
+Components that already render JAVA_TOOL_OPTIONS conditionally
+(orchestration, optimize) should compose caBundleJavaOpts into their
+existing branch instead, so user-supplied javaOpts are preserved.
+
+Usage (inside an env: list):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleJavaToolOptionsEnv" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleJavaToolOptionsEnv" -}}
+- name: JAVA_TOOL_OPTIONS
+  value: {{ include "camundaPlatform.caBundleJavaOpts" . | quote }}
 {{- end -}}
 
 {{/*

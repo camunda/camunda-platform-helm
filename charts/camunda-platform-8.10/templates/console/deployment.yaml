@@ -30,7 +30,13 @@ spec:
       imagePullSecrets:
         {{- include "console.imagePullSecrets" . | nindent 8 }}
       initContainers:
-        {{- tpl ((or .Values.camundaHub.console.initContainers .Values.console.initContainers) | default list | toYaml | nindent 8) $ }}
+        {{- /* Console is a Node.js application; the caBundle init container builds
+              a JKS truststore that the JVM consumes — Node uses NODE_EXTRA_CA_CERTS
+              instead. caBundleEnv (below) injects both SSL_CERT_FILE and
+              NODE_EXTRA_CA_CERTS, so no init container is needed here. */ -}}
+        {{- with (or .Values.camundaHub.console.initContainers .Values.console.initContainers) }}
+        {{- tpl (toYaml . | nindent 8) $ }}
+        {{- end }}
       serviceAccountName: {{ include "console.serviceAccountName" . }}
       {{- if (or .Values.camundaHub.console.dnsConfig .Values.console.dnsConfig) }}
       dnsConfig: {{- toYaml (or .Values.camundaHub.console.dnsConfig .Values.console.dnsConfig) | nindent 8 }}
@@ -51,8 +57,19 @@ spec:
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
             ) | nindent 12 }}
+            {{- /* When global.tls.caBundle is set, NODE_EXTRA_CA_CERTS
+                  must point at the user CA bundle so Console's outbound
+                  Node.js HTTPS calls trust the user CAs (Node ignores
+                  SSL_CERT_FILE). Otherwise, fall back to Console's own
+                  certificate path (legacy chart behavior; meaningful when
+                  Console serves over TLS with a custom cert). */ -}}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/camunda/tls/ca.crt
+            {{- else }}
             - name: NODE_EXTRA_CA_CERTS
               value: {{ printf "/usr/local/console/certificates/%s" (or .Values.camundaHub.console.tls.certKeyFilename .Values.console.tls.certKeyFilename) | quote }}
+            {{- end }}
             - name: NODE_ENV
               value: {{ (or .Values.camundaHub.console.nodeEnv .Values.console.nodeEnv) | default "prod" | quote }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
@@ -86,7 +103,15 @@ spec:
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- /* Node.js — SSL_CERT_FILE for libcurl init scripts in the
+                  image; NODE_EXTRA_CA_CERTS is set unconditionally above
+                  to Console's own server cert path, so we use the
+                  SSL_CERT_FILE-only variant here to avoid emitting a
+                  duplicate NODE_EXTRA_CA_CERTS env entry (Kubernetes
+                  treats duplicates as undefined / last-wins). The
+                  JAVA_TOOL_OPTIONS truststore env is omitted: Node
+                  ignores it. */ -}}
+            {{- include "camundaPlatform.caBundleSslCertFileEnv" . | nindent 12 }}
           {{- end }}
           {{- if (or .Values.camundaHub.console.env .Values.console.env) }}
             {{ (or .Values.camundaHub.console.env .Values.console.env) | toYaml | nindent 12 }}
@@ -159,6 +184,7 @@ spec:
               readOnly: true
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
             {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
           {{- end }}
           {{- if (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) }}
@@ -183,6 +209,7 @@ spec:
         ) | nindent 8 }}
         {{- end }}
       {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- /* No truststore volume — Node doesn't consume the JKS. */ -}}
         {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
       {{- end }}
       {{- if (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) }}
