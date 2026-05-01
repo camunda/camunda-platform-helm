@@ -306,6 +306,16 @@ integration:
           persistence: elasticsearch
           qa: true
           platforms: [gke]
+        - name: qa-license
+          enabled: false
+          flow: install
+          shortname: lic
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license]
+          qa: true
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch

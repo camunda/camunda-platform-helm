@@ -193,11 +193,34 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 }
 
 // Filter applies post-generation filtering to the matrix entries.
+// When both ScenarioFilter and ShortnameFilter are provided and the combined
+// AND produces zero results, Filter retries with just the ScenarioFilter
+// (dropping the shortname constraint). This supports workflows with dynamic
+// shortnames (e.g., the license-key workflow passes "8.10-come" which isn't
+// in ci-test-config) while keeping shortname as a precise disambiguator when
+// multiple entries share a scenario name.
 func Filter(entries []Entry, opts FilterOptions) []Entry {
 	if opts.ScenarioFilter == "" && opts.ShortnameFilter == "" && opts.FlowFilter == "" && opts.Platform == "" {
 		return entries
 	}
 
+	filtered := filterEntries(entries, opts)
+
+	// Fallback: when both scenario and shortname filters are set but yield no
+	// results, retry without the shortname filter. This handles dynamic shortnames
+	// (e.g., license workflow) where the scenario is the stable lookup key.
+	if len(filtered) == 0 && opts.ScenarioFilter != "" && opts.ShortnameFilter != "" {
+		fallbackOpts := opts
+		fallbackOpts.ShortnameFilter = ""
+		fallbackOpts.ShortnameExact = false
+		filtered = filterEntries(entries, fallbackOpts)
+	}
+
+	return filtered
+}
+
+// filterEntries is the core filter logic used by Filter.
+func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 	// Parse comma-separated scenario filters into individual substrings.
 	var scenarioFilters []string
 	if opts.ScenarioFilter != "" {

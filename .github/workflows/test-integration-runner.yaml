@@ -583,6 +583,7 @@ jobs:
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
+            --scenario-filter "${{ inputs.scenario }}" \
             --shortname-filter "${{ inputs.shortname }}" \
             --shortname-exact \
             --flow-filter "${{ inputs.flow }}" \
@@ -823,6 +824,7 @@ jobs:
           go run . matrix run \
             --repo-root "${GITHUB_WORKSPACE}" \
             --include-disabled \
+            --scenario-filter "${{ inputs.scenario }}" \
             --shortname-filter "${{ inputs.shortname }}" \
             --shortname-exact \
             --flow-filter "${{ inputs.flow }}" \
