@@ -315,7 +315,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 #    - chromium-XXXX/ (357 MB) - Full browser
 #    - chromium_headless_shell-XXXX/ (110 MB) - Headless-only
 #    - ffmpeg-XXXX/ (5 MB) - Video encoding
-# 3. Delete the full browser and ffmpeg (we only need headless shell)
+# 3. Delete the full browser (we only need headless shell; ffmpeg is kept — see NOTE below)
 #
 # WHY HEADLESS SHELL ONLY:
 # - Our tests run headless (no visible browser window)
