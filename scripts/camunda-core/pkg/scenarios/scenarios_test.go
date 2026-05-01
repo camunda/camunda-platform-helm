@@ -102,6 +102,13 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPersistence: "rdbms-oracle",
 			wantPlatform:    "gke",
 		},
+		{
+			name:            "rdbms-self-signed maps to rdbms-self-signed persistence",
+			scenario:        "rdbms-self-signed",
+			wantIdentity:    "keycloak",
+			wantPersistence: "rdbms-self-signed",
+			wantPlatform:    "gke",
+		},
 
 		// Platform derivation
 		{

@@ -7,7 +7,7 @@
 # Camunda chart. Referenced from ci-test-config.yaml dependencies.
 #
 # Camunda components connect via:
-#   jdbc:postgresql://postgres-tls:5432/orchestration?sslmode=verify-full&sslrootcert=/etc/camunda/tls/ca.crt
+#   jdbc:postgresql://postgres-tls-postgresql:5432/orchestration?sslmode=verify-full&sslrootcert=/etc/camunda/tls/ca.crt
 # with the CA mounted from the `rdbms-tls-ca` secret.
 
 auth:
