@@ -1212,6 +1212,24 @@ Usage (inside an env: list):
 {{- end -}}
 
 {{/*
+caBundleSslCertFileEnv
+SSL_CERT_FILE only — for components that already manage their own
+NODE_EXTRA_CA_CERTS via component-specific values (Console pins the env
+var to its own server cert path; injecting another NODE_EXTRA_CA_CERTS
+from this helper would emit a duplicate env name with last-wins
+behavior). Use this variant on those components.
+
+Usage (inside an env: list):
+  {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+  {{- include "camundaPlatform.caBundleSslCertFileEnv" . | nindent 12 }}
+  {{- end }}
+*/}}
+{{- define "camundaPlatform.caBundleSslCertFileEnv" -}}
+- name: SSL_CERT_FILE
+  value: /etc/camunda/tls/ca.crt
+{{- end -}}
+
+{{/*
 caBundleInitContainer
 Emits an init container that builds a Java truststore (PKCS12-format JKS)
 combining the system $JAVA_HOME/lib/security/cacerts with the user CA
@@ -1237,12 +1255,16 @@ image keeps the keytool step robust across orchestration / optimize /
 identity / connectors / console / web-modeler restapi.
 */}}
 {{- define "camundaPlatform.caBundleInitContainer" -}}
-{{- $img := .Values.global.tls.caBundle.image | default "eclipse-temurin:21-jre" -}}
-{{- /* Prepend global.image.registry when set so air-gapped mirrors work
-       transparently — assumes the mirror keeps the upstream path. Skip
-       when the user already supplied a fully-qualified image (contains
-       a registry separator) so we don't double-prefix. */ -}}
-{{- if and .Values.global.image .Values.global.image.registry (not (regexMatch "^[^/]+\\.[^/]+/.+" $img)) -}}
+{{- $defaultImg := "eclipse-temurin:21-jre" -}}
+{{- $img := .Values.global.tls.caBundle.image | default $defaultImg -}}
+{{- /* Prepend global.image.registry when set AND the user has not
+       overridden the image. A regex-based "is this fully qualified"
+       detection breaks for port-based registries with no dots
+       (`localhost:5000/foo`, `myregistry:5000/foo`); we sidestep that
+       by only prefixing the chart default. If the user supplied an
+       explicit override they are responsible for making it routable
+       in their environment. */ -}}
+{{- if and (eq $img $defaultImg) .Values.global.image .Values.global.image.registry -}}
 {{-   $img = printf "%s/%s" .Values.global.image.registry $img -}}
 {{- end -}}
 - name: ca-bundle-truststore-init
@@ -1267,14 +1289,33 @@ identity / connectors / console / web-modeler restapi.
       # public CAs and add our user CA on top.
       cp -L "$JAVA_HOME/lib/security/cacerts" /var/camunda/tls-truststore/cacerts
       chmod 0644 /var/camunda/tls-truststore/cacerts
-      keytool -importcert \
-        -noprompt \
-        -trustcacerts \
-        -keystore /var/camunda/tls-truststore/cacerts \
-        -storepass changeit \
-        -alias camunda-user-ca \
-        -file /etc/camunda/tls/ca.crt
-      echo "[ca-bundle-truststore-init] imported user CA into /var/camunda/tls-truststore/cacerts"
+      # Split a multi-cert PEM bundle into single-cert files and import
+      # each under its own alias. keytool -importcert with a single
+      # -alias only ever stores the first cert under that alias and
+      # silently discards the rest, so customers who concatenate
+      # root + intermediate CAs into one ca.crt would otherwise lose
+      # everything but the first. Use a writable workdir under
+      # /var/camunda — readOnlyRootFilesystem is set on this container.
+      WORK=/var/camunda/tls-truststore/work
+      mkdir -p "$WORK"
+      awk 'BEGIN{n=0; out=""}
+           /-----BEGIN CERTIFICATE-----/ {n++; out=sprintf("'"$WORK"'/cert-%02d.pem", n)}
+           out!="" {print > out}
+           /-----END CERTIFICATE-----/ {close(out); out=""}' \
+           /etc/camunda/tls/ca.crt
+      i=0
+      for cert in "$WORK"/cert-*.pem; do
+        i=$((i+1))
+        keytool -importcert \
+          -noprompt \
+          -trustcacerts \
+          -keystore /var/camunda/tls-truststore/cacerts \
+          -storepass changeit \
+          -alias "camunda-user-ca-$i" \
+          -file "$cert"
+      done
+      rm -rf "$WORK"
+      echo "[ca-bundle-truststore-init] imported $i user CA cert(s) into /var/camunda/tls-truststore/cacerts"
   volumeMounts:
     - name: ca-bundle
       mountPath: /etc/camunda/tls

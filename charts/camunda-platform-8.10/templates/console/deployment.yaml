@@ -92,10 +92,15 @@ spec:
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
           {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
-            {{- /* Node.js — SSL_CERT_FILE for libcurl init scripts and
-                  NODE_EXTRA_CA_CERTS for the Node TLS stack. JAVA_TOOL_OPTIONS
-                  is omitted: Node ignores it. */ -}}
-            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+            {{- /* Node.js — SSL_CERT_FILE for libcurl init scripts in the
+                  image; NODE_EXTRA_CA_CERTS is set unconditionally above
+                  to Console's own server cert path, so we use the
+                  SSL_CERT_FILE-only variant here to avoid emitting a
+                  duplicate NODE_EXTRA_CA_CERTS env entry (Kubernetes
+                  treats duplicates as undefined / last-wins). The
+                  JAVA_TOOL_OPTIONS truststore env is omitted: Node
+                  ignores it. */ -}}
+            {{- include "camundaPlatform.caBundleSslCertFileEnv" . | nindent 12 }}
           {{- end }}
           {{- if (or .Values.camundaHub.console.env .Values.console.env) }}
             {{ (or .Values.camundaHub.console.env .Values.console.env) | toYaml | nindent 12 }}
