@@ -57,13 +57,9 @@ spec:
                 name: {{ include "orchestration.fullname" . }}-migration-data-env-vars
           command:
             - /usr/local/camunda/bin/data-migration
-          resources:
-            limits:
-              cpu: 500m
-              memory: 500Mi
-            requests:
-              cpu: 500m
-              memory: 500Mi
+          {{- with .Values.orchestration.migration.data.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /usr/local/camunda/config/application.yaml
