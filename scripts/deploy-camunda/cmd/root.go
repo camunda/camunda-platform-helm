@@ -404,7 +404,7 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Persistence completion
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPersistence := []string{"elasticsearch", "opensearch", "rdbms", "rdbms-external", "rdbms-oracle"}
+		defaultPersistence := []string{"elasticsearch", "opensearch", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 
 		if scenarioPath == "" {
 			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
