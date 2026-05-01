@@ -136,6 +136,7 @@ runs:
       echo NAMESPACE_PREFIX=$NAMESPACE_PREFIX | tee -a $GITHUB_ENV
 
       PLATFORM="${{ inputs.platform }}"
+      PLATFORM="${PLATFORM%%,*}"
       PLATFORM="${PLATFORM,,}"
       echo PLATFORM=$PLATFORM | tee -a $GITHUB_ENV
 
