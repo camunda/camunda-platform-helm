@@ -80,3 +80,4 @@ annotations:
       description: "Use internal cluster url for connectors in console release info"
     - kind: fixed
       description: "#5874 remove prerelease annotation"
+

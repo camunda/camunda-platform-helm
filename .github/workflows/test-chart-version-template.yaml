@@ -122,6 +122,11 @@ on:
         required: false
         default: false
         type: boolean
+      helm-version:
+        description: "Helm version to install via azure/setup-helm. Empty means use the pre-baked Helm from the CI runner image."
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
@@ -188,6 +193,7 @@ jobs:
       test-upgrade: ${{ inputs.test-upgrade }}
       skip-e2e: ${{ inputs.skip-e2e }}
       skip-it: ${{ inputs.skip-it }}
+      helm-version: ${{ inputs.helm-version }}
       vault-secret-mapping: |
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
         secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;

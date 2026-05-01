@@ -216,6 +216,10 @@ write_matrix_entry() {
         skip_it=$(echo "$prScenario" | yq e -r '.skip-it // false' -)
         echo "    skipE2E: ${skip_e2e}" >> matrix_versions.txt
         echo "    skipIT: ${skip_it}" >> matrix_versions.txt
+        # Per-scenario Helm version override (empty string = use pre-baked Helm).
+        # Quoted to keep values like "4.0" from being reinterpreted as floats by yq.
+        helm_version=$(echo "$prScenario" | yq e -r '.helmVersion // ""' -)
+        echo "    helmVersion: \"${helm_version}\"" >> matrix_versions.txt
       done
     done
     sed -i -e '$s/,$/]\n/' matrix_versions.txt

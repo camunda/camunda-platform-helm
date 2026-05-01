@@ -227,6 +227,11 @@ on:
         required: false
         default: false
         type: boolean
+      helm-version:
+        description: "Helm version to install via azure/setup-helm. Empty means use the pre-baked Helm from the CI runner image."
+        required: false
+        default: ""
+        type: string
     outputs:
       deployment-url:
         description: The URL of the deployed application.
@@ -321,6 +326,31 @@ jobs:
 
       # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
+      # The per-scenario helm-version input below can override the pre-baked helm when set in ci-test-config.yaml.
+      # When no override is provided, fall back to the helm version pinned in .tool-versions.
+
+      - name: CI Setup - Resolve Helm version
+        id: helm-resolve
+        run: |
+          version="${{ inputs.helm-version }}"
+          if [[ -z "$version" ]]; then
+            version="$(awk '$1=="helm"{print $2}' .tool-versions)"
+          fi
+          prebaked="$(helm version --short --template '{{.Version}}' 2>/dev/null | sed 's/^v//' | cut -d'+' -f1)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == "$prebaked" ]]; then
+            echo "needs-install=false" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked matches requested $version — skipping override"
+          else
+            echo "needs-install=true" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked != requested $version — installing override"
+          fi
+
+      - name: CI Setup - Override Helm version
+        if: steps.helm-resolve.outputs.needs-install == 'true'
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+        with:
+          version: ${{ steps.helm-resolve.outputs.version }}
 
       - name: CI Setup - Shared integration test setup
         id: setup
@@ -661,6 +691,31 @@ jobs:
 
       # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
+      # The per-scenario helm-version input below can override the pre-baked helm when set in ci-test-config.yaml.
+      # When no override is provided, fall back to the helm version pinned in .tool-versions.
+
+      - name: CI Setup - Resolve Helm version
+        id: helm-resolve
+        run: |
+          version="${{ inputs.helm-version }}"
+          if [[ -z "$version" ]]; then
+            version="$(awk '$1=="helm"{print $2}' .tool-versions)"
+          fi
+          prebaked="$(helm version --short --template '{{.Version}}' 2>/dev/null | sed 's/^v//' | cut -d'+' -f1)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == "$prebaked" ]]; then
+            echo "needs-install=false" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked matches requested $version — skipping override"
+          else
+            echo "needs-install=true" >> "$GITHUB_OUTPUT"
+            echo "Pre-baked helm $prebaked != requested $version — installing override"
+          fi
+
+      - name: CI Setup - Override Helm version
+        if: steps.helm-resolve.outputs.needs-install == 'true'
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+        with:
+          version: ${{ steps.helm-resolve.outputs.version }}
 
       - name: CI Setup - Shared integration test setup
         id: setup

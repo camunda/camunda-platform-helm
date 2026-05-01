@@ -145,7 +145,7 @@ RUN curl -fsSL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx
 # Tool versions - These should match .tool-versions in the repository root
 # The build script passes these automatically from .tool-versions
 # ------------------------------------------------------------------------------
-ARG HELM_VERSION=3.19.4
+ARG HELM_VERSION=4.1.4
 ARG KUBECTL_VERSION=1.27.16
 ARG JQ_VERSION=1.8.1
 ARG YQ_VERSION=4.50.1

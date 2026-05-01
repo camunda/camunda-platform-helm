@@ -9,6 +9,14 @@ vars:
   VALUES_CONFIG: '{{ env "VALUES_CONFIG" | default "{}" }}'
   # Selection + composition model configuration
   LAYERED_VALUES_DIR: '{{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values'
+  # Helm v4 changed --wait semantics; --wait=legacy preserves v3 behavior.
+  HELM_WAIT_FLAG:
+    sh: |
+      if helm version --short 2>/dev/null | grep -q '^v4'; then
+        echo "--wait=legacy"
+      else
+        echo "--wait"
+      fi
 
 tasks:
   pre:
@@ -122,12 +130,11 @@ tasks:
           --values "$MERGED_VALUES" \
           $EXTRA_VALUES_ARGS \
           $LICENSE_KEY_ARGS \
-          --force \
           --timeout 20m0s \
           --set orchestration.upgrade.allowPreReleaseImages=true \
           --wait-for-jobs \
-          --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
-      
+          {{ .HELM_WAIT_FLAG }} {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
+
       else
         # Fallback to legacy monolithic values files
         echo "WARNING: Values directory not found: $VALUES_DIR" >&2
@@ -176,9 +183,8 @@ tasks:
           {{ end -}}
           --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra-{{ .INFRA_TYPE_SUFFIX }}.yaml \
           $IMAGE_TAGS_ARGS \
-          --force \
           --timeout 20m0s \
           --set orchestration.upgrade.allowPreReleaseImages=true \
           --wait-for-jobs \
-          --wait {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
+          {{ .HELM_WAIT_FLAG }} {{ .TEST_HELM_EXTRA_ARGS }} |& grep -v 'Ignoring non-table value'
       fi

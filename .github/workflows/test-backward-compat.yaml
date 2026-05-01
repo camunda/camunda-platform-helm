@@ -59,6 +59,7 @@ jobs:
              snapshot: "8.8-SNAPSHOT"
              identity: "8.8-SNAPSHOT"
              webmodeler: "8.8"
+             helmVersion: "3.20.2"
            - dir: camunda-platform-8.9
              tag: "89"
              snapshot: "8.9-SNAPSHOT"
@@ -126,6 +127,7 @@ jobs:
       flows: install
       include-image-tags: true
       initialClaimValue: ${{ matrix.scenario.initialClaimValue || '' }}
+      helm-version: ${{ matrix.version.helmVersion || '' }}
       values-config: |
         {
           "E2E_TESTS_CAMUNDA_HELM_DIR": "${{ matrix.version.dir }}",
@@ -218,6 +220,7 @@ jobs:
       shortname: ${{ matrix.scenario.shortname }}
       always-delete-namespace: true
       include-image-tags: true
+      helm-version: "3.20.2"
       values-config: |
         {
           "E2E_TESTS_CAMUNDA_HELM_DIR": "camunda-platform-8.7",
@@ -319,6 +322,7 @@ jobs:
             tag: "88"
             snapshot: "8.8-SNAPSHOT"
             identity: "8.8-SNAPSHOT"
+            helmVersion: "3.20.2"
             webmodeler: "8.8"
           - dir: camunda-platform-8.9
             tag: "89"
@@ -355,6 +359,7 @@ jobs:
       always-delete-namespace: true
       flows: install
       include-image-tags: true
+      helm-version: ${{ matrix.version.helmVersion || '' }}
       values-config: |
         {
           "E2E_TESTS_CAMUNDA_HELM_DIR": "${{ matrix.version.dir }}",
