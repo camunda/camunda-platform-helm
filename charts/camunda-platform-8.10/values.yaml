@@ -291,6 +291,31 @@ global:
   ##
   ## The secret must contain a PEM-encoded CA bundle under existingSecretKey
   ## (default "ca.crt"). It is mounted read-only at /etc/camunda/tls/ca.crt.
+  ##
+  ## KNOWN LIMITATION — JKS / caBundle precedence per component:
+  ## On a component that has its own JKS truststore configured
+  ## (e.g. orchestration with secondaryStorage.elasticsearch.tls.secret set,
+  ## or optimize with database.elasticsearch.tls.secret set), the JKS path
+  ## takes precedence on JAVA_TOOL_OPTIONS for THAT component — the chart's
+  ## init container still builds the combined truststore but the JVM does
+  ## not point at it. Components without their own JKS (Connectors,
+  ## Identity, Web Modeler restapi) still pick caBundle correctly.
+  ##
+  ## If you need both worlds on the same component, include your corporate
+  ## CA chain in the JKS file itself (offline `keytool -importcert`) so the
+  ## JKS truststore covers all your trust anchors.
+  ##
+  ## A merge-init-container variant that imports the JKS into the chart-built
+  ## truststore is planned as a follow-up; see the deprecation work in #6050
+  ## that is pushing customers off the legacy JKS path entirely.
+  ##
+  ## KNOWN LIMITATION — JAVA_TOOL_OPTIONS env-collision:
+  ## If you set <component>.env: [{name: JAVA_TOOL_OPTIONS, value: ...}] for
+  ## heap tuning or similar, your value WILL strip the chart's truststore
+  ## flags (Kubernetes last-wins on duplicate env names). The chart cannot
+  ## detect this at template time. Either include the truststore flags in
+  ## your override (`-Djavax.net.ssl.trustStore=/var/camunda/tls-truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit`)
+  ## or use <component>.javaOpts (which the chart appends to, not replaces).
   tls:
     ## @extra global.tls.caBundle Optional OS-level CA bundle for SSL_CERT_FILE
     caBundle:
