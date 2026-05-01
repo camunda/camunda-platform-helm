@@ -315,7 +315,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 #    - chromium-XXXX/ (357 MB) - Full browser
 #    - chromium_headless_shell-XXXX/ (110 MB) - Headless-only
 #    - ffmpeg-XXXX/ (5 MB) - Video encoding
-# 3. Delete the full browser and ffmpeg (we only need headless shell)
+# 3. Delete the full browser (we only need headless shell; ffmpeg is kept — see NOTE below)
 #
 # WHY HEADLESS SHELL ONLY:
 # - Our tests run headless (no visible browser window)
@@ -330,6 +330,36 @@ RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
     # Delete full Chromium browser - keep only headless shell
     && rm -rf /ms-playwright/chromium-*/chrome-linux \
     # Clean npm cache
+    && npm cache clean --force \
+    && rm -rf /root/.npm /tmp/*
+
+# ==============================================================================
+# Layer 4b: Pre-built E2E test-suite node_modules
+# ==============================================================================
+# At test time, scripts/base_playwright_script.sh runs `npm install` inside
+# charts/<v>/test/e2e/, which pulls hundreds of pinned packages every job
+# (containers start with an empty filesystem). To make this fast while still
+# always running against the latest published `@camunda/e2e-test-suite`, we
+# pre-install every OTHER dependency here at image build time, then the runtime
+# script only fetches `@camunda/e2e-test-suite@latest` on top.
+#
+# Inputs:
+#   - e2e-package.json: a copy of charts/camunda-platform-<latest>/test/e2e/
+#     package.json, placed into the build context by the workflow / local build
+#     script. Required.
+#
+# We strip `@camunda/e2e-test-suite` from the package.json before installing so
+# the moving-target dep is not baked in.
+# ==============================================================================
+COPY e2e-package.json /opt/e2e-prebuilt/package.json
+
+RUN cd /opt/e2e-prebuilt \
+    && jq 'del(.devDependencies["@camunda/e2e-test-suite"], .dependencies["@camunda/e2e-test-suite"])' \
+        package.json > package.json.stripped \
+    && mv package.json.stripped package.json \
+    && npm install --no-audit --no-fund --omit=optional \
+    && node -e "require('@playwright/test')" \
+    && echo "Prebuilt node_modules size:" && du -sh node_modules \
     && npm cache clean --force \
     && rm -rf /root/.npm /tmp/*
 
@@ -371,6 +401,9 @@ RUN echo "=== Verifying tool installations ===" \
     && (zbctl version 2>/dev/null || true) \
     && echo "=== Checking browser installation ===" \
     && ls -la /ms-playwright/ \
+    && echo "=== Checking prebuilt e2e node_modules ===" \
+    && test -d /opt/e2e-prebuilt/node_modules/@playwright/test \
+    && test ! -d /opt/e2e-prebuilt/node_modules/@camunda/e2e-test-suite \
     && echo "=== All tools verified successfully ==="
 
 # Run as root by default (CI typically runs as root)

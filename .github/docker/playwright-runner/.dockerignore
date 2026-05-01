@@ -3,4 +3,5 @@
 
 # Include only the files needed for the build
 !.tool-versions
+!e2e-package.json
 

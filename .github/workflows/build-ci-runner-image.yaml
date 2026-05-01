@@ -15,6 +15,13 @@ on:
       - ".github/docker/**"
       - ".github/workflows/build-ci-runner-image.yaml"
       - "scripts/build-ci-runner-local.sh"
+      # Rebuild when the e2e test-suite's pinned deps change so the image's
+      # prebuilt /opt/e2e-prebuilt/node_modules stays in sync.
+      - "charts/camunda-platform-*/test/e2e/package.json"
+  schedule:
+    # Weekly refresh so the prebuilt node_modules tracks any package.json drift
+    # we missed and picks up new transitive versions within semver ranges.
+    - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       force-rebuild:
@@ -111,6 +118,17 @@ jobs:
       - name: Copy .tool-versions for Playwright Runner build
         run: |
           cp .tool-versions .github/docker/playwright-runner/.tool-versions
+
+      - name: Copy chart e2e package.json for Playwright Runner build
+        run: |
+          # Pre-installs all pinned e2e deps (except the moving-target
+          # @camunda/e2e-test-suite) into /opt/e2e-prebuilt/node_modules.
+          # Pick the highest chart version so we track the most recent
+          # devDependency set; all current chart versions ship the same set.
+          src=$(ls -d charts/camunda-platform-*/test/e2e/package.json \
+                | sort -V | tail -n1)
+          echo "Using $src as e2e-package.json source"
+          cp "$src" .github/docker/playwright-runner/e2e-package.json
 
       - name: Build and push Playwright Runner image
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
