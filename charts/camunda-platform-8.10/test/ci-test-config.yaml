@@ -143,6 +143,11 @@ integration:
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch-tls.yaml
         - name: opensearch-self-signed-os-trust
+          # B2 turns this on. Depends on A1 (#6032) being on main first
+          # (carries the cert generator script
+          # create-opensearch-tls-secrets.sh that the os-trust pre-install
+          # wrapper exec's). If B2 lands before A1 the scenario will fail
+          # in CI; keep B2 stacked on a base that includes A1, or merge A1 first.
           enabled: true
           shortname: osot
           exclude: []
