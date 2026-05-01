@@ -54,9 +54,6 @@ type CITestConfig struct {
 			PR struct {
 				Scenarios []CIScenario `yaml:"scenario"`
 			} `yaml:"pr"`
-			Nightly struct {
-				Scenarios []CIScenario `yaml:"scenario"`
-			} `yaml:"nightly"`
 		} `yaml:"case"`
 	} `yaml:"integration"`
 }
