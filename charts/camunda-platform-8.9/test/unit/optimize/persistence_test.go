@@ -115,12 +115,12 @@ func (s *PersistenceTemplateTest) TestPersistenceConfiguration() {
 				s.Require().NotNil(tmpVolume, "tmp volume should exist")
 				s.Require().NotNil(tmpVolume.PersistentVolumeClaim, "tmp should use PVC when persistence is enabled")
 				s.Require().Nil(tmpVolume.EmptyDir, "tmp should not use emptyDir when persistence is enabled")
-				s.Require().Equal("camunda-platform-test-optimize-data", tmpVolume.PersistentVolumeClaim.ClaimName)
+				s.Require().Equal("camunda-platform-test-optimize-data-tmp", tmpVolume.PersistentVolumeClaim.ClaimName, "tmp volume must claim its own PVC; mounting the same PVC from two volumes deadlocks the kubelet on RWO storage")
 
 				s.Require().NotNil(camundaVolume, "camunda volume should exist")
 				s.Require().NotNil(camundaVolume.PersistentVolumeClaim, "camunda should use PVC when persistence is enabled")
 				s.Require().Nil(camundaVolume.EmptyDir, "camunda should not use emptyDir when persistence is enabled")
-				s.Require().Equal("camunda-platform-test-optimize-data", camundaVolume.PersistentVolumeClaim.ClaimName)
+				s.Require().Equal("camunda-platform-test-optimize-data-camunda", camundaVolume.PersistentVolumeClaim.ClaimName, "camunda volume must claim its own PVC; mounting the same PVC from two volumes deadlocks the kubelet on RWO storage")
 			},
 		},
 		{
@@ -207,23 +207,34 @@ func TestPVCManifestCreated(t *testing.T) {
 	chartPath, err := filepath.Abs("../../../")
 	require.NoError(t, err)
 
-	testCase := testhelpers.TestCase{
-		Name: "TestPVCManifestCreated",
-		Values: map[string]string{
-			"identity.enabled":                    "true",
-			"optimize.enabled":                    "true",
-			"optimize.persistence.enabled":        "true",
-			"optimize.persistence.size":           "5Gi",
-			"optimize.persistence.accessModes[0]": "ReadWriteOnce",
-		},
-		Verifier: func(t *testing.T, output string, err error) {
-			var pvc corev1.PersistentVolumeClaim
-			helm.UnmarshalK8SYaml(t, output, &pvc)
-			require.Equal(t, "camunda-platform-test-optimize-data", pvc.Name)
-			require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
-			require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
-		},
+	values := map[string]string{
+		"identity.enabled":                    "true",
+		"optimize.enabled":                    "true",
+		"optimize.persistence.enabled":        "true",
+		"optimize.persistence.size":           "5Gi",
+		"optimize.persistence.accessModes[0]": "ReadWriteOnce",
 	}
 
-	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-optimize", []string{"templates/optimize/persistentvolumeclaim.yaml"}, []testhelpers.TestCase{testCase})
+	cases := []struct {
+		template string
+		name     string
+	}{
+		{"templates/optimize/persistentvolumeclaim-camunda.yaml", "camunda-platform-test-optimize-data-camunda"},
+		{"templates/optimize/persistentvolumeclaim-tmp.yaml", "camunda-platform-test-optimize-data-tmp"},
+	}
+	for _, c := range cases {
+		c := c
+		testCase := testhelpers.TestCase{
+			Name:   "TestPVCManifestCreated:" + c.name,
+			Values: values,
+			Verifier: func(t *testing.T, output string, err error) {
+				var pvc corev1.PersistentVolumeClaim
+				helm.UnmarshalK8SYaml(t, output, &pvc)
+				require.Equal(t, c.name, pvc.Name)
+				require.Equal(t, "5Gi", pvc.Spec.Resources.Requests.Storage().String())
+				require.Equal(t, corev1.ReadWriteOnce, pvc.Spec.AccessModes[0])
+			},
+		}
+		testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-optimize", []string{c.template}, []testhelpers.TestCase{testCase})
+	}
 }

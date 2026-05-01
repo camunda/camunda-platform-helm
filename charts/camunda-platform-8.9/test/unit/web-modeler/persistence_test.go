@@ -213,3 +213,60 @@ func TestPVCManifestCreated(t *testing.T) {
 
 	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/persistentvolumeclaim-restapi.yaml"}, []testhelpers.TestCase{testCase})
 }
+
+// TestDeploymentStrategyDefaultsToRollingUpdate asserts the default strategy
+// is RollingUpdate (preserves zero-downtime upgrade for users with RWX/
+// existingClaim setups). Users with chart-managed RWO PVCs hit a Multi-Attach
+// deadlock with RollingUpdate and must opt into "Recreate" — see
+// TestDeploymentStrategyRecreateOptIn.
+func TestDeploymentStrategyDefaultsToRollingUpdate(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyDefaultsToRollingUpdate",
+		Values: map[string]string{
+			"identity.enabled":                    "true",
+			"global.elasticsearch.enabled":        "true",
+			"elasticsearch.enabled":               "true",
+			"webModeler.enabled":                  "true",
+			"webModeler.restapi.mail.fromAddress": "example@example.com",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var deployment appsv1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+			require.Equal(t, appsv1.RollingUpdateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
+}
+
+// TestDeploymentStrategyRecreateOptIn asserts users can opt into Recreate
+// strategy via webModeler.persistence.deploymentStrategy. Recreate avoids the
+// Multi-Attach deadlock that RWO PVCs hit during a RollingUpdate rollout, at
+// the cost of brief downtime per upgrade.
+func TestDeploymentStrategyRecreateOptIn(t *testing.T) {
+	t.Parallel()
+	chartPath, err := filepath.Abs("../../../")
+	require.NoError(t, err)
+
+	testCase := testhelpers.TestCase{
+		Name: "TestDeploymentStrategyRecreateOptIn",
+		Values: map[string]string{
+			"identity.enabled":                            "true",
+			"global.elasticsearch.enabled":                "true",
+			"elasticsearch.enabled":                       "true",
+			"webModeler.enabled":                          "true",
+			"webModeler.restapi.mail.fromAddress":         "example@example.com",
+			"webModeler.persistence.enabled":              "true",
+			"webModeler.persistence.deploymentStrategy":   "Recreate",
+		},
+		Verifier: func(t *testing.T, output string, err error) {
+			var deployment appsv1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+			require.Equal(t, appsv1.RecreateDeploymentStrategyType, deployment.Spec.Strategy.Type)
+		},
+	}
+	testhelpers.RunTestCasesE(t, chartPath, "camunda-platform-test", "camunda-platform-webmodeler", []string{"templates/web-modeler/deployment-restapi.yaml"}, []testhelpers.TestCase{testCase})
+}

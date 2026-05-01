@@ -3803,6 +3803,11 @@
                             "type": "object",
                             "description": "can be used to define a label selector for the persistent volume claim",
                             "default": {}
+                        },
+                        "deploymentStrategy": {
+                            "type": "string",
+                            "description": "update strategy for the restapi Deployment. Defaults to RollingUpdate (zero-downtime), which only works when the PVC supports concurrent attach (RWX storage, or accessModes including ReadWriteMany). For chart-managed PVCs on RWO storage, set to \"Recreate\" to avoid Multi-Attach deadlocks during helm upgrade (introduces brief downtime per upgrade).",
+                            "default": "RollingUpdate"
                         }
                     }
                 }
