@@ -98,6 +98,13 @@ global:
     ## @param global.multitenancy.enabled if true, then enable multitenancy in all applicable components.
     enabled: false
 
+  ## Resource-Based Authorization (RBA) configuration.
+  ## Cannot be enabled at the same time as global.multitenancy.enabled or identity.multitenancy.enabled.
+  ## @extra global.rba
+  rba:
+    ## @param global.rba.enabled if true, then enable RBA in all applicable components (Orchestration and Identity).
+    enabled: false
+
   ## Security configuration
   ## @extra global.security
   security:

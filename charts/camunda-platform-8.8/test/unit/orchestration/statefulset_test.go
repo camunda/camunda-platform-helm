@@ -1049,4 +1049,36 @@ func (s *StatefulSetTest) TestRespectsComponentJavaOpts_WithJKS_Elasticsearch() 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
 
+func (s *StatefulSetTest) TestRBA() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name:   "TestRBADisabledByDefaultDoesNotEmitEnvVars",
+			Values: map[string]string{},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
 
+				for _, e := range statefulSet.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", e.Name)
+					require.NotEqual(t, "CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", e.Name)
+				}
+			},
+		},
+		{
+			Name: "TestRBAEnabledEmitsOrchestrationEnvVars",
+			Values: map[string]string{
+				"global.rba.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var statefulSet appsv1.StatefulSet
+				helm.UnmarshalK8SYaml(t, output, &statefulSet)
+
+				env := statefulSet.Spec.Template.Spec.Containers[0].Env
+				require.Contains(t, env, corev1.EnvVar{Name: "CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+				require.Contains(t, env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", Value: "true"})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

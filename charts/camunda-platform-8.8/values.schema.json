@@ -105,6 +105,16 @@
                         }
                     }
                 },
+                "rba": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "if true, then enable RBA in all applicable components (Orchestration and Identity).",
+                            "default": false
+                        }
+                    }
+                },
                 "security": {
                     "type": "object",
                     "properties": {
