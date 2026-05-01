@@ -268,7 +268,7 @@
                                                 },
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret) can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "description": "(DEPRECATED in chart 15.x — only meaningful for the legacy JKS truststore path; switch to global.tls.caBundle.secret with a PEM CA bundle. The chart-built truststore uses a fixed password set by the helper, so no per-deployment password is needed in the new path.) can be used to provide the jks password as a plain-text value for non-production usage.",
                                                     "default": ""
                                                 }
                                             }
@@ -403,7 +403,7 @@
                                                 },
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret) can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "description": "(DEPRECATED in chart 15.x — only meaningful for the legacy JKS truststore path; switch to global.tls.caBundle.secret with a PEM CA bundle. The chart-built truststore uses a fixed password set by the helper, so no per-deployment password is needed in the new path.) can be used to provide the jks password as a plain-text value for non-production usage.",
                                                     "default": ""
                                                 }
                                             }

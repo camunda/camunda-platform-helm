@@ -330,7 +330,7 @@ The following values inside your values.yaml need to be set but were not:
             (printf "DEPRECATION: values.yaml is using legacy JKS truststore option '%s'." .path)
             "This option is deprecated as of chart 15.x and will be removed in a future major release."
             "Please migrate to 'global.tls.caBundle.secret.{existingSecret,existingSecretKey}', supplying a PEM-encoded CA bundle."
-            "The chart will build the JVM truststore at pod start (no offline keytool needed). See https://docs.camunda.io/docs/self-managed/deployment/helm/configure/tls#legacy-per-component-jks-truststore-deprecated for the migration recipe."
+            "The chart will build the JVM truststore at pod start (no offline keytool needed). Migration: supply a PEM CA bundle to global.tls.caBundle.secret.existingSecret and remove the legacy tls.secret.existingSecret entries plus any -Djavax.net.ssl.trustStore* flags from javaOpts."
         -}}
         {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
     {{- end }}
