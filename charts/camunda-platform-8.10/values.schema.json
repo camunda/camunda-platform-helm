@@ -258,17 +258,17 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the jks password.",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the existing secret object.",
                                                     "default": ""
                                                 },
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret) can be used to provide the jks password as a plain-text value for non-production usage.",
                                                     "default": ""
                                                 }
                                             }
@@ -393,17 +393,17 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the jks password.",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the existing secret object.",
                                                     "default": ""
                                                 },
                                                 "inlineSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret) can be used to provide the jks password as a plain-text value for non-production usage.",
                                                     "default": ""
                                                 }
                                             }
@@ -5225,12 +5225,12 @@
                                                     "properties": {
                                                         "existingSecret": {
                                                             "type": "string",
-                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the TLS trust store",
                                                             "default": ""
                                                         },
                                                         "existingSecretKey": {
                                                             "type": "string",
-                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) defines the key within the existing Kubernetes Secret for TLS trust store",
                                                             "default": ""
                                                         }
                                                     }
@@ -5295,12 +5295,12 @@
                                                     "properties": {
                                                         "existingSecret": {
                                                             "type": "string",
-                                                            "description": "can be used to reference an existing Kubernetes Secret containing the TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the TLS trust store",
                                                             "default": ""
                                                         },
                                                         "existingSecretKey": {
                                                             "type": "string",
-                                                            "description": "defines the key within the existing Kubernetes Secret for TLS trust store",
+                                                            "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) defines the key within the existing Kubernetes Secret for TLS trust store",
                                                             "default": ""
                                                         }
                                                     }
@@ -5870,12 +5870,12 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the secret containing the certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                                     "default": "externaldb.jks"
                                                 }
                                             }
@@ -5970,12 +5970,12 @@
                                             "properties": {
                                                 "existingSecret": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate",
                                                     "default": ""
                                                 },
                                                 "existingSecretKey": {
                                                     "type": "string",
-                                                    "description": "can be used to provide the key within the secret containing the certificate",
+                                                    "description": "(DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate",
                                                     "default": "externaldb.jks"
                                                 }
                                             }
