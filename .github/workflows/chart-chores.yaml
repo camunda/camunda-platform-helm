@@ -13,30 +13,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  init:
-    name: Check Conditions
-    runs-on: ubuntu-latest
-    steps:
-      # The workflow shouldn't run on some branches where we have independent workflows for them.
-      - name: Check conditions
-        id: conditions
-        run: |
-          set -x
-          SHOULD_RUN=true
-          case "${{ github.head_ref }}" in
-              "renovate/"*)
-                  SHOULD_RUN="false"
-                  ;;
-              "release-please--"*)
-                  SHOULD_RUN="false"
-              ;;
-          esac
-          echo "should-run=${SHOULD_RUN}" | tee -a ${GITHUB_OUTPUT}
-    outputs:
-      should-run: ${{ steps.conditions.outputs.should-run }}
   chores:
-    needs: [init]
-    if: needs.init.outputs.should-run == 'true'
+    if: ${{ !startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'release-please--') }}
     name: Chart chores
     runs-on: ubuntu-latest
     steps:
