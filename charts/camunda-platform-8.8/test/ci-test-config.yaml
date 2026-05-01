@@ -145,7 +145,7 @@ integration:
           features: [arm]
           persistence: elasticsearch-external
         - name: opensearch
-          enabled: false
+          enabled: true
           exclude: []
           shortname: oske
           auth: keycloak
@@ -153,6 +153,9 @@ integration:
           persistence: opensearch
           qa: false
           flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
         - name: opensearch-external
           enabled: true
           shortname: osex
