@@ -500,15 +500,20 @@
                         "caBundle": {
                             "type": "object",
                             "properties": {
-                                "existingSecret": {
-                                    "type": "string",
-                                    "description": "name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.",
-                                    "default": ""
-                                },
-                                "existingSecretKey": {
-                                    "type": "string",
-                                    "description": "key within the secret that holds the PEM-encoded CA bundle.",
-                                    "default": "ca.crt"
+                                "secret": {
+                                    "type": "object",
+                                    "properties": {
+                                        "existingSecret": {
+                                            "type": "string",
+                                            "description": "name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.",
+                                            "default": ""
+                                        },
+                                        "existingSecretKey": {
+                                            "type": "string",
+                                            "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                            "default": "ca.crt"
+                                        }
+                                    }
                                 }
                             }
                         }

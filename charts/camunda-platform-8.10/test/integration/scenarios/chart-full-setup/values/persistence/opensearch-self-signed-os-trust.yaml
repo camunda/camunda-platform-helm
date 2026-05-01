@@ -29,8 +29,9 @@ global:
   # JKS path below for JVM clients.
   tls:
     caBundle:
-      existingSecret: opensearch-tls-ca
-      existingSecretKey: ca.crt
+      secret:
+        existingSecret: opensearch-tls-ca
+        existingSecretKey: ca.crt
 
 orchestration:
   # Java 21 PKCS12 default; same gotcha PR #5974 documented.
