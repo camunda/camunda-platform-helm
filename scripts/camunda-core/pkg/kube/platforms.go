@@ -128,6 +128,15 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		return fmt.Errorf("apply credentials secrets: %w", err)
 	}
 
+	// NOTE: external-secret-qa-keycloak-credentials{,-vault}.yaml is intentionally
+	// NOT applied here. Its remoteRef.key/property are templated and rendered by
+	// the CI bash apply step in .github/actions/cluster-setup-secrets/action.yaml.
+	// Wiring a templated manifest into this Go-side apply requires the broader
+	// refactor tracked in camunda/team-distribution#776 (config-driven external
+	// secret application). Manual deploy-camunda runs that need the QA Keycloak
+	// admin secret can apply the rendered manifest by hand or set the K8s secret
+	// directly.
+
 	// Determine which integration test credentials file to use based on external secrets store
 	integrationCredsFile := fmt.Sprintf("external-secret-integration-test-credentials%s.yaml", vaultSuffix)
 
