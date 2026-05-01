@@ -1207,6 +1207,8 @@ Usage (inside an env: list):
 {{- define "camundaPlatform.caBundleEnv" -}}
 - name: SSL_CERT_FILE
   value: /etc/camunda/tls/ca.crt
+- name: NODE_EXTRA_CA_CERTS
+  value: /etc/camunda/tls/ca.crt
 {{- end -}}
 
 {{/*
@@ -1235,8 +1237,16 @@ image keeps the keytool step robust across orchestration / optimize /
 identity / connectors / console / web-modeler restapi.
 */}}
 {{- define "camundaPlatform.caBundleInitContainer" -}}
+{{- $img := .Values.global.tls.caBundle.image | default "eclipse-temurin:21-jre" -}}
+{{- /* Prepend global.image.registry when set so air-gapped mirrors work
+       transparently — assumes the mirror keeps the upstream path. Skip
+       when the user already supplied a fully-qualified image (contains
+       a registry separator) so we don't double-prefix. */ -}}
+{{- if and .Values.global.image .Values.global.image.registry (not (regexMatch "^[^/]+\\.[^/]+/.+" $img)) -}}
+{{-   $img = printf "%s/%s" .Values.global.image.registry $img -}}
+{{- end -}}
 - name: ca-bundle-truststore-init
-  image: {{ .Values.global.tls.caBundle.image | default "eclipse-temurin:21-jre" | quote }}
+  image: {{ $img | quote }}
   imagePullPolicy: {{ .Values.global.tls.caBundle.imagePullPolicy | default "IfNotPresent" | quote }}
   securityContext:
     runAsNonRoot: true
