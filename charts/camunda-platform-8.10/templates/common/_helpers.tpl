@@ -1239,8 +1239,10 @@ points -Djavax.net.ssl.trustStore at this file.
 
 This is the JVM-side counterpart to caBundleEnv (SSL_CERT_FILE): the
 JVM does not honour SSL_CERT_FILE, so we have to give it a real
-truststore. Runs as the same image as the main container (which has
-keytool from its bundled JRE) — no extra image pull, no root needed.
+truststore. Runs `keytool` from a dedicated JRE image (default
+eclipse-temurin:21-jre — see "Image and pull policy" below for why
+we don't reuse the main container image). Runs as a non-root user
+with readOnlyRootFilesystem and dropped capabilities.
 
 Usage (inside .spec.initContainers):
   {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
@@ -1305,6 +1307,9 @@ identity / connectors / console / web-modeler restapi.
            /etc/camunda/tls/ca.crt
       i=0
       for cert in "$WORK"/cert-*.pem; do
+        # POSIX sh has no nullglob — when awk produced zero output files,
+        # the literal pattern is iterated once. Skip non-files.
+        [ -f "$cert" ] || continue
         i=$((i+1))
         keytool -importcert \
           -noprompt \
@@ -1315,6 +1320,10 @@ identity / connectors / console / web-modeler restapi.
           -file "$cert"
       done
       rm -rf "$WORK"
+      if [ "$i" = "0" ]; then
+        echo "[ca-bundle-truststore-init] ERROR: no certificates found in /etc/camunda/tls/ca.crt — check that global.tls.caBundle.secret references a non-empty PEM bundle." >&2
+        exit 1
+      fi
       echo "[ca-bundle-truststore-init] imported $i user CA cert(s) into /var/camunda/tls-truststore/cacerts"
   volumeMounts:
     - name: ca-bundle

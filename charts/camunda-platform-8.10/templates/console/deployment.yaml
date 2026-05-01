@@ -57,8 +57,19 @@ spec:
                 "envName" "CAMUNDA_LICENSE_KEY"
                 "config" .Values.global.license
             ) | nindent 12 }}
+            {{- /* When global.tls.caBundle is set, NODE_EXTRA_CA_CERTS
+                  must point at the user CA bundle so Console's outbound
+                  Node.js HTTPS calls trust the user CAs (Node ignores
+                  SSL_CERT_FILE). Otherwise, fall back to Console's own
+                  certificate path (legacy chart behavior; meaningful when
+                  Console serves over TLS with a custom cert). */ -}}
+            {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/camunda/tls/ca.crt
+            {{- else }}
             - name: NODE_EXTRA_CA_CERTS
               value: {{ printf "/usr/local/console/certificates/%s" (or .Values.camundaHub.console.tls.certKeyFilename .Values.console.tls.certKeyFilename) | quote }}
+            {{- end }}
             - name: NODE_ENV
               value: {{ (or .Values.camundaHub.console.nodeEnv .Values.console.nodeEnv) | default "prod" | quote }}
             {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
