@@ -90,7 +90,7 @@ integration:
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
         - name: opensearch-self-signed
-          enabled: false
+          enabled: true
           shortname: osss
           exclude: []
           auth: keycloak
