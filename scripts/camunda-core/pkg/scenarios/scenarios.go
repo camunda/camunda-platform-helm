@@ -310,7 +310,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive QA mode from prefix
 	if strings.HasPrefix(s, "qa-") {
 		config.QA = true
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 	}
 
 	// Handle well-known composite scenarios that can't be derived from name parsing alone.
@@ -320,14 +320,14 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// so it must keep working.
 	if s == "keycloak-original" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 		config.Platform = "gke"
 		return config
 	}
 
 	if s == "elasticsearch" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 		config.Platform = "gke"
 		return config
 	}
@@ -362,7 +362,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "rdbms"):
 		config.Persistence = "rdbms"
 	default:
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 	}
 
 	// Derive platform (default to gke)

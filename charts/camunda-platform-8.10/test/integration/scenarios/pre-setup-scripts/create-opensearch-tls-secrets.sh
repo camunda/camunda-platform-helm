@@ -77,13 +77,17 @@ subjectAltName = @alt_names
 extendedKeyUsage = serverAuth, clientAuth
 
 [alt_names]
+# Service names are derived from the companion chart's masterService override
+# (test/integration/companion-values/opensearch-tls.yaml sets
+# masterService: opensearch-master, so the chart creates "opensearch-master"
+# and "opensearch-master-headless"; the default "opensearch-cluster-master"
+# service is NOT created and must not appear here).
 DNS.1 = opensearch-master
-DNS.2 = opensearch-cluster-master
-DNS.3 = opensearch-master.${NAMESPACE}.svc.cluster.local
-DNS.4 = opensearch-master-0.opensearch-master-headless.${NAMESPACE}.svc.cluster.local
-DNS.5 = opensearch-master-headless
-DNS.6 = opensearch-master-headless.${NAMESPACE}.svc.cluster.local
-DNS.7 = localhost
+DNS.2 = opensearch-master.${NAMESPACE}.svc.cluster.local
+DNS.3 = opensearch-master-0.opensearch-master-headless.${NAMESPACE}.svc.cluster.local
+DNS.4 = opensearch-master-headless
+DNS.5 = opensearch-master-headless.${NAMESPACE}.svc.cluster.local
+DNS.6 = localhost
 IP.1  = 127.0.0.1
 EOF
 
