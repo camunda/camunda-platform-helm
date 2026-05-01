@@ -84,6 +84,7 @@ TTL=""
 ES_URL="http://localhost:9200"
 ES_USER=""
 ES_PASS=""
+ELASTICSEARCH_NAMESPACE=""
 NAMESPACE=""
 DRY_RUN=0
 
