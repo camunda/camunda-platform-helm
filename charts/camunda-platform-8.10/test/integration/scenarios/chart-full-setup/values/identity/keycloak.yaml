@@ -2,6 +2,9 @@
 # Layer 2: Auth method - Internal Keycloak
 
 global:
+  security:
+    authentication:
+      method: oidc
   host: "$CAMUNDA_HOSTNAME"
   ingress:
     enabled: true
@@ -263,17 +266,13 @@ optimize:
 connectors:
   security:
     authentication:
-      method: oidc
       oidc:
         secret:
           existingSecret: "integration-test-credentials"
           existingSecretKey: "identity-connectors-client-token"
 
-camundaHub:
-  webModeler:
-    security:
-      authentication:
-        method: oidc
+# camundaHub.webModeler.security.authentication.method is inherited from
+# global.security.authentication.method (set globally above).
 
 orchestration:
   security:
@@ -285,7 +284,6 @@ orchestration:
           clients:
             - venom
     authentication:
-      method: oidc
       authenticationRefreshInterval: "PT30S"
       oidc:
         redirectUrl: "https://{{ .Values.global.host }}/orchestration"
