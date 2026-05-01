@@ -56,7 +56,12 @@ type FilterOptions struct {
 	// ScenarioFilter limits output to scenarios matching one or more substrings (comma-separated).
 	ScenarioFilter string
 	// ShortnameFilter limits output to entries whose shortname matches one or more substrings (comma-separated).
+	// When ShortnameExact is true, each comma-separated value must match the entry's shortname exactly
+	// — required by per-scenario CI workflows where short shortnames like "es" otherwise greedily
+	// match unrelated entries (eske, esba, esoi, eshy, esarm, ...).
 	ShortnameFilter string
+	// ShortnameExact, when true, treats each ShortnameFilter value as an exact match instead of a substring.
+	ShortnameExact bool
 	// FlowFilter limits output to entries with this specific flow.
 	FlowFilter string
 	// Platform limits output to entries targeting this platform.
@@ -188,11 +193,34 @@ func Generate(repoRoot string, opts GenerateOptions) ([]Entry, error) {
 }
 
 // Filter applies post-generation filtering to the matrix entries.
+// When both ScenarioFilter and ShortnameFilter are provided and the combined
+// AND produces zero results, Filter retries with just the ScenarioFilter
+// (dropping the shortname constraint). This supports workflows with dynamic
+// shortnames (e.g., the license-key workflow passes "8.10-come" which isn't
+// in ci-test-config) while keeping shortname as a precise disambiguator when
+// multiple entries share a scenario name.
 func Filter(entries []Entry, opts FilterOptions) []Entry {
 	if opts.ScenarioFilter == "" && opts.ShortnameFilter == "" && opts.FlowFilter == "" && opts.Platform == "" {
 		return entries
 	}
 
+	filtered := filterEntries(entries, opts)
+
+	// Fallback: when both scenario and shortname filters are set but yield no
+	// results, retry without the shortname filter. This handles dynamic shortnames
+	// (e.g., license workflow) where the scenario is the stable lookup key.
+	if len(filtered) == 0 && opts.ScenarioFilter != "" && opts.ShortnameFilter != "" {
+		fallbackOpts := opts
+		fallbackOpts.ShortnameFilter = ""
+		fallbackOpts.ShortnameExact = false
+		filtered = filterEntries(entries, fallbackOpts)
+	}
+
+	return filtered
+}
+
+// filterEntries is the core filter logic used by Filter.
+func filterEntries(entries []Entry, opts FilterOptions) []Entry {
 	// Parse comma-separated scenario filters into individual substrings.
 	var scenarioFilters []string
 	if opts.ScenarioFilter != "" {
@@ -218,8 +246,21 @@ func Filter(entries []Entry, opts FilterOptions) []Entry {
 		if len(scenarioFilters) > 0 && !matchesAny(e.Scenario, scenarioFilters) {
 			continue
 		}
-		if len(shortnameFilters) > 0 && !matchesAny(e.Shortname, shortnameFilters) {
-			continue
+		if len(shortnameFilters) > 0 {
+			matched := false
+			if opts.ShortnameExact {
+				for _, sn := range shortnameFilters {
+					if e.Shortname == sn {
+						matched = true
+						break
+					}
+				}
+			} else {
+				matched = matchesAny(e.Shortname, shortnameFilters)
+			}
+			if !matched {
+				continue
+			}
 		}
 		if opts.FlowFilter != "" && e.Flow != opts.FlowFilter {
 			continue

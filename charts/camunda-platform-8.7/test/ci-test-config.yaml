@@ -97,6 +97,61 @@ integration:
           infra-type:
             gke: distroci
           platforms: [gke]
+
+        # ===========================================================================
+        # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
+        # (caller: c8-cross-component-e2e-tests / playwright_sm_reusable_flow_8_7_minus.yaml).
+        # All disabled so they don't appear in the regular CI matrix; matrix run resolves
+        # them via --shortname-filter + --include-disabled.
+        # ===========================================================================
+        - name: qa-elasticsearch
+          enabled: false
+          flow: install
+          shortname: qael
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba
+          enabled: false
+          flow: install
+          shortname: qarba
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt
+          enabled: false
+          flow: install
+          shortname: qamt
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-license
+          enabled: false
+          flow: install
+          shortname: lic
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license]
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch
+          enabled: false
+          flow: install
+          shortname: qaos
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
     nightly:
       scenario:
         - name: elasticsearch

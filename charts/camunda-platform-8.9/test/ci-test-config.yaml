@@ -220,6 +220,14 @@ integration:
           identity: keycloak
           persistence: rdbms-external
           platforms: [gke]
+        # rdbms: persistence layer points Camunda at an external PostgreSQL cluster
+        # (postgresql-cluster-rw.<namespace>.svc.cluster.local). The CloudNativePG
+        # `Cluster` + auth Secret are NOT part of the chart — they're a CI-only
+        # fixture that must exist before helm install or Camunda pods crash-loop
+        # connecting. Provisioned by `pre-setup-scripts/pre-install-rdbms.sh`,
+        # auto-discovered by versionmatrix.HasPreInstallScript and run by the
+        # matrix runner immediately before `helm install` (replaces the legacy
+        # Taskfile `setup.pre` rdbms branch).
         - name: rdbms
           enabled: true
           auth: keycloak
@@ -230,6 +238,217 @@ integration:
             gke: distroci
           identity: keycloak
           persistence: rdbms
+          platforms: [gke]
+
+        # ===========================================================================
+        # Backward-compat scenarios — referenced by .github/workflows/test-backward-compat.yaml
+        # (callers: c8-cross-component-e2e-tests playwright_sm_reusable_flow_8_8_plus.yaml,
+        #  sm_manual_upgrade_minor_8_9, and camunda/docker-build-helm-integration.yml).
+        # All disabled so they don't appear in the regular CI matrix; matrix run resolves
+        # them via --shortname-filter + --include-disabled.
+        #
+        # Note on duplicate shortnames: compat workflow reuses qaosupg/qaelmtupg across
+        # tasklist-v1 install scenarios and *-upg upgrade-minor scenarios. Both deploy
+        # via the same flow=install path here (compat workflow uses flow: install for
+        # both because modular-upgrade-minor requires real infra it doesn't provision).
+        # One entry per shortname covers both.
+        # ===========================================================================
+        - name: qa-elasticsearch
+          enabled: false
+          flow: install
+          shortname: qael
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch
+          enabled: false
+          flow: install
+          shortname: qaos
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba
+          enabled: false
+          flow: install
+          shortname: qaelrba
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt
+          enabled: false
+          flow: install
+          shortname: qaelmt
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-license
+          enabled: false
+          flow: install
+          shortname: lic
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license]
+          qa: true
+          platforms: [gke]
+        - name: qa-entra
+          enabled: false
+          flow: install
+          shortname: qaen
+          auth: oidc
+          identity: oidc
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-document-store
+          enabled: false
+          flow: install
+          shortname: qadoc
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaeltlv1
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaosupg
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          features: [tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaelrbaupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba, tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: qaelmtupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy, tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-license-tasklist-v1
+          enabled: false
+          flow: install
+          shortname: licupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license, tasklist-v1]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-upg
+          enabled: false
+          flow: install
+          shortname: qaelupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-document-upg
+          enabled: false
+          flow: install
+          shortname: qaeldocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
+        - name: qa-opensearch-upg
+          enabled: false
+          flow: install
+          shortname: qaosupg2
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-rba-upg
+          enabled: false
+          flow: install
+          shortname: qaelrbaup2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba]
+          qa: true
+          platforms: [gke]
+        - name: qa-elasticsearch-mt-upg
+          enabled: false
+          flow: install
+          shortname: qaelmtup2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [multitenancy]
+          qa: true
+          platforms: [gke]
+        - name: qa-license-upg
+          enabled: false
+          flow: install
+          shortname: licup2
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [license]
+          qa: true
+          platforms: [gke]
+        - name: qa-document-store-upg
+          enabled: false
+          flow: install
+          shortname: qadocupg
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
+          features: [documentstore]
+          qa: true
+          platforms: [gke]
+        # kcor is referenced by .github/workflows/test-backward-compat.yaml's
+        # compat-camunda-docker job (camunda/docker-build-helm-integration.yml).
+        # The 8.10 chart already exposes keycloak-original under shortname `keorg`;
+        # this 8.9 entry mirrors that mapping for the compat caller's shortname.
+        - name: keycloak-original
+          enabled: false
+          flow: install
+          shortname: kcor
+          auth: keycloak
+          identity: keycloak
+          persistence: elasticsearch
           platforms: [gke]
     nightly:
       scenario:

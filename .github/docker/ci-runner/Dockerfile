@@ -149,7 +149,6 @@ ARG HELM_VERSION=3.19.4
 ARG KUBECTL_VERSION=1.27.16
 ARG JQ_VERSION=1.8.1
 ARG YQ_VERSION=4.50.1
-ARG TASK_VERSION=3.30.1
 ARG KUSTOMIZE_VERSION=5.8.0
 ARG KIND_VERSION=0.31.0
 ARG ZBCTL_VERSION=v8.6.0
@@ -186,10 +185,6 @@ RUN curl -fsSL -o jq "https://github.com/jqlang/jq/releases/download/jq-${JQ_VER
 # Used for: Parsing and transforming YAML files
 RUN curl -fsSL -o yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
     && chmod +x yq
-
-# Task - Task runner (Makefile alternative)
-# Used for: Running CI tasks defined in Taskfile.yaml
-RUN curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz" | tar -xzf - task
 
 # Kustomize - Kubernetes configuration customization
 # Used for: Overlaying Kubernetes manifests
@@ -246,7 +241,7 @@ RUN echo "=== Original binary sizes ===" && ls -lhS /tools/
 # - Anti-tampering measures
 # We continue on failure to avoid breaking the build.
 # ------------------------------------------------------------------------------
-RUN for bin in helm kubectl yq task kustomize kind oras ct cr gomplate oc zbctl; do \
+RUN for bin in helm kubectl yq kustomize kind oras ct cr gomplate oc zbctl; do \
         echo "Compressing $bin..." && upx --best "$bin" || echo "Warning: UPX failed for $bin, keeping original"; \
     done \
     # jq sometimes fails with UPX on certain versions
@@ -446,7 +441,6 @@ RUN echo "=== Verifying tool installations ===" \
     && kubectl version --client \
     && jq --version \
     && yq --version \
-    && task --version \
     && kustomize version \
     && kind version \
     && oras version \
