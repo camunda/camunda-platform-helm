@@ -56,10 +56,6 @@ orchestration:
   # -Djavax.net.ssl.trustStore=... and -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)
   # automatically (see #5994), so we no longer set the password literal in javaOpts.
   javaOpts: >-
-    -XX:+HeapDumpOnOutOfMemoryError
-    -XX:HeapDumpPath=/usr/local/camunda/data
-    -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
-    -XX:+ExitOnOutOfMemoryError
     -Djavax.net.ssl.trustStoreType=jks
   data:
     secondaryStorage:
