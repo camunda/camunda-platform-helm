@@ -153,6 +153,9 @@ integration:
           persistence: opensearch
           qa: false
           flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
         - name: opensearch-external
           enabled: true
           shortname: osex
