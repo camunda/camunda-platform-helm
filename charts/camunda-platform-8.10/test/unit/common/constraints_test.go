@@ -218,6 +218,94 @@ func (s *ConstraintTemplateTest) TestPusherSecretConstraint() {
 }
 
 
+// TestLegacyJksTruststoreFieldsRenderWithoutCrash asserts that setting any
+// of the legacy JKS truststore fields targeted by the chart-15.x
+// deprecation does not break template rendering. The deprecation warning
+// itself is emitted via NOTES.txt at install time and is not surfaced by
+// `helm template` (the framework these tests use), so warning-content
+// assertions live only in manual `helm install --dry-run` / production
+// install verification — same constraint that applies to the existing
+// global.elasticsearch.tls.secret and Bitnami subchart deprecation
+// warnings.
+func (s *ConstraintTemplateTest) TestLegacyJksTruststoreFieldsRenderWithoutCrash() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestSecondaryStorageElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                    "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestSecondaryStorageOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                 "opensearch",
+				"orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestOptimizeElasticsearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"optimize.database.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestOptimizeOpensearchTlsSecretRendersOk",
+			Values: map[string]string{
+				"optimize.database.opensearch.tls.secret.existingSecret": "my-legacy-jks",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                         "elasticsearch",
+				"global.elasticsearch.tls.jks.secret.existingSecret":               "my-jks-pw-secret",
+				"global.elasticsearch.tls.jks.secret.existingSecretKey":            "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalOpensearchTlsJksSecretRendersOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":               "opensearch",
+				"global.opensearch.tls.jks.secret.existingSecret":        "my-jks-pw-secret",
+				"global.opensearch.tls.jks.secret.existingSecretKey":     "truststore-password",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestCaBundleAndLegacyJksCoexistRenderOk",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":                                    "elasticsearch",
+				"orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret": "my-legacy-jks",
+				"global.tls.caBundle.secret.existingSecret":                                   "camunda-ca-bundle",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}
+
+
 func (s *ConstraintTemplateTest) TestBitnamiSubchartDeprecationWarnings() {
 	testCases := []testhelpers.TestCase{
 		{

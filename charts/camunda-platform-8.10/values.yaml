@@ -177,10 +177,10 @@ global:
   ## @param global.elasticsearch.tls.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.enabled or orchestration.data.secondaryStorage.elasticsearch.tls) if true, enable tls for external elasticsearch
   ## @extra global.elasticsearch.auth (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth or orchestration.data.secondaryStorage.elasticsearch.auth)
   ## @param global.elasticsearch.auth.username (DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.auth.username or orchestration.data.secondaryStorage.elasticsearch.auth.username) the username for external elasticsearch
-  ## @extra global.elasticsearch.tls.jks configuration to provide the jks secret.
-  ## @param global.elasticsearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
-  ## @param global.elasticsearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
-  ## @param global.elasticsearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
+  ## @extra global.elasticsearch.tls.jks (DEPRECATED in chart 15.x — the jks password block is part of the legacy JKS truststore path; use global.tls.caBundle.secret with a PEM CA bundle instead) configuration to provide the jks secret.
+  ## @param global.elasticsearch.tls.jks.secret.existingSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the jks password.
+  ## @param global.elasticsearch.tls.jks.secret.existingSecretKey (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the existing secret object.
+  ## @param global.elasticsearch.tls.jks.secret.inlineSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret) can be used to provide the jks password as a plain-text value for non-production usage.
   elasticsearch:
     enabled: false
     external: false
@@ -230,10 +230,10 @@ global:
   ## @param global.opensearch.tls.enabled (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.enabled or orchestration.data.secondaryStorage.opensearch.tls) if true, enable tls for external opensearch
   ## @extra global.opensearch.auth (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth or orchestration.data.secondaryStorage.opensearch.auth)
   ## @param global.opensearch.auth.username (DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.auth.username or orchestration.data.secondaryStorage.opensearch.auth.username) the username for external opensearch
-  ## @extra global.opensearch.tls.jks configuration to provide the jks secret.
-  ## @param global.opensearch.tls.jks.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the jks password.
-  ## @param global.opensearch.tls.jks.secret.existingSecretKey can be used to provide the key within the existing secret object.
-  ## @param global.opensearch.tls.jks.secret.inlineSecret can be used to provide the jks password as a plain-text value for non-production usage.
+  ## @extra global.opensearch.tls.jks (DEPRECATED in chart 15.x — the jks password block is part of the legacy JKS truststore path; use global.tls.caBundle.secret with a PEM CA bundle instead) configuration to provide the jks secret.
+  ## @param global.opensearch.tls.jks.secret.existingSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the jks password.
+  ## @param global.opensearch.tls.jks.secret.existingSecretKey (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the existing secret object.
+  ## @param global.opensearch.tls.jks.secret.inlineSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret) can be used to provide the jks password as a plain-text value for non-production usage.
   opensearch:
     enabled: false
     aws:
@@ -2887,11 +2887,11 @@ orchestration:
             existingSecretKey: ""
         ## @extra orchestration.data.secondaryStorage.elasticsearch.tls configuration for TLS settings for elasticsearch connection
         tls:
-          ## @extra orchestration.data.secondaryStorage.elasticsearch.tls.secret secret ref for TLS trust store
+          ## @extra orchestration.data.secondaryStorage.elasticsearch.tls.secret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret with a PEM CA bundle; the chart builds the JVM truststore at pod start) secret ref for TLS trust store
           secret:
-            ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS trust store
+            ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the TLS trust store
             existingSecret: ""
-            ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey defines the key within the existing Kubernetes Secret for TLS trust store
+            ## @param orchestration.data.secondaryStorage.elasticsearch.tls.secret.existingSecretKey (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) defines the key within the existing Kubernetes Secret for TLS trust store
             existingSecretKey: ""
       ## @extra orchestration.data.secondaryStorage.opensearch configuration for Opensearch as secondary storage
       opensearch:
@@ -2915,11 +2915,11 @@ orchestration:
             existingSecretKey: ""
         ## @extra orchestration.data.secondaryStorage.opensearch.tls configuration for TLS settings for opensearch connection
         tls:
-          ## @extra orchestration.data.secondaryStorage.opensearch.tls.secret secret ref for TLS trust store
+          ## @extra orchestration.data.secondaryStorage.opensearch.tls.secret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret with a PEM CA bundle; the chart builds the JVM truststore at pod start) secret ref for TLS trust store
           secret:
-            ## @param orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the TLS trust store
+            ## @param orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to reference an existing Kubernetes Secret containing the TLS trust store
             existingSecret: ""
-            ## @param orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey defines the key within the existing Kubernetes Secret for TLS trust store
+            ## @param orchestration.data.secondaryStorage.opensearch.tls.secret.existingSecretKey (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) defines the key within the existing Kubernetes Secret for TLS trust store
             existingSecretKey: ""
   ## @param orchestration.extraVolumes can be used to define extra volumes for the broker pods, useful for additional exporters
   extraVolumes: []
@@ -3187,11 +3187,11 @@ optimize:
       external: false
       tls:
         enabled: false
-        ## @extra optimize.database.elasticsearch.tls.secret configuration for new secret pattern (>= 8.9)
+        ## @extra optimize.database.elasticsearch.tls.secret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret with a PEM CA bundle; the chart builds the JVM truststore at pod start) configuration for new secret pattern (>= 8.9)
         secret:
-          ## @param optimize.database.elasticsearch.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificate
+          ## @param optimize.database.elasticsearch.tls.secret.existingSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate
           existingSecret: ""
-          ## @param optimize.database.elasticsearch.tls.secret.existingSecretKey can be used to provide the key within the secret containing the certificate
+          ## @param optimize.database.elasticsearch.tls.secret.existingSecretKey (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate
           existingSecretKey: "externaldb.jks"
       auth:
         username: ""
@@ -3227,11 +3227,11 @@ optimize:
         enabled: false
       tls:
         enabled: false
-        ## @extra optimize.database.opensearch.tls.secret configuration for new secret pattern (>= 8.9)
+        ## @extra optimize.database.opensearch.tls.secret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret with a PEM CA bundle; the chart builds the JVM truststore at pod start) configuration for new secret pattern (>= 8.9)
         secret:
-          ## @param optimize.database.opensearch.tls.secret.existingSecret can be used to provide the name of an existing Kubernetes secret containing TLS certificate
+          ## @param optimize.database.opensearch.tls.secret.existingSecret (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecret) can be used to provide the name of an existing Kubernetes secret containing TLS certificate
           existingSecret: ""
-          ## @param optimize.database.opensearch.tls.secret.existingSecretKey can be used to provide the key within the secret containing the certificate
+          ## @param optimize.database.opensearch.tls.secret.existingSecretKey (DEPRECATED in chart 15.x — use global.tls.caBundle.secret.existingSecretKey) can be used to provide the key within the secret containing the certificate
           existingSecretKey: "externaldb.jks"
       auth:
         username: ""
