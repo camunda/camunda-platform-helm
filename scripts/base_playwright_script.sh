@@ -570,11 +570,21 @@ _log_e2e_suite_version() {
   info "E2E test suite version: ${version}"
 }
 
+# Path to a node_modules tree pre-built into the playwright-runner image
+# (see .github/docker/playwright-runner/Dockerfile). Contains every pinned dep
+# from charts/<v>/test/e2e/package.json EXCEPT @camunda/e2e-test-suite, which
+# is intentionally fetched fresh on every run.
+PREBUILT_E2E_NODE_MODULES="${PREBUILT_E2E_NODE_MODULES:-/opt/e2e-prebuilt/node_modules}"
+
 # Setup playwright environment: change directory, install dependencies, create test-results dir
 # Uses double-checked locking to prevent concurrent npm install corruption.
-# Before installing, updates @camunda/e2e-test-suite to the latest version from
-# the registry so that the "latest" tag in package.json is actually resolved
-# (npm install alone never upgrades past the version pinned in package-lock.json).
+#
+# Fast path (CI in playwright-runner image): seed node_modules from the
+# prebuilt tree baked into the image, then `npm install @camunda/e2e-test-suite@latest`
+# on top — one network round-trip instead of a full dependency tree install.
+#
+# Slow path (local dev / image without prebuilt tree): full `npm install` after
+# an `npm update @camunda/e2e-test-suite` to chase the floating "latest" tag.
 #
 # When PLAYWRIGHT_E2E_LOCAL_TEST_SUITE is set, symlinks the local checkout into
 # node_modules instead of using the npm-published package. This allows iterating
@@ -593,10 +603,46 @@ _setup_playwright_environment() {
     npm_flags="$npm_flags --silent"
   fi
 
-  # Acquire the lock first — npm update and npm install both modify
-  # node_modules and package-lock.json, so they must be serialized.
+  # Acquire the lock first — npm install modifies node_modules and may rewrite
+  # package-lock.json, so concurrent shards must serialize.
   local got_lock=true
   _acquire_npm_lock "$test_suite_path" 120 || got_lock=false
+
+  # ---------- Fast path: prebuilt node_modules from the runner image ----------
+  if [[ ! -d "node_modules" ]] && [[ -d "$PREBUILT_E2E_NODE_MODULES" ]]; then
+    info "Seeding node_modules from prebuilt tree at $PREBUILT_E2E_NODE_MODULES"
+    # cp -al uses hardlinks where possible (same filesystem) so this is near-free.
+    if ! cp -al "$PREBUILT_E2E_NODE_MODULES" node_modules 2>/dev/null; then
+      log "Hardlink copy not supported, falling back to recursive copy"
+      cp -a "$PREBUILT_E2E_NODE_MODULES" node_modules
+    fi
+  fi
+
+  # If we have a node_modules tree (either prebuilt or from a previous run), we
+  # only need to ensure @camunda/e2e-test-suite itself is at the latest version.
+  # `npm install <pkg>@latest --no-save` overwrites just that one package and
+  # its transitive deps without rewriting package-lock.json or touching unrelated
+  # packages — drastically faster than `npm install` of the whole tree.
+  if [[ -d "node_modules" ]] && [[ -f "package.json" ]] \
+      && grep -q '@camunda/e2e-test-suite' package.json 2>/dev/null; then
+    info "Fetching latest @camunda/e2e-test-suite..."
+    # shellcheck disable=SC2086
+    if npm install @camunda/e2e-test-suite@latest --no-save --prefer-online $npm_flags; then
+      [[ "$got_lock" == "true" ]] && _release_npm_lock "$test_suite_path"
+      if [[ -n "${PLAYWRIGHT_E2E_LOCAL_TEST_SUITE:-}" ]]; then
+        _link_local_test_suite "$test_suite_path" "$PLAYWRIGHT_E2E_LOCAL_TEST_SUITE"
+      fi
+      local results_dir="${PLAYWRIGHT_TEST_OUTPUT:-$test_suite_path/test-results}"
+      mkdir -p "$results_dir"
+      return 0
+    fi
+    # Targeted install failed — fall through to a full install below as a
+    # safety net (e.g., transitive dep mismatch after an upstream package.json bump).
+    info "Targeted @camunda/e2e-test-suite install failed — falling back to full npm install"
+    rm -rf node_modules
+  fi
+
+  # ---------- Slow path: no prebuilt tree available (local dev) ----------
 
   # Update @camunda/e2e-test-suite to the latest version from the registry.
   # npm install respects package-lock.json and never upgrades past the pinned
