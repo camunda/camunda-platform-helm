@@ -59,8 +59,9 @@
 global:
   tls:
     caBundle:
-      existingSecret: "camunda-ca-bundle"
-      existingSecretKey: "ca.crt"
+      secret:
+        existingSecret: "camunda-ca-bundle"
+        existingSecretKey: "ca.crt"
       # The init container is a dedicated JRE image (it needs `keytool`).
       # Override if you mirror images internally.
       image: "eclipse-temurin:21-jre"
@@ -198,7 +199,7 @@ global:
 # -----------------------------------------------------------------------------
 # When using cert-manager, the recommended pattern is to issue your CA
 # bundle Secret via a Certificate resource and reference its secretName as
-# global.tls.caBundle.existingSecret. The chart does not depend on
+# global.tls.caBundle.secret.existingSecret. The chart does not depend on
 # cert-manager — this is just the ergonomic recipe.
 #
 # Outside this values file, apply something like:
