@@ -358,6 +358,34 @@ func TestFilter(t *testing.T) {
 			t.Errorf("Filter(shortname=esk, exact=false): got %d entries, want 4", len(got))
 		}
 	})
+
+	t.Run("scenario+shortname fallback to scenario only when shortname unmatched", func(t *testing.T) {
+		// When scenario filter matches but shortname doesn't match anything,
+		// the fallback drops the shortname filter and uses scenario alone.
+		// "oidc" scenario exists, but shortname "dynamic-xyz" doesn't.
+		got := Filter(entries, FilterOptions{ScenarioFilter: "oidc", ShortnameFilter: "dynamic-xyz", ShortnameExact: true})
+		// Should fall back to scenario-only filter and find the oidc entry
+		if len(got) != 1 || got[0].Scenario != "oidc" {
+			t.Errorf("Filter(scenario=oidc, shortname=dynamic-xyz, exact=true): got %d entries, want 1 oidc entry (fallback)", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname no fallback when shortname matches", func(t *testing.T) {
+		// When both filters match, use the combined AND result (no fallback needed).
+		got := Filter(entries, FilterOptions{ScenarioFilter: "elasticsearch", ShortnameFilter: "eske", ShortnameExact: true})
+		// Should match entries with scenario containing "elasticsearch" AND shortname exactly "eske"
+		if len(got) != 4 {
+			t.Errorf("Filter(scenario=elasticsearch, shortname=eske, exact=true): got %d entries, want 4", len(got))
+		}
+	})
+
+	t.Run("scenario+shortname fallback not triggered without scenario filter", func(t *testing.T) {
+		// Without a scenario filter, shortname-only filter that matches nothing returns empty.
+		got := Filter(entries, FilterOptions{ShortnameFilter: "dynamic-xyz", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=dynamic-xyz, exact=true, no scenario): got %d entries, want 0", len(got))
+		}
+	})
 }
 
 // --- GroupByVersion / VersionOrder tests ---
