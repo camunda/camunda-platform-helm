@@ -146,3 +146,52 @@ EOF
   run bash "$SCRIPT"
   [ "$status" -eq 2 ]
 }
+
+@test "ERROR: --namespace with no value exits 2 (not 1 from set -u)" {
+  run bash "$SCRIPT" --namespace
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"requires a value"* ]] || [[ "$stderr" == *"requires a value"* ]]
+}
+
+@test "ERROR: --kube-context with no value exits 2 (not 1 from set -u)" {
+  run bash "$SCRIPT" --namespace ci-test --kube-context
+  [ "$status" -eq 2 ]
+}
+
+@test "FAIL: plaintext HTTP to elasticsearch-master-headless suffix" {
+  write_pod_json "$TMPDIR_TEST/pods" "orchestration-0" "orchestration" \
+    "ES_URL" "http://elasticsearch-master-headless:9200"
+  install_kubectl_stub "orchestration-0" "$TMPDIR_TEST/pods"
+
+  run bash "$SCRIPT" --namespace ci-test
+  [ "$status" -eq 1 ]
+}
+
+@test "FAIL: plaintext HTTP to opensearch-master-coordinating-only suffix" {
+  write_pod_json "$TMPDIR_TEST/pods" "orchestration-0" "orchestration" \
+    "OS_URL" "http://opensearch-master-coordinating-only:9200"
+  install_kubectl_stub "orchestration-0" "$TMPDIR_TEST/pods"
+
+  run bash "$SCRIPT" --namespace ci-test
+  [ "$status" -eq 1 ]
+}
+
+@test "FAIL: multiple JDBC URLs in one env var, second is insecure" {
+  write_pod_json "$TMPDIR_TEST/pods" "orchestration-0" "orchestration" \
+    "JDBC_PAIR" "jdbc:postgresql://secure:5432/db?sslmode=verify-full&jdbc:postgresql://insecure:5432/db"
+  install_kubectl_stub "orchestration-0" "$TMPDIR_TEST/pods"
+
+  run bash "$SCRIPT" --namespace ci-test
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"insecure"* ]] || [[ "$stderr" == *"insecure"* ]]
+}
+
+@test "FAIL: JDBC URL with sslmode=require (disables hostname verification)" {
+  write_pod_json "$TMPDIR_TEST/pods" "orchestration-0" "orchestration" \
+    "JDBC_URL" "jdbc:postgresql://postgres-tls-postgresql:5432/orchestration?sslmode=require"
+  install_kubectl_stub "orchestration-0" "$TMPDIR_TEST/pods"
+
+  run bash "$SCRIPT" --namespace ci-test
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"INSECURE-JDBC"* ]] || [[ "$stderr" == *"INSECURE-JDBC"* ]]
+}
