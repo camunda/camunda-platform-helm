@@ -349,7 +349,7 @@ integration:
           exclude: []
           flow: upgrade-minor
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [hub-legacy]
           platforms: [gke]
           infra-type:
