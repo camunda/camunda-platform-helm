@@ -241,7 +241,7 @@ func NewRootCommand() *cobra.Command {
 	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
 	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection: keycloak, keycloak-external, oidc, basic, hybrid")
-	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-self-signed, elasticsearch-external-self-signed, opensearch, opensearch-embedded, opensearch-external, rdbms, rdbms-external, rdbms-oracle")
+	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection: elasticsearch, elasticsearch-self-signed, elasticsearch-external-self-signed, opensearch, opensearch-embedded, opensearch-external, rdbms, rdbms-external, rdbms-oracle, rdbms-self-signed")
 	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection: gke, eks, openshift")
 	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections (comma-separated): multitenancy, rba, documentstore")
 	f.BoolVar(&flags.Selection.QA, "qa", false, "Enable QA configuration (test users, etc.)")
@@ -404,7 +404,7 @@ func registerSelectionCompletion(cmd *cobra.Command) {
 	// Persistence completion
 	_ = cmd.RegisterFlagCompletionFunc("persistence", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		scenarioPath := resolveScenarioPath(cmd)
-		defaultPersistence := []string{"elasticsearch", "opensearch", "rdbms", "rdbms-external", "rdbms-oracle"}
+		defaultPersistence := []string{"elasticsearch", "opensearch", "rdbms", "rdbms-external", "rdbms-oracle", "rdbms-self-signed"}
 
 		if scenarioPath == "" {
 			return defaultPersistence, cobra.ShellCompDirectiveNoFileComp
