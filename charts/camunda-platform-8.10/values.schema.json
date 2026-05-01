@@ -494,6 +494,26 @@
                     "description": "ZeebeClusterName defines the cluster name for the Zeebe cluster. All Zeebe pods get this prefix in their name and the brokers uses that as cluster name.",
                     "default": "{{ .Release.Name }}-zeebe"
                 },
+                "tls": {
+                    "type": "object",
+                    "properties": {
+                        "caBundle": {
+                            "type": "object",
+                            "properties": {
+                                "existingSecret": {
+                                    "type": "string",
+                                    "description": "name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.",
+                                    "default": ""
+                                },
+                                "existingSecretKey": {
+                                    "type": "string",
+                                    "description": "key within the secret that holds the PEM-encoded CA bundle.",
+                                    "default": "ca.crt"
+                                }
+                            }
+                        }
+                    }
+                },
                 "identity": {
                     "type": "object",
                     "properties": {
