@@ -1,0 +1,147 @@
+# CI values for the OpenSearch 3 companion chart in the opensearch-self-signed
+# scenario. Enables HTTP/Transport TLS using a self-signed CA + node + admin
+# certificates that are pre-provisioned by
+# pre-install-opensearch-self-signed.sh in the namespace as the secret
+# `opensearch-tls-certs`.
+#
+# Deployed as a separate Helm release by deploy-camunda before the main
+# Camunda chart. Referenced from ci-test-config.yaml dependencies.
+
+clusterName: "opensearch"
+masterService: "opensearch-master"
+
+singleNode: true
+replicas: 1
+
+protocol: https
+
+# Mount the CA / node / admin PEM material (created by the pre-install script)
+# into the OpenSearch container under /usr/share/opensearch/config/certs.
+secretMounts:
+  - name: opensearch-tls-certs
+    secretName: opensearch-tls-certs
+    path: /usr/share/opensearch/config/certs
+    defaultMode: 0o400
+
+extraEnvs:
+  # Skip the demo install_demo_configuration.sh path; we configure security
+  # entirely via opensearch.yml + securityConfig below using our own certs.
+  - name: DISABLE_INSTALL_DEMO_CONFIG
+    value: "true"
+  - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+    value: "Camunda-CI-OS-2026!"
+
+config:
+  opensearch.yml: |
+    cluster.name: opensearch
+    network.host: 0.0.0.0
+    discovery.type: single-node
+
+    plugins.security.ssl.transport.pemcert_filepath: certs/tls.crt
+    plugins.security.ssl.transport.pemkey_filepath: certs/tls.key
+    plugins.security.ssl.transport.pemtrustedcas_filepath: certs/ca.crt
+    plugins.security.ssl.transport.enforce_hostname_verification: false
+    plugins.security.ssl.http.enabled: true
+    plugins.security.ssl.http.pemcert_filepath: certs/tls.crt
+    plugins.security.ssl.http.pemkey_filepath: certs/tls.key
+    plugins.security.ssl.http.pemtrustedcas_filepath: certs/ca.crt
+    plugins.security.allow_unsafe_democertificates: false
+    plugins.security.allow_default_init_securityindex: true
+    plugins.security.authcz.admin_dn:
+      - "CN=admin,O=camunda-ci"
+    plugins.security.nodes_dn:
+      - "CN=opensearch-master,O=camunda-ci"
+    plugins.security.audit.type: noop
+    plugins.security.enable_snapshot_restore_privilege: true
+    plugins.security.check_snapshot_restore_write_privileges: true
+    plugins.security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
+    plugins.security.system_indices.enabled: true
+
+# Provide the OpenSearch security plugin's bootstrap config inline so the
+# admin user exists at startup. We deliberately bypass the demo install
+# (DISABLE_INSTALL_DEMO_CONFIG=true) so DEMO certs do not collide with the
+# self-signed material we mount under /config/certs.
+#
+# The bcrypt hash below corresponds to the admin password
+# "Camunda-CI-OS-2026!" used by the camunda persistence values.
+securityConfig:
+  enabled: true
+  config:
+    dataComplete: true
+    data:
+      internal_users.yml: |-
+        _meta:
+          type: "internalusers"
+          config_version: 2
+        admin:
+          hash: "$2b$12$nvR4pKn6/5AYmBv50Zb55OeoFcBD1VMSngyzQhP.LhBiAqVR12TXi"
+          reserved: true
+          backend_roles:
+            - "admin"
+          description: "camunda-ci admin"
+      config.yml: |-
+        _meta:
+          type: "config"
+          config_version: 2
+        config:
+          dynamic:
+            authc:
+              basic_internal_auth_domain:
+                description: "HTTP basic with internal users db"
+                http_enabled: true
+                transport_enabled: true
+                order: 0
+                http_authenticator:
+                  type: basic
+                  challenge: true
+                authentication_backend:
+                  type: intern
+      roles.yml: |-
+        _meta:
+          type: "roles"
+          config_version: 2
+      roles_mapping.yml: |-
+        _meta:
+          type: "rolesmapping"
+          config_version: 2
+        all_access:
+          reserved: false
+          backend_roles:
+            - "admin"
+        security_rest_api_access:
+          reserved: false
+          backend_roles:
+            - "admin"
+      action_groups.yml: |-
+        _meta:
+          type: "actiongroups"
+          config_version: 2
+      tenants.yml: |-
+        _meta:
+          type: "tenants"
+          config_version: 2
+      nodes_dn.yml: |-
+        _meta:
+          type: "nodesdn"
+          config_version: 2
+      whitelist.yml: |-
+        _meta:
+          type: "whitelist"
+          config_version: 2
+      audit.yml: |-
+        _meta:
+          type: "audit"
+          config_version: 2
+        config:
+          enabled: false
+
+sysctlInit:
+  enabled: true
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
