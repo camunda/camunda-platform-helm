@@ -998,3 +998,38 @@ func (s *DeploymentTemplateTest) TestDifferentValuesInputs() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *DeploymentTemplateTest) TestRBA() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestRBADisabledByDefaultDoesNotEmitEnvVar",
+			Values: map[string]string{
+				"identity.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "RESOURCE_PERMISSIONS_ENABLED", e.Name)
+				}
+			},
+		},
+		{
+			Name: "TestRBAEnabledEmitsIdentityEnvVar",
+			Values: map[string]string{
+				"identity.enabled":   "true",
+				"global.rba.enabled": "true",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var deployment appsv1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				env := deployment.Spec.Template.Spec.Containers[0].Env
+				require.Contains(t, env, corev1.EnvVar{Name: "RESOURCE_PERMISSIONS_ENABLED", Value: "true"})
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

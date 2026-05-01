@@ -1038,3 +1038,31 @@ func (s *deploymentTemplateTest) TestSetDnsPolicyAndDnsConfig() {
 
 	require.Equal(s.T(), expectedDNSConfig, deployment.Spec.Template.Spec.DNSConfig, "dnsConfig should match the expected configuration")
 }
+
+func (s *deploymentTemplateTest) TestRBADisabledByDefaultDoesNotEmitEnvVar() {
+	options := &helm.Options{
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+		s.Require().NotEqual("CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", e.Name)
+	}
+}
+
+func (s *deploymentTemplateTest) TestRBAEnabledEmitsOperateEnvVar() {
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"global.rba.enabled": "true",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	env := deployment.Spec.Template.Spec.Containers[0].Env
+	s.Require().Contains(env, corev1.EnvVar{Name: "CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED", Value: "true"})
+}
