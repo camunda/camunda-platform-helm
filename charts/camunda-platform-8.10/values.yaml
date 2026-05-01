@@ -294,10 +294,12 @@ global:
   tls:
     ## @extra global.tls.caBundle Optional OS-level CA bundle for SSL_CERT_FILE
     caBundle:
-      ## @param global.tls.caBundle.existingSecret name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.
-      existingSecret: ""
-      ## @param global.tls.caBundle.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
-      existingSecretKey: "ca.crt"
+      ## @extra global.tls.caBundle.secret The Kubernetes secret reference holding the CA bundle. Mirrors the .secret.existingSecret/existingSecretKey naming convention used by global.elasticsearch.tls.secret, global.opensearch.tls.secret, and global.license.secret elsewhere in this chart.
+      secret:
+        ## @param global.tls.caBundle.secret.existingSecret name of an existing Kubernetes secret containing the PEM-encoded CA bundle. Empty disables the feature.
+        existingSecret: ""
+        ## @param global.tls.caBundle.secret.existingSecretKey key within the secret that holds the PEM-encoded CA bundle.
+        existingSecretKey: "ca.crt"
 
   # --------------------------------------------------------------------------
   # Identity / Authentication Modes
