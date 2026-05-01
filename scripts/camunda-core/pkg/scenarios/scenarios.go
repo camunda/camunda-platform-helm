@@ -354,11 +354,13 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 		config.Identity = "keycloak"
 	}
 
-	// Derive persistence
+	// Derive persistence.
 	// Specific opensearch variants must precede the generic "opensearch" arm
-	// since Go's switch evaluates in order and "opensearch-self-signed" /
-	// "opensearch-embedded" both contain the substring "opensearch".
+	// since Go's switch evaluates in order and all contain the substring
+	// "opensearch".
 	switch {
+	case strings.Contains(s, "opensearch-self-signed-os-trust"):
+		config.Persistence = "opensearch-self-signed-os-trust"
 	case strings.Contains(s, "opensearch-self-signed"):
 		config.Persistence = "opensearch-self-signed"
 	case strings.Contains(s, "opensearch-embedded"):

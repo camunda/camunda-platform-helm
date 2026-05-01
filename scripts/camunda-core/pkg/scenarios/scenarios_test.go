@@ -103,6 +103,13 @@ func TestMapScenarioToConfig(t *testing.T) {
 			wantPlatform:    "gke",
 		},
 		{
+			name:            "opensearch-self-signed-os-trust resolves to its own persistence (substring trap regression)",
+			scenario:        "opensearch-self-signed-os-trust",
+			wantIdentity:    "keycloak",
+			wantPersistence: "opensearch-self-signed-os-trust",
+			wantPlatform:    "gke",
+		},
+		{
 			name:            "opensearch-self-signed maps to opensearch-self-signed persistence",
 			scenario:        "opensearch-self-signed",
 			wantIdentity:    "keycloak",
