@@ -984,6 +984,153 @@ Usage:
 {{- end -}}
 
 {{/*
+common.java_tool_options_tls_env
+
+Emits JAVA_TOOL_OPTIONS with truststore flags and emits TRUSTSTORE_PASSWORD using the normalized secret helper.
+
+Usage in a Deployment/StatefulSet env: block:
+  {{ include "common.java_tool_options_tls_env" (dict
+    "Values" .Values
+    "component" "orchestration"            # REQUIRED: values key to read javaOpts from (e.g., orchestration, optimize)
+  ) | nindent 12 }}
+
+Configuring the JKS password is OPTIONAL. When TLS is configured (via either the legacy
+`global.<engine>.tls.existingSecret` field or the normalized `tls.secret.existingSecret`
+pattern) but no `tls.jks.secret.*` is set, the helper emits only the truststore PATH and
+omits both the TRUSTSTORE_PASSWORD env var and the `-Djavax.net.ssl.trustStorePassword`
+JVM arg — so existing chart users see no behavioural change.
+
+To opt into password injection, set the matching `tls.jks.secret` block:
+
+Example (existing secret, recommended):
+  global:
+    elasticsearch:
+      tls:
+        enabled: true
+        existingSecret: my-es-tls            # legacy field, also supported
+        # OR: secret: { existingSecret: my-es-tls, existingSecretKey: externaldb.jks }
+        jks:
+          secret:
+            existingSecret: my-truststore-secret
+            existingSecretKey: truststore-password
+
+Example (inline plaintext, testing only):
+  global:
+    opensearch:
+      tls:
+        enabled: true
+        existingSecret: my-os-tls
+        jks:
+          secret:
+            inlineSecret: "changeit"
+
+Behavior:
+- Requires "component" parameter; fails if omitted.
+- Renders JAVA_TOOL_OPTIONS composed of:
+  <component>.javaOpts (or provided "javaOpts") plus:
+    -Djavax.net.ssl.trustStore=<truststoreDir>/<dynamic-filename>
+    -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)        # only when global.<engine>.tls.jks.secret is configured
+- Truststore filename is resolved via "camundaPlatform.getTlsSecretKey" so a non-default existingSecretKey continues to work.
+- Emits TRUSTSTORE_PASSWORD via "camundaPlatform.emitEnvVarFromSecretConfig" when one of:
+  - global.elasticsearch.tls.jks (preferred when ES TLS secret is set), or
+  - global.opensearch.tls.jks (preferred when OS TLS secret is set)
+  is configured (existingSecret/existingSecretKey or inlineSecret). Component-level TLS configs
+  (e.g. orchestration.data.secondaryStorage.*.tls, optimize.database.*.tls) do NOT yet carry a jks
+  password block; for those, callers must continue to set the password via JAVA_OPTS manually.
+
+Note: the $(TRUSTSTORE_PASSWORD) placeholder is not resolved during Helm template evaluation.
+It is expanded by Kubernetes env-var substitution when constructing the container environment,
+because TRUSTSTORE_PASSWORD is emitted as an earlier env entry. Java then receives the
+already-expanded JAVA_TOOL_OPTIONS value at runtime.
+
+Reserved env var name: when this helper fires it owns the env var name TRUSTSTORE_PASSWORD.
+Do not set TRUSTSTORE_PASSWORD via <component>.env / extraEnv when using this feature —
+duplicate env names are rejected by some Kubernetes API servers (e.g. AKS) and cause undefined
+last-wins behaviour elsewhere.
+
+Migration note: customers who previously worked around the missing password support by setting
+"-Djavax.net.ssl.trustStorePassword=..." via <component>.javaOpts should remove that flag once
+they adopt global.<engine>.tls.jks.secret.* — otherwise both flags are present and the JVM uses
+the last one, which becomes confusing to debug.
+*/}}
+
+{{- /* Internal: resolve the correct TLS JKS config for the currently enabled engine */ -}}
+{{/*
+Activates the JKS block for whichever engine has TLS configured.
+Honours both the legacy single-string `tls.existingSecret` and the 8.9 normalized
+`tls.secret.existingSecret` pattern, so users on either pattern get password injection
+when they set the matching `tls.jks.secret.*`.
+*/}}
+{{- define "camundaPlatform._resolve_tls_jks_config" -}}
+{{- $cfg := dict -}}
+{{- $esTls := (.Values.global.elasticsearch.tls | default dict) -}}
+{{- $osTls := (.Values.global.opensearch.tls | default dict) -}}
+{{- $esSecret := ($esTls.secret | default dict) -}}
+{{- $osSecret := ($osTls.secret | default dict) -}}
+{{- if or $esTls.existingSecret $esSecret.existingSecret -}}
+{{-   $cfg = ($esTls.jks | default dict) -}}
+{{- else if or $osTls.existingSecret $osSecret.existingSecret -}}
+{{-   $cfg = ($osTls.jks | default dict) -}}
+{{- end -}}
+{{- toYaml $cfg -}}
+{{- end -}}
+
+{{- /* Internal: unified JAVA_TOOL_OPTIONS + TRUSTSTORE_PASSWORD emitter */ -}}
+{{- define "camundaPlatform._java_tool_options_tls_env" -}}
+{{- $vals := .Values -}}
+{{- $comp := required "common.java_tool_options_tls_env: parameter 'component' is required" .component -}}
+{{- $compVals := (get $vals $comp) | default dict -}}
+{{- $javaOpts := (.javaOpts | default ((get $compVals "javaOpts") | default "")) | trim -}}
+{{- $truststoreDir := required "camundaPlatform._java_tool_options_tls_env: parameter 'truststoreDir' is required" .truststoreDir -}}
+{{- $secretKey := include "camundaPlatform.getTlsSecretKey" (dict "Values" $vals) -}}
+{{- $truststorePath := printf "%s/%s" $truststoreDir $secretKey -}}
+{{- $jks := ((include "camundaPlatform._resolve_tls_jks_config" .) | fromYaml) | default dict -}}
+{{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+{{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+    "envName" "TRUSTSTORE_PASSWORD"
+    "config" $jks
+ ) | nindent 0 }}
+{{- end }}
+- name: JAVA_TOOL_OPTIONS
+  value: >-
+    {{- if $javaOpts -}}
+    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $javaOpts $truststorePath | nindent 4 }}
+    {{- else -}}
+    {{- printf "%s\n-Djavax.net.ssl.trustStore=%s" $javaOpts $truststorePath | nindent 4 }}
+    {{- end -}}
+    {{- else -}}
+    {{- if (eq (include "camundaPlatform.hasSecretConfig" (dict "config" $jks)) "true") -}}
+    {{- printf "-Djavax.net.ssl.trustStore=%s\n-Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)" $truststorePath | nindent 4 }}
+    {{- else -}}
+    {{- printf "-Djavax.net.ssl.trustStore=%s" $truststorePath | nindent 4 }}
+    {{- end -}}
+    {{- end -}}
+{{- end }}
+
+{{- define "common.java_tool_options_tls_env" -}}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "truststoreDir" "/usr/local/camunda/certificates"
+) }}
+{{- end }}
+
+{{/* optimize.java_tool_options_tls_env
+Delegates to camundaPlatform._java_tool_options_tls_env.
+See common.java_tool_options_tls_env for full documentation.
+*/}}
+{{- define "optimize.java_tool_options_tls_env" -}}
+{{ include "camundaPlatform._java_tool_options_tls_env" (dict
+  "Values" .Values
+  "component" .component
+  "javaOpts" .javaOpts
+  "truststoreDir" "/optimize/certificates"
+) }}
+{{- end }}
+
+{{/*
 ********************************************************************************
 Release highlights.
 ********************************************************************************
