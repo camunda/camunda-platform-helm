@@ -250,6 +250,31 @@
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.elasticsearch.tls.enabled or orchestration.data.secondaryStorage.elasticsearch.tls) if true, enable tls for external elasticsearch",
                                     "default": false
                                 },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "secret": {
                                     "type": "object",
                                     "properties": {
@@ -359,6 +384,31 @@
                                     "type": "boolean",
                                     "description": "(DEPRECATED - use component-specific options instead, e.g., optimize.database.opensearch.tls.enabled or orchestration.data.secondaryStorage.opensearch.tls) if true, enable tls for external opensearch",
                                     "default": false
+                                },
+                                "jks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "secret": {
+                                            "type": "object",
+                                            "properties": {
+                                                "existingSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to reference an existing Kubernetes Secret containing the jks password.",
+                                                    "default": ""
+                                                },
+                                                "existingSecretKey": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the key within the existing secret object.",
+                                                    "default": ""
+                                                },
+                                                "inlineSecret": {
+                                                    "type": "string",
+                                                    "description": "can be used to provide the jks password as a plain-text value for non-production usage.",
+                                                    "default": ""
+                                                }
+                                            }
+                                        }
+                                    }
                                 },
                                 "secret": {
                                     "type": "object",
