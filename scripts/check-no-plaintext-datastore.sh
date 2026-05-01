@@ -17,7 +17,10 @@
 #
 # Inspects every container env var in every pod of the target namespace and
 # fails if any URL points at a known datastore service over plain HTTP, or if
-# any jdbc:postgresql:// URL omits TLS (sslmode=verify-* or ssl=true).
+# any jdbc:postgresql:// URL omits sslmode=verify-ca or sslmode=verify-full.
+# Note that ssl=true alone and sslmode=require are deliberately rejected:
+# both disable hostname verification, which is the regression we want to
+# catch.
 #
 # This catches accidental chart regressions where a default plaintext URL
 # silently re-enters a TLS-claimed deployment — the case the epic
@@ -57,8 +60,18 @@ EOF
 while (( "$#" )); do
   case "$1" in
     -n|--namespace)
+      if (( $# < 2 )); then
+        echo "ERROR: --namespace requires a value" >&2
+        usage >&2
+        exit 2
+      fi
       NAMESPACE="$2"; shift 2 ;;
     --kube-context)
+      if (( $# < 2 )); then
+        echo "ERROR: --kube-context requires a value" >&2
+        usage >&2
+        exit 2
+      fi
       KUBE_CONTEXT="$2"; shift 2 ;;
     -h|--help)
       usage; exit 0 ;;
@@ -83,17 +96,22 @@ fi
 # ---------------------------------------------------------------------------
 # Patterns
 # ---------------------------------------------------------------------------
-# HTTP plaintext to known datastore service names. The trailing colon-or-slash
-# is intentional: it avoids matching paths like "http-elasticsearch" or random
-# substrings; the URL boundary makes the match intentional.
-PLAINTEXT_HTTP_RE='http://([a-z0-9-]*-)?(elasticsearch|opensearch|postgres|postgresql|opensearch-master|elasticsearch-master)([./:]|$)'
+# HTTP plaintext to known datastore service names. Trailing alternation
+# covers Bitnami service name suffixes (-headless, -coordinating-only, -data,
+# -master, -client) and the URL boundary characters [./:].
+PLAINTEXT_HTTP_RE='http://([a-z0-9-]*-)?(elasticsearch|opensearch|postgres|postgresql|opensearch-master|elasticsearch-master)(-headless|-coordinating-only|-data|-master|-client)?([./:]|$)'
 
 # JDBC PostgreSQL URLs that are missing a TLS directive. Postgres JDBC
 # accepts either ?ssl=true or ?sslmode=require|verify-ca|verify-full. We
 # require verify-ca or verify-full as the only meaningful TLS settings;
-# ssl=true alone disables hostname verification on Postgres JDBC, which is
-# the regression we want to catch.
-JDBC_PG_RE='jdbc:postgresql://[^"]*'
+# ssl=true alone and sslmode=require disable hostname verification, which
+# is the regression we want to catch.
+#
+# Stop characters: quote, whitespace, and the URL boundary characters that
+# delimit one URL from the next when multiple are concatenated in a single
+# env var. Adjacent URLs joined by `&jdbc:postgresql://` are split via sed
+# pre-processing in the loop below since POSIX regex lacks lookahead.
+JDBC_PG_RE='jdbc:postgresql://[^" ]*'
 
 # ---------------------------------------------------------------------------
 # Inspect
@@ -129,9 +147,12 @@ for POD in ${PODS}; do
     fi
 
     # 2. Postgres JDBC URLs without sslmode=verify-* (verify-ca / verify-full).
-    #    Match each occurrence; an env var can contain multiple URLs.
+    #    Match each occurrence; an env var can contain multiple URLs joined
+    #    by `&jdbc:postgresql://`. Pre-split on that boundary so each URL is
+    #    grep-matched independently (POSIX regex has no lookahead).
     if echo "${env_value}" | grep -qE "${JDBC_PG_RE}"; then
-      for url in $(echo "${env_value}" | grep -oE "${JDBC_PG_RE}"); do
+      split_value=$(echo "${env_value}" | sed 's|&jdbc:postgresql://|\n\&jdbc:postgresql://|g; s|^&||')
+      for url in $(echo "${split_value}" | grep -oE "${JDBC_PG_RE}"); do
         if ! echo "${url}" | grep -qE 'sslmode=verify-(ca|full)'; then
           VIOLATIONS+=("INSECURE-JDBC	${pod_name}/${container}	${env_name}=${url}")
         fi
