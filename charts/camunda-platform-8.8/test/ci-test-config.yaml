@@ -159,7 +159,7 @@ integration:
           exclude: []
           auth: keycloak
           identity: keycloak
-          persistence: opensearch-external
+          persistence: opensearch
           flow: install
           infra-type:
             gke: distroci
