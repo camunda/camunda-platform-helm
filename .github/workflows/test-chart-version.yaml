@@ -299,7 +299,6 @@ jobs:
       test-qa: ${{ matrix.qa == 'true' }}
       test-upgrade: ${{ matrix.upgrade == 'true' }}
       skip-e2e: ${{ matrix.skipE2E == 'true' }}
-      skip-it: ${{ matrix.skipIT == 'true' }}
       helm-version: ${{ matrix.helmVersion }}
       cached: ${{ matrix.cached == 'true' }}
       pr-head-sha: ${{ needs.init.outputs.pr-head-sha }}

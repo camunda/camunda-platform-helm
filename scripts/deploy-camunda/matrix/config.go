@@ -187,7 +187,6 @@ type CIScenario struct {
 	// When set, these prevent the corresponding test types from running for this scenario,
 	// replacing hardcoded shortname-based skip logic in both the Go CLI and GHA workflows.
 	SkipE2E bool `yaml:"skip-e2e,omitempty"`
-	SkipIT  bool `yaml:"skip-it,omitempty"`
 
 	// Profiles names reusable dependency profiles (see
 	// integration.dependency-profiles) to expand into this scenario's

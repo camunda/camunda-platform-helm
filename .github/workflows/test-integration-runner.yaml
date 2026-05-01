@@ -139,11 +139,6 @@ on:
         required: false
         default: false
         type: boolean
-      skip-it:
-        description: "Skip integration (Playwright IT) tests for this scenario (declared in ci-test-config.yaml)"
-        required: false
-        default: false
-        type: boolean
       pr-head-sha:
         description: "PR HEAD commit SHA for recording cache results"
         required: false

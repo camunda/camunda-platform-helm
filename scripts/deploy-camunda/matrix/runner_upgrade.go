@@ -183,8 +183,7 @@ func executeTwoStepUpgrade(ctx context.Context, entry Entry, flags *config.Runti
 	// Step 1 installs the previously released chart; caller --extra-values
 	// (e.g. per-PR image tag) belongs to Step 2 only.
 	step1Flags.Deployment.ExtraValues = nil
-	step1Flags.Test.RunIntegrationTests = false // Don't run tests after Step 1.
-	step1Flags.Test.RunE2ETests = false
+	step1Flags.Test.RunE2ETests = false // Don't run tests after Step 1.
 	step1Flags.Test.RunAllTests = false
 	step1Flags.Deployment.DeleteNamespaceFirst = flags.Deployment.DeleteNamespaceFirst // Only delete on Step 1.
 

@@ -27,11 +27,9 @@ type RunOptions struct {
 	// 0 or 1 means sequential execution (default). Values > 1 enable parallel execution
 	// with at most MaxParallel entries running simultaneously.
 	MaxParallel int
-	// TestIT runs integration tests after each deployment.
-	TestIT bool
 	// TestE2E runs e2e tests after each deployment.
 	TestE2E bool
-	// TestAll runs both integration and e2e tests after each deployment.
+	// TestAll runs all e2e tests after each deployment.
 	TestAll bool
 	// RepoRoot is the repository root path.
 	RepoRoot string

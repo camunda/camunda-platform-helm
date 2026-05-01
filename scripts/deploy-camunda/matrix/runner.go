@@ -1590,7 +1590,6 @@ func PrintRunSummary(results []RunResult, wallClock time.Duration, logDir string
 					baseName := entryLogFileName(r.Entry)
 					fmt.Fprintf(&b, "    %s\n", dryKey("Logs:"))
 					fmt.Fprintf(&b, "      deploy:  %s\n", filepath.Join(logDir, baseName+".deploy.log"))
-					fmt.Fprintf(&b, "      it:      %s\n", filepath.Join(logDir, baseName+".it.log"))
 					fmt.Fprintf(&b, "      e2e:     %s\n", filepath.Join(logDir, baseName+".e2e.log"))
 				}
 			}

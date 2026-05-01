@@ -227,7 +227,6 @@ integration:
           features:
             - postgresql-companion
           skip-e2e: true
-          skip-it: true
           dependencies:
             - chart: charts/internal-postgresql
               release-name: postgresql
@@ -474,7 +473,6 @@ integration:
           features:
             - no-secondary-storage
           skip-e2e: true
-          skip-it: true
           dependencies:
             - chart: charts/internal-keycloak-26
               release-name: keycloak

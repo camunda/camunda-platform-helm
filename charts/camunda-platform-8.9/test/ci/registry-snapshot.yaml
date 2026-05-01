@@ -110,7 +110,6 @@ integration:
           identity: oidc
           persistence: elasticsearch
           skip-e2e: true
-          skip-it: true
         - name: keycloak-mt
           enabled: true
           shortname: kemt
@@ -252,7 +251,6 @@ integration:
           features:
             - no-secondary-storage
           skip-e2e: true
-          skip-it: true
         - name: documentstore
           enabled: true
           shortname: docstr

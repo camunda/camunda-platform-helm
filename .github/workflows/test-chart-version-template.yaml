@@ -117,11 +117,6 @@ on:
         required: false
         default: false
         type: boolean
-      skip-it:
-        description: "Skip integration (Playwright IT) tests for this scenario"
-        required: false
-        default: false
-        type: boolean
       helm-version:
         description: "Helm version to install. Empty means use the pre-baked Helm from the CI runner image."
         required: false
@@ -219,7 +214,6 @@ jobs:
       test-qa: ${{ inputs.test-qa }}
       test-upgrade: ${{ inputs.test-upgrade }}
       skip-e2e: ${{ inputs.skip-e2e }}
-      skip-it: ${{ inputs.skip-it }}
       helm-version: ${{ inputs.helm-version }}
       pr-head-sha: ${{ inputs.pr-head-sha }}
       camunda-version: ${{ inputs.camunda-version }}
