@@ -307,6 +307,57 @@ func TestFilter(t *testing.T) {
 			t.Errorf("Filter(shortname=zzzz): got %d entries, want 0", len(got))
 		}
 	})
+
+	t.Run("shortname exact match filters precisely", func(t *testing.T) {
+		// "es" with ShortnameExact=true should NOT match "eske" or "eshy" or "esoi"
+		got := Filter(entries, FilterOptions{ShortnameFilter: "es", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=es, exact=true): got %d entries, want 0 (no entry has shortname exactly 'es')", len(got))
+		}
+	})
+
+	t.Run("shortname exact match finds exact shortname", func(t *testing.T) {
+		// "eske" with ShortnameExact=true should match all entries with shortname=="eske"
+		got := Filter(entries, FilterOptions{ShortnameFilter: "eske", ShortnameExact: true})
+		if len(got) != 4 {
+			t.Errorf("Filter(shortname=eske, exact=true): got %d entries, want 4", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eske" {
+				t.Errorf("Filter(shortname=eske, exact=true): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname exact with substring does not match", func(t *testing.T) {
+		// "esk" with ShortnameExact=true should NOT match "eske" (substring match disabled)
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esk", ShortnameExact: true})
+		if len(got) != 0 {
+			t.Errorf("Filter(shortname=esk, exact=true): got %d entries, want 0", len(got))
+		}
+	})
+
+	t.Run("shortname exact with comma-separated values", func(t *testing.T) {
+		// "eske,esoi" with ShortnameExact=true should match those exact shortnames
+		got := Filter(entries, FilterOptions{ShortnameFilter: "eske,esoi", ShortnameExact: true})
+		if len(got) != 5 {
+			t.Errorf("Filter(shortname=eske,esoi, exact=true): got %d entries, want 5 (4 eske + 1 esoi)", len(got))
+		}
+		for _, e := range got {
+			if e.Shortname != "eske" && e.Shortname != "esoi" {
+				t.Errorf("Filter(shortname=eske,esoi, exact=true): unexpected shortname %q", e.Shortname)
+			}
+		}
+	})
+
+	t.Run("shortname non-exact allows substring match", func(t *testing.T) {
+		// Confirm the default (ShortnameExact=false) still does substring matching
+		// "esk" should match "eske" entries
+		got := Filter(entries, FilterOptions{ShortnameFilter: "esk", ShortnameExact: false})
+		if len(got) != 4 {
+			t.Errorf("Filter(shortname=esk, exact=false): got %d entries, want 4", len(got))
+		}
+	})
 }
 
 // --- GroupByVersion / VersionOrder tests ---
