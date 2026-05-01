@@ -69,7 +69,7 @@ func (c *DeploymentConfig) Validate() error {
 	}
 
 	// Validate persistence values
-	validPersistence := []string{"elasticsearch", "elasticsearch-external", "elasticsearch-external-self-signed", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-external", "rdbms", "rdbms-external", "rdbms-oracle"}
+	validPersistence := []string{"elasticsearch", "elasticsearch-external", "elasticsearch-external-self-signed", "elasticsearch-self-signed", "no-elasticsearch", "opensearch", "opensearch-embedded", "opensearch-external", "opensearch-self-signed-os-trust", "rdbms", "rdbms-external", "rdbms-oracle"}
 	if !contains(validPersistence, c.Persistence) {
 		return fmt.Errorf("invalid --persistence value %q: must be one of: %s", c.Persistence, strings.Join(validPersistence, ", "))
 	}
@@ -310,7 +310,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// Derive QA mode from prefix
 	if strings.HasPrefix(s, "qa-") {
 		config.QA = true
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 	}
 
 	// Handle well-known composite scenarios that can't be derived from name parsing alone.
@@ -320,14 +320,14 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	// so it must keep working.
 	if s == "keycloak-original" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 		config.Platform = "gke"
 		return config
 	}
 
 	if s == "elasticsearch" {
 		config.Identity = "keycloak"
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 		config.Platform = "gke"
 		return config
 	}
@@ -344,8 +344,15 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 		config.Identity = "keycloak"
 	}
 
-	// Derive persistence
+	// Derive persistence.
+	// Specific opensearch variants must precede the generic "opensearch" arm
+	// since Go's switch evaluates in order. The B1 PR introduces only the
+	// "opensearch-self-signed-os-trust" variant — A1 (#6032) adds
+	// "opensearch-self-signed" and A2 territory (the embedded chart, #5979)
+	// adds "opensearch-embedded"; both have their own arms in their PRs.
 	switch {
+	case strings.Contains(s, "opensearch-self-signed-os-trust"):
+		config.Persistence = "opensearch-self-signed-os-trust"
 	case strings.Contains(s, "opensearch"):
 		config.Persistence = "opensearch-external"
 	case strings.Contains(s, "rdbms-external"):
@@ -355,7 +362,7 @@ func MapScenarioToConfig(scenario string) *DeploymentConfig {
 	case strings.Contains(s, "rdbms"):
 		config.Persistence = "rdbms"
 	default:
-		config.Persistence = "elasticsearch"
+		config.Persistence = "elasticsearch-external"
 	}
 
 	// Derive platform (default to gke)

@@ -89,6 +89,29 @@ integration:
               repo-name: opensearch
               repo-url: https://opensearch-project.github.io/helm-charts/
               values-file: test/integration/companion-values/opensearch.yaml
+        - name: opensearch-self-signed-os-trust
+          # Disabled until A1 (opensearch-self-signed scenario, #6032) merges
+          # to main — that PR carries the cert generator script
+          # (create-opensearch-tls-secrets.sh) referenced by the os-trust
+          # pre-install wrapper. B2 (#6040, the truststore init container PR)
+          # flips this to enabled: true once both have landed.
+          enabled: false
+          shortname: osot
+          exclude: []
+          auth: keycloak
+          identity: keycloak
+          persistence: opensearch-self-signed-os-trust
+          flow: install
+          infra-type:
+            gke: distroci
+          platforms: [gke]
+          dependencies:
+            - chart: opensearch/opensearch
+              version: "3.6.0"
+              release-name: opensearch
+              repo-name: opensearch
+              repo-url: https://opensearch-project.github.io/helm-charts/
+              values-file: test/integration/companion-values/opensearch-tls.yaml
         - name: upgrade-migration
           # upgrade migrators are only for 8.7 -> 8.8, not for 8.10
           enabled: false
@@ -260,7 +283,7 @@ integration:
           exclude: []
           flow: install
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [hub-legacy]
           platforms: [gke]
           infra-type:
@@ -273,7 +296,7 @@ integration:
           exclude: []
           flow: upgrade-minor
           identity: keycloak
-          persistence: elasticsearch-external
+          persistence: elasticsearch
           features: [hub-legacy]
           platforms: [gke]
           infra-type:

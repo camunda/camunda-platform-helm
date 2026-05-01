@@ -1,0 +1,87 @@
+# =============================================================================
+# OpenSearch Backend with Self-Signed TLS — caBundle + JKS validation
+# =============================================================================
+# Layer 3: Backend - OpenSearch (companion, self-signed TLS)
+# Used with: --persistence opensearch-self-signed-os-trust
+#
+# Validates the new global.tls.caBundle / SSL_CERT_FILE wiring (helm#3498)
+# alongside the existing JKS truststore. Both paths are set:
+#   - JKS via tls.secret.existingSecret = opensearch-jks
+#       (carries trust for JVM HttpClient-based code: Operate/Tasklist/
+#       Optimize OS connector, which uses Apache httpcore5 + javax.net.ssl)
+#   - global.tls.caBundle = opensearch-tls-ca
+#       (carries trust for libraries that honor SSL_CERT_FILE / OS-level
+#       trust resolution — the post-8.6.7 OS native client path called out
+#       in helm#3498, plus modern HTTP clients in init scripts)
+#
+# This scenario proves the new caBundle helper coexists with the legacy
+# JKS path without conflict and renders correctly. Full validation of the
+# OS-level path against AWS-managed OpenSearch is out of scope for
+# in-cluster CI and lives in Phase F (customer trial).
+# =============================================================================
+
+global:
+  elasticsearch:
+    enabled: false
+  # New: OS-level CA bundle for libraries that read from the OS trust
+  # store (libcurl-based init scripts, modern PG JDBC native, OS native
+  # clients post-8.6.7). The JVM does NOT honour SSL_CERT_FILE — see the
+  # JKS path below for JVM clients.
+  tls:
+    caBundle:
+      secret:
+        existingSecret: opensearch-tls-ca
+        existingSecretKey: ca.crt
+
+orchestration:
+  # Java 21 PKCS12 default; same gotcha PR #5974 documented.
+  javaOpts: >-
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/camunda/data
+    -XX:ErrorFile=/usr/local/camunda/data/camunda_error%p.log
+    -XX:+ExitOnOutOfMemoryError
+    -Djavax.net.ssl.trustStoreType=jks
+    -Djavax.net.ssl.trustStorePassword=changeit
+  data:
+    secondaryStorage:
+      type: opensearch
+      opensearch:
+        url: "https://opensearch-master:9200"
+        auth:
+          username: admin
+          secret:
+            inlineSecret: "Camunda-CI-OS-2026!"
+        # JKS path retained — this carries trust for the Operate OS connector
+        # (Apache httpcore5 + javax.net.ssl). The new caBundle is additive,
+        # not a replacement.
+        tls:
+          secret:
+            existingSecret: opensearch-jks
+            existingSecretKey: externaldb.jks
+
+optimize:
+  enabled: true
+  javaOpts: "-Djavax.net.ssl.trustStoreType=jks -Djavax.net.ssl.trustStorePassword=changeit"
+  database:
+    elasticsearch:
+      enabled: false
+    opensearch:
+      enabled: true
+      aws:
+        enabled: false
+      url:
+        protocol: https
+        host: "opensearch-master"
+        port: 9200
+      auth:
+        username: admin
+        secret:
+          inlineSecret: "Camunda-CI-OS-2026!"
+      tls:
+        enabled: true
+        secret:
+          existingSecret: opensearch-jks
+          existingSecretKey: externaldb.jks
+
+elasticsearch:
+  enabled: false

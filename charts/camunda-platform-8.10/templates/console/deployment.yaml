@@ -85,6 +85,9 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
             {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleEnv" . | nindent 12 }}
+          {{- end }}
           {{- if (or .Values.camundaHub.console.env .Values.console.env) }}
             {{ (or .Values.camundaHub.console.env .Values.console.env) | toYaml | nindent 12 }}
           {{- end }}
@@ -155,6 +158,9 @@ spec:
               mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
               readOnly: true
             {{- end }}
+          {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+            {{- include "camundaPlatform.caBundleVolumeMount" . | nindent 12 }}
+          {{- end }}
           {{- if (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) }}
             {{- (or .Values.camundaHub.console.extraVolumeMounts .Values.console.extraVolumeMounts) | toYaml | nindent 12 }}
           {{- end }}
@@ -176,6 +182,9 @@ spec:
             "fileName" .Values.global.documentStore.type.gcp.fileName
         ) | nindent 8 }}
         {{- end }}
+      {{- if eq (include "camundaPlatform.hasCaBundle" .) "true" }}
+        {{- include "camundaPlatform.caBundleVolume" . | nindent 8 }}
+      {{- end }}
       {{- if (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) }}
         {{- (or .Values.camundaHub.console.extraVolumes .Values.console.extraVolumes) | toYaml | nindent 8 }}
       {{- end }}
