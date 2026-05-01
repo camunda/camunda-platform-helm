@@ -270,7 +270,7 @@ integration:
           infra-type:
             eks: preemptible
         - name: rdbms-self-signed
-          enabled: false
+          enabled: true
           shortname: rdbss
           exclude: []
           auth: keycloak
