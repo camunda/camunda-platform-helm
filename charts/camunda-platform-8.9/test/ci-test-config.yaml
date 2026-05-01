@@ -150,6 +150,24 @@ integration:
           persistence: elasticsearch
           features: [rba]
           platforms: [gke]
+        - name: rba-upgrade
+          # Verifies the back-compat path: Step 1 deploys the previous chart
+          # version using the legacy manual env-var configuration, Step 2
+          # upgrades to this chart still using the same values. Confirms the
+          # manual env-var path keeps working after the global.rba.enabled
+          # flag lands.
+          enabled: true
+          exclude: []
+          shortname: rbaup
+          auth: keycloak
+          flow: upgrade-minor
+          infra-type:
+            gke: distroci
+            eks: preemptible
+          identity: keycloak
+          persistence: elasticsearch
+          features: [rba-upgrade]
+          platforms: [gke]
         - name: keycloak-original
           enabled: true
           exclude: []
