@@ -53,8 +53,10 @@ runs:
       INFRA_CONFIG=".github/config/infra.yaml"
 
       # Extract first platform when a comma-separated list is passed (e.g. "gke,eks").
+      # Normalize to lowercase so callers can pass "GKE", "gke", "EKS", etc. interchangeably.
       PLATFORM="${{ inputs.platform }}"
       PLATFORM="${PLATFORM%%,*}"
+      PLATFORM="${PLATFORM,,}"
       if [[ -z "$PLATFORM" ]]; then
         echo "::error::platform input must not be empty"
         exit 1
