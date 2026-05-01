@@ -14,11 +14,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: metrics,health,prometheus
+        include: health,prometheus
   endpoint:
     health:
-      show-details: always
-      show-components: always
+      show-details: never
+      show-components: never
       group:
         readiness:
           include:
