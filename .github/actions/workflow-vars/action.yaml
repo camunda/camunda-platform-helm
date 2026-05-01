@@ -135,8 +135,9 @@ runs:
       fi
       echo NAMESPACE_PREFIX=$NAMESPACE_PREFIX | tee -a $GITHUB_ENV
 
-      PLATFORM=${{ inputs.platform }}
-      echo PLATFORM=${{ inputs.platform }} | tee -a $GITHUB_ENV
+      PLATFORM="${{ inputs.platform }}"
+      PLATFORM="${PLATFORM,,}"
+      echo PLATFORM=$PLATFORM | tee -a $GITHUB_ENV
 
       echo "Env vars:"
       # Namespace.
@@ -209,7 +210,7 @@ runs:
       fi
 
       # Deployment identifier.
-      TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${local_identifier} | sed 's/\./-/g')"
+      TEST_IDENTIFIER="$(echo ${PLATFORM}-${local_identifier} | sed 's/\./-/g')"
       if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
         TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgp"
       fi
