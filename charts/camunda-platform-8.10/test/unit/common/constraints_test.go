@@ -268,22 +268,46 @@ func (s *ConstraintTemplateTest) TestLegacyJksTruststoreFieldsRenderWithoutCrash
 			},
 		},
 		{
-			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk",
+			// Minimal config: only existingSecret set, existingSecretKey defaults to "".
+			// Pins the round-2 P1 fix: deprecation gate must fire on existingSecret-only,
+			// not require both fields (which the old hasSecretConfig-based gate did).
+			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk_ExistingSecretOnly",
 			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":                         "elasticsearch",
-				"global.elasticsearch.tls.jks.secret.existingSecret":               "my-jks-pw-secret",
-				"global.elasticsearch.tls.jks.secret.existingSecretKey":            "truststore-password",
+				"orchestration.data.secondaryStorage.type":           "elasticsearch",
+				"global.elasticsearch.tls.jks.secret.existingSecret": "my-jks-pw-secret",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
 			},
 		},
 		{
-			Name: "TestGlobalOpensearchTlsJksSecretRendersOk",
+			Name: "TestGlobalOpensearchTlsJksSecretRendersOk_ExistingSecretOnly",
 			Values: map[string]string{
-				"orchestration.data.secondaryStorage.type":               "opensearch",
-				"global.opensearch.tls.jks.secret.existingSecret":        "my-jks-pw-secret",
-				"global.opensearch.tls.jks.secret.existingSecretKey":     "truststore-password",
+				"orchestration.data.secondaryStorage.type":        "opensearch",
+				"global.opensearch.tls.jks.secret.existingSecret": "my-jks-pw-secret",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			// Exercises the inlineSecret branch of the gate
+			// (or .secret.existingSecret .secret.inlineSecret).
+			// Both branches must fire the warning independently.
+			Name: "TestGlobalElasticsearchTlsJksSecretRendersOk_InlineSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":         "elasticsearch",
+				"global.elasticsearch.tls.jks.secret.inlineSecret": "changeit",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				s.Require().Nil(err)
+			},
+		},
+		{
+			Name: "TestGlobalOpensearchTlsJksSecretRendersOk_InlineSecret",
+			Values: map[string]string{
+				"orchestration.data.secondaryStorage.type":      "opensearch",
+				"global.opensearch.tls.jks.secret.inlineSecret": "changeit",
 			},
 			Verifier: func(t *testing.T, output string, err error) {
 				s.Require().Nil(err)
