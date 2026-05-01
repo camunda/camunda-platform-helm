@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/jwalton/gchalk v1.3.0
-	github.com/rs/zerolog v1.35.0
+	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/term v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
