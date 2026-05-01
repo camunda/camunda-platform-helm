@@ -241,7 +241,11 @@ helm.readme-update:
 # helm.schema-update: generate schema from values file
 .PHONY: helm.schema-update
 # TODO: Once 8.7 is released, remove "alpha" name from the excluded versions.
+# strict_versions limits the additionalProperties: false post-processing to
+# specific chart versions during pilot rollout (issue #4564). Extend this
+# regex to include 8.8 / 8.9 once the 8.10 pilot is validated.
 helm.schema-update:
+	strict_versions="camunda-platform-8\.10$$"; \
 	for chart_dir in $(chartPath); do \
 		excluded_charts="keycloak|postgres|elasticsearch"; \
 		if echo "$${chart_dir}" | grep -qE "$${excluded_charts}"; then \
@@ -259,15 +263,20 @@ helm.schema-update:
 		readme-generator \
 			--values "$${chart_dir}/values.yaml" \
 			--schema "$${chart_dir}/values.schema.json"; \
-		if [ ! -f "$${chart_dir}/values.schema.extra.json" ]; then \
+		if [ -f "$${chart_dir}/values.schema.extra.json" ]; then \
+			echo "[$@] Merging with extra schema"; \
+			jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
+				"$${chart_dir}/values.schema.json" \
+				"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
+				&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
+		else \
 			echo "[$@] No extra schema to merge"; \
-			continue; \
 		fi; \
-		echo "[$@] Merging with extra schema"; \
-		jq --indent 4 -s 'reduce .[] as $$obj ({}; . * $$obj)' \
-			"$${chart_dir}/values.schema.json" \
-			"$${chart_dir}/values.schema.extra.json" > "$${chart_dir}/values.schema.tmp.json" \
-			&& mv "$${chart_dir}/values.schema.tmp.json" "$${chart_dir}/values.schema.json"; \
+		if echo "$${chart_dir}" | grep -qE "$${strict_versions}"; then \
+			echo "[$@] Applying strict additionalProperties (issue #4564)"; \
+			abs_schema="$$(cd "$${chart_dir}" && pwd)/values.schema.json"; \
+			(cd scripts/make-schema-strict && go run . -i "$${abs_schema}" -o "$${abs_schema}"); \
+		fi; \
 	done
 
 # helm.get-images: list all images in the chart.
