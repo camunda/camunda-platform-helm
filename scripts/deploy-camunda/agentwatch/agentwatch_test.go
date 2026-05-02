@@ -112,6 +112,60 @@ func TestParseVerdict_TrailingProseWithBraces(t *testing.T) {
 	}
 }
 
+func TestParseVerdict_RecoversAfterUnterminatedOpener(t *testing.T) {
+	// Regression for the brace-walker continuation bug: an unmatched '{'
+	// before the real verdict used to make the walker give up entirely.
+	raw := []byte(`Here's the JSON I'll return: { (oops, malformed
+	{"diagnosis":"image not found","causal_chain":[],"confidence":0.95,"recommended_action":"abort"}`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.RecommendedAction != ActionAbort {
+		t.Fatalf("expected abort, got %q", v.RecommendedAction)
+	}
+}
+
+func TestRedactForCorpus_StripsSensitiveEnvValues(t *testing.T) {
+	in := []byte(`{
+	  "pods": {"items": [{"spec": {"containers": [{
+	    "name": "runner",
+	    "env": [
+	      {"name": "DB_PASSWORD", "value": "hunter2"},
+	      {"name": "HARBOR_TOKEN", "value": "abc.def.ghi"},
+	      {"name": "PUBLIC_URL", "value": "https://camunda.example"},
+	      {"name": "OIDC_CLIENT_SECRET", "valueFrom": {"secretKeyRef": {"name": "x", "key": "y"}}}
+	    ]
+	  }]}}]}
+	}`)
+	out := RedactForCorpus(in)
+	s := string(out)
+	if strings.Contains(s, "hunter2") {
+		t.Fatal("DB_PASSWORD plaintext leaked into corpus")
+	}
+	if strings.Contains(s, "abc.def.ghi") {
+		t.Fatal("HARBOR_TOKEN plaintext leaked into corpus")
+	}
+	if !strings.Contains(s, "https://camunda.example") {
+		t.Fatal("non-sensitive PUBLIC_URL was incorrectly redacted")
+	}
+	if !strings.Contains(s, "DB_PASSWORD") {
+		t.Fatal("env name was redacted; should remain visible")
+	}
+	// valueFrom references don't carry plaintext, so we leave them alone
+	if !strings.Contains(s, "secretKeyRef") {
+		t.Fatal("valueFrom reference was unexpectedly stripped")
+	}
+}
+
+func TestRedactForCorpus_StripsBearerTokensFromLogs(t *testing.T) {
+	in := []byte(`{"events":{"items":[{"message":"GET /x: Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NSJ9.signature"}]}}`)
+	out := string(RedactForCorpus(in))
+	if strings.Contains(out, "eyJhbGciOiJIUzI1NiJ9") {
+		t.Fatal("JWT-shaped token leaked into corpus")
+	}
+}
+
 func TestParseVerdict_BracesInsideStringFields(t *testing.T) {
 	raw := []byte(`prefix {"diagnosis":"got } here in the message","causal_chain":[],"confidence":0.5,"recommended_action":"wait"} trailing`)
 	v, err := ParseVerdict(raw)

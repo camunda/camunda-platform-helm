@@ -75,8 +75,31 @@ Typical use:
 				Str("path", cli.Path).
 				Msg("agentwatch: using local agent CLI")
 
-			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-			defer stop()
+			if corpusDir != "" {
+				fmt.Fprintf(os.Stderr,
+					"agentwatch: NOTE — captured snapshots in %s contain pod specs and event messages. "+
+						"Env values matching /TOKEN|SECRET|PASSWORD|KEY/i and bearer tokens are redacted "+
+						"before persistence, but treat the directory as sensitive before sharing.\n",
+					corpusDir)
+			}
+
+			// Track which signal (if any) interrupted the watch so we can
+			// exit with the conventional code (130 for SIGINT, 143 for
+			// SIGTERM). Without this, a CI wrapper cannot distinguish a
+			// user-initiated stop from a clean completion.
+			var interruptSignal os.Signal
+			signalCh := make(chan os.Signal, 1)
+			signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+			defer signal.Stop(signalCh)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			go func() {
+				if s, ok := <-signalCh; ok {
+					interruptSignal = s
+					cancel()
+				}
+			}()
 
 			opts := agentwatch.Options{
 				CLI: cli,
@@ -92,26 +115,27 @@ Typical use:
 			}
 
 			decision, verdict, err := agentwatch.Watch(ctx, opts)
-			if err != nil {
-				// Ctrl+C / SIGTERM is the documented way to stop the
-				// watcher in interactive use. Treat it as a clean exit
-				// rather than surfacing "Error: context canceled".
-				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-					return nil
-				}
+			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				return err
 			}
 
-			switch decision {
-			case agentwatch.DecisionAbort:
+			if decision == agentwatch.DecisionAbort {
 				if verdict != nil {
 					fmt.Fprintf(os.Stderr, "\nAGENT VERDICT: %s\n  confidence=%.2f\n  action=%s\n",
 						verdict.Diagnosis, verdict.Confidence, verdict.RecommendedAction)
 				}
 				return fmt.Errorf("agent recommended abort")
-			default:
-				return nil
 			}
+
+			// Clean stop on signal: exit with the conventional code so CI
+			// wrappers can tell a user-aborted watch from a normal exit.
+			switch interruptSignal {
+			case syscall.SIGINT:
+				os.Exit(130)
+			case syscall.SIGTERM:
+				os.Exit(143)
+			}
+			return nil
 		},
 	}
 

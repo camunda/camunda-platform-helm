@@ -100,6 +100,7 @@ func extractBalancedObjects(s []byte) [][]byte {
 		depth := 0
 		inString := false
 		escape := false
+		closed := false
 		for ; i < len(s); i++ {
 			ch := s[i]
 			if inString {
@@ -123,12 +124,16 @@ func extractBalancedObjects(s []byte) [][]byte {
 				if depth == 0 {
 					out = append(out, s[start:i+1])
 					i++
+					closed = true
 					break
 				}
 			}
 		}
-		if depth != 0 {
-			break // unterminated object — nothing after will balance
+		if !closed {
+			// Unterminated candidate '{'. Don't give up on the whole input —
+			// a later '{' may still open a balanced object. Resume one
+			// character past the unbalanced opener.
+			i = start + 1
 		}
 	}
 	return out
