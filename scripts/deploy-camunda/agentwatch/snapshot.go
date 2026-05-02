@@ -34,6 +34,12 @@ type SnapshotOptions struct {
 	SkipHelmStatus bool
 }
 
+// kubectlPerCallTimeout caps a single kubectl/helm invocation. Without a
+// per-call cap, an unreachable apiserver or hung admission webhook blocks
+// an entire poll tick on one command — destroying the diagnose-while-
+// running property the watcher exists to provide.
+const kubectlPerCallTimeout = 30 * time.Second
+
 // GatherSnapshot runs `kubectl get pods,events,pvcs` and `helm status` and
 // returns the combined snapshot. A non-fatal helm error is recorded in
 // Snapshot.HelmStatusErr rather than failing the whole collection — the
@@ -109,9 +115,13 @@ func runHelmStatus(ctx context.Context, kubeContext, namespace, release string) 
 }
 
 // runCmd executes a command and returns its stdout. Stderr is folded into
-// the error so the caller can surface it without a separate field.
+// the error so the caller can surface it without a separate field. Each
+// call gets its own timeout-bound child context so a single hung
+// invocation cannot block the watch loop indefinitely.
 func runCmd(ctx context.Context, name string, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, name, args...)
+	callCtx, cancel := context.WithTimeout(ctx, kubectlPerCallTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(callCtx, name, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

@@ -77,9 +77,12 @@ Typical use:
 
 			if corpusDir != "" {
 				fmt.Fprintf(os.Stderr,
-					"agentwatch: NOTE — captured snapshots in %s contain pod specs and event messages. "+
-						"Env values matching /TOKEN|SECRET|PASSWORD|KEY/i and bearer tokens are redacted "+
-						"before persistence, but treat the directory as sensitive before sharing.\n",
+					"agentwatch: NOTE — captured snapshots in %s contain pod specs, event messages, "+
+						"and helm status output. Best-effort redaction is applied for env values matching "+
+						"/TOKEN|SECRET|PASSWORD|KEY/i and for bearer tokens / JWTs / Authorization headers "+
+						"in string values. Other forms of sensitive data (custom credential formats, secrets "+
+						"in unexpected fields) may not be caught — review and treat the directory as "+
+						"sensitive before sharing.\n",
 					corpusDir)
 			}
 
