@@ -1,9 +1,13 @@
 package agentwatch
 
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 )
+
+func nowSuffix() string { return time.Now().UTC().Format("20060102T150405") }
 
 func TestParseVerdict_StrictJSON(t *testing.T) {
 	raw := []byte(`{
@@ -149,6 +153,37 @@ func contains(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+func TestWatch_SnapshotFailureRespectsMaxTicks(t *testing.T) {
+	// Regression: snapshot-fail path used to skip tick++, so MaxTicks
+	// could not bound the loop when kubectl was permanently broken.
+	// We simulate "always-broken kubectl" by pointing GatherSnapshot at a
+	// nonexistent namespace with no kubeconfig; it returns quickly with
+	// an error. With MaxTicks=2 and a sub-second interval the loop must
+	// exit within a small wall-clock budget.
+	opts := Options{
+		CLI: AgentCLI{Name: "claude", Path: "/nonexistent-but-required-by-validation"},
+		Snapshot: SnapshotOptions{
+			Namespace:      "definitely-does-not-exist-" + nowSuffix(),
+			SkipHelmStatus: true,
+			KubeContext:    "definitely-does-not-exist-context",
+		},
+		Interval: 10 * time.Millisecond,
+		MaxTicks: 2,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	decision, verdict, err := Watch(ctx, opts)
+	if err != nil {
+		t.Fatalf("expected nil error after MaxTicks exit, got %v", err)
+	}
+	if decision != DecisionContinue {
+		t.Fatalf("expected DecisionContinue after MaxTicks exit, got %v", decision)
+	}
+	if verdict != nil {
+		t.Fatalf("expected nil verdict (no successful tick), got %+v", verdict)
+	}
 }
 
 func TestReplayReport_FormatLabelsRegressions(t *testing.T) {

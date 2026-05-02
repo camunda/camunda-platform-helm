@@ -140,6 +140,10 @@ func Watch(ctx context.Context, opts Options) (Decision, *Verdict, error) {
 			if !sleep(ctx, opts.Interval) {
 				return DecisionContinue, lastVerdict, ctx.Err()
 			}
+			tick++
+			if opts.MaxTicks > 0 && tick >= opts.MaxTicks {
+				return DecisionContinue, lastVerdict, nil
+			}
 			continue
 		}
 

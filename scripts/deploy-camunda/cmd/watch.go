@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -92,6 +93,12 @@ Typical use:
 
 			decision, verdict, err := agentwatch.Watch(ctx, opts)
 			if err != nil {
+				// Ctrl+C / SIGTERM is the documented way to stop the
+				// watcher in interactive use. Treat it as a clean exit
+				// rather than surfacing "Error: context canceled".
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					return nil
+				}
 				return err
 			}
 
@@ -155,6 +162,9 @@ func newWatchReplayCommand() *cobra.Command {
 
 			report, err := agentwatch.Replay(ctx, cli, args[0])
 			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					return nil
+				}
 				return err
 			}
 			fmt.Print(report.Format())
