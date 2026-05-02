@@ -273,13 +273,16 @@ func persistTick(dir string, snapshot, raw []byte, parsed *Verdict, runErr error
 		Error     string          `json:"error,omitempty"`
 	}
 	// Redact env-var values matching /TOKEN|SECRET|PASSWORD|KEY/i and
-	// strip bearer tokens / JWTs / Authorization headers from log lines
-	// before writing. The agent sees the unredacted snapshot in-memory;
-	// the corpus only carries the *shape* of credentials, not the values.
+	// strip bearer tokens / JWTs / Authorization headers from string
+	// values before writing. The agent sees the unredacted snapshot
+	// in-memory; the corpus only carries the *shape* of credentials,
+	// not the values. raw_agent_output gets the same string-level scrub
+	// because the agent's diagnosis can quote credential-bearing log
+	// lines verbatim.
 	rec := tickRecord{
 		Timestamp: ts,
 		Snapshot:  json.RawMessage(RedactForCorpus(snapshot)),
-		Raw:       string(raw),
+		Raw:       RedactRawAgentOutput(string(raw)),
 		Verdict:   parsed,
 	}
 	if runErr != nil {

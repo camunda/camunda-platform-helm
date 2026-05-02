@@ -25,6 +25,16 @@ var (
 
 const redactedPlaceholder = "[redacted]"
 
+// RedactRawAgentOutput strips bearer tokens, JWTs, and Authorization
+// headers from a raw agent CLI response. The agent reads the unredacted
+// in-memory snapshot, so its diagnosis (or causal chain, or cited
+// evidence) can quote credential-bearing log lines verbatim. The
+// persisted raw output should be scrubbed with the same rules used on
+// the snapshot.
+func RedactRawAgentOutput(raw string) string {
+	return redactString(raw)
+}
+
 // RedactForCorpus returns a redacted JSON copy of snapshotBytes suitable
 // for writing to the eval corpus. Returns the original bytes on parse
 // failure rather than refusing to persist — corpus entries are
