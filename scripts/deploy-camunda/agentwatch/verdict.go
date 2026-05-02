@@ -3,7 +3,6 @@ package agentwatch
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -54,52 +53,85 @@ func (v Verdict) Valid() error {
 	return nil
 }
 
-// jsonObjectPattern finds the first balanced JSON object in a string. Agent
-// CLIs sometimes wrap the structured output with prose ("Here is the
-// verdict: { ... }") or fence it in a markdown code block; this lets us
-// recover the embedded JSON without insisting the CLI return a pristine
-// stdout. The pattern is intentionally simple (greedy outer braces); for
-// nested structures the JSON decoder gives the authoritative answer.
-var jsonObjectPattern = regexp.MustCompile(`(?s)\{.*\}`)
-
-// ParseVerdict extracts a Verdict from raw agent CLI output. It first tries
-// strict JSON decoding; if that fails it falls back to extracting the first
-// balanced JSON object substring and decoding that. This keeps the parser
-// robust to small wrapping differences between Claude Code and opencode.
+// ParseVerdict extracts a Verdict from raw agent CLI output. It tries, in
+// order: strict JSON decoding, unwrapping known CLI envelopes, then walking
+// the string for balanced JSON objects and decoding each in turn. This keeps
+// the parser robust to small wrapping differences between Claude Code and
+// opencode and to trailing prose that contains braces.
 func ParseVerdict(raw []byte) (Verdict, error) {
-	var v Verdict
-	if err := json.Unmarshal(raw, &v); err == nil {
-		if validateErr := v.Valid(); validateErr == nil {
-			return v, nil
-		}
-		// Fall through: the top-level decode succeeded but the verdict
-		// itself was malformed. The substring search below may find a
-		// nested object that is what we actually want.
+	candidates := [][]byte{raw}
+	if unwrapped, ok := unwrapEnvelope(raw); ok {
+		candidates = append([][]byte{unwrapped}, candidates...)
 	}
 
-	// Some CLI envelopes wrap the model's output as e.g.
-	// {"role":"assistant","content":"<verdict-json>"}. Try unwrapping
-	// known shapes before giving up.
-	if unwrapped, ok := unwrapEnvelope(raw); ok {
-		if err := json.Unmarshal(unwrapped, &v); err == nil {
-			if validateErr := v.Valid(); validateErr == nil {
+	for _, candidate := range candidates {
+		var v Verdict
+		if err := json.Unmarshal(candidate, &v); err == nil {
+			if v.Valid() == nil {
 				return v, nil
 			}
 		}
-		raw = unwrapped
+		for _, sub := range extractBalancedObjects(candidate) {
+			if err := json.Unmarshal(sub, &v); err != nil {
+				continue
+			}
+			if v.Valid() == nil {
+				return v, nil
+			}
+		}
 	}
+	return Verdict{}, fmt.Errorf("no valid verdict JSON found in agent output")
+}
 
-	match := jsonObjectPattern.Find(raw)
-	if match == nil {
-		return Verdict{}, fmt.Errorf("no JSON object found in agent output")
+// extractBalancedObjects returns every balanced top-level JSON object
+// substring in s, in order. It tracks string literals + escapes so braces
+// inside strings don't unbalance the count. A greedy regex like `\{.*\}`
+// would overshoot when prose after the verdict contains '}', and a lazy
+// regex would stop at the first '}' inside a nested structure; the brace
+// walker handles both.
+func extractBalancedObjects(s []byte) [][]byte {
+	var out [][]byte
+	for i := 0; i < len(s); {
+		if s[i] != '{' {
+			i++
+			continue
+		}
+		start := i
+		depth := 0
+		inString := false
+		escape := false
+		for ; i < len(s); i++ {
+			ch := s[i]
+			if inString {
+				if escape {
+					escape = false
+				} else if ch == '\\' {
+					escape = true
+				} else if ch == '"' {
+					inString = false
+				}
+				continue
+			}
+			if ch == '"' {
+				inString = true
+				continue
+			}
+			if ch == '{' {
+				depth++
+			} else if ch == '}' {
+				depth--
+				if depth == 0 {
+					out = append(out, s[start:i+1])
+					i++
+					break
+				}
+			}
+		}
+		if depth != 0 {
+			break // unterminated object — nothing after will balance
+		}
 	}
-	if err := json.Unmarshal(match, &v); err != nil {
-		return Verdict{}, fmt.Errorf("failed to decode verdict JSON: %w", err)
-	}
-	if err := v.Valid(); err != nil {
-		return Verdict{}, err
-	}
-	return v, nil
+	return out
 }
 
 // unwrapEnvelope handles a couple of known CLI output shapes that wrap the

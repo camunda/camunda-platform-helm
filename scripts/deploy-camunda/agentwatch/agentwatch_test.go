@@ -96,6 +96,33 @@ func TestParseVerdict_NoJSON(t *testing.T) {
 	}
 }
 
+func TestParseVerdict_TrailingProseWithBraces(t *testing.T) {
+	// Regression for the greedy-regex bug: a literal '}' in trailing prose
+	// used to make the match run to the very last '}' in the input,
+	// producing an unparseable substring on otherwise valid output.
+	raw := []byte(`Here you go:
+	{"diagnosis":"shard OOM","causal_chain":[],"confidence":0.92,"recommended_action":"investigate"}
+	Note: example of bad output below for contrast: { "diagnosis": ""`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.RecommendedAction != ActionInvestigate {
+		t.Fatalf("expected investigate, got %q", v.RecommendedAction)
+	}
+}
+
+func TestParseVerdict_BracesInsideStringFields(t *testing.T) {
+	raw := []byte(`prefix {"diagnosis":"got } here in the message","causal_chain":[],"confidence":0.5,"recommended_action":"wait"} trailing`)
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if v.Diagnosis != "got } here in the message" {
+		t.Fatalf("string-literal handling broken; diagnosis=%q", v.Diagnosis)
+	}
+}
+
 func TestClassify(t *testing.T) {
 	cases := []struct {
 		name            string
