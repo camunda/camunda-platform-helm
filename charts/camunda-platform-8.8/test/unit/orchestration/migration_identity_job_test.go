@@ -238,3 +238,45 @@ func (s *MigrationIdentityJobTest) TestServiceAccount() {
 
 	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
 }
+
+func (s *MigrationIdentityJobTest) TestExtraVolumesAndMounts() {
+	testCases := []testhelpers.TestCase{
+		{
+			Name: "TestExtraVolumesAndMountsRendered",
+			ValuesFiles: []string{
+				"testdata/migration-identity-extra-volumes.yaml",
+			},
+			Verifier: func(t *testing.T, output string, err error) {
+				var job batchv1.Job
+				helm.UnmarshalK8SYaml(s.T(), output, &job)
+
+				containers := job.Spec.Template.Spec.Containers
+				s.Require().Equal(1, len(containers))
+
+				// Verify custom volume mount exists
+				volumeMounts := containers[0].VolumeMounts
+				found := false
+				for _, vm := range volumeMounts {
+					if vm.Name == "custom-mount" {
+						found = true
+						s.Require().Equal("/custom/path", vm.MountPath)
+					}
+				}
+				s.Require().True(found, "custom volume mount should exist")
+
+				// Verify custom volume exists
+				volumes := job.Spec.Template.Spec.Volumes
+				found = false
+				for _, vol := range volumes {
+					if vol.Name == "custom-volume" {
+						found = true
+						s.Require().NotNil(vol.EmptyDir)
+					}
+				}
+				s.Require().True(found, "custom volume should exist")
+			},
+		},
+	}
+
+	testhelpers.RunTestCasesE(s.T(), s.chartPath, s.release, s.namespace, s.templates, testCases)
+}

@@ -1,0 +1,10 @@
+orchestration:
+  migration:
+    data:
+      enabled: true
+      extraVolumes:
+        - name: custom-volume
+          emptyDir: {}
+      extraVolumeMounts:
+        - name: custom-mount
+          mountPath: /custom/path

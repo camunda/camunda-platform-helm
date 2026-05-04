@@ -5533,6 +5533,18 @@
                                             }
                                         }
                                     }
+                                },
+                                "extraVolumes": {
+                                    "type": "array",
+                                    "description": "can be used to define extra volumes for the migration data job pod",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumeMounts": {
+                                    "type": "array",
+                                    "description": "can be used to mount extra volumes for the migration data job pod",
+                                    "default": [],
+                                    "items": {}
                                 }
                             }
                         },
@@ -5622,6 +5634,18 @@
                                 "env": {
                                     "type": "array",
                                     "description": "can be used to set extra environment variables in the identity migration job container",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumes": {
+                                    "type": "array",
+                                    "description": "can be used to define extra volumes for the migration identity job pod",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "extraVolumeMounts": {
+                                    "type": "array",
+                                    "description": "can be used to mount extra volumes for the migration identity job pod",
                                     "default": [],
                                     "items": {}
                                 }

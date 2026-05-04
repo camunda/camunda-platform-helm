@@ -1,0 +1,12 @@
+orchestration:
+  migration:
+    identity:
+      enabled: true
+      secret:
+        inlineSecret: "very-secret-thus-plaintext"
+      extraVolumes:
+        - name: custom-volume
+          emptyDir: {}
+      extraVolumeMounts:
+        - name: custom-mount
+          mountPath: /custom/path

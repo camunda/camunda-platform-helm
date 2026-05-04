@@ -70,6 +70,9 @@ spec:
               name: tmp
             - mountPath: /usr/local/camunda/logs
               name: logs
+            {{- if .Values.orchestration.migration.identity.extraVolumeMounts }}
+            {{- .Values.orchestration.migration.identity.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
       {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- include "camundaPlatform.toYamlPretty" (dict "value" . "context" $) | nindent 8 }}
@@ -90,4 +93,7 @@ spec:
           emptyDir: {}
         - name: logs
           emptyDir: {}
+        {{- if .Values.orchestration.migration.identity.extraVolumes }}
+        {{- .Values.orchestration.migration.identity.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
 {{- end }}
