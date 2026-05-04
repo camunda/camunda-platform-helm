@@ -1,5 +1,28 @@
 # Changelog
 
+## [14.1.0](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.0.1...camunda-platform-8.9-14.1.0) (2026-05-04)
+
+
+### Features
+
+* add companion chart deployment support to deploy-camunda ([#5979](https://github.com/camunda/camunda-platform-helm/issues/5979)) ([b52f467](https://github.com/camunda/camunda-platform-helm/commit/b52f467af948aa1ed685646a8b91d6d2f9349110))
+
+
+### Bug Fixes
+
+* add missing properties and annotations to values.schema.json ([#5938](https://github.com/camunda/camunda-platform-helm/issues/5938)) ([6c39f8a](https://github.com/camunda/camunda-platform-helm/commit/6c39f8a12b3ea3ead768674b4d09bdbff388d411))
+* resolve SM nightly upgrade scenario failures for groups 2-4 ([#5984](https://github.com/camunda/camunda-platform-helm/issues/5984)) ([1b1e8e4](https://github.com/camunda/camunda-platform-helm/commit/1b1e8e44f49c5c247239c5a3e2d2bbf98c2273e3))
+
+
+### Dependencies
+
+* update camunda-platform-digests ([#5947](https://github.com/camunda/camunda-platform-helm/issues/5947)) ([2560847](https://github.com/camunda/camunda-platform-helm/commit/2560847a8d161ac9209705912f0b5c5fe549e4f6))
+* update camunda-platform-digests ([#5950](https://github.com/camunda/camunda-platform-helm/issues/5950)) ([9c9af77](https://github.com/camunda/camunda-platform-helm/commit/9c9af778f14476cf420ec9d984b883ec33c1c8c1))
+* update camunda-platform-digests ([#5951](https://github.com/camunda/camunda-platform-helm/issues/5951)) ([44ac858](https://github.com/camunda/camunda-platform-helm/commit/44ac858353bdad6fb214dc2b04f48f89c8998e04))
+* update camunda-platform-digests ([#5952](https://github.com/camunda/camunda-platform-helm/issues/5952)) ([3eb893a](https://github.com/camunda/camunda-platform-helm/commit/3eb893ab9712781407c9ab191545f68626e22b15))
+* update camunda-platform-digests ([#5953](https://github.com/camunda/camunda-platform-helm/issues/5953)) ([18eed02](https://github.com/camunda/camunda-platform-helm/commit/18eed025d3170aa1d3f224555fa1837503170361))
+* update camunda/web-modeler-restapi:snapshot docker digest to fe94a61 ([#5946](https://github.com/camunda/camunda-platform-helm/issues/5946)) ([1906b47](https://github.com/camunda/camunda-platform-helm/commit/1906b47f9f955f58d0f0efb208584f8d555d2609))
+
 ## [14.0.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.0.0...camunda-platform-8.9-14.0.1) (2026-04-22)
 
 
